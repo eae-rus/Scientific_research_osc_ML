@@ -30,8 +30,11 @@ def copy_cfg_and_dat_files(source_dir, dest_dir):
                             hash_table[file_hash] = (file, dest_path)  # Добавляем хэш-сумму файла в хэш-таблицу
                             
     hash_table_file_path = os.path.join(dest_dir, 'hash_table.json')  # Формируем путь для сохранения hash_table
-    with open(hash_table_file_path, 'w') as file:
-        json.dump(hash_table, file)  # Сохраняем hash_table в JSON файл
+    try:
+        with open(hash_table_file_path, 'w') as file:
+            json.dump(hash_table, file)  # Сохраняем hash_table в JSON файл
+    except:
+        print("Не удалось сохранить hash_table в JSON файл")
 
 def deleting_confidential_information_in_cfg_files(source_dir):
     protected_files = []  # Создаем список для хранения путей к защищенным файлам
@@ -54,18 +57,9 @@ def deleting_confidential_information_in_cfg_files(source_dir):
 
 # Пример использования функции
 # Путь к исходной директории
-source_directory = 'D:\Программирование\Fork\APS_Osc_sort\Отчёты' 
+source_directory = 'D:\Программирование\Fork\Scientific_research_osc_ML\Отчёты' 
 # Путь к целевой директории
-destination_directory = 'D:\Программирование\Fork\APS_Osc_sort\Отчёты_копия'
+destination_directory = 'D:\Программирование\Fork\Scientific_research_osc_ML\Отчёты_копия'
 
 copy_cfg_and_dat_files(source_directory, destination_directory)
 # deleting_confidential_information_in_cfg_files(destination_directory)
-
-dest_dir = destination_directory
-hash_table_file_path = os.path.join(dest_dir, 'hash_table.json')  # Формируем путь к файлу с hash_table
-if os.path.exists(hash_table_file_path) and os.path.getsize(hash_table_file_path) > 0:
-    with open(hash_table_file_path, 'r') as file:
-        hash_table = json.load(file)  # Загружаем hash_table из JSON файла
-else:
-    hash_table = {}  # Создаем пустую хэш-таблицу
-print(hash_table)
