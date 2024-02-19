@@ -6,6 +6,8 @@ import json
 # Функция для обхода файловой системы
 def copy_cfg_and_dat_files(source_dir, dest_dir, hash_table = {}):
     # hash_table - хэш-таблицf для отслеживания скопированных файлов
+    new_hash_table = {}
+    count_new_files = 0
     for root, dirs, files in os.walk(source_dir):  # Итерируемся по всем файлам и директориям в исходной директории
         for file in files:  # Имя каждого файла
             if file.endswith(".cfg"):  # Если файл имеет расширение .cfg
@@ -28,13 +30,25 @@ def copy_cfg_and_dat_files(source_dir, dest_dir, hash_table = {}):
                                 shutil.copy2(dat_file_path, dat_dest_path)  # Копируем dat файл в целевую директорию
                                 
                             hash_table[file_hash] = (file, file_path)  # Добавляем хэш-сумму файла в хэш-таблицу
-                            
+                            new_hash_table[file_hash] = (file, file_path)
+                            count_new_files += 1
+    
+    # Сохранение JSON файлов hash_table и new_hash_table                        
     hash_table_file_path = os.path.join(dest_dir, '_hash_table.json')  # Формируем путь для сохранения hash_table
     try:
         with open(hash_table_file_path, 'w') as file:
             json.dump(hash_table, file)  # Сохраняем hash_table в JSON файл
     except:
         print("Не удалось сохранить hash_table в JSON файл")
+    
+    print(f"Количество новых скопированных файлов: {count_new_files}")    
+    new_hash_table_file_path = os.path.join(dest_dir, '_new_hash_table.json')
+    try:
+        with open(new_hash_table_file_path, 'w') as file:
+            json.dump(new_hash_table, file)
+    except:
+        print("Не удалось сохранить new_hash_table в JSON файл")
+
 
 def deleting_confidential_information_in_cfg_files(source_dir):
     protected_files = []  # Создаем список для хранения путей к защищенным файлам
