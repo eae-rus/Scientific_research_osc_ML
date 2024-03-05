@@ -10,7 +10,8 @@ def copy_cfg_and_dat_files(source_dir, dest_dir, hash_table = {}):
     count_new_files = 0
     for root, dirs, files in os.walk(source_dir):  # Итерируемся по всем файлам и директориям в исходной директории
         for file in files:  # Имя каждого файла
-            if file.endswith(".cfg"):  # Если файл имеет расширение .cfg
+            if file.lower().endswith(".cfg"):  # Если файл имеет расширение .cfg
+                file = file[:-4] + ".cfg" # изменяем шрифт типа файла на строчный.
                 file_path = os.path.join(root, file)  # Получаем полный путь к cfg файлу
                 dat_file = file[:-4] + ".dat"  # Формируем имя dat файла на основе имени cfg файла
                 dat_file_path = file_path[:-4] + ".dat"  # Получаем полный путь к dat файлу
