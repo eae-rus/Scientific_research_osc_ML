@@ -5,7 +5,7 @@ import json
 
 # Функция для обхода файловой системы
 def copy_cfg_and_dat_files(source_dir, dest_dir, hash_table = {}):
-    # hash_table - хэш-таблицf для отслеживания скопированных файлов
+    # hash_table - хэш-таблица для отслеживания скопированных файлов
     new_hash_table = {}
     count_new_files = 0
     for root, dirs, files in os.walk(source_dir):  # Итерируемся по всем файлам и директориям в исходной директории
@@ -15,8 +15,8 @@ def copy_cfg_and_dat_files(source_dir, dest_dir, hash_table = {}):
                 file_path = os.path.join(root, file)  # Получаем полный путь к cfg файлу
                 dat_file = file[:-4] + ".dat"  # Формируем имя dat файла на основе имени cfg файла
                 dat_file_path = file_path[:-4] + ".dat"  # Получаем полный путь к dat файлу
-                if os.path.exists(dat_file_path):
-                    with open(file_path, 'rb') as f:  # Открываем cfg файл для чтения в бинарном режиме
+                if os.path.exists(dat_file_path) and os.path.getsize(dat_file_path) > 0:
+                    with open(dat_file_path, 'rb') as f:  # Открываем cfg файл для чтения в бинарном режиме
                         file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму cfg файла
                         if file_hash not in hash_table:
                             dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
