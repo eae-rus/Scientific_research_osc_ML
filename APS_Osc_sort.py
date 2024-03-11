@@ -14,8 +14,9 @@ def copy_cfg_and_dat_files(source_dir, dest_dir, hash_table = {}):
                 file = file[:-4] + ".cfg" # изменяем шрифт типа файла на строчный.
                 file_path = os.path.join(root, file)  # Получаем полный путь к cfg файлу
                 dat_file = file[:-4] + ".dat"  # Формируем имя dat файла на основе имени cfg файла
-                dat_file_path = file_path[:-4] + ".dat"  # Получаем полный путь к dat файлу
-                if os.path.exists(dat_file_path) and os.path.getsize(dat_file_path) > 0:
+                dat_file_path = os.path.join(root, dat_file)  # Получаем полный путь к dat файлу
+                is_exist = os.path.exists(dat_file_path)              
+                if is_exist:
                     with open(dat_file_path, 'rb') as f:  # Открываем cfg файл для чтения в бинарном режиме
                         file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму cfg файла
                         if file_hash not in hash_table:
