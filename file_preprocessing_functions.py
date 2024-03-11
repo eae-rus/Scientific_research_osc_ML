@@ -1,7 +1,6 @@
 import os
 import shutil
 import hashlib
-import json
 
 def deleting_confidential_information_in_cfg_files(source_dir):
     protected_files = []  # Создаем список для хранения путей к защищенным файлам
@@ -43,6 +42,28 @@ def deleting_confidential_information_in_cfg_files(source_dir):
     with open(os.path.join(source_dir, 'protected_files.txt'), 'w') as file:
         file.write('\n'.join(protected_files))  # Сохраняем список защищенных файлов в txt файл в корне папки
 
+
+def copy_cfg_and_dat_files_in_one_dir(source_dir, dest_dir):
+    for root, dirs, files in os.walk(source_dir):  # Итерируемся по всем файлам и директориям в исходной директории
+        for file in files:  # Имя каждого файла
+            if file.lower().endswith(".cfg"):  # Если файл имеет расширение .cfg
+                file = file[:-4] + ".cfg" # изменяем шрифт типа файла на строчный.
+                file_path = os.path.join(root, file)  # Получаем полный путь к cfg файлу
+                dat_file = file[:-4] + ".dat"  # Формируем имя dat файла на основе имени cfg файла
+                dat_file_path = os.path.join(root, dat_file)  # Получаем полный путь к dat файлу
+                is_exist = os.path.exists(dat_file_path) 
+                if is_exist:
+                    dest_path = os.path.join(dest_dir, file)  # Формируем путь для копирования cfg файла
+                    if not os.path.exists(dest_path):
+                        os.makedirs(os.path.dirname(dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
+                        shutil.copy2(file_path, dest_path)  # Копируем cfg файл в целевую директорию
+
+                    dat_dest_path = os.path.join(dest_dir, dat_file)  # Формируем путь для копирования dat файла
+                    if not os.path.exists(dat_dest_path):
+                        os.makedirs(os.path.dirname(dat_dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого dat файла
+                        shutil.copy2(dat_file_path, dat_dest_path)  # Копируем dat файл в целевую директорию
+
+
 # Пример использования функции
 # Путь к исходной директории
 source_directory = 'C:/Users/User/Desktop/Буфер (Алексей)/Банк осциллограмм/_до обработки/Удалить'
@@ -59,4 +80,5 @@ try:
 except:
     print("Не удалось прочитать hash_table из JSON файла")
 
-deleting_confidential_information_in_cfg_files(destination_directory)
+# deleting_confidential_information_in_cfg_files(destination_directory)
+copy_cfg_and_dat_files_in_one_dir(source_directory, destination_directory)
