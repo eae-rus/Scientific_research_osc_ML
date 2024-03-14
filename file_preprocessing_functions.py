@@ -1,6 +1,7 @@
 import os
 import shutil
 import hashlib
+import datetime
 
 def copy_cfg_and_dat_files_in_one_dir(source_dir, dest_dir): #FIXME: исправить наименование
     for root, dirs, files in os.walk(source_dir):  # Итерируемся по всем файлам и директориям в исходной директории
@@ -65,6 +66,18 @@ def diff_encoding(file_path, root, encoding_name): #FIXME: исправить н
     os.rename(file_path, os.path.join(root, file_hash + '.cfg'))
     os.rename(dat_file_path, os.path.join(root, file_hash + '.dat'))
 
+
+def date_replacement(source_dir):
+    # Получаем текущую дату и время
+    current_date = datetime.datetime.now()
+
+    # Проходим по всем файлам в папке
+    for filename in os.listdir(source_dir):
+        file_path = os.path.join(source_dir, filename)
+        file_stat = os.stat(file_path)
+        os.utime(file_path, times=(file_stat.st_atime, current_date.timestamp()))
+
+
 # Пример использования функции
 # Путь к исходной директории
 source_directory = 'C:/Users/User/Desktop/Буфер (Алексей)/Банк осциллограмм/_до обработки/Удалить'
@@ -73,13 +86,11 @@ source_directory = 'C://Users/User/Desktop/Буфер (Алексей)/Банк 
 # Путь к целевой директории
 destination_directory = 'C:/Users/User/Desktop/Буфер (Алексей)/Банк осциллограмм/_до обработки/_ALL_OSC'
 
-hash_table = {}
-destination_directory_hash_table = destination_directory +  '/_hash_table.json'
-try:
-    with open(destination_directory_hash_table, 'r') as file:
-        hash_table = json.load(file)
-except:
-    print("Не удалось прочитать hash_table из JSON файла")
+# FIXME: Оформить описание
+# 1) сперва рекомендуется переносить в одну папку
+# 2) потом проходиться алгоритмом обезличивания
+# 3) а затем удалять дату.
 
-# deleting_confidential_information_in_cfg_files(destination_directory)
-copy_cfg_and_dat_files_in_one_dir(source_directory, destination_directory)
+# copy_cfg_and_dat_files_in_one_dir(source_directory, destination_directory)
+# deleting_confidential_information_in_cfg_files(source_directory)
+date_replacement(source_directory)
