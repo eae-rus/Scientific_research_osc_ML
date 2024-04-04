@@ -133,20 +133,24 @@ def extract_frequencies(file_path):
     Returns:
         tuple: кортеж, содержащий извлеченную частоту сети и частоту дискретизации.
     """
-    f_network = None
-    f_rate = None
+    f_network, f_rate = 0, 0
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            # FIXME: нет защиты от защищёных и/или ошибочных файлов
+            lines = file.readlines()
+            if len(lines) >= 2:
+                # считываем количество сигналов
+                signals, analog_signals, digital_signals = lines[1].split(',')
+                signals = int(signals)
+                f_network = lines[signals + 2][:-1]
+                f_rate, count = lines[signals + 4].split(',')
+                f_network, f_rate = int(f_network), int(f_rate)
+    except Exception as e:
+        f_network, f_rate = 1, 1
+        print(e)
 
-    with open(file_path, 'r') as file:
-        # FIXME: нет защиты от защищёных и/или ошибочных файлов
-        lines = file.readlines()
-        if len(lines) >= 2:
-            # считываем количество сигналов
-            signals, analog_signals, digital_signals = lines[1].split(',')
-            signals = int(signals)
-            f_network = lines[signals + 2][:-1]
-            f_rate, count = lines[signals + 4].split(',')
-
-    return f_network, int(f_rate)
+    return f_network, f_rate
         
 def grouping_by_sampling_rate_and_network(source_dir):
     """
@@ -170,7 +174,7 @@ def grouping_by_sampling_rate_and_network(source_dir):
                     f_network, f_rate = extract_frequencies(file_path)
 
                     if f_network and f_rate:
-                        dest_folder = os.path.join(source_dir, 'f_network = ' + f_network + ' and f_rate = ' + f_rate)
+                        dest_folder = os.path.join(source_dir, 'f_network = ' + str(f_network) + ' and f_rate = ' + str(f_rate))
                         if not os.path.exists(dest_folder):
                             os.makedirs(dest_folder)
 
