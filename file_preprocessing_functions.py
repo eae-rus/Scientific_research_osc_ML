@@ -121,6 +121,61 @@ def date_replacement(source_dir):
         file_path = os.path.join(source_dir, filename)
         file_stat = os.stat(file_path)
         os.utime(file_path, times=(file_stat.st_atime, current_date.timestamp()))
+        
+        
+def extract_frequencies(file_path):
+    """
+    Извлекает частоту сети (f_network) и частоту дискретизации (f_rate) из заданного файла ".cfg".
+
+    Args:
+        source_dir (str): путь к файлу ".cfg".
+
+    Returns:
+        tuple: кортеж, содержащий извлеченную частоту сети и частоту дискретизации.
+    """
+    f_network = None
+    f_rate = None
+
+    with open(file_path, 'r') as file:
+        # FIXME: нет защиты от защищёных и/или ошибочных файлов
+        lines = file.readlines()
+        if len(lines) >= 2:
+            # считываем количество сигналов
+            signals, analog_signals, digital_signals = lines[1].split(',')
+            signals = int(signals)
+            f_network = lines[signals + 2][:-1]
+            f_rate, count = lines[signals + 4].split(',')
+
+    return f_network, int(f_rate)
+        
+def grouping_by_sampling_rate_and_network(source_dir):
+    """
+    Функция группирует файлы по частоте дискретизации и частоте сети.
+
+    Args:
+        source_dir (str): каталог, содержащий файлы для обновления.
+
+    Returns:
+        None
+    """
+    # Проходим по всем файлам в папке
+    for root, dirs, files in os.walk(source_dir):
+        for file in files:
+            if file.lower().endswith(".cfg"):
+                file_path = os.path.join(root, file)
+                dat_file = file[:-4] + ".dat"  # Формируем имя dat файла на основе имени cfg файла
+                dat_file_path = os.path.join(root, dat_file)  # Получаем полный путь к dat файлу
+                is_exist = os.path.exists(dat_file_path) 
+                if is_exist:
+                    f_network, f_rate = extract_frequencies(file_path)
+
+                    if f_network and f_rate:
+                        dest_folder = os.path.join(source_dir, 'f_network = ' + f_network + ' and f_rate = ' + f_rate)
+                        if not os.path.exists(dest_folder):
+                            os.makedirs(dest_folder)
+
+                        shutil.move(file_path, os.path.join(dest_folder, file))
+                        shutil.move(dat_file_path, os.path.join(dest_folder, dat_file))
 
 
 # Пример использования функции
@@ -138,4 +193,5 @@ destination_directory = 'C:/Users/User/Desktop/Буфер (Алексей)/Ба�
 
 # copy_cfg_and_dat_files_in_one_dir(source_directory, destination_directory)
 # deleting_confidential_information_in_cfg_files(source_directory)
-date_replacement(source_directory)
+# date_replacement(source_directory)
+grouping_by_sampling_rate_and_network(source_directory)
