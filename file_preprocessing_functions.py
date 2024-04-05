@@ -2,6 +2,7 @@ import os
 import shutil
 import hashlib
 import datetime
+import csv
 
 def copy_cfg_and_dat_files_in_one_dir(source_dir, dest_dir): #FIXME: исправить наименование
     """
@@ -181,6 +182,48 @@ def grouping_by_sampling_rate_and_network(source_dir):
                         shutil.move(file_path, os.path.join(dest_folder, file))
                         shutil.move(dat_file_path, os.path.join(dest_folder, dat_file))
 
+def find_all_name_analog_signals(source_dir):
+    """
+    Функция ищет все название аналоговых сигналов в comtrade файлах и сортирует их по частоте использования.
+
+    Args:
+        source_dir (str): каталог, содержащий файлы для обновления.
+
+    Returns:
+        None
+    """
+    analog_signals_name = {}
+    # Проходим по всем файлам в папке
+    for root, dirs, files in os.walk(source_dir):
+        for file in files:
+            if file.lower().endswith(".cfg"):
+                file_path = os.path.join(root, file)
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    # FIXME: нет защиты от защищёных и/или ошибочных файлов
+                    lines = file.readlines()
+                    if len(lines) >= 2:
+                        # считываем количество сигналов
+                        signals, analog_signals, digital_signals = lines[1].split(',')
+                        count_analog_signals = int(analog_signals[:-1])
+                        for i in range(count_analog_signals):
+                            analog_signal = lines[2 + i].split(',') # получаем аналоговый сигнал
+                            name, phase, unit = analog_signal[1], analog_signal[2], analog_signal[4] # получаем название, фазу и единицу измерения
+                            name, phase, unit = name.replace(' ', ''), phase.replace(' ', ''), unit.replace(' ', '') # удаляем пробелы
+                            signal_name = name + ' | phase:' + phase + ' | unit:' + unit # создаем комбинированное название сигнала
+                            if signal_name not in analog_signals_name:
+                                analog_signals_name[signal_name] = 1
+                            else:
+                                analog_signals_name[signal_name] += 1
+    
+    sorted_analog_signals_name = {k: v for k, v in sorted(analog_signals_name.items(), key=lambda item: item[1], reverse=True)}      
+    # определям путь к csv файлу 
+    csv_file = os.path.join(source_dir, 'sorted_analog_signals_name.csv')
+    # записываем результаты в csv файл
+    with open(csv_file, 'w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(['Key', "universal_code", 'Value'])  # Write header
+        for key, value in sorted_analog_signals_name.items():
+            writer.writerow([key, "-", value])
 
 # Пример использования функции
 # Путь к исходной директории
@@ -198,4 +241,5 @@ destination_directory = 'C:/Users/User/Desktop/Буфер (Алексей)/Ба�
 # copy_cfg_and_dat_files_in_one_dir(source_directory, destination_directory)
 # deleting_confidential_information_in_cfg_files(source_directory)
 # date_replacement(source_directory)
-grouping_by_sampling_rate_and_network(source_directory)
+# grouping_by_sampling_rate_and_network(source_directory)
+find_all_name_analog_signals(source_directory)
