@@ -248,9 +248,11 @@ def find_all_name_digital_signals(source_dir):
                         # считываем количество сигналов
                         signals, analog_signals, digital_signals = lines[1].split(',')
                         count_analog_signals = int(analog_signals[:-1])
-                        count_digital_signals = int(digital_signals[:-1])
+                        count_digital_signals = int(digital_signals[:-2])
                         for i in range(count_digital_signals):
                             digital_signal = lines[2 + count_analog_signals + i].split(',') # получаем аналоговый сигнал
+                            if len(digital_signal) == 1:
+                                break
                             signal_name = digital_signal[1] # получаем название
                             if signal_name not in digital_signals_name:
                                 digital_signals_name[signal_name] = 1
