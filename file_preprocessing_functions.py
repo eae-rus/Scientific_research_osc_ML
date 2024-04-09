@@ -225,6 +225,48 @@ def find_all_name_analog_signals(source_dir):
         for key, value in sorted_analog_signals_name.items():
             writer.writerow([key, "-", value])
 
+def find_all_name_digital_signals(source_dir):
+    """
+    Функция ищет все название дискретных сигналов в comtrade файлах и сортирует их по частоте использования.
+
+    Args:
+        source_dir (str): каталог, содержащий файлы для обновления.
+
+    Returns:
+        None
+    """
+    digital_signals_name = {}
+    # Проходим по всем файлам в папке
+    for root, dirs, files in os.walk(source_dir):
+        for file in files:
+            if file.lower().endswith(".cfg"):
+                file_path = os.path.join(root, file)
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    # FIXME: нет защиты от защищёных и/или ошибочных файлов
+                    lines = file.readlines()
+                    if len(lines) >= 2:
+                        # считываем количество сигналов
+                        signals, analog_signals, digital_signals = lines[1].split(',')
+                        count_analog_signals = int(analog_signals[:-1])
+                        count_digital_signals = int(digital_signals[:-1])
+                        for i in range(count_digital_signals):
+                            digital_signal = lines[2 + count_analog_signals + i].split(',') # получаем аналоговый сигнал
+                            signal_name = digital_signal[1] # получаем название
+                            if signal_name not in digital_signals_name:
+                                digital_signals_name[signal_name] = 1
+                            else:
+                                digital_signals_name[signal_name] += 1
+    
+    sorted_digital_signals_name = {k: v for k, v in sorted(digital_signals_name.items(), key=lambda item: item[1], reverse=True)}      
+    # определям путь к csv файлу 
+    csv_file = os.path.join(source_dir, 'sorted_digital_signals_name.csv')
+    # записываем результаты в csv файл
+    with open(csv_file, 'w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(['Key', "universal_code", 'Value'])  # Write header
+        for key, value in sorted_digital_signals_name.items():
+            writer.writerow([key, "-", value])
+
 # Пример использования функции
 # Путь к исходной директории
 source_directory = 'C:/Users/User/Desktop/Буфер (Алексей)/Банк осциллограмм/_до обработки/Удалить'
@@ -242,4 +284,5 @@ destination_directory = 'C:/Users/User/Desktop/Буфер (Алексей)/Ба�
 # deleting_confidential_information_in_cfg_files(source_directory)
 # date_replacement(source_directory)
 # grouping_by_sampling_rate_and_network(source_directory)
-find_all_name_analog_signals(source_directory)
+# find_all_name_analog_signals(source_directory)
+find_all_name_digital_signals(source_directory)
