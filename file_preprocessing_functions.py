@@ -311,7 +311,7 @@ def rename_analog_signals(source_dir, csv_dir):
                             signal_name = name + ' | phase:' + phase + ' | unit:' + unit # создаем комбинированное название сигнала
                             if signal_name in code_map:
                                 analog_signal[1] = code_map[signal_name]
-                            lines[2 + i] = ','.join(analog_signal) + '\n'
+                                lines[2 + i] = ','.join(analog_signal)
                 
                 with open(file_path, 'w', encoding='utf-8') as file:
                     file.writelines(lines)
@@ -358,10 +358,37 @@ def rename_digital_signals(source_dir, csv_dir):
                             signal_name = digital_signal[1] # получаем название
                             if signal_name in code_map:
                                 digital_signal[1] = code_map[signal_name]
-                                lines[2 + count_analog_signals + i] = ','.join(digital_signal) + '\n'
+                                lines[2 + count_analog_signals + i] = ','.join(digital_signal)
                 
                 with open(file_path, 'w', encoding='utf-8') as file:
                     file.writelines(lines)
+
+def delete_empty_line(source_dir):
+    """
+    удаляет из cfg файла пустые строки
+      
+    Args:
+        source_dir (str): каталог, содержащий файлы для обновления.
+
+    Returns:
+        None
+    """
+    # Проходим по всем файлам в папке
+    for root, dirs, files in os.walk(source_dir):
+        for file in files:
+            if file.lower().endswith(".cfg"):
+                file_path = os.path.join(root, file)
+                new_lines = []
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    # FIXME: нет защиты от защищёных и/или ошибочных файлов
+                    lines = file.readlines()
+                    for line in lines:
+                        if line.strip():
+                            new_lines.append(line)
+                
+                with open(file_path, 'w', encoding='utf-8') as file:
+                    file.writelines(new_lines)
+
 # Пример использования функции
 # Путь к исходной директории
 source_directory = 'C:/Users/User/Desktop/Буфер (Алексей)/Банк осциллограмм/_до обработки/Удалить'
@@ -385,4 +412,5 @@ csv_digital_directory = 'D:/DataSet/depersonalized_ALL_OSC_/universal_digital_si
 # find_all_name_analog_signals(source_directory)
 # find_all_name_digital_signals(source_directory)
 # rename_analog_signals(source_directory, csv_analog_directory)
-rename_digital_signals(source_directory, csv_digital_directory)
+# rename_digital_signals(source_directory, csv_digital_directory)
+delete_empty_line(source_directory)
