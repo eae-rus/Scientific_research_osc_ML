@@ -269,6 +269,99 @@ def find_all_name_digital_signals(source_dir):
         for key, value in sorted_digital_signals_name.items():
             writer.writerow([key, "-", value])
 
+
+def rename_analog_signals(source_dir, csv_dir):
+    """
+    Функция ищет все название аналоговые сигналы, которые присутствуют в базе данных, и переименовывает их к стандартным кодам.
+      
+    Args:
+        source_dir (str): каталог, содержащий файлы для обновления.
+        csv_dir (str): адрес csv файла.
+
+    Returns:
+        None
+    """
+    # Загрузка CSV файла в словарь
+    code_map = {}
+    with open(csv_dir, mode='r', encoding='utf-8-sig') as file:
+        reader = csv.DictReader(file, delimiter=';')
+        for row in reader:
+            key = row['Key']
+            universal_code = row['universal_code']
+            is_name_determined = universal_code != '-' and universal_code != '?'
+            if is_name_determined:
+                code_map[key] = universal_code
+    
+    # Проходим по всем файлам в папке
+    for root, dirs, files in os.walk(source_dir):
+        for file in files:
+            if file.lower().endswith(".cfg"):
+                file_path = os.path.join(root, file)
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    # FIXME: нет защиты от защищёных и/или ошибочных файлов
+                    lines = file.readlines()
+                    if len(lines) >= 2:
+                        # считываем количество сигналов
+                        signals, analog_signals, digital_signals = lines[1].split(',')
+                        count_analog_signals = int(analog_signals[:-1])
+                        for i in range(count_analog_signals):
+                            analog_signal = lines[2 + i].split(',') # получаем аналоговый сигнал
+                            name, phase, unit = analog_signal[1], analog_signal[2], analog_signal[4] # получаем название, фазу и единицу измерения
+                            name, phase, unit = name.replace(' ', ''), phase.replace(' ', ''), unit.replace(' ', '') # удаляем пробелы
+                            signal_name = name + ' | phase:' + phase + ' | unit:' + unit # создаем комбинированное название сигнала
+                            if signal_name in code_map:
+                                analog_signal[1] = code_map[signal_name]
+                            lines[2 + i] = ','.join(analog_signal) + '\n'
+                
+                with open(file_path, 'w', encoding='utf-8') as file:
+                    file.writelines(lines)
+
+def rename_digital_signals(source_dir, csv_dir):
+    """
+    Функция ищет все название аналоговые сигналы, которые присутствуют в базе данных, и переименовывает их к стандартным кодам.
+      
+    Args:
+        source_dir (str): каталог, содержащий файлы для обновления.
+        csv_dir (str): адрес csv файла.
+
+    Returns:
+        None
+    """
+    # Загрузка CSV файла в словарь
+    code_map = {}
+    with open(csv_dir, mode='r', encoding='windows-1251') as file:
+        reader = csv.DictReader(file, delimiter=';')
+        for row in reader:
+            key = row['Key']
+            universal_code = row['universal_code']
+            is_name_determined = universal_code != '-' and universal_code != '?'
+            if is_name_determined:
+                code_map[key] = universal_code
+    
+    # Проходим по всем файлам в папке
+    for root, dirs, files in os.walk(source_dir):
+        for file in files:
+            if file.lower().endswith(".cfg"):
+                file_path = os.path.join(root, file)
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    # FIXME: нет защиты от защищёных и/или ошибочных файлов
+                    lines = file.readlines()
+                    if len(lines) >= 2:
+                        # считываем количество сигналов
+                        signals, analog_signals, digital_signals = lines[1].split(',')
+                        count_analog_signals = int(analog_signals[:-1])
+                        count_digital_signals = int(digital_signals[:-2])
+                        for i in range(count_digital_signals):
+                            digital_signal = lines[2 + count_analog_signals + i].split(',') # получаем аналоговый сигнал
+                            if len(digital_signal) == 1: # защита от некорректного количества сигналов
+                                break
+                            signal_name = digital_signal[1] # получаем название
+                            if signal_name in code_map:
+                                digital_signal[1] = code_map[signal_name]
+                                lines[2 + count_analog_signals + i] = ','.join(digital_signal) + '\n'
+                
+                with open(file_path, 'w', encoding='utf-8') as file:
+                    file.writelines(lines)
 # Пример использования функции
 # Путь к исходной директории
 source_directory = 'C:/Users/User/Desktop/Буфер (Алексей)/Банк осциллограмм/_до обработки/Удалить'
@@ -276,6 +369,9 @@ source_directory = '//192.168.87.199/документы/ОТГРУЖЕННЫЕ �
 source_directory = 'C://Users/User/Desktop/Буфер (Алексей)/Банк осциллограмм/Локальное (Алексея)'
 # Путь к целевой директории
 destination_directory = 'C:/Users/User/Desktop/Буфер (Алексей)/Банк осциллограмм/_до обработки/_ALL_OSC'
+# Путь к csv файлу универсальных имён
+csv_analog_directory = 'D:/DataSet/depersonalized_ALL_OSC_/universal_analog_signals_name v2.csv'
+csv_digital_directory = 'D:/DataSet/depersonalized_ALL_OSC_/universal_digital_signals_name v2.csv'
 
 # FIXME: Оформить описание
 # 1) сперва рекомендуется переносить в одну папку
@@ -287,4 +383,6 @@ destination_directory = 'C:/Users/User/Desktop/Буфер (Алексей)/Ба�
 # date_replacement(source_directory)
 # grouping_by_sampling_rate_and_network(source_directory)
 # find_all_name_analog_signals(source_directory)
-find_all_name_digital_signals(source_directory)
+# find_all_name_digital_signals(source_directory)
+# rename_analog_signals(source_directory, csv_analog_directory)
+rename_digital_signals(source_directory, csv_digital_directory)
