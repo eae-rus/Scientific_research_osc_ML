@@ -2,9 +2,10 @@ import os
 import shutil
 import hashlib
 import json
+import datetime
 
 # Функция для обхода файловой системы
-def copy_cfg_and_dat_files(source_dir, dest_dir, hash_table = {}):
+def Search_and_copy_new_oscillograms(source_dir, dest_dir, hash_table = {}):
     """
     Копирует файлы .cfg и соответствующие файлы .dat из исходного каталога в целевой каталог, отслеживая скопированные файлы.
 
@@ -17,7 +18,10 @@ def copy_cfg_and_dat_files(source_dir, dest_dir, hash_table = {}):
         hash_table (dict): хэш-таблица для отслеживания скопированных файлов (по умолчанию-пустой словарь).
 
     Returns:
-        None
+        None.
+        При этом, создаются новые файлы в целевом каталоге:
+        - обновляется файл "_hash_table"
+        - создаётся новый файл "_new_hash_table"
     """
     # hash_table - хэш-таблица для отслеживания скопированных файлов
     new_hash_table = {}
@@ -31,8 +35,8 @@ def copy_cfg_and_dat_files(source_dir, dest_dir, hash_table = {}):
                 dat_file_path = os.path.join(root, dat_file)  # Получаем полный путь к dat файлу
                 is_exist = os.path.exists(dat_file_path)              
                 if is_exist:
-                    with open(dat_file_path, 'rb') as f:  # Открываем cfg файл для чтения в бинарном режиме
-                        file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму cfg файла
+                    with open(dat_file_path, 'rb') as f:  # Открываем dat файл для чтения в бинарном режиме
+                        file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму dat файла
                         if file_hash not in hash_table:
                             dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
                             dest_path = os.path.join(dest_dir, dest_subdir, file)  # Формируем путь для копирования cfg файла
@@ -57,8 +61,10 @@ def copy_cfg_and_dat_files(source_dir, dest_dir, hash_table = {}):
     except:
         print("Не удалось сохранить hash_table в JSON файл")
     
-    print(f"Количество новых скопированных файлов: {count_new_files}")    
-    new_hash_table_file_path = os.path.join(dest_dir, '_new_hash_table.json')
+    print(f"Количество новых скопированных файлов: {count_new_files}") 
+    # TODO: Проверить корректность сохранения new_hash_table.
+    data_now = datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+    new_hash_table_file_path = os.path.join(dest_dir, '_new_hash_table_', data_now, '.json')
     try:
         with open(new_hash_table_file_path, 'w') as file:
             json.dump(new_hash_table, file)
@@ -81,4 +87,4 @@ try:
 except:
     print("Не удалось прочитать hash_table из JSON файла")
 
-copy_cfg_and_dat_files(source_directory, destination_directory, hash_table)
+Search_and_copy_new_oscillograms(source_directory, destination_directory, hash_table)
