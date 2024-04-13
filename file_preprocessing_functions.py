@@ -210,6 +210,7 @@ def find_all_name_analog_signals(source_dir):
                         count_analog_signals = int(analog_signals[:-1])
                         for i in range(count_analog_signals):
                             analog_signal = lines[2 + i].split(',') # получаем аналоговый сигнал
+                            # TODO: добавить единую функцию формирования комбинированного названия сигнала
                             name, phase, unit = analog_signal[1], analog_signal[2], analog_signal[4] # получаем название, фазу и единицу измерения
                             name, phase, unit = name.replace(' ', ''), phase.replace(' ', ''), unit.replace(' ', '') # удаляем пробелы
                             signal_name = name + ' | phase:' + phase + ' | unit:' + unit # создаем комбинированное название сигнала
@@ -309,6 +310,7 @@ def rename_analog_signals(source_dir, csv_dir):
                         count_analog_signals = int(analog_signals[:-1])
                         for i in range(count_analog_signals):
                             analog_signal = lines[2 + i].split(',') # получаем аналоговый сигнал
+                            # TODO: добавить единую функцию формирования комбинированного названия сигнала
                             name, phase, unit = analog_signal[1], analog_signal[2], analog_signal[4] # получаем название, фазу и единицу измерения
                             name, phase, unit = name.replace(' ', ''), phase.replace(' ', ''), unit.replace(' ', '') # удаляем пробелы
                             signal_name = name + ' | phase:' + phase + ' | unit:' + unit # создаем комбинированное название сигнала
