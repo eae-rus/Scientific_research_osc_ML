@@ -4,7 +4,7 @@ import hashlib
 import datetime
 import csv
 
-def copy_cfg_and_dat_files_in_one_dir(source_dir, dest_dir): #FIXME: исправить наименование
+def copy_files_in_one_dir(source_dir, dest_dir):
     """
     Копирует файлы .cfg и соответствующие файлы .dat из дирректории "source_dir" в "dest_dir".
 
@@ -34,9 +34,10 @@ def copy_cfg_and_dat_files_in_one_dir(source_dir, dest_dir): #FIXME: испра�
                         os.makedirs(os.path.dirname(dat_dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого dat файла
                         shutil.copy2(dat_file_path, dat_dest_path)  # Копируем dat файл в целевую директорию
 
-def deleting_confidential_information_in_cfg_files(source_dir): #FIXME: исправить наименование
+def deleting_confidential_information_in_all_files(source_dir): #FIXME: исправить наименование
     """
-    Идентифицирует и обрабатывает конфиденциальную информацию в файлах. cfg в указанном исходном каталоге.
+    Идентифицирует и обрабатывает конфиденциальную информацию в файлах. cfg в указанном исходном каталоге, а так же
+    переименовывет файлы с расширением .cfg в .dat.
 
     Функция ищет файлы .cfg в заданном каталоге, пытается определить их кодировку (utf-8, windows-1251 или ОЕМ 866) 
     и собирает пути к файлам с потенциальной конфиденциальной информацией. 
@@ -53,21 +54,23 @@ def deleting_confidential_information_in_cfg_files(source_dir): #FIXME: испр
         for file in files:  # Имя каждого файла
             if file.endswith(".cfg"):  # Если файл имеет расширение .cfg
                 file_path = os.path.join(root, file)  # Получаем полный путь к cfg файлу
-                try:
-                    diff_encoding(file_path, root, 'utf-8')
+                # TODO: для определения кодировки и пересохранения файла в utf-8 необходимо
+                # создать отдельную функцию
+                try: 
+                    deleting_confidential_information_in_on_file(file_path, root, 'utf-8')
                 except Exception as e:
                     try:
-                        diff_encoding(file_path, root, 'windows-1251')  
+                        deleting_confidential_information_in_on_file(file_path, root, 'windows-1251')  
                     except Exception as e:
                         try:
-                            diff_encoding(file_path, root, 'ОЕМ 866') # ОЕМ - русский язык
+                            deleting_confidential_information_in_on_file(file_path, root, 'ОЕМ 866') # ОЕМ - русский язык
                         except Exception as e:
                             protected_files.append(file_path)  # Добавляем защищенный файл в список
                             protected_files.append(f"Произошла ошибка при обработке cfg файла: {e}")
     with open(os.path.join(source_dir, 'protected_files.txt'), 'w') as file:
         file.write('\n'.join(protected_files))  # Сохраняем список защищенных файлов в txt файл в корне папки
 
-def diff_encoding(file_path, root, encoding_name): #FIXME: исправить наименование
+def deleting_confidential_information_in_on_file(file_path, root, encoding_name): #FIXME: исправить наименование
     """
     Функция считывает содержимое файла. cfg, выполняет коррекцию кодировки, 
     удаляет локальную информацию, обновляет определенные строки, вычисляет хэш данных 
@@ -104,7 +107,7 @@ def diff_encoding(file_path, root, encoding_name): #FIXME: исправить н
     os.rename(dat_file_path, os.path.join(root, file_hash + '.dat'))
 
 
-def date_replacement(source_dir):
+def date_of_change_replacement(source_dir):
     """
     Функция перебирает все файлы в данном каталоге и устанавливает время изменения каждого файла на текущую дату и время.
 
@@ -123,35 +126,6 @@ def date_replacement(source_dir):
         file_stat = os.stat(file_path)
         os.utime(file_path, times=(file_stat.st_atime, current_date.timestamp()))
         
-        
-def extract_frequencies(file_path):
-    """
-    Извлекает частоту сети (f_network) и частоту дискретизации (f_rate) из заданного файла ".cfg".
-
-    Args:
-        source_dir (str): путь к файлу ".cfg".
-
-    Returns:
-        tuple: кортеж, содержащий извлеченную частоту сети и частоту дискретизации.
-    """
-    f_network, f_rate = 0, 0
-    
-    try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            # FIXME: нет защиты от защищёных и/или ошибочных файлов
-            lines = file.readlines()
-            if len(lines) >= 2:
-                # считываем количество сигналов
-                signals, analog_signals, digital_signals = lines[1].split(',')
-                signals = int(signals)
-                f_network = lines[signals + 2][:-1]
-                f_rate, count = lines[signals + 4].split(',')
-                f_network, f_rate = int(f_network), int(f_rate)
-    except Exception as e:
-        f_network, f_rate = 1, 1
-        print(e)
-
-    return f_network, f_rate
         
 def grouping_by_sampling_rate_and_network(source_dir):
     """
@@ -181,6 +155,35 @@ def grouping_by_sampling_rate_and_network(source_dir):
 
                         shutil.move(file_path, os.path.join(dest_folder, file))
                         shutil.move(dat_file_path, os.path.join(dest_folder, dat_file))
+
+def extract_frequencies(file_path):
+    """
+    Извлекает частоту сети (f_network) и частоту дискретизации (f_rate) из заданного файла ".cfg".
+
+    Args:
+        source_dir (str): путь к файлу ".cfg".
+
+    Returns:
+        tuple: кортеж, содержащий извлеченную частоту сети и частоту дискретизации.
+    """
+    f_network, f_rate = 0, 0
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            # FIXME: нет защиты от защищёных и/или ошибочных файлов
+            lines = file.readlines()
+            if len(lines) >= 2:
+                # считываем количество сигналов
+                signals, analog_signals, digital_signals = lines[1].split(',')
+                signals = int(signals)
+                f_network = lines[signals + 2][:-1]
+                f_rate, count = lines[signals + 4].split(',')
+                f_network, f_rate = int(f_network), int(f_rate)
+    except Exception as e:
+        f_network, f_rate = 1, 1 #TODO В будущих версиях может потребовать корректировка невалидной частоты
+        print(e)
+
+    return f_network, f_rate
 
 def find_all_name_analog_signals(source_dir):
     """
@@ -405,9 +408,9 @@ csv_digital_directory = 'D:/DataSet/depersonalized_ALL_OSC_/universal_digital_si
 # 2) потом проходиться алгоритмом обезличивания
 # 3) а затем удалять дату.
 
-# copy_cfg_and_dat_files_in_one_dir(source_directory, destination_directory)
-# deleting_confidential_information_in_cfg_files(source_directory)
-# date_replacement(source_directory)
+# copy_files_in_one_dir(source_directory, destination_directory)
+# deleting_confidential_information_in_files(source_directory)
+# date_of_change_replacement(source_directory)
 # grouping_by_sampling_rate_and_network(source_directory)
 # find_all_name_analog_signals(source_directory)
 # find_all_name_digital_signals(source_directory)
