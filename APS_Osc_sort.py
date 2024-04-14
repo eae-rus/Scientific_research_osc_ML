@@ -71,6 +71,30 @@ def Search_and_copy_new_oscillograms(source_dir, dest_dir, hash_table = {}):
     except:
         print("Не удалось сохранить new_hash_table в JSON файл")
 
+def find_all_osc_for_terminal(dest_dir, hash_table, osc_name_dict):
+    """
+    Ищет коды осциллограмм в хэш-таблице и добавляет их в новый хэш-список.
+      
+    Args:
+        dest_dir (str): каталог, для сохранения словаря осциллограмм.
+        hash_table (dict): хэш-таблица для отслеживания скопированных файлов.
+        osc_name_dict (dict): словарь для хранения кодов осциллограмм и их хэш-сумм.
+    Returns:
+        None
+    """
+    # Проходим по всем файлам в папке
+    for osc_name in osc_name_dict.keys():
+        for key in hash_table.keys():
+            if osc_name in hash_table[key][0]:
+                osc_name_dict[osc_name].append(key)
+    
+    osc_name_dict_file_path = os.path.join(dest_dir, '_osc_name_dict.json')  # Формируем путь для сохранения osc_name_dict
+    try:
+        with open(osc_name_dict_file_path, 'w') as file:
+            json.dump(osc_name_dict, file)  # Сохраняем hash_table в JSON файл
+    except:
+        print("Не удалось сохранить osc_name_dict в JSON файл")
+
 # Пример использования функции
 # Путь к исходной директории
 source_directory = 'C:/Users/User/Desktop/Буфер (Алексей)/Банк осциллограмм/_до обработки/Удалить'
@@ -87,4 +111,8 @@ try:
 except:
     print("Не удалось прочитать hash_table из JSON файла")
 
-Search_and_copy_new_oscillograms(source_directory, destination_directory, hash_table)
+
+# Search_and_copy_new_oscillograms(source_directory, destination_directory, hash_table)
+osc_name_dict = {}
+osc_name_dict["t00209"], osc_name_dict["t00331"], osc_name_dict["t00363"] = [], [], []
+find_all_osc_for_terminal(destination_directory, hash_table, osc_name_dict)
