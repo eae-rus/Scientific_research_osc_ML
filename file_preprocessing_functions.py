@@ -4,7 +4,7 @@ import hashlib
 import datetime
 import csv
 
-def copy_files_in_one_dir(source_dir, dest_dir):
+def copy_files_in_one_dir(source_dir: str, dest_dir: str) -> None:
     """
     Копирует файлы .cfg и соответствующие файлы .dat из дирректории "source_dir" в "dest_dir".
 
@@ -34,7 +34,7 @@ def copy_files_in_one_dir(source_dir, dest_dir):
                         os.makedirs(os.path.dirname(dat_dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого dat файла
                         shutil.copy2(dat_file_path, dat_dest_path)  # Копируем dat файл в целевую директорию
 
-def deleting_confidential_information_in_all_files(source_dir): #FIXME: исправить наименование
+def deleting_confidential_information_in_all_files(source_dir: str) -> None:
     """
     Идентифицирует и обрабатывает конфиденциальную информацию в файлах. cfg в указанном исходном каталоге, а так же
     переименовывет файлы с расширением .cfg в .dat.
@@ -70,7 +70,7 @@ def deleting_confidential_information_in_all_files(source_dir): #FIXME: испр
     with open(os.path.join(source_dir, 'protected_files.txt'), 'w') as file:
         file.write('\n'.join(protected_files))  # Сохраняем список защищенных файлов в txt файл в корне папки
 
-def deleting_confidential_information_in_on_file(file_path, root, encoding_name): #FIXME: исправить наименование
+def deleting_confidential_information_in_on_file(file_path: str, root: str, encoding_name: str) -> None:
     """
     Функция считывает содержимое файла. cfg, выполняет коррекцию кодировки, 
     удаляет локальную информацию, обновляет определенные строки, вычисляет хэш данных 
@@ -107,7 +107,7 @@ def deleting_confidential_information_in_on_file(file_path, root, encoding_name)
     os.rename(dat_file_path, os.path.join(root, file_hash + '.dat'))
 
 
-def date_of_change_replacement(source_dir):
+def date_of_change_replacement(source_dir: str) -> None:
     """
     Функция перебирает все файлы в данном каталоге и устанавливает время изменения каждого файла на текущую дату и время.
 
@@ -127,7 +127,7 @@ def date_of_change_replacement(source_dir):
         os.utime(file_path, times=(file_stat.st_atime, current_date.timestamp()))
         
         
-def grouping_by_sampling_rate_and_network(source_dir):
+def grouping_by_sampling_rate_and_network(source_dir: str) -> None:
     """
     Функция группирует файлы по частоте дискретизации и частоте сети.
 
@@ -156,7 +156,7 @@ def grouping_by_sampling_rate_and_network(source_dir):
                         shutil.move(file_path, os.path.join(dest_folder, file))
                         shutil.move(dat_file_path, os.path.join(dest_folder, dat_file))
 
-def extract_frequencies(file_path):
+def extract_frequencies(file_path: str) -> tuple:
     """
     Извлекает частоту сети (f_network) и частоту дискретизации (f_rate) из заданного файла ".cfg".
 
@@ -185,7 +185,7 @@ def extract_frequencies(file_path):
 
     return f_network, f_rate
 
-def find_all_name_analog_signals(source_dir):
+def find_all_name_analog_signals(source_dir: str) -> None:
     """
     Функция ищет все название аналоговых сигналов в comtrade файлах и сортирует их по частоте использования.
 
@@ -229,7 +229,7 @@ def find_all_name_analog_signals(source_dir):
         for key, value in sorted_analog_signals_name.items():
             writer.writerow([key, "-", value])
 
-def find_all_name_digital_signals(source_dir):
+def find_all_name_digital_signals(source_dir: str) -> None:
     """
     Функция ищет все название дискретных сигналов в comtrade файлах и сортирует их по частоте использования.
 
@@ -274,7 +274,7 @@ def find_all_name_digital_signals(source_dir):
             writer.writerow([key, "-", value])
 
 
-def rename_analog_signals(source_dir, csv_dir):
+def rename_analog_signals(source_dir: str, csv_dir: str) -> None:
     """
     Функция ищет все название аналоговые сигналы, которые присутствуют в базе данных, и переименовывает их к стандартным кодам.
       
@@ -321,7 +321,7 @@ def rename_analog_signals(source_dir, csv_dir):
                 with open(file_path, 'w', encoding='utf-8') as file:
                     file.writelines(lines)
 
-def rename_digital_signals(source_dir, csv_dir):
+def rename_digital_signals(source_dir: str, csv_dir: str) -> None:
     """
     Функция ищет все название аналоговые сигналы, которые присутствуют в базе данных, и переименовывает их к стандартным кодам.
       
@@ -368,7 +368,7 @@ def rename_digital_signals(source_dir, csv_dir):
                 with open(file_path, 'w', encoding='utf-8') as file:
                     file.writelines(lines)
 
-def delete_empty_line(source_dir):
+def delete_empty_line(source_dir: str) -> None:
     """
     удаляет из cfg файла пустые строки
       

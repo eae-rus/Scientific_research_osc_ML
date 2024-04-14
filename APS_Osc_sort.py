@@ -5,7 +5,7 @@ import json
 import datetime
 
 # Функция для обхода файловой системы
-def Search_and_copy_new_oscillograms(source_dir, dest_dir, hash_table = {}):
+def Search_and_copy_new_oscillograms(source_dir: str, dest_dir: str, hash_table: dict = {}) -> None:
     """
     Копирует файлы .cfg и соответствующие файлы .dat из исходного каталога в целевой каталог, отслеживая скопированные файлы.
 
@@ -71,7 +71,7 @@ def Search_and_copy_new_oscillograms(source_dir, dest_dir, hash_table = {}):
     except:
         print("Не удалось сохранить new_hash_table в JSON файл")
 
-def find_all_osc_for_terminal(dest_dir, hash_table, osc_name_dict):
+def find_all_osc_for_terminal(dest_dir: str, hash_table: dict, osc_name_dict: dict) -> None:
     """
     Ищет коды осциллограмм в хэш-таблице и добавляет их в новый хэш-список.
       
