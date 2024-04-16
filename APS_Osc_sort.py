@@ -4,6 +4,11 @@ import hashlib
 import json
 import datetime
 
+# создаю exe файл через 
+# pip install auto-py-to-exe
+# и затем опять же в командной строке
+# python -m auto_py_to_exe
+
 # Функция для обхода файловой системы
 def Search_and_copy_new_oscillograms(source_dir, dest_dir, hash_table = {}):
     """
@@ -120,6 +125,10 @@ destination_directory = 'C:/Users/User/Desktop/Буфер (Алексей)/Ба�
 
 hash_table = {}
 destination_directory_hash_table = destination_directory +  '/_hash_table.json'
+
+source_directory = input("Введите путь в которой искать: ")
+destination_directory = input("Введите путь в которую сохранять: ")
+destination_directory_hash_table = input("Введите путь к папке с файлом '_hash_table.json': ")
 try:
     with open(destination_directory_hash_table, 'r') as file:
         hash_table = json.load(file)
@@ -127,7 +136,7 @@ except:
     print("Не удалось прочитать hash_table из JSON файла")
 
 
-# Search_and_copy_new_oscillograms(source_directory, destination_directory, hash_table)
-osc_name_dict = {}
-osc_name_dict["t00209"], osc_name_dict["t00331"], osc_name_dict["t00363"] = [], [], []
-find_all_osc_for_terminal(destination_directory, hash_table, osc_name_dict)
+Search_and_copy_new_oscillograms(source_directory, destination_directory, hash_table)
+# osc_name_dict = {}
+# osc_name_dict["t00209"], osc_name_dict["t00331"], osc_name_dict["t00363"] = [], [], []
+# find_all_osc_for_terminal(destination_directory, hash_table, osc_name_dict)
