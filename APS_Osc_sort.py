@@ -52,6 +52,22 @@ def Search_and_copy_new_oscillograms(source_dir, dest_dir, hash_table = {}):
                             hash_table[file_hash] = (file, file_path)  # Добавляем хэш-сумму файла в хэш-таблицу
                             new_hash_table[file_hash] = (file, file_path)
                             count_new_files += 1
+            
+            if file.lower().endswith(".brs"):  # Если файл имеет расширение .brs (характерно для Бресслера)
+                file = file[:-4] + ".brs" # изменяем шрифт типа файла на строчный.
+                file_path = os.path.join(root, file)  # Получаем полный путь к cfg файлу
+                with open(file_path, 'rb') as f: # Открываем brs файл для чтения в бинарном режиме
+                    file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму dat файла
+                    if file_hash not in hash_table:
+                        dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
+                        dest_path_BRESELER = os.path.join(dest_dir,'BRESELER', dest_subdir, file)  # Формируем путь для копирования cfg файла
+                        if not os.path.exists(dest_path_BRESELER):
+                            os.makedirs(os.path.dirname(dest_path_BRESELER), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
+                            shutil.copy2(file_path, dest_path_BRESELER)  # Копируем файл в целевую директорию
+                           
+                        hash_table[file_hash] = (file, file_path)  # Добавляем хэш-сумму файла в хэш-таблицу
+                        new_hash_table[file_hash] = (file, file_path)
+                        count_new_files += 1
     
     # Сохранение JSON файлов hash_table и new_hash_table                        
     hash_table_file_path = os.path.join(dest_dir, '_hash_table.json')  # Формируем путь для сохранения hash_table
@@ -62,9 +78,8 @@ def Search_and_copy_new_oscillograms(source_dir, dest_dir, hash_table = {}):
         print("Не удалось сохранить hash_table в JSON файл")
     
     print(f"Количество новых скопированных файлов: {count_new_files}") 
-    # TODO: Проверить корректность сохранения new_hash_table.
     data_now = datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-    new_hash_table_file_path = os.path.join(dest_dir, '_new_hash_table_', data_now, '.json')
+    new_hash_table_file_path = os.path.join(dest_dir, f'new_hash_table_{data_now}.json')
     try:
         with open(new_hash_table_file_path, 'w') as file:
             json.dump(new_hash_table, file)
