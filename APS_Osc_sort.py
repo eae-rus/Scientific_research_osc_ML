@@ -10,7 +10,7 @@ import datetime
 # python -m auto_py_to_exe
 
 # Функция для обхода файловой системы
-def Search_and_copy_new_oscillograms(source_dir, dest_dir, hash_table = {}):
+def Search_and_copy_new_oscillograms(source_dir, dest_dir, hash_table = {}, is_copy_saving_the_folder_structure = True):
     """
     Копирует файлы .cfg и соответствующие файлы .dat из исходного каталога в целевой каталог, отслеживая скопированные файлы.
 
@@ -65,7 +65,10 @@ def Search_and_copy_new_oscillograms(source_dir, dest_dir, hash_table = {}):
                     file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму dat файла
                     if file_hash not in hash_table:
                         dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
-                        dest_path_BRESELER = os.path.join(dest_dir,'BRESELER', dest_subdir, file)  # Формируем путь для копирования cfg файла
+                        if is_copy_saving_the_folder_structure:
+                            dest_path_BRESELER = os.path.join(dest_dir,'BRESELER', dest_subdir, file)  # Формируем путь для копирования cfg файла
+                        else:
+                            dest_path_BRESELER = os.path.join(dest_dir,'BRESELER', file)  # Формируем путь для копирования cfg файла
                         if not os.path.exists(dest_path_BRESELER):
                             os.makedirs(os.path.dirname(dest_path_BRESELER), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
                             shutil.copy2(file_path, dest_path_BRESELER)  # Копируем файл в целевую директорию
@@ -122,6 +125,8 @@ source_directory = '//192.168.87.199/документы/ОТГРУЖЕННЫЕ �
 source_directory = 'C://Users/User/Desktop/Буфер (Алексей)/Банк осциллограмм/Локальное (Алексея)'
 # Путь к целевой директории
 destination_directory = 'C:/Users/User/Desktop/Буфер (Алексей)/Банк осциллограмм/_до обработки/_ALL_OSC'
+# Копировать с сохранением структуры директорий? True/False.
+is_copy_saving_the_folder_structure = True
 
 hash_table = {}
 destination_directory_hash_table = destination_directory +  '/_hash_table.json'
@@ -136,7 +141,7 @@ except:
     print("Не удалось прочитать hash_table из JSON файла")
 
 
-Search_and_copy_new_oscillograms(source_directory, destination_directory, hash_table)
+Search_and_copy_new_oscillograms(source_directory, destination_directory, hash_table, is_copy_saving_the_folder_structure)
 # osc_name_dict = {}
 # osc_name_dict["t00209"], osc_name_dict["t00331"], osc_name_dict["t00363"] = [], [], []
 # find_all_osc_for_terminal(destination_directory, hash_table, osc_name_dict)
