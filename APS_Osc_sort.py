@@ -10,7 +10,7 @@ import datetime
 # python -m auto_py_to_exe
 
 # Функция для обхода файловой системы
-def Search_and_copy_new_oscillograms(source_dir, dest_dir, hash_table = {}, is_copy_saving_the_folder_structure = True):
+def Search_and_copy_new_oscillograms(source_dir: str, dest_dir: str, hash_table: dict = {}, is_copy_saving_the_folder_structure: bool = True) -> None:
     """
     Копирует файлы .cfg и соответствующие файлы .dat из исходного каталога в целевой каталог, отслеживая скопированные файлы.
 
@@ -21,6 +21,7 @@ def Search_and_copy_new_oscillograms(source_dir, dest_dir, hash_table = {}, is_c
         source_dir (str): путь к исходному каталогу.
         dest_dir (str): путь к целевому каталогу.
         hash_table (dict): хэш-таблица для отслеживания скопированных файлов (по умолчанию-пустой словарь).
+        is_copy_saving_the_folder_structure (bool): сохранять ли структуру директорий в целевом каталоге?
 
     Returns:
         None.
