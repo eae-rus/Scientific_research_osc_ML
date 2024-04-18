@@ -4,36 +4,6 @@ import hashlib
 import datetime
 import csv
 
-def copy_files_in_one_dir(source_dir: str, dest_dir: str) -> None:
-    """
-    Копирует файлы .cfg и соответствующие файлы .dat из дирректории "source_dir" в "dest_dir".
-
-    Args:
-        source_dir (str): исходный каталог, содержащий файлы .cfg и .dat.
-        dest_dir (str): каталог назначения для копирования файлов.
-
-    Returns:
-        None
-    """
-    for root, dirs, files in os.walk(source_dir):  # Итерируемся по всем файлам и директориям в исходной директории
-        for file in files:  # Имя каждого файла
-            if file.lower().endswith(".cfg"):  # Если файл имеет расширение .cfg
-                file = file[:-4] + ".cfg" # изменяем шрифт типа файла на строчный.
-                file_path = os.path.join(root, file)  # Получаем полный путь к cfg файлу
-                dat_file = file[:-4] + ".dat"  # Формируем имя dat файла на основе имени cfg файла
-                dat_file_path = os.path.join(root, dat_file)  # Получаем полный путь к dat файлу
-                is_exist = os.path.exists(dat_file_path) 
-                if is_exist:
-                    dest_path = os.path.join(dest_dir, file)  # Формируем путь для копирования cfg файла
-                    if not os.path.exists(dest_path):
-                        os.makedirs(os.path.dirname(dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
-                        shutil.copy2(file_path, dest_path)  # Копируем cfg файл в целевую директорию
-
-                    dat_dest_path = os.path.join(dest_dir, dat_file)  # Формируем путь для копирования dat файла
-                    if not os.path.exists(dat_dest_path):
-                        os.makedirs(os.path.dirname(dat_dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого dat файла
-                        shutil.copy2(dat_file_path, dat_dest_path)  # Копируем dat файл в целевую директорию
-
 def deleting_confidential_information_in_all_files(source_dir: str) -> None:
     """
     Идентифицирует и обрабатывает конфиденциальную информацию в файлах. cfg в указанном исходном каталоге, а так же
