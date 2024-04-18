@@ -181,9 +181,9 @@ def find_all_name_analog_signals(source_dir: str) -> None:
                         for i in range(count_analog_signals):
                             analog_signal = lines[2 + i].split(',') # получаем аналоговый сигнал
                             # TODO: добавить единую функцию формирования комбинированного названия сигнала
-                            name, phase, unit = analog_signal[1], analog_signal[2], analog_signal[4] # получаем название, фазу и единицу измерения
-                            name, phase, unit = name.replace(' ', ''), phase.replace(' ', ''), unit.replace(' ', '') # удаляем пробелы
-                            signal_name = name + ' | phase:' + phase + ' | unit:' + unit # создаем комбинированное название сигнала
+                            name, phase = analog_signal[1], analog_signal[2] # получаем название, фазу и единицу измерения
+                            name, phase = name.replace(' ', ''), phase.replace(' ', '') # удаляем пробелы
+                            signal_name = name + ' | phase:' + phase # создаем комбинированное название сигнала
                             if signal_name not in analog_signals_name:
                                 analog_signals_name[signal_name] = 1
                             else:
@@ -281,9 +281,9 @@ def rename_analog_signals(source_dir: str, csv_dir: str) -> None:
                         for i in range(count_analog_signals):
                             analog_signal = lines[2 + i].split(',') # получаем аналоговый сигнал
                             # TODO: добавить единую функцию формирования комбинированного названия сигнала
-                            name, phase, unit = analog_signal[1], analog_signal[2], analog_signal[4] # получаем название, фазу и единицу измерения
-                            name, phase, unit = name.replace(' ', ''), phase.replace(' ', ''), unit.replace(' ', '') # удаляем пробелы
-                            signal_name = name + ' | phase:' + phase + ' | unit:' + unit # создаем комбинированное название сигнала
+                            name, phase = analog_signal[1], analog_signal[2] # получаем название, фазу и единицу измерения
+                            name, phase = name.replace(' ', ''), phase.replace(' ', ''),  # удаляем пробелы
+                            signal_name = name + ' | phase:' + phase # создаем комбинированное название сигнала
                             if signal_name in code_map:
                                 analog_signal[1] = code_map[signal_name]
                                 lines[2 + i] = ','.join(analog_signal)
