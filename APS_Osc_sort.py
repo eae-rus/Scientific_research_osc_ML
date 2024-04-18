@@ -45,12 +45,18 @@ def Search_and_copy_new_oscillograms(source_dir: str, dest_dir: str, hash_table:
                         file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму dat файла
                         if file_hash not in hash_table:
                             dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
-                            dest_path = os.path.join(dest_dir, dest_subdir, file)  # Формируем путь для копирования cfg файла
+                            
+                            if is_copy_saving_the_folder_structure:
+                                dest_path = os.path.join(dest_dir, dest_subdir, file)  # Формируем путь для копирования cfg файла
+                                dat_dest_path = os.path.join(dest_dir, dest_subdir, dat_file)  # Формируем путь для копирования dat файла
+                            else:
+                                dest_path = os.path.join(dest_dir, file)
+                                dat_dest_path = os.path.join(dest_dir, dat_file)
+                            
                             if not os.path.exists(dest_path):
                                 os.makedirs(os.path.dirname(dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
                                 shutil.copy2(file_path, dest_path)  # Копируем cfg файл в целевую директорию
                             
-                            dat_dest_path = os.path.join(dest_dir, dest_subdir, dat_file)  # Формируем путь для копирования dat файла
                             if not os.path.exists(dat_dest_path):
                                 os.makedirs(os.path.dirname(dat_dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого dat файла
                                 shutil.copy2(dat_file_path, dat_dest_path)  # Копируем dat файл в целевую директорию
