@@ -366,11 +366,9 @@ def delete_empty_line(source_dir: str) -> None:
 
 # Пример использования функции
 # Путь к исходной директории
-source_directory = 'C:/Users/User/Desktop/Буфер (Алексей)/Банк осциллограмм/_до обработки/Удалить'
-source_directory = '//192.168.87.199/документы/ОТГРУЖЕННЫЕ ТЕРМИНАЛЫ И ШКАФЫ/Терминалы/БАВР/00203'
-source_directory = 'C://Users/User/Desktop/Буфер (Алексей)/Банк осциллограмм/Локальное (Алексея)'
+source_directory = 'D:/DataSet/_ALL_OSC_v2'
 # Путь к целевой директории
-destination_directory = 'C:/Users/User/Desktop/Буфер (Алексей)/Банк осциллограмм/_до обработки/_ALL_OSC'
+destination_directory = 'D:/DataSet/depersonalized_ALL_OSC_v2'
 # Путь к csv файлу универсальных имён
 csv_analog_directory = 'D:/DataSet/depersonalized_ALL_OSC_/universal_analog_signals_name v2.csv'
 csv_digital_directory = 'D:/DataSet/depersonalized_ALL_OSC_/universal_digital_signals_name v2.csv'
@@ -380,7 +378,6 @@ csv_digital_directory = 'D:/DataSet/depersonalized_ALL_OSC_/universal_digital_si
 # 2) потом проходиться алгоритмом обезличивания
 # 3) а затем удалять дату.
 
-# copy_files_in_one_dir(source_directory, destination_directory)
 # deleting_confidential_information_in_files(source_directory)
 # date_of_change_replacement(source_directory)
 # grouping_by_sampling_rate_and_network(source_directory)
@@ -388,4 +385,4 @@ csv_digital_directory = 'D:/DataSet/depersonalized_ALL_OSC_/universal_digital_si
 # find_all_name_digital_signals(source_directory)
 # rename_analog_signals(source_directory, csv_analog_directory)
 # rename_digital_signals(source_directory, csv_digital_directory)
-delete_empty_line(source_directory)
+# delete_empty_line(source_directory)

@@ -132,20 +132,16 @@ def find_all_osc_for_terminal(dest_dir: str, hash_table: dict, osc_name_dict: di
 
 # Пример использования функции
 # Путь к исходной директории
-source_directory = 'C:/Users/User/Desktop/Буфер (Алексей)/Банк осциллограмм/_до обработки/Удалить'
-source_directory = '//192.168.87.199/документы/ОТГРУЖЕННЫЕ ТЕРМИНАЛЫ И ШКАФЫ/Терминалы/БАВР/00203'
-source_directory = 'C://Users/User/Desktop/Буфер (Алексей)/Банк осциллограмм/Локальное (Алексея)'
+source_directory = 'D:/DataSet/_ALL_OSC_v2'
 # Путь к целевой директории
-destination_directory = 'C:/Users/User/Desktop/Буфер (Алексей)/Банк осциллограмм/_до обработки/_ALL_OSC'
-# Копировать с сохранением структуры директорий? True/False.
-is_copy_saving_the_folder_structure = True
+destination_directory = 'D:/DataSet/depersonalized_ALL_OSC_v2'
 
 hash_table = {}
 destination_directory_hash_table = destination_directory +  '/_hash_table.json'
 
-source_directory = input("Введите путь в которой искать: ")
-destination_directory = input("Введите путь в которую сохранять: ")
-destination_directory_hash_table = input("Введите путь к папке с файлом '_hash_table.json': ")
+# source_directory = input("Введите путь в которой искать: ")
+# destination_directory = input("Введите путь в которую сохранять: ")
+# destination_directory_hash_table = input("Введите путь к папке с файлом '_hash_table.json': ")
 try:
     with open(destination_directory_hash_table, 'r') as file:
         hash_table = json.load(file)
@@ -153,7 +149,7 @@ except:
     print("Не удалось прочитать hash_table из JSON файла")
 
 
-Search_and_copy_new_oscillograms(source_directory, destination_directory, hash_table, is_copy_saving_the_folder_structure)
+Search_and_copy_new_oscillograms(source_directory, destination_directory, is_copy_saving_the_folder_structure=False, is_use_brs=False)
 # osc_name_dict = {}
 # osc_name_dict["t00209"], osc_name_dict["t00331"], osc_name_dict["t00363"] = [], [], []
 # find_all_osc_for_terminal(destination_directory, hash_table, osc_name_dict)
