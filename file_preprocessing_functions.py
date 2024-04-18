@@ -364,25 +364,75 @@ def delete_empty_line(source_dir: str) -> None:
                 with open(file_path, 'w', encoding='utf-8') as file:
                     file.writelines(new_lines)
 
+def Combining_databases_of_unique_codes(old_csv_file_path: str, new_csv_file_path: str, merged_csv_file_path: str,
+                                        deelimed_old_csv_file: str = ';', deelimed_new_csv_file: str = ';') -> None:
+    """
+    функция объединяет csv файлы с уникальными кодами сигналов
+      
+    Args:
+        old_csv_file_path (str): адрес csv файла с уникальными кодами сигналов.
+        new_csv_file_path (str): адрес csv файла с уникальными кодами сигналов.
+
+    Returns:
+        None
+    """
+    # Открытие старого CSV файла и чтение его в словарь
+    old_code_map = {}
+    with open(old_csv_file_path, mode='r', encoding='utf-8') as file:
+        reader = csv.DictReader(file, delimiter=deelimed_old_csv_file)
+        for row in reader:
+            key = row['Key']
+            universal_code = row['universal_code']
+            is_name_determined = universal_code != '-' and universal_code != '?'
+            if is_name_determined:
+                old_code_map[key] = universal_code
+
+    # Открытие новоего CSV файла и чтение его в словарь
+    new_code_map = {}
+    with open(new_csv_file_path, mode='r', encoding='utf-8') as file:
+        reader = csv.DictReader(file, delimiter=deelimed_new_csv_file)
+        for row in reader:
+            key = row['Key']
+            universal_code = row['universal_code']
+            value = row['Value']
+            new_code_map[key] = (universal_code, value)
+
+    # Создание нового CSV файла для хранения скопированных значений
+    with open(merged_csv_file_path, mode='w', encoding='utf-8', newline='') as new_file:
+        writer = csv.writer(new_file, delimiter=deelimed_new_csv_file)
+        writer.writerow(['Key', 'universal_code', 'Value'])
+        for key, (universal_code, value) in new_code_map.items():
+            if key in old_code_map:
+                writer.writerow([key, old_code_map[key], value])
+            else:
+                writer.writerow([key, universal_code, value])
+
 # Пример использования функции
 # Путь к исходной директории
 source_directory = 'D:/DataSet/_ALL_OSC_v2'
+source_directory = 'XXXXX'
 # Путь к целевой директории
 destination_directory = 'D:/DataSet/depersonalized_ALL_OSC_v2'
 # Путь к csv файлу универсальных имён
 csv_analog_directory = 'D:/DataSet/depersonalized_ALL_OSC_/universal_analog_signals_name v2.csv'
 csv_digital_directory = 'D:/DataSet/depersonalized_ALL_OSC_/universal_digital_signals_name v2.csv'
+# Пути комбинации файлов csv
+old_csv_file_path = 'D:/DataSet/depersonalized_ALL_OSC_v2/universal_analog_signals_name v2.csv'
+new_csv_file_path = 'D:/DataSet/depersonalized_ALL_OSC_v2/sorted_analog_signals_name.csv'
+merged_csv_file_path = 'D:/DataSet/depersonalized_ALL_OSC_v2/merged.csv'
 
 # FIXME: Оформить описание
 # 1) сперва рекомендуется переносить в одну папку
 # 2) потом проходиться алгоритмом обезличивания
 # 3) а затем удалять дату.
 
-# deleting_confidential_information_in_files(source_directory)
-# date_of_change_replacement(source_directory)
-# grouping_by_sampling_rate_and_network(source_directory)
-# find_all_name_analog_signals(source_directory)
-# find_all_name_digital_signals(source_directory)
-# rename_analog_signals(source_directory, csv_analog_directory)
-# rename_digital_signals(source_directory, csv_digital_directory)
-# delete_empty_line(source_directory)
+# deleting_confidential_information_in_all_files(destination_directory)
+# date_of_change_replacement(destination_directory)
+# grouping_by_sampling_rate_and_network(destination_directory)
+# find_all_name_analog_signals(destination_directory)
+# find_all_name_digital_signals(destination_directory)
+# rename_analog_signals(destination_directory, csv_analog_directory)
+# rename_digital_signals(destination_directory, csv_digital_directory)
+# delete_empty_line(destination_directory)
+Combining_databases_of_unique_codes(old_csv_file_path, new_csv_file_path, merged_csv_file_path,
+                                    deelimed_old_csv_file=';',deelimed_new_csv_file=',')
