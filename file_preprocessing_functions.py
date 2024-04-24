@@ -337,6 +337,35 @@ def rename_digital_signals(source_dir: str, csv_dir: str) -> None:
                 
                 with open(file_path, 'w', encoding='utf-8') as file:
                     file.writelines(lines)
+                    
+def rename_one_signals(source_dir: str, old_name: str, new_name: str) -> None:
+    """
+    Функция ищет все название сигнала с одним именем и меняет на новое.
+      
+    Args:
+        source_dir (str): каталог, содержащий файлы для обновления.
+        old_name (str): старое название сигнала.
+        new_name (str): новое название сигнала.
+
+    Returns:
+        None
+    """
+    # Проходим по всем файлам в папке
+    for root, dirs, files in os.walk(source_dir):
+        for file in files:
+            if file.lower().endswith(".cfg"):
+                file_path = os.path.join(root, file)
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    # FIXME: нет защиты от защищёных и/или ошибочных файлов
+                    lines = file.readlines()
+                    if len(lines) >= 2:
+                        # считываем количество сигналов
+                        for i in range(len(lines)):
+                            if old_name in lines[i]:
+                                lines[i] = lines[i].replace(old_name, new_name)
+                
+                with open(file_path, 'w', encoding='utf-8') as file:
+                    file.writelines(lines)
 
 def delete_empty_line(source_dir: str) -> None:
     """
@@ -433,6 +462,7 @@ merged_csv_file_path = 'D:/DataSet/depersonalized_ALL_OSC_v2/merged.csv'
 # find_all_name_digital_signals(destination_directory)
 # rename_analog_signals(destination_directory, csv_analog_directory)
 # rename_digital_signals(destination_directory, csv_digital_directory)
+rename_one_signals(destination_directory, 'I | Bus-3 | phase: N', 'U | BusBar-3 | phase: N')
 # delete_empty_line(destination_directory)
-Combining_databases_of_unique_codes(old_csv_file_path, new_csv_file_path, merged_csv_file_path,
-                                    deelimed_old_csv_file=';',deelimed_new_csv_file=',')
+# Combining_databases_of_unique_codes(old_csv_file_path, new_csv_file_path, merged_csv_file_path,
+#                                     deelimed_old_csv_file=';',deelimed_new_csv_file=',')
