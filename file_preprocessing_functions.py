@@ -3,6 +3,7 @@ import shutil
 import hashlib
 import datetime
 import csv
+import json
 
 def deleting_confidential_information_in_all_files(source_dir: str) -> None:
     """
@@ -436,6 +437,39 @@ def Combining_databases_of_unique_codes(old_csv_file_path: str, new_csv_file_pat
             else:
                 writer.writerow([key, universal_code, value])
 
+def combining_json_hash_table(source_dir: str) -> None:
+    """
+    !!ВНИМАНИЕ!!
+    Стоит использовать только для объединения файлов "hash_table"
+    функция объединяет json файлы с уникальными именами осциллограмм сигналов
+      
+    Args:
+        source_dir (str): каталог, содержащий файлы для обновления.
+
+    Returns:
+        None
+    """
+    combine_hash_table = {}
+    for root, dirs, files in os.walk(source_dir):  # Итерируемся по всем файлам и директориям в исходной директории
+        for file in files:  # Имя каждого файла
+            if file.lower().endswith(".json"):  # Если файл имеет расширение .json
+                try:
+                    path = os.path.join(root, file)
+                    with open(path, 'r', encoding='utf-8') as file:
+                        hash_table = json.load(file)
+                        for key, value in hash_table.items():
+                            if key not in combine_hash_table:
+                                combine_hash_table[key] = value
+                except:
+                    print("Не удалось прочитать hash_table из JSON файла")
+                        
+    try:
+        combine_hash_table_file_path = os.path.join(source_dir, 'combine_hash_table.json')
+        with open(combine_hash_table_file_path, 'w') as file:
+            json.dump(combine_hash_table, file)
+    except:
+        print("Не удалось сохранить new_hash_table в JSON файл")
+
 # Пример использования функции
 # Путь к исходной директории
 source_directory = 'D:/DataSet/_ALL_OSC_v2'
@@ -462,7 +496,8 @@ merged_csv_file_path = 'D:/DataSet/depersonalized_ALL_OSC_v2/merged.csv'
 # find_all_name_digital_signals(destination_directory)
 # rename_analog_signals(destination_directory, csv_analog_directory)
 # rename_digital_signals(destination_directory, csv_digital_directory)
-rename_one_signals(destination_directory, 'I | Bus-3 | phase: N', 'U | BusBar-3 | phase: N')
+# rename_one_signals(destination_directory, 'I | Bus-3 | phase: N', 'U | BusBar-3 | phase: N')
 # delete_empty_line(destination_directory)
 # Combining_databases_of_unique_codes(old_csv_file_path, new_csv_file_path, merged_csv_file_path,
 #                                     deelimed_old_csv_file=';',deelimed_new_csv_file=',')
+combining_json_hash_table(destination_directory)
