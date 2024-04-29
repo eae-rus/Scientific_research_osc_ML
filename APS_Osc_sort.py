@@ -149,7 +149,7 @@ except:
     print("Не удалось прочитать hash_table из JSON файла")
 
 
-Search_and_copy_new_oscillograms(source_directory, destination_directory, is_copy_saving_the_folder_structure=False, is_use_brs=False)
-# osc_name_dict = {}
-# osc_name_dict["t00209"], osc_name_dict["t00331"], osc_name_dict["t00363"] = [], [], []
-# find_all_osc_for_terminal(destination_directory, hash_table, osc_name_dict)
+# Search_and_copy_new_oscillograms(source_directory, destination_directory, is_copy_saving_the_folder_structure=False, is_use_brs=False)
+osc_name_dict = {}
+osc_name_dict["t00108"], osc_name_dict["t00209"], osc_name_dict["t00331"], osc_name_dict["t00363"] = [], [], [], []
+find_all_osc_for_terminal(destination_directory, hash_table, osc_name_dict)
