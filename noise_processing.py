@@ -137,7 +137,8 @@ def generate_group_signals_from_csv(is_print_to_console: bool = False) -> dict:
    
     return dict_group_names
 
-def noise_processing(source_dir: str, path_to_csv_file: str) -> None:
+def noise_processing(source_dir: str, path_to_csv_file: str, 
+                     is_use_qestion_1: bool = False, is_use_qestion_2: bool = False, is_use_qestion_3: bool = False) -> None:
     """
     Функция обрабатывает csv файл и размечается данные с шумом или вызывающие вопросы
       
@@ -208,6 +209,7 @@ def noise_processing(source_dir: str, path_to_csv_file: str) -> None:
             # РАБОТА С ШУМОМ
             if row["norm"] == "хз":
                 # задание номиналов
+                # TODO: переписать в одну функцию
                 if csv_group_base["U BusBar"] == -1 and csv_group_base["U CableLine"] == -1 and csv_group_base["I phase"] == -1 and csv_group_base["I zero"] == -1:
                     # нет номиналов, принимаем, что все номиналы базовые
                     csv_group_base["U BusBar"], csv_group_base["U CableLine"], csv_group_base["I phase"], csv_group_base["I zero"] = 100, 100, 5, 1
@@ -256,20 +258,21 @@ def noise_processing(source_dir: str, path_to_csv_file: str) -> None:
             if row["norm"] == "НЕТ":
                 # задание номиналов
                 # НО! стоит иметь ввиду, что это можно сделать не под все вопросы.
+                # TODO: переписать в одну функцию
                 if csv_group_base["U BusBar"] == -1 and csv_group_base["U CableLine"] == -1 and csv_group_base["I phase"] == -1 and csv_group_base["I zero"] == -1:
-                    # нет номиналов, принимаем, что все номиналы базовые
+                    # не можем утверждать, чо это не в диапазонах проблема, поэтому переходим на следующую итерацию
                     csv_group_base["U BusBar"], csv_group_base["U CableLine"], csv_group_base["I phase"], csv_group_base["I zero"] = 100, 100, 5, 1
                 else:
-                    if csv_group_base["U BusBar"] != -1:
+                    if csv_group_base["U BusBar"] == -1:
                         if csv_group_base["U CableLine"] != -1:
                             csv_group_base["U BusBar"] = csv_group_base["U CableLine"]
                         else:
                             csv_group_base["U BusBar"] = 100
-                    if csv_group_base["U CableLine"] != -1:
+                    if csv_group_base["U CableLine"] == -1:
                         csv_group_base["U CableLine"] = csv_group_base["U BusBar"] # она уже не может быть "-1"
-                    if csv_group_base["I phase"] != -1:
+                    if csv_group_base["I phase"] == -1:
                         csv_group_base["I phase"] = 5
-                    if csv_group_base["I zero"] != -1:
+                    if csv_group_base["I zero"] == -1:
                         csv_group_base["I zero"] = 1
 
                 coun_undefined = 0 # количество неопределенных вопросов
@@ -284,17 +287,21 @@ def noise_processing(source_dir: str, path_to_csv_file: str) -> None:
                             key in csv_group_names["I phase"] or key in csv_group_names["I zero"]):
                         continue # пропуск не интересующего
                     
-                    if not (key == "шум" or row[key] == "?1"): # обработку считаем уместной только для этих аспектов
+                    if not (row[key] == "шум" or row[key] == "?1" and is_use_qestion_1 or row[key] == "?2" and is_use_qestion_2 or row[key] == "?3" and is_use_qestion_3): # обработку считаем уместной только для этих аспектов
                         coun_undefined += 1
                         continue
                     
-                    if key in csv_group_names["U BusBar"]:
+                    if (key in csv_group_names["U BusBar"] and 
+                        (row[key] == "шум" or row[key] == "?1" and is_use_qestion_1 or row[key] == "?2" and is_use_qestion_2 or row[key] == "?3" and is_use_qestion_3)):
                         row[key] = csv_group_base["U BusBar"]
-                    if key in csv_group_names["U CableLine"]:
+                    if (key in csv_group_names["U CableLine"] and 
+                        (row[key] == "шум" or row[key] == "?1" and is_use_qestion_1 or row[key] == "?2" and is_use_qestion_2 or row[key] == "?3" and is_use_qestion_3)):
                         row[key] = csv_group_base["U CableLine"]
-                    if key in csv_group_names["I phase"]:
+                    if (key in csv_group_names["I phase"] and 
+                        (row[key] == "шум" or row[key] == "?1" and is_use_qestion_1 or row[key] == "?2" and is_use_qestion_2 or row[key] == "?3" and is_use_qestion_3)):
                         row[key] = csv_group_base["I phase"]
-                    if key in csv_group_names["I zero"]:
+                    if (row[key] == "шум" or key in csv_group_names["I zero"] and 
+                        (row[key] == "?1" and is_use_qestion_1 or row[key] == "?2" and is_use_qestion_2 or row[key] == "?3" and is_use_qestion_3)):
                         row[key] = csv_group_base["I zero"]
 
                 if coun_undefined == 0:
@@ -322,5 +329,5 @@ path_to_csv_file = 'D:/DataSet/Для нормировки/norm_1600_v1.csv'
 
 # test = generate_group_signals(is_print_to_console = True)
 # test = generate_group_signals_from_csv(is_print_to_console = True)
-noise_processing(source_directory, path_to_csv_file)
+noise_processing(source_directory, path_to_csv_file, is_use_qestion_1 = True, is_use_qestion_2 = True, is_use_qestion_3 = True)
     
