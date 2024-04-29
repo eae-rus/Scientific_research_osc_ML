@@ -1,5 +1,5 @@
-import os
 import csv
+import json
 
 def generate_group_signals(is_print_to_console: bool = False) -> dict:
     """
@@ -156,11 +156,7 @@ def noise_processing(source_dir: str, path_to_csv_file: str,
     
     with open(path_to_csv_file, mode='r', encoding='utf-8') as file:
         reader = csv.DictReader(file, delimiter=',')
-        #iterration = 0 # FIXME: для первых тестов
         for row in reader:
-            #if iterration >= 10:
-            #    break
-            #iterration += 1
             if not (row["norm"] == "хз" or row["norm"] == "НЕТ"): # raw - потом разметим отдельно
                 new_csv_file.append(row)
                 continue # То есть обрабатываются только шумные (хз) и с вопросами (НЕТ)
