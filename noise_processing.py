@@ -314,16 +314,71 @@ def noise_processing(source_dir: str, path_to_csv_file: str,
         writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
         writer.writeheader()
         for data in new_csv_file:
-            writer.writerow(data)                  
-    
+            writer.writerow(data)
+
+def set_base_values(source_directory: str, path_to_csv_file: str, base_values: dict, osc_list: list) -> None:
+    """
+    Функция обрабатывает csv файл и задаёт номинал выбранным осциллограммам
+      
+    Args:
+        source_directory (str): каталог, содержащий файлы для обновления.
+        path_to_csv_file: (str): адрес csv файла.
+        base_values (dict): словарь с номиналами
+        osc_list (list): список названий осциллограмм
+
+    Returns:
+        None
+    """
+    with open(path_to_csv_file, mode='r', encoding='utf-8') as file:
+        new_csv_file = []
+        reader = csv.DictReader(file, delimiter=',')
+        for row in reader:
+            if row['name'] in osc_list:
+                for key, value in base_values.items():
+                    if key in base_values:
+                        row[key] = base_values[key]
+            new_csv_file.append(row)
+
+        new_csv_file_path = ''.join((source_directory, "/set_base_file.csv"))
+        csv_columns = reader.fieldnames
+        
+        with open(new_csv_file_path, 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+            writer.writeheader()
+            for data in new_csv_file:
+                writer.writerow(data)
+            
     
 # Пример использования функции
 # Путь к исходной директории
 source_directory = 'D:/DataSet/Для нормировки'
 
-path_to_csv_file = 'D:/DataSet/Для нормировки/norm_1600_v1.csv'
+#path_to_csv_file = 'D:/DataSet/Для нормировки/norm_1600_v1.1.csv'
+path_to_csv_file = 'D:/DataSet/Для нормировки/new_norm_file.csv'
+
+# 108
+base_values = {"1Ub_PS":"s", "1Ub_base": "100", "1Uc_PS":"s", "1Uc_base": "100", "1Ip_PS":"s", "1Ip_base": "0.1",
+               "2Ub_PS":"s", "2Ub_base": "100", "2Uc_PS":"s", "2Uc_base": "100", "2Ip_PS":"s", "2Ip_base": "0.1"}
+# 209
+#base_values = {"1Ub_PS":"s", "1Ub_base": "400", "1Uc_PS":"s", "1Uc_base": "400", "1Ip_PS":"s", "1Ip_base": "0.1",
+#               "2Ub_PS":"s", "2Ub_base": "400", "2Uc_PS":"s", "2Uc_base": "400", "2Ip_PS":"s", "2Ip_base": "0.1"}
+# 331
+#base_values = {"1Uc_PS":"s", "1Uc_base": "0.31542", "1Ip_PS":"s", "1Ip_base": "0.45",
+#               "2Uc_PS":"s", "2Uc_base": "0.31542", "2Ip_PS":"s", "2Ip_base": "0.45"}
+# 363
+#base_values = {"1Uc_PS":"s", "1Uc_base": "0.1105", "1Ip_PS":"s", "1Ip_base": "1.41",
+#               "2Uc_PS":"s", "2Uc_base": "0.1105", "2Ip_PS":"s", "2Ip_base": "1.41"}
+osc_list = []
+try:
+    path = 'D:/DataSet/Для нормировки/_osc_name_dict_v1.json'
+    with open(path, 'r', encoding='utf-8') as file:
+        hash_table = json.load(file)
+        osc_list = hash_table["t00108"] # t00108, t00209, t00331, t00363
+except:
+    print("Не удалось прочитать hash_table из JSON файла")
 
 # test = generate_group_signals(is_print_to_console = True)
 # test = generate_group_signals_from_csv(is_print_to_console = True)
-noise_processing(source_directory, path_to_csv_file, is_use_qestion_1 = True, is_use_qestion_2 = True, is_use_qestion_3 = True)
+# noise_processing(source_directory, path_to_csv_file, is_use_qestion_1 = True, is_use_qestion_2 = True, is_use_qestion_3 = True)
+set_base_values(source_directory, path_to_csv_file, base_values, osc_list)
     
