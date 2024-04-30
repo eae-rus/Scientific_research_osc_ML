@@ -1,12 +1,15 @@
 import csv
 import json
 
-def generate_group_signals(is_print_to_console: bool = False) -> dict:
+def generate_group_signals(is_print_to_console: bool = False, is_print_to_json: bool = False, path_to_json_file: str = "") -> dict:
     """
     Функция генерирует группы со всеми именами сигналов
     Вероятно, она пока не нужна.
       
     Args:
+        is_print_to_console (bool): печать на консоль
+        is_print_to_json (bool): печать в json файл
+        path_to_json_file (str): путь к json файлу
 
     Returns:
         dict - словарь с группами и именами сигналов
@@ -91,6 +94,11 @@ def generate_group_signals(is_print_to_console: bool = False) -> dict:
         print(dict_new_group_names)
     
     dict_group_names["Diff current"] = dict_new_group_names
+    
+    if is_print_to_json:
+        path = path_to_json_file + '/dict_analog_names.json'
+        with open(path, 'w') as fp:
+            json.dump(dict_group_names, fp)
     
     return dict_group_names
 
@@ -377,8 +385,8 @@ try:
 except:
     print("Не удалось прочитать hash_table из JSON файла")
 
-# test = generate_group_signals(is_print_to_console = True)
+test = generate_group_signals(is_print_to_json=True, path_to_json_file='D:/DataSet/Для нормировки')
 # test = generate_group_signals_from_csv(is_print_to_console = True)
 # noise_processing(source_directory, path_to_csv_file, is_use_qestion_1 = True, is_use_qestion_2 = True, is_use_qestion_3 = True)
-set_base_values(source_directory, path_to_csv_file, base_values, osc_list)
+# set_base_values(source_directory, path_to_csv_file, base_values, osc_list)
     
