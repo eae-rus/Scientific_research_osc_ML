@@ -67,7 +67,7 @@ def Search_and_copy_new_oscillograms(source_dir: str, dest_dir: str, hash_table:
                             new_hash_table[file_hash] = (file, file_path)
                             count_new_files += 1
             
-            if is_use_brs and file.lower().endswith(".brs"):  # Если файл имеет расширение .brs (характерно для Бресслера)
+            if is_use_brs and file.lower().endswith(".brs"):  # Если файл имеет расширение .brs (характерно для Бреслера)
                 file = file[:-4] + ".brs" # изменяем шрифт типа файла на строчный.
                 file_path = os.path.join(root, file)  # Получаем полный путь к cfg файлу
                 with open(file_path, 'rb') as f: # Открываем brs файл для чтения в бинарном режиме
