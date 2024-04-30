@@ -1,7 +1,7 @@
 import csv
 import json
 
-def generate_group_signals(is_print_to_console: bool = False, is_print_to_json: bool = False, path_to_json_file: str = "") -> dict:
+def generate_analog_signals_name(is_print_to_console: bool = False, is_print_to_json: bool = False, path_to_json_file: str = "") -> dict:
     """
     Функция генерирует группы со всеми именами сигналов
     Вероятно, она пока не нужна.
@@ -14,93 +14,92 @@ def generate_group_signals(is_print_to_console: bool = False, is_print_to_json: 
     Returns:
         dict - словарь с группами и именами сигналов
     """
-    dict_group_names = {}
-    # TODO: можно подумать о другом типе данных для ускорения
-    for i in range(1, 8):
+    dict_names = {}
+    for i in range(1, 9):
         if is_print_to_console:
             print(f"------------ секция {i} ------------")
         # истинные данные
-        dict_new_group_names = {}
-        dict_new_group_names[f"U BusBar {i}"] = []
-        dict_new_group_names[f"U CableLine {i}"] = []
-        dict_new_group_names[f"I phase {i}"] = []
-        dict_new_group_names[f"I zero {i}"] = []
+        dict_names_new = {}
+        dict_names_new[f"U BusBar {i}"] = []
+        dict_names_new[f"U CableLine {i}"] = []
+        dict_names_new[f"I phase {i}"] = []
+        dict_names_new[f"I zero {i}"] = []
 
-        dict_new_group_names [f"U BusBar {i}"].append(f"U | BusBar-{i} | phase: A")
-        dict_new_group_names [f"U BusBar {i}"].append(f"U | BusBar-{i} | phase: B")
-        dict_new_group_names [f"U BusBar {i}"].append(f"U | BusBar-{i} | phase: C")
-        dict_new_group_names [f"U BusBar {i}"].append(f"U | BusBar-{i} | phase: N")
-        dict_new_group_names [f"U BusBar {i}"].append(f"U | BusBar-{i} | phase: AB")
-        dict_new_group_names [f"U BusBar {i}"].append(f"U | BusBar-{i} | phase: BC")
-        dict_new_group_names [f"U BusBar {i}"].append(f"U | BusBar-{i} | phase: CA")
+        dict_names_new [f"U BusBar {i}"].append(f"U | BusBar-{i} | phase: A")
+        dict_names_new [f"U BusBar {i}"].append(f"U | BusBar-{i} | phase: B")
+        dict_names_new [f"U BusBar {i}"].append(f"U | BusBar-{i} | phase: C")
+        dict_names_new [f"U BusBar {i}"].append(f"U | BusBar-{i} | phase: N")
+        dict_names_new [f"U BusBar {i}"].append(f"U | BusBar-{i} | phase: AB")
+        dict_names_new [f"U BusBar {i}"].append(f"U | BusBar-{i} | phase: BC")
+        dict_names_new [f"U BusBar {i}"].append(f"U | BusBar-{i} | phase: CA")
         
-        dict_new_group_names[f"U CableLine {i}"].append(f"U | CableLine-{i} | phase: A")
-        dict_new_group_names[f"U CableLine {i}"].append(f"U | CableLine-{i} | phase: B")
-        dict_new_group_names[f"U CableLine {i}"].append(f"U | CableLine-{i} | phase: C")
-        dict_new_group_names[f"U CableLine {i}"].append(f"U | CableLine-{i} | phase: N")
-        dict_new_group_names[f"U CableLine {i}"].append(f"U | CableLine-{i} | phase: AB")
-        dict_new_group_names[f"U CableLine {i}"].append(f"U | CableLine-{i} | phase: BC")
-        dict_new_group_names[f"U CableLine {i}"].append(f"U | CableLine-{i} | phase: CA")
+        dict_names_new[f"U CableLine {i}"].append(f"U | CableLine-{i} | phase: A")
+        dict_names_new[f"U CableLine {i}"].append(f"U | CableLine-{i} | phase: B")
+        dict_names_new[f"U CableLine {i}"].append(f"U | CableLine-{i} | phase: C")
+        dict_names_new[f"U CableLine {i}"].append(f"U | CableLine-{i} | phase: N")
+        dict_names_new[f"U CableLine {i}"].append(f"U | CableLine-{i} | phase: AB")
+        dict_names_new[f"U CableLine {i}"].append(f"U | CableLine-{i} | phase: BC")
+        dict_names_new[f"U CableLine {i}"].append(f"U | CableLine-{i} | phase: CA")
         
-        dict_new_group_names[f"I phase {i}"].append(f"I | Bus-{i} | phase: A")
-        dict_new_group_names[f"I phase {i}"].append(f"I | Bus-{i} | phase: B")
-        dict_new_group_names[f"I phase {i}"].append(f"I | Bus-{i} | phase: C")
+        dict_names_new[f"I phase {i}"].append(f"I | Bus-{i} | phase: A")
+        dict_names_new[f"I phase {i}"].append(f"I | Bus-{i} | phase: B")
+        dict_names_new[f"I phase {i}"].append(f"I | Bus-{i} | phase: C")
         
-        dict_new_group_names[f"I zero {i}"].append(f"I | Bus-{i} | zero")
+        dict_names_new[f"I zero {i}"].append(f"I | Bus-{i} | zero")
         
         # с других типов датчиков, пока это чэто пояса Роговского и ёмкостные делители
-        dict_new_group_names[f"U_raw BusBar {i}"] = []
-        dict_new_group_names[f"U_raw CableLine {i}"] = []
-        dict_new_group_names[f"I_raw phase {i}"] = []
-        dict_new_group_names[f"I_raw zero {i}"] = []
+        dict_names_new[f"U_raw BusBar {i}"] = []
+        dict_names_new[f"U_raw CableLine {i}"] = []
+        dict_names_new[f"I_raw phase {i}"] = []
+        dict_names_new[f"I_raw zero {i}"] = []
         
-        dict_new_group_names [f"U_raw BusBar {i}"].append(f"U_raw | BusBar-{i} | phase: A")
-        dict_new_group_names [f"U_raw BusBar {i}"].append(f"U_raw | BusBar-{i} | phase: B")
-        dict_new_group_names [f"U_raw BusBar {i}"].append(f"U_raw | BusBar-{i} | phase: C")
-        dict_new_group_names [f"U_raw BusBar {i}"].append(f"U_raw | BusBar-{i} | phase: N")
-        dict_new_group_names [f"U_raw BusBar {i}"].append(f"U_raw | BusBar-{i} | phase: AB")
-        dict_new_group_names [f"U_raw BusBar {i}"].append(f"U_raw | BusBar-{i} | phase: BC")
-        dict_new_group_names [f"U_raw BusBar {i}"].append(f"U_raw | BusBar-{i} | phase: CA")
+        dict_names_new [f"U_raw BusBar {i}"].append(f"U_raw | BusBar-{i} | phase: A")
+        dict_names_new [f"U_raw BusBar {i}"].append(f"U_raw | BusBar-{i} | phase: B")
+        dict_names_new [f"U_raw BusBar {i}"].append(f"U_raw | BusBar-{i} | phase: C")
+        dict_names_new [f"U_raw BusBar {i}"].append(f"U_raw | BusBar-{i} | phase: N")
+        dict_names_new [f"U_raw BusBar {i}"].append(f"U_raw | BusBar-{i} | phase: AB")
+        dict_names_new [f"U_raw BusBar {i}"].append(f"U_raw | BusBar-{i} | phase: BC")
+        dict_names_new [f"U_raw BusBar {i}"].append(f"U_raw | BusBar-{i} | phase: CA")
         
-        dict_new_group_names[f"U_raw CableLine {i}"].append(f"U_raw | CableLine-{i} | phase: A")
-        dict_new_group_names[f"U_raw CableLine {i}"].append(f"U_raw | CableLine-{i} | phase: B")
-        dict_new_group_names[f"U_raw CableLine {i}"].append(f"U_raw | CableLine-{i} | phase: C")
-        dict_new_group_names[f"U_raw CableLine {i}"].append(f"U_raw | CableLine-{i} | phase: N")
-        dict_new_group_names[f"U_raw CableLine {i}"].append(f"U_raw | CableLine-{i} | phase: AB")
-        dict_new_group_names[f"U_raw CableLine {i}"].append(f"U_raw | CableLine-{i} | phase: BC")
-        dict_new_group_names[f"U_raw CableLine {i}"].append(f"U_raw | CableLine-{i} | phase: CA")
+        dict_names_new[f"U_raw CableLine {i}"].append(f"U_raw | CableLine-{i} | phase: A")
+        dict_names_new[f"U_raw CableLine {i}"].append(f"U_raw | CableLine-{i} | phase: B")
+        dict_names_new[f"U_raw CableLine {i}"].append(f"U_raw | CableLine-{i} | phase: C")
+        dict_names_new[f"U_raw CableLine {i}"].append(f"U_raw | CableLine-{i} | phase: N")
+        dict_names_new[f"U_raw CableLine {i}"].append(f"U_raw | CableLine-{i} | phase: AB")
+        dict_names_new[f"U_raw CableLine {i}"].append(f"U_raw | CableLine-{i} | phase: BC")
+        dict_names_new[f"U_raw CableLine {i}"].append(f"U_raw | CableLine-{i} | phase: CA")
         
-        dict_new_group_names[f"I_raw phase {i}"].append(f"I_raw | Bus-{i} | phase: A")
-        dict_new_group_names[f"I_raw phase {i}"].append(f"I_raw | Bus-{i} | phase: B")
-        dict_new_group_names[f"I_raw phase {i}"].append(f"I_raw | Bus-{i} | phase: C")
+        dict_names_new[f"I_raw phase {i}"].append(f"I_raw | Bus-{i} | phase: A")
+        dict_names_new[f"I_raw phase {i}"].append(f"I_raw | Bus-{i} | phase: B")
+        dict_names_new[f"I_raw phase {i}"].append(f"I_raw | Bus-{i} | phase: C")
         
-        dict_new_group_names[f"I_raw zero {i}"].append(f"I_raw | Bus-{i} | zero")
+        dict_names_new[f"I_raw zero {i}"].append(f"I_raw | Bus-{i} | zero")
         
         
-        dict_group_names[f"Bus {i}"] = dict_new_group_names
+        dict_names[f"Bus {i}"] = dict_names_new
         if is_print_to_console:
-            print(dict_new_group_names)
+            print(dict_names_new)
     
-    dict_new_group_names = {}
-    dict_new_group_names["Diff 1"] = []
-    dict_new_group_names["Diff 1"].append("I | dif-1 | phase: A")
-    dict_new_group_names["Diff 1"].append("I | dif-1 | phase: B")
-    dict_new_group_names["Diff 1"].append("I | dif-1 | phase: C")
-    dict_new_group_names["Diff 1"].append("I | braking-1 | phase: A")
-    dict_new_group_names["Diff 1"].append("I | braking-1 | phase: B")
-    dict_new_group_names["Diff 1"].append("I | braking-1 | phase: C")
+    dict_names_new = {}
+    dict_names_new["Diff 1"] = []
+    dict_names_new["Diff 1"].append("I | dif-1 | phase: A")
+    dict_names_new["Diff 1"].append("I | dif-1 | phase: B")
+    dict_names_new["Diff 1"].append("I | dif-1 | phase: C")
+    dict_names_new["Diff 1"].append("I | braking-1 | phase: A")
+    dict_names_new["Diff 1"].append("I | braking-1 | phase: B")
+    dict_names_new["Diff 1"].append("I | braking-1 | phase: C")
     if is_print_to_console:
         print("------------ Diff 1 ------------")
-        print(dict_new_group_names)
+        print(dict_names_new)
     
-    dict_group_names["Diff current"] = dict_new_group_names
+    dict_names["Diff current"] = dict_names_new
     
     if is_print_to_json:
         path = path_to_json_file + '/dict_analog_names.json'
         with open(path, 'w') as fp:
-            json.dump(dict_group_names, fp)
+            json.dump(dict_names, fp)
     
-    return dict_group_names
+    return dict_names
 
 def generate_group_signals_from_csv(is_print_to_console: bool = False) -> dict:
     """
@@ -385,7 +384,7 @@ try:
 except:
     print("Не удалось прочитать hash_table из JSON файла")
 
-test = generate_group_signals(is_print_to_json=True, path_to_json_file='D:/DataSet/Для нормировки')
+test = generate_analog_signals_name(is_print_to_json=True, path_to_json_file='D:/DataSet/Для нормировки')
 # test = generate_group_signals_from_csv(is_print_to_console = True)
 # noise_processing(source_directory, path_to_csv_file, is_use_qestion_1 = True, is_use_qestion_2 = True, is_use_qestion_3 = True)
 # set_base_values(source_directory, path_to_csv_file, base_values, osc_list)
