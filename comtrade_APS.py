@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # MIT License
 
-# Copyright (c) 202024 Evdakov Aleksey Evgenievich
+# Copyright (c) 2024 Evdakov Aleksey Evgenievich
 # Created on the basis of the "comtrade 0.1.2" library (Copyright (c) 2018 David Rodrigues Parrini) provided by the link "https://pypi.org/project/comtrade/"
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
