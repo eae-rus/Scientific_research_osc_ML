@@ -470,6 +470,80 @@ def combining_json_hash_table(source_dir: str) -> None:
     except:
         print("Не удалось сохранить new_hash_table в JSON файл")
 
+
+def Research_coorect_encoding_in_cfg(source_dir: str, act_function = None) -> None:
+    """
+    Функция ищет файлы .cfg в заданном каталоге, пытается определить их кодировку (utf-8, windows-1251 или ОЕМ 866) 
+    и собирает пути к файлам. 
+    Он сохраняет список защищенных файлов и любые ошибки обработки в 'protected_files.txt-файл в исходном каталоге.
+    
+    С требуемыми файлами применяется функция заданная в входных данныхх
+
+    Args:
+        source_dir (str): каталог, содержащий файлы .cfg для проверки конфиденциальной информации.
+        act_function (function): функция, которая будет применена к файлам.
+
+    Returns:
+        None
+    """
+    protected_files = []  # Создаем список для хранения путей к защищенным файлам
+    for root, dirs, files in os.walk(source_dir):  # Итерируемся по всем файлам и директориям в исходной директории
+        for file in files:  # Имя каждого файла
+            if file.endswith(".cfg"):  # Если файл имеет расширение .cfg
+                file_path = os.path.join(root, file)  # Получаем полный путь к cfg файлу
+                # TODO: для определения кодировки и пересохранения файла в utf-8 необходимо
+                # создать отдельную функцию
+                try: 
+                    act_function(file_path, root, 'utf-8')
+                except Exception as e:
+                    try:
+                        act_function(file_path, root, 'windows-1251')  
+                    except Exception as e:
+                        try:
+                            act_function(file_path, root, 'ОЕМ 866') # ОЕМ - русский язык
+                        except Exception as e:
+                            protected_files.append(file_path)  # Добавляем защищенный файл в список
+                            protected_files.append(f"Произошла ошибка при обработке cfg файла: {e}")
+    with open(os.path.join(source_dir, 'protected_files.txt'), 'w', encoding='utf-8') as file:
+        file.write('\n'.join(protected_files))  # Сохраняем список защищенных файлов в txt файл в корне папки
+
+def detect_date(file_path: str, root: str, encoding_name: str, dict_all_dates = {}) -> None:
+    """
+    Функция определяет дату события в cfg файле.
+    
+    Args:
+        file_path (str): путь к файлу .cfg.
+        root (str): путь к корневому каталогу.
+        encoding_name (str): формат кодировки, используемый для чтения файла.
+
+    Returns:
+        None
+    """
+    with open(file_path, 'r', encoding=encoding_name) as file:
+        lines = file.readlines()
+        # считываем количество сигналов
+        signals, analog_signals, digital_signals = lines[1].split(',')
+        signals = int(signals)
+        
+        # Изменяем только год в дате события
+        new_date = lines[signals + 5].split(',')
+        date_parts = new_date[0].split('/')
+        time_parts = new_date[1].split(':')
+        
+        dict_date = {
+            'year': date_parts[2],
+            'month': date_parts[1],
+            'day': date_parts[0],
+            'hour': time_parts[0],
+            'minute': time_parts[1],
+            'second': time_parts[2]
+        }
+        dat_file_path = file_path[:-4] + ".dat"  # Получаем полный путь к dat файлу 
+        with open(dat_file_path, 'rb') as file: # решил делать по dat файлу, так как он точно отличается даже после всех корректировок
+            file_hash = hashlib.md5(file.read()).hexdigest()  # Вычисляем хэш-сумму cfg файла
+
+        dict_all_dates[file_hash] = dict_date
+
 # Пример использования функции
 # Путь к исходной директории
 source_directory = 'D:/DataSet/_ALL_OSC_v2'
@@ -500,4 +574,9 @@ merged_csv_file_path = 'D:/DataSet/depersonalized_ALL_OSC_v2/merged.csv'
 # delete_empty_line(destination_directory)
 # Combining_databases_of_unique_codes(old_csv_file_path, new_csv_file_path, merged_csv_file_path,
 #                                     deelimed_old_csv_file=';',deelimed_new_csv_file=',')
-combining_json_hash_table(destination_directory)
+# combining_json_hash_table(destination_directory)
+dict_all_dates = {}
+Research_coorect_encoding_in_cfg(destination_directory, act_function=lambda file_path, root, encoding_name: detect_date(file_path, root, encoding_name, dict_all_dates))
+dict_all_dates_path = destination_directory + '/dict_all_dates.json'
+with open(dict_all_dates_path, 'w', encoding='utf-8') as file:
+    file.write(json.dumps(dict_all_dates))
