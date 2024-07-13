@@ -117,11 +117,25 @@ def find_all_osc_for_terminal(dest_dir: str, hash_table: dict, osc_name_dict: di
     Returns:
         None
     """
-    # Проходим по всем файлам в папке
+    SCM_NAME = '\\ИПМ'
+    new_osc_name_dict = {}
+    new_osc_name_arr = [] # для ускорения работы циклов
     for osc_name in osc_name_dict.keys():
-        for key in hash_table.keys():
+        new_osc_name_arr.append(osc_name)
+        new_osc_name_dict[osc_name] = '\\'+osc_name[1:]
+        
+    # Проходим по всем файлам в папке
+    for key in hash_table.keys():  # имён по хэш-суммам в разы больше, чем терминалов
+        for osc_name in new_osc_name_arr:
             if osc_name in hash_table[key][0]:
                 osc_name_dict[osc_name].append(key)
+                break # если найдено имя осциллограммы, то прерываем цикл.
+            elif ('ОТГРУЖЕННЫЕ ТЕРМИНАЛЫ И ШКАФЫ' in hash_table[key][1] and new_osc_name_dict[osc_name] in hash_table[key][1] and 
+                  not SCM_NAME in hash_table[key][1]):
+                # сделано раздельно, чтобы отследить, что проверка добавлена не зря.
+                osc_name_dict[osc_name].append(key)
+                break
+                
     
     osc_name_dict_file_path = os.path.join(dest_dir, '_osc_name_dict.json')  # Формируем путь для сохранения osc_name_dict
     try:
@@ -134,7 +148,7 @@ def find_all_osc_for_terminal(dest_dir: str, hash_table: dict, osc_name_dict: di
 # Путь к исходной директории
 source_directory = 'D:/DataSet/_ALL_OSC_v2'
 # Путь к целевой директории
-destination_directory = 'D:/DataSet/depersonalized_ALL_OSC_v2'
+destination_directory = 'D:/DataSet/depersonalized_ALL_OSC_v2.1'
 
 hash_table = {}
 destination_directory_hash_table = destination_directory +  '/_hash_table.json'
@@ -151,5 +165,7 @@ except:
 
 # Search_and_copy_new_oscillograms(source_directory, destination_directory, is_copy_saving_the_folder_structure=False, is_use_brs=False)
 osc_name_dict = {}
-osc_name_dict["t00108"], osc_name_dict["t00209"], osc_name_dict["t00331"], osc_name_dict["t00363"] = [], [], [], []
+# osc_name_dict["t00108"], osc_name_dict["t00209"], osc_name_dict["t00331"], osc_name_dict["t00363"] = [], [], [], []
+for i in range(1, 500): # пока лишь до 500, потом расширим
+    osc_name_dict[f"t{i:05}"] = []
 find_all_osc_for_terminal(destination_directory, hash_table, osc_name_dict)
