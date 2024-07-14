@@ -146,7 +146,15 @@ def find_all_osc_for_terminal(dest_dir: str, hash_table: dict, osc_name_dict: di
 
 def Copy_oscillogramms_for_terminals(source_dir: str, dest_dir: str, terminal_names: list, osc_name_dict: dict) -> None:
     """
-    
+    Копирует осциллограммы структуируя их по номерам терминалов.
+      
+    Args:
+        source_dir (str): исходный каталог.
+        dest_dir (str): каталог, для сохранения скопированных файлов.
+        terminal_names (list): список имён терминалов.
+        osc_name_dict (dict): словарь для хранения терминалов и хеш имён осциллограмм.
+    Returns:
+        None
     """
     osc_terminal_dict = {}  # словарь для хранения имён осциллограмм и их принадлежности к терминалу
     # Функция формирующая обратный список к словарю osc_name_dict (из "терминал -> имя осц" в "имя осц -> терминал")
