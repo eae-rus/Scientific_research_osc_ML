@@ -144,6 +144,36 @@ def find_all_osc_for_terminal(dest_dir: str, hash_table: dict, osc_name_dict: di
     except:
         print("Не удалось сохранить osc_name_dict в JSON файл")
 
+def Copy_oscillogramms_for_terminals(source_dir: str, dest_dir: str, terminal_names: list, osc_name_dict: dict) -> None:
+    """
+    
+    """
+    osc_terminal_dict = {}  # словарь для хранения имён осциллограмм и их принадлежности к терминалу
+    # Функция формирующая обратный список к словарю osc_name_dict (из "терминал -> имя осц" в "имя осц -> терминал")
+    for terminal_name in terminal_names:
+        for osc_name in osc_name_dict[terminal_name]:
+            osc_terminal_dict[osc_name] = terminal_name
+    
+    for root, dirs, files in os.walk(source_dir):  # Итерируемся по всем файлам и директориям в исходной директории
+        for file in files:  # Имя каждого файла
+            if file.endswith(".cfg") and file[:-4] in osc_terminal_dict:  # Если файл имеет расширение .cfg и есть в списке имён интересующих осциллограмм
+                file_name = file[:-4]
+                cfg_file_name = file
+                dat_file_name = cfg_file_name[:-4] + ".dat"
+                cfg_file_path = os.path.join(root, file)  # Формируем полный путь к cfg файлу
+                dat_file_path = cfg_file_path[:-3] + "dat"  # Формируем полный путь к dat файлу
+                # копируем файлы в соответствующу папку
+                if os.path.exists(cfg_file_path) and os.path.exists(dat_file_path):
+                    cfg_dest_path = os.path.join(dest_dir, osc_terminal_dict[file_name], cfg_file_name)  # Формируем путь для копирования dat файла
+                    dat_dest_path = os.path.join(dest_dir, osc_terminal_dict[file_name], dat_file_name)  # Формируем путь для копирования dat файла
+                    if not os.path.exists(cfg_dest_path):
+                        os.makedirs(os.path.dirname(cfg_dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
+                        shutil.copy2(cfg_file_path, cfg_dest_path)  # Копируем cfg файл в целевую директорию
+                    
+                    if not os.path.exists(dat_dest_path):
+                        os.makedirs(os.path.dirname(dat_dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого dat файла
+                        shutil.copy2(dat_file_path, dat_dest_path)  # Копируем dat файл в целевую директорию              
+
 # Пример использования функции
 # Путь к исходной директории
 source_directory = 'D:/DataSet/_ALL_OSC_v2'
@@ -164,8 +194,27 @@ except:
 
 
 # Search_and_copy_new_oscillograms(source_directory, destination_directory, is_copy_saving_the_folder_structure=False, is_use_brs=False)
-osc_name_dict = {}
+# osc_name_dict = {}
 # osc_name_dict["t00108"], osc_name_dict["t00209"], osc_name_dict["t00331"], osc_name_dict["t00363"] = [], [], [], []
-for i in range(1, 500): # пока лишь до 500, потом расширим
-    osc_name_dict[f"t{i:05}"] = []
-find_all_osc_for_terminal(destination_directory, hash_table, osc_name_dict)
+# for i in range(1, 500): # пока лишь до 500, потом расширим
+#     osc_name_dict[f"t{i:05}"] = []
+# find_all_osc_for_terminal(destination_directory, hash_table, osc_name_dict)
+
+
+
+# Перенос файлов терминала в папку с осциллограммами
+osc_name_dict = {}
+destination_directory_osc_name_dict = destination_directory +  '/_osc_name_dict (по терминалам) v1.json'
+# Путь к целевой директории
+dataset_for_primary_research_directory = 'D:/DataSet/dataset_for_primary_research'
+try:
+    with open(destination_directory_osc_name_dict, 'r') as file:
+        osc_name_dict = json.load(file)
+except:
+    print("Не удалось прочитать hash_table из JSON файла")
+terminal_names = []
+for i in range(1, 100): # пока лишь до 100, потом расширим
+    terminal_name = f"t{i:05}"
+    terminal_names.append(terminal_name)
+Copy_oscillogramms_for_terminals(destination_directory, dataset_for_primary_research_directory, terminal_names, osc_name_dict)
+    
