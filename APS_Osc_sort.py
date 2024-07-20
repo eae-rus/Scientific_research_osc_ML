@@ -174,7 +174,7 @@ def organize_oscillograms_by_terminal(source_dir: str, dest_dir: str, terminal_l
                 cfg_file_name = file
                 dat_file_name = cfg_file_name[:-4] + DAT_EXTENSION
                 cfg_file_path = os.path.join(root, file)  # Формируем полный путь к cfg файлу
-                dat_file_path = cfg_file_path[:-3] + DAT_EXTENSION  # Формируем полный путь к dat файлу
+                dat_file_path = cfg_file_path[:-4] + DAT_EXTENSION  # Формируем полный путь к dat файлу
                 # копируем файлы в соответствующу папку
                 if os.path.exists(cfg_file_path) and os.path.exists(dat_file_path):
                     cfg_dest_path = os.path.join(dest_dir, osc_terminal_dict[file_name], cfg_file_name)  # Формируем путь для копирования dat файла
