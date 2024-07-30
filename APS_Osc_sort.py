@@ -3,6 +3,7 @@ import shutil
 import hashlib
 import json
 import datetime
+import py7zr
 
 # создаю exe файл через 
 # pip install auto-py-to-exe
@@ -15,9 +16,10 @@ CFG_EXTENSION, DAT_EXTENSION, BRS_EXTENSION = '.cfg', '.dat', '.brs'
 
 
 # Функция для обхода файловой системы
-def copy_new_oscillograms(source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
+def copy_new_oscillograms(source_dir: str, dest_dir: str, copied_hashes: dict = {},
                           preserve_dir_structure: bool = True, use_hashes: bool = True,
-                          use_comtrade: bool = True, use_brs: bool = True) -> None:
+                          use_comtrade: bool = True, use_brs: bool = True, 
+                          _new_copied_hashes: dict = {}, _first_run: bool = True, _path_temp = None) -> int:
     """
     Копирует файлы осциллограмм из исходного каталога в целевой каталог, отслеживая скопированные файлы.
 
@@ -29,87 +31,187 @@ def copy_new_oscillograms(source_dir: str, dest_dir: str, copied_hashes: dict = 
         use_hashes (bool): использовать ли хэш-суммы для проверки уникальности файлов?
         copy_comtrade (bool): копировать ли файлы Comtrade (.cfg и .dat)?
         copy_brs (bool): копировать ли файлы Bresler (.brs)?
-
+        
+        local variables
+        _new_copied_hashes (dict): The dictionary of new copied file hashes.
+        _first_run (bool): The flag indicating the first run.
+        _path_temp (str): The temporary path.
     Returns:
-        None.
+        Возвращает колличество сохранённых осциллограм.
         При этом, создаются новые файлы в целевом каталоге:
         - обновляется файл "_hash_table"
         - создаётся новый файл "_new_hash_table"
     """
     # hash_table - хэш-таблица для отслеживания скопированных файлов
-    new_copied_hashes = {}
     count_new_files = 0
     for root, dirs, files in os.walk(source_dir):  # Итерируемся по всем файлам и директориям в исходной директории
         for file in files:  # Имя каждого файла
             if use_comtrade and file.lower().endswith(CFG_EXTENSION):  # Если файл имеет расширение .cfg
-                file = file[:-4] + CFG_EXTENSION # изменяем шрифт типа файла на строчный.
-                file_path = os.path.join(root, file)  # Получаем полный путь к cfg файлу
-                dat_file = file[:-4] + DAT_EXTENSION  # Формируем имя dat файла на основе имени cfg файла
-                dat_file_path = os.path.join(root, dat_file)  # Получаем полный путь к dat файлу
-                is_exist = os.path.exists(dat_file_path)              
-                if is_exist:
-                    with open(dat_file_path, 'rb') as f:  # Открываем dat файл для чтения в бинарном режиме
-                        file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму dat файла
-                        if file_hash not in copied_hashes or not use_hashes:
-                            dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
-                            
-                            if preserve_dir_structure:
-                                dest_path = os.path.join(dest_dir, dest_subdir, file)  # Формируем путь для копирования cfg файла
-                                dat_dest_path = os.path.join(dest_dir, dest_subdir, dat_file)  # Формируем путь для копирования dat файла
-                            else:
-                                dest_path = os.path.join(dest_dir, file)
-                                dat_dest_path = os.path.join(dest_dir, dat_file)
-                            
-                            if not os.path.exists(dest_path):
-                                os.makedirs(os.path.dirname(dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
-                                shutil.copy2(file_path, dest_path)  # Копируем cfg файл в целевую директорию
-                            
-                            if not os.path.exists(dat_dest_path):
-                                os.makedirs(os.path.dirname(dat_dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого dat файла
-                                shutil.copy2(dat_file_path, dat_dest_path)  # Копируем dat файл в целевую директорию
-                                
-                            copied_hashes[file_hash] = (file, file_path)  # Добавляем хэш-сумму файла в хэш-таблицу
-                            new_copied_hashes[file_hash] = (file, file_path)
-                            count_new_files += 1
+                count_new_files += process_comtrade_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                         preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
             
             if use_brs and file.lower().endswith(BRS_EXTENSION):  # Если файл имеет расширение .brs (характерно для Бреслера)
-                file = file[:-4] + BRS_EXTENSION # изменяем шрифт типа файла на строчный.
-                file_path = os.path.join(root, file)  # Получаем полный путь к cfg файлу
-                with open(file_path, 'rb') as f: # Открываем brs файл для чтения в бинарном режиме
-                    file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму dat файла
-                    if file_hash not in copied_hashes or not use_hashes:
-                        dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
-                        if preserve_dir_structure:
-                            dest_path_BRESELER = os.path.join(dest_dir,'BRESELER', dest_subdir, file)  # Формируем путь для копирования cfg файла
-                        else:
-                            dest_path_BRESELER = os.path.join(dest_dir,'BRESELER', file)  # Формируем путь для копирования cfg файла
-                        if not os.path.exists(dest_path_BRESELER):
-                            os.makedirs(os.path.dirname(dest_path_BRESELER), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
-                            shutil.copy2(file_path, dest_path_BRESELER)  # Копируем файл в целевую директорию
-                        
-                        if use_hashes:  
-                            copied_hashes[file_hash] = (file, file_path)  # Добавляем хэш-сумму файла в хэш-таблицу
-                            new_copied_hashes[file_hash] = (file, file_path)
-                        count_new_files += 1
+                count_new_files += process_brs_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                    preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
+                
+            if file.lower().endswith(ARCHIVE_7Z_EXTENSION):  # Если файл является архивом 7z
+                count_new_files += process_7z_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                   preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
+                                                   use_comtrade=use_comtrade, use_brs=use_brs,_first_run=_first_run, _path_temp=_path_temp)
     
-    print(f"Количество новых скопированных файлов: {count_new_files}") 
-    # Сохранение JSON файлов hash_table и new_hash_table                        
-    hash_table_file_path = os.path.join(dest_dir, '_hash_table.json')  # Формируем путь для сохранения hash_table
-    if use_hashes: 
-        try:
-            with open(hash_table_file_path, 'w') as file:
-                json.dump(copied_hashes, file)  # Сохраняем hash_table в JSON файл
-        except:
-            print("Не удалось сохранить hash_table в JSON файл")
-            
-        data_now = datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-        new_copied_hashes_file_path = os.path.join(dest_dir, f'new_hash_table_{data_now}.json')
-        try:
-            with open(new_copied_hashes_file_path, 'w') as file:
-                json.dump(new_copied_hashes, file)
-        except:
-            print("Не удалось сохранить new_hash_table в JSON файл")
+    if _first_run:
+        print(f"Количество новых скопированных файлов: {count_new_files}") 
+        # Сохранение JSON файлов hash_table и new_hash_table                        
+        hash_table_file_path = os.path.join(dest_dir, '_hash_table.json')  # Формируем путь для сохранения hash_table
+        if use_hashes: 
+            try:
+                with open(hash_table_file_path, 'w') as file:
+                    json.dump(copied_hashes, file)  # Сохраняем hash_table в JSON файл
+            except:
+                print("Не удалось сохранить hash_table в JSON файл")
 
+            data_now = datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+            new_copied_hashes_file_path = os.path.join(dest_dir, f'new_hash_table_{data_now}.json')
+            try:
+                with open(new_copied_hashes_file_path, 'w') as file:
+                    json.dump(_new_copied_hashes, file)
+            except:
+                print("Не удалось сохранить new_hash_table в JSON файл")
+        return count_new_files
+    else:
+        return count_new_files
+
+def process_comtrade_file(file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
+                     preserve_dir_structure: bool = True, use_hashes: bool = True, _new_copied_hashes: dict = {}) -> int:
+    """
+    Processes a single file, copying it to the destination directory and updating the copied_hashes dictionary.
+    
+    Args:
+        file (str): The name of the file to process.
+        root (str): The root directory of the file.
+        dest_dir (str): The destination directory for the copied files.
+        copied_hashes (dict): The dictionary of copied file hashes.
+        preserve_dir_structure (bool): Whether to preserve the directory structure.
+        use_hashes (bool): Whether to use file hashes for comparison.
+        
+        local variables
+        _new_copied_hashes (dict): The dictionary of new copied file hashes.
+    Returns:
+        int: The number of new files copied.
+    """
+    cfg_file = file[:-4] + CFG_EXTENSION # изменяем шрифт типа файла на строчный.
+    cfg_file_path = os.path.join(root, cfg_file)  # Получаем полный путь к cfg файлу
+    dat_file = cfg_file[:-4] + DAT_EXTENSION  # Формируем имя dat файла на основе имени cfg файла
+    dat_file_path = os.path.join(root, dat_file)  # Получаем полный путь к dat файлу
+    is_exist = os.path.exists(dat_file_path)              
+    if is_exist:
+        with open(dat_file_path, 'rb') as f:  # Открываем dat файл для чтения в бинарном режиме
+            file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму dat файла
+            if file_hash not in copied_hashes or not use_hashes:
+                dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
+                
+                if preserve_dir_structure:
+                    dest_path = os.path.join(dest_dir, dest_subdir, cfg_file)  # Формируем путь для копирования cfg файла
+                    dat_dest_path = os.path.join(dest_dir, dest_subdir, dat_file)  # Формируем путь для копирования dat файла
+                else:
+                    dest_path = os.path.join(dest_dir, cfg_file)
+                    dat_dest_path = os.path.join(dest_dir, dat_file)
+                
+                if not os.path.exists(dest_path):
+                    os.makedirs(os.path.dirname(dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
+                    shutil.copy2(cfg_file_path, dest_path)  # Копируем cfg файл в целевую директорию
+                
+                if not os.path.exists(dat_dest_path):
+                    os.makedirs(os.path.dirname(dat_dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого dat файла
+                    shutil.copy2(dat_file_path, dat_dest_path)  # Копируем dat файл в целевую директорию
+                    
+                copied_hashes[file_hash] = (cfg_file, cfg_file_path)  # Добавляем хэш-сумму файла в хэш-таблицу
+                _new_copied_hashes[file_hash] = (cfg_file, cfg_file_path)
+                return 1 # новый файл скопирован
+    return 0 # новый файл НЕ скопирован
+
+def process_brs_file(file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
+                     preserve_dir_structure: bool = True, use_hashes: bool = True, _new_copied_hashes: dict = {}) -> int:
+    """
+    Processes a single file, copying it to the destination directory and updating the copied_hashes dictionary.
+    
+    Args:
+        file (str): The name of the file to process.
+        root (str): The root directory of the file.
+        dest_dir (str): The destination directory for the copied files.
+        copied_hashes (dict): The dictionary of copied file hashes.
+        preserve_dir_structure (bool): Whether to preserve the directory structure.
+        use_hashes (bool): Whether to use file hashes for comparison.
+        
+        local variables
+        _new_copied_hashes (dict): The dictionary of new copied file hashes.
+    Returns:
+        int: The number of new files copied.
+    """
+    file = file[:-4] + BRS_EXTENSION # изменяем шрифт типа файла на строчный.
+    file_path = os.path.join(root, file)  # Получаем полный путь к cfg файлу
+    with open(file_path, 'rb') as f: # Открываем brs файл для чтения в бинарном режиме
+        file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму dat файла
+        if file_hash not in copied_hashes or not use_hashes:
+            dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
+            if preserve_dir_structure:
+                dest_path_BRESELER = os.path.join(dest_dir,'BRESELER', dest_subdir, file)  # Формируем путь для копирования cfg файла
+            else:
+                dest_path_BRESELER = os.path.join(dest_dir,'BRESELER', file)  # Формируем путь для копирования cfg файла
+            if not os.path.exists(dest_path_BRESELER):
+                os.makedirs(os.path.dirname(dest_path_BRESELER), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
+                shutil.copy2(file_path, dest_path_BRESELER)  # Копируем файл в целевую директорию
+            
+            if use_hashes:  
+                copied_hashes[file_hash] = (file, file_path)  # Добавляем хэш-сумму файла в хэш-таблицу
+                _new_copied_hashes[file_hash] = (file, file_path)
+                return 1 # новый файл скопирован
+    return 0 # новый файл НЕ скопирован
+
+def process_7z_file(file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
+                    preserve_dir_structure: bool = True, use_hashes: bool = True, _new_copied_hashes: dict = {},
+                    use_comtrade: bool = True, use_brs: bool = True, _first_run: bool = False, _path_temp = None) -> int:
+    """
+    Processes a single file, copying it to the destination directory and updating the copied_hashes dictionary.
+    
+    Args:
+        file (str): The name of the file to process.
+        root (str): The root directory of the file.
+        dest_dir (str): The destination directory for the copied files.
+        copied_hashes (dict): The dictionary of copied file hashes.
+        preserve_dir_structure (bool): Whether to preserve the directory structure.
+        use_hashes (bool): Whether to use file hashes for comparison.
+        
+        local variables
+        _new_copied_hashes (dict): The dictionary of new copied file hashes.
+    Returns:
+        int: The number of new files copied.
+    """
+    count_new_files = 0
+    file_path = os.path.join(root, file)  # Получаем полный путь к cfg файлу
+    with py7zr.SevenZipFile(file_path, mode='r') as zf:
+        if _path_temp is None:
+            _path_temp = os.path.join(dest_dir,'temp')  # Формируем путь для копирования
+            source_dir_temp = _path_temp
+            if preserve_dir_structure:
+                dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
+                _path_temp = os.path.join(dest_dir,'temp', dest_subdir)  # Формируем путь для копирования
+        else:
+            _path_temp = os.path.join(_path_temp, 'temp')
+            source_dir_temp = _path_temp
+        zf.extractall(_path_temp)  # Извлекаем все файлы из архива в целевую директорию
+        dest_dir = os.path.join(dest_dir, "archive_7z")
+        # FIXME: подумать над сохранением пути внутри архивов - пока эта функция не работает в полной мере.
+        count_new_files += copy_new_oscillograms(source_dir=_path_temp, dest_dir=dest_dir, copied_hashes=copied_hashes, preserve_dir_structure=preserve_dir_structure,
+                                                 use_hashes=use_hashes, use_comtrade=use_comtrade, use_brs=use_brs, 
+                                                 _new_copied_hashes=_new_copied_hashes, _first_run = False, _path_temp=_path_temp)
+        shutil.rmtree(source_dir_temp)  # Удаляем временную директорию
+        if _first_run:
+            _path_temp = None
+        else:
+            _path_temp = _path_temp[:-5] # вычитает /temp
+
+    return count_new_files
 
 def match_oscillograms_to_terminals(dest_dir: str, copied_hashes: dict, terminal_oscillogram_names: dict) -> None:
     """
