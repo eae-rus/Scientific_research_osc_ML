@@ -24,7 +24,7 @@ BLACK_BOX_EXTENSION = '.bb' # Чёрный ящик
 RES_3_EXTENSION = '.sg2' # РЭС 3, пока не научился их открывать.
 PARMA_O_EXTENSION, PARMA_0_EXTENSION, PARMA_1_EXTENSION, PARMA_2_EXTENSION, PARMA_3_EXTENSION = '.do', '.d0', '.d1', '.d2', '.d3' # в реальности они DO, D01 и D02...
 ARCHIVE_7Z_EXTENSION, ARCHIVE_ZIP_EXTENSION, ARCHIVE_RAR_EXTENSION = '.7z', '.zip', '.rar'
-WORD_1_EXTENSION, WORD_2_EXTENSION = '.doc', '.docx'
+WORD_1_EXTENSION, WORD_2_EXTENSION, WORD_3_EXTENSION = '.doc', '.docx', '.dot'
 
 
 # Функция для обхода файловой системы
@@ -91,7 +91,7 @@ def copy_new_oscillograms(source_dir: str, dest_dir: str, copied_hashes: dict = 
                 count_new_files += process_ekra_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                      preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
             
-            elif (use_parma and not (file.lower().endswith(WORD_1_EXTENSION) or file.lower().endswith(WORD_2_EXTENSION)) and
+            elif (use_parma and not (file.lower().endswith(WORD_1_EXTENSION) or file.lower().endswith(WORD_2_EXTENSION) or file.lower().endswith(WORD_3_EXTENSION)) and
             (PARMA_O_EXTENSION in file.lower() or PARMA_0_EXTENSION in file.lower() or PARMA_1_EXTENSION in file.lower() or
              PARMA_2_EXTENSION in file.lower()) or PARMA_3_EXTENSION in file.lower()):  # Если файл имеет расширение .do, d0, ?d1? (характерно для специальных от ПАРМЫ)
                 # TODO: по сбору данных, проверить, всегда ли они имеют тип вида .do, d01, d02, ?d11? , где последние цифра есть и может меняться.
