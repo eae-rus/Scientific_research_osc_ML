@@ -17,13 +17,14 @@ SOURCE_DIR = 'D:/DataSet/(копия)_ALL_OSC_v2'
 DEST_DIR = 'D:/DataSet/depersonalized_ALL_OSC_v2 (В процессе)'
 CFG_EXTENSION, DAT_EXTENSION, BRS_EXTENSION = '.cfg', '.dat', '.brs'
 CFG_EXTENSION, DAT_EXTENSION, BRS_EXTENSION, NEVA_EXTENSION = '.cfg', '.dat', '.brs', '.os'
+CFG_EXTENSION, DAT_EXTENSION, BRS_EXTENSION, NEVA_EXTENSION, EKRA_EXTENSION = '.cfg', '.dat', '.brs', '.os', '.dfr'
 ARCHIVE_7Z_EXTENSION, ARCHIVE_ZIP_EXTENSION, ARCHIVE_RAR_EXTENSION = '.7z', '.zip', '.rar'
 
 
 # Функция для обхода файловой системы
 def copy_new_oscillograms(source_dir: str, dest_dir: str, copied_hashes: dict = {},
                           preserve_dir_structure: bool = True, use_hashes: bool = True,
-                          use_comtrade: bool = True, use_brs: bool = True, use_neva: bool = True, 
+                          use_comtrade: bool = True, use_brs: bool = True, use_neva: bool = True, use_ekra: bool = True, 
                           _new_copied_hashes: dict = {}, _first_run: bool = True, _path_temp = None) -> int:
     """
     Копирует файлы осциллограмм из исходного каталога в целевой каталог, отслеживая скопированные файлы.
@@ -63,6 +64,10 @@ def copy_new_oscillograms(source_dir: str, dest_dir: str, copied_hashes: dict = 
                 # TODO: по сбору данных, проверить, всегда ли они имеют тип вида ".os1", где последняя цифра есть и может меняться.
                 # И если это так, то каков её размер? Может быть скорректировать поиск, так как сейчас не оптимален.
                 count_new_files += process_neva_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                     preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
+            
+            elif use_ekra and file.lower().endswith(EKRA_EXTENSION):  # Если файл имеет расширение .DFR (характерно для специальных от ЭКРЫ)
+                count_new_files += process_ekra_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                      preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
             
             elif (file.lower().endswith(ARCHIVE_7Z_EXTENSION) or file.lower().endswith(ARCHIVE_ZIP_EXTENSION) or
@@ -210,6 +215,44 @@ def process_neva_file(file: str, root: str, source_dir: str, dest_dir: str, copi
             if not os.path.exists(dest_path_NEVA):
                 os.makedirs(os.path.dirname(dest_path_NEVA), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
                 shutil.copy2(file_path, dest_path_NEVA)  # Копируем файл в целевую директорию
+            
+            if use_hashes:  
+                copied_hashes[file_hash] = (file, file_path)  # Добавляем хэш-сумму файла в хэш-таблицу
+                _new_copied_hashes[file_hash] = (file, file_path)
+                return 1 # новый файл скопирован
+    return 0 # новый файл НЕ скопирован
+
+def process_ekra_file(file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
+                      preserve_dir_structure: bool = True, use_hashes: bool = True, _new_copied_hashes: dict = {}) -> int:
+    """
+    Processes a single file, copying it to the destination directory and updating the copied_hashes dictionary.
+    
+    Args:
+        file (str): The name of the file to process.
+        root (str): The root directory of the file.
+        dest_dir (str): The destination directory for the copied files.
+        copied_hashes (dict): The dictionary of copied file hashes.
+        preserve_dir_structure (bool): Whether to preserve the directory structure.
+        use_hashes (bool): Whether to use file hashes for comparison.
+        
+        local variables
+        _new_copied_hashes (dict): The dictionary of new copied file hashes.
+    Returns:
+        int: The number of new files copied.
+    """
+    file = file[:-4] + EKRA_EXTENSION # изменяем шрифт типа файла на строчный.
+    file_path = os.path.join(root, file)  # Получаем полный путь к файлу
+    with open(file_path, 'rb') as f: # Открываем brs файл для чтения в бинарном режиме
+        file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму dat файла
+        if file_hash not in copied_hashes or not use_hashes:
+            dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
+            if preserve_dir_structure:
+                dest_path_EKRA = os.path.join(dest_dir,'EKRA', dest_subdir, file)  # Формируем путь для копирования файла
+            else:
+                dest_path_EKRA = os.path.join(dest_dir,'EKRA', file)  # Формируем путь для копирования файла
+            if not os.path.exists(dest_path_EKRA):
+                os.makedirs(os.path.dirname(dest_path_EKRA), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
+                shutil.copy2(file_path, dest_path_EKRA)  # Копируем файл в целевую директорию
             
             if use_hashes:  
                 copied_hashes[file_hash] = (file, file_path)  # Добавляем хэш-сумму файла в хэш-таблицу
