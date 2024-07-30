@@ -13,6 +13,7 @@ import py7zr
 SOURCE_DIR = 'D:/DataSet/(копия)_ALL_OSC_v2'
 DEST_DIR = 'D:/DataSet/depersonalized_ALL_OSC_v2 (В процессе)'
 CFG_EXTENSION, DAT_EXTENSION, BRS_EXTENSION = '.cfg', '.dat', '.brs'
+ARCHIVE_7Z_EXTENSION, ARCHIVE_ZIP_EXTENSION, ARCHIVE_RAR_EXTENSION = '.7z', '.zip', '.rar'
 
 
 # Функция для обхода файловой системы
