@@ -13,10 +13,9 @@ import aspose.zip as az
 # и затем опять же в командной строке
 # python -m auto_py_to_exe
 
-SOURCE_DIR = 'D:/DataSet/(копия)_ALL_OSC_v2'
-DEST_DIR = 'D:/DataSet/depersonalized_ALL_OSC_v2 (В процессе)'
-SOURCE_DIR = 'D:\\DataSet\\Новая папка\\24.04.19 Ж-г-кая 6АТ (БПЛА)'
-DEST_DIR = 'D:\\DataSet\\Новая папка\\Out'
+SOURCE_DIR = 'Пусть 1'
+DEST_DIR = 'Путь 2'
+
 CFG_EXTENSION, DAT_EXTENSION, CFF_EXTENSION = '.cfg', '.dat', '.cff' # Форматы Comtrade (cff - новый)
 BRS_EXTENSION = '.brs' # Бреслер
 EKRA_EXTENSION = '.dfr' # Внутренний формат ЭКРЫ
