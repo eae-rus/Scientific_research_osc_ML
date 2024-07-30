@@ -4,6 +4,9 @@ import hashlib
 import json
 import datetime
 import py7zr
+import zipfile
+import aspose.zip as az
+
 
 # создаю exe файл через 
 # pip install auto-py-to-exe
@@ -55,10 +58,11 @@ def copy_new_oscillograms(source_dir: str, dest_dir: str, copied_hashes: dict = 
                 count_new_files += process_brs_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                     preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
                 
-            if file.lower().endswith(ARCHIVE_7Z_EXTENSION):  # Если файл является архивом 7z
-                count_new_files += process_7z_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
-                                                   preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
-                                                   use_comtrade=use_comtrade, use_brs=use_brs,_first_run=_first_run, _path_temp=_path_temp)
+            if (file.lower().endswith(ARCHIVE_7Z_EXTENSION) or file.lower().endswith(ARCHIVE_ZIP_EXTENSION) or
+                file.lower().endswith(ARCHIVE_RAR_EXTENSION) ):  # Если файл является архивом
+                count_new_files += process_archive_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                        preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
+                                                        use_comtrade=use_comtrade, use_brs=use_brs,_first_run=_first_run, _path_temp=_path_temp)
     
     if _first_run:
         print(f"Количество новых скопированных файлов: {count_new_files}") 
@@ -169,9 +173,10 @@ def process_brs_file(file: str, root: str, source_dir: str, dest_dir: str, copie
                 return 1 # новый файл скопирован
     return 0 # новый файл НЕ скопирован
 
-def process_7z_file(file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
-                    preserve_dir_structure: bool = True, use_hashes: bool = True, _new_copied_hashes: dict = {},
-                    use_comtrade: bool = True, use_brs: bool = True, _first_run: bool = False, _path_temp = None) -> int:
+
+def process_archive_file(file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
+                         preserve_dir_structure: bool = True, use_hashes: bool = True, _new_copied_hashes: dict = {},
+                         use_comtrade: bool = True, use_brs: bool = True, _first_run: bool = False, _path_temp = None) -> int:
     """
     Processes a single file, copying it to the destination directory and updating the copied_hashes dictionary.
     
@@ -190,27 +195,42 @@ def process_7z_file(file: str, root: str, source_dir: str, dest_dir: str, copied
     """
     count_new_files = 0
     file_path = os.path.join(root, file)  # Получаем полный путь к cfg файлу
-    with py7zr.SevenZipFile(file_path, mode='r') as zf:
-        if _path_temp is None:
-            _path_temp = os.path.join(dest_dir,'temp')  # Формируем путь для копирования
-            source_dir_temp = _path_temp
-            if preserve_dir_structure:
-                dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
-                _path_temp = os.path.join(dest_dir,'temp', dest_subdir)  # Формируем путь для копирования
-        else:
-            _path_temp = os.path.join(_path_temp, 'temp')
-            source_dir_temp = _path_temp
-        zf.extractall(_path_temp)  # Извлекаем все файлы из архива в целевую директорию
-        dest_dir = os.path.join(dest_dir, "archive_7z")
-        # FIXME: подумать над сохранением пути внутри архивов - пока эта функция не работает в полной мере.
-        count_new_files += copy_new_oscillograms(source_dir=_path_temp, dest_dir=dest_dir, copied_hashes=copied_hashes, preserve_dir_structure=preserve_dir_structure,
-                                                 use_hashes=use_hashes, use_comtrade=use_comtrade, use_brs=use_brs, 
-                                                 _new_copied_hashes=_new_copied_hashes, _first_run = False, _path_temp=_path_temp)
-        shutil.rmtree(source_dir_temp)  # Удаляем временную директорию
-        if _first_run:
-            _path_temp = None
-        else:
-            _path_temp = _path_temp[:-5] # вычитает /temp
+    if _path_temp is None:
+        _path_temp = os.path.join(dest_dir,'temp')  # Формируем путь для копирования
+        source_dir_temp = _path_temp
+        if preserve_dir_structure:
+            dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
+            _path_temp = os.path.join(dest_dir,'temp', dest_subdir)  # Формируем путь для копирования
+    else:
+        _path_temp = os.path.join(_path_temp, 'temp')
+        source_dir_temp = _path_temp
+        
+    # CСоздание дирректории, если она не сущетсвует
+    os.makedirs(_path_temp, exist_ok=True)
+    
+    # определение типа и разархивация
+    if file.lower().endswith(ARCHIVE_7Z_EXTENSION):
+        with py7zr.SevenZipFile(file_path, mode='r') as archive:
+            archive.extractall(_path_temp)  # Извлекаем все файлы из архива в целевую директорию
+            dest_dir = os.path.join(dest_dir, "archive_7z")
+    elif file.lower().endswith(ARCHIVE_ZIP_EXTENSION):
+        with zipfile.ZipFile(file_path, 'r') as zf:
+            zf.extractall(_path_temp)  # Извлекаем все файлы из архива в целевую директорию
+            dest_dir = os.path.join(dest_dir, "archive_zip")
+    elif file.lower().endswith(ARCHIVE_RAR_EXTENSION):
+        with az.rar.RarArchive(file_path) as archive:
+            archive.extract_to_directory(_path_temp)
+        dest_dir = os.path.join(dest_dir, "archive_rar")
+    
+    # FIXME: подумать над сохранением пути внутри архивов - пока эта функция не работает в полной мере.
+    count_new_files += copy_new_oscillograms(source_dir=_path_temp, dest_dir=dest_dir, copied_hashes=copied_hashes, preserve_dir_structure=preserve_dir_structure,
+                                             use_hashes=use_hashes, use_comtrade=use_comtrade, use_brs=use_brs, 
+                                             _new_copied_hashes=_new_copied_hashes, _first_run = False, _path_temp=_path_temp)
+    shutil.rmtree(source_dir_temp)  # Удаляем временную директорию
+    if _first_run:
+        _path_temp = None
+    else:
+        _path_temp = _path_temp[:-5] # вычитает /temp
 
     return count_new_files
 
