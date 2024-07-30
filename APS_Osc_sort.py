@@ -475,18 +475,22 @@ def process_archive_file(file: str, root: str, source_dir: str, dest_dir: str, c
     os.makedirs(_path_temp, exist_ok=True)
     
     # определение типа и разархивация
-    if file.lower().endswith(ARCHIVE_7Z_EXTENSION):
-        with py7zr.SevenZipFile(file_path, mode='r') as archive:
-            archive.extractall(_path_temp)  # Извлекаем все файлы из архива в целевую директорию
-            dest_dir = os.path.join(dest_dir, "archive_7z")
-    elif file.lower().endswith(ARCHIVE_ZIP_EXTENSION):
-        with zipfile.ZipFile(file_path, 'r') as zf:
-            zf.extractall(_path_temp)  # Извлекаем все файлы из архива в целевую директорию
-            dest_dir = os.path.join(dest_dir, "archive_zip")
-    elif file.lower().endswith(ARCHIVE_RAR_EXTENSION):
-        with az.rar.RarArchive(file_path) as archive:
-            archive.extract_to_directory(_path_temp)
-        dest_dir = os.path.join(dest_dir, "archive_rar")
+    try:
+        if file.lower().endswith(ARCHIVE_7Z_EXTENSION):
+            with py7zr.SevenZipFile(file_path, mode='r') as archive:
+                archive.extractall(_path_temp)  # Извлекаем все файлы из архива в целевую директорию
+                dest_dir = os.path.join(dest_dir, "archive_7z")
+        elif file.lower().endswith(ARCHIVE_ZIP_EXTENSION):
+            with zipfile.ZipFile(file_path, 'r') as zf:
+                zf.extractall(_path_temp)  # Извлекаем все файлы из архива в целевую директорию
+                dest_dir = os.path.join(dest_dir, "archive_zip")
+        elif file.lower().endswith(ARCHIVE_RAR_EXTENSION):
+            with az.rar.RarArchive(file_path) as archive:
+                archive.extract_to_directory(_path_temp)
+            dest_dir = os.path.join(dest_dir, "archive_rar")
+    except Exception as e:
+        # FIXME: подумать над оформлением нормального лога.
+        print(f"Ошибка при разархивации файла {_path_temp}: {e}")
     
     # FIXME: подумать над сохранением пути внутри архивов - пока эта функция не работает в полной мере.
     count_new_files += copy_new_oscillograms(source_dir=_path_temp, dest_dir=dest_dir, copied_hashes=copied_hashes, preserve_dir_structure=preserve_dir_structure,
