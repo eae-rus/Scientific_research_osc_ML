@@ -106,7 +106,9 @@ def copy_new_oscillograms(source_dir: str, dest_dir: str, copied_hashes: dict = 
                 file_lower.endswith(ARCHIVE_RAR_EXTENSION) ):  # Если файл является архивом
                 count_new_files += process_archive_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                         preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
-                                                        use_comtrade=use_comtrade, use_brs=use_brs,_first_run=_first_run, _path_temp=_path_temp)
+                                                        _first_run=_first_run, _path_temp=_path_temp,
+                                                        use_comtrade=use_comtrade, use_new_comtrade=use_new_comtrade, use_neva=use_neva, use_ekra=use_ekra,
+                                                        use_brs=use_brs, use_black_box=use_black_box, use_res_3=use_res_3, use_parma=use_parma)
     
     if _first_run:
         print(f"Количество новых скопированных файлов: {count_new_files}") 
@@ -445,7 +447,10 @@ def process_parma_file(file: str, root: str, source_dir: str, dest_dir: str, cop
 
 def process_archive_file(file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
                          preserve_dir_structure: bool = True, use_hashes: bool = True, _new_copied_hashes: dict = {},
-                         use_comtrade: bool = True, use_brs: bool = True, _first_run: bool = False, _path_temp = None) -> int:
+                         _first_run: bool = False, _path_temp = None,
+                         use_comtrade: bool = True, use_new_comtrade: bool = True, use_brs: bool = True,
+                         use_neva: bool = True, use_ekra: bool = True, use_parma: bool = True,
+                         use_black_box: bool = True, use_res_3: bool = True,) -> int:
     """
     Processes a single file, copying it to the destination directory and updating the copied_hashes dictionary.
     
@@ -497,9 +502,16 @@ def process_archive_file(file: str, root: str, source_dir: str, dest_dir: str, c
     
     # FIXME: подумать над сохранением пути внутри архивов - пока эта функция не работает в полной мере.
     count_new_files += copy_new_oscillograms(source_dir=_path_temp, dest_dir=dest_dir, copied_hashes=copied_hashes, preserve_dir_structure=preserve_dir_structure,
-                                             use_hashes=use_hashes, use_comtrade=use_comtrade, use_brs=use_brs, 
-                                             _new_copied_hashes=_new_copied_hashes, _first_run = False, _path_temp=_path_temp)
-    shutil.rmtree(source_dir_temp)  # Удаляем временную директорию
+                                             use_hashes=use_hashes, 
+                                             _new_copied_hashes=_new_copied_hashes, _first_run = False, _path_temp=_path_temp,
+                                             use_comtrade=use_comtrade, use_new_comtrade=use_new_comtrade, use_neva=use_neva, use_ekra=use_ekra,
+                                             use_brs=use_brs, use_black_box=use_black_box, use_res_3=use_res_3, use_parma=use_parma)
+    try:
+        shutil.rmtree(source_dir_temp)  # Удаляем временную директорию
+    except Exception as e:
+        # FIXME: подумать над оформлением нормального лога.
+        print(f"Ошибка при разархивации файла {_path_temp}: {e}")
+        
     if _first_run:
         _path_temp = None
     else:
@@ -598,26 +610,27 @@ except:
     print("Не удалось прочитать hash_table из JSON файла")
 
 
-copy_new_oscillograms(SOURCE_DIR, DEST_DIR, preserve_dir_structure=False, use_brs=False)
+copy_new_oscillograms(source_dir=SOURCE_DIR, dest_dir=DEST_DIR, copied_hashes=copied_hashes, use_parma=False, use_neva=False)
 # terminal_oscillogram_names = {}
 # terminal_oscillogram_names["t00108"], terminal_oscillogram_names["t00209"], terminal_oscillogram_names["t00331"], terminal_oscillogram_names["t00363"] = [], [], [], []
 # for i in range(1, 500): # пока лишь до 500, потом расширим
 #     terminal_oscillogram_names[f"t{i:05}"] = []
 # match_oscillograms_to_terminals(destination_directory, copied_hashes, terminal_oscillogram_names)
 
-# Перенос файлов терминала в папку с осциллограммами
-osc_name_dict = {}
-terminal_oscillogram_names_path = DEST_DIR +  '/_osc_name_dict (по терминалам) v1.json'
-# Путь к целевой директории
-dataset_for_primary_research_directory = 'D:/DataSet/dataset_for_primary_research'
-try:
-    with open(terminal_oscillogram_names_path, 'r') as file:
-        osc_name_dict = json.load(file)
-except:
-    print("Не удалось прочитать hash_table из JSON файла")
-terminal_list = []
-for i in range(1, 100): # пока лишь до 100, потом расширим
-    terminal_name = f"t{i:05}"
-    terminal_list.append(terminal_name)
-# organize_oscillograms_by_terminal(destination_directory, dataset_for_primary_research_directory, terminal_list, osc_name_dict)
+#
+#  # Перенос файлов терминала в папку с осциллограммами
+#  osc_name_dict = {}
+#  terminal_oscillogram_names_path = DEST_DIR +  '/_osc_name_dict (по терминалам) v1.json'
+#  # Путь к целевой директории
+#  dataset_for_primary_research_directory = 'D:/DataSet/dataset_for_primary_research'
+#  try:
+#      with open(terminal_oscillogram_names_path, 'r') as file:
+#          osc_name_dict = json.load(file)
+#  except:
+#      print("Не удалось прочитать hash_table из JSON файла")
+#  terminal_list = []
+#  for i in range(1, 100): # пока лишь до 100, потом расширим
+#      terminal_name = f"t{i:05}"
+#      terminal_list.append(terminal_name)
+#  # organize_oscillograms_by_terminal(destination_directory, dataset_for_primary_research_directory, terminal_list, osc_name_dict)
     
