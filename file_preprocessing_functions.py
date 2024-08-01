@@ -395,7 +395,7 @@ def delete_empty_line(source_dir: str) -> None:
                     file.writelines(new_lines)
 
 def Combining_databases_of_unique_codes(old_csv_file_path: str, new_csv_file_path: str, merged_csv_file_path: str,
-                                        deelimed_old_csv_file: str = ';', deelimed_new_csv_file: str = ';') -> None:
+                                        deelimed_old_csv_file: str = ';', deelimed_new_csv_file: str = ';', is_merge_files: bool = True) -> None:
     """
     функция объединяет csv файлы с уникальными кодами сигналов
       
@@ -408,14 +408,15 @@ def Combining_databases_of_unique_codes(old_csv_file_path: str, new_csv_file_pat
     """
     # Открытие старого CSV файла и чтение его в словарь
     old_code_map = {}
-    with open(old_csv_file_path, mode='r', encoding='utf-8') as file:
+    with open(old_csv_file_path, mode='r', encoding='1251') as file:
         reader = csv.DictReader(file, delimiter=deelimed_old_csv_file)
         for row in reader:
             key = row['Key']
             universal_code = row['universal_code']
+            value = row['Value']
             is_name_determined = universal_code != '-' and universal_code != '?'
-            if is_name_determined:
-                old_code_map[key] = universal_code
+            if is_name_determined or is_merge_files:
+                old_code_map[key] = (universal_code, value)
 
     # Открытие новоего CSV файла и чтение его в словарь
     new_code_map = {}
@@ -426,16 +427,35 @@ def Combining_databases_of_unique_codes(old_csv_file_path: str, new_csv_file_pat
             universal_code = row['universal_code']
             value = row['Value']
             new_code_map[key] = (universal_code, value)
+            
 
-    # Создание нового CSV файла для хранения скопированных значений
+    # Если is_merge_files имеет значение True, объедините массив с суммированными значениями в поле "значение"
+    merged_code_map = dict()
+    if is_merge_files:
+        merged_code_map = old_code_map.copy()
+        
+    for key, value in new_code_map.items():
+        if is_merge_files:
+            if key not in merged_code_map:
+                merged_code_map[key] = value
+            else:
+                old_value = merged_code_map[key][1]
+                new_value = value[1]
+                merged_value = int(old_value) + int(new_value)
+                merged_code_map[key] = (merged_code_map[key][0], str(merged_value))
+        else:
+            if key in old_code_map:
+                merged_code_map[key] = (old_code_map[key][0] , value[1])
+            else:
+                merged_code_map[key] = value
+    
+    sorted_code_map = dict(sorted(merged_code_map.items(), key=lambda item: int(item[1][1]), reverse=True))
+     # Создание нового CSV файла для хранения скопированных значений
     with open(merged_csv_file_path, mode='w', encoding='utf-8', newline='') as new_file:
         writer = csv.writer(new_file, delimiter=deelimed_new_csv_file)
         writer.writerow(['Key', 'universal_code', 'Value'])
-        for key, (universal_code, value) in new_code_map.items():
-            if key in old_code_map:
-                writer.writerow([key, old_code_map[key], value])
-            else:
-                writer.writerow([key, universal_code, value])
+        for key, (universal_code, value) in sorted_code_map.items():
+            writer.writerow([key, universal_code, value])
 
 def combining_json_hash_table(source_dir: str) -> None:
     """
@@ -572,8 +592,8 @@ merged_csv_file_path = 'D:/DataSet/depersonalized_ALL_OSC_v2/merged.csv'
 # rename_digital_signals(destination_directory, csv_digital_directory)
 # rename_one_signals(destination_directory, 'I | Bus-3 | phase: N', 'U | BusBar-3 | phase: N')
 # delete_empty_line(destination_directory)
-# Combining_databases_of_unique_codes(old_csv_file_path, new_csv_file_path, merged_csv_file_path,
-#                                     deelimed_old_csv_file=';',deelimed_new_csv_file=',')
+Combining_databases_of_unique_codes(old_csv_file_path, new_csv_file_path, merged_csv_file_path,
+                                    deelimed_old_csv_file=';',deelimed_new_csv_file=',', is_merge_files=True)
 # combining_json_hash_table(destination_directory)
 dict_all_dates = {}
 Research_coorect_encoding_in_cfg(destination_directory, act_function=lambda file_path, root, encoding_name: detect_date(file_path, root, encoding_name, dict_all_dates))
