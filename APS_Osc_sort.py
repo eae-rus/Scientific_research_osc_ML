@@ -7,6 +7,7 @@ import py7zr
 import zipfile
 import aspose.zip as az
 from tqdm import tqdm
+from enum import Enum
 
 
 # создаю exe файл через 
@@ -17,9 +18,23 @@ from tqdm import tqdm
 SOURCE_DIR = 'Пусть 1'
 DEST_DIR = 'Путь 2'
 
-CFG_EXTENSION, DAT_EXTENSION, CFF_EXTENSION = '.cfg', '.dat', '.cff' # Форматы Comtrade (cff - новый)
+class TYPE_OSC(Enum):
+    # TODO: написать полноценные описание типов
+    COMTRADE_CFG_DAT = "comtrade_cfg_dat"
+    COMTRADE_CFF = "comtrade_cff"
+    BRESLER = "bresler"
+    BLACK_BOX = "black_box"
+    RES_3 = "res_3"
+    EKRA = "ekra"
+    PARMA = "parma"
+    NEVA = "neva"
+    OSC = "osc"
+
+CFG_EXTENSION, DAT_EXTENSION = '.cfg', '.dat'
+CFF_EXTENSION = '.cff' # Форматы Comtrade (cff - новый) 
 BRS_EXTENSION = '.brs' # Бреслер
 EKRA_EXTENSION = '.dfr' # Внутренний формат ЭКРЫ
+OSC_EXTENSION = '.osc' # Пока не выясинл что за тип
 NEVA_EXTENSION = '.os' # Внутрении НЕВЫ. В реальности они os1, os2...
 BLACK_BOX_EXTENSION = '.bb' # Чёрный ящик
 RES_3_EXTENSION = '.sg2' # РЭС 3, пока не научился их открывать.
@@ -33,7 +48,7 @@ def copy_new_oscillograms(source_dir: str, dest_dir: str, copied_hashes: dict = 
                           preserve_dir_structure: bool = True, use_hashes: bool = True,
                           use_comtrade: bool = True, use_new_comtrade: bool = True, use_brs: bool = True,
                           use_neva: bool = True, use_ekra: bool = True, use_parma: bool = True,
-                          use_black_box: bool = True, use_res_3: bool = True,
+                          use_black_box: bool = True, use_res_3: bool = True, use_osc: bool = True,
                           _new_copied_hashes: dict = {}, _first_run: bool = True, _path_temp = None) -> int:
     """
     Копирует файлы осциллограмм из исходного каталога в целевой каталог, отслеживая скопированные файлы.
@@ -69,34 +84,46 @@ def copy_new_oscillograms(source_dir: str, dest_dir: str, copied_hashes: dict = 
                 file_lower = file.lower()
                 # TODO: переписать функции в одну / две, чтобы не повторяться
                 if use_comtrade and file_lower.endswith(CFG_EXTENSION):  # Если файл имеет расширение .cfg
-                    count_new_files += process_comtrade_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
-                                                             preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
+                    count_new_files += process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                    preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
+                                                    type_osc=TYPE_OSC.COMTRADE_CFG_DAT)
                 
                 elif use_new_comtrade and file_lower.endswith(CFF_EXTENSION):  # Если файл имеет расширение .cff (характерно для новых форматов Comtrade)
-                    count_new_files += process_new_comtrade_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
-                                                                 preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
+                    count_new_files += process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                    preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
+                                                    type_osc=TYPE_OSC.COMTRADE_CFF)
                 
                 elif use_brs and file_lower.endswith(BRS_EXTENSION):  # Если файл имеет расширение .brs (характерно для Бреслера)
-                    count_new_files += process_brs_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
-                                                        preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
+                    count_new_files += process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                    preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
+                                                    type_osc=TYPE_OSC.BRESLER)
                  
                 elif use_black_box and file_lower.endswith(BLACK_BOX_EXTENSION):  # Если файл имеет расширение .brs (характерно для Бреслера)
-                    count_new_files += process_black_box_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
-                                                              preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
+                    count_new_files += process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                    preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
+                                                    type_osc=TYPE_OSC.BLACK_BOX)
                     
                 elif use_res_3 and file_lower.endswith(RES_3_EXTENSION):  # Если файл имеет расширение .brs (характерно для Бреслера)
-                    count_new_files += process_res_3_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
-                                                          preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
+                    count_new_files += process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                    preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
+                                                    type_osc=TYPE_OSC.RES_3)
                                     
+                elif use_osc and file_lower.endswith(OSC_EXTENSION):  # Если файл имеет расширение .osc (Пока не выяснил, для кого характерно),
+                    count_new_files += process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                    preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
+                                                    type_osc=TYPE_OSC.OSC)
+                
                 elif use_neva and NEVA_EXTENSION in file_lower and not file_lower.endswith('.xml'):  # Если файл имеет расширение .os (характерно для НЕВА),
                     # TODO: по сбору данных, проверить, всегда ли они имеют тип вида ".os1", где последняя цифра есть и может меняться.
                     # И если это так, то каков её размер? Может быть скорректировать поиск, так как сейчас не оптимален.
-                    count_new_files += process_neva_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
-                                                         preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
+                    count_new_files += process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                    preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
+                                                    type_osc=TYPE_OSC.NEVA)
                 
                 elif use_ekra and file_lower.endswith(EKRA_EXTENSION):  # Если файл имеет расширение .DFR (характерно для специальных от ЭКРЫ)
-                    count_new_files += process_ekra_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
-                                                         preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
+                    count_new_files += process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                    preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
+                                                    type_osc=TYPE_OSC.EKRA)
                 
                 elif (use_parma and 
                       not (file_lower.endswith(WORD_1_EXTENSION) or file_lower.endswith(WORD_2_EXTENSION) or file_lower.endswith(WORD_3_EXTENSION) or 
@@ -105,8 +132,9 @@ def copy_new_oscillograms(source_dir: str, dest_dir: str, copied_hashes: dict = 
                        PARMA_2_EXTENSION in file_lower) or PARMA_3_EXTENSION in file_lower):  # Если файл имеет расширение .do, d0, ?d1? (характерно для специальных от ПАРМЫ)
                     # TODO: по сбору данных, проверить, всегда ли они имеют тип вида .do, d01, d02, ?d11? , где последние цифра есть и может меняться.
                     # И если это так, то каков её размер? Может быть скорректировать поиск, так как сейчас не оптимален.
-                    count_new_files += process_parma_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
-                                                         preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
+                    count_new_files += process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                    preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
+                                                    type_osc=TYPE_OSC.PARMA)
                 
                 elif (file_lower.endswith(ARCHIVE_7Z_EXTENSION) or file_lower.endswith(ARCHIVE_ZIP_EXTENSION) or
                     file_lower.endswith(ARCHIVE_RAR_EXTENSION) ):  # Если файл является архивом
@@ -114,7 +142,7 @@ def copy_new_oscillograms(source_dir: str, dest_dir: str, copied_hashes: dict = 
                                                             preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                             _first_run=_first_run, _path_temp=_path_temp,
                                                             use_comtrade=use_comtrade, use_new_comtrade=use_new_comtrade, use_neva=use_neva, use_ekra=use_ekra,
-                                                            use_brs=use_brs, use_black_box=use_black_box, use_res_3=use_res_3, use_parma=use_parma)
+                                                            use_brs=use_brs, use_black_box=use_black_box, use_res_3=use_res_3, use_parma=use_parma, use_osc=use_osc)
     
     if _first_run:
         print(f"Количество новых скопированных файлов: {count_new_files}") 
@@ -138,7 +166,76 @@ def copy_new_oscillograms(source_dir: str, dest_dir: str, copied_hashes: dict = 
     else:
         return count_new_files
 
-def process_comtrade_file(file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
+def process_file(file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
+                 preserve_dir_structure: bool = True, use_hashes: bool = True, _new_copied_hashes: dict = {},
+                 new_folder: str = "New folder", type_osc: TYPE_OSC = TYPE_OSC.BRESLER) -> int:
+    """
+    Processes a single file, copying it to the destination directory and updating the copied_hashes dictionary.
+    
+    Args:
+        file (str): The name of the file to process.
+        root (str): The root directory of the file.
+        dest_dir (str): The destination directory for the copied files.
+        copied_hashes (dict): The dictionary of copied file hashes.
+        preserve_dir_structure (bool): Whether to preserve the directory structure.
+        use_hashes (bool): Whether to use file hashes for comparison.
+        new_folder (str): the name of the new folder where the file will be saved
+        type_osc (TYPE_OSC): The type of osc to process.
+        
+        local variables
+        _new_copied_hashes (dict): The dictionary of new copied file hashes.
+    Returns:
+        int: The number of new files copied.
+    """
+    match type_osc:
+        case TYPE_OSC.COMTRADE_CFG_DAT:
+            return _process_comtrade_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                         preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
+        case TYPE_OSC.COMTRADE_CFF:
+            file = file[:-4] + CFF_EXTENSION # изменяем шрифт типа файла на строчный.
+            if new_folder == "New folder": new_folder = "COMTRADE_CFF"
+        case TYPE_OSC.BRESLER:
+            file = file[:-4] + BRS_EXTENSION
+            if new_folder == "New folder": new_folder = "BRESLER"
+        case TYPE_OSC.EKRA:
+            file = file[:-4] + EKRA_EXTENSION
+            if new_folder == "New folder": new_folder = "EKRA"
+        case TYPE_OSC.BLACK_BOX:
+            file = file[:-3] + BLACK_BOX_EXTENSION
+            if new_folder == "New folder": new_folder = "BLACK_BOX"
+        case TYPE_OSC.RES_3:
+            file = file[:-4] + RES_3_EXTENSION
+            if new_folder == "New folder": new_folder = "RES_3"
+        case TYPE_OSC.OSC:
+            file = file[:-4] + OSC_EXTENSION
+            if new_folder == "New folder": new_folder = "OSC"
+        case TYPE_OSC.PARMA:
+            # Тип файла не меняется, т.к. имеет множество вариантов
+            if new_folder == "New folder": new_folder = "PARMA"
+        case TYPE_OSC.NEVA:
+            # Тип файла не меняется, т.к. имеет множество вариантов
+            if new_folder == "New folder": new_folder = "NEVA"
+
+    file_path = os.path.join(root, file)  # Получаем полный путь к файлу
+    with open(file_path, 'rb') as f: # Открываем brs файл для чтения в бинарном режиме
+        file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму dat файла
+        if file_hash not in copied_hashes or not use_hashes:
+            dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
+            if preserve_dir_structure:
+                dest_path = os.path.join(dest_dir, new_folder, dest_subdir, file)  # Формируем путь для копирования файла
+            else:
+                dest_path = os.path.join(dest_dir, new_folder, file)  # Формируем путь для копирования файла
+            if not os.path.exists(dest_path):
+                os.makedirs(os.path.dirname(dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
+                shutil.copy2(file_path, dest_path)  # Копируем файл в целевую директорию
+            
+            if use_hashes:  
+                copied_hashes[file_hash] = (file, file_path)  # Добавляем хэш-сумму файла в хэш-таблицу
+                _new_copied_hashes[file_hash] = (file, file_path)
+                return 1 # новый файл скопирован
+    return 0 # новый файл НЕ скопирован
+
+def _process_comtrade_file(file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
                           preserve_dir_structure: bool = True, use_hashes: bool = True, _new_copied_hashes: dict = {}) -> int:
     """
     Processes a single file, copying it to the destination directory and updating the copied_hashes dictionary.
@@ -168,11 +265,11 @@ def process_comtrade_file(file: str, root: str, source_dir: str, dest_dir: str, 
                 dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
                 
                 if preserve_dir_structure:
-                    dest_path = os.path.join(dest_dir, dest_subdir, cfg_file)  # Формируем путь для копирования cfg файла
-                    dat_dest_path = os.path.join(dest_dir, dest_subdir, dat_file)  # Формируем путь для копирования dat файла
+                    dest_path = os.path.join(dest_dir, "COMTRADE_CFG_DAT", dest_subdir, cfg_file)  # Формируем путь для копирования cfg файла
+                    dat_dest_path = os.path.join(dest_dir, "COMTRADE_CFG_DAT", dest_subdir, dat_file)  # Формируем путь для копирования dat файла
                 else:
-                    dest_path = os.path.join(dest_dir, cfg_file)
-                    dat_dest_path = os.path.join(dest_dir, dat_file)
+                    dest_path = os.path.join(dest_dir, "COMTRADE_CFG_DAT", cfg_file)
+                    dat_dest_path = os.path.join(dest_dir, "COMTRADE_CFG_DAT", dat_file)
                 
                 if not os.path.exists(dest_path):
                     os.makedirs(os.path.dirname(dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
@@ -184,270 +281,6 @@ def process_comtrade_file(file: str, root: str, source_dir: str, dest_dir: str, 
                     
                 copied_hashes[file_hash] = (cfg_file, cfg_file_path)  # Добавляем хэш-сумму файла в хэш-таблицу
                 _new_copied_hashes[file_hash] = (cfg_file, cfg_file_path)
-                return 1 # новый файл скопирован
-    return 0 # новый файл НЕ скопирован
-
-def process_new_comtrade_file(file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
-                              preserve_dir_structure: bool = True, use_hashes: bool = True, _new_copied_hashes: dict = {}) -> int:
-    """
-    Processes a single file, copying it to the destination directory and updating the copied_hashes dictionary.
-    
-    Args:
-        file (str): The name of the file to process.
-        root (str): The root directory of the file.
-        dest_dir (str): The destination directory for the copied files.
-        copied_hashes (dict): The dictionary of copied file hashes.
-        preserve_dir_structure (bool): Whether to preserve the directory structure.
-        use_hashes (bool): Whether to use file hashes for comparison.
-        
-        local variables
-        _new_copied_hashes (dict): The dictionary of new copied file hashes.
-    Returns:
-        int: The number of new files copied.
-    """
-    file = file[:-4] + CFF_EXTENSION # изменяем шрифт типа файла на строчный.
-    file_path = os.path.join(root, file)  # Получаем полный путь к файлу
-    with open(file_path, 'rb') as f: # Открываем brs файл для чтения в бинарном режиме
-        file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму dat файла
-        if file_hash not in copied_hashes or not use_hashes:
-            dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
-            if preserve_dir_structure:
-                dest_path = os.path.join(dest_dir, dest_subdir, file)  # Формируем путь для копирования файла
-            else:
-                dest_path = os.path.join(dest_dir, file)  # Формируем путь для копирования файла
-            if not os.path.exists(dest_path):
-                os.makedirs(os.path.dirname(dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
-                shutil.copy2(file_path, dest_path)  # Копируем файл в целевую директорию
-            
-            if use_hashes:  
-                copied_hashes[file_hash] = (file, file_path)  # Добавляем хэш-сумму файла в хэш-таблицу
-                _new_copied_hashes[file_hash] = (file, file_path)
-                return 1 # новый файл скопирован
-    return 0 # новый файл НЕ скопирован
-
-def process_brs_file(file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
-                     preserve_dir_structure: bool = True, use_hashes: bool = True, _new_copied_hashes: dict = {}) -> int:
-    """
-    Processes a single file, copying it to the destination directory and updating the copied_hashes dictionary.
-    
-    Args:
-        file (str): The name of the file to process.
-        root (str): The root directory of the file.
-        dest_dir (str): The destination directory for the copied files.
-        copied_hashes (dict): The dictionary of copied file hashes.
-        preserve_dir_structure (bool): Whether to preserve the directory structure.
-        use_hashes (bool): Whether to use file hashes for comparison.
-        
-        local variables
-        _new_copied_hashes (dict): The dictionary of new copied file hashes.
-    Returns:
-        int: The number of new files copied.
-    """
-    file = file[:-4] + BRS_EXTENSION # изменяем шрифт типа файла на строчный.
-    file_path = os.path.join(root, file)  # Получаем полный путь к файлу
-    with open(file_path, 'rb') as f: # Открываем brs файл для чтения в бинарном режиме
-        file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму dat файла
-        if file_hash not in copied_hashes or not use_hashes:
-            dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
-            if preserve_dir_structure:
-                dest_path_BRESELER = os.path.join(dest_dir,'BRESELER', dest_subdir, file)  # Формируем путь для копирования файла
-            else:
-                dest_path_BRESELER = os.path.join(dest_dir,'BRESELER', file)  # Формируем путь для копирования файла
-            if not os.path.exists(dest_path_BRESELER):
-                os.makedirs(os.path.dirname(dest_path_BRESELER), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
-                shutil.copy2(file_path, dest_path_BRESELER)  # Копируем файл в целевую директорию
-            
-            if use_hashes:  
-                copied_hashes[file_hash] = (file, file_path)  # Добавляем хэш-сумму файла в хэш-таблицу
-                _new_copied_hashes[file_hash] = (file, file_path)
-                return 1 # новый файл скопирован
-    return 0 # новый файл НЕ скопирован
-
-def process_neva_file(file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
-                      preserve_dir_structure: bool = True, use_hashes: bool = True, _new_copied_hashes: dict = {}) -> int:
-    """
-    Processes a single file, copying it to the destination directory and updating the copied_hashes dictionary.
-    
-    Args:
-        file (str): The name of the file to process.
-        root (str): The root directory of the file.
-        dest_dir (str): The destination directory for the copied files.
-        copied_hashes (dict): The dictionary of copied file hashes.
-        preserve_dir_structure (bool): Whether to preserve the directory structure.
-        use_hashes (bool): Whether to use file hashes for comparison.
-        
-        local variables
-        _new_copied_hashes (dict): The dictionary of new copied file hashes.
-    Returns:
-        int: The number of new files copied.
-    """
-    file_path = os.path.join(root, file)  # Получаем полный путь к файлу
-    with open(file_path, 'rb') as f: # Открываем brs файл для чтения в бинарном режиме
-        file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму dat файла
-        if file_hash not in copied_hashes or not use_hashes:
-            dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
-            if preserve_dir_structure:
-                dest_path_NEVA = os.path.join(dest_dir,'NEVA', dest_subdir, file)  # Формируем путь для копирования файла
-            else:
-                dest_path_NEVA = os.path.join(dest_dir,'NEVA', file)  # Формируем путь для копирования файла
-            if not os.path.exists(dest_path_NEVA):
-                os.makedirs(os.path.dirname(dest_path_NEVA), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
-                shutil.copy2(file_path, dest_path_NEVA)  # Копируем файл в целевую директорию
-            
-            if use_hashes:  
-                copied_hashes[file_hash] = (file, file_path)  # Добавляем хэш-сумму файла в хэш-таблицу
-                _new_copied_hashes[file_hash] = (file, file_path)
-                return 1 # новый файл скопирован
-    return 0 # новый файл НЕ скопирован
-
-def process_ekra_file(file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
-                      preserve_dir_structure: bool = True, use_hashes: bool = True, _new_copied_hashes: dict = {}) -> int:
-    """
-    Processes a single file, copying it to the destination directory and updating the copied_hashes dictionary.
-    
-    Args:
-        file (str): The name of the file to process.
-        root (str): The root directory of the file.
-        dest_dir (str): The destination directory for the copied files.
-        copied_hashes (dict): The dictionary of copied file hashes.
-        preserve_dir_structure (bool): Whether to preserve the directory structure.
-        use_hashes (bool): Whether to use file hashes for comparison.
-        
-        local variables
-        _new_copied_hashes (dict): The dictionary of new copied file hashes.
-    Returns:
-        int: The number of new files copied.
-    """
-    file = file[:-4] + EKRA_EXTENSION # изменяем шрифт типа файла на строчный.
-    file_path = os.path.join(root, file)  # Получаем полный путь к файлу
-    with open(file_path, 'rb') as f: # Открываем brs файл для чтения в бинарном режиме
-        file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму dat файла
-        if file_hash not in copied_hashes or not use_hashes:
-            dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
-            if preserve_dir_structure:
-                dest_path_EKRA = os.path.join(dest_dir,'EKRA', dest_subdir, file)  # Формируем путь для копирования файла
-            else:
-                dest_path_EKRA = os.path.join(dest_dir,'EKRA', file)  # Формируем путь для копирования файла
-            if not os.path.exists(dest_path_EKRA):
-                os.makedirs(os.path.dirname(dest_path_EKRA), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
-                shutil.copy2(file_path, dest_path_EKRA)  # Копируем файл в целевую директорию
-            
-            if use_hashes:  
-                copied_hashes[file_hash] = (file, file_path)  # Добавляем хэш-сумму файла в хэш-таблицу
-                _new_copied_hashes[file_hash] = (file, file_path)
-                return 1 # новый файл скопирован
-    return 0 # новый файл НЕ скопирован
-
-def process_black_box_file(file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
-                           preserve_dir_structure: bool = True, use_hashes: bool = True, _new_copied_hashes: dict = {}) -> int:
-    """
-    Processes a single file, copying it to the destination directory and updating the copied_hashes dictionary.
-    
-    Args:
-        file (str): The name of the file to process.
-        root (str): The root directory of the file.
-        dest_dir (str): The destination directory for the copied files.
-        copied_hashes (dict): The dictionary of copied file hashes.
-        preserve_dir_structure (bool): Whether to preserve the directory structure.
-        use_hashes (bool): Whether to use file hashes for comparison.
-        
-        local variables
-        _new_copied_hashes (dict): The dictionary of new copied file hashes.
-    Returns:
-        int: The number of new files copied.
-    """
-    file = file[:-3] + BLACK_BOX_EXTENSION # изменяем шрифт типа файла на строчный.
-    file_path = os.path.join(root, file)  # Получаем полный путь к файлу
-    with open(file_path, 'rb') as f: # Открываем brs файл для чтения в бинарном режиме
-        file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму dat файла
-        if file_hash not in copied_hashes or not use_hashes:
-            dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
-            if preserve_dir_structure:
-                dest_path_BLACK_BOX = os.path.join(dest_dir,'BLACK_BOX', dest_subdir, file)  # Формируем путь для копирования файла
-            else:
-                dest_path_BLACK_BOX = os.path.join(dest_dir,'BLACK_BOX', file)  # Формируем путь для копирования файла
-            if not os.path.exists(dest_path_BLACK_BOX):
-                os.makedirs(os.path.dirname(dest_path_BLACK_BOX), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
-                shutil.copy2(file_path, dest_path_BLACK_BOX)  # Копируем файл в целевую директорию
-            
-            if use_hashes:  
-                copied_hashes[file_hash] = (file, file_path)  # Добавляем хэш-сумму файла в хэш-таблицу
-                _new_copied_hashes[file_hash] = (file, file_path)
-                return 1 # новый файл скопирован
-    return 0 # новый файл НЕ скопирован
-
-def process_res_3_file(file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
-                           preserve_dir_structure: bool = True, use_hashes: bool = True, _new_copied_hashes: dict = {}) -> int:
-    """
-    Processes a single file, copying it to the destination directory and updating the copied_hashes dictionary.
-    
-    Args:
-        file (str): The name of the file to process.
-        root (str): The root directory of the file.
-        dest_dir (str): The destination directory for the copied files.
-        copied_hashes (dict): The dictionary of copied file hashes.
-        preserve_dir_structure (bool): Whether to preserve the directory structure.
-        use_hashes (bool): Whether to use file hashes for comparison.
-        
-        local variables
-        _new_copied_hashes (dict): The dictionary of new copied file hashes.
-    Returns:
-        int: The number of new files copied.
-    """
-    file = file[:-4] + RES_3_EXTENSION # изменяем шрифт типа файла на строчный.
-    file_path = os.path.join(root, file)  # Получаем полный путь к файлу
-    with open(file_path, 'rb') as f: # Открываем brs файл для чтения в бинарном режиме
-        file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму dat файла
-        if file_hash not in copied_hashes or not use_hashes:
-            dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
-            if preserve_dir_structure:
-                dest_path_RES_3 = os.path.join(dest_dir,'RES_3', dest_subdir, file)  # Формируем путь для копирования файла
-            else:
-                dest_path_RES_3 = os.path.join(dest_dir,'RES_3', file)  # Формируем путь для копирования файла
-            if not os.path.exists(dest_path_RES_3):
-                os.makedirs(os.path.dirname(dest_path_RES_3), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
-                shutil.copy2(file_path, dest_path_RES_3)  # Копируем файл в целевую директорию
-            
-            if use_hashes:  
-                copied_hashes[file_hash] = (file, file_path)  # Добавляем хэш-сумму файла в хэш-таблицу
-                _new_copied_hashes[file_hash] = (file, file_path)
-                return 1 # новый файл скопирован
-    return 0 # новый файл НЕ скопирован
-
-def process_parma_file(file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
-                       preserve_dir_structure: bool = True, use_hashes: bool = True, _new_copied_hashes: dict = {}) -> int:
-    """
-    Processes a single file, copying it to the destination directory and updating the copied_hashes dictionary.
-    
-    Args:
-        file (str): The name of the file to process.
-        root (str): The root directory of the file.
-        dest_dir (str): The destination directory for the copied files.
-        copied_hashes (dict): The dictionary of copied file hashes.
-        preserve_dir_structure (bool): Whether to preserve the directory structure.
-        use_hashes (bool): Whether to use file hashes for comparison.
-        
-        local variables
-        _new_copied_hashes (dict): The dictionary of new copied file hashes.
-    Returns:
-        int: The number of new files copied.
-    """
-    file_path = os.path.join(root, file)  # Получаем полный путь к файлу
-    with open(file_path, 'rb') as f: # Открываем brs файл для чтения в бинарном режиме
-        file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму dat файла
-        if file_hash not in copied_hashes or not use_hashes:
-            dest_subdir = os.path.relpath(root, source_dir)  # Получаем относительный путь от исходной директории до текущей директории
-            if preserve_dir_structure:
-                dest_path_PARMA = os.path.join(dest_dir,'PARMA', dest_subdir, file)  # Формируем путь для копирования файла
-            else:
-                dest_path_PARMA = os.path.join(dest_dir,'PARMA', file)  # Формируем путь для копирования файла
-            if not os.path.exists(dest_path_PARMA):
-                os.makedirs(os.path.dirname(dest_path_PARMA), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
-                shutil.copy2(file_path, dest_path_PARMA)  # Копируем файл в целевую директорию
-            
-            if use_hashes:  
-                copied_hashes[file_hash] = (file, file_path)  # Добавляем хэш-сумму файла в хэш-таблицу
-                _new_copied_hashes[file_hash] = (file, file_path)
                 return 1 # новый файл скопирован
     return 0 # новый файл НЕ скопирован
 
