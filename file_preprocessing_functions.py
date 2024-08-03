@@ -4,6 +4,7 @@ import hashlib
 import datetime
 import csv
 import json
+from tqdm import tqdm
 
 def deleting_confidential_information_in_all_files(source_dir: str) -> None:
     """
@@ -21,23 +22,28 @@ def deleting_confidential_information_in_all_files(source_dir: str) -> None:
         None
     """
     protected_files = []  # Создаем список для хранения путей к защищенным файлам
-    for root, dirs, files in os.walk(source_dir):  # Итерируемся по всем файлам и директориям в исходной директории
-        for file in files:  # Имя каждого файла
-            if file.endswith(".cfg"):  # Если файл имеет расширение .cfg
-                file_path = os.path.join(root, file)  # Получаем полный путь к cfg файлу
-                # TODO: для определения кодировки и пересохранения файла в utf-8 необходимо
-                # создать отдельную функцию
-                try: 
-                    deleting_confidential_information_in_on_file(file_path, root, 'utf-8')
-                except Exception as e:
-                    try:
-                        deleting_confidential_information_in_on_file(file_path, root, 'windows-1251')  
+    print("Считаем общее количество файлов в исходной директории...")
+    total_files = sum([len(files) for r, d, files in os.walk(source_dir)])  # Подсчет общего количества файлов
+    print(f"Общее количество файлов: {total_files}, запускаем обработку...")
+    with tqdm(total=total_files, desc="Deleting confidential information") as pbar:  # Инициализация прогресс-бара
+        for root, dirs, files in os.walk(source_dir):  # Итерируемся по всем файлам и директориям в исходной директории
+            for file in files:  # Имя каждого файла
+                pbar.update(1)  # Обновление прогресс-бара на один файл
+                if file.endswith(".cfg"):  # Если файл имеет расширение .cfg
+                    file_path = os.path.join(root, file)  # Получаем полный путь к cfg файлу
+                    # TODO: для определения кодировки и пересохранения файла в utf-8 необходимо
+                    # создать отдельную функцию
+                    try: 
+                        deleting_confidential_information_in_on_file(file_path, root, 'utf-8')
                     except Exception as e:
                         try:
-                            deleting_confidential_information_in_on_file(file_path, root, 'ОЕМ 866') # ОЕМ - русский язык
+                            deleting_confidential_information_in_on_file(file_path, root, 'windows-1251')  
                         except Exception as e:
-                            protected_files.append(file_path)  # Добавляем защищенный файл в список
-                            protected_files.append(f"Произошла ошибка при обработке cfg файла: {e}")
+                            try:
+                                deleting_confidential_information_in_on_file(file_path, root, 'ОЕМ 866') # ОЕМ - русский язык
+                            except Exception as e:
+                                protected_files.append(file_path)  # Добавляем защищенный файл в список
+                                protected_files.append(f"Произошла ошибка при обработке cfg файла: {e}")
     with open(os.path.join(source_dir, 'protected_files.txt'), 'w') as file:
         file.write('\n'.join(protected_files))  # Сохраняем список защищенных файлов в txt файл в корне папки
 
@@ -109,23 +115,28 @@ def grouping_by_sampling_rate_and_network(source_dir: str) -> None:
         None
     """
     # Проходим по всем файлам в папке
-    for root, dirs, files in os.walk(source_dir):
-        for file in files:
-            if file.lower().endswith(".cfg"):
-                file_path = os.path.join(root, file)
-                dat_file = file[:-4] + ".dat"  # Формируем имя dat файла на основе имени cfg файла
-                dat_file_path = os.path.join(root, dat_file)  # Получаем полный путь к dat файлу
-                is_exist = os.path.exists(dat_file_path) 
-                if is_exist:
-                    f_network, f_rate = extract_frequencies(file_path)
+    print("Считаем общее количество файлов в исходной директории...")
+    total_files = sum([len(files) for r, d, files in os.walk(source_dir)])  # Подсчет общего количества файлов
+    print(f"Общее количество файлов: {total_files}, запускаем обработку...")
+    with tqdm(total=total_files, desc="Grouping by sampling rate and network") as pbar:  # Инициализация прогресс-бара
+        for root, dirs, files in os.walk(source_dir):
+            for file in files:
+                pbar.update(1)  # Обновление прогресс-бара на один файл
+                if file.lower().endswith(".cfg"):
+                    file_path = os.path.join(root, file)
+                    dat_file = file[:-4] + ".dat"  # Формируем имя dat файла на основе имени cfg файла
+                    dat_file_path = os.path.join(root, dat_file)  # Получаем полный путь к dat файлу
+                    is_exist = os.path.exists(dat_file_path) 
+                    if is_exist:
+                        f_network, f_rate = extract_frequencies(file_path)
 
-                    if f_network and f_rate:
-                        dest_folder = os.path.join(source_dir, 'f_network = ' + str(f_network) + ' and f_rate = ' + str(f_rate))
-                        if not os.path.exists(dest_folder):
-                            os.makedirs(dest_folder)
-
-                        shutil.move(file_path, os.path.join(dest_folder, file))
-                        shutil.move(dat_file_path, os.path.join(dest_folder, dat_file))
+                        if f_network and f_rate:
+                            dest_folder = os.path.join(source_dir, 'f_network = ' + str(f_network) + ' and f_rate = ' + str(f_rate))
+                            if not os.path.exists(dest_folder):
+                                os.makedirs(dest_folder)
+                                
+                            shutil.move(file_path, os.path.join(dest_folder, file))
+                            shutil.move(dat_file_path, os.path.join(dest_folder, dat_file))
 
 def extract_frequencies(file_path: str) -> tuple:
     """
@@ -168,27 +179,32 @@ def find_all_name_analog_signals(source_dir: str) -> None:
     """
     analog_signals_name = {}
     # Проходим по всем файлам в папке
-    for root, dirs, files in os.walk(source_dir):
-        for file in files:
-            if file.lower().endswith(".cfg"):
-                file_path = os.path.join(root, file)
-                with open(file_path, 'r', encoding='utf-8') as file:
-                    # FIXME: нет защиты от защищёных и/или ошибочных файлов
-                    lines = file.readlines()
-                    if len(lines) >= 2:
-                        # считываем количество сигналов
-                        signals, analog_signals, digital_signals = lines[1].split(',')
-                        count_analog_signals = int(analog_signals[:-1])
-                        for i in range(count_analog_signals):
-                            analog_signal = lines[2 + i].split(',') # получаем аналоговый сигнал
-                            # TODO: добавить единую функцию формирования комбинированного названия сигнала
-                            name, phase = analog_signal[1], analog_signal[2] # получаем название, фазу и единицу измерения
-                            name, phase = name.replace(' ', ''), phase.replace(' ', '') # удаляем пробелы
-                            signal_name = name + ' | phase:' + phase # создаем комбинированное название сигнала
-                            if signal_name not in analog_signals_name:
-                                analog_signals_name[signal_name] = 1
-                            else:
-                                analog_signals_name[signal_name] += 1
+    print("Считаем общее количество файлов в исходной директории...")
+    total_files = sum([len(files) for r, d, files in os.walk(source_dir)])  # Подсчет общего количества файлов
+    print(f"Общее количество файлов: {total_files}, запускаем обработку...")
+    with tqdm(total=total_files, desc="Find all name analog signals") as pbar:  # Инициализация прогресс-бара
+        for root, dirs, files in os.walk(source_dir):
+            for file in files:
+                pbar.update(1)  # Обновление прогресс-бара на один файл
+                if file.lower().endswith(".cfg"):
+                    file_path = os.path.join(root, file)
+                    with open(file_path, 'r', encoding='utf-8') as file:
+                        # FIXME: нет защиты от защищёных и/или ошибочных файлов
+                        lines = file.readlines()
+                        if len(lines) >= 2:
+                            # считываем количество сигналов
+                            signals, analog_signals, digital_signals = lines[1].split(',')
+                            count_analog_signals = int(analog_signals[:-1])
+                            for i in range(count_analog_signals):
+                                analog_signal = lines[2 + i].split(',') # получаем аналоговый сигнал
+                                # TODO: добавить единую функцию формирования комбинированного названия сигнала
+                                name, phase = analog_signal[1], analog_signal[2] # получаем название, фазу и единицу измерения
+                                name, phase = name.replace(' ', ''), phase.replace(' ', '') # удаляем пробелы
+                                signal_name = name + ' | phase:' + phase # создаем комбинированное название сигнала
+                                if signal_name not in analog_signals_name:
+                                    analog_signals_name[signal_name] = 1
+                                else:
+                                    analog_signals_name[signal_name] += 1
     
     sorted_analog_signals_name = {k: v for k, v in sorted(analog_signals_name.items(), key=lambda item: item[1], reverse=True)}      
     # определям путь к csv файлу 
@@ -212,27 +228,32 @@ def find_all_name_digital_signals(source_dir: str) -> None:
     """
     digital_signals_name = {}
     # Проходим по всем файлам в папке
-    for root, dirs, files in os.walk(source_dir):
-        for file in files:
-            if file.lower().endswith(".cfg"):
-                file_path = os.path.join(root, file)
-                with open(file_path, 'r', encoding='utf-8') as file:
-                    # FIXME: нет защиты от защищёных и/или ошибочных файлов
-                    lines = file.readlines()
-                    if len(lines) >= 2:
-                        # считываем количество сигналов
-                        signals, analog_signals, digital_signals = lines[1].split(',')
-                        count_analog_signals = int(analog_signals[:-1])
-                        count_digital_signals = int(digital_signals[:-2])
-                        for i in range(count_digital_signals):
-                            digital_signal = lines[2 + count_analog_signals + i].split(',') # получаем аналоговый сигнал
-                            if len(digital_signal) == 1: # защита от некорректного количества сигналов
-                                break
-                            signal_name = digital_signal[1] # получаем название
-                            if signal_name not in digital_signals_name:
-                                digital_signals_name[signal_name] = 1
-                            else:
-                                digital_signals_name[signal_name] += 1
+    print("Считаем общее количество файлов в исходной директории...")
+    total_files = sum([len(files) for r, d, files in os.walk(source_dir)])  # Подсчет общего количества файлов
+    print(f"Общее количество файлов: {total_files}, запускаем обработку...")
+    with tqdm(total=total_files, desc="Find all name digital signals") as pbar:  # Инициализация прогресс-бара
+        for root, dirs, files in os.walk(source_dir):
+            for file in files:
+                pbar.update(1)  # Обновление прогресс-бара на один файл
+                if file.lower().endswith(".cfg"):
+                    file_path = os.path.join(root, file)
+                    with open(file_path, 'r', encoding='utf-8') as file:
+                        # FIXME: нет защиты от защищёных и/или ошибочных файлов
+                        lines = file.readlines()
+                        if len(lines) >= 2:
+                            # считываем количество сигналов
+                            signals, analog_signals, digital_signals = lines[1].split(',')
+                            count_analog_signals = int(analog_signals[:-1])
+                            count_digital_signals = int(digital_signals[:-2])
+                            for i in range(count_digital_signals):
+                                digital_signal = lines[2 + count_analog_signals + i].split(',') # получаем аналоговый сигнал
+                                if len(digital_signal) == 1: # защита от некорректного количества сигналов
+                                    break
+                                signal_name = digital_signal[1] # получаем название
+                                if signal_name not in digital_signals_name:
+                                    digital_signals_name[signal_name] = 1
+                                else:
+                                    digital_signals_name[signal_name] += 1
     
     sorted_digital_signals_name = {k: v for k, v in sorted(digital_signals_name.items(), key=lambda item: item[1], reverse=True)}      
     # определям путь к csv файлу 
@@ -268,29 +289,34 @@ def rename_analog_signals(source_dir: str, csv_dir: str) -> None:
                 code_map[key] = universal_code
     
     # Проходим по всем файлам в папке
-    for root, dirs, files in os.walk(source_dir):
-        for file in files:
-            if file.lower().endswith(".cfg"):
-                file_path = os.path.join(root, file)
-                with open(file_path, 'r', encoding='utf-8') as file:
-                    # FIXME: нет защиты от защищёных и/или ошибочных файлов
-                    lines = file.readlines()
-                    if len(lines) >= 2:
-                        # считываем количество сигналов
-                        signals, analog_signals, digital_signals = lines[1].split(',')
-                        count_analog_signals = int(analog_signals[:-1])
-                        for i in range(count_analog_signals):
-                            analog_signal = lines[2 + i].split(',') # получаем аналоговый сигнал
-                            # TODO: добавить единую функцию формирования комбинированного названия сигнала
-                            name, phase = analog_signal[1], analog_signal[2] # получаем название, фазу и единицу измерения
-                            name, phase = name.replace(' ', ''), phase.replace(' ', ''),  # удаляем пробелы
-                            signal_name = name + ' | phase:' + phase # создаем комбинированное название сигнала
-                            if signal_name in code_map:
-                                analog_signal[1] = code_map[signal_name]
-                                lines[2 + i] = ','.join(analog_signal)
-                
-                with open(file_path, 'w', encoding='utf-8') as file:
-                    file.writelines(lines)
+    print("Считаем общее количество файлов в исходной директории...")
+    total_files = sum([len(files) for r, d, files in os.walk(source_dir)])  # Подсчет общего количества файлов
+    print(f"Общее количество файлов: {total_files}, запускаем обработку...")
+    with tqdm(total=total_files, desc="Rename analog signals") as pbar:  # Инициализация прогресс-бара
+        for root, dirs, files in os.walk(source_dir):
+            for file in files:
+                pbar.update(1)  # Обновление прогресс-бара на один файл
+                if file.lower().endswith(".cfg"):
+                    file_path = os.path.join(root, file)
+                    with open(file_path, 'r', encoding='utf-8') as file:
+                        # FIXME: нет защиты от защищёных и/или ошибочных файлов
+                        lines = file.readlines()
+                        if len(lines) >= 2:
+                            # считываем количество сигналов
+                            signals, analog_signals, digital_signals = lines[1].split(',')
+                            count_analog_signals = int(analog_signals[:-1])
+                            for i in range(count_analog_signals):
+                                analog_signal = lines[2 + i].split(',') # получаем аналоговый сигнал
+                                # TODO: добавить единую функцию формирования комбинированного названия сигнала
+                                name, phase = analog_signal[1], analog_signal[2] # получаем название, фазу и единицу измерения
+                                name, phase = name.replace(' ', ''), phase.replace(' ', ''),  # удаляем пробелы
+                                signal_name = name + ' | phase:' + phase # создаем комбинированное название сигнала
+                                if signal_name in code_map:
+                                    analog_signal[1] = code_map[signal_name]
+                                    lines[2 + i] = ','.join(analog_signal)
+
+                    with open(file_path, 'w', encoding='utf-8') as file:
+                        file.writelines(lines)
 
 def rename_digital_signals(source_dir: str, csv_dir: str) -> None:
     """
@@ -315,29 +341,34 @@ def rename_digital_signals(source_dir: str, csv_dir: str) -> None:
                 code_map[key] = universal_code
     
     # Проходим по всем файлам в папке
-    for root, dirs, files in os.walk(source_dir):
-        for file in files:
-            if file.lower().endswith(".cfg"):
-                file_path = os.path.join(root, file)
-                with open(file_path, 'r', encoding='utf-8') as file:
-                    # FIXME: нет защиты от защищёных и/или ошибочных файлов
-                    lines = file.readlines()
-                    if len(lines) >= 2:
-                        # считываем количество сигналов
-                        signals, analog_signals, digital_signals = lines[1].split(',')
-                        count_analog_signals = int(analog_signals[:-1])
-                        count_digital_signals = int(digital_signals[:-2])
-                        for i in range(count_digital_signals):
-                            digital_signal = lines[2 + count_analog_signals + i].split(',') # получаем аналоговый сигнал
-                            if len(digital_signal) == 1: # защита от некорректного количества сигналов
-                                break
-                            signal_name = digital_signal[1] # получаем название
-                            if signal_name in code_map:
-                                digital_signal[1] = code_map[signal_name]
-                                lines[2 + count_analog_signals + i] = ','.join(digital_signal)
-                
-                with open(file_path, 'w', encoding='utf-8') as file:
-                    file.writelines(lines)
+    print("Считаем общее количество файлов в исходной директории...")
+    total_files = sum([len(files) for r, d, files in os.walk(source_dir)])  # Подсчет общего количества файлов
+    print(f"Общее количество файлов: {total_files}, запускаем обработку...")
+    with tqdm(total=total_files, desc="Rename digital signals") as pbar:  # Инициализация прогресс-бара
+        for root, dirs, files in os.walk(source_dir):
+            for file in files:
+                pbar.update(1)  # Обновление прогресс-бара на один файл
+                if file.lower().endswith(".cfg"):
+                    file_path = os.path.join(root, file)
+                    with open(file_path, 'r', encoding='utf-8') as file:
+                        # FIXME: нет защиты от защищёных и/или ошибочных файлов
+                        lines = file.readlines()
+                        if len(lines) >= 2:
+                            # считываем количество сигналов
+                            signals, analog_signals, digital_signals = lines[1].split(',')
+                            count_analog_signals = int(analog_signals[:-1])
+                            count_digital_signals = int(digital_signals[:-2])
+                            for i in range(count_digital_signals):
+                                digital_signal = lines[2 + count_analog_signals + i].split(',') # получаем аналоговый сигнал
+                                if len(digital_signal) == 1: # защита от некорректного количества сигналов
+                                    break
+                                signal_name = digital_signal[1] # получаем название
+                                if signal_name in code_map:
+                                    digital_signal[1] = code_map[signal_name]
+                                    lines[2 + count_analog_signals + i] = ','.join(digital_signal)
+
+                    with open(file_path, 'w', encoding='utf-8') as file:
+                        file.writelines(lines)
                     
 def rename_one_signals(source_dir: str, old_name: str, new_name: str) -> None:
     """
@@ -352,21 +383,26 @@ def rename_one_signals(source_dir: str, old_name: str, new_name: str) -> None:
         None
     """
     # Проходим по всем файлам в папке
-    for root, dirs, files in os.walk(source_dir):
-        for file in files:
-            if file.lower().endswith(".cfg"):
-                file_path = os.path.join(root, file)
-                with open(file_path, 'r', encoding='utf-8') as file:
-                    # FIXME: нет защиты от защищёных и/или ошибочных файлов
-                    lines = file.readlines()
-                    if len(lines) >= 2:
-                        # считываем количество сигналов
-                        for i in range(len(lines)):
-                            if old_name in lines[i]:
-                                lines[i] = lines[i].replace(old_name, new_name)
-                
-                with open(file_path, 'w', encoding='utf-8') as file:
-                    file.writelines(lines)
+    print("Считаем общее количество файлов в исходной директории...")
+    total_files = sum([len(files) for r, d, files in os.walk(source_dir)])  # Подсчет общего количества файлов
+    print(f"Общее количество файлов: {total_files}, запускаем обработку...")
+    with tqdm(total=total_files, desc="Rename signal") as pbar:  # Инициализация прогресс-бара
+        for root, dirs, files in os.walk(source_dir):
+            for file in files:
+                pbar.update(1)  # Обновление прогресс-бара на один файл
+                if file.lower().endswith(".cfg"):
+                    file_path = os.path.join(root, file)
+                    with open(file_path, 'r', encoding='utf-8') as file:
+                        # FIXME: нет защиты от защищёных и/или ошибочных файлов
+                        lines = file.readlines()
+                        if len(lines) >= 2:
+                            # считываем количество сигналов
+                            for i in range(len(lines)):
+                                if old_name in lines[i]:
+                                    lines[i] = lines[i].replace(old_name, new_name)
+
+                    with open(file_path, 'w', encoding='utf-8') as file:
+                        file.writelines(lines)
 
 def delete_empty_line(source_dir: str) -> None:
     """
@@ -379,20 +415,25 @@ def delete_empty_line(source_dir: str) -> None:
         None
     """
     # Проходим по всем файлам в папке
-    for root, dirs, files in os.walk(source_dir):
-        for file in files:
-            if file.lower().endswith(".cfg"):
-                file_path = os.path.join(root, file)
-                new_lines = []
-                with open(file_path, 'r', encoding='utf-8') as file:
-                    # FIXME: нет защиты от защищёных и/или ошибочных файлов
-                    lines = file.readlines()
-                    for line in lines:
-                        if line.strip():
-                            new_lines.append(line)
-                
-                with open(file_path, 'w', encoding='utf-8') as file:
-                    file.writelines(new_lines)
+    print("Считаем общее количество файлов в исходной директории...")
+    total_files = sum([len(files) for r, d, files in os.walk(source_dir)])  # Подсчет общего количества файлов
+    print(f"Общее количество файлов: {total_files}, запускаем обработку...")
+    with tqdm(total=total_files, desc="Delete empty line") as pbar:  # Инициализация прогресс-бара
+        for root, dirs, files in os.walk(source_dir):
+            for file in files:
+                pbar.update(1)  # Обновление прогресс-бара на один файл
+                if file.lower().endswith(".cfg"):
+                    file_path = os.path.join(root, file)
+                    new_lines = []
+                    with open(file_path, 'r', encoding='utf-8') as file:
+                        # FIXME: нет защиты от защищёных и/или ошибочных файлов
+                        lines = file.readlines()
+                        for line in lines:
+                            if line.strip():
+                                new_lines.append(line)
+
+                    with open(file_path, 'w', encoding='utf-8') as file:
+                        file.writelines(new_lines)
 
 def Combining_databases_of_unique_codes(old_csv_file_path: str, new_csv_file_path: str, merged_csv_file_path: str,
                                         deelimed_old_csv_file: str = ';', deelimed_new_csv_file: str = ';', is_merge_files: bool = True) -> None:
@@ -470,18 +511,23 @@ def combining_json_hash_table(source_dir: str) -> None:
         None
     """
     combine_hash_table = {}
-    for root, dirs, files in os.walk(source_dir):  # Итерируемся по всем файлам и директориям в исходной директории
-        for file in files:  # Имя каждого файла
-            if file.lower().endswith(".json"):  # Если файл имеет расширение .json
-                try:
-                    path = os.path.join(root, file)
-                    with open(path, 'r', encoding='utf-8') as file:
-                        hash_table = json.load(file)
-                        for key, value in hash_table.items():
-                            if key not in combine_hash_table:
-                                combine_hash_table[key] = value
-                except:
-                    print("Не удалось прочитать hash_table из JSON файла")
+    print("Считаем общее количество файлов в исходной директории...")
+    total_files = sum([len(files) for r, d, files in os.walk(source_dir)])  # Подсчет общего количества файлов
+    print(f"Общее количество файлов: {total_files}, запускаем обработку...")
+    with tqdm(total=total_files, desc="Combining json hash table") as pbar:  # Инициализация прогресс-бара
+        for root, dirs, files in os.walk(source_dir):  # Итерируемся по всем файлам и директориям в исходной директории
+            for file in files:  # Имя каждого файла
+                pbar.update(1)  # Обновление прогресс-бара на один файл
+                if file.lower().endswith(".json"):  # Если файл имеет расширение .json
+                    try:
+                        path = os.path.join(root, file)
+                        with open(path, 'r', encoding='utf-8') as file:
+                            hash_table = json.load(file)
+                            for key, value in hash_table.items():
+                                if key not in combine_hash_table:
+                                    combine_hash_table[key] = value
+                    except:
+                        print("Не удалось прочитать hash_table из JSON файла")
                         
     try:
         combine_hash_table_file_path = os.path.join(source_dir, 'combine_hash_table.json')
@@ -507,23 +553,28 @@ def Research_coorect_encoding_in_cfg(source_dir: str, act_function = None) -> No
         None
     """
     protected_files = []  # Создаем список для хранения путей к защищенным файлам
-    for root, dirs, files in os.walk(source_dir):  # Итерируемся по всем файлам и директориям в исходной директории
-        for file in files:  # Имя каждого файла
-            if file.endswith(".cfg"):  # Если файл имеет расширение .cfg
-                file_path = os.path.join(root, file)  # Получаем полный путь к cfg файлу
-                # TODO: для определения кодировки и пересохранения файла в utf-8 необходимо
-                # создать отдельную функцию
-                try: 
-                    act_function(file_path, root, 'utf-8')
-                except Exception as e:
-                    try:
-                        act_function(file_path, root, 'windows-1251')  
+    print("Считаем общее количество файлов в исходной директории...")
+    total_files = sum([len(files) for r, d, files in os.walk(source_dir)])  # Подсчет общего количества файлов
+    print(f"Общее количество файлов: {total_files}, запускаем обработку...")
+    with tqdm(total=total_files, desc="Finding the correct encoding and determining the date") as pbar:  # Инициализация прогресс-бара
+        for root, dirs, files in os.walk(source_dir):  # Итерируемся по всем файлам и директориям в исходной директории
+            for file in files:  # Имя каждого файла
+                pbar.update(1)  # Обновление прогресс-бара на один файл
+                if file.endswith(".cfg"):  # Если файл имеет расширение .cfg
+                    file_path = os.path.join(root, file)  # Получаем полный путь к cfg файлу
+                    # TODO: для определения кодировки и пересохранения файла в utf-8 необходимо
+                    # создать отдельную функцию
+                    try: 
+                        act_function(file_path, root, 'utf-8')
                     except Exception as e:
                         try:
-                            act_function(file_path, root, 'ОЕМ 866') # ОЕМ - русский язык
+                            act_function(file_path, root, 'windows-1251')  
                         except Exception as e:
-                            protected_files.append(file_path)  # Добавляем защищенный файл в список
-                            protected_files.append(f"Произошла ошибка при обработке cfg файла: {e}")
+                            try:
+                                act_function(file_path, root, 'ОЕМ 866') # ОЕМ - русский язык
+                            except Exception as e:
+                                protected_files.append(file_path)  # Добавляем защищенный файл в список
+                                protected_files.append(f"Произошла ошибка при обработке cfg файла: {e}")
     with open(os.path.join(source_dir, 'protected_files.txt'), 'w', encoding='utf-8') as file:
         file.write('\n'.join(protected_files))  # Сохраняем список защищенных файлов в txt файл в корне папки
 

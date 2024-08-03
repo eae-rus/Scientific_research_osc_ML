@@ -6,6 +6,7 @@ import datetime
 import py7zr
 import zipfile
 import aspose.zip as az
+from tqdm import tqdm
 
 
 # создаю exe файл через 
@@ -58,57 +59,62 @@ def copy_new_oscillograms(source_dir: str, dest_dir: str, copied_hashes: dict = 
     """
     # hash_table - хэш-таблица для отслеживания скопированных файлов
     count_new_files = 0
-    for root, dirs, files in os.walk(source_dir):  # Итерируемся по всем файлам и директориям в исходной директории
-        for file in files:  # Имя каждого файла
-            file_lower = file.lower()
-            # TODO: переписать функции в одну / две, чтобы не повторяться
-            if use_comtrade and file_lower.endswith(CFG_EXTENSION):  # Если файл имеет расширение .cfg
-                count_new_files += process_comtrade_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
-                                                         preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
-            
-            elif use_new_comtrade and file_lower.endswith(CFF_EXTENSION):  # Если файл имеет расширение .cff (характерно для новых форматов Comtrade)
-                count_new_files += process_new_comtrade_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+    print("Считаем общее количество файлов в исходной директории...")
+    total_files = sum([len(files) for r, d, files in os.walk(source_dir)])  # Подсчет общего количества файлов
+    print(f"Общее количество файлов: {total_files}, запускаем обработку...")
+    with tqdm(total=total_files, desc="Copying files") as pbar:  # Инициализация прогресс-бара
+        for root, dirs, files in os.walk(source_dir):  # Итерируемся по всем файлам и директориям в исходной директории
+            for file in files:  # Имя каждого файла
+                pbar.update(1)  # Обновление прогресс-бара на один файл
+                file_lower = file.lower()
+                # TODO: переписать функции в одну / две, чтобы не повторяться
+                if use_comtrade and file_lower.endswith(CFG_EXTENSION):  # Если файл имеет расширение .cfg
+                    count_new_files += process_comtrade_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                              preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
-            
-            elif use_brs and file_lower.endswith(BRS_EXTENSION):  # Если файл имеет расширение .brs (характерно для Бреслера)
-                count_new_files += process_brs_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
-                                                    preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
-             
-            elif use_black_box and file_lower.endswith(BLACK_BOX_EXTENSION):  # Если файл имеет расширение .brs (характерно для Бреслера)
-                count_new_files += process_black_box_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
-                                                          preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
                 
-            elif use_res_3 and file_lower.endswith(RES_3_EXTENSION):  # Если файл имеет расширение .brs (характерно для Бреслера)
-                count_new_files += process_res_3_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
-                                                      preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
-                                
-            elif use_neva and NEVA_EXTENSION in file_lower and not file_lower.endswith('.xml'):  # Если файл имеет расширение .os (характерно для НЕВА),
-                # TODO: по сбору данных, проверить, всегда ли они имеют тип вида ".os1", где последняя цифра есть и может меняться.
-                # И если это так, то каков её размер? Может быть скорректировать поиск, так как сейчас не оптимален.
-                count_new_files += process_neva_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
-                                                     preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
-            
-            elif use_ekra and file_lower.endswith(EKRA_EXTENSION):  # Если файл имеет расширение .DFR (характерно для специальных от ЭКРЫ)
-                count_new_files += process_ekra_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
-                                                     preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
-            
-            elif (use_parma and 
-                  not (file_lower.endswith(WORD_1_EXTENSION) or file_lower.endswith(WORD_2_EXTENSION) or file_lower.endswith(WORD_3_EXTENSION) or 
-                       ".doc" in file_lower) and
-                  (PARMA_O_EXTENSION in file_lower or PARMA_0_EXTENSION in file_lower or PARMA_1_EXTENSION in file_lower or
-                   PARMA_2_EXTENSION in file_lower) or PARMA_3_EXTENSION in file_lower):  # Если файл имеет расширение .do, d0, ?d1? (характерно для специальных от ПАРМЫ)
-                # TODO: по сбору данных, проверить, всегда ли они имеют тип вида .do, d01, d02, ?d11? , где последние цифра есть и может меняться.
-                # И если это так, то каков её размер? Может быть скорректировать поиск, так как сейчас не оптимален.
-                count_new_files += process_parma_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
-                                                     preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
-            
-            elif (file_lower.endswith(ARCHIVE_7Z_EXTENSION) or file_lower.endswith(ARCHIVE_ZIP_EXTENSION) or
-                file_lower.endswith(ARCHIVE_RAR_EXTENSION) ):  # Если файл является архивом
-                count_new_files += process_archive_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
-                                                        preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
-                                                        _first_run=_first_run, _path_temp=_path_temp,
-                                                        use_comtrade=use_comtrade, use_new_comtrade=use_new_comtrade, use_neva=use_neva, use_ekra=use_ekra,
-                                                        use_brs=use_brs, use_black_box=use_black_box, use_res_3=use_res_3, use_parma=use_parma)
+                elif use_new_comtrade and file_lower.endswith(CFF_EXTENSION):  # Если файл имеет расширение .cff (характерно для новых форматов Comtrade)
+                    count_new_files += process_new_comtrade_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                                 preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
+                
+                elif use_brs and file_lower.endswith(BRS_EXTENSION):  # Если файл имеет расширение .brs (характерно для Бреслера)
+                    count_new_files += process_brs_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                        preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
+                 
+                elif use_black_box and file_lower.endswith(BLACK_BOX_EXTENSION):  # Если файл имеет расширение .brs (характерно для Бреслера)
+                    count_new_files += process_black_box_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                              preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
+                    
+                elif use_res_3 and file_lower.endswith(RES_3_EXTENSION):  # Если файл имеет расширение .brs (характерно для Бреслера)
+                    count_new_files += process_res_3_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                          preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
+                                    
+                elif use_neva and NEVA_EXTENSION in file_lower and not file_lower.endswith('.xml'):  # Если файл имеет расширение .os (характерно для НЕВА),
+                    # TODO: по сбору данных, проверить, всегда ли они имеют тип вида ".os1", где последняя цифра есть и может меняться.
+                    # И если это так, то каков её размер? Может быть скорректировать поиск, так как сейчас не оптимален.
+                    count_new_files += process_neva_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                         preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
+                
+                elif use_ekra and file_lower.endswith(EKRA_EXTENSION):  # Если файл имеет расширение .DFR (характерно для специальных от ЭКРЫ)
+                    count_new_files += process_ekra_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                         preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
+                
+                elif (use_parma and 
+                      not (file_lower.endswith(WORD_1_EXTENSION) or file_lower.endswith(WORD_2_EXTENSION) or file_lower.endswith(WORD_3_EXTENSION) or 
+                           ".doc" in file_lower) and
+                      (PARMA_O_EXTENSION in file_lower or PARMA_0_EXTENSION in file_lower or PARMA_1_EXTENSION in file_lower or
+                       PARMA_2_EXTENSION in file_lower) or PARMA_3_EXTENSION in file_lower):  # Если файл имеет расширение .do, d0, ?d1? (характерно для специальных от ПАРМЫ)
+                    # TODO: по сбору данных, проверить, всегда ли они имеют тип вида .do, d01, d02, ?d11? , где последние цифра есть и может меняться.
+                    # И если это так, то каков её размер? Может быть скорректировать поиск, так как сейчас не оптимален.
+                    count_new_files += process_parma_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                         preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
+                
+                elif (file_lower.endswith(ARCHIVE_7Z_EXTENSION) or file_lower.endswith(ARCHIVE_ZIP_EXTENSION) or
+                    file_lower.endswith(ARCHIVE_RAR_EXTENSION) ):  # Если файл является архивом
+                    count_new_files += process_archive_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
+                                                            preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
+                                                            _first_run=_first_run, _path_temp=_path_temp,
+                                                            use_comtrade=use_comtrade, use_new_comtrade=use_new_comtrade, use_neva=use_neva, use_ekra=use_ekra,
+                                                            use_brs=use_brs, use_black_box=use_black_box, use_res_3=use_res_3, use_parma=use_parma)
     
     if _first_run:
         print(f"Количество новых скопированных файлов: {count_new_files}") 
@@ -154,7 +160,7 @@ def process_comtrade_file(file: str, root: str, source_dir: str, dest_dir: str, 
     cfg_file_path = os.path.join(root, cfg_file)  # Получаем полный путь к cfg файлу
     dat_file = cfg_file[:-4] + DAT_EXTENSION  # Формируем имя dat файла на основе имени cfg файла
     dat_file_path = os.path.join(root, dat_file)  # Получаем полный путь к dat файлу
-    is_exist = os.path.exists(dat_file_path)              
+    is_exist = os.path.exists(dat_file_path)  
     if is_exist:
         with open(dat_file_path, 'rb') as f:  # Открываем dat файл для чтения в бинарном режиме
             file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисляем хэш-сумму dat файла
@@ -538,16 +544,18 @@ def match_oscillograms_to_terminals(dest_dir: str, copied_hashes: dict, terminal
         new_osc_name_dict[osc_name] = '\\'+osc_name[1:]
         
     # Проходим по всем файлам в папке
-    for key in copied_hashes.keys():  # имён по хэш-суммам в разы больше, чем терминалов
-        for osc_name in new_osc_name_arr:
-            if osc_name in copied_hashes[key][0]:
-                terminal_oscillogram_names[osc_name].append(key)
-                break # если найдено имя осциллограммы, то прерываем цикл.
-            elif ('ОТГРУЖЕННЫЕ ТЕРМИНАЛЫ И ШКАФЫ' in copied_hashes[key][1] and new_osc_name_dict[osc_name] in copied_hashes[key][1] and 
-                  not SCM_NAME in copied_hashes[key][1]):
-                # сделано раздельно, чтобы отследить, что проверка добавлена не зря.
-                terminal_oscillogram_names[osc_name].append(key)
-                break
+    with tqdm(total=len(copied_hashes) * len(new_osc_name_arr), desc="Matching oscillograms") as pbar:  # Инициализация прогресс-бара
+        for key in copied_hashes.keys():  # имён по хэш-суммам в разы больше, чем терминалов
+            for osc_name in new_osc_name_arr:
+                pbar.update(1)  # Обновление прогресс-бара на один файл
+                if osc_name in copied_hashes[key][0]:
+                    terminal_oscillogram_names[osc_name].append(key)
+                    break # если найдено имя осциллограммы, то прерываем цикл.
+                elif ('ОТГРУЖЕННЫЕ ТЕРМИНАЛЫ И ШКАФЫ' in copied_hashes[key][1] and new_osc_name_dict[osc_name] in copied_hashes[key][1] and 
+                      not SCM_NAME in copied_hashes[key][1]):
+                    # сделано раздельно, чтобы отследить, что проверка добавлена не зря.
+                    terminal_oscillogram_names[osc_name].append(key)
+                    break
                 
     
     osc_name_dict_file_path = os.path.join(dest_dir, '_osc_name_dict.json')  # Формируем путь для сохранения osc_name_dict
@@ -575,25 +583,30 @@ def organize_oscillograms_by_terminal(source_dir: str, dest_dir: str, terminal_l
         for osc_name in terminal_oscillogram_names[terminal_name]:
             osc_terminal_dict[osc_name] = terminal_name
     
-    for root, dirs, files in os.walk(source_dir):  # Итерируемся по всем файлам и директориям в исходной директории
-        for file in files:  # Имя каждого файла
-            if file.endswith(CFG_EXTENSION) and file[:-4] in osc_terminal_dict:  # Если файл имеет расширение .cfg и есть в списке имён интересующих осциллограмм
-                file_name = file[:-4]
-                cfg_file_name = file
-                dat_file_name = cfg_file_name[:-4] + DAT_EXTENSION
-                cfg_file_path = os.path.join(root, file)  # Формируем полный путь к cfg файлу
-                dat_file_path = cfg_file_path[:-4] + DAT_EXTENSION  # Формируем полный путь к dat файлу
-                # копируем файлы в соответствующу папку
-                if os.path.exists(cfg_file_path) and os.path.exists(dat_file_path):
-                    cfg_dest_path = os.path.join(dest_dir, osc_terminal_dict[file_name], cfg_file_name)  # Формируем путь для копирования dat файла
-                    dat_dest_path = os.path.join(dest_dir, osc_terminal_dict[file_name], dat_file_name)  # Формируем путь для копирования dat файла
-                    if not os.path.exists(cfg_dest_path):
-                        os.makedirs(os.path.dirname(cfg_dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
-                        shutil.copy2(cfg_file_path, cfg_dest_path)  # Копируем cfg файл в целевую директорию
-                    
-                    if not os.path.exists(dat_dest_path):
-                        os.makedirs(os.path.dirname(dat_dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого dat файла
-                        shutil.copy2(dat_file_path, dat_dest_path)  # Копируем dat файл в целевую директорию              
+    print("Считаем общее количество файлов в исходной директории...")
+    total_files = sum([len(files) for r, d, files in os.walk(source_dir)])  # Подсчет общего количества файлов
+    print(f"Общее количество файлов: {total_files}, запускаем обработку...")
+    with tqdm(total=total_files, desc="Organize oscillograms") as pbar:  # Инициализация прогресс-бара
+        for root, dirs, files in os.walk(source_dir):  # Итерируемся по всем файлам и директориям в исходной директории
+            for file in files:  # Имя каждого файла
+                pbar.update(1)  # Обновление прогресс-бара на один файл
+                if file.endswith(CFG_EXTENSION) and file[:-4] in osc_terminal_dict:  # Если файл имеет расширение .cfg и есть в списке имён интересующих осциллограмм
+                    file_name = file[:-4]
+                    cfg_file_name = file
+                    dat_file_name = cfg_file_name[:-4] + DAT_EXTENSION
+                    cfg_file_path = os.path.join(root, file)  # Формируем полный путь к cfg файлу
+                    dat_file_path = cfg_file_path[:-4] + DAT_EXTENSION  # Формируем полный путь к dat файлу
+                    # копируем файлы в соответствующу папку
+                    if os.path.exists(cfg_file_path) and os.path.exists(dat_file_path):
+                        cfg_dest_path = os.path.join(dest_dir, osc_terminal_dict[file_name], cfg_file_name)  # Формируем путь для копирования dat файла
+                        dat_dest_path = os.path.join(dest_dir, osc_terminal_dict[file_name], dat_file_name)  # Формируем путь для копирования dat файла
+                        if not os.path.exists(cfg_dest_path):
+                            os.makedirs(os.path.dirname(cfg_dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого файла
+                            shutil.copy2(cfg_file_path, cfg_dest_path)  # Копируем cfg файл в целевую директорию
+
+                        if not os.path.exists(dat_dest_path):
+                            os.makedirs(os.path.dirname(dat_dest_path), exist_ok=True)  # Создаем все несуществующие директории для целевого dat файла
+                            shutil.copy2(dat_file_path, dat_dest_path)  # Копируем dat файл в целевую директорию              
 
 
 # Пример использования функции
