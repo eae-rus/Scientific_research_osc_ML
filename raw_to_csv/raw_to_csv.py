@@ -1,16 +1,14 @@
 import pandas as pd
 import os
 import json
-import comtrade
+import comtrade # comtrade 0.1.2
 
 
 class RawToCSV():
     """
     This class implemented to convert raw comtrade files to csv file.
     """
-    def __init__(self, raw_path='raw_data/', csv_path=''):
-        self.raw_path = raw_path
-        self.csv_path = raw_path
+    def __init__(self, raw_path='raw_data/', csv_path='', uses_buses = ['1', '2', '12']):
         if not os.path.exists(raw_path):
             raise FileNotFoundError("Path for raw files does not exist")
         with open("dict_analog_names.json", "r") as file:
@@ -24,6 +22,13 @@ class RawToCSV():
         self.raw_path = raw_path
         self.csv_path = csv_path
         self.unread_files = set()
+        self.uses_buses = uses_buses # 12 - межсекционное, пока никак не учитывается, при её добавление требуется поправить проверку дискрет
+        # пока сохраняются все, подумать о том, чтобы задавать их более удобно
+        # TODO: по переменным uses - добавить усечение сигналов из массивов.
+        self.uses_CT_B, self.uses_CT_zero = True, True
+        self.uses_VT_ph, self.uses_VT_iph, self.uses_VT_zero  = True, True, True
+        self.use_VT_CL, self.use_VT_BB = True, True
+        # TODO: Добавить переменные объединения уровнеий аварий (ML сигналов)
 
     def create_csv(self, csv_name='datset.csv'):
         """
@@ -69,43 +74,14 @@ class RawToCSV():
         buses_df = pd.DataFrame()
         buses_cols = dict()
         raw_cols = set(raw_df.columns)
-        raw_df = self.rename_raw_columns(raw_df)
+        raw_df = self.rename_raw_columns(raw_df) # FIXME: вроде бы здесь вызывается лишний раз.
         for bus, cols in self.buses_names.items():
             cols = raw_cols.intersection(cols)
-            if bus[-1] == '1':
-                ml = {'MLsignal_1_1_1',
-                      'MLsignal_1_1_2',
-                      'MLsignal_1_1',
-                      'MLsignal_1_2',
-                      'MLsignal_1_2_1_1',
-                      'MLsignal_1_2_1_2',
-                      'MLsignal_1_2_1_3',
-                      'MLsignal_1_3',
-                      'MLsignal_1_3_1',
-                      'MLsignal_1_3_2',
-                      'MLsignal_1_3_3',
-                      'MLsignal_12_1_1',
-                      'MLsignal_12_1_2',
-                      'MLsignal_12_2_1_1',
-                      'MLsignal_12_3'}
-                raw_ml = raw_cols.intersection(ml)
-                cols = cols.union(raw_ml)
-            if bus[-1] == '2':
-                ml = {'MLsignal_2_1_1',
-                      'MLsignal_2_1_2',
-                      'MLsignal_2_1',
-                      'MLsignal_2_2_1_1',
-                      'MLsignal_2_2_1_2',
-                      'MLsignal_2_2_1_3',
-                      'MLsignal_2_3',
-                      'MLsignal_2_3_2',
-                      'MLsignal_2_3_3',
-                      'MLsignal_12_1_1',
-                      'MLsignal_12_1_2',
-                      'MLsignal_12_2_1_1',
-                      'MLsignal_12_3'}
-                raw_ml = raw_cols.intersection(ml)
-                cols = cols.union(raw_ml)
+            for i_bus in self.uses_buses:
+                if bus[-1] == i_bus or bus[-2] == i_bus:
+                    ml = self.get_ml_signals(i_bus)
+                    raw_ml = raw_cols.intersection(ml)
+                    cols = cols.union(raw_ml)
             if cols:
                 buses_cols[bus] = cols
         for bus, columns in buses_cols.items():
@@ -154,6 +130,7 @@ class RawToCSV():
         return all_names
 
     def rename_raw_columns(self, raw_df):
+        # TODO: вероятно устарела в текущей реализации. Проверить, будет ли вызываться хоть раз.
         """
         This function renames columns in raw DataFrame.
 
@@ -179,73 +156,108 @@ class RawToCSV():
         Returns:
             pandas.DataFrame: Dataframe with renamed columns.
         """
-        bus_columns_to_rename = {'MLsignal_1_1_1': 'ML_1_1',
-                                 'MLsignal_2_1_1': 'ML_1_1',
-                                 'MLsignal_12_1_1': 'ML_12_1_1',
-                                 'MLsignal_1_1_2': 'ML_1_2',
-                                 'MLsignal_2_1_2': 'ML_1_2',
-                                 'MLsignal_12_1_2': 'ML_12_1_2',
-                                 'MLsignal_1_1': 'ML_1',
-                                 'MLsignal_2_1': 'ML_1',
-                                 'MLsignal_1_2': 'ML_2',
-                                 'MLsignal_1_2_1_1': 'ML_2_1_1',
-                                 'MLsignal_2_2_1_1': 'ML_2_1_1',
-                                 'MLsignal_12_2_1_1': 'ML_12_2_1_1',
-                                 'MLsignal_1_2_1_2': 'ML_2_1_2',
-                                 'MLsignal_2_2_1_2': 'ML_2_1_2',
-                                 'MLsignal_1_2_1_3': 'ML_2_1_3',
-                                 'MLsignal_2_2_1_3': 'ML_2_1_3',
-                                 'MLsignal_1_3': 'ML_3',
-                                 'MLsignal_2_3': 'ML_3',
-                                 'MLsignal_12_3': 'ML_12_3',
-                                 'MLsignal_1_3_1': 'ML_3_1',
-                                 'MLsignal_1_3_2': 'ML_3_2',
-                                 'MLsignal_1_3_3': 'ML_3_3',
-                                 'MLsignal_2_3_2': 'ML_3_2',
-                                 'MLsignal_2_3_3': 'ML_3_3',
-                                 'I | Bus-1 | phase: A': 'IA',
-                                 'I | Bus-2 | phase: A': 'IA',
-                                 'I | Bus-1 | phase: C': 'IC',
-                                 'I | Bus-2 | phase: C': 'IC',
-                                 'U | BusBar-1 | phase: A': 'UA',
-                                 'U | BusBar-2 | phase: A': 'UA',
-                                 'U | BusBar-1 | phase: B': 'UB',
-                                 'U | BusBar-2 | phase: B': 'UB',
-                                 'U | BusBar-1 | phase: C': 'UC',
-                                 'U | BusBar-2 | phase: C': 'UC',
-                                 'U | BusBar-1 | phase: N': 'UN',
-                                 'U | BusBar-2 | phase: N': 'UN'}
+        bus_columns_to_rename = {}
+
+        # Generate renaming for ML signals
+        for i_bus in self.uses_buses:
+            ml_signals = self.get_ml_signals(i_bus)
+            for signal in ml_signals:
+                new_name = signal.replace(f'MLsignal_{i_bus}_', 'ML_')
+                bus_columns_to_rename[signal] = new_name
+        
+        # Generate renaming for analog signals
+        for bus, names in self.buses_names.items():
+            for name in names:
+                if 'I | Bus' in name:
+                    phase = name.split(': ')[-1]
+                    if (phase == 'B' and not self.uses_CT_B) or (phase == 'N' and not self.uses_CT_zero):
+                        continue
+                    bus_columns_to_rename[name] = f'I{phase}'
+                    
+                elif self.use_VT_BB and 'U | BusBar' in name:
+                    phase = name.split(': ')[-1]
+                    if (((phase == 'A' or phase == 'B' or phase == 'C') and not self.uses_VT_ph) or 
+                        ((phase == 'AB' or phase == 'BC' or phase == 'CA') and not self.uses_VT_iph) or
+                         (phase == 'N' and not self.uses_VT_zero)):
+                        continue
+                    bus_columns_to_rename[name] = f'U{phase} BB'
+                    
+                elif self.use_VT_CL and 'U | CableLine' in name:
+                    phase = name.split(': ')[-1]
+                    if (((phase == 'A' or phase == 'B' or phase == 'C') and not self.uses_VT_ph) or 
+                        ((phase == 'AB' or phase == 'BC' or phase == 'CA') and not self.uses_VT_iph) or
+                         (phase == 'N' and not self.uses_VT_zero)):
+                        continue 
+                    bus_columns_to_rename[name] = f'U{phase} CL'
+                        
+        # TODO: не учитываются сигналы I_raw, U_raw, I | dif-1, I | braking-1
+
         bus_df.rename(columns=bus_columns_to_rename, inplace=True)
         return bus_df
 
     def check_columns(self, raw_df):
         """check for unknown columns"""
-        ml_signals = {'MLsignal_1_1_1',
-                      'MLsignal_1_1_2',
-                      'MLsignal_1_1',
-                      'MLsignal_1_2',
-                      'MLsignal_1_2_1_1',
-                      'MLsignal_1_2_1_2',
-                      'MLsignal_1_2_1_3',
-                      'MLsignal_1_3',
-                      'MLsignal_1_3_1',
-                      'MLsignal_1_3_2',
-                      'MLsignal_1_3_3',
-                      'MLsignal_2_1_1',
-                      'MLsignal_2_1_2',
-                      'MLsignal_2_1',
-                      'MLsignal_2_2_1_1',
-                      'MLsignal_2_2_1_2',
-                      'MLsignal_2_2_1_3',
-                      'MLsignal_2_3',
-                      'MLsignal_2_3_2',
-                      'MLsignal_2_3_3',
-                      'MLsignal_12_1_1',
-                      'MLsignal_12_1_2',
-                      'MLsignal_12_2_1_1',
-                      'MLsignal_12_3'}
+        ml_signals = set()
+        for i_bus in self.uses_buses:
+            ml_signals.update(self.get_ml_signals(i_bus))
+
         all_names = self.all_names.union(ml_signals)
         columns = raw_df.columns
         for c in columns:
             if c not in all_names:
                 raise NameError("Unknown column: " + c)
+
+    def get_ml_signals(self, i_bus, use_operational_switching=True, use_abnormal_event=True, use_emergency_even=True):
+        """
+        This function returns a set of ML signals for a given bus.
+
+        Args:
+            i_bus (str): The bus number.
+            use_operational_switching (bool): Include operational switching signals.
+            use_abnormal_event (bool): Include abnormal event signals.
+            use_emergency_even (bool): Include emergency event signals.
+
+        Returns:
+            set: A set of ML signals for the given bus.
+        """
+        # FIXME: переписать, чтобы записывалось в самом начале и считалось 1 раз, а не при каждом запросе
+        ml_signals = set()
+
+        if use_operational_switching:
+            ml_signals.update({
+                # --- Рабочие коммутации ---
+                f'MLsignal_{i_bus}_1',      # Рабочее переключение, без уточнения
+                f'MLsignal_{i_bus}_1_1',    # Рабочее включение, без уточнения
+                f'MLsignal_{i_bus}_1_1_1',  # Рабочее включение, пуск двигателя
+                f'MLsignal_{i_bus}_1_2',    # Рабочее отключение, без уточнения
+            })
+
+        if use_abnormal_event:
+            ml_signals.update({
+                # --- Аномальные события
+                f'MLsignal_{i_bus}_2',      # Аномалия, без уточнения
+                f'MLsignal_{i_bus}_2_1',    # Однофазное замыкание на землю (ОЗЗ), без уточнения
+                f'MLsignal_{i_bus}_2_1_1',  # Устойчивое ОЗЗ
+                f'MLsignal_{i_bus}_2_1_2',  # Устойчивое затухающее ОЗЗ, с редкими пробоями
+                f'MLsignal_{i_bus}_2_1_3',  # Дуговое перемежающее однофазное замыкание на землю (ДПОЗЗ)
+                f'MLsignal_{i_bus}_2_2',    # Затухающие колебания от аварийных процессов
+                f'MLsignal_{i_bus}_2_3',    # Просадка напряжения
+                f'MLsignal_{i_bus}_2_3_1',  # Просадка напряжения при пуске двигателя
+                f'MLsignal_{i_bus}_2_4',    # Колебания тока, без уточнения
+                f'MLsignal_{i_bus}_2_4_1',  # Колебания тока при пуске двигателя
+                f'MLsignal_{i_bus}_2_4_2',  # Колебания тока, от двигателей с частотным приводом
+            })
+
+        if use_emergency_even:
+            ml_signals.update({
+                # --- Аварийные события ----
+                f'MLsignal_{i_bus}_3',      # Аварийные события, без уточнения
+                f'MLsignal_{i_bus}_3_1',    # Авария ввиду некорректной работы устройства, без уточнения
+                f'MLsignal_{i_bus}_3_2',    # Неисправность терминала
+                f'MLsignal_{i_bus}_3_3'     # Двухфазное замыкание на землю
+            })
+
+        return ml_signals
+
+rawToCSV = RawToCSV()
+rawToCSV.create_csv()
