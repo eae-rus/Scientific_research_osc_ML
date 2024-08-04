@@ -107,10 +107,16 @@ class ProcessingOscillograms():
         current_date = datetime.datetime.now()
 
         # Проходим по всем файлам в папке
-        for filename in os.listdir(source_dir):
-            file_path = os.path.join(source_dir, filename)
-            file_stat = os.stat(file_path)
-            os.utime(file_path, times=(file_stat.st_atime, current_date.timestamp()))
+        print("Считаем общее количество файлов в исходной директории...")
+        total_files = sum([len(files) for r, d, files in os.walk(source_dir)])  # Подсчет общего количества файлов
+        print(f"Общее количество файлов: {total_files}, запускаем обработку...")
+        with tqdm(total=total_files, desc="Deleting confidential information") as pbar:  # Инициализация прогресс-бара
+            for root, dirs, files in os.walk(source_dir):
+                for filename in files:
+                    pbar.update(1)  # Обновление прогресс-бара на один файл
+                    file_path = os.path.join(root, filename)
+                    file_stat = os.stat(file_path)
+                    os.utime(file_path, times=(file_stat.st_atime, current_date.timestamp()))
             
             
     def grouping_by_sampling_rate_and_network(self, source_dir: str) -> None:
