@@ -258,6 +258,3 @@ class RawToCSV():
             })
 
         return ml_signals
-
-rawToCSV = RawToCSV()
-rawToCSV.create_csv()
