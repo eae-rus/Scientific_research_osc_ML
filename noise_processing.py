@@ -45,7 +45,7 @@ def generate_analog_signals_name(is_print_to_console: bool = False, is_print_to_
         dict_names_new[f"I phase {i}"].append(f"I | Bus-{i} | phase: B")
         dict_names_new[f"I phase {i}"].append(f"I | Bus-{i} | phase: C")
         
-        dict_names_new[f"I zero {i}"].append(f"I | Bus-{i} | zero")
+        dict_names_new[f"I zero {i}"].append(f"I | Bus-{i} | phase: N")
         
         # с других типов датчиков, пока это чэто пояса Роговского и ёмкостные делители
         dict_names_new[f"U_raw BusBar {i}"] = []
@@ -73,7 +73,7 @@ def generate_analog_signals_name(is_print_to_console: bool = False, is_print_to_
         dict_names_new[f"I_raw phase {i}"].append(f"I_raw | Bus-{i} | phase: B")
         dict_names_new[f"I_raw phase {i}"].append(f"I_raw | Bus-{i} | phase: C")
         
-        dict_names_new[f"I_raw zero {i}"].append(f"I_raw | Bus-{i} | zero")
+        dict_names_new[f"I_raw zero {i}"].append(f"I_raw | Bus-{i} | phase: N")
         
         
         dict_names[f"Bus {i}"] = dict_names_new
