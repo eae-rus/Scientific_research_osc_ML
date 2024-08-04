@@ -47,7 +47,7 @@ class SearchOscillograms():
         self.PARMA_O_EXTENSION, self.PARMA_ZERO_EXTENSION = '.do', '.d0' # в реальности они DO, D01 и D02...
         self.PARMA_TO_EXTENSION, self.PARMA_T_ZERO_EXTENSION = '.to', '.t0' # открывается просмотрщиком TO, T01...
         self.ARCHIVE_7Z_EXTENSION, self.ARCHIVE_ZIP_EXTENSION, self.ARCHIVE_RAR_EXTENSION = '.7z', '.zip', '.rar'
-        self.WORD_1_EXTENSION, self.WORD_2_EXTENSION, self.WORD_3_EXTENSION = '.doc', '.docx', '.dot'
+        self.WORD_1_EXTENSION, self.WORD_2_EXTENSION, self.WORD_3_EXTENSION, self.PDF_EXTENSION = '.doc', '.docx', '.dot', '.pdf'
 
 
     def copy_new_oscillograms(self, source_dir: str, dest_dir: str, copied_hashes: dict = {},
@@ -142,7 +142,7 @@ class SearchOscillograms():
     
                         elif (use_parma and 
                               not (file_lower.endswith(self.WORD_1_EXTENSION) or file_lower.endswith(self.WORD_2_EXTENSION) or file_lower.endswith(self.WORD_3_EXTENSION) or 
-                                   ".doc" in file_lower) and
+                                   file_lower.endswith(self.PDF_EXTENSION) or ".doc" in file_lower) and
                               (self.PARMA_O_EXTENSION in file_lower or self.PARMA_ZERO_EXTENSION in file_lower)):  # Если файл имеет расширение .do, d0, ?d1? (характерно для специальных от ПАРМЫ)
                             # TODO: по сбору данных, проверить, всегда ли они имеют тип вида .do, d01, d02, где последние цифра есть и может меняться.
                             # И если это так, то каков её размер? Может быть скорректировать поиск, так как сейчас не оптимален.
