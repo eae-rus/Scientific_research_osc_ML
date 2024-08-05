@@ -3,22 +3,20 @@ import json
 
 def generate_analog_signals_name(is_print_to_console: bool = False, is_print_to_json: bool = False, path_to_json_file: str = "") -> dict:
     """
-    Функция генерирует группы со всеми именами сигналов
-    Вероятно, она пока не нужна.
+    The function generates groups with all the names of the signals
       
     Args:
-        is_print_to_console (bool): печать на консоль
-        is_print_to_json (bool): печать в json файл
-        path_to_json_file (str): путь к json файлу
+        is_print_to_console (bool): printing to the console
+        is_print_to_json (bool): printing to a json file
+        path_to_json_file (str): path to the json file
 
     Returns:
-        dict - словарь с группами и именами сигналов
+        dict - dictionary with groups and names of signals
     """
     dict_names = {}
     for i in range(1, 9):
         if is_print_to_console:
-            print(f"------------ секция {i} ------------")
-        # истинные данные
+            print(f"------------ Bus {i} ------------")
         dict_names_new = {}
         dict_names_new[f"U BusBar {i}"] = []
         dict_names_new[f"U CableLine {i}"] = []
@@ -47,7 +45,7 @@ def generate_analog_signals_name(is_print_to_console: bool = False, is_print_to_
         
         dict_names_new[f"I zero {i}"].append(f"I | Bus-{i} | phase: N")
         
-        # с других типов датчиков, пока это чэто пояса Роговского и ёмкостные делители
+        # with other types of sensors, as long as these are Rogovsky belts and capacitive dividers
         dict_names_new[f"U_raw BusBar {i}"] = []
         dict_names_new[f"U_raw CableLine {i}"] = []
         dict_names_new[f"I_raw phase {i}"] = []
@@ -103,16 +101,15 @@ def generate_analog_signals_name(is_print_to_console: bool = False, is_print_to_
 
 def generate_discrete_signals_name(is_print_to_console: bool = False, is_print_to_json: bool = False, path_to_json_file: str = "") -> dict:
     """
-    Функция генерирует группы со всеми именами сигналов
-    Вероятно, она пока не нужна.
+    The function generates groups with all the names of the signals
       
     Args:
-        is_print_to_console (bool): печать на консоль
-        is_print_to_json (bool): печать в json файл
-        path_to_json_file (str): путь к json файлу
+        is_print_to_console (bool): printing to the console
+        is_print_to_json (bool): printing to a json file
+        path_to_json_file (str): path to the json file
 
     Returns:
-        dict - словарь с группами и именами сигналов
+        dict - dictionary with groups and names of signals
     """
     dict_names = {}
     
@@ -122,15 +119,14 @@ def generate_discrete_signals_name(is_print_to_console: bool = False, is_print_t
     dict_names_new["RNM"].append("RNM | Bus-0 | operation")
     dict_names[f"Bus 0 (common signals)"] = dict_names_new
     if is_print_to_console:
-        print(f"------------ секция 0 (общие сигналы) ------------")
+        print(f"------------ bus 0 (general signals) ------------")
         print(dict_names_new)
     
     dict_names["Bus 0 (common signals)"] = dict_names_new
     
     for i in range(1, 9):
         if is_print_to_console:
-            print(f"------------ секция {i} ------------")
-        # истинные данные
+            print(f"------------ bus {i} ------------")
         dict_names_new = {}
         dict_names_new[f"PDR B{i}"] = []
         dict_names_new[f"IFB B{i}"] = []
@@ -142,7 +138,7 @@ def generate_discrete_signals_name(is_print_to_console: bool = False, is_print_t
         dict_names_new[f"PDR B{i}"].append(f"PDR | Bus-{i} | phase: A")
         dict_names_new[f"PDR B{i}"].append(f"PDR | Bus-{i} | phase: B")
         dict_names_new[f"PDR B{i}"].append(f"PDR | Bus-{i} | phase: C")
-        dict_names_new[f"PDR B{i}"].append(f"PDR | Bus-{i} | phase: PS") # Прямая последовательность или общий сигнал
+        dict_names_new[f"PDR B{i}"].append(f"PDR | Bus-{i} | phase: PS") # Direct sequence or common signal
         
         dict_names_new[f"IFB B{i}"].append(f"IFB | Bus-{i} | open")
         dict_names_new[f"IFB B{i}"].append(f"IFB | Bus-{i} | close")
@@ -186,13 +182,12 @@ def generate_discrete_signals_name(is_print_to_console: bool = False, is_print_t
 
 def generate_group_signals_from_csv(is_print_to_console: bool = False) -> dict:
     """
-    Функция генерирует группы со всеми именами сигналов
-    Вероятно, она пока не нужна.
-      
+    The function generates groups with all the names of the signals
+
     Args:
 
     Returns:
-        dict - словарь с группами и именами сигнало
+        dict - dictionary with groups and names of signals
     """
     dict_group_names = {}
     dict_group_names["U BusBar"] = []
@@ -204,23 +199,22 @@ def generate_group_signals_from_csv(is_print_to_console: bool = False) -> dict:
     dict_group_names["I_raw phase"] = []
     dict_group_names["I_raw zero"] = []
     
-    # TODO: можно подумать о другом типе данных для ускорения
+    # TODO: you can think of another type of data to speed up
     for i in range(1, 8):
-        # истинные данные
         dict_group_names["U BusBar"].append(f"{i}Ub_base")
         dict_group_names["U CableLine"].append(f"{i}Uc_base")
         dict_group_names["I phase"].append(f"{i}Ip_base")
         dict_group_names["I zero"].append(f"{i}Iz_base")
         
-        # с других типов датчиков, пока это чэто пояса Роговского и ёмкостные делители
-        # TODO: пока отсутствуют такие имена и делается прост пометка в осциллограмме
+        # with other types of sensors, while these are Rogovsky belts and capacitive dividers
+        # TODO: there are no such names yet and a simple mark is being made in the waveform
         dict_group_names["U_raw BusBar"].append(f"{i}Ub_PS")
         dict_group_names["U_raw CableLine"].append(f"{i}Uc_base")
         dict_group_names["I_raw phase"].append(f"{i}Ip_base")
         dict_group_names["I_raw zero"].append(f"{i}Iz_base")
 
     dict_group_names["Diff"] = []
-    dict_group_names["Diff"].append("dId_base") # FIXME: почему так? Dif может?
+    dict_group_names["Diff"].append("dId_base") # FIXME: Why is that? Can a Dif?
 
     if is_print_to_console:
         print(dict_group_names)
@@ -230,11 +224,11 @@ def generate_group_signals_from_csv(is_print_to_console: bool = False) -> dict:
 def noise_processing(source_dir: str, path_to_csv_file: str, 
                      is_use_qestion_1: bool = False, is_use_qestion_2: bool = False, is_use_qestion_3: bool = False) -> None:
     """
-    Функция обрабатывает csv файл и размечается данные с шумом или вызывающие вопросы
-      
+    The function processes the csv file and marks up the data with noise or causing questions
+
     Args:
-        source_dir (str): каталог с файлом.
-        path_to_csv_file: (str): адрес csv файла.
+        source_dir (str): the directory with the file.
+        path_to_csv_file: (str): The address of the csv file.
 
     Returns:
         None
@@ -247,21 +241,21 @@ def noise_processing(source_dir: str, path_to_csv_file: str,
     with open(path_to_csv_file, mode='r', encoding='utf-8') as file:
         reader = csv.DictReader(file, delimiter=',')
         for row in reader:
-            if not (row["norm"] == "хз" or row["norm"] == "НЕТ"): # raw - потом разметим отдельно
+            if not (row["norm"] == "хз" or row["norm"] == "НЕТ"): # raw - then we mark it up separately
                 new_csv_file.append(row)
-                continue # То есть обрабатываются только шумные (хз) и с вопросами (НЕТ)
+                continue # That is, only noisy (хз) and with questions (Нет) are processed
             
             csv_group_base["U BusBar"], csv_group_base["U CableLine"], csv_group_base["I phase"], csv_group_base["I zero"] = -1, -1, -1, -1
             
             is_correct_nominal = True
-            # поиск номиналов
+            # search for denominations
             for key, value in row.items():
-                if not value: # отсутствует значение
+                if not value: # missing value
                     continue
                 
                 if not (value.isdigit() or (value.count('.') == 1 and value.replace('.', '', 1).isdigit()) ):
-                    continue # это не число
-                int_value = round(float(value)) # достаточно округление, ибо иногда прост пишется 100.0
+                    continue # it's not a number
+                int_value = round(float(value)) # rounding is enough, because sometimes 100.0 is written simply
                 
                 if key in csv_group_names["U BusBar"]:
                     if csv_group_base["U BusBar"] == -1 or csv_group_base["U BusBar"] == int_value:
@@ -288,16 +282,16 @@ def noise_processing(source_dir: str, path_to_csv_file: str,
                         is_correct_nominal = False
             
             if not is_correct_nominal:
-                print(f"Обнаружены разные номиналы, осцилограмма {row['name']} не обрабатывается")
+                print(f"Different values were detected, the {row['name']} waveform is not being processed")
                 new_csv_file.append(row)
                 continue
             
-            # РАБОТА С ШУМОМ
+            # WORKING WITH NOISE
             if row["norm"] == "хз":
-                # задание номиналов
-                # TODO: переписать в одну функцию
+                # setting the denominations
+                # TODO: rewrite into one function
                 if csv_group_base["U BusBar"] == -1 and csv_group_base["U CableLine"] == -1 and csv_group_base["I phase"] == -1 and csv_group_base["I zero"] == -1:
-                    # нет номиналов, принимаем, что все номиналы базовые
+                    # there are no denominations, we assume that all denominations are basic
                     csv_group_base["U BusBar"], csv_group_base["U CableLine"], csv_group_base["I phase"], csv_group_base["I zero"] = 100, 100, 5, 1
                 else:
                     if csv_group_base["U BusBar"] == -1:
@@ -306,27 +300,27 @@ def noise_processing(source_dir: str, path_to_csv_file: str,
                         else:
                             csv_group_base["U BusBar"] = 100
                     if csv_group_base["U CableLine"] == -1:
-                        csv_group_base["U CableLine"] = csv_group_base["U BusBar"] # она уже не может быть "-1"
+                        csv_group_base["U CableLine"] = csv_group_base["U BusBar"] # she can't be "-1" anymore
                     if csv_group_base["I phase"] == -1:
                         csv_group_base["I phase"] = 5
                     if csv_group_base["I zero"] == -1:
                         csv_group_base["I zero"] = 1
 
                 for key, value in row.items():
-                    if not value: # отсутствует значение
+                    if not value: # missing value
                         continue
                     
                     if value.isdigit() or (value.count('.') == 1 and value.replace('.', '', 1).isdigit()):
-                        continue # это число и менять не надо
+                        continue # this number does not need to be changed
                     
                     if not (key in csv_group_names["U BusBar"] or key in csv_group_names["U CableLine"] or
                             key in csv_group_names["I phase"] or key in csv_group_names["I zero"]):
-                        continue # пропуск не интересующего
+                        continue # skipping the non-interesting
                     
                     if ((key in csv_group_names["U BusBar"] or key in csv_group_names["U CableLine"] or
                          key in csv_group_names["I phase"] or key in csv_group_names["I zero"]) 
                         and row[key] != "шум"):
-                        print("Why? Обнаружены несотыковки в шуме")
+                        print("Why? Inconsistencies in the noise have been detected")
                     
                     if key in csv_group_names["U BusBar"]:
                         row[key] = str(csv_group_base["U BusBar"])
@@ -340,13 +334,13 @@ def noise_processing(source_dir: str, path_to_csv_file: str,
                 row["norm"] = "ДА"
                 new_csv_file.append(row)
             
-            # РАБОТА С ВОПРОСАМИ ПЕРОВОГО ПОРЯДКА (?1)
+            # WORKING WITH FIRST-ORDER QUESTIONS (?1)
             if row["norm"] == "НЕТ":
-                # задание номиналов
-                # НО! стоит иметь ввиду, что это можно сделать не под все вопросы.
-                # TODO: переписать в одну функцию
+                # setting the denominations
+                # BUT! it should be borne in mind that this can not be done for all questions.
+                # TODO: rewrite into one function
                 if csv_group_base["U BusBar"] == -1 and csv_group_base["U CableLine"] == -1 and csv_group_base["I phase"] == -1 and csv_group_base["I zero"] == -1:
-                    # не можем утверждать, чо это не в диапазонах проблема, поэтому переходим на следующую итерацию
+                    # we cannot say that this is not a problem in the ranges, so we move on to the next iteration
                     csv_group_base["U BusBar"], csv_group_base["U CableLine"], csv_group_base["I phase"], csv_group_base["I zero"] = 100, 100, 5, 1
                 else:
                     if csv_group_base["U BusBar"] == -1:
@@ -355,25 +349,26 @@ def noise_processing(source_dir: str, path_to_csv_file: str,
                         else:
                             csv_group_base["U BusBar"] = 100
                     if csv_group_base["U CableLine"] == -1:
-                        csv_group_base["U CableLine"] = csv_group_base["U BusBar"] # она уже не может быть "-1"
+                        csv_group_base["U CableLine"] = csv_group_base["U BusBar"] # she can't be "-1" anymore
                     if csv_group_base["I phase"] == -1:
                         csv_group_base["I phase"] = 5
                     if csv_group_base["I zero"] == -1:
                         csv_group_base["I zero"] = 1
 
-                coun_undefined = 0 # количество неопределенных вопросов
+                coun_undefined = 0 # number of undefined questions
                 for key, value in row.items():
-                    if not value: # отсутствует значение
+                    if not value: # missing value
                         continue
                     
                     if value.isdigit() or (value.count('.') == 1 and value.replace('.', '', 1).isdigit()):
-                        continue # это число и менять не надо
+                        continue # this number does not need to be changed
                     
                     if not (key in csv_group_names["U BusBar"] or key in csv_group_names["U CableLine"] or
                             key in csv_group_names["I phase"] or key in csv_group_names["I zero"]):
-                        continue # пропуск не интересующего
+                        continue # skipping the non-interesting
                     
-                    if not (row[key] == "шум" or row[key] == "?1" and is_use_qestion_1 or row[key] == "?2" and is_use_qestion_2 or row[key] == "?3" and is_use_qestion_3): # обработку считаем уместной только для этих аспектов
+                    # we consider processing appropriate only for these aspects
+                    if not (row[key] == "шум" or row[key] == "?1" and is_use_qestion_1 or row[key] == "?2" and is_use_qestion_2 or row[key] == "?3" and is_use_qestion_3): 
                         coun_undefined += 1
                         continue
                     
@@ -408,13 +403,13 @@ def noise_processing(source_dir: str, path_to_csv_file: str,
 
 def set_base_values(source_directory: str, path_to_csv_file: str, base_values: dict, osc_list: list) -> None:
     """
-    Функция обрабатывает csv файл и задаёт номинал выбранным осциллограммам
+    The function processes the csv file and sets the nominal value of the selected waveforms
       
     Args:
-        source_directory (str): каталог, содержащий файлы для обновления.
-        path_to_csv_file: (str): адрес csv файла.
-        base_values (dict): словарь с номиналами
-        osc_list (list): список названий осциллограмм
+        source_directory (str): The directory containing the files to update.
+        path_to_csv_file: (str): The address of the csv file.
+        base_values (dict): dictionary with denominations
+        osc_list (list): list of waveform names
 
     Returns:
         None
@@ -439,12 +434,10 @@ def set_base_values(source_directory: str, path_to_csv_file: str, base_values: d
                 writer.writerow(data)
             
     
-# Пример использования функции
-# Путь к исходной директории
-source_directory = 'D:/DataSet/Для нормировки'
-
-#path_to_csv_file = 'D:/DataSet/Для нормировки/norm_1600_v1.1.csv'
-path_to_csv_file = 'D:/DataSet/Для нормировки/new_norm_file.csv'
+# Example of using the function
+# Path to the source directory
+source_directory = '/For normalization'
+path_to_csv_file = '/For normalization/new_norm_file.csv'
 
 # 108
 base_values = {"1Ub_PS":"s", "1Ub_base": "100", "1Uc_PS":"s", "1Uc_base": "100", "1Ip_PS":"s", "1Ip_base": "0.1",
@@ -460,15 +453,15 @@ base_values = {"1Ub_PS":"s", "1Ub_base": "100", "1Uc_PS":"s", "1Uc_base": "100",
 #               "2Uc_PS":"s", "2Uc_base": "0.1105", "2Ip_PS":"s", "2Ip_base": "1.41"}
 osc_list = []
 try:
-    path = 'D:/DataSet/Для нормировки/_osc_name_dict_v1.json'
+    path = '/For normalization/_osc_name_dict_v1.json'
     with open(path, 'r', encoding='utf-8') as file:
         hash_table = json.load(file)
         osc_list = hash_table["t00108"] # t00108, t00209, t00331, t00363
 except:
-    print("Не удалось прочитать hash_table из JSON файла")
+    print("Failed to read hash_table from JSON file")
 
-test = generate_analog_signals_name(is_print_to_json=True, path_to_json_file='D:/DataSet/Для нормировки')
-test = generate_discrete_signals_name(is_print_to_json=True, path_to_json_file='D:/DataSet/Для нормировки')
+test = generate_analog_signals_name(is_print_to_json=True, path_to_json_file='/For normalization')
+test = generate_discrete_signals_name(is_print_to_json=True, path_to_json_file='/For normalization')
 # test = generate_group_signals_from_csv(is_print_to_console = True)
 # noise_processing(source_directory, path_to_csv_file, is_use_qestion_1 = True, is_use_qestion_2 = True, is_use_qestion_3 = True)
 # set_base_values(source_directory, path_to_csv_file, base_values, osc_list)
