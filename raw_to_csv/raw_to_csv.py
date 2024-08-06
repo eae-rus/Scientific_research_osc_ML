@@ -373,7 +373,7 @@ class RawToCSV():
         # Identify rows with ML signals
         bus_df["is_save"] = bus_df[filtered_column_names].notna().any(axis=1) & (bus_df[filtered_column_names] == 1).any(axis=1)
         
-        # Next, fill in the areas to
+        # Forward fill: Extend "is_save" to cover sections before ML signals
         for index, row in bus_df.iterrows():
             if index == 0:
                 continue
@@ -382,8 +382,8 @@ class RawToCSV():
                     bus_df.loc[index-samples_before:index, "is_save"] = True
                 else:
                     bus_df.loc[0:index]["is_save"] = True
-        
-        # Next, fill in the areas after, using the back pass
+
+        # Backward fill: Extend "is_save" to cover sections after ML signals
         for index, row in reversed(list(bus_df.iterrows())):
             if index == len(bus_df) - 1:
                 continue
