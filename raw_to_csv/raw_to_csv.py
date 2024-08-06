@@ -67,7 +67,7 @@ class RawToCSV():
                         dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
                     pbar.update(1)
                     
-        dataset_df.to_csv(self.csv_path + csv_name, index_label='time')
+        dataset_df.to_csv(self.csv_path + csv_name, index=False)
         return dataset_df
 
     def read_comtrade(self, file_name):
