@@ -103,8 +103,8 @@ class RawToCSV():
             cols = raw_cols.intersection(cols)
             for i_bus in self.uses_buses:
                 if bus[-1] == i_bus or bus[-2] == i_bus:
-                    ml, ml_1, ml_2, ml_3 = self.get_ml_signals(i_bus)
-                    raw_ml = raw_cols.intersection(ml)
+                    ml_all = self.get_ml_signals(i_bus)
+                    raw_ml = raw_cols.intersection(ml_all)
                     cols = cols.union(raw_ml)
             if cols:
                 buses_cols[bus] = cols
@@ -298,7 +298,7 @@ class RawToCSV():
         if use_emergency_event:
             ml_signals.update(ml_emergency_event)
 
-        return ml_signals, ml_operational_switching, ml_abnormal_event, ml_emergency_event
+        return ml_signals
     
     def get_short_names_ml_signals(self, use_operational_switching=True, use_abnormal_event=True, use_emergency_event=True):
         """
