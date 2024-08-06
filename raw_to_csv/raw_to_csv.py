@@ -11,6 +11,7 @@ class RawToCSV():
     def __init__(self, raw_path='raw_data/', csv_path='', uses_buses = ['1', '2', '12']):
         if not os.path.exists(raw_path):
             raise FileNotFoundError("Path for raw files does not exist")
+        # FIXME: You need to add a workaround to the problem when these files are missing. Because they have to be taken from somewhere.
         with open("dict_analog_names.json", "r") as file:
             analog_names = json.load(file)
         with open("dict_discrete_names.json", "r") as file:
@@ -29,8 +30,10 @@ class RawToCSV():
         self.uses_VT_ph, self.uses_VT_iph, self.uses_VT_zero  = True, True, True
         self.use_VT_CL, self.use_VT_BB = True, True
         # TODO: Add variables for combining accident levels (ML signals)
+        self.number_periods = 10 # TODO: The number of samples is being set now. Think about a time-to-date task, or something similar.
+        self.short_names_ml_signals = self.get_short_names_ml_signals()
 
-    def create_csv(self, csv_name='datset.csv'):
+    def create_csv(self, csv_name='datset.csv', is_cut_out_area = False):
         """
         This function DataFrame and save csv file from raw comtrade data.
 
@@ -41,34 +44,49 @@ class RawToCSV():
         raw_files = sorted([file for file in os.listdir(self.raw_path)
                             if 'cfg' in file])
         for file in raw_files:
-            raw_df = self.read_comtrade(self.raw_path + file)
+            # TODO: it is not rational to use two variables, but the necessary global data.
+            # it will be necessary to think about optimizing this issue.
+            raw_date, raw_df = self.read_comtrade(self.raw_path + file)
             self.check_columns(raw_df)
             if not raw_df.empty:
                 raw_df = self.rename_raw_columns(raw_df)
                 raw_df = raw_df.reset_index()
                 buses_df = self.split_buses(raw_df, file)
-                dataset_df = pd.concat([dataset_df, buses_df],
-                                       axis=0, ignore_index=False)
+                
+                frequency = raw_date.cfg.frequency
+                samples_rate = raw_date.cfg.sample_rates[0][0]
+                number_samples = int(samples_rate / frequency) # TODO: It won't always be whole, but it's rare.
+                samples_before, samples_after = number_samples * self.number_periods, number_samples * self.number_periods
+                if is_cut_out_area:
+                    # TODO: think about the design of this division into groups in the function itself
+                    for _, bus_df in buses_df.groupby("file_name"):
+                        bus_df = self.cut_out_area(bus_df, samples_before, samples_after)
+                        dataset_df = pd.concat([dataset_df, bus_df], axis=0, ignore_index=False)
+                else:
+                    dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
         dataset_df.to_csv(self.csv_path + csv_name, index_label='time')
         return dataset_df
 
     def read_comtrade(self, file_name):
         """
-        This function load the comtrade file to pandas DataFrame.
+        Load and read comtrade files contents.
 
         Args:
             file_name (str): The name of comtrade file.
 
         Returns:
-            pandas.DataFrame: DataFrame of raw comtrade file.
+            tuple:
+            - raw_date (Comtrade): The raw comtrade
+            - raw_df (pandas.DataFrame): DataFrame of raw comtrade file.
         """
         raw_df = None
         try:
-            raw_df = comtrade.load_as_dataframe(file_name)
+            raw_date = comtrade.load(file_name)
+            raw_df = raw_date.to_dataframe()
         except Exception as ex:
             self.unread_files.add((file_name, ex))
-        return raw_df
-
+        return raw_date, raw_df
+    
     def split_buses(self, raw_df, file_name):
         """Implemented for bus 1 and bus 2 only"""
         buses_df = pd.DataFrame()
@@ -193,7 +211,7 @@ class RawToCSV():
 
         bus_df.rename(columns=bus_columns_to_rename, inplace=True)
         return bus_df
-
+    
     def check_columns(self, raw_df):
         """check for unknown columns"""
         ml_signals = set()
@@ -269,3 +287,145 @@ class RawToCSV():
             })
 
         return ml_signals
+    
+    def get_short_names_ml_signals(self, use_operational_switching=True, use_abnormal_event=True, use_emergency_even=True):
+        """
+        This function returns a set of short names ML signals for (without i_bus).
+
+        Args:
+            use_operational_switching (bool): Include operational switching signals.
+            use_abnormal_event (bool): Include abnormal event signals.
+            use_emergency_even (bool): Include emergency event signals.
+
+        Returns:
+            set: A set of ML signals for the given bus.
+        """
+        # FIXME: rewrite so that it is recorded at the very beginning and counted 1 time, and not at every request
+        ml_signals = set()
+
+        if use_operational_switching:
+            ml_signals.update({
+                #--- Working switching ---
+                f'ML_1',      # Working switching, without specification
+                f'ML_1_1',    # Operational activation, without specification
+                f'ML_1_1_1',  # Operating start-up, engine start-up
+                f'ML_1_2',    # Operational shutdown, without specification
+            })
+
+        if use_abnormal_event:
+            ml_signals.update({
+                # --- Abnormal events
+                f'ML_2',      # Аномалия, без уточнения
+                f'ML_2_1',    # Однофазное замыкание на землю (ОЗЗ), без уточнения
+                f'ML_2_1_1',  # Устойчивое ОЗЗ
+                f'ML_2_1_2',  # Устойчивое затухающее ОЗЗ, с редкими пробоями
+                f'ML_2_1_3',  # Дуговое перемежающее однофазное замыкание на землю (ДПОЗЗ)
+                f'ML_2_2',    # Затухающие колебания от аварийных процессов
+                f'ML_2_3',    # Просадка напряжения
+                f'ML_2_3_1',  # Просадка напряжения при пуске двигателя
+                f'ML_2_4',    # Колебания тока, без уточнения
+                f'ML_2_4_1',  # Колебания тока при пуске двигателя
+                f'ML_2_4_2',  # Колебания тока, от двигателей с частотным приводом
+                
+                f'ML_2',      # Anomaly, without clarification
+                f'ML_2_1',    # Single phase-to-ground fault, without specification
+                f'ML_2_1_1',  # Sustainable single phase-to-ground fault
+                f'ML_2_1_2',  # Steady attenuating single phase-to-ground fault, with rare breakouts
+                f'ML_2_1_3',  # Arc intermittent single phase-to-ground fault
+                f'ML_2_2',    # Damping fluctuations from emergency processes
+                f'ML_2_3',    # Voltage drawdown
+                f'ML_2_3_1',  # Voltage drawdown when starting the engine
+                f'ML_2_4',    # Current fluctuations, without specification
+                f'ML_2_4_1',  # Current fluctuations when starting the engine
+                f'ML_2_4_2',  # Current fluctuations from frequency-driven motors
+            })
+
+        if use_emergency_even:
+            ml_signals.update({
+                # --- Emergency events ----
+                f'ML_3',      # Emergency events, without clarification
+                f'ML_3_1',    # An accident due to incorrect operation of the device, without clarification
+                f'ML_3_2',    # Terminal malfunction
+                f'ML_3_3'     # Two-phase earth fault
+            })
+
+        return ml_signals
+    
+    def cut_out_area(self, bus_df: pd.DataFrame, samples_before: int, samples_after: int) -> pd.DataFrame:
+        """
+        The function cuts off sections that do not contain ML signals, leaving before and after them at a given boundary.
+
+        Args:
+            buses_df (pd.DataFrame): DataFrame for processing
+            samples_before (int): Number of samples to cut off before the first ML signal.
+            samples_after (int): Number of samples to cut off after the last ML signal.
+            
+        Returns:
+            pd.DataFrame: The DataFrame with cut-out sections.
+        """
+        truncated_dataset = pd.DataFrame()
+        # Reset the index before slicing
+        bus_df = bus_df.reset_index(drop=True)
+
+        bus_df["is_save"] = False
+        column_names = bus_df.columns
+        filtered_column_names = [col for col in column_names if col in self.short_names_ml_signals]
+        for index, row in bus_df.iterrows():
+            is_save = False
+            for signal in filtered_column_names:
+                if pd.notna(row[signal]) and row[signal] == 1:
+                    is_save = True
+                    break
+            bus_df.loc[index, "is_save"] = is_save
+        
+        # Next, fill in the areas to
+        for index, row in bus_df.iterrows():
+            if index == 0:
+                continue
+            if bus_df.loc[index, "is_save"] and bus_df.loc[index-1, "is_save"]:
+                if index >= samples_before:
+                    bus_df.loc[index-samples_before:index, "is_save"] = True
+                else:
+                    bus_df.loc[0:index]["is_save"] = True
+        
+        # Next, fill in the areas after, using the back pass
+        for index, row in reversed(list(bus_df.iterrows())):
+            if index == len(bus_df) - 1:
+                continue
+            if bus_df.loc[index, "is_save"] and bus_df.loc[index+1, "is_save"]:
+                if index + samples_after < len(bus_df):
+                    bus_df.loc[index+1:index+samples_after+1, "is_save"] = True
+                else:
+                    bus_df.loc[index+1:len(bus_df), "is_save"] = True
+                    
+        # Add the event number in the waveform (if the sample before was False, but became True, then increase)
+        event_number = 0
+        event_number_str = "0"
+        for index, row in bus_df.iterrows():
+            if index == 0:
+                if bus_df.loc[index, "is_save"]:
+                    event_number += 1
+                    event_number_str = str(event_number)
+                    bus_df.loc[index, 'file_name'] = bus_df.loc[index, 'file_name'] + "_" + event_number_str
+                continue
+            
+            if bus_df.loc[index, "is_save"] and not bus_df.loc[index-1, "is_save"]:
+                event_number += 1
+                event_number_str = str(event_number)
+                bus_df.loc[index, 'file_name'] = bus_df.loc[index, 'file_name'] + "_" + event_number_str
+            elif bus_df.loc[index, "is_save"]:
+                bus_df.loc[index, 'file_name'] = bus_df.loc[index, 'file_name'] + "_" + event_number_str
+            
+        truncated_dataset = bus_df[bus_df["is_save"]]
+    
+        # If the array is empty, then we take from the piece in the middle equal to the sum of the lengths before and after
+        if len(truncated_dataset) == 0:
+            if len(bus_df) > samples_before + samples_after:
+                middle = len(bus_df) // 2
+                truncated_dataset = bus_df.iloc[middle-samples_before:middle+samples_after+1]
+            else:
+                truncated_dataset = bus_df
+
+        truncated_dataset = truncated_dataset.drop(columns=["is_save"])
+
+        return truncated_dataset
