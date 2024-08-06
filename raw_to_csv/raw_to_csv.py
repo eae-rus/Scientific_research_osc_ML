@@ -32,7 +32,7 @@ class RawToCSV():
         self.use_VT_CL, self.use_VT_BB = True, True
         # TODO: Add variables for combining accident levels (ML signals)
         self.number_periods = 10 # TODO: The number of samples is being set now. Think about a time-to-date task, or something similar.
-        self.short_names_ml_signals = self.get_short_names_ml_signals()
+        self.short_ml, self.short_ml_opr_swch, self.short_ml_abnorm_evnt, self.short_ml_emerg_evnt  = self.get_short_names_ml_signals()
 
     def create_csv(self, csv_name='datset.csv', is_cut_out_area = False):
         """
@@ -99,7 +99,7 @@ class RawToCSV():
             cols = raw_cols.intersection(cols)
             for i_bus in self.uses_buses:
                 if bus[-1] == i_bus or bus[-2] == i_bus:
-                    ml = self.get_ml_signals(i_bus)
+                    ml, ml_1, ml_2, ml_3 = self.get_ml_signals(i_bus)
                     raw_ml = raw_cols.intersection(ml)
                     cols = cols.union(raw_ml)
             if cols:
@@ -227,7 +227,7 @@ class RawToCSV():
             if c not in all_names:
                 raise NameError("Unknown column: " + c)
 
-    def get_ml_signals(self, i_bus, use_operational_switching=True, use_abnormal_event=True, use_emergency_even=True):
+    def get_ml_signals(self, i_bus, use_operational_switching=True, use_abnormal_event=True, use_emergency_event=True):
         """
         This function returns a set of ML signals for a given bus.
 
@@ -243,116 +243,124 @@ class RawToCSV():
         # FIXME: rewrite so that it is recorded at the very beginning and counted 1 time, and not at every request
         ml_signals = set()
 
+        ml_operational_switching = {
+            #--- Working switching ---
+            f'MLsignal_{i_bus}_1',      # Working switching, without specification
+            f'MLsignal_{i_bus}_1_1',    # Operational activation, without specification
+            f'MLsignal_{i_bus}_1_1_1',  # Operating start-up, engine start-up
+            f'MLsignal_{i_bus}_1_2',    # Operational shutdown, without specification
+        }
+
+        ml_abnormal_event = {
+            # --- Abnormal events
+            f'MLsignal_{i_bus}_2',      # Аномалия, без уточнения
+            f'MLsignal_{i_bus}_2_1',    # Однофазное замыкание на землю (ОЗЗ), без уточнения
+            f'MLsignal_{i_bus}_2_1_1',  # Устойчивое ОЗЗ
+            f'MLsignal_{i_bus}_2_1_2',  # Устойчивое затухающее ОЗЗ, с редкими пробоями
+            f'MLsignal_{i_bus}_2_1_3',  # Дуговое перемежающее однофазное замыкание на землю (ДПОЗЗ)
+            f'MLsignal_{i_bus}_2_2',    # Затухающие колебания от аварийных процессов
+            f'MLsignal_{i_bus}_2_3',    # Просадка напряжения
+            f'MLsignal_{i_bus}_2_3_1',  # Просадка напряжения при пуске двигателя
+            f'MLsignal_{i_bus}_2_4',    # Колебания тока, без уточнения
+            f'MLsignal_{i_bus}_2_4_1',  # Колебания тока при пуске двигателя
+            f'MLsignal_{i_bus}_2_4_2',  # Колебания тока, от двигателей с частотным приводом
+            
+            f'MLsignal_{i_bus}_2',      # Anomaly, without clarification
+            f'MLsignal_{i_bus}_2_1',    # Single phase-to-ground fault, without specification
+            f'MLsignal_{i_bus}_2_1_1',  # Sustainable single phase-to-ground fault
+            f'MLsignal_{i_bus}_2_1_2',  # Steady attenuating single phase-to-ground fault, with rare breakouts
+            f'MLsignal_{i_bus}_2_1_3',  # Arc intermittent single phase-to-ground fault
+            f'MLsignal_{i_bus}_2_2',    # Damping fluctuations from emergency processes
+            f'MLsignal_{i_bus}_2_3',    # Voltage drawdown
+            f'MLsignal_{i_bus}_2_3_1',  # Voltage drawdown when starting the engine
+            f'MLsignal_{i_bus}_2_4',    # Current fluctuations, without specification
+            f'MLsignal_{i_bus}_2_4_1',  # Current fluctuations when starting the engine
+            f'MLsignal_{i_bus}_2_4_2',  # Current fluctuations from frequency-driven motors
+        }
+
+        ml_emergency_event = {
+            # --- Emergency events ----
+            f'MLsignal_{i_bus}_3',      # Emergency events, without clarification
+            f'MLsignal_{i_bus}_3_1',    # An accident due to incorrect operation of the device, without clarification
+            f'MLsignal_{i_bus}_3_2',    # Terminal malfunction
+            f'MLsignal_{i_bus}_3_3'     # Two-phase earth fault
+        }
+            
+        ml_signals = set()
         if use_operational_switching:
-            ml_signals.update({
-                #--- Working switching ---
-                f'MLsignal_{i_bus}_1',      # Working switching, without specification
-                f'MLsignal_{i_bus}_1_1',    # Operational activation, without specification
-                f'MLsignal_{i_bus}_1_1_1',  # Operating start-up, engine start-up
-                f'MLsignal_{i_bus}_1_2',    # Operational shutdown, without specification
-            })
-
+            ml_signals.update(ml_operational_switching)
         if use_abnormal_event:
-            ml_signals.update({
-                # --- Abnormal events
-                f'MLsignal_{i_bus}_2',      # Аномалия, без уточнения
-                f'MLsignal_{i_bus}_2_1',    # Однофазное замыкание на землю (ОЗЗ), без уточнения
-                f'MLsignal_{i_bus}_2_1_1',  # Устойчивое ОЗЗ
-                f'MLsignal_{i_bus}_2_1_2',  # Устойчивое затухающее ОЗЗ, с редкими пробоями
-                f'MLsignal_{i_bus}_2_1_3',  # Дуговое перемежающее однофазное замыкание на землю (ДПОЗЗ)
-                f'MLsignal_{i_bus}_2_2',    # Затухающие колебания от аварийных процессов
-                f'MLsignal_{i_bus}_2_3',    # Просадка напряжения
-                f'MLsignal_{i_bus}_2_3_1',  # Просадка напряжения при пуске двигателя
-                f'MLsignal_{i_bus}_2_4',    # Колебания тока, без уточнения
-                f'MLsignal_{i_bus}_2_4_1',  # Колебания тока при пуске двигателя
-                f'MLsignal_{i_bus}_2_4_2',  # Колебания тока, от двигателей с частотным приводом
-                
-                f'MLsignal_{i_bus}_2',      # Anomaly, without clarification
-                f'MLsignal_{i_bus}_2_1',    # Single phase-to-ground fault, without specification
-                f'MLsignal_{i_bus}_2_1_1',  # Sustainable single phase-to-ground fault
-                f'MLsignal_{i_bus}_2_1_2',  # Steady attenuating single phase-to-ground fault, with rare breakouts
-                f'MLsignal_{i_bus}_2_1_3',  # Arc intermittent single phase-to-ground fault
-                f'MLsignal_{i_bus}_2_2',    # Damping fluctuations from emergency processes
-                f'MLsignal_{i_bus}_2_3',    # Voltage drawdown
-                f'MLsignal_{i_bus}_2_3_1',  # Voltage drawdown when starting the engine
-                f'MLsignal_{i_bus}_2_4',    # Current fluctuations, without specification
-                f'MLsignal_{i_bus}_2_4_1',  # Current fluctuations when starting the engine
-                f'MLsignal_{i_bus}_2_4_2',  # Current fluctuations from frequency-driven motors
-            })
+            ml_signals.update(ml_abnormal_event)
+        if use_emergency_event:
+            ml_signals.update(ml_emergency_event)
 
-        if use_emergency_even:
-            ml_signals.update({
-                # --- Emergency events ----
-                f'MLsignal_{i_bus}_3',      # Emergency events, without clarification
-                f'MLsignal_{i_bus}_3_1',    # An accident due to incorrect operation of the device, without clarification
-                f'MLsignal_{i_bus}_3_2',    # Terminal malfunction
-                f'MLsignal_{i_bus}_3_3'     # Two-phase earth fault
-            })
-
-        return ml_signals
+        return ml_signals, use_operational_switching, ml_abnormal_event, ml_emergency_event
     
-    def get_short_names_ml_signals(self, use_operational_switching=True, use_abnormal_event=True, use_emergency_even=True):
+    def get_short_names_ml_signals(self, use_operational_switching=True, use_abnormal_event=True, use_emergency_event=True):
         """
         This function returns a set of short names ML signals for (without i_bus).
 
         Args:
             use_operational_switching (bool): Include operational switching signals.
             use_abnormal_event (bool): Include abnormal event signals.
-            use_emergency_even (bool): Include emergency event signals.
+            use_emergency_event (bool): Include emergency event signals.
 
         Returns:
             set: A set of ML signals for the given bus.
         """
         # FIXME: rewrite so that it is recorded at the very beginning and counted 1 time, and not at every request
+
+        ml_operational_switching = {
+            #--- Working switching ---
+            f'ML_1',      # Working switching, without specification
+            f'ML_1_1',    # Operational activation, without specification
+            f'ML_1_1_1',  # Operating start-up, engine start-up
+            f'ML_1_2',    # Operational shutdown, without specification
+        }
+        ml_abnormal_event = {
+            # --- Abnormal events
+            f'ML_2',      # Аномалия, без уточнения
+            f'ML_2_1',    # Однофазное замыкание на землю (ОЗЗ), без уточнения
+            f'ML_2_1_1',  # Устойчивое ОЗЗ
+            f'ML_2_1_2',  # Устойчивое затухающее ОЗЗ, с редкими пробоями
+            f'ML_2_1_3',  # Дуговое перемежающее однофазное замыкание на землю (ДПОЗЗ)
+            f'ML_2_2',    # Затухающие колебания от аварийных процессов
+            f'ML_2_3',    # Просадка напряжения
+            f'ML_2_3_1',  # Просадка напряжения при пуске двигателя
+            f'ML_2_4',    # Колебания тока, без уточнения
+            f'ML_2_4_1',  # Колебания тока при пуске двигателя
+            f'ML_2_4_2',  # Колебания тока, от двигателей с частотным приводом
+            
+            f'ML_2',      # Anomaly, without clarification
+            f'ML_2_1',    # Single phase-to-ground fault, without specification
+            f'ML_2_1_1',  # Sustainable single phase-to-ground fault
+            f'ML_2_1_2',  # Steady attenuating single phase-to-ground fault, with rare breakouts
+            f'ML_2_1_3',  # Arc intermittent single phase-to-ground fault
+            f'ML_2_2',    # Damping fluctuations from emergency processes
+            f'ML_2_3',    # Voltage drawdown
+            f'ML_2_3_1',  # Voltage drawdown when starting the engine
+            f'ML_2_4',    # Current fluctuations, without specification
+            f'ML_2_4_1',  # Current fluctuations when starting the engine
+            f'ML_2_4_2',  # Current fluctuations from frequency-driven motors
+            }
+
+        ml_emergency_event ={
+            # --- Emergency events ----
+            f'ML_3',      # Emergency events, without clarification
+            f'ML_3_1',    # An accident due to incorrect operation of the device, without clarification
+            f'ML_3_2',    # Terminal malfunction
+            f'ML_3_3'     # Two-phase earth fault
+        }
+
         ml_signals = set()
-
         if use_operational_switching:
-            ml_signals.update({
-                #--- Working switching ---
-                f'ML_1',      # Working switching, without specification
-                f'ML_1_1',    # Operational activation, without specification
-                f'ML_1_1_1',  # Operating start-up, engine start-up
-                f'ML_1_2',    # Operational shutdown, without specification
-            })
-
+            ml_signals.update(ml_operational_switching)
         if use_abnormal_event:
-            ml_signals.update({
-                # --- Abnormal events
-                f'ML_2',      # Аномалия, без уточнения
-                f'ML_2_1',    # Однофазное замыкание на землю (ОЗЗ), без уточнения
-                f'ML_2_1_1',  # Устойчивое ОЗЗ
-                f'ML_2_1_2',  # Устойчивое затухающее ОЗЗ, с редкими пробоями
-                f'ML_2_1_3',  # Дуговое перемежающее однофазное замыкание на землю (ДПОЗЗ)
-                f'ML_2_2',    # Затухающие колебания от аварийных процессов
-                f'ML_2_3',    # Просадка напряжения
-                f'ML_2_3_1',  # Просадка напряжения при пуске двигателя
-                f'ML_2_4',    # Колебания тока, без уточнения
-                f'ML_2_4_1',  # Колебания тока при пуске двигателя
-                f'ML_2_4_2',  # Колебания тока, от двигателей с частотным приводом
-                
-                f'ML_2',      # Anomaly, without clarification
-                f'ML_2_1',    # Single phase-to-ground fault, without specification
-                f'ML_2_1_1',  # Sustainable single phase-to-ground fault
-                f'ML_2_1_2',  # Steady attenuating single phase-to-ground fault, with rare breakouts
-                f'ML_2_1_3',  # Arc intermittent single phase-to-ground fault
-                f'ML_2_2',    # Damping fluctuations from emergency processes
-                f'ML_2_3',    # Voltage drawdown
-                f'ML_2_3_1',  # Voltage drawdown when starting the engine
-                f'ML_2_4',    # Current fluctuations, without specification
-                f'ML_2_4_1',  # Current fluctuations when starting the engine
-                f'ML_2_4_2',  # Current fluctuations from frequency-driven motors
-            })
-
-        if use_emergency_even:
-            ml_signals.update({
-                # --- Emergency events ----
-                f'ML_3',      # Emergency events, without clarification
-                f'ML_3_1',    # An accident due to incorrect operation of the device, without clarification
-                f'ML_3_2',    # Terminal malfunction
-                f'ML_3_3'     # Two-phase earth fault
-            })
-
-        return ml_signals
+            ml_signals.update(ml_abnormal_event)
+        if use_emergency_event:
+            ml_signals.update(ml_emergency_event)
+        
+        return ml_signals, use_operational_switching, ml_abnormal_event, ml_emergency_event
 
     def cut_out_area(self, buses_df: pd.DataFrame, samples_before: int, samples_after: int) -> pd.DataFrame:
         """
@@ -373,7 +381,7 @@ class RawToCSV():
             bus_df = bus_df.reset_index(drop=True)
 
             bus_df["is_save"] = False
-            filtered_column_names = [col for col in bus_df.columns if col in self.short_names_ml_signals]
+            filtered_column_names = [col for col in bus_df.columns if col in self.short_ml]
 
             # Identify rows with ML signals
             bus_df["is_save"] = bus_df[filtered_column_names].notna().any(axis=1) & (bus_df[filtered_column_names] == 1).any(axis=1)
