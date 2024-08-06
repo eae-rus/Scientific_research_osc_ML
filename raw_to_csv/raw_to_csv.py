@@ -22,13 +22,13 @@ class RawToCSV():
         self.raw_path = raw_path
         self.csv_path = csv_path
         self.unread_files = set()
-        self.uses_buses = uses_buses # 12 - межсекционное, пока никак не учитывается, при её добавление требуется поправить проверку дискрет
-        # пока сохраняются все, подумать о том, чтобы задавать их более удобно
-        # TODO: по переменным uses - добавить усечение сигналов из массивов.
+        self.uses_buses = uses_buses # 12 - intersectional, is not taken into account in any way, when adding it, it is necessary to correct the discretionary check
+        # while everything is saved, think about how to set them more conveniently
+        # TODO: by uses variables - add truncation of signals from arrays.
         self.uses_CT_B, self.uses_CT_zero = True, True
         self.uses_VT_ph, self.uses_VT_iph, self.uses_VT_zero  = True, True, True
         self.use_VT_CL, self.use_VT_BB = True, True
-        # TODO: Добавить переменные объединения уровнеий аварий (ML сигналов)
+        # TODO: Add variables for combining accident levels (ML signals)
 
     def create_csv(self, csv_name='datset.csv'):
         """
@@ -74,7 +74,6 @@ class RawToCSV():
         buses_df = pd.DataFrame()
         buses_cols = dict()
         raw_cols = set(raw_df.columns)
-        raw_df = self.rename_raw_columns(raw_df) # FIXME: вроде бы здесь вызывается лишний раз.
         for bus, cols in self.buses_names.items():
             cols = raw_cols.intersection(cols)
             for i_bus in self.uses_buses:
@@ -130,7 +129,7 @@ class RawToCSV():
         return all_names
 
     def rename_raw_columns(self, raw_df):
-        # TODO: вероятно устарела в текущей реализации. Проверить, будет ли вызываться хоть раз.
+        # TODO: probably outdated in the current implementation. Check if it will be called at least once.
         """
         This function renames columns in raw DataFrame.
 
@@ -190,7 +189,7 @@ class RawToCSV():
                         continue 
                     bus_columns_to_rename[name] = f'U{phase} CL'
                         
-        # TODO: не учитываются сигналы I_raw, U_raw, I | dif-1, I | braking-1
+        # TODO: signals I_raw, U_raw, I|dif-1, I | braking-1 are not taken into account
 
         bus_df.rename(columns=bus_columns_to_rename, inplace=True)
         return bus_df
@@ -220,21 +219,21 @@ class RawToCSV():
         Returns:
             set: A set of ML signals for the given bus.
         """
-        # FIXME: переписать, чтобы записывалось в самом начале и считалось 1 раз, а не при каждом запросе
+        # FIXME: rewrite so that it is recorded at the very beginning and counted 1 time, and not at every request
         ml_signals = set()
 
         if use_operational_switching:
             ml_signals.update({
-                # --- Рабочие коммутации ---
-                f'MLsignal_{i_bus}_1',      # Рабочее переключение, без уточнения
-                f'MLsignal_{i_bus}_1_1',    # Рабочее включение, без уточнения
-                f'MLsignal_{i_bus}_1_1_1',  # Рабочее включение, пуск двигателя
-                f'MLsignal_{i_bus}_1_2',    # Рабочее отключение, без уточнения
+                #--- Working switching ---
+                f'MLsignal_{i_bus}_1',      # Working switching, without specification
+                f'MLsignal_{i_bus}_1_1',    # Operational activation, without specification
+                f'MLsignal_{i_bus}_1_1_1',  # Operating start-up, engine start-up
+                f'MLsignal_{i_bus}_1_2',    # Operational shutdown, without specification
             })
 
         if use_abnormal_event:
             ml_signals.update({
-                # --- Аномальные события
+                # --- Abnormal events
                 f'MLsignal_{i_bus}_2',      # Аномалия, без уточнения
                 f'MLsignal_{i_bus}_2_1',    # Однофазное замыкание на землю (ОЗЗ), без уточнения
                 f'MLsignal_{i_bus}_2_1_1',  # Устойчивое ОЗЗ
@@ -246,15 +245,27 @@ class RawToCSV():
                 f'MLsignal_{i_bus}_2_4',    # Колебания тока, без уточнения
                 f'MLsignal_{i_bus}_2_4_1',  # Колебания тока при пуске двигателя
                 f'MLsignal_{i_bus}_2_4_2',  # Колебания тока, от двигателей с частотным приводом
+                
+                f'MLsignal_{i_bus}_2',      # Anomaly, without clarification
+                f'MLsignal_{i_bus}_2_1',    # Single phase-to-ground fault, without specification
+                f'MLsignal_{i_bus}_2_1_1',  # Sustainable single phase-to-ground fault
+                f'MLsignal_{i_bus}_2_1_2',  # Steady attenuating single phase-to-ground fault, with rare breakouts
+                f'MLsignal_{i_bus}_2_1_3',  # Arc intermittent single phase-to-ground fault
+                f'MLsignal_{i_bus}_2_2',    # Damping fluctuations from emergency processes
+                f'MLsignal_{i_bus}_2_3',    # Voltage drawdown
+                f'MLsignal_{i_bus}_2_3_1',  # Voltage drawdown when starting the engine
+                f'MLsignal_{i_bus}_2_4',    # Current fluctuations, without specification
+                f'MLsignal_{i_bus}_2_4_1',  # Current fluctuations when starting the engine
+                f'MLsignal_{i_bus}_2_4_2',  # Current fluctuations from frequency-driven motors
             })
 
         if use_emergency_even:
             ml_signals.update({
-                # --- Аварийные события ----
-                f'MLsignal_{i_bus}_3',      # Аварийные события, без уточнения
-                f'MLsignal_{i_bus}_3_1',    # Авария ввиду некорректной работы устройства, без уточнения
-                f'MLsignal_{i_bus}_3_2',    # Неисправность терминала
-                f'MLsignal_{i_bus}_3_3'     # Двухфазное замыкание на землю
+                # --- Emergency events ----
+                f'MLsignal_{i_bus}_3',      # Emergency events, without clarification
+                f'MLsignal_{i_bus}_3_1',    # An accident due to incorrect operation of the device, without clarification
+                f'MLsignal_{i_bus}_3_2',    # Terminal malfunction
+                f'MLsignal_{i_bus}_3_3'     # Two-phase earth fault
             })
 
         return ml_signals
