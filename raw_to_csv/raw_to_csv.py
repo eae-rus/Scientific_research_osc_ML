@@ -2,6 +2,7 @@ import pandas as pd
 import os
 import json
 import comtrade # comtrade 0.1.2
+from tqdm import tqdm
 
 
 class RawToCSV():
@@ -43,25 +44,28 @@ class RawToCSV():
         dataset_df = pd.DataFrame()
         raw_files = sorted([file for file in os.listdir(self.raw_path)
                             if 'cfg' in file])
-        for file in raw_files:
-            # TODO: it is not rational to use two variables, but the necessary global data.
-            # it will be necessary to think about optimizing this issue.
-            raw_date, raw_df = self.read_comtrade(self.raw_path + file)
-            self.check_columns(raw_df)
-            if not raw_df.empty:
-                raw_df = self.rename_raw_columns(raw_df)
-                raw_df = raw_df.reset_index()
-                buses_df = self.split_buses(raw_df, file)
-                
-                frequency = raw_date.cfg.frequency
-                samples_rate = raw_date.cfg.sample_rates[0][0]
-                number_samples = int(samples_rate / frequency) # TODO: It won't always be whole, but it's rare.
-                samples_before, samples_after = number_samples * self.number_periods, number_samples * self.number_periods
-                if is_cut_out_area:
-                    buses_df = self.cut_out_area(buses_df, samples_before, samples_after)
-                    dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
-                else:
-                    dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
+        total_files = len(raw_files)
+        with tqdm(total=total_files, desc="Convert Comtrade to CSV") as pbar:
+            for file in raw_files:
+                # TODO: it is not rational to use two variables, but the necessary global data.
+                # it will be necessary to think about optimizing this issue.
+                raw_date, raw_df = self.read_comtrade(self.raw_path + file)
+                self.check_columns(raw_df)
+                if not raw_df.empty:
+                    raw_df = self.rename_raw_columns(raw_df)
+                    raw_df = raw_df.reset_index()
+                    buses_df = self.split_buses(raw_df, file)
+
+                    frequency = raw_date.cfg.frequency
+                    samples_rate = raw_date.cfg.sample_rates[0][0]
+                    number_samples = int(samples_rate / frequency) # TODO: It won't always be whole, but it's rare.
+                    samples_before, samples_after = number_samples * self.number_periods, number_samples * self.number_periods
+                    if is_cut_out_area:
+                        buses_df = self.cut_out_area(buses_df, samples_before, samples_after)
+                        dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
+                    else:
+                        dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
+                    pbar.update(1)
                     
         dataset_df.to_csv(self.csv_path + csv_name, index_label='time')
         return dataset_df
