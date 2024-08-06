@@ -34,7 +34,7 @@ class RawToCSV():
         self.number_periods = 10 # TODO: The number of samples is being set now. Think about a time-to-date task, or something similar.
         self.ml_all, self.ml_opr_swch, self.ml_abnorm_evnt, self.ml_emerg_evnt  = self.get_short_names_ml_signals()
 
-    def create_csv(self, csv_name='datset.csv', is_cut_out_area = False):
+    def create_csv(self, csv_name='datset.csv', is_cut_out_area = False, is_simple_csv = False):
         """
         This function DataFrame and save csv file from raw comtrade data.
 
@@ -66,7 +66,11 @@ class RawToCSV():
                     else:
                         dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
                     pbar.update(1)
-                    
+        
+        if is_simple_csv:
+            # We do not overwrite the original data, but only create another csv file
+            self.get_simple_dataset(dataset_df)
+        
         dataset_df.to_csv(self.csv_path + csv_name, index=False)
         return dataset_df
 
@@ -426,4 +430,28 @@ class RawToCSV():
             truncated_dataset = truncated_dataset.drop(columns=["is_save"])
             dataset_df = pd.concat([dataset_df, truncated_dataset], axis=0, ignore_index=False)
             
+        return dataset_df
+    
+    def get_simple_dataset(self, dataset_df: pd.DataFrame, csv_name='datset_simpl.csv') -> pd.DataFrame:
+        """ 
+        Create new columns for simplified version. Only 4 groups of signals are formed:
+        1) Operating switches
+        2) Abnormal events 
+        3) Emergency events
+        4) Normal (no events)
+        """
+        column_names = set(dataset_df.columns)
+        ml_opr_swch = self.ml_opr_swch.intersection(column_names)
+        ml_abnorm_evnt = self.ml_abnorm_evnt.intersection(column_names)
+        ml_emerg_evnt = self.ml_emerg_evnt.intersection(column_names)
+        ml_all = ml_opr_swch.union(ml_abnorm_evnt).union(ml_emerg_evnt)
+        
+        dataset_df["opr_swch"] = dataset_df[list(ml_opr_swch)].apply(lambda x: 1 if x.any() else "", axis=1)
+        dataset_df["abnorm_evnt"] = dataset_df[list(ml_abnorm_evnt)].apply(lambda x: 1 if x.any() else "", axis=1)
+        dataset_df["emerg_evnt"] = dataset_df[list(ml_emerg_evnt)].apply(lambda x: 1 if x.any() else "", axis=1)
+        dataset_df["normal"] = dataset_df[list(ml_all)].apply(lambda x: "" if x.all() == 1 else 1, axis=1)
+        # Drop ML signals
+        dataset_df = dataset_df.drop(columns=ml_all)
+        
+        dataset_df.to_csv(self.csv_path + csv_name, index=False)
         return dataset_df
