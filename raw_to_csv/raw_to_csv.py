@@ -58,12 +58,11 @@ class RawToCSV():
                 number_samples = int(samples_rate / frequency) # TODO: It won't always be whole, but it's rare.
                 samples_before, samples_after = number_samples * self.number_periods, number_samples * self.number_periods
                 if is_cut_out_area:
-                    # TODO: think about the design of this division into groups in the function itself
-                    for _, bus_df in buses_df.groupby("file_name"):
-                        bus_df = self.cut_out_area(bus_df, samples_before, samples_after)
-                        dataset_df = pd.concat([dataset_df, bus_df], axis=0, ignore_index=False)
+                    buses_df = self.cut_out_area(buses_df, samples_before, samples_after)
+                    dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
                 else:
                     dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
+                    
         dataset_df.to_csv(self.csv_path + csv_name, index_label='time')
         return dataset_df
 
@@ -103,7 +102,7 @@ class RawToCSV():
                 buses_cols[bus] = cols
         for bus, columns in buses_cols.items():
             bus_df = raw_df.loc[:, list(columns)]
-            bus_df.insert(0, 'file_name',  [file_name + bus] * bus_df.shape[0])
+            bus_df.insert(0, 'file_name',  [file_name[:-4] + "_" + bus] * bus_df.shape[0])
             bus_df = self.rename_bus_columns(bus_df)
             buses_df = pd.concat([buses_df, bus_df], axis=0,
                                  ignore_index=False)    
@@ -351,7 +350,7 @@ class RawToCSV():
 
         return ml_signals
 
-    def cut_out_area(self, bus_df: pd.DataFrame, samples_before: int, samples_after: int) -> pd.DataFrame:
+    def cut_out_area(self, buses_df: pd.DataFrame, samples_before: int, samples_after: int) -> pd.DataFrame:
         """
         The function cuts off sections that do not contain ML signals, leaving before and after them at a given boundary.
 
@@ -363,54 +362,59 @@ class RawToCSV():
         Returns:
             pd.DataFrame: The DataFrame with cut-out sections.
         """
-        truncated_dataset = pd.DataFrame()
-        # Reset the index before slicing
-        bus_df = bus_df.reset_index(drop=True)
+        dataset_df = pd.DataFrame()
+        for _, bus_df in buses_df.groupby("file_name"):
+            truncated_dataset = pd.DataFrame()
+            # Reset the index before slicing
+            bus_df = bus_df.reset_index(drop=True)
 
-        bus_df["is_save"] = False
-        filtered_column_names = [col for col in bus_df.columns if col in self.short_names_ml_signals]
-            
-        # Identify rows with ML signals
-        bus_df["is_save"] = bus_df[filtered_column_names].notna().any(axis=1) & (bus_df[filtered_column_names] == 1).any(axis=1)
-        
-        # Forward fill: Extend "is_save" to cover sections before ML signals
-        for index, row in bus_df.iterrows():
-            if index == 0:
-                continue
-            if bus_df.loc[index, "is_save"] and bus_df.loc[index-1, "is_save"]:
-                if index >= samples_before:
-                    bus_df.loc[index-samples_before:index, "is_save"] = True
+            bus_df["is_save"] = False
+            filtered_column_names = [col for col in bus_df.columns if col in self.short_names_ml_signals]
+
+            # Identify rows with ML signals
+            bus_df["is_save"] = bus_df[filtered_column_names].notna().any(axis=1) & (bus_df[filtered_column_names] == 1).any(axis=1)
+
+            # Forward fill: Extend "is_save" to cover sections before ML signals
+            for index, row in bus_df.iterrows():
+                if index == 0:
+                    continue
+                if bus_df.loc[index, "is_save"] and bus_df.loc[index-1, "is_save"]:
+                    if index >= samples_before:
+                        bus_df.loc[index-samples_before:index, "is_save"] = True
+                    else:
+                        bus_df.loc[0:index, "is_save"] = True
+
+            # Backward fill: Extend "is_save" to cover sections after ML signals
+            for index, row in reversed(list(bus_df.iterrows())):
+                if index == len(bus_df) - 1:
+                    continue
+                if bus_df.loc[index, "is_save"] and bus_df.loc[index+1, "is_save"]:
+                    if index + samples_after < len(bus_df):
+                        bus_df.loc[index+1:index+samples_after+1, "is_save"] = True
+                    else:
+                        bus_df.loc[index+1:len(bus_df), "is_save"] = True
+
+            # Add event numbers to file names
+            event_number = 0
+            for index, row in bus_df.iterrows():
+                if bus_df.loc[index, "is_save"]:
+                    if (index == 0 or not bus_df.loc[index - 1, "is_save"]):
+                        event_number += 1
+                    bus_df.loc[index, 'file_name'] = bus_df.loc[index, 'file_name'] + " _event №" + str(event_number)
+
+            truncated_dataset = bus_df[bus_df["is_save"]]
+            # If the array is empty, then we take from the piece in the middle equal to the sum of the lengths before and after
+            if len(truncated_dataset) == 0:
+                if len(bus_df) > samples_before + samples_after:
+                    middle = len(bus_df) // 2
+                    truncated_dataset = bus_df.iloc[middle-samples_before:middle+samples_after+1]
                 else:
-                    bus_df.loc[0:index]["is_save"] = True
+                    truncated_dataset = bus_df
 
-        # Backward fill: Extend "is_save" to cover sections after ML signals
-        for index, row in reversed(list(bus_df.iterrows())):
-            if index == len(bus_df) - 1:
-                continue
-            if bus_df.loc[index, "is_save"] and bus_df.loc[index+1, "is_save"]:
-                if index + samples_after < len(bus_df):
-                    bus_df.loc[index+1:index+samples_after+1, "is_save"] = True
-                else:
-                    bus_df.loc[index+1:len(bus_df), "is_save"] = True
-
-        # Add event numbers to file names
-        event_number = 0
-        for index, row in bus_df.iterrows():
-            if bus_df.loc[index, "is_save"]:
-                if (index == 0 or not bus_df.loc[index - 1, "is_save"]):
-                    event_number += 1
-                bus_df.loc[index, 'file_name'] = bus_df.loc[index, 'file_name'] + "_" + str(event_number)
+            truncated_dataset = truncated_dataset.drop(columns=["is_save"])
+            dataset_df = pd.concat([dataset_df, truncated_dataset], axis=0, ignore_index=False)
             
-        truncated_dataset = bus_df[bus_df["is_save"]]
-    
-        # If the array is empty, then we take from the piece in the middle equal to the sum of the lengths before and after
-        if len(truncated_dataset) == 0:
-            if len(bus_df) > samples_before + samples_after:
-                middle = len(bus_df) // 2
-                truncated_dataset = bus_df.iloc[middle-samples_before:middle+samples_after+1]
-            else:
-                truncated_dataset = bus_df
+        return dataset_df
 
-        truncated_dataset = truncated_dataset.drop(columns=["is_save"])
-
-        return truncated_dataset
+rawToCSV = RawToCSV()
+rawToCSV.create_csv(is_cut_out_area=True)
