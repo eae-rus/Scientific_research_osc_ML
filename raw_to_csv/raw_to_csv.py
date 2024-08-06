@@ -294,7 +294,7 @@ class RawToCSV():
         if use_emergency_event:
             ml_signals.update(ml_emergency_event)
 
-        return ml_signals, use_operational_switching, ml_abnormal_event, ml_emergency_event
+        return ml_signals, ml_operational_switching, ml_abnormal_event, ml_emergency_event
     
     def get_short_names_ml_signals(self, use_operational_switching=True, use_abnormal_event=True, use_emergency_event=True):
         """
@@ -360,7 +360,7 @@ class RawToCSV():
         if use_emergency_event:
             ml_signals.update(ml_emergency_event)
         
-        return ml_signals, use_operational_switching, ml_abnormal_event, ml_emergency_event
+        return ml_signals, ml_operational_switching, ml_abnormal_event, ml_emergency_event
 
     def cut_out_area(self, buses_df: pd.DataFrame, samples_before: int, samples_after: int) -> pd.DataFrame:
         """
