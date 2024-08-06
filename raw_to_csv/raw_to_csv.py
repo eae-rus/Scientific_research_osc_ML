@@ -32,7 +32,7 @@ class RawToCSV():
         self.use_VT_CL, self.use_VT_BB = True, True
         # TODO: Add variables for combining accident levels (ML signals)
         self.number_periods = 10 # TODO: The number of samples is being set now. Think about a time-to-date task, or something similar.
-        self.short_ml, self.short_ml_opr_swch, self.short_ml_abnorm_evnt, self.short_ml_emerg_evnt  = self.get_short_names_ml_signals()
+        self.ml_all, self.ml_opr_swch, self.ml_abnorm_evnt, self.ml_emerg_evnt  = self.get_short_names_ml_signals()
 
     def create_csv(self, csv_name='datset.csv', is_cut_out_area = False):
         """
@@ -381,7 +381,7 @@ class RawToCSV():
             bus_df = bus_df.reset_index(drop=True)
 
             bus_df["is_save"] = False
-            filtered_column_names = [col for col in bus_df.columns if col in self.short_ml]
+            filtered_column_names = [col for col in bus_df.columns if col in self.ml_all]
 
             # Identify rows with ML signals
             bus_df["is_save"] = bus_df[filtered_column_names].notna().any(axis=1) & (bus_df[filtered_column_names] == 1).any(axis=1)
