@@ -427,6 +427,3 @@ class RawToCSV():
             dataset_df = pd.concat([dataset_df, truncated_dataset], axis=0, ignore_index=False)
             
         return dataset_df
-
-rawToCSV = RawToCSV()
-rawToCSV.create_csv(is_cut_out_area=True)
