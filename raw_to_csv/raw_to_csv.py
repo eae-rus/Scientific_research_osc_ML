@@ -350,7 +350,7 @@ class RawToCSV():
             })
 
         return ml_signals
-    
+
     def cut_out_area(self, bus_df: pd.DataFrame, samples_before: int, samples_after: int) -> pd.DataFrame:
         """
         The function cuts off sections that do not contain ML signals, leaving before and after them at a given boundary.
@@ -368,15 +368,10 @@ class RawToCSV():
         bus_df = bus_df.reset_index(drop=True)
 
         bus_df["is_save"] = False
-        column_names = bus_df.columns
-        filtered_column_names = [col for col in column_names if col in self.short_names_ml_signals]
-        for index, row in bus_df.iterrows():
-            is_save = False
-            for signal in filtered_column_names:
-                if pd.notna(row[signal]) and row[signal] == 1:
-                    is_save = True
-                    break
-            bus_df.loc[index, "is_save"] = is_save
+        filtered_column_names = [col for col in bus_df.columns if col in self.short_names_ml_signals]
+            
+        # Identify rows with ML signals
+        bus_df["is_save"] = bus_df[filtered_column_names].notna().any(axis=1) & (bus_df[filtered_column_names] == 1).any(axis=1)
         
         # Next, fill in the areas to
         for index, row in bus_df.iterrows():
@@ -397,24 +392,14 @@ class RawToCSV():
                     bus_df.loc[index+1:index+samples_after+1, "is_save"] = True
                 else:
                     bus_df.loc[index+1:len(bus_df), "is_save"] = True
-                    
-        # Add the event number in the waveform (if the sample before was False, but became True, then increase)
+
+        # Add event numbers to file names
         event_number = 0
-        event_number_str = "0"
         for index, row in bus_df.iterrows():
-            if index == 0:
-                if bus_df.loc[index, "is_save"]:
+            if bus_df.loc[index, "is_save"]:
+                if (index == 0 or not bus_df.loc[index - 1, "is_save"]):
                     event_number += 1
-                    event_number_str = str(event_number)
-                    bus_df.loc[index, 'file_name'] = bus_df.loc[index, 'file_name'] + "_" + event_number_str
-                continue
-            
-            if bus_df.loc[index, "is_save"] and not bus_df.loc[index-1, "is_save"]:
-                event_number += 1
-                event_number_str = str(event_number)
-                bus_df.loc[index, 'file_name'] = bus_df.loc[index, 'file_name'] + "_" + event_number_str
-            elif bus_df.loc[index, "is_save"]:
-                bus_df.loc[index, 'file_name'] = bus_df.loc[index, 'file_name'] + "_" + event_number_str
+                bus_df.loc[index, 'file_name'] = bus_df.loc[index, 'file_name'] + "_" + str(event_number)
             
         truncated_dataset = bus_df[bus_df["is_save"]]
     
