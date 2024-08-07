@@ -69,7 +69,7 @@ class RawToCSV():
         
         if is_simple_csv:
             # We do not overwrite the original data, but only create another csv file
-            self.get_simple_dataset(dataset_df)
+            self.get_simple_dataset(dataset_df.copy())
         
         dataset_df.to_csv(self.csv_path + csv_name, index=False)
         return dataset_df
@@ -319,7 +319,7 @@ class RawToCSV():
             'ML_1',      # Working switching, without specification
             'ML_1_1',    # Operational activation, without specification
             'ML_1_1_1',  # Operating start-up, engine start-up
-            'ML_1_2',    # Operational shutdown, without specification
+            'ML_1_2'    # Operational shutdown, without specification
         ]
         ml_abnormal_event = [
             # --- Abnormal events
@@ -333,7 +333,7 @@ class RawToCSV():
             'ML_2_3_1',  # Voltage drawdown when starting the engine
             'ML_2_4',    # Current fluctuations, without specification
             'ML_2_4_1',  # Current fluctuations when starting the engine
-            'ML_2_4_2',  # Current fluctuations from frequency-driven motors
+            'ML_2_4_2'  # Current fluctuations from frequency-driven motors
             ]
 
         ml_emergency_event = [
@@ -429,9 +429,9 @@ class RawToCSV():
         4) Normal (no events)
         """
         column_names = set(dataset_df.columns)
-        ml_opr_swch = self.ml_opr_swch.intersection(column_names)
-        ml_abnorm_evnt = self.ml_abnorm_evnt.intersection(column_names)
-        ml_emerg_evnt = self.ml_emerg_evnt.intersection(column_names)
+        ml_opr_swch = set(self.ml_opr_swch).intersection(column_names)
+        ml_abnorm_evnt = set(self.ml_abnorm_evnt).intersection(column_names)
+        ml_emerg_evnt = set(self.ml_emerg_evnt).intersection(column_names)
         ml_all = ml_opr_swch.union(ml_abnorm_evnt).union(ml_emerg_evnt)
         
         dataset_df["opr_swch"] = dataset_df[list(ml_opr_swch)].apply(lambda x: 1 if x.any() else "", axis=1)
