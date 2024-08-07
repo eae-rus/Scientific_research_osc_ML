@@ -67,6 +67,8 @@ class RawToCSV():
                         dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
                     pbar.update(1)
         
+        # TODO: Think about organizing the processing itself differently and not adding a function.
+        dataset_df = self.structure_columns(dataset_df)
         if is_simple_csv:
             # We do not overwrite the original data, but only create another csv file
             self.get_simple_dataset(dataset_df.copy())
@@ -354,6 +356,50 @@ class RawToCSV():
         
         return ml_signals, ml_operational_switching, ml_abnormal_event, ml_emergency_event
 
+
+    def get_short_names_ml_analog_signals(self) -> list:
+        """
+        This function returns a set of short names ML analog signals for (without i_bus).
+
+        Args:
+
+        Returns:
+            list: A set of ML signals for the given bus.
+        """
+
+        ml_current = [
+            'IA',
+            'IB',
+            'IC',
+            'IN'
+        ]
+        ml_votage_BB = [
+             'UA BB',
+             'UB BB',
+             'UC BB',
+             'UN BB',
+            'UAB BB',
+            'UBC BB',
+            'UCN BB',
+        ]
+        ml_votage_CL = [
+             'UA CL',
+             'UB CL',
+             'UC CL',
+             'UN CL',
+            'UAB CL',
+            'UBC CL',
+            'UCN CL',
+        ]
+        # TODO: signals I_raw, U_raw, I|dif-1, I | braking-1 are not taken into account
+        
+        ml_signals = []
+        ml_signals.extend(ml_current)
+        ml_signals.extend(ml_votage_BB)
+        ml_signals.extend(ml_votage_CL)
+        
+        return ml_signals
+
     def cut_out_area(self, buses_df: pd.DataFrame, samples_before: int, samples_after: int) -> pd.DataFrame:
         """
         The function cuts off sections that do not contain ML signals, leaving before and after them at a given boundary.
@@ -442,4 +488,23 @@ class RawToCSV():
         dataset_df = dataset_df.drop(columns=ml_all)
         
         dataset_df.to_csv(self.csv_path + csv_name, index=False)
+        return dataset_df
+
+    def structure_columns(self, dataset_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        This function restructures the columns of the dataset for easier analysis.
+        """
+        # TODO: some names may be missing, so think about processing them.
+        # Specify the desired order of columns
+        desired_order = ["file_name"]
+        desired_order.extend(self.get_short_names_ml_analog_signals())
+        desired_order.extend(self.get_short_names_ml_signals()[0])
+        desired_order.extend(["opr_swch", "abnorm_evnt", "emerg_evnt", "normal"])
+        
+        # Check if each column in the desired order exists in the DataFrame
+        existing_columns = [col for col in desired_order if col in list(dataset_df.columns)]
+
+        # Reorder the DataFrame columns based on the existing columns
+        dataset_df = dataset_df[existing_columns]
+        
         return dataset_df
