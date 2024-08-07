@@ -44,8 +44,7 @@ class RawToCSV():
         dataset_df = pd.DataFrame()
         raw_files = sorted([file for file in os.listdir(self.raw_path)
                             if 'cfg' in file])
-        total_files = len(raw_files)
-        with tqdm(total=total_files, desc="Convert Comtrade to CSV") as pbar:
+        with tqdm(total=len(raw_files), desc="Convert Comtrade to CSV") as pbar:
             for file in raw_files:
                 # TODO: it is not rational to use two variables, but the necessary global data.
                 # it will be necessary to think about optimizing this issue.
@@ -416,7 +415,7 @@ class RawToCSV():
                 if bus_df.loc[index, "is_save"]:
                     if (index == 0 or not bus_df.loc[index - 1, "is_save"]):
                         event_number += 1
-                    bus_df.loc[index, 'file_name'] = bus_df.loc[index, 'file_name'] + " _event №" + str(event_number)
+                    bus_df.loc[index, 'file_name'] = bus_df.loc[index, 'file_name'] + " _event N" + str(event_number)
 
             truncated_dataset = bus_df[bus_df["is_save"]]
             # If the array is empty, then we take from the piece in the middle equal to the sum of the lengths before and after
