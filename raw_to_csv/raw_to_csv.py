@@ -466,7 +466,7 @@ class RawToCSV():
             
         return dataset_df
     
-    def get_simple_dataset(self, dataset_df: pd.DataFrame, csv_name='datset_simpl.csv') -> pd.DataFrame:
+    def get_simple_dataset(self, dataset_df: pd.DataFrame, csv_name='datset_simpl.csv'):
         """ 
         Create new columns for simplified version. Only 4 groups of signals are formed:
         1) Operating switches
@@ -483,12 +483,11 @@ class RawToCSV():
         dataset_df["opr_swch"] = dataset_df[list(ml_opr_swch)].apply(lambda x: 1 if x.any() else "", axis=1)
         dataset_df["abnorm_evnt"] = dataset_df[list(ml_abnorm_evnt)].apply(lambda x: 1 if x.any() else "", axis=1)
         dataset_df["emerg_evnt"] = dataset_df[list(ml_emerg_evnt)].apply(lambda x: 1 if x.any() else "", axis=1)
-        dataset_df["normal"] = dataset_df[list(ml_all)].apply(lambda x: "" if x.all() == 1 else 1, axis=1)
+        dataset_df["normal"] = dataset_df[list(ml_all)].apply(lambda x: "" if 1 in x.values else 1, axis=1)
         # Drop ML signals
         dataset_df = dataset_df.drop(columns=ml_all)
         
         dataset_df.to_csv(self.csv_path + csv_name, index=False)
-        return dataset_df
 
     def structure_columns(self, dataset_df: pd.DataFrame) -> pd.DataFrame:
         """
