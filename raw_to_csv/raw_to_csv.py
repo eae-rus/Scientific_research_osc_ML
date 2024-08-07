@@ -49,6 +49,7 @@ class RawToCSV():
                 # TODO: it is not rational to use two variables, but the necessary global data.
                 # it will be necessary to think about optimizing this issue.
                 raw_date, raw_df = self.read_comtrade(self.raw_path + file)
+                # TODO: Add secondary/primary checks to the dataset reading and processing.
                 self.check_columns(raw_df)
                 if not raw_df.empty:
                     raw_df = self.rename_raw_columns(raw_df)
