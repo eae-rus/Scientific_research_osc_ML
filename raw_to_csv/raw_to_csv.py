@@ -380,7 +380,7 @@ class RawToCSV():
              'UN BB',
             'UAB BB',
             'UBC BB',
-            'UCN BB',
+            'UCA BB',
         ]
         ml_votage_CL = [
              'UA CL',
@@ -389,7 +389,7 @@ class RawToCSV():
              'UN CL',
             'UAB CL',
             'UBC CL',
-            'UCN CL',
+            'UCA CL',
         ]
         # TODO: signals I_raw, U_raw, I|dif-1, I | braking-1 are not taken into account
         
