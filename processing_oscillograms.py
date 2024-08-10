@@ -564,17 +564,30 @@ class ProcessingOscillograms():
             count_all_signals = int(count_all_signals_str)
             
             # We only change the year in the event date
-            new_date = lines[count_all_signals + 5].split(',')
-            date_parts = new_date[0].split('/')
-            time_parts = new_date[1].split(':')
-            
+            start_date = lines[count_all_signals + 5].split(',')
+            start_date_parts = start_date[0].split('/')
+            start_time_parts = start_date[1].split(':')
+            end_date = lines[count_all_signals + 6].split(',')
+            end_date_parts = end_date[0].split('/')
+            end_time_parts = end_date[1].split(':')
+
             dict_date = {
-                'year': date_parts[2],
-                'month': date_parts[1],
-                'day': date_parts[0],
-                'hour': time_parts[0],
-                'minute': time_parts[1],
-                'second': time_parts[2]
+                'start_date': {
+                    'year': start_date_parts[2],
+                    'month': start_date_parts[1],
+                    'day': start_date_parts[0],
+                    'hour': start_time_parts[0],
+                    'minute': start_time_parts[1],
+                    'second': start_time_parts[2]
+                },
+                'end_date': {
+                    'year': end_date_parts[2],
+                    'month': end_date_parts[1],
+                    'day': end_date_parts[0],
+                    'hour': end_time_parts[0],
+                    'minute': end_time_parts[1],
+                    'second': end_time_parts[2]
+                }
             }
             dat_file_path = file_path[:-4] + ".dat"
             with open(dat_file_path, 'rb') as file:
