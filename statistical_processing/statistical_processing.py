@@ -260,9 +260,12 @@ class StatisticalProces():
         # sort by network and then by count
         sorted_dict = sorted(frequency_statistics_dict.items(), key=lambda x: (x[0], -sum(x[1].values()), -max(x[1].values())))
 
+        all_count = 0
         for network, rate_dict in sorted_dict:
             print(f"Network: {network}")
             sorted_rate_dict = sorted(rate_dict.items(), key=lambda x: x[1], reverse=True)
             for rate, count in sorted_rate_dict:
                 print(f"\tRate: {rate}, Count: {count}")
+                all_count += count
+        print(f"Total count: {all_count}")
         return frequency_statistics_dict
