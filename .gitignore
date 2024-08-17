@@ -1,1 +1,7 @@
 _ALL_OSC/
+
+# Ignore raw_data folder
+raw_data/
+
+# Ignore __pycache__ folder in all subdirectories
+__pycache__/
