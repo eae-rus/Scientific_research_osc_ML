@@ -1,4 +1,11 @@
+import os
 import datetime
+from tqdm import tqdm
+import sys
+
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+sys.path.append(ROOT_DIR)
+from preparing_oscillograms.processing_oscillograms import ProcessingOscillograms
 
 class StatisticalProces():
     """
@@ -205,3 +212,57 @@ class StatisticalProces():
         answer_datetime = datetime.datetime.strptime(new_date_str, date_format)
         
         return (answer_datetime, answer['result'], answer['message'])
+
+    def frequency_statistics(self, source_dir: str, threshold: float = 0.1, isPrintMessege: bool = False) -> dict:
+        """
+        The function groups files by sampling rate and network frequency.
+
+        Args:
+            source_dir (str): The directory containing the files to update.
+            threshold (float): The threshold for considering frequency deviation from an integer as a measurement error.
+            isPrintMessege (bool): A flag indicating whether to print a message if the frequencies are not found.
+
+        Returns:
+            frequency_statistics_dict dict: A dictionary containing the frequencies grouped by sampling rate and network.
+        """
+        # TODO: think about optimizing the code, the function is close to "grouping_by_sampling_rate_and_network".
+        # also, the "extract_frequencies" function is taken from that library and an extra link appears.
+        process_osc = ProcessingOscillograms()
+        frequency_statistics_dict = {}
+        
+        print("We count the total number of files in the source directory...")
+        total_files = sum([len(files) for r, d, files in os.walk(source_dir)])
+        print(f"Total number of files: {total_files}, starting processing...")
+        with tqdm(total=total_files, desc="Grouping by sampling rate and network") as pbar:
+            for root, dirs, files in os.walk(source_dir):
+                for file in files:
+                    pbar.update(1)
+                    if file.lower().endswith(".cfg"):
+                        file_path = os.path.join(root, file)
+                        dat_file = file[:-4] + ".dat"
+                        dat_file_path = os.path.join(root, dat_file)
+                        is_exist = os.path.exists(dat_file_path) 
+                        if is_exist:
+                            f_network, f_rate = process_osc.extract_frequencies(file_path=file_path, threshold=threshold, isPrintMessege=isPrintMessege)
+                            if f_network and f_rate:
+                                if f_network not in frequency_statistics_dict:
+                                    frequency_statistics_dict[f_network] = {}
+                                if f_rate not in frequency_statistics_dict[f_network]:
+                                     frequency_statistics_dict[f_network][f_rate] = 0
+                                frequency_statistics_dict[f_network][f_rate] += 1
+                            elif f_network:
+                                if isPrintMessege: print(f"No network frequency found in the file: {file_path}")
+                            elif f_rate:
+                                if isPrintMessege: print(f"No sampling rate found in the file: {file_path}")
+                            else:
+                                if isPrintMessege: print(f"No frequencies found in the file: {file_path}")
+        
+        # sort by network and then by count
+        sorted_dict = sorted(frequency_statistics_dict.items(), key=lambda x: (x[0], -sum(x[1].values()), -max(x[1].values())))
+
+        for network, rate_dict in sorted_dict:
+            print(f"Network: {network}")
+            sorted_rate_dict = sorted(rate_dict.items(), key=lambda x: x[1], reverse=True)
+            for rate, count in sorted_rate_dict:
+                print(f"\tRate: {rate}, Count: {count}")
+        return frequency_statistics_dict
