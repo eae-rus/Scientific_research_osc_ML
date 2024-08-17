@@ -24,8 +24,7 @@ class TYPE_OSC(Enum):
         RES_3 = "File type (.sg2) typical for the terminal manufacturer Prosoft-Systems LLC, official link : https://prosoftsystems.ru / and a link to the devices https://prosoftsystems.ru/catalog/show/cifrovoj--registrator-jelektricheskih-sobytij-pjes3 "
         EKRA = "File type (.dfr) typical for the terminal manufacturer NPP EKRA LLC, official link: https://ekra.ru /"
         PARMA = "File type (.do) typical for the terminal manufacturer PARMA LLC, official link: https://parma.spb.ru /"
-        PARMA_TO = "File type (.dfr) typical for the terminal manufacturer NPP EKRA LLC, official link: https://ekra.ru /"
-        PARMA = "File type (.to) typical for the manufacturer of terminals LLC PARMA, this type is intended for registration of long-term processes, official link: https://parma.spb.ru /"
+        PARMA_TO = "File type (.to) typical for the manufacturer of terminals LLC PARMA, this type is intended for registration of long-term processes, official link: https://parma.spb.ru /"
         NEVA = "File type (.os1 and similar) typical for the terminal manufacturer NPF ENERGOSOYUZ, official link: https://www.energosoyuz.spb.ru/ru and a link to the devices https://www.energosoyuz.spb.ru/ru/content/registrator-avariynyh-sobytiy-neva-ras "
         OSC = "File format (.osc) - the contact binding has not yet been fully clarified"
 

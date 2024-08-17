@@ -142,7 +142,7 @@ class ProcessingOscillograms():
                         dat_file_path = os.path.join(root, dat_file)
                         is_exist = os.path.exists(dat_file_path) 
                         if is_exist:
-                            f_network, f_rate = self._extract_frequencies(file_path=file_path, threshold=threshold, isPrintMessege=isPrintMessege)
+                            f_network, f_rate = self.extract_frequencies(file_path=file_path, threshold=threshold, isPrintMessege=isPrintMessege)
 
                             if f_network and f_rate:
                                 dest_folder = os.path.join(source_dir, 'f_network = ' + str(f_network) + ' and f_rate = ' + str(f_rate))
@@ -158,7 +158,7 @@ class ProcessingOscillograms():
                             else:
                                 if isPrintMessege: print(f"No frequencies found in the file: {file_path}")
 
-    def _extract_frequencies(self, file_path: str, threshold: float = 0.1, isPrintMessege: bool = False) -> tuple:
+    def extract_frequencies(self, file_path: str, threshold: float = 0.1, isPrintMessege: bool = False) -> tuple:
         """
         Extracts the network frequency (f_network) and sampling rate (f_rate) from the specified ".cfg" file.
 
