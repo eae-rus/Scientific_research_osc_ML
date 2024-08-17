@@ -196,24 +196,28 @@ class ProcessingOscillograms():
             for root, dirs, files in os.walk(source_dir):
                 for file in files:
                     pbar.update(1)
-                    if file.lower().endswith(".cfg"):
-                        file_path = os.path.join(root, file)
-                        with open(file_path, 'r', encoding='utf-8') as file:
-                            # FIXME: No protection against protected and/or erroneous files
-                            lines = file.readlines()
-                            if len(lines) >= 2:
-                                count_all_signals_str, count_analog_signals_str, count_digital_signals_str = lines[1].split(',')
-                                count_analog_signals = int(count_analog_signals_str[:-1])
-                                for i in range(count_analog_signals):
-                                    analog_signal = lines[2 + i].split(',') # getting an analog signal
-                                    # TODO: add a single function for generating a combined signal name
-                                    name, phase = analog_signal[1], analog_signal[2] # we get the name, phase and unit of measurement
-                                    name, phase = name.replace(' ', ''), phase.replace(' ', '')
-                                    signal_name = name + ' | phase:' + phase # creating a combined signal name
-                                    if signal_name not in analog_signals_name:
-                                        analog_signals_name[signal_name] = 1
-                                    else:
-                                        analog_signals_name[signal_name] += 1
+                    try:
+                        if file.lower().endswith(".cfg"):
+                            file_path = os.path.join(root, file)
+                            with open(file_path, 'r', encoding='utf-8') as file:
+                                # FIXME: No protection against protected and/or erroneous files
+                                lines = file.readlines()
+                                if len(lines) >= 2:
+                                    count_all_signals_str, count_analog_signals_str, count_digital_signals_str = lines[1].split(',')
+                                    count_analog_signals = int(count_analog_signals_str[:-1])
+                                    for i in range(count_analog_signals):
+                                        analog_signal = lines[2 + i].split(',') # getting an analog signal
+                                        # TODO: add a single function for generating a combined signal name
+                                        name, phase = analog_signal[1], analog_signal[2] # we get the name, phase and unit of measurement
+                                        name, phase = name.replace(' ', ''), phase.replace(' ', '')
+                                        signal_name = name + ' | phase:' + phase # creating a combined signal name
+                                        if signal_name not in analog_signals_name:
+                                            analog_signals_name[signal_name] = 1
+                                        else:
+                                            analog_signals_name[signal_name] += 1
+                    except Exception as e:
+                        print(e)
+                        print("Error occurred while processing file: ", file_path)
         
         sorted_analog_signals_name = {k: v for k, v in sorted(analog_signals_name.items(), key=lambda item: item[1], reverse=True)}      
         csv_file = os.path.join(source_dir, 'sorted_analog_signals_name.csv')
@@ -241,24 +245,28 @@ class ProcessingOscillograms():
             for root, dirs, files in os.walk(source_dir):
                 for file in files:
                     pbar.update(1)
-                    if file.lower().endswith(".cfg"):
-                        file_path = os.path.join(root, file)
-                        with open(file_path, 'r', encoding='utf-8') as file:
-                            # FIXME: No protection against protected and/or erroneous files
-                            lines = file.readlines()
-                            if len(lines) >= 2:
-                                count_all_signals_str, count_analog_signals_str, count_digital_signals_str = lines[1].split(',')
-                                count_analog_signals = int(count_analog_signals_str[:-1])
-                                count_digital_signals = int(count_digital_signals_str[:-2])
-                                for i in range(count_digital_signals):
-                                    digital_signal = lines[2 + count_analog_signals + i].split(',') # getting an analog signal
-                                    if len(digital_signal) == 1:# protection against incorrect number of signals
-                                        break
-                                    signal_name = digital_signal[1] # getting the name
-                                    if signal_name not in digital_signals_name:
-                                        digital_signals_name[signal_name] = 1
-                                    else:
-                                        digital_signals_name[signal_name] += 1
+                    try:
+                        if file.lower().endswith(".cfg"):
+                            file_path = os.path.join(root, file)
+                            with open(file_path, 'r', encoding='utf-8') as file:
+                                # FIXME: No protection against protected and/or erroneous files
+                                lines = file.readlines()
+                                if len(lines) >= 2:
+                                    count_all_signals_str, count_analog_signals_str, count_digital_signals_str = lines[1].split(',')
+                                    count_analog_signals = int(count_analog_signals_str[:-1])
+                                    count_digital_signals = int(count_digital_signals_str[:-2])
+                                    for i in range(count_digital_signals):
+                                        digital_signal = lines[2 + count_analog_signals + i].split(',') # getting an analog signal
+                                        if len(digital_signal) == 1:# protection against incorrect number of signals
+                                            break
+                                        signal_name = digital_signal[1] # getting the name
+                                        if signal_name not in digital_signals_name:
+                                            digital_signals_name[signal_name] = 1
+                                        else:
+                                            digital_signals_name[signal_name] += 1
+                    except Exception as e:
+                        print(e)
+                        print("Error occurred while processing file: ", file_path)
         
         sorted_digital_signals_name = {k: v for k, v in sorted(digital_signals_name.items(), key=lambda item: item[1], reverse=True)}      
         csv_file = os.path.join(source_dir, 'sorted_digital_signals_name.csv')
