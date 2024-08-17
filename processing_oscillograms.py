@@ -117,12 +117,14 @@ class ProcessingOscillograms():
                     os.utime(file_path, times=(file_stat.st_atime, current_date.timestamp()))
             
             
-    def grouping_by_sampling_rate_and_network(self, source_dir: str) -> None:
+    def grouping_by_sampling_rate_and_network(self, source_dir: str, threshold: float = 0.1, isPrintMessege: bool = False) -> None:
         """
         The function groups files by sampling rate and network frequency.
 
         Args:
             source_dir (str): The directory containing the files to update.
+            threshold (float): The threshold for considering frequency deviation from an integer as a measurement error.
+            isPrintMessege (bool): A flag indicating whether to print a message if the frequencies are not found.
 
         Returns:
             None
@@ -140,7 +142,7 @@ class ProcessingOscillograms():
                         dat_file_path = os.path.join(root, dat_file)
                         is_exist = os.path.exists(dat_file_path) 
                         if is_exist:
-                            f_network, f_rate = self._extract_frequencies(file_path)
+                            f_network, f_rate = self._extract_frequencies(file_path=file_path, threshold=threshold, isPrintMessege=isPrintMessege)
 
                             if f_network and f_rate:
                                 dest_folder = os.path.join(source_dir, 'f_network = ' + str(f_network) + ' and f_rate = ' + str(f_rate))
@@ -149,13 +151,21 @@ class ProcessingOscillograms():
                                     
                                 shutil.move(file_path, os.path.join(dest_folder, file))
                                 shutil.move(dat_file_path, os.path.join(dest_folder, dat_file))
+                            elif f_network:
+                                if isPrintMessege: print(f"No network frequency found in the file: {file_path}")
+                            elif f_rate:
+                                if isPrintMessege: print(f"No sampling rate found in the file: {file_path}")
+                            else:
+                                if isPrintMessege: print(f"No frequencies found in the file: {file_path}")
 
-    def _extract_frequencies(self, file_path: str) -> tuple:
+    def _extract_frequencies(self, file_path: str, threshold: float = 0.1, isPrintMessege: bool = False) -> tuple:
         """
         Extracts the network frequency (f_network) and sampling rate (f_rate) from the specified ".cfg" file.
 
         Args:
             source_dir (str): The path to the ".cfg" file.
+            threshold (float): The threshold for considering frequency deviation from an integer as a measurement error.
+            isPrintMessege (bool): A flag indicating whether to print a message if the frequencies are not found.
 
         Returns:
             tuple: A tuple containing the extracted network frequency and sampling rate.
@@ -172,9 +182,20 @@ class ProcessingOscillograms():
                     f_network = lines[count_all_signals + 2][:-1]
                     f_rate, count = lines[count_all_signals + 4].split(',')
                     f_network, f_rate = int(f_network), int(f_rate)
+                if f_network == 0:
+                    f_network = -1
+                if f_rate == 0:
+                    f_rate = -1
         except Exception as e:
-            f_network, f_rate = 1, 1 # TODO: In future versions, the invalid frequency may need to be adjusted
-            print(e)
+            try:
+                f_network, f_rate = float(f_network), float(f_rate)
+                if abs(f_network - round(f_network)) < threshold and abs(f_rate - round(f_rate)) < threshold:
+                    f_network, f_rate = round(f_network), round(f_rate)
+                else:
+                    f_network, f_rate = -1, -1 # TODO: In future versions, the invalid frequency may need to be adjusted
+            except Exception as e:
+                f_network, f_rate = -1, -1 # TODO: In future versions, the invalid frequency may need to be adjusted
+                if isPrintMessege: print(e)
 
         return f_network, f_rate
 
