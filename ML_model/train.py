@@ -13,10 +13,9 @@ from sklearn.utils.class_weight import compute_class_weight
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
-
 from sklearn.metrics import hamming_loss, jaccard_score
 
-from model import CONV_MLP
+from model import CONV_MLP, KAN_firrst
 
 
 class FeaturesForDataset():
@@ -359,12 +358,14 @@ if __name__ == "__main__":
 
     start_epoch = 0
     # !! создание новой !!
-    model = CONV_MLP(
+    #model = CONV_MLP(
+    model = KAN_firrst(
         FRAME_SIZE,
         channel_num=len(FeaturesForDataset.FEATURES),
         hidden_size=HIDDEN_SIZE,
         output_size=len(FeaturesForDataset.FEATURES_TARGET),
     )
+    
     model.to(device)
     # !! Загрузка модели из файла !!
     # filename_model = "ML_model/trained_models/model_ep7_tl0.3257.pt"
@@ -378,7 +379,7 @@ if __name__ == "__main__":
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
         mode='min',
-        factor=0.8,
+        factor=0.5,
         patience=1,
     )
     current_lr = LEARNING_RATE
@@ -508,8 +509,47 @@ if __name__ == "__main__":
             current_lr = optimizer.param_groups[0]["lr"]
     pass
 pass
-# torch.save(model, "model40_3.pt")
-# model = torch.load("model40_3.pt")
 
-# BATCH_SIZE_TRAIN = 128
+# KAN_first model
+# BATCH_SIZE_TRAIN = 128 
 # LEARNING_RATE = 1e-04
+# class_weights_tensor = tensor([0.1511, 0.3798, 1.0000], device='cuda:0')
+# 100%|██████████████████████████████████████████████████████████████████████████████| 537/537 [03:02<00:00,  2.95 batch/s, Epoch 1/100 LR=1.000e-03 Train loss: 0.0424 ] 
+# Prev. test loss: 0.0255 F1 / BA: opr_swch: 0.4188/0.8108, abnorm_evnt: 0.9885/0.9887, emerg_evnt: 0.3066/0.9017
+# Hamming Loss: 0.13182457486254956, Jaccard Score: 0.577982355197545
+# 100%|██████████████████████████████████████████████████████████████████████████████| 537/537 [02:34<00:00,  3.48 batch/s, Epoch 2/100 LR=1.000e-03 Train loss: 0.0179 ] 
+# Prev. test loss: 0.0157 F1 / BA: opr_swch: 0.4473/0.8301, abnorm_evnt: 0.9867/0.9869, emerg_evnt: 0.6082/0.9483
+# Hamming Loss: 0.10387418488684312, Jaccard Score: 0.6050249328730342
+# 100%|██████████████████████████████████████████████████████████████████████████████| 537/537 [02:29<00:00,  3.58 batch/s, Epoch 3/100 LR=1.000e-03 Train loss: 0.0140 ] 
+# Prev. test loss: 0.0176 F1 / BA: opr_swch: 0.4249/0.8152, abnorm_evnt: 0.9872/0.9873, emerg_evnt: 0.6600/0.9704 
+# Hamming Loss: 0.1113156885308784, Jaccard Score: 0.6113796189745556
+# 100%|██████████████████████████████████████████████████████████████████████████████| 537/537 [02:29<00:00,  3.59 batch/s, Epoch 4/100 LR=1.000e-03 Train loss: 0.0127 ]
+# Prev. test loss: 0.0174 F1 / BA: opr_swch: 0.5237/0.8713, abnorm_evnt: 0.9341/0.9319, emerg_evnt: 0.6991/0.8962 
+# Hamming Loss: 0.0950517836593786, Jaccard Score: 0.6095384221966501
+# 100%|██████████████████████████████████████████████████████████████████████████████| 537/537 [02:29<00:00,  3.58 batch/s, Epoch 5/100 LR=1.000e-03 Train loss: 0.0119 ] 
+# Prev. test loss: 0.0226 F1 / BA: opr_swch: 0.4573/0.8362, abnorm_evnt: 0.9711/0.9712, emerg_evnt: 0.5346/0.8954 
+# Hamming Loss: 0.10699399053829434, Jaccard Score: 0.6079657332821891
+# 100%|██████████████████████████████████████████████████████████████████████████████| 537/537 [02:29<00:00,  3.58 batch/s, Epoch 6/100 LR=1.000e-03 Train loss: 0.0118 ] 
+# Prev. test loss: 0.0235 F1 / BA: opr_swch: 0.4098/0.8045, abnorm_evnt: 0.9695/0.9695, emerg_evnt: 0.5442/0.9077 
+# Hamming Loss: 0.12655670630354174, Jaccard Score: 0.6088991177598773
+# 100%|██████████████████████████████████████████████████████████████████████████████| 537/537 [02:29<00:00,  3.59 batch/s, Epoch 7/100 LR=1.000e-03 Train loss: 0.0113 ] 
+# Prev. test loss: 0.0228 F1 / BA: opr_swch: 0.4210/0.8127, abnorm_evnt: 0.9494/0.9485, emerg_evnt: 0.6063/0.9067 
+# Hamming Loss: 0.12676128372330903, Jaccard Score: 0.6095000639304436
+# 100%|██████████████████████████████████████████████████████████████████████████████| 537/537 [02:29<00:00,  3.59 batch/s, Epoch 8/100 LR=1.000e-03 Train loss: 0.0112 ] 
+# Prev. test loss: 0.0149 F1 / BA: opr_swch: 0.4242/0.8150, abnorm_evnt: 0.9720/0.9721, emerg_evnt: 0.4543/0.9753 
+# Hamming Loss: 0.1255849635596471, Jaccard Score: 0.6128244470016622
+# 100%|██████████████████████████████████████████████████████████████████████████████| 537/537 [02:29<00:00,  3.59 batch/s, Epoch 9/100 LR=1.000e-03 Train loss: 0.0113 ] 
+# Prev. test loss: 0.0184 F1 / BA: opr_swch: 0.4786/0.8490, abnorm_evnt: 0.9613/0.9611, emerg_evnt: 0.4524/0.9732 
+# Hamming Loss: 0.10929548651067639, Jaccard Score: 0.607543792353919
+# 100%|█████████████████████████████████████████████████████████████████████████████| 537/537 [02:29<00:00,  3.59 batch/s, Epoch 10/100 LR=1.000e-03 Train loss: 0.0112 ] 
+# Prev. test loss: 0.0137 F1 / BA: opr_swch: 0.4220/0.8136, abnorm_evnt: 0.9608/0.9605, emerg_evnt: 0.6247/0.9807 
+# Hamming Loss: 0.12297660145761412, Jaccard Score: 0.6113156885308784
+# 100%|█████████████████████████████████████████████████████████████████████████████| 537/537 [02:32<00:00,  3.53 batch/s, Epoch 11/100 LR=1.000e-03 Train loss: 0.0109 ]
+# Prev. test loss: 0.0189 F1 / BA: opr_swch: 0.4169/0.8098, abnorm_evnt: 0.9572/0.9567, emerg_evnt: 0.5535/0.9514 
+# Hamming Loss: 0.12832118654903465, Jaccard Score: 0.6096151387290628
+# 100%|█████████████████████████████████████████████████████████████████████████████| 537/537 [02:32<00:00,  3.53 batch/s, Epoch 12/100 LR=1.000e-03 Train loss: 0.0109 ] 
+# Prev. test loss: 0.0176 F1 / BA: opr_swch: 0.4161/0.8093, abnorm_evnt: 0.9635/0.9633, emerg_evnt: 0.5436/0.9743 
+# Hamming Loss: 0.12742616033755275, Jaccard Score: 0.607825086306099
+# 100%|█████████████████████████████████████████████████████████████████████████████| 537/537 [02:31<00:00,  3.55 batch/s, Epoch 13/100 LR=1.000e-03 Train loss: 0.0112 ] 
+# Prev. test loss: 0.0181 F1 / BA: opr_swch: 0.4206/0.8130, abnorm_evnt: 0.9456/0.9444, emerg_evnt: 0.6314/0.9236 
+# Hamming Loss: 0.12806546477432554, Jaccard Score: 0.6079018028385117
