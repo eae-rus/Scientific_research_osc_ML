@@ -5,3 +5,6 @@ raw_data/
 
 # Ignore __pycache__ folder in all subdirectories
 __pycache__/
+
+# Ignore trained_models folder
+ML_model/trained_models

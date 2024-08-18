@@ -13,15 +13,53 @@ from sklearn.utils.class_weight import compute_class_weight
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
+
+from sklearn.metrics import hamming_loss, jaccard_score
+
 from model import CONV_MLP
 
 
+class FeaturesForDataset():
+        # FEATURES_CURRENT = ["IA", "IB", "IC"]
+        FEATURES_CURRENT = ["IA", "IC"]
+        # FEATURES_VOLTAGE = ["UA BB", "UB BB", "UC BB", "UN BB",
+        #                     "UA CL", "UB CL", "UC CL", "UN CL",
+        #                     "UAB CL","UBC CL","UCA CL"]
+        FEATURES_VOLTAGE = ["UA BB", "UB BB", "UC BB", "UN BB"]
+        FEATURES = FEATURES_CURRENT.copy()
+        FEATURES.extend(FEATURES_VOLTAGE)
+        
+        # FEATURES_TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt", "normal"]
+        FEATURES_TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt"]
+        
+        FEATURES_TARGET_WITH_FILENAME = ["file_name"]
+        FEATURES_TARGET_WITH_FILENAME.extend(FEATURES_TARGET)
+        
+        # WEIGHT_IMPORTANCE_TARGET = {"normal": 0.1, "opr_swch": 1, "abnorm_evnt": 5, "emerg_evnt": 10}
+        WEIGHT_IMPORTANCE_TARGET = {"opr_swch": 1, "abnorm_evnt": 2, "emerg_evnt": 3}
+
 class CustomDataset(Dataset):
 
-    def __init__(self, dt, indexes, frame_size):
+    def __init__(self, dt: pd.DataFrame(), indexes: pd.DataFrame(), frame_size: int, target_position: int = None):
+        """ Initialize the dataset.
+
+        Args:
+            dt (pd.DataFrame()): The DataFrame containing the data
+            indexes (pd.DataFrame()): _description_
+            frame_size (int): the size of the selection window
+            target_position (int, optional): The position from which the target value is selected. 0 - means that it is taken from the first point. frame_size-1 - means that it is taken from the last point.
+        """
         self.data = dt
         self.indexes = indexes
         self.frame_size = frame_size
+        if (target_position is not None):
+            if 0 <= target_position < frame_size:
+                self.target_position = target_position
+            else:
+                self.target_position = frame_size
+                print("Invalid target position. Target position should be in range of 0 to frame_size-1")
+        else:
+            self.target_position = frame_size-1
         # self.len_files = dict(
         #     self.data.groupby("file_name").count()["sample"].items()
         # )
@@ -31,25 +69,20 @@ class CustomDataset(Dataset):
 
     def __getitem__(self, idx):
         start = self.indexes.iloc[idx].name
-        frame = self.data.loc[start : start + self.frame_size - 1]
-        # TODO: вынести "фичи" во вне
-        # features_current = ["IA", "IB", "IC"]
-        features_current = ["IA", "IC"]
-        # features_voltage = ["UA BB", "UB BB", "UC BB", "UN BB",
-        #                     "UA CL", "UB CL", "UC CL", "UN CL",
-        #                     "UAB CL","UBC CL","UCA CL"]
-        features_voltage = ["UA BB", "UB BB", "UC BB", "UN BB"]
-        features = features_current.copy()
-        features.extend(features_voltage)
-        sample = frame[features]
-        features_target = ["opr_swch", "abnorm_evnt", "emerg_evnt", "normal"]
+        if start + self.frame_size - 1 >= len(self.data):
+            # Защита от выхода за диапазон. Такого быть не должно при обрезании массива, но оставил на всякий случай.
+            return (None, None)
+        
+        sample = self.data.loc[start : start + self.frame_size - 1][FeaturesForDataset.FEATURES]
+        #sample = frame[FeaturesForDataset.FEATURES]
         x = torch.tensor(
             sample.to_numpy(dtype=np.float32),
             dtype=torch.float32,
         )
 
-        target = self.indexes.iloc[idx][features_target]
-        target = torch.tensor(target, dtype=torch.float32) # было torch.long
+        target_index = start + self.target_position
+        target_sample = self.data.loc[target_index][FeaturesForDataset.FEATURES_TARGET]
+        target = torch.tensor(target_sample, dtype=torch.float32) # было torch.long
         return x, target
 
 
@@ -124,12 +157,12 @@ def seed_everything(seed: int = 42):
 
 if __name__ == "__main__":
 
-    FRAME_SIZE = 64
-    BATCH_SIZE_TRAIN = 128# 128
+    FRAME_SIZE = 64 # 32
+    BATCH_SIZE_TRAIN = 128
     BATCH_SIZE_TEST = 1024
     HIDDEN_SIZE = 40
     EPOCHS = 100
-    LEARNING_RATE = 1e-4
+    LEARNING_RATE = 1e-3
     MAX_GRAD_NORM = 10
     SEED = 42
     print(f"{BATCH_SIZE_TRAIN=}")
@@ -139,7 +172,7 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     # device = "cpu"
 
-    file_csv = "ML_model/datset_simpl v1.csv"
+    file_csv = "ML_model/datset_simpl v1.1 (MLOps).csv"
     # Create the folder if it doesn't exist
     folder_path = "/ML_model"
     os.makedirs(folder_path, exist_ok=True)
@@ -173,25 +206,16 @@ if __name__ == "__main__":
         
         # TODO: Нормальизацию стоит делать отдельно. Здесь я её закладываю временно
         Inom, Unom = 5, 100
-        # features_current = ["IA", "IB", "IC"]
-        features_current = ["IA", "IC"]
-        # features_voltage = ["UA BB", "UB BB", "UC BB", "UN BB",
-        #                     "UA CL", "UB CL", "UC CL", "UN CL",
-        #                     "UAB CL","UBC CL","UCA CL"]
-        features_voltage = ["UA BB", "UB BB", "UC BB", "UN BB"]
-        features = features_current.copy()
-        features.extend(features_voltage)
-        
-        for name in features_current:
+        for name in FeaturesForDataset.FEATURES_CURRENT:
             dt[name] = dt[name] / (Inom*20)
-        for name in features_voltage:
+        for name in FeaturesForDataset.FEATURES_VOLTAGE:
             dt[name] = dt[name] / (Unom*3)
                 
         files_to_test = [
             "a3a1591bc548a7faf784728430499837_Bus 1 _event N1",  # "Осц_1_2_1",
             "4d8cbe560afd5f7f50ee476b9651f95d_Bus 1 _event N1",  # "Осц_1_8_1",
             "5718d1a5fc834efcfc0cf98f19485db7_Bus 1 _event N1",  # "Осц_1_15_1",
-            # "a2321d3375dbade8cd9afecfc2571a99_Bus 1",  # "Осц_1_25_1",
+            "a2321d3375dbade8cd9afecfc2571a99_Bus 1 _event N1",  # "Осц_1_25_1",
             "5e01b6ca41575c55ebd68978d6f3227c_Bus 1 _event N1",  # "Осц_1_38_1",
             "9a26f30ebb02b8dd74a65c8c33c1dbcd_Bus 1 _event N1",  # "Осц_1_42_1",
               
@@ -208,63 +232,63 @@ if __name__ == "__main__":
 
         std_scaler = StandardScaler()
         
-        df_unscaled_train = dt_train[features]
-        df_unscaled_test = dt_test[features]
-        std_scaler.fit(df_unscaled_train.to_numpy())
-        df_scaled_train = std_scaler.transform(df_unscaled_train.to_numpy())
-        df_scaled_test = std_scaler.transform(df_unscaled_test.to_numpy())
+        df_scaled_train = dt_train[FeaturesForDataset.FEATURES]
+        df_scaled_test = dt_test[FeaturesForDataset.FEATURES]
+        # TODO: массштабирование производится отдельно. Нормальизация в адекватных данных не должна требоваться
+        # так как знечения симметричны относительно 0. 
+        # Причём ранее числа тут преобразовывались в -1 / 0 / 1, что было странно очень.
+        # std_scaler.fit(df_unscaled_train.to_numpy())
+        # df_scaled_train = std_scaler.transform(df_unscaled_train.to_numpy())
+        # df_scaled_test = std_scaler.transform(df_unscaled_test.to_numpy())
         df_scaled_train = pd.DataFrame(
             df_scaled_train,
-            columns=df_unscaled_train.columns,
-            index=df_unscaled_train.index,
+            columns=df_scaled_train.columns,
+            index=df_scaled_train.index,
         )
         df_scaled_test = pd.DataFrame(
             df_scaled_test,
-            columns=df_unscaled_test.columns,
-            index=df_unscaled_test.index,
+            columns=df_scaled_test.columns,
+            index=df_scaled_test.index,
         )
 
         dt_train = pd.concat(
-            (dt_train.drop(features, axis=1), df_scaled_train), axis=1
+            (dt_train.drop(FeaturesForDataset.FEATURES, axis=1), df_scaled_train), axis=1
         )
         dt_test = pd.concat(
-            (dt_test.drop(features, axis=1), df_scaled_test), axis=1
+            (dt_test.drop(FeaturesForDataset.FEATURES, axis=1), df_scaled_test), axis=1
         )
 
         dt_train.reset_index(drop=True, inplace=True)
         dt_test.reset_index(drop=True, inplace=True)
 
-        features_target = ["opr_swch", "abnorm_evnt", "emerg_evnt", "normal"]
-        target_series_train = dt_train[features_target]
-        target_series_test = dt_test[features_target]
+        target_series_train = dt_train[FeaturesForDataset.FEATURES_TARGET]
+        target_series_test = dt_test[FeaturesForDataset.FEATURES_TARGET]
 
         # Пока без этого, я разделил на 4 разные столбца
         # записываем в target_frame значение, которого больше всего в окне FRAME_SIZE:
-        # dt_train[features_target] = (
+        # dt_train[FeaturesForDataset.FEATURES_TARGET] = (
         #     target_series_train.rolling(window=FRAME_SIZE, min_periods=1)
         #     .apply(lambda x: pd.Series(x).value_counts().idxmax(), raw=True)
         #     .shift(-FRAME_SIZE)
         # )
-        # dt_test[features_target] = (
+        # dt_test[FeaturesForDataset.FEATURES_TARGET] = (
         #     target_series_test.rolling(window=FRAME_SIZE, min_periods=1)
         #     .apply(lambda x: pd.Series(x).value_counts().idxmax(), raw=True)
         #     .shift(-FRAME_SIZE)
         # )
 
         # замена значений NaN на 0 в конце датафрейма
-        for name in features_target:
+        for name in FeaturesForDataset.FEATURES_TARGET:
             dt_train[name] = dt_train[name].fillna(0)  
             dt_train[name] = dt_train[name].astype(int)
+            dt_test[name] = dt_test[name].fillna(0)
+            dt_test[name] = dt_test[name].astype(int)
+        # Замена значений NaN на 0 для пустых ячеек
+        for name in FeaturesForDataset.FEATURES:
+            dt_train[name] = dt_train[name].fillna(0)  
             dt_train[name] = dt_train[name].astype(np.float32)
             dt_test[name] = dt_test[name].fillna(0)
-            dt_test[name] = dt_test[name].astype(int)
             dt_test[name] = dt_test[name].astype(np.float32)
-        # Замена значений NaN на 0 для пустых ячеек
-        for name in features:
-            dt_train[name] = dt_train[name].fillna(0)  
-            dt_train[name] = dt_train[name].astype(int)
-            dt_test[name] = dt_test[name].fillna(0)
-            dt_test[name] = dt_test[name].astype(int)
 
         dt_train.to_csv(file_with_target_frame_train, index=False)
         dt_test.to_csv(file_with_target_frame_test, index=False)
@@ -276,39 +300,52 @@ if __name__ == "__main__":
     
     
     # TODO: Добавить имена для всего класса
-    features_target = ["opr_swch", "abnorm_evnt", "emerg_evnt", "normal"]
-    features_target_with_fileName = ["file_name", "opr_swch", "abnorm_evnt", "emerg_evnt", "normal"]
-    print("Train:")
-    print(dt_train[features_target].value_counts())
-    print("Test:")
-    print(dt_test[features_target].value_counts())
+    # print("Train:")
+    # print(dt_train[FeaturesForDataset.FEATURES_TARGET].value_counts())
+    # print("Test:")
+    # print(dt_test[FeaturesForDataset.FEATURES_TARGET].value_counts())
 
     # копия датафрейма для получения индексов начал фреймов для трейн
-    dt_indexes_train = dt_train[features_target_with_fileName]
+    dt_indexes_train = dt_train[FeaturesForDataset.FEATURES_TARGET_WITH_FILENAME]
     files_train = dt_indexes_train["file_name"].unique()
     train_indexes = pd.DataFrame()
     for file in files_train:
         # удаление последних FRAME_SIZE сэмплов в каждом файле
         df_file = dt_indexes_train[dt_indexes_train["file_name"] == file][
-            :-FRAME_SIZE
+            :-FRAME_SIZE # Удаление последних FRAME_SIZE сэмплов в каждом файл, чтобы индексы не выходили за диапазон
         ]
-        #df_file = dt_indexes_train.loc[dt_indexes_train["file_name"] == file].iloc[:-FRAME_SIZE]
         train_indexes = pd.concat((train_indexes, df_file))
 
     # копия датафрейма для получения индексов начал фреймов для тест
-    dt_indexes_test = dt_test[features_target_with_fileName]
+    dt_indexes_test = dt_test[FeaturesForDataset.FEATURES_TARGET_WITH_FILENAME]
     files_test = dt_indexes_test["file_name"].unique()
     test_indexes = pd.DataFrame()
     for file in files_test:
         # удаление последних FRAME_SIZE сэмплов в каждом файле
         df_file = dt_indexes_test[dt_indexes_test["file_name"] == file][
-            :-FRAME_SIZE
+            :-FRAME_SIZE # Удаление последних FRAME_SIZE сэмплов в каждом файл, чтобы индексы не выходили за диапазон
         ]
         test_indexes = pd.concat((test_indexes, df_file))
 
-    labels_train = train_indexes[features_target]
+    labels_train = train_indexes[FeaturesForDataset.FEATURES_TARGET]
     
-    # TODO: Не понимаю как это заставить работать для 4 столбцов
+    # создание весов ценности для классов
+    target_samples = {name: 0 for name in FeaturesForDataset.FEATURES_TARGET}
+    all_samples = len(dt_train)
+    class_weights = []
+    for name in FeaturesForDataset.FEATURES_TARGET:
+        target_samples[name] = dt_train[name].value_counts()[1]
+        value = 1
+        if target_samples[name] > 0:
+            value = FeaturesForDataset.WEIGHT_IMPORTANCE_TARGET[name] * np.log10(all_samples / target_samples[name] + 1)
+        class_weights.append(value)
+    
+    max_weight = max(class_weights)
+    class_weights_normalized = [weight / max_weight for weight in class_weights]
+    class_weights_tensor = torch.FloatTensor(class_weights_normalized).to(device)
+    print(f"{class_weights_tensor = }")    
+
+    # TODO: Не понимаю как это заставить работать для 4 столбцов    
     # class_weights = compute_class_weight(
     #     "balanced",
     #     classes=np.unique(labels_train.values.ravel()),  # Flatten the 2D array
@@ -316,26 +353,31 @@ if __name__ == "__main__":
     # )
     # class_weights_tensor = torch.FloatTensor(class_weights).to(device)
     # print(f"{class_weights = }")
-    
-    class_weights_tensor = torch.rand(len(features_target)).to(device)
-    print(f"{class_weights_tensor = }")
 
-    train_dataset = CustomDataset(dt_train, train_indexes, FRAME_SIZE)
-    test_dataset = CustomDataset(dt_test, test_indexes, FRAME_SIZE)
+    train_dataset = CustomDataset(dt_train, train_indexes, FRAME_SIZE, int(FRAME_SIZE/2))
+    test_dataset = CustomDataset(dt_test, test_indexes, FRAME_SIZE, int(FRAME_SIZE/2))
 
+    start_epoch = 0
+    # !! создание новой !!
     model = CONV_MLP(
         FRAME_SIZE,
-        channel_num=6, # TODO: сделать назначаемой автоматически len(features)
+        channel_num=len(FeaturesForDataset.FEATURES),
         hidden_size=HIDDEN_SIZE,
-        output_size=4,# Было len(np.unique(labels_train)), Но у меня 4 независимых столбца
+        output_size=len(FeaturesForDataset.FEATURES_TARGET),
     )
     model.to(device)
+    # !! Загрузка модели из файла !!
+    # filename_model = "ML_model/trained_models/model_ep7_tl0.3257.pt"
+    # model = torch.load(filename_model)
+    # start_epoch = int(filename_model.split("ep")[1].split("_")[0])
+    # model.eval()  # Set the model to evaluation mode
 
     criterion = nn.CrossEntropyLoss(weight=class_weights_tensor)
     
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
+        mode='min',
         factor=0.8,
         patience=1,
     )
@@ -352,10 +394,13 @@ if __name__ == "__main__":
     min_loss_test = 100
     # loss_test = 0.0
     # f1 = ""
-    for epoch in range(EPOCHS):
+    for epoch in range(start_epoch,EPOCHS):
         with tqdm(train_dataloader, unit=" batch", mininterval=3) as t:
             loss_sum = 0.0
             for i, (batch, targets) in enumerate(t):
+                if (batch == None or targets == None):
+                    # TODO: Защита от необрезанных массивов. Но сюда не должно попадать.
+                    continue
 
                 targets = targets.to(device)
                 batch = batch.to(device)
@@ -379,12 +424,13 @@ if __name__ == "__main__":
                     f"LR={current_lr:.3e} "
                     f"Train loss: {(loss_sum / (i + 1)):.4f} "
                 )
-                if epoch > 0:
-                    message += (
-                        f"Prev. test loss: {loss_test:.4f} "
-                        f"& F1: {', '.join([f'{score:.4f}' for score in f1])} "
-                        # f"& BA: {ba:.4f}" # TODO: Сделать ba мультимодальным, причём
-                    )
+                # if epoch > 0:
+                #     message += (
+                #         f"Prev. test loss: {loss_test:.4f} "
+                #         #f"& F1: {', '.join([f'{score:.4f}' for score in f1])} "
+                #         f"F1: {', '.join([f'{signal_name}: {score:.4f}' for signal_name, score in zip(FeaturesForDataset.FEATURES_TARGET, f1)])} "
+                #         # f"& BA: {ba:.4f}" # TODO: Сделать ba мультимодальным, причём
+                #     )
                 t.set_postfix_str(s=message)
 
                 # plt.plot(all_losses, marker="o", linestyle="-")
@@ -432,15 +478,30 @@ if __name__ == "__main__":
             predicted_labels_tensor = torch.from_numpy(numpy_labels)
             predicted_labels = torch.where(predicted_labels_tensor >= 0.5, torch.tensor(1), torch.tensor(0))
             
-            f1 = f1_score(true_labels, predicted_labels, average=None)
+            # TODO: Разобраться с метриками и модернизировать их
+            numpy_true_labels = np.array(true_labels) # промежуточные преобразования для ускорения
+            true_labels_tensor = torch.from_numpy(numpy_true_labels)
+            ba, f1 = [], []
+            for i in range(len(FeaturesForDataset.FEATURES_TARGET)): # 'binary' для бинарной классификации на каждом классе
+                true_binary = true_labels_tensor[:, i].flatten()
+                pred_binary = predicted_labels[:, i].flatten()
+                
+                ba.append(balanced_accuracy_score(true_binary, pred_binary))
+                f1.append(f1_score(true_binary, pred_binary, average='binary'))
             
-            # TODO: Сделать balanced_accuracy_score мультимодальным, причём, когда одновременно разные столбцы могут быть равны 1
-            # ba = balanced_accuracy_score(true_labels, predicted_labels)
-            # print(
-            #     f"Epoch [{epoch+1}/{EPOCHS}], Step [{i+1}/{len(train_dataloader)}], Test loss: {loss_test:.4f}, F1: {f1}, Balanced Accuracy: {ba}"
-            # )
+            message_f1_ba = (
+                             f"Prev. test loss: {loss_test:.4f} "
+                             f"F1 / BA: {', '.join([f'{signal_name}: {f1_score:.4f}/{ba_score:.4f}' for signal_name, f1_score, ba_score in zip(FeaturesForDataset.FEATURES_TARGET, f1, ba)])} "
+                             )
+            print(message_f1_ba)
+            # Hamming Loss - чем меньше, тем лучше
+            hl = hamming_loss(true_labels, predicted_labels)
+            # Jaccard Score - для многолейбловой задачи, 'samples' для подсчета по образцам - чем ближе к 1, тем лучше
+            js = jaccard_score(true_labels, predicted_labels, average='samples')
+            print(f"Hamming Loss: {hl}, Jaccard Score: {js}")
+
             if loss_test < min_loss_test:
-                torch.save(model, f"model_ep{epoch+1}_tl{loss_test:.4f}.pt")
+                torch.save(model, f"ML_model/trained_models/model_ep{epoch+1}_tl{loss_test:.4f}.pt")
                 min_loss_test = loss_test
             model.train()
             # scheduler.step(loss_test) # constant LR
