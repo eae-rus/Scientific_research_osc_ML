@@ -1,4 +1,5 @@
 import os
+import sys
 import random
 
 import matplotlib.pyplot as plt
@@ -15,16 +16,18 @@ from tqdm import tqdm
 
 from sklearn.metrics import hamming_loss, jaccard_score
 
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+sys.path.append(ROOT_DIR)
 from model import CONV_MLP, KAN_firrst
 
 
 class FeaturesForDataset():
-        # FEATURES_CURRENT = ["IA", "IB", "IC"]
-        FEATURES_CURRENT = ["IA", "IC"]
-        # FEATURES_VOLTAGE = ["UA BB", "UB BB", "UC BB", "UN BB",
-        #                     "UA CL", "UB CL", "UC CL", "UN CL",
-        #                     "UAB CL","UBC CL","UCA CL"]
-        FEATURES_VOLTAGE = ["UA BB", "UB BB", "UC BB", "UN BB"]
+        FEATURES_CURRENT = ["IA", "IB", "IC"]
+        # FEATURES_CURRENT = ["IA", "IC"]
+        FEATURES_VOLTAGE = ["UA BB", "UB BB", "UC BB", "UN BB",
+                            "UA CL", "UB CL", "UC CL", "UN CL",
+                            "UAB CL","UBC CL","UCA CL"]
+        # FEATURES_VOLTAGE = ["UA BB", "UB BB", "UC BB", "UN BB"]
         FEATURES = FEATURES_CURRENT.copy()
         FEATURES.extend(FEATURES_VOLTAGE)
         
@@ -35,7 +38,7 @@ class FeaturesForDataset():
         FEATURES_TARGET_WITH_FILENAME.extend(FEATURES_TARGET)
         
         # WEIGHT_IMPORTANCE_TARGET = {"normal": 0.1, "opr_swch": 1, "abnorm_evnt": 5, "emerg_evnt": 10}
-        WEIGHT_IMPORTANCE_TARGET = {"opr_swch": 1, "abnorm_evnt": 2, "emerg_evnt": 3}
+        WEIGHT_IMPORTANCE_TARGET = {"opr_swch": 1, "abnorm_evnt": 3, "emerg_evnt": 5}
 
 class CustomDataset(Dataset):
 
@@ -156,7 +159,7 @@ def seed_everything(seed: int = 42):
 
 if __name__ == "__main__":
 
-    FRAME_SIZE = 64 # 32
+    FRAME_SIZE = 32 # 64
     BATCH_SIZE_TRAIN = 128
     BATCH_SIZE_TEST = 1024
     HIDDEN_SIZE = 40
@@ -171,7 +174,7 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     # device = "cpu"
 
-    file_csv = "ML_model/datset_simpl v1.1 (MLOps).csv"
+    file_csv = "ML_model/datset_simpl v1.csv"
     # Create the folder if it doesn't exist
     folder_path = "/ML_model"
     os.makedirs(folder_path, exist_ok=True)
@@ -358,8 +361,8 @@ if __name__ == "__main__":
 
     start_epoch = 0
     # !! создание новой !!
-    #model = CONV_MLP(
-    model = KAN_firrst(
+    model = CONV_MLP(
+    #model = KAN_firrst(
         FRAME_SIZE,
         channel_num=len(FeaturesForDataset.FEATURES),
         hidden_size=HIDDEN_SIZE,
@@ -368,7 +371,7 @@ if __name__ == "__main__":
     
     model.to(device)
     # !! Загрузка модели из файла !!
-    # filename_model = "ML_model/trained_models/model_ep7_tl0.3257.pt"
+    # filename_model = "ML_model/trained_models/model_ep31_tl0.0061_train119.7887.pt"
     # model = torch.load(filename_model)
     # start_epoch = int(filename_model.split("ep")[1].split("_")[0])
     # model.eval()  # Set the model to evaluation mode
@@ -501,8 +504,9 @@ if __name__ == "__main__":
             js = jaccard_score(true_labels, predicted_labels, average='samples')
             print(f"Hamming Loss: {hl}, Jaccard Score: {js}")
 
+            torch.save(model, f"ML_model/trained_models/model_ep{epoch+1}_tl{loss_test:.4f}_train{loss_sum:.4f}.pt")
             if loss_test < min_loss_test:
-                torch.save(model, f"ML_model/trained_models/model_ep{epoch+1}_tl{loss_test:.4f}.pt")
+                #torch.save(model, f"ML_model/trained_models/model_ep{epoch+1}_tl{loss_test:.4f}.pt")
                 min_loss_test = loss_test
             model.train()
             # scheduler.step(loss_test) # constant LR
