@@ -75,6 +75,26 @@ class RawToCSV():
         
         dataset_df.to_csv(self.csv_path + csv_name, index=False)
         return dataset_df
+    
+    def create_one_df(self, file_path, file_name) -> pd.DataFrame:
+        """
+        The function of converting a single Comtrade file to pd.DataFrame().
+
+        Args:
+            file_path (str): The path to comtrade file.
+            file_name (str): The name of comtrade file.
+            
+        Returns:
+            pd.DataFrame: The DataFrame of the comtrade file.
+        """
+        dataset_df = pd.DataFrame()
+        _, raw_df = self.read_comtrade(file_path)
+        self.check_columns(raw_df)
+        if not raw_df.empty:
+            raw_df = raw_df.reset_index()
+            dataset_df = self.split_buses(raw_df, file_name)
+
+        return dataset_df
 
     def read_comtrade(self, file_name):
         """
