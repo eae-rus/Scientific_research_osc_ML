@@ -1,7 +1,7 @@
 import os
+import sys
 import datetime
 from tqdm import tqdm
-import sys
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
