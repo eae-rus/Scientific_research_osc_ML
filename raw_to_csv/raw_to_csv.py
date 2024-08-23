@@ -502,10 +502,13 @@ class RawToCSV():
         ml_emerg_evnt = set(self.ml_emerg_evnt).intersection(column_names)
         ml_all = ml_opr_swch.union(ml_abnorm_evnt).union(ml_emerg_evnt)
         
-        dataset_df["opr_swch"] = dataset_df[list(ml_opr_swch)].apply(lambda x: 1 if x.any() else "", axis=1)
+        dataset_df["emerg_evnt"] = dataset_df[list(ml_emerg_evnt)].apply(lambda x: 1 if x.any() else "", axis=1)
         dataset_df["abnorm_evnt"] = dataset_df[list(ml_abnorm_evnt)].apply(lambda x: 1 if x.any() else "", axis=1)
+        dataset_df.loc[dataset_df['emerg_evnt'] == 1, 'abnorm_evnt'] = ""
         dataset_df["emerg_evnt"] = dataset_df[list(ml_emerg_evnt)].apply(lambda x: 1 if x.any() else "", axis=1)
         dataset_df["normal"] = dataset_df[list(ml_all)].apply(lambda x: "" if 1 in x.values else 1, axis=1)
+        dataset_df["no_event"] = dataset_df[["abnorm_evnt", 'emerg_evnt']].apply(lambda x: "" if 1 in x.values else 1, axis=1)
+        
         # Drop ML signals
         dataset_df = dataset_df.drop(columns=ml_all)
         
