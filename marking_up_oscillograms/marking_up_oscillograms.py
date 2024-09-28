@@ -89,6 +89,8 @@ class MarkingUpOscillograms(RawToCSV):
         with tqdm(total=len(raw_files), desc="Convert Comtrade to CSV") as pbar:
             for file in raw_files:
                 df = self.create_one_df(self.raw_path + file + ".cfg", file + ".cfg")
+                if df.empty:
+                    continue # Protection empty df
                 names_osc = df["file_name"].unique()
                 for name_osc in names_osc:
                     count_events = {name : 0 for name in FeaturesForDataset.FEATURES_TARGET}
