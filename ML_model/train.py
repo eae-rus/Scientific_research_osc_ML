@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 import csv
 import json
+import time
 
 from sklearn.metrics import hamming_loss, jaccard_score
 
@@ -169,40 +170,64 @@ def seed_everything(seed: int = 42):
     torch.backends.cudnn.benchmark = False
 
 # Сохранение статистики в CSV-файл
-def save_stats_to_csv(epoch, batch_count, train_loss, test_loss, mean_f1, mean_ba, hamming, jaccard, lr, f1_per_class, ba_per_class):
-    """Сохраняем данные в CSV файл."""
+def save_stats_to_csv(epoch, batch_count, epoch_duration, train_loss, test_loss, mean_f1, mean_ba, hamming, jaccard, lr, f1_per_class, ba_per_class):
+    """Сохраняем данные в CSV файл с заголовками."""
+    # Путь к основному файлу статистики
+    training_statistics_file = "ML_model/trained_models/training_statistics.csv"
+    per_class_metrics_file = "ML_model/trained_models/per_class_metrics.csv"
+
     # Создаем или открываем файл для записи общей статистики
-    with open("ML_model/trained_models/training_statistics.csv", mode="a", newline='') as file:
+    with open(training_statistics_file, mode="a", newline='') as file:
         writer = csv.writer(file)
-        # Записываем строку: Эпоха, Батч, Потери (Train/Test), Средние F1/BA, Hamming Loss, Jaccard Score, Learning Rate
-        writer.writerow([epoch, batch_count, train_loss, test_loss, mean_f1, mean_ba, hamming, jaccard, lr])
+
+        # Записываем заголовок, если файл пустой
+        if os.stat(training_statistics_file).st_size == 0:
+            header = [
+                "epoch", "batch_count", "epoch_duration",
+                "train_loss", "test_loss", "mean_f1", "mean_ba",
+                "hamming_loss", "jaccard_score", "learning_rate"
+            ]
+            writer.writerow(header)
+
+        # Записываем строку с текущими значениями
+        writer.writerow([
+            epoch, batch_count, epoch_duration, train_loss, test_loss,
+            mean_f1, mean_ba, hamming, jaccard, lr
+        ])
 
     # Сохраняем метрики по каждому классу в отдельный CSV файл
-    with open("ML_model/trained_models/per_class_metrics.csv", mode="a", newline='') as file:
+    with open(per_class_metrics_file, mode="a", newline='') as file:
         writer = csv.writer(file)
+
         # Записываем заголовок, если файл пустой
-        if file.tell() == 0:
-            header = ["epoch", "batch_count"] + [f"{feature}_f1" for feature in FeaturesForDataset.FEATURES_TARGET] + [f"{feature}_ba" for feature in FeaturesForDataset.FEATURES_TARGET]
+        if os.stat(per_class_metrics_file).st_size == 0:
+            header = ["epoch", "batch_count", "epoch_duration"] + [
+                f"{feature}_f1" for feature in FeaturesForDataset.FEATURES_TARGET
+            ] + [
+                f"{feature}_ba" for feature in FeaturesForDataset.FEATURES_TARGET
+            ]
             writer.writerow(header)
 
         # Формируем строку с метриками для текущей эпохи и батча
-        row = [epoch, batch_count] + f1_per_class + ba_per_class
+        row = [epoch, batch_count, epoch_duration] + f1_per_class + ba_per_class
         writer.writerow(row)
-    
+
+    # Сохранение статистики в JSON
     save_stats_to_json(
-        "ML_model/trained_models/epoch_statistics.json", epoch, batch_count, 
-        loss_sum / len(train_dataloader), test_loss,
-        mean_f1, mean_ba, hamming, jaccard, current_lr,
+        "ML_model/trained_models/epoch_statistics.json", epoch, batch_count, epoch_duration,
+        train_loss, test_loss,
+        mean_f1, mean_ba, hamming, jaccard, lr,
         f1_per_class=f1, ba_per_class=ba
     )
 
 
-def save_stats_to_json(filename, epoch, batch_count, train_loss, test_loss, mean_f1, mean_ba, hamming, jaccard, lr, f1_per_class, ba_per_class):
+def save_stats_to_json(filename, epoch, batch_count, epoch_duration, train_loss, test_loss, mean_f1, mean_ba, hamming, jaccard, lr, f1_per_class, ba_per_class):
     """Сохранение статистики в JSON формате."""
     # Создаем структуру данных
     data = {
         "epoch": epoch,
         "batch_count": batch_count,
+        "epoch_duration": epoch_duration,
         "train_loss": train_loss,
         "test_loss": test_loss,
         "mean_f1": mean_f1,
@@ -429,6 +454,7 @@ if __name__ == "__main__":
     current_lr = LEARNING_RATE
     batch_count = 0
     for epoch in range(start_epoch,EPOCHS):
+        epoch_start_time = time.time()  # Начало отсчета времени для эпохи
         if (epoch % 10 == 0) and (epoch != 0):
             current_lr /= 2
         optimizer = torch.optim.Adam(model.parameters(), lr=current_lr)
@@ -508,13 +534,18 @@ if __name__ == "__main__":
             loss_test = test_loss / len(test_dataloader) # Средние потери на тестовой выборке
             mean_f1 = np.mean(f1)  # Средний F1-score по всем классам
             mean_ba = np.mean(ba)  # Средний Balanced Accuracy по всем классам
+            
+            # Время обучения текущей эпохи
+            epoch_end_time = time.time()
+            epoch_duration = epoch_end_time - epoch_start_time  # Время в секундах
 
             # Сохраняем данные в CSV
             save_stats_to_csv(
-                epoch, batch_count, loss_sum / len(train_dataloader), test_loss,
+                epoch, batch_count, epoch_duration, loss_sum / len(train_dataloader), test_loss,
                 mean_f1, mean_ba, hamming, jaccard, current_lr,
                 f1_per_class=f1, ba_per_class=ba
             )   
+
 
             # Сообщение для tqdm
             t.set_postfix_str(f"Batch: {batch_count}, Train loss: {loss_sum / (i + 1):.4f}, Test loss: {test_loss:.4f}, LR: {current_lr:.4e}")
