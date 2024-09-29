@@ -12,91 +12,250 @@ from kan_convolutional.KANLinear import KANLinear
 # from kan import *
 # KAN
 
-class CONV_MLP(nn.Module):
+    
+class CONV_MLP_v2(nn.Module):
     def __init__(
-        self, frame_size, channel_num=5, hidden_size=40, output_size=4
+        self, frame_size, channel_num=5, hidden_size=40, output_size=4, device = None,
     ):
         # TODO: разобраться в схеме обработки сигналов
         # TODO: Подумать о создании более сложной схемы (2D свёртки, чтобы одновременно и I и U)
-        super(CONV_MLP, self).__init__()
-        self.conv = nn.Sequential(
+        self.channel_num = channel_num
+        self.hidden_size = hidden_size
+        self.device = device
+        super(CONV_MLP_v2, self).__init__()
+        self.conv32 = nn.Sequential(
             nn.Conv1d(
-                channel_num,
-                int(hidden_size//4),
+                1,
+                8,
                 kernel_size=32,
-                stride=1,
-                padding=1,
-                padding_mode="circular",
+                stride=16,
             ),
-            nn.ReLU(True),
-        )
-        self.conv2 = nn.Sequential(
-            nn.Conv1d(
-                channel_num,
-                int(hidden_size//2),
-                kernel_size=16,
-                stride=1,
-                padding=1,
-                padding_mode="circular",
-            ),
-            nn.ReLU(True),
+            nn.LeakyReLU(True),
         )
         self.conv3 = nn.Sequential(
             nn.Conv1d(
-                channel_num,
-                int(hidden_size//2),
-                kernel_size=8,
+                1,
+                2*8,
+                kernel_size=3,
                 stride=1,
                 padding=1,
                 padding_mode="circular",
             ),
-            nn.ReLU(True),
+            nn.LeakyReLU(True),
+            nn.MaxPool1d(kernel_size=2, stride=2), # 32*16 -> 16*16
+            nn.Conv1d(
+                16,
+                4*8,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+                padding_mode="circular",
+            ),
+            nn.LeakyReLU(True),
+            nn.MaxPool1d(kernel_size=2, stride=2), # 16*32 -> 8*32
+            nn.Conv1d(
+                4*8,
+                4*8,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+                padding_mode="circular",
+            ),
+            nn.LeakyReLU(True),
+            nn.MaxPool1d(kernel_size=8, stride=8), # 8*32 -> 1*32
         )
 
         # TODO: исправить расчётывание выходного размера после свёрток
         # пока что задаю принудительно 128*16
-        self.fc = nn.Sequential(
-            nn.Linear(950, hidden_size//2), # nn.Linear(hidden_size * 7, hidden_size),
-            nn.ReLU(True),
-            nn.Linear(hidden_size//2, output_size),
+        self.fc_opr_swch = nn.Sequential(
+            nn.Linear((24+32)*14, hidden_size),
+            nn.LeakyReLU(True),
+            nn.Linear(hidden_size, 4*hidden_size),
+            nn.LeakyReLU(),
+            nn.Linear(4*hidden_size, hidden_size),
+            nn.LeakyReLU(),
+            nn.Linear(hidden_size, hidden_size//2),
+            nn.LeakyReLU(),
+            nn.Linear(hidden_size//2, 1),
+            nn.Sigmoid(),
+        )
+        self.fc_abnorm_evnt = nn.Sequential(
+            nn.Linear((24+32)*14, hidden_size),
+            nn.LeakyReLU(True),
+            nn.Linear(hidden_size, 4*hidden_size),
+            nn.LeakyReLU(),
+            nn.Linear(4*hidden_size, hidden_size),
+            nn.LeakyReLU(),
+            nn.Linear(hidden_size, hidden_size//2),
+            nn.LeakyReLU(),
+            nn.Linear(hidden_size//2, 1),
+            nn.Sigmoid(),
+        )
+        self.fc_emerg_evnt = nn.Sequential(
+            nn.Linear((24+32)*14, hidden_size),
+            nn.LeakyReLU(True),
+            nn.Linear(hidden_size, 4*hidden_size),
+            nn.LeakyReLU(),
+            nn.Linear(4*hidden_size, hidden_size),
+            nn.LeakyReLU(),
+            nn.Linear(hidden_size, hidden_size//2),
+            nn.LeakyReLU(),
+            nn.Linear(hidden_size//2, 1),
             nn.Sigmoid(),
         )
 
     def forward(self, x):
-        x1 = self.conv(x.permute(0, 2, 1))
-        x1 = x1.view(x1.size(0), x1.size(1) * x1.size(2))
-        x2 = self.conv2(x.permute(0, 2, 1))
-        x2 = x2.view(x2.size(0), x2.size(1) * x2.size(2))
-        x3 = self.conv3(x.permute(0, 2, 1))
-        x3 = x3.view(x3.size(0), x3.size(1) * x3.size(2))
-        # Concatenate tensors along axis 0
-        x = torch.cat((x1, x2, x3), dim=1)
-        x = self.fc(x)
+        x = x.permute(0, 2, 1)
+        X_sum = torch.zeros(x.size(0), 24+32, self.channel_num, device=self.device)
+        for i in range(self.channel_num):
+            x_i = x[:, i:i+1, :]
+            x1 = self.conv32(x_i)
+            x1 = x1.view(x1.size(0), -1)
+            x3 = self.conv3(x_i[:, :, 32:])
+            x3 = x3.view(x3.size(0), -1)
+            # Concatenate tensors along axis 0
+            x_i = torch.cat((x1, x3), dim=1)
+            X_sum[:,:, i] = x_i
+            
+        X_sum = X_sum.view(X_sum.size(0), -1)  # Flatten the tensor to 2 dimensions
+        # FEATURES_TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt"]
+        x_opr_swch = self.fc_opr_swch(X_sum)
+        x_abnorm_evnt = self.fc_abnorm_evnt(X_sum)
+        x_emerg_evnt = self.fc_emerg_evnt(X_sum)
+        x = torch.cat((x_opr_swch, x_abnorm_evnt, x_emerg_evnt), dim=1)
         return x
 
-class KAN_firrst(nn.Module):
+
+class FFT_MLP(nn.Module):
     def __init__(
-        self, frame_size, channel_num=5, hidden_size=40, output_size=4
+        self, frame_size, channel_num=5, hidden_size=40, output_size=4, device = None,
     ):
-        # пример взят у https://github.com/AntonioTepsich/Convolutional-KANs.git
-        # https://arxiv.org/pdf/2406.13155
-        super(KAN_firrst, self).__init__()
-        self.conv = nn.Sequential(
-            nn.Conv1d(
-                channel_num,
-                int(hidden_size),
-                kernel_size=32,
-                stride=1,
-                padding=1,
-                padding_mode="circular",
-            ),
-            nn.ReLU(True),
-            nn.MaxPool1d(kernel_size=2, stride=2),
+        # TODO: разобраться в схеме обработки сигналов
+        # TODO: Подумать о создании более сложной схемы (2D свёртки, чтобы одновременно и I и U)
+        self.channel_num = channel_num
+        self.hidden_size = hidden_size
+        self.device = device
+        super(FFT_MLP, self).__init__()
+
+        # TODO: исправить расчётывание выходного размера после свёрток
+        # пока что задаю принудительно 128*16
+        self.fc = nn.Sequential(
+            nn.Linear(4*9*14, 4*hidden_size),
+            nn.LeakyReLU(0.05),
+            nn.Linear(4*hidden_size, 4*hidden_size),
+            nn.LeakyReLU(0.05),
+            nn.Linear(4*hidden_size, 2*hidden_size),
+            nn.LeakyReLU(0.05),
+            nn.Linear(2*hidden_size, hidden_size),
+            nn.LeakyReLU(0.05),
+        )
+        self.fc_opr_swch = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size//2),
+            nn.LeakyReLU(0.05),
+            nn.Linear(hidden_size//2, 1),
+            nn.Sigmoid(),
+        )
+        self.fc_abnorm_evnt = nn.Sequential(
+
+            nn.Linear(hidden_size, hidden_size//2),
+            nn.LeakyReLU(0.05),
+            nn.Linear(hidden_size//2, 1),
+            nn.Sigmoid(),
+        )
+        self.fc_emerg_evnt = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size//2),
+            nn.LeakyReLU(0.05),
+            nn.Linear(hidden_size//2, 1),
+            nn.Sigmoid(),
         )
 
+    def fft_calc(self, input, count_harmonic=1):
+        # input - тензор формы (batch_size, channel_num, frame_size)
+        batch_size, channel_num, frame_size = input.size()
+        
+        # Вычисление FFT для каждого канала
+        fft_result_previous = torch.fft.rfft(input[:,:,:32])  # Одностороннее комплексное преобразование Фурье (работает с реальными числами)
+        fft_result_current = torch.fft.rfft(input[:,:,32:]) 
+
+        # Ограничиваем количество гармоник до count_harmonic + 1
+        fft_result_previous = fft_result_previous[:, :, :count_harmonic+1]
+        fft_result_current = fft_result_current[:, :, :count_harmonic+1]
+
+        # Извлечение амплитуды и фазы только для выбранных гармоник
+        fft_amplitude_previous = torch.abs(fft_result_previous)  # Амплитуда
+        fft_amplitude_current = torch.abs(fft_result_current)
+        fft_phase_previous = torch.angle(fft_result_current)  # Фаза
+        fft_phase_current = torch.angle(fft_result_current)
+
+        # Объединяем амплитуду и фазу в один тензор с последующим разворачиванием
+        # Амплитуда и фаза будут идти последовательно по последней размерности
+        # Например, (batch_size, channel_num, count_harmonic+1, 2) -> (batch_size, channel_num, (count_harmonic+1)*2)
+        fft_combined = torch.cat((fft_amplitude_previous, fft_phase_previous, fft_amplitude_current, fft_phase_current), dim=-1)  # Склеиваем по последней размерности
+
+        # Изменение формы результирующего тензора, чтобы убрать лишние измерения
+        # (batch_size, channel_num, count_harmonic+1, 2) -> (batch_size, channel_num, (count_harmonic+1)*2)
+        # fft_combined = fft_combined.view(batch_size, channel_num, -1)
+        
+        return fft_combined
+        
+    def forward(self, x):
+        ## ТРЕБУЕТСЯ сделать независимые выходы для КАЖДОГО класса 
+        x = x.view(x.size(0), x.size(2), x.size(1))
+        x = self.fft_calc(x, count_harmonic = 8)
+        # Concatenate tensors along axis 0
+        x = x.view(x.size(0), -1)
+        x = self.fc(x)
+        
+        # FEATURES_TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt"]
+        x_opr_swch = self.fc_opr_swch(x)
+        x_abnorm_evnt = self.fc_abnorm_evnt(x)
+        x_emerg_evnt = self.fc_emerg_evnt(x)
+        x = torch.cat((x_opr_swch, x_abnorm_evnt, x_emerg_evnt), dim=1)
+        return x
+
+class FFT_MLP_KAN_v1(nn.Module):
+    def __init__(
+        self, frame_size, channel_num=5, hidden_size=40, output_size=4, device = None,
+    ):
+        # TODO: разобраться в схеме обработки сигналов
+        # TODO: Подумать о создании более сложной схемы (2D свёртки, чтобы одновременно и I и U)
+        self.channel_num = channel_num
+        self.hidden_size = hidden_size
+        self.device = device
+        super(FFT_MLP_KAN_v1, self).__init__()
+        
         # TODO: Расписать # KANLayer
-        conv_output_size = (frame_size - 30) // 2  # Предполагаем, что размер фрейма уменьшается после свёртки и пулинга
-        self.kan1 = KANLinear(in_features=conv_output_size * hidden_size,
+        self.kan1 = KANLinear(in_features=4*9*14,
+                             out_features=2*hidden_size,
+                             grid_size=10,
+                             spline_order=3,
+                             scale_noise=0.01,
+                             scale_base=1,
+                             scale_spline=1,
+                             base_activation=nn.SiLU,
+                             grid_eps=0.02,
+                             grid_range=[0,1])
+        self.kan2 = KANLinear(in_features=2*hidden_size,
+                             out_features=4*hidden_size,
+                             grid_size=10,
+                             spline_order=3,
+                             scale_noise=0.01,
+                             scale_base=1,
+                             scale_spline=1,
+                             base_activation=nn.SiLU,
+                             grid_eps=0.02,
+                             grid_range=[0,1])
+        self.kan3 = KANLinear(in_features=4*hidden_size,
+                             out_features=2*hidden_size,
+                             grid_size=10,
+                             spline_order=3,
+                             scale_noise=0.01,
+                             scale_base=1,
+                             scale_spline=1,
+                             base_activation=nn.SiLU,
+                             grid_eps=0.02,
+                             grid_range=[0,1])
+        self.kan4 = KANLinear(in_features=2*hidden_size,
                              out_features=hidden_size,
                              grid_size=10,
                              spline_order=3,
@@ -106,24 +265,77 @@ class KAN_firrst(nn.Module):
                              base_activation=nn.SiLU,
                              grid_eps=0.02,
                              grid_range=[0,1])
-        self.kan2 = KANLinear(in_features=hidden_size,
-                             out_features=output_size,
-                             grid_size=10,
-                             spline_order=3,
-                             scale_noise=0.01,
-                             scale_base=1,
-                             scale_spline=1,
-                             base_activation=nn.SiLU,
-                             grid_eps=0.02,
-                             grid_range=[0,1])
+        
+        self.fc_opr_swch = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size), # nn.Linear(hidden_size * 7, hidden_size),
+            nn.LeakyReLU(True),
+            nn.Linear(hidden_size, hidden_size//2),
+            nn.LeakyReLU(0.05),
+            nn.Linear(hidden_size//2, 1),
+            nn.Sigmoid(),
+        )
+        self.fc_abnorm_evnt = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size), # nn.Linear(hidden_size * 7, hidden_size),
+            nn.LeakyReLU(True),
+            nn.Linear(hidden_size, hidden_size//2),
+            nn.LeakyReLU(0.05),
+            nn.Linear(hidden_size//2, 1),
+            nn.Sigmoid(),
+        )
+        self.fc_emerg_evnt = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size), # nn.Linear(hidden_size * 7, hidden_size),
+            nn.LeakyReLU(True),
+            nn.Linear(hidden_size, hidden_size//2),
+            nn.LeakyReLU(0.05),
+            nn.Linear(hidden_size//2, 1),
+            nn.Sigmoid(),
+        )
 
+    def fft_calc(self, input, count_harmonic=1, device = None):
+        # input - тензор формы (batch_size, channel_num, frame_size)
+        batch_size, channel_num, frame_size = input.size()
+        
+        # Вычисление FFT для каждого канала
+        fft_result_previous = torch.fft.rfft(input[:,:,:32])  # Одностороннее комплексное преобразование Фурье (работает с реальными числами)
+        fft_result_current = torch.fft.rfft(input[:,:,32:]) 
+
+        # Ограничиваем количество гармоник до count_harmonic + 1
+        fft_result_previous = fft_result_previous[:, :, :count_harmonic+1]
+        fft_result_current = fft_result_current[:, :, :count_harmonic+1]
+
+        # Извлечение амплитуды и фазы только для выбранных гармоник
+        fft_amplitude_previous = torch.abs(fft_result_previous)  # Амплитуда
+        fft_amplitude_current = torch.abs(fft_result_current)
+        fft_phase_previous = torch.angle(fft_result_current)  # Фаза
+        fft_phase_current = torch.angle(fft_result_current)
+
+        # Объединяем амплитуду и фазу в один тензор с последующим разворачиванием
+        # Амплитуда и фаза будут идти последовательно по последней размерности
+        # Например, (batch_size, channel_num, count_harmonic+1, 2) -> (batch_size, channel_num, (count_harmonic+1)*2)
+        fft_combined = torch.cat((fft_amplitude_previous, fft_phase_previous, fft_amplitude_current, fft_phase_current), dim=-1)  # Склеиваем по последней размерности
+
+        # Изменение формы результирующего тензора, чтобы убрать лишние измерения
+        # (batch_size, channel_num, count_harmonic+1, 2) -> (batch_size, channel_num, (count_harmonic+1)*2)
+        # fft_combined = fft_combined.view(batch_size, channel_num, -1)
+        
+        return fft_combined
+        
     def forward(self, x):
-        x = self.conv(x.permute(0, 2, 1))
+        x = x.view(x.size(0), x.size(2), x.size(1))
+        x = self.fft_calc(x, count_harmonic = 8)
+        # Concatenate tensors along axis 0
         x = x.view(x.size(0), -1)
         x = self.kan1(x)
         x = self.kan2(x)
+        x = self.kan3(x)
+        x = self.kan4(x)
+        
+        # FEATURES_TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt"]
+        x_opr_swch = self.fc_opr_swch(x)
+        x_abnorm_evnt = self.fc_abnorm_evnt(x)
+        x_emerg_evnt = self.fc_emerg_evnt(x)
+        x = torch.cat((x_opr_swch, x_abnorm_evnt, x_emerg_evnt), dim=1)
         return x
 
-
 if __name__ == "__main__":
-    print(CONV_MLP())
+    print(CONV_MLP_v2())
