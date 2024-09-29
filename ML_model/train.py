@@ -11,6 +11,8 @@ from sklearn.metrics import balanced_accuracy_score, f1_score
 from sklearn.preprocessing import StandardScaler
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
+import csv
+import json
 
 from sklearn.metrics import hamming_loss, jaccard_score
 
@@ -166,6 +168,55 @@ def seed_everything(seed: int = 42):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+# Сохранение статистики в CSV-файл
+def save_stats_to_csv(epoch, batch_count, train_loss, test_loss, mean_f1, mean_ba, hamming, jaccard, lr, f1_per_class, ba_per_class):
+    """Сохраняем данные в CSV файл."""
+    # Создаем или открываем файл для записи общей статистики
+    with open("ML_model/trained_models/training_statistics.csv", mode="a", newline='') as file:
+        writer = csv.writer(file)
+        # Записываем строку: Эпоха, Батч, Потери (Train/Test), Средние F1/BA, Hamming Loss, Jaccard Score, Learning Rate
+        writer.writerow([epoch, batch_count, train_loss, test_loss, mean_f1, mean_ba, hamming, jaccard, lr])
+
+    # Сохраняем метрики по каждому классу в отдельный CSV файл
+    with open("ML_model/trained_models/per_class_metrics.csv", mode="a", newline='') as file:
+        writer = csv.writer(file)
+        # Записываем заголовок, если файл пустой
+        if file.tell() == 0:
+            header = ["epoch", "batch_count"] + [f"{feature}_f1" for feature in FeaturesForDataset.FEATURES_TARGET] + [f"{feature}_ba" for feature in FeaturesForDataset.FEATURES_TARGET]
+            writer.writerow(header)
+
+        # Формируем строку с метриками для текущей эпохи и батча
+        row = [epoch, batch_count] + f1_per_class + ba_per_class
+        writer.writerow(row)
+    
+    save_stats_to_json(
+        "ML_model/trained_models/epoch_statistics.json", epoch, batch_count, 
+        loss_sum / len(train_dataloader), test_loss,
+        mean_f1, mean_ba, hamming, jaccard, current_lr,
+        f1_per_class=f1, ba_per_class=ba
+    )
+
+
+def save_stats_to_json(filename, epoch, batch_count, train_loss, test_loss, mean_f1, mean_ba, hamming, jaccard, lr, f1_per_class, ba_per_class):
+    """Сохранение статистики в JSON формате."""
+    # Создаем структуру данных
+    data = {
+        "epoch": epoch,
+        "batch_count": batch_count,
+        "train_loss": train_loss,
+        "test_loss": test_loss,
+        "mean_f1": mean_f1,
+        "mean_ba": mean_ba,
+        "hamming_loss": hamming,
+        "jaccard_score": jaccard,
+        "learning_rate": lr,
+        "f1_scores_per_class": {feature: f1 for feature, f1 in zip(FeaturesForDataset.FEATURES_TARGET, f1_per_class)},
+        "balanced_accuracy_per_class": {feature: ba for feature, ba in zip(FeaturesForDataset.FEATURES_TARGET, ba_per_class)}
+    }
+
+    # Записываем в файл
+    with open(filename, "a") as file:
+        json.dump(data, file, indent=4)
 
 if __name__ == "__main__":
     FRAME_SIZE = 64 # 64
@@ -356,9 +407,29 @@ if __name__ == "__main__":
     train_dataloader = DataLoader(train_dataset, batch_sampler=sampler)
     test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE_TEST)
 
-    current_lr = 2*LEARNING_RATE
+    # Инициализация DataFrame для статистики
+    # Статистика по каждому классу и общей метрике
+    epoch_statistics = {
+        "epoch": [],
+        "train_loss": [],
+        "train_accuracy": [],
+        "test_loss": [],
+        "test_accuracy": [],
+        "f1_scores_per_class": [],
+        "balanced_accuracy_per_class": [],
+        "hamming_loss": [],
+        "jaccard_score": [],
+        "learning_rate": []
+    }
+
+    # Также можно создать CSV для хранения метрик каждой эпохи с разбивкой по классам
+    per_class_metrics = {feature_name: {"f1_score": [], "balanced_accuracy": []} for feature_name in FeaturesForDataset.FEATURES_TARGET}
+
+
+    current_lr = LEARNING_RATE
+    batch_count = 0
     for epoch in range(start_epoch,EPOCHS):
-        if epoch // 10 == 0:
+        if (epoch % 10 == 0) and (epoch != 0):
             current_lr /= 2
         optimizer = torch.optim.Adam(model.parameters(), lr=current_lr)
         #optimizer = torch.optim.Adam(model.parameters(), lr=current_lr, weight_decay=L2_REGULARIZATION_COEFFICIENT)
@@ -374,7 +445,9 @@ if __name__ == "__main__":
                 if (batch == None or targets == None):
                     # TODO: Защита от необрезанных массивов. Но сюда не должно попадать.
                     continue
-
+                
+                batch_count += 1  # Счётчик батчей
+                
                 targets = targets.to(device)
                 batch = batch.to(device)
 
@@ -395,51 +468,62 @@ if __name__ == "__main__":
                 )
                 optimizer.step()
 
-                # print(f"Epoch {epoch + 1}, Step {i + 1}, Loss: {loss.item()}")
-
             model.eval()
-            true_labels = []
-            predicted_labels = []
-            loss_test = 0.0
-            # FIXME: разобраться, почему не сходятся массивы меток. [12460, 172]
+
+            # Сохранение статистики каждую эпоху
+            # Выполняем оценку на тестовой выборке
+            test_loss = 0.0
+            true_labels, predicted_labels = [], []
             with torch.no_grad():
                 for inputs, labels in test_dataloader:
                     inputs = inputs.to(device)
                     outputs = model(inputs)
-                    loss_test += criterion(
-                        outputs, labels.to(device).squeeze()
-                    ).item()
-                    # _, predicted = torch.max(outputs.data, 1)
-                    predicted = outputs.data
-                    true_labels.extend(labels.numpy())
-                    predicted_labels.extend(predicted.cpu().numpy())
-                loss_test /= len(test_dataloader)
-
+                    test_loss += criterion(outputs, labels.to(device)).item()
+                    true_labels.extend(labels.cpu().numpy())
+                    predicted_labels.extend(outputs.cpu().numpy())
+            
+            # Рассчитываем метрики
             numpy_labels = np.array(predicted_labels) # промежуточные преобразования для ускорения
             predicted_labels_tensor = torch.from_numpy(numpy_labels)
             predicted_labels = torch.where(predicted_labels_tensor >= 0.5, torch.tensor(1), torch.tensor(0))
+            # Hamming Loss - чем меньше, тем лучше
+            hamming = hamming_loss(true_labels, predicted_labels)
+            # Jaccard Score - для многолейбловой задачи, 'samples' для подсчета по образцам - чем ближе к 1, тем лучше
+            jaccard = jaccard_score(true_labels, predicted_labels, average='samples')
             
             # TODO: Разобраться с метриками и модернизировать их
             numpy_true_labels = np.array(true_labels) # промежуточные преобразования для ускорения
             true_labels_tensor = torch.from_numpy(numpy_true_labels)
             ba, f1 = [], []
-            for i in range(len(FeaturesForDataset.FEATURES_TARGET)): # 'binary' для бинарной классификации на каждом классе
-                true_binary = true_labels_tensor[:, i].flatten()
-                pred_binary = predicted_labels[:, i].flatten()
+            for k in range(len(FeaturesForDataset.FEATURES_TARGET)): # 'binary' для бинарной классификации на каждом классе
+                true_binary = true_labels_tensor[:, k].flatten()
+                pred_binary = predicted_labels[:, k].flatten()
                 
                 ba.append(balanced_accuracy_score(true_binary, pred_binary))
                 f1.append(f1_score(true_binary, pred_binary, average='binary'))
+
             
+            # Сохраняем данные
+            # Рассчитываем метрики после каждой эпохи
+            loss_test = test_loss / len(test_dataloader) # Средние потери на тестовой выборке
+            mean_f1 = np.mean(f1)  # Средний F1-score по всем классам
+            mean_ba = np.mean(ba)  # Средний Balanced Accuracy по всем классам
+
+            # Сохраняем данные в CSV
+            save_stats_to_csv(
+                epoch, batch_count, loss_sum / len(train_dataloader), test_loss,
+                mean_f1, mean_ba, hamming, jaccard, current_lr,
+                f1_per_class=f1, ba_per_class=ba
+            )   
+
+            # Сообщение для tqdm
+            t.set_postfix_str(f"Batch: {batch_count}, Train loss: {loss_sum / (i + 1):.4f}, Test loss: {test_loss:.4f}, LR: {current_lr:.4e}")
             message_f1_ba = (
                              f"Prev. test loss: {loss_test:.4f} "
                              f"F1 / BA: {', '.join([f'{signal_name}: {f1_score:.4f}/{ba_score:.4f}' for signal_name, f1_score, ba_score in zip(FeaturesForDataset.FEATURES_TARGET, f1, ba)])} "
                              )
             print(message_f1_ba)
-            # Hamming Loss - чем меньше, тем лучше
-            hl = hamming_loss(true_labels, predicted_labels)
-            # Jaccard Score - для многолейбловой задачи, 'samples' для подсчета по образцам - чем ближе к 1, тем лучше
-            js = jaccard_score(true_labels, predicted_labels, average='samples')
-            print(f"Hamming Loss: {hl}, Jaccard Score: {js}")
+            print(f"Hamming Loss: {hamming}, Jaccard Score: {jaccard}")
             
             torch.save(model, f"ML_model/trained_models/model_{name_model}_ep{epoch+1}_tl{loss_test:.4f}_train{loss_sum:.4f}.pt")
             model.train()
