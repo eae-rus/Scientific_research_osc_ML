@@ -29,6 +29,18 @@ class FeaturesForDataset():
                             "UA CL", "UB CL", "UC CL", "UN CL",
                             "UAB CL","UBC CL","UCA CL"]
         # FEATURES_VOLTAGE = ["UA BB", "UB BB", "UC BB", "UN BB"]
+        
+
+        FEATURES_VOLTAGE_PHAZE = ["UA BB", "UB BB", "UC BB",
+                                 "UA CL", "UB CL", "UC CL"]
+        FEATURES_VOLTAGE_LINE_NOMINAL = ["UN BB", "UN CL", "UAB CL", "UBC CL", "UCA CL"]
+        
+        FEATURES_VOLTAGE_PHAZE_BB = ["UA BB", "UB BB", "UC BB"]
+        FEATURES_VOLTAGE_PHAZE_CL = ["UA CL", "UB CL", "UC CL"]
+
+        FEATURES_VOLTAGE_LINE_CL = ["UAB CL", "UBC CL", "UCA CL"]
+        
+        
         FEATURES = FEATURES_CURRENT.copy()
         FEATURES.extend(FEATURES_VOLTAGE)
         
@@ -38,48 +50,144 @@ class FeaturesForDataset():
         FEATURES_TARGET_WITH_FILENAME = ["file_name"]
         FEATURES_TARGET_WITH_FILENAME.extend(FEATURES_TARGET)
 
+# TODO: Решить проблему различия __getitem__ в первой строке с "iloc" у CustomDataset_train и CustomDataset
 class CustomDataset_train(Dataset):
-    # TODO: Решить проблему различия __getitem__ в первой строке с "iloc"
-    def __init__(self, dt: pd.DataFrame(), indexes: pd.DataFrame(), frame_size: int, target_position: int = None):
-        """ Initialize the dataset.
+    def __init__(self, dt: pd.DataFrame(), indexes: pd.DataFrame(), frame_size: int, target_position: int = None, 
+                 apply_inversion: bool = False, apply_noise: bool = False, current_noise_level: float = 0.0004, voltage_noise_level: float = 0.0001,
+                 apply_amplitude_scaling: bool = False, current_amplitude_range: tuple = (0.2, 10), voltage_amplitude_range: tuple = (0.95, 1.05),
+                 apply_offset: bool = False, offset_range: tuple = (-0.001, 0.001),
+                 apply_phase_shuffling: bool = False):
+        """
+        Initialize the dataset.
 
         Args:
-            dt (pd.DataFrame()): The DataFrame containing the data
-            indexes (pd.DataFrame()): _description_
-            frame_size (int): the size of the selection window
+            dt (pd.DataFrame()): The DataFrame containing the data.
+            indexes (pd.DataFrame()): DataFrame with index positions to split the data.
+            frame_size (int): The size of the selection window.
             target_position (int, optional): The position from which the target value is selected. 0 - means that it is taken from the first point. frame_size-1 - means that it is taken from the last point.
+            apply_inversion (bool): Whether to apply signal inversion.
+            apply_noise (bool): Whether to apply Gaussian noise.
+            current_noise_level (float): Standard deviation of the Gaussian noise.
+            voltage_noise_level (float): Standard deviation of the Gaussian noise.
+            apply_amplitude_scaling (bool): Whether to apply amplitude scaling.
+            current_amplitude_range (tuple): Scaling range for current signals.
+            voltage_amplitude_range (tuple): Scaling range for voltage signals.
+            apply_offset (bool): Whether to apply offset drift.
+            offset_range (tuple): Range for the offset value.
+            apply_phase_shuffling (bool): Whether to apply phase shuffling for current and voltage channels.
         """
         self.data = dt
         self.indexes = indexes
         self.frame_size = frame_size
-        if (target_position is not None):
+
+        # Параметры целевой позиции
+        if target_position is not None:
             if 0 <= target_position < frame_size:
                 self.target_position = target_position
             else:
-                self.target_position = frame_size
+                self.target_position = frame_size - 1
                 print("Invalid target position. Target position should be in range of 0 to frame_size-1")
         else:
-            self.target_position = frame_size-1
+            self.target_position = frame_size - 1
+
+        # Параметры для аугментации
+        self.apply_inversion = apply_inversion
+        self.apply_noise = apply_noise
+        self.current_noise_level = current_noise_level
+        self.voltage_noise_level = voltage_noise_level
+        self.apply_amplitude_scaling = apply_amplitude_scaling
+        self.current_amplitude_range = current_amplitude_range
+        self.voltage_amplitude_range = voltage_amplitude_range
+        self.apply_offset = apply_offset
+        self.offset_range = offset_range
+        self.apply_phase_shuffling = apply_phase_shuffling  # Добавлена новая переменная для перетасовки фаз
 
     def __len__(self):
         return len(self.indexes)
 
     def __getitem__(self, idx):
-        start = self.indexes.loc[idx].name # было iloc, но в данном случае это некорректно
+        # Получение начального индекса для окна
+        start = self.indexes.loc[idx].name  
         if start + self.frame_size - 1 >= len(self.data):
             # Защита от выхода за диапазон. Такого быть не должно при обрезании массива, но оставил на всякий случай.
             return (None, None)
         
-        sample = self.data.loc[start : start + self.frame_size - 1][FeaturesForDataset.FEATURES]
-        #sample = frame[FeaturesForDataset.FEATURES]
-        x = torch.tensor(
-            sample.to_numpy(dtype=np.float32),
-            dtype=torch.float32,
-        )
+        # Извлечение окна данных
+        sample = self.data.loc[start: start + self.frame_size - 1][FeaturesForDataset.FEATURES]
+        x = torch.tensor(sample.to_numpy(dtype=np.float32), dtype=torch.float32)
 
+        # === АУГМЕНТАЦИЯ ДАННЫХ === #
+        
+        # 1. Инверсия сигнала
+        if self.apply_inversion and random.random() < 0.5:
+            x = x * -1
+
+        # 2. Амплитудные искажения (раздельно для токов и напряжений)
+        if self.apply_amplitude_scaling:
+            # Масштабирование токов
+            current_scale_factor = np.random.uniform(self.current_amplitude_range[0], self.current_amplitude_range[1])
+            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.FEATURES_VOLTAGE_PHAZE]] *= current_scale_factor
+            
+            # Масштабирование напряжений
+            voltage_scale_factor = np.random.uniform(self.voltage_amplitude_range[0], self.voltage_amplitude_range[1])
+            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.FEATURES_VOLTAGE]] *= voltage_scale_factor
+
+        # 3. Добавление шума
+        if self.apply_noise:
+            # Создание шума для токов
+            current_noise = torch.normal(
+                mean=0,
+                std=self.current_noise_level,
+                size=(x.shape[0], len(FeaturesForDataset.FEATURES_VOLTAGE_PHAZE))
+            )
+            # Применение шума к колонкам токов
+            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.FEATURES_VOLTAGE_PHAZE]] += current_noise
+            
+            # Создание шума для напряжений
+            voltage_phaze_noise = torch.normal(
+                mean=0,
+                std=self.voltage_noise_level,
+                size=(x.shape[0], len(FeaturesForDataset.FEATURES_VOLTAGE_PHAZE))
+            )
+            voltage_line_noise = torch.normal(
+                mean=0,
+                std=self.voltage_noise_level * torch.sqrt(torch.tensor(3.)),
+                size=(x.shape[0], len(FeaturesForDataset.FEATURES_VOLTAGE_LINE_NOMINAL))
+            )
+            # Применение шума к колонкам напряжений
+            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.FEATURES_VOLTAGE_PHAZE]] += voltage_phaze_noise
+            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.FEATURES_VOLTAGE_LINE_NOMINAL]] += voltage_line_noise
+
+        # 4. Сдвиг значений (Offset)
+        if self.apply_offset:
+            offset = torch.tensor(np.random.uniform(self.offset_range[0], self.offset_range[1], size=x.shape[1]), dtype=torch.float32)
+            x = x + offset
+
+        # 5. Перетасовка фаз
+        if self.apply_phase_shuffling:
+            # Генерация случайного сдвига фаз (0 - без изменений, 1 - сдвиг на одну фазу, 2 - сдвиг на две фазы)
+            phase_shift = np.random.randint(0, 3)
+
+            # Сдвиг фазовых токов (IA, IB, IC)
+            current_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.FEATURES_VOLTAGE_PHAZE]
+            x[:, current_indices] = torch.roll(x[:, current_indices], shifts=phase_shift, dims=1)
+
+            # Сдвиг фазных напряжений
+            phaze_BB_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.FEATURES_VOLTAGE_PHAZE_BB]
+            x[:, phaze_BB_indices] = torch.roll(x[:, phaze_BB_indices], shifts=phase_shift, dims=1)
+
+            phaze_CL_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.FEATURES_VOLTAGE_PHAZE_CL]
+            x[:, phaze_CL_indices] = torch.roll(x[:, phaze_CL_indices], shifts=phase_shift, dims=1)
+
+            # Сдвиг линейных напряжений (UAB CL, UBC CL, UCA CL)
+            line_CL_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.FEATURES_VOLTAGE_LINE_CL]
+            x[:, line_CL_indices] = torch.roll(x[:, line_CL_indices], shifts=phase_shift, dims=1)
+
+        # === ИЗВЛЕЧЕНИЕ ЦЕЛЕВОГО ЗНАЧЕНИЯ === #
         target_index = start + self.target_position
         target_sample = self.data.loc[target_index][FeaturesForDataset.FEATURES_TARGET]
-        target = torch.tensor(target_sample, dtype=torch.float32) # было torch.long
+        target = torch.tensor(target_sample, dtype=torch.float32)
+
         return x, target
 
 class CustomDataset(Dataset):
@@ -399,8 +507,18 @@ if __name__ == "__main__":
         ]
         test_indexes = pd.concat((test_indexes, df_file))
 
-    # скорректировать точку, я сейчас задал принудительно 32 точки назад (период наза, или 20мс)
-    train_dataset = CustomDataset_train(dt_train, train_indexes, FRAME_SIZE, FRAME_SIZE-8)
+    # скорректировать точку, я сейчас задал принудительно 8 точек назад (четверть периода назад, или 4мс)
+    train_dataset = CustomDataset_train(
+        dt=dt_train, indexes=train_indexes,
+        frame_size=FRAME_SIZE,  # Указываем размер окна
+        target_position=FRAME_SIZE-8,  # Целевая позиция – последний элемент окна
+        apply_inversion=False, # Активируем рандомную инверсию сигнала
+        apply_noise=False, # Активируем добавление шума
+        apply_amplitude_scaling=False, # Активируем изменение масштаба
+        apply_offset=False, # Активирует добавление рандомной постоянной составляющей
+        apply_phase_shuffling=False  # Активируем рандомнуюперетасовку фаз
+    )
+    
     test_dataset = CustomDataset(dt_test, test_indexes, FRAME_SIZE, FRAME_SIZE-8)
 
     start_epoch = 0
