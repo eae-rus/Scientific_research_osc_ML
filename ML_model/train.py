@@ -23,32 +23,32 @@ from model import CONV_MLP_v2, FFT_MLP, FFT_MLP_KAN_v1
 
 
 class FeaturesForDataset():
-        FEATURES_CURRENT = ["IA", "IB", "IC"]
-        # FEATURES_CURRENT = ["IA", "IC"]
-        FEATURES_VOLTAGE = ["UA BB", "UB BB", "UC BB", "UN BB",
-                            "UA CL", "UB CL", "UC CL", "UN CL",
-                            "UAB CL","UBC CL","UCA CL"]
-        # FEATURES_VOLTAGE = ["UA BB", "UB BB", "UC BB", "UN BB"]
+        CURRENT = ["IA", "IB", "IC"]
+        # CURRENT = ["IA", "IC"]
+        VOLTAGE = ["UA BB", "UB BB", "UC BB", "UN BB",
+                   "UA CL", "UB CL", "UC CL", "UN CL",
+                   "UAB CL","UBC CL","UCA CL"]
+        # VOLTAGE = ["UA BB", "UB BB", "UC BB", "UN BB"]
         
 
-        FEATURES_VOLTAGE_PHAZE = ["UA BB", "UB BB", "UC BB",
+        VOLTAGE_PHAZE = ["UA BB", "UB BB", "UC BB",
                                  "UA CL", "UB CL", "UC CL"]
-        FEATURES_VOLTAGE_LINE_NOMINAL = ["UN BB", "UN CL", "UAB CL", "UBC CL", "UCA CL"]
+        VOLTAGE_LINE_NOMINAL = ["UN BB", "UN CL", "UAB CL", "UBC CL", "UCA CL"]
         
-        FEATURES_VOLTAGE_PHAZE_BB = ["UA BB", "UB BB", "UC BB"]
-        FEATURES_VOLTAGE_PHAZE_CL = ["UA CL", "UB CL", "UC CL"]
+        VOLTAGE_PHAZE_BB = ["UA BB", "UB BB", "UC BB"]
+        VOLTAGE_PHAZE_CL = ["UA CL", "UB CL", "UC CL"]
 
-        FEATURES_VOLTAGE_LINE_CL = ["UAB CL", "UBC CL", "UCA CL"]
+        VOLTAGE_LINE_CL = ["UAB CL", "UBC CL", "UCA CL"]
         
         
-        FEATURES = FEATURES_CURRENT.copy()
-        FEATURES.extend(FEATURES_VOLTAGE)
+        FEATURES = CURRENT.copy()
+        FEATURES.extend(VOLTAGE)
         
-        # FEATURES_TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt", "normal"]
-        FEATURES_TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt"]
+        # TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt", "normal"]
+        TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt"]
         
-        FEATURES_TARGET_WITH_FILENAME = ["file_name"]
-        FEATURES_TARGET_WITH_FILENAME.extend(FEATURES_TARGET)
+        TARGET_WITH_FILENAME = ["file_name"]
+        TARGET_WITH_FILENAME.extend(TARGET)
 
 # TODO: Решить проблему различия __getitem__ в первой строке с "iloc" у CustomDataset_train и CustomDataset
 class CustomDataset_train(Dataset):
@@ -126,11 +126,11 @@ class CustomDataset_train(Dataset):
         if self.apply_amplitude_scaling:
             # Масштабирование токов
             current_scale_factor = np.random.uniform(self.current_amplitude_range[0], self.current_amplitude_range[1])
-            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.FEATURES_VOLTAGE_PHAZE]] *= current_scale_factor
+            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_PHAZE]] *= current_scale_factor
             
             # Масштабирование напряжений
             voltage_scale_factor = np.random.uniform(self.voltage_amplitude_range[0], self.voltage_amplitude_range[1])
-            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.FEATURES_VOLTAGE]] *= voltage_scale_factor
+            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE]] *= voltage_scale_factor
 
         # 3. Добавление шума
         if self.apply_noise:
@@ -138,25 +138,25 @@ class CustomDataset_train(Dataset):
             current_noise = torch.normal(
                 mean=0,
                 std=self.current_noise_level,
-                size=(x.shape[0], len(FeaturesForDataset.FEATURES_VOLTAGE_PHAZE))
+                size=(x.shape[0], len(FeaturesForDataset.VOLTAGE_PHAZE))
             )
             # Применение шума к колонкам токов
-            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.FEATURES_VOLTAGE_PHAZE]] += current_noise
+            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_PHAZE]] += current_noise
             
             # Создание шума для напряжений
             voltage_phaze_noise = torch.normal(
                 mean=0,
                 std=self.voltage_noise_level,
-                size=(x.shape[0], len(FeaturesForDataset.FEATURES_VOLTAGE_PHAZE))
+                size=(x.shape[0], len(FeaturesForDataset.VOLTAGE_PHAZE))
             )
             voltage_line_noise = torch.normal(
                 mean=0,
                 std=self.voltage_noise_level * torch.sqrt(torch.tensor(3.)),
-                size=(x.shape[0], len(FeaturesForDataset.FEATURES_VOLTAGE_LINE_NOMINAL))
+                size=(x.shape[0], len(FeaturesForDataset.VOLTAGE_LINE_NOMINAL))
             )
             # Применение шума к колонкам напряжений
-            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.FEATURES_VOLTAGE_PHAZE]] += voltage_phaze_noise
-            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.FEATURES_VOLTAGE_LINE_NOMINAL]] += voltage_line_noise
+            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_PHAZE]] += voltage_phaze_noise
+            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_LINE_NOMINAL]] += voltage_line_noise
 
         # 4. Сдвиг значений (Offset)
         if self.apply_offset:
@@ -169,23 +169,23 @@ class CustomDataset_train(Dataset):
             phase_shift = np.random.randint(0, 3)
 
             # Сдвиг фазовых токов (IA, IB, IC)
-            current_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.FEATURES_VOLTAGE_PHAZE]
+            current_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_PHAZE]
             x[:, current_indices] = torch.roll(x[:, current_indices], shifts=phase_shift, dims=1)
 
             # Сдвиг фазных напряжений
-            phaze_BB_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.FEATURES_VOLTAGE_PHAZE_BB]
+            phaze_BB_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_PHAZE_BB]
             x[:, phaze_BB_indices] = torch.roll(x[:, phaze_BB_indices], shifts=phase_shift, dims=1)
 
-            phaze_CL_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.FEATURES_VOLTAGE_PHAZE_CL]
+            phaze_CL_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_PHAZE_CL]
             x[:, phaze_CL_indices] = torch.roll(x[:, phaze_CL_indices], shifts=phase_shift, dims=1)
 
             # Сдвиг линейных напряжений (UAB CL, UBC CL, UCA CL)
-            line_CL_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.FEATURES_VOLTAGE_LINE_CL]
+            line_CL_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_LINE_CL]
             x[:, line_CL_indices] = torch.roll(x[:, line_CL_indices], shifts=phase_shift, dims=1)
 
         # === ИЗВЛЕЧЕНИЕ ЦЕЛЕВОГО ЗНАЧЕНИЯ === #
         target_index = start + self.target_position
-        target_sample = self.data.loc[target_index][FeaturesForDataset.FEATURES_TARGET]
+        target_sample = self.data.loc[target_index][FeaturesForDataset.TARGET]
         target = torch.tensor(target_sample, dtype=torch.float32)
 
         return x, target
@@ -230,7 +230,7 @@ class CustomDataset(Dataset):
         )
 
         target_index = start + self.target_position
-        target_sample = self.data.loc[target_index][FeaturesForDataset.FEATURES_TARGET]
+        target_sample = self.data.loc[target_index][FeaturesForDataset.TARGET]
         target = torch.tensor(target_sample, dtype=torch.float32) # было torch.long
         return x, target
 
@@ -310,9 +310,9 @@ def save_stats_to_csv(epoch, batch_count, epoch_duration, train_loss, test_loss,
         # Записываем заголовок, если файл пустой
         if os.stat(per_class_metrics_file).st_size == 0:
             header = ["epoch", "batch_count", "epoch_duration"] + [
-                f"{feature}_f1" for feature in FeaturesForDataset.FEATURES_TARGET
+                f"{feature}_f1" for feature in FeaturesForDataset.TARGET
             ] + [
-                f"{feature}_ba" for feature in FeaturesForDataset.FEATURES_TARGET
+                f"{feature}_ba" for feature in FeaturesForDataset.TARGET
             ]
             writer.writerow(header)
 
@@ -343,8 +343,8 @@ def save_stats_to_json(filename, epoch, batch_count, epoch_duration, train_loss,
         "hamming_loss": hamming,
         "jaccard_score": jaccard,
         "learning_rate": lr,
-        "f1_scores_per_class": {feature: f1 for feature, f1 in zip(FeaturesForDataset.FEATURES_TARGET, f1_per_class)},
-        "balanced_accuracy_per_class": {feature: ba for feature, ba in zip(FeaturesForDataset.FEATURES_TARGET, ba_per_class)}
+        "f1_scores_per_class": {feature: f1 for feature, f1 in zip(FeaturesForDataset.TARGET, f1_per_class)},
+        "balanced_accuracy_per_class": {feature: ba for feature, ba in zip(FeaturesForDataset.TARGET, ba_per_class)}
     }
 
     # Записываем в файл
@@ -404,9 +404,9 @@ if __name__ == "__main__":
         
         # TODO: Нормальизацию стоит делать отдельно. Здесь я её закладываю временно
         Inom, Unom = 5, 100
-        for name in FeaturesForDataset.FEATURES_CURRENT:
+        for name in FeaturesForDataset.CURRENT:
             dt[name] = dt[name] / (Inom*20)
-        for name in FeaturesForDataset.FEATURES_VOLTAGE:
+        for name in FeaturesForDataset.VOLTAGE:
             dt[name] = dt[name] / (Unom*3)
                 
         files_to_test = [
@@ -455,11 +455,11 @@ if __name__ == "__main__":
         dt_train.reset_index(drop=True, inplace=True)
         dt_test.reset_index(drop=True, inplace=True)
 
-        target_series_train = dt_train[FeaturesForDataset.FEATURES_TARGET]
-        target_series_test = dt_test[FeaturesForDataset.FEATURES_TARGET]
+        target_series_train = dt_train[FeaturesForDataset.TARGET]
+        target_series_test = dt_test[FeaturesForDataset.TARGET]
 
         # замена значений NaN на 0 в конце датафрейма
-        for name in FeaturesForDataset.FEATURES_TARGET:
+        for name in FeaturesForDataset.TARGET:
             dt_train[name] = dt_train[name].fillna(0)  
             dt_train[name] = dt_train[name].astype(int)
             dt_test[name] = dt_test[name].fillna(0)
@@ -475,7 +475,7 @@ if __name__ == "__main__":
         dt_test.to_csv(file_with_target_frame_test, index=False)
     
     # копия датафрейма для получения индексов начал фреймов для трейн
-    dt_indexes_train = dt_train[FeaturesForDataset.FEATURES_TARGET_WITH_FILENAME]
+    dt_indexes_train = dt_train[FeaturesForDataset.TARGET_WITH_FILENAME]
     files_train = dt_indexes_train["file_name"].unique()
     train_indexes = pd.DataFrame()
     for file in files_train:
@@ -497,7 +497,7 @@ if __name__ == "__main__":
     }
 
     # копия датафрейма для получения индексов начал фреймов для тест
-    dt_indexes_test = dt_test[FeaturesForDataset.FEATURES_TARGET_WITH_FILENAME]
+    dt_indexes_test = dt_test[FeaturesForDataset.TARGET_WITH_FILENAME]
     files_test = dt_indexes_test["file_name"].unique()
     test_indexes = pd.DataFrame()
     for file in files_test:
@@ -530,7 +530,7 @@ if __name__ == "__main__":
         FRAME_SIZE,
         channel_num=len(FeaturesForDataset.FEATURES),
         hidden_size=HIDDEN_SIZE,
-        output_size=len(FeaturesForDataset.FEATURES_TARGET),
+        output_size=len(FeaturesForDataset.TARGET),
         device=device,
     )
     
@@ -566,7 +566,7 @@ if __name__ == "__main__":
     }
 
     # Также можно создать CSV для хранения метрик каждой эпохи с разбивкой по классам
-    per_class_metrics = {feature_name: {"f1_score": [], "balanced_accuracy": []} for feature_name in FeaturesForDataset.FEATURES_TARGET}
+    per_class_metrics = {feature_name: {"f1_score": [], "balanced_accuracy": []} for feature_name in FeaturesForDataset.TARGET}
 
 
     current_lr = LEARNING_RATE
@@ -639,7 +639,7 @@ if __name__ == "__main__":
             numpy_true_labels = np.array(true_labels) # промежуточные преобразования для ускорения
             true_labels_tensor = torch.from_numpy(numpy_true_labels)
             ba, f1 = [], []
-            for k in range(len(FeaturesForDataset.FEATURES_TARGET)): # 'binary' для бинарной классификации на каждом классе
+            for k in range(len(FeaturesForDataset.TARGET)): # 'binary' для бинарной классификации на каждом классе
                 true_binary = true_labels_tensor[:, k].flatten()
                 pred_binary = predicted_labels[:, k].flatten()
                 
@@ -669,7 +669,7 @@ if __name__ == "__main__":
             t.set_postfix_str(f"Batch: {batch_count}, Train loss: {loss_sum / (i + 1):.4f}, Test loss: {test_loss:.4f}, LR: {current_lr:.4e}")
             message_f1_ba = (
                              f"Prev. test loss: {loss_test:.4f} "
-                             f"F1 / BA: {', '.join([f'{signal_name}: {f1_score:.4f}/{ba_score:.4f}' for signal_name, f1_score, ba_score in zip(FeaturesForDataset.FEATURES_TARGET, f1, ba)])} "
+                             f"F1 / BA: {', '.join([f'{signal_name}: {f1_score:.4f}/{ba_score:.4f}' for signal_name, f1_score, ba_score in zip(FeaturesForDataset.TARGET, f1, ba)])} "
                              )
             print(message_f1_ba)
             print(f"Hamming Loss: {hamming}, Jaccard Score: {jaccard}")
