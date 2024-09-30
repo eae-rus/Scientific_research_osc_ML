@@ -124,12 +124,12 @@ class CustomDataset_train(Dataset):
 
         # 2. Амплитудные искажения (раздельно для токов и напряжений)
         if self.apply_amplitude_scaling:
-            # Масштабирование токов
-            current_scale_factor = np.random.uniform(self.current_amplitude_range[0], self.current_amplitude_range[1])
-            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_PHAZE]] *= current_scale_factor
-            
-            # Масштабирование напряжений
-            voltage_scale_factor = np.random.uniform(self.voltage_amplitude_range[0], self.voltage_amplitude_range[1])
+            # Масштабирование токов (одним коэффициентом для всех фаз)
+            current_scale_factor = np.random.uniform(*self.current_amplitude_range)
+            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.CURRENT]] *= current_scale_factor
+
+            # Масштабирование напряжений (одним коэффициентом для всех фаз и линий)
+            voltage_scale_factor = np.random.uniform(*self.voltage_amplitude_range)
             x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE]] *= voltage_scale_factor
 
         # 3. Добавление шума
