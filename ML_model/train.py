@@ -21,6 +21,10 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
 from model import CONV_MLP_v2, FFT_MLP, FFT_MLP_KAN_v1
 
+# Добавлено для исключения лишних предупреждений о возможных будущих проблемах.
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+import pandas
 
 class FeaturesForDataset():
         CURRENT = ["IA", "IB", "IC"]
