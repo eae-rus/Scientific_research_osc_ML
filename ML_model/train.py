@@ -653,7 +653,7 @@ if __name__ == "__main__":
             
             # Сохраняем данные
             # Рассчитываем метрики после каждой эпохи
-            loss_test = test_loss / len(test_dataloader) # Средние потери на тестовой выборке
+            test_loss = test_loss / len(test_dataloader) # Средние потери на тестовой выборке
             mean_f1 = np.mean(f1)  # Средний F1-score по всем классам
             mean_ba = np.mean(ba)  # Средний Balanced Accuracy по всем классам
             
@@ -672,13 +672,13 @@ if __name__ == "__main__":
             # Сообщение для tqdm
             t.set_postfix_str(f"Batch: {batch_count}, Train loss: {loss_sum / (i + 1):.4f}, Test loss: {test_loss:.4f}, LR: {current_lr:.4e}")
             message_f1_ba = (
-                             f"Prev. test loss: {loss_test:.4f} "
+                             f"Prev. test loss: {test_loss:.4f} "
                              f"F1 / BA: {', '.join([f'{signal_name}: {f1_score:.4f}/{ba_score:.4f}' for signal_name, f1_score, ba_score in zip(FeaturesForDataset.TARGET, f1, ba)])} "
                              )
             print(message_f1_ba)
             print(f"Hamming Loss: {hamming}, Jaccard Score: {jaccard}")
             
-            torch.save(model, f"ML_model/trained_models/model_{name_model}_ep{epoch+1}_tl{loss_test:.4f}_train{loss_sum:.4f}.pt")
+            torch.save(model, f"ML_model/trained_models/model_{name_model}_ep{epoch+1}_tl{test_loss:.4f}_train{loss_sum:.4f}.pt")
             model.train()
     pass
 pass
