@@ -58,7 +58,7 @@ class FeaturesForDataset():
 class CustomDataset_train(Dataset):
     def __init__(self, dt: pd.DataFrame(), indexes: pd.DataFrame(), frame_size: int, target_position: int = None, 
                  apply_inversion: bool = False, apply_noise: bool = False, current_noise_level: float = 0.0004, voltage_noise_level: float = 0.0001,
-                 apply_amplitude_scaling: bool = False, current_amplitude_range: float = 5.0, voltage_amplitude_range: float = 1.05,
+                 apply_amplitude_scaling: bool = False, current_amplitude_factor: float = 5.0, voltage_amplitude_factor: float = 1.05,
                  apply_offset: bool = False, offset_range: tuple = (-0.001, 0.001),
                  apply_phase_shuffling: bool = False):
         """
@@ -100,8 +100,8 @@ class CustomDataset_train(Dataset):
         self.current_noise_level = current_noise_level
         self.voltage_noise_level = voltage_noise_level
         self.apply_amplitude_scaling = apply_amplitude_scaling
-        self.current_amplitude_range = current_amplitude_range
-        self.voltage_amplitude_range = voltage_amplitude_range
+        self.current_amplitude_factor = current_amplitude_factor
+        self.voltage_amplitude_factor = voltage_amplitude_factor
         self.apply_offset = apply_offset
         self.offset_range = offset_range
         self.apply_phase_shuffling = apply_phase_shuffling  # Добавлена новая переменная для перетасовки фаз
