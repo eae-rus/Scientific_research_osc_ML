@@ -58,7 +58,7 @@ class FeaturesForDataset():
 class CustomDataset_train(Dataset):
     def __init__(self, dt: pd.DataFrame(), indexes: pd.DataFrame(), frame_size: int, target_position: int = None, 
                  apply_inversion: bool = False, apply_noise: bool = False, current_noise_level: float = 0.0004, voltage_noise_level: float = 0.0001,
-                 apply_amplitude_scaling: bool = False, current_amplitude_range: tuple = (0.2, 10), voltage_amplitude_range: tuple = (0.95, 1.05),
+                 apply_amplitude_scaling: bool = False, current_amplitude_range: float = 5.0, voltage_amplitude_range: float = 1.05,
                  apply_offset: bool = False, offset_range: tuple = (-0.001, 0.001),
                  apply_phase_shuffling: bool = False):
         """
@@ -74,8 +74,8 @@ class CustomDataset_train(Dataset):
             current_noise_level (float): Standard deviation of the Gaussian noise.
             voltage_noise_level (float): Standard deviation of the Gaussian noise.
             apply_amplitude_scaling (bool): Whether to apply amplitude scaling.
-            current_amplitude_range (tuple): Scaling range for current signals.
-            voltage_amplitude_range (tuple): Scaling range for voltage signals.
+            current_amplitude_range (float): Scaling range for current signals.
+            voltage_amplitude_range (float): Scaling range for voltage signals.
             apply_offset (bool): Whether to apply offset drift.
             offset_range (tuple): Range for the offset value.
             apply_phase_shuffling (bool): Whether to apply phase shuffling for current and voltage channels.
@@ -128,12 +128,23 @@ class CustomDataset_train(Dataset):
 
         # 2. Амплитудные искажения (раздельно для токов и напряжений)
         if self.apply_amplitude_scaling:
+            # Определение типа искажения: уменьшение, увеличение или без изменений
+            scaling_type = np.random.choice(['decrease', 'increase', 'none'], p=[1/3, 1/3, 1/3])
+
+            if scaling_type == 'decrease':
+                current_scale_factor = np.random.uniform(1 / self.current_amplitude_factor, 1)
+                voltage_scale_factor = np.random.uniform(1 / self.voltage_amplitude_factor, 1)
+            elif scaling_type == 'increase':
+                current_scale_factor = np.random.uniform(1, self.current_amplitude_factor)
+                voltage_scale_factor = np.random.uniform(1, self.voltage_amplitude_factor)
+            else:
+                current_scale_factor = 1.0  # Без изменений
+                voltage_scale_factor = 1.0  # Без изменений
+
             # Масштабирование токов (одним коэффициентом для всех фаз)
-            current_scale_factor = np.random.uniform(*self.current_amplitude_range)
             x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.CURRENT]] *= current_scale_factor
 
             # Масштабирование напряжений (одним коэффициентом для всех фаз и линий)
-            voltage_scale_factor = np.random.uniform(*self.voltage_amplitude_range)
             x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE]] *= voltage_scale_factor
 
         # 3. Добавление шума
