@@ -60,7 +60,8 @@ class CustomDataset_train(Dataset):
                  apply_inversion: bool = False, apply_noise: bool = False, current_noise_level: float = 0.0004, voltage_noise_level: float = 0.0001,
                  apply_amplitude_scaling: bool = False, current_amplitude_factor: float = 5.0, voltage_amplitude_factor: float = 1.05,
                  apply_offset: bool = False, offset_range: tuple = (-0.001, 0.001),
-                 apply_phase_shuffling: bool = False):
+                 apply_phase_shuffling: bool = False,
+                 augmentation_probabilities: dict = None):
         """
         Initialize the dataset.
 
@@ -79,6 +80,9 @@ class CustomDataset_train(Dataset):
             apply_offset (bool): Whether to apply offset drift.
             offset_range (tuple): Range for the offset value.
             apply_phase_shuffling (bool): Whether to apply phase shuffling for current and voltage channels.
+            augmentation_probabilities (dict, optional): Dictionary specifying the activation probabilities for each augmentation.
+                Example: {"inversion": 0.5, "noise": 0.3, "scaling": 0.7, "offset": 0.4, "phase_shuffling": 0.2}.
+                Default value is 0.5 for all augmentations if not provided.
         """
         self.data = dt
         self.indexes = indexes
@@ -104,7 +108,12 @@ class CustomDataset_train(Dataset):
         self.voltage_amplitude_factor = voltage_amplitude_factor
         self.apply_offset = apply_offset
         self.offset_range = offset_range
-        self.apply_phase_shuffling = apply_phase_shuffling  # Добавлена новая переменная для перетасовки фаз
+        self.apply_phase_shuffling = apply_phase_shuffling
+
+        # Вероятности активации аугментаций
+        # По умолчанию вероятность для всех аугментаций = 0.5
+        default_probabilities = {"inversion": 0.5, "noise": 0.5, "scaling": 0.5, "offset": 0.5, "phase_shuffling": 0.5}
+        self.augmentation_probabilities = default_probabilities if augmentation_probabilities is None else augmentation_probabilities
 
     def __len__(self):
         return len(self.indexes)
@@ -123,11 +132,11 @@ class CustomDataset_train(Dataset):
         # === АУГМЕНТАЦИЯ ДАННЫХ === #
         
         # 1. Инверсия сигнала
-        if self.apply_inversion and random.random() < 0.5:
+        if self.apply_inversion and random.random() < self.augmentation_probabilities["inversion"]:
             x = x * -1
 
         # 2. Амплитудные искажения (раздельно для токов и напряжений)
-        if self.apply_amplitude_scaling:
+        if self.apply_amplitude_scaling and random.random() < self.augmentation_probabilities["scaling"]:
             # Определение типа искажения: уменьшение, увеличение или без изменений
             scaling_type = np.random.choice(['decrease', 'increase', 'none'], p=[1/3, 1/3, 1/3])
 
@@ -148,7 +157,7 @@ class CustomDataset_train(Dataset):
             x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE]] *= voltage_scale_factor
 
         # 3. Добавление шума
-        if self.apply_noise:
+        if self.apply_noise and random.random() < self.augmentation_probabilities["noise"]:
             # Создание шума для токов
             current_noise = torch.normal(
                 mean=0,
@@ -174,12 +183,12 @@ class CustomDataset_train(Dataset):
             x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_LINE_NOMINAL]] += voltage_line_noise
 
         # 4. Сдвиг значений (Offset)
-        if self.apply_offset:
+        if self.apply_offset and random.random() < self.augmentation_probabilities["offset"]:
             offset = torch.tensor(np.random.uniform(self.offset_range[0], self.offset_range[1], size=x.shape[1]), dtype=torch.float32)
             x = x + offset
 
         # 5. Перетасовка фаз
-        if self.apply_phase_shuffling:
+        if self.apply_phase_shuffling and random.random() < self.augmentation_probabilities["phase_shuffling"]:
             # Генерация случайного сдвига фаз (0 - без изменений, 1 - сдвиг на одну фазу, 2 - сдвиг на две фазы)
             phase_shift = np.random.randint(0, 3)
 
@@ -538,7 +547,7 @@ if __name__ == "__main__":
 
     start_epoch = 0
     # !! создание новой !!
-    name_model = "ConvMLP" # FftMLP , FftKAN
+    name_model = "FftKAN" # FftMLP , FftKAN
     # model = CONV_MLP_v2(
     # model = FFT_MLP(
     model = FFT_MLP_KAN_v1(
