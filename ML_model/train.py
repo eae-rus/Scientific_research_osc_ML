@@ -184,7 +184,7 @@ class CustomDataset_train(Dataset):
             phase_shift = np.random.randint(0, 3)
 
             # Сдвиг фазовых токов (IA, IB, IC)
-            current_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_PHAZE]
+            current_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.CURRENT]
             x[:, current_indices] = torch.roll(x[:, current_indices], shifts=phase_shift, dims=1)
 
             # Сдвиг фазных напряжений
