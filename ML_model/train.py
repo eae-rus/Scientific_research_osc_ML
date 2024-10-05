@@ -6,39 +6,213 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
-import torch.fft as fft
 import torch.nn as nn
 from sklearn.metrics import balanced_accuracy_score, f1_score
 from sklearn.preprocessing import StandardScaler
-from sklearn.utils.class_weight import compute_class_weight
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
+import csv
+import json
+import time
 
 from sklearn.metrics import hamming_loss, jaccard_score
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
-from model import CONV_MLP, KAN_firrst
+from model import CONV_MLP_v2, FFT_MLP, FFT_MLP_KAN_v1
 
+# Добавлено для исключения лишних предупреждений о возможных будущих проблемах.
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+import pandas
 
 class FeaturesForDataset():
-        FEATURES_CURRENT = ["IA", "IB", "IC"]
-        # FEATURES_CURRENT = ["IA", "IC"]
-        FEATURES_VOLTAGE = ["UA BB", "UB BB", "UC BB", "UN BB",
-                            "UA CL", "UB CL", "UC CL", "UN CL",
-                            "UAB CL","UBC CL","UCA CL"]
-        # FEATURES_VOLTAGE = ["UA BB", "UB BB", "UC BB", "UN BB"]
-        FEATURES = FEATURES_CURRENT.copy()
-        FEATURES.extend(FEATURES_VOLTAGE)
+        CURRENT = ["IA", "IB", "IC"]
+        # CURRENT = ["IA", "IC"]
+        VOLTAGE = ["UA BB", "UB BB", "UC BB", "UN BB",
+                   "UA CL", "UB CL", "UC CL", "UN CL",
+                   "UAB CL","UBC CL","UCA CL"]
+        # VOLTAGE = ["UA BB", "UB BB", "UC BB", "UN BB"]
         
-        # FEATURES_TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt", "normal"]
-        FEATURES_TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt"]
+
+        VOLTAGE_PHAZE = ["UA BB", "UB BB", "UC BB",
+                                 "UA CL", "UB CL", "UC CL"]
+        VOLTAGE_LINE_NOMINAL = ["UN BB", "UN CL", "UAB CL", "UBC CL", "UCA CL"]
         
-        FEATURES_TARGET_WITH_FILENAME = ["file_name"]
-        FEATURES_TARGET_WITH_FILENAME.extend(FEATURES_TARGET)
+        VOLTAGE_PHAZE_BB = ["UA BB", "UB BB", "UC BB"]
+        VOLTAGE_PHAZE_CL = ["UA CL", "UB CL", "UC CL"]
+
+        VOLTAGE_LINE_CL = ["UAB CL", "UBC CL", "UCA CL"]
         
-        # WEIGHT_IMPORTANCE_TARGET = {"normal": 0.1, "opr_swch": 1, "abnorm_evnt": 5, "emerg_evnt": 10}
-        WEIGHT_IMPORTANCE_TARGET = {"opr_swch": 1, "abnorm_evnt": 3, "emerg_evnt": 5}
+        
+        FEATURES = CURRENT.copy()
+        FEATURES.extend(VOLTAGE)
+        
+        # TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt", "normal"]
+        TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt"]
+        
+        TARGET_WITH_FILENAME = ["file_name"]
+        TARGET_WITH_FILENAME.extend(TARGET)
+
+# TODO: Решить проблему различия __getitem__ в первой строке с "iloc" у CustomDataset_train и CustomDataset
+class CustomDataset_train(Dataset):
+    def __init__(self, dt: pd.DataFrame(), indexes: pd.DataFrame(), frame_size: int, target_position: int = None, 
+                 apply_inversion: bool = False, apply_noise: bool = False, current_noise_level: float = 0.0004, voltage_noise_level: float = 0.0001,
+                 apply_amplitude_scaling: bool = False, current_amplitude_factor: float = 5.0, voltage_amplitude_factor: float = 1.05,
+                 apply_offset: bool = False, offset_range: tuple = (-0.001, 0.001),
+                 apply_phase_shuffling: bool = False,
+                 augmentation_probabilities: dict = None):
+        """
+        Initialize the dataset.
+
+        Args:
+            dt (pd.DataFrame()): The DataFrame containing the data.
+            indexes (pd.DataFrame()): DataFrame with index positions to split the data.
+            frame_size (int): The size of the selection window.
+            target_position (int, optional): The position from which the target value is selected. 0 - means that it is taken from the first point. frame_size-1 - means that it is taken from the last point.
+            apply_inversion (bool): Whether to apply signal inversion.
+            apply_noise (bool): Whether to apply Gaussian noise.
+            current_noise_level (float): Standard deviation of the Gaussian noise.
+            voltage_noise_level (float): Standard deviation of the Gaussian noise.
+            apply_amplitude_scaling (bool): Whether to apply amplitude scaling.
+            current_amplitude_range (float): Scaling range for current signals.
+            voltage_amplitude_range (float): Scaling range for voltage signals.
+            apply_offset (bool): Whether to apply offset drift.
+            offset_range (tuple): Range for the offset value.
+            apply_phase_shuffling (bool): Whether to apply phase shuffling for current and voltage channels.
+            augmentation_probabilities (dict, optional): Dictionary specifying the activation probabilities for each augmentation.
+                Example: {"inversion": 0.5, "noise": 0.3, "scaling": 0.7, "offset": 0.4, "phase_shuffling": 0.2}.
+                Default value is 0.5 for all augmentations if not provided.
+        """
+        self.data = dt
+        self.indexes = indexes
+        self.frame_size = frame_size
+
+        # Параметры целевой позиции
+        if target_position is not None:
+            if 0 <= target_position < frame_size:
+                self.target_position = target_position
+            else:
+                self.target_position = frame_size - 1
+                print("Invalid target position. Target position should be in range of 0 to frame_size-1")
+        else:
+            self.target_position = frame_size - 1
+
+        # Параметры для аугментации
+        self.apply_inversion = apply_inversion
+        self.apply_noise = apply_noise
+        self.current_noise_level = current_noise_level
+        self.voltage_noise_level = voltage_noise_level
+        self.apply_amplitude_scaling = apply_amplitude_scaling
+        self.current_amplitude_factor = current_amplitude_factor
+        self.voltage_amplitude_factor = voltage_amplitude_factor
+        self.apply_offset = apply_offset
+        self.offset_range = offset_range
+        self.apply_phase_shuffling = apply_phase_shuffling
+
+        # Вероятности активации аугментаций
+        # По умолчанию вероятность для всех аугментаций = 0.5
+        default_probabilities = {"inversion": 0.5, "noise": 0.5, "scaling": 0.5, "offset": 0.5, "phase_shuffling": 0.5}
+        self.augmentation_probabilities = default_probabilities if augmentation_probabilities is None else augmentation_probabilities
+
+    def __len__(self):
+        return len(self.indexes)
+
+    def __getitem__(self, idx):
+        # Получение начального индекса для окна
+        start = self.indexes.loc[idx].name  
+        if start + self.frame_size - 1 >= len(self.data):
+            # Защита от выхода за диапазон. Такого быть не должно при обрезании массива, но оставил на всякий случай.
+            return (None, None)
+        
+        # Извлечение окна данных
+        sample = self.data.loc[start: start + self.frame_size - 1][FeaturesForDataset.FEATURES]
+        x = torch.tensor(sample.to_numpy(dtype=np.float32), dtype=torch.float32)
+
+        # === АУГМЕНТАЦИЯ ДАННЫХ === #
+        
+        # 1. Инверсия сигнала
+        if self.apply_inversion and random.random() < self.augmentation_probabilities["inversion"]:
+            x = x * -1
+
+        # 2. Амплитудные искажения (раздельно для токов и напряжений)
+        if self.apply_amplitude_scaling and random.random() < self.augmentation_probabilities["scaling"]:
+            # Определение типа искажения: уменьшение, увеличение или без изменений
+            scaling_type = np.random.choice(['decrease', 'increase', 'none'], p=[1/3, 1/3, 1/3])
+
+            if scaling_type == 'decrease':
+                current_scale_factor = np.random.uniform(1 / self.current_amplitude_factor, 1)
+                voltage_scale_factor = np.random.uniform(1 / self.voltage_amplitude_factor, 1)
+            elif scaling_type == 'increase':
+                current_scale_factor = np.random.uniform(1, self.current_amplitude_factor)
+                voltage_scale_factor = np.random.uniform(1, self.voltage_amplitude_factor)
+            else:
+                current_scale_factor = 1.0  # Без изменений
+                voltage_scale_factor = 1.0  # Без изменений
+
+            # Масштабирование токов (одним коэффициентом для всех фаз)
+            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.CURRENT]] *= current_scale_factor
+
+            # Масштабирование напряжений (одним коэффициентом для всех фаз и линий)
+            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE]] *= voltage_scale_factor
+
+        # 3. Добавление шума
+        if self.apply_noise and random.random() < self.augmentation_probabilities["noise"]:
+            # Создание шума для токов
+            current_noise = torch.normal(
+                mean=0,
+                std=self.current_noise_level,
+                size=(x.shape[0], len(FeaturesForDataset.VOLTAGE_PHAZE))
+            )
+            # Применение шума к колонкам токов
+            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_PHAZE]] += current_noise
+            
+            # Создание шума для напряжений
+            voltage_phaze_noise = torch.normal(
+                mean=0,
+                std=self.voltage_noise_level,
+                size=(x.shape[0], len(FeaturesForDataset.VOLTAGE_PHAZE))
+            )
+            voltage_line_noise = torch.normal(
+                mean=0,
+                std=self.voltage_noise_level * torch.sqrt(torch.tensor(3.)),
+                size=(x.shape[0], len(FeaturesForDataset.VOLTAGE_LINE_NOMINAL))
+            )
+            # Применение шума к колонкам напряжений
+            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_PHAZE]] += voltage_phaze_noise
+            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_LINE_NOMINAL]] += voltage_line_noise
+
+        # 4. Сдвиг значений (Offset)
+        if self.apply_offset and random.random() < self.augmentation_probabilities["offset"]:
+            offset = torch.tensor(np.random.uniform(self.offset_range[0], self.offset_range[1], size=x.shape[1]), dtype=torch.float32)
+            x = x + offset
+
+        # 5. Перетасовка фаз
+        if self.apply_phase_shuffling and random.random() < self.augmentation_probabilities["phase_shuffling"]:
+            # Генерация случайного сдвига фаз (0 - без изменений, 1 - сдвиг на одну фазу, 2 - сдвиг на две фазы)
+            phase_shift = np.random.randint(0, 3)
+
+            # Сдвиг фазовых токов (IA, IB, IC)
+            current_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.CURRENT]
+            x[:, current_indices] = torch.roll(x[:, current_indices], shifts=phase_shift, dims=1)
+
+            # Сдвиг фазных напряжений
+            phaze_BB_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_PHAZE_BB]
+            x[:, phaze_BB_indices] = torch.roll(x[:, phaze_BB_indices], shifts=phase_shift, dims=1)
+
+            phaze_CL_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_PHAZE_CL]
+            x[:, phaze_CL_indices] = torch.roll(x[:, phaze_CL_indices], shifts=phase_shift, dims=1)
+
+            # Сдвиг линейных напряжений (UAB CL, UBC CL, UCA CL)
+            line_CL_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_LINE_CL]
+            x[:, line_CL_indices] = torch.roll(x[:, line_CL_indices], shifts=phase_shift, dims=1)
+
+        # === ИЗВЛЕЧЕНИЕ ЦЕЛЕВОГО ЗНАЧЕНИЯ === #
+        target_index = start + self.target_position
+        target_sample = self.data.loc[target_index][FeaturesForDataset.TARGET]
+        target = torch.tensor(target_sample, dtype=torch.float32)
+
+        return x, target
 
 class CustomDataset(Dataset):
 
@@ -62,9 +236,6 @@ class CustomDataset(Dataset):
                 print("Invalid target position. Target position should be in range of 0 to frame_size-1")
         else:
             self.target_position = frame_size-1
-        # self.len_files = dict(
-        #     self.data.groupby("file_name").count()["sample"].items()
-        # )
 
     def __len__(self):
         return len(self.indexes)
@@ -83,66 +254,40 @@ class CustomDataset(Dataset):
         )
 
         target_index = start + self.target_position
-        target_sample = self.data.loc[target_index][FeaturesForDataset.FEATURES_TARGET]
+        target_sample = self.data.loc[target_index][FeaturesForDataset.TARGET]
         target = torch.tensor(target_sample, dtype=torch.float32) # было torch.long
         return x, target
 
 
-class CustomSampler(torch.utils.data.Sampler):
-    """Creates indexes to sample from sequentially spaced data
-    with a given frame size from only one file"""
+class FastBalancedBatchSampler(torch.utils.data.Sampler):
+    """Быстрая реализация BalancedBatchSampler.
+    Для каждой категории данных заранее создаются списки индексов, а затем выбираются батчи."""
 
-    def __init__(self, data_source, batch_size, frame_size, shuffle):
-        self.data_source = data_source
-        self.batch_size = batch_size
-        self.frame_size = frame_size
+    def __init__(self, datasets_by_class, batch_size_per_class, num_batches, shuffle=True):
+        """ Инициализация
+        Args:
+            datasets_by_class (dict): Словарь, где ключ - имя категории, а значение - индексы для этой категории
+            batch_size_per_class (int): Количество примеров на класс в одном батче
+            num_batches (int): Общее количество батчей для генерации
+            shuffle (bool): Перемешивание данных внутри батча
+        """
+        self.datasets_by_class = datasets_by_class
+        self.batch_size_per_class = batch_size_per_class
+        self.num_batches = num_batches
         self.shuffle = shuffle
 
-        all_files = list(data_source.len_files.keys())
-        start_indexes = []
-        df = data_source.data
-        for file in all_files:
-            start_index_in_dataset = df.loc[(df["file_name"] == file)].index[0]
-            len_selected_file = data_source.len_files[file]
-            start_indexes.extend(
-                list(
-                    range(
-                        start_index_in_dataset,
-                        start_index_in_dataset
-                        + len_selected_file
-                        - frame_size
-                        + 1,
-                    )
-                )
-            )
-        self.start_indexes = start_indexes
-        self.length = len(start_indexes)
+    def __len__(self):
+        return self.num_batches
 
     def __iter__(self):
-        for _ in range(self.length):
+        for _ in range(self.num_batches):
             batch = []
-            for __ in range(self.batch_size):
-                if len(self.start_indexes) > 0:
-                    if self.shuffle:
-                        selected_index = np.random.randint(
-                            0, len(self.start_indexes)
-                        )
-                    else:
-                        selected_index = 0
-                    start_index = self.start_indexes.pop(selected_index)
-                    batch.append(
-                        np.arange(start_index, start_index + self.frame_size)
-                    )
-                else:
-                    break
-            if len(batch):
-                yield np.array(batch)
-            else:
-                break
+            for class_name, indices in self.datasets_by_class.items():
+                # Выбор случайных индексов, без повторений
+                selected_indices = np.random.choice(indices, size=self.batch_size_per_class, replace=False)
+                batch.extend(selected_indices)
 
-    def __len__(self):
-        return self.length
-
+            yield batch
 
 def seed_everything(seed: int = 42):
     """
@@ -156,15 +301,90 @@ def seed_everything(seed: int = 42):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+# Сохранение статистики в CSV-файл
+def save_stats_to_csv(epoch, batch_count, epoch_duration, train_loss, test_loss, mean_f1, mean_ba, hamming, jaccard, lr, f1_per_class, ba_per_class):
+    """Сохраняем данные в CSV файл с заголовками."""
+    # Путь к основному файлу статистики
+    training_statistics_file = "ML_model/trained_models/training_statistics.csv"
+    per_class_metrics_file = "ML_model/trained_models/per_class_metrics.csv"
+
+    # Создаем или открываем файл для записи общей статистики
+    with open(training_statistics_file, mode="a", newline='') as file:
+        writer = csv.writer(file)
+
+        # Записываем заголовок, если файл пустой
+        if os.stat(training_statistics_file).st_size == 0:
+            header = [
+                "epoch", "batch_count", "epoch_duration",
+                "train_loss", "test_loss", "mean_f1", "mean_ba",
+                "hamming_loss", "jaccard_score", "learning_rate"
+            ]
+            writer.writerow(header)
+
+        # Записываем строку с текущими значениями
+        writer.writerow([
+            epoch, batch_count, epoch_duration, train_loss, test_loss,
+            mean_f1, mean_ba, hamming, jaccard, lr
+        ])
+
+    # Сохраняем метрики по каждому классу в отдельный CSV файл
+    with open(per_class_metrics_file, mode="a", newline='') as file:
+        writer = csv.writer(file)
+
+        # Записываем заголовок, если файл пустой
+        if os.stat(per_class_metrics_file).st_size == 0:
+            header = ["epoch", "batch_count", "epoch_duration"] + [
+                f"{feature}_f1" for feature in FeaturesForDataset.TARGET
+            ] + [
+                f"{feature}_ba" for feature in FeaturesForDataset.TARGET
+            ]
+            writer.writerow(header)
+
+        # Формируем строку с метриками для текущей эпохи и батча
+        row = [epoch, batch_count, epoch_duration] + f1_per_class + ba_per_class
+        writer.writerow(row)
+
+    # Сохранение статистики в JSON
+    save_stats_to_json(
+        "ML_model/trained_models/epoch_statistics.json", epoch, batch_count, epoch_duration,
+        train_loss, test_loss,
+        mean_f1, mean_ba, hamming, jaccard, lr,
+        f1_per_class=f1, ba_per_class=ba
+    )
+
+
+def save_stats_to_json(filename, epoch, batch_count, epoch_duration, train_loss, test_loss, mean_f1, mean_ba, hamming, jaccard, lr, f1_per_class, ba_per_class):
+    """Сохранение статистики в JSON формате."""
+    # Создаем структуру данных
+    data = {
+        "epoch": epoch,
+        "batch_count": batch_count,
+        "epoch_duration": epoch_duration,
+        "train_loss": train_loss,
+        "test_loss": test_loss,
+        "mean_f1": mean_f1,
+        "mean_ba": mean_ba,
+        "hamming_loss": hamming,
+        "jaccard_score": jaccard,
+        "learning_rate": lr,
+        "f1_scores_per_class": {feature: f1 for feature, f1 in zip(FeaturesForDataset.TARGET, f1_per_class)},
+        "balanced_accuracy_per_class": {feature: ba for feature, ba in zip(FeaturesForDataset.TARGET, ba_per_class)}
+    }
+
+    # Записываем в файл
+    with open(filename, "a") as file:
+        json.dump(data, file, indent=4)
 
 if __name__ == "__main__":
-
-    FRAME_SIZE = 32 # 64
-    BATCH_SIZE_TRAIN = 128
+    FRAME_SIZE = 64 # 64
+    BATCH_SIZE_PER_CLASS = 32  # Например, 128/4=32
+    BATCH_SIZE_TRAIN = 4 * BATCH_SIZE_PER_CLASS # 4 - количество фич, сделать через Гипер Параметр
+    NUM_BATCHES = 1000 # Количество генерируемых батчей
     BATCH_SIZE_TEST = 1024
     HIDDEN_SIZE = 40
     EPOCHS = 100
     LEARNING_RATE = 1e-3
+    L2_REGULARIZATION_COEFFICIENT = 0.001
     MAX_GRAD_NORM = 10
     SEED = 42
     print(f"{BATCH_SIZE_TRAIN=}")
@@ -174,7 +394,7 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     # device = "cpu"
 
-    file_csv = "ML_model/datset_simpl v1.csv"
+    file_csv = "ML_model/datset_simpl v2.csv"
     # Create the folder if it doesn't exist
     folder_path = "/ML_model"
     os.makedirs(folder_path, exist_ok=True)
@@ -208,9 +428,9 @@ if __name__ == "__main__":
         
         # TODO: Нормальизацию стоит делать отдельно. Здесь я её закладываю временно
         Inom, Unom = 5, 100
-        for name in FeaturesForDataset.FEATURES_CURRENT:
+        for name in FeaturesForDataset.CURRENT:
             dt[name] = dt[name] / (Inom*20)
-        for name in FeaturesForDataset.FEATURES_VOLTAGE:
+        for name in FeaturesForDataset.VOLTAGE:
             dt[name] = dt[name] / (Unom*3)
                 
         files_to_test = [
@@ -236,12 +456,8 @@ if __name__ == "__main__":
         
         df_scaled_train = dt_train[FeaturesForDataset.FEATURES]
         df_scaled_test = dt_test[FeaturesForDataset.FEATURES]
-        # TODO: массштабирование производится отдельно. Нормальизация в адекватных данных не должна требоваться
+        # TODO: массштабирование производится отдельно. Нормализация в адекватных данных не должна требоваться
         # так как знечения симметричны относительно 0. 
-        # Причём ранее числа тут преобразовывались в -1 / 0 / 1, что было странно очень.
-        # std_scaler.fit(df_unscaled_train.to_numpy())
-        # df_scaled_train = std_scaler.transform(df_unscaled_train.to_numpy())
-        # df_scaled_test = std_scaler.transform(df_unscaled_test.to_numpy())
         df_scaled_train = pd.DataFrame(
             df_scaled_train,
             columns=df_scaled_train.columns,
@@ -263,24 +479,11 @@ if __name__ == "__main__":
         dt_train.reset_index(drop=True, inplace=True)
         dt_test.reset_index(drop=True, inplace=True)
 
-        target_series_train = dt_train[FeaturesForDataset.FEATURES_TARGET]
-        target_series_test = dt_test[FeaturesForDataset.FEATURES_TARGET]
-
-        # Пока без этого, я разделил на 4 разные столбца
-        # записываем в target_frame значение, которого больше всего в окне FRAME_SIZE:
-        # dt_train[FeaturesForDataset.FEATURES_TARGET] = (
-        #     target_series_train.rolling(window=FRAME_SIZE, min_periods=1)
-        #     .apply(lambda x: pd.Series(x).value_counts().idxmax(), raw=True)
-        #     .shift(-FRAME_SIZE)
-        # )
-        # dt_test[FeaturesForDataset.FEATURES_TARGET] = (
-        #     target_series_test.rolling(window=FRAME_SIZE, min_periods=1)
-        #     .apply(lambda x: pd.Series(x).value_counts().idxmax(), raw=True)
-        #     .shift(-FRAME_SIZE)
-        # )
+        target_series_train = dt_train[FeaturesForDataset.TARGET]
+        target_series_test = dt_test[FeaturesForDataset.TARGET]
 
         # замена значений NaN на 0 в конце датафрейма
-        for name in FeaturesForDataset.FEATURES_TARGET:
+        for name in FeaturesForDataset.TARGET:
             dt_train[name] = dt_train[name].fillna(0)  
             dt_train[name] = dt_train[name].astype(int)
             dt_test[name] = dt_test[name].fillna(0)
@@ -294,21 +497,9 @@ if __name__ == "__main__":
 
         dt_train.to_csv(file_with_target_frame_train, index=False)
         dt_test.to_csv(file_with_target_frame_test, index=False)
-
-    ############ для быстрого тестирования кода !!!!!!!!!!
-    # dt_train = dt_train.head(int(len(dt_train) * 0.1))
-    # dt_test = dt_test.head(int(len(dt_test) * 0.1))
-    ############ для быстрого тестирования кода !!!!!!!!!!
     
-    
-    # TODO: Добавить имена для всего класса
-    # print("Train:")
-    # print(dt_train[FeaturesForDataset.FEATURES_TARGET].value_counts())
-    # print("Test:")
-    # print(dt_test[FeaturesForDataset.FEATURES_TARGET].value_counts())
-
     # копия датафрейма для получения индексов начал фреймов для трейн
-    dt_indexes_train = dt_train[FeaturesForDataset.FEATURES_TARGET_WITH_FILENAME]
+    dt_indexes_train = dt_train[FeaturesForDataset.TARGET_WITH_FILENAME]
     files_train = dt_indexes_train["file_name"].unique()
     train_indexes = pd.DataFrame()
     for file in files_train:
@@ -317,9 +508,20 @@ if __name__ == "__main__":
             :-FRAME_SIZE # Удаление последних FRAME_SIZE сэмплов в каждом файл, чтобы индексы не выходили за диапазон
         ]
         train_indexes = pd.concat((train_indexes, df_file))
+    
+    dt_train_opr_swch = train_indexes[train_indexes["opr_swch"] == 1]
+    dt_train_abnorm_evnt = train_indexes[train_indexes["abnorm_evnt"] == 1]
+    dt_train_emerg_evnt = train_indexes[train_indexes["emerg_evnt"] == 1]
+    dt_train_no_event = train_indexes[train_indexes[["opr_swch", "abnorm_evnt", "emerg_evnt"]].all(axis=1) == 0]
+    datasets_by_class = {
+        'opr_swch': list(dt_train_opr_swch.index),
+        'abnorm_evnt': list(dt_train_abnorm_evnt.index),
+        'emerg_evnt': list(dt_train_emerg_evnt.index),
+        'no_event': list(dt_train_no_event.index)
+    }
 
     # копия датафрейма для получения индексов начал фреймов для тест
-    dt_indexes_test = dt_test[FeaturesForDataset.FEATURES_TARGET_WITH_FILENAME]
+    dt_indexes_test = dt_test[FeaturesForDataset.TARGET_WITH_FILENAME]
     files_test = dt_indexes_test["file_name"].unique()
     test_indexes = pd.DataFrame()
     for file in files_test:
@@ -329,98 +531,95 @@ if __name__ == "__main__":
         ]
         test_indexes = pd.concat((test_indexes, df_file))
 
-    labels_train = train_indexes[FeaturesForDataset.FEATURES_TARGET]
+    # скорректировать точку, я сейчас задал принудительно 8 точек назад (четверть периода назад, или 4мс)
+    train_dataset = CustomDataset_train(
+        dt=dt_train, indexes=train_indexes,
+        frame_size=FRAME_SIZE,  # Указываем размер окна
+        target_position=FRAME_SIZE-8,  # Целевая позиция – последний элемент окна
+        apply_inversion=False, # Активируем рандомную инверсию сигнала
+        apply_noise=False, # Активируем добавление шума
+        apply_amplitude_scaling=False, # Активируем изменение масштаба
+        apply_offset=False, # Активирует добавление рандомной постоянной составляющей
+        apply_phase_shuffling=False  # Активируем рандомнуюперетасовку фаз
+    )
     
-    # создание весов ценности для классов
-    target_samples = {name: 0 for name in FeaturesForDataset.FEATURES_TARGET}
-    all_samples = len(dt_train)
-    class_weights = []
-    for name in FeaturesForDataset.FEATURES_TARGET:
-        target_samples[name] = dt_train[name].value_counts()[1]
-        value = 1
-        if target_samples[name] > 0:
-            value = FeaturesForDataset.WEIGHT_IMPORTANCE_TARGET[name] * np.log10(all_samples / target_samples[name] + 1)
-        class_weights.append(value)
-    
-    max_weight = max(class_weights)
-    class_weights_normalized = [weight / max_weight for weight in class_weights]
-    class_weights_tensor = torch.FloatTensor(class_weights_normalized).to(device)
-    print(f"{class_weights_tensor = }")    
-
-    # TODO: Не понимаю как это заставить работать для 4 столбцов    
-    # class_weights = compute_class_weight(
-    #     "balanced",
-    #     classes=np.unique(labels_train.values.ravel()),  # Flatten the 2D array
-    #     y=labels_train.values.ravel()  # Flatten the 2D array
-    # )
-    # class_weights_tensor = torch.FloatTensor(class_weights).to(device)
-    # print(f"{class_weights = }")
-
-    train_dataset = CustomDataset(dt_train, train_indexes, FRAME_SIZE, int(FRAME_SIZE/2))
-    test_dataset = CustomDataset(dt_test, test_indexes, FRAME_SIZE, int(FRAME_SIZE/2))
+    test_dataset = CustomDataset(dt_test, test_indexes, FRAME_SIZE, FRAME_SIZE-8)
 
     start_epoch = 0
     # !! создание новой !!
-    model = CONV_MLP(
-    #model = KAN_firrst(
+    name_model = "FftKAN" # FftMLP , FftKAN
+    # model = CONV_MLP_v2(
+    # model = FFT_MLP(
+    model = FFT_MLP_KAN_v1(
         FRAME_SIZE,
         channel_num=len(FeaturesForDataset.FEATURES),
         hidden_size=HIDDEN_SIZE,
-        output_size=len(FeaturesForDataset.FEATURES_TARGET),
+        output_size=len(FeaturesForDataset.TARGET),
+        device=device,
     )
     
     model.to(device)
-    # !! Загрузка модели из файла !!
-    # filename_model = "ML_model/trained_models/model_ep31_tl0.0061_train119.7887.pt"
+    # # !! Загрузка модели из файла !!
+    # filename_model = "ML_model/trained_models/model_ep2_tl0.3498_train1432.3669.pt"
     # model = torch.load(filename_model)
     # start_epoch = int(filename_model.split("ep")[1].split("_")[0])
     # model.eval()  # Set the model to evaluation mode
 
-    #criterion = nn.CrossEntropyLoss(weight=class_weights_tensor)
-    criterion = nn.CrossEntropyLoss()
+    # criterion = nn.CrossEntropyLoss()
+    criterion = nn.BCELoss() # Лучше для многоклассовой пересекающейся модели
     
-    optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer,
-        mode='min',
-        factor=0.5,
-        patience=1,
-    )
-    current_lr = LEARNING_RATE
-
     all_losses = []
 
-    train_dataloader = DataLoader(
-        train_dataset, batch_size=BATCH_SIZE_TRAIN, shuffle=True
-    )
-
+    sampler = FastBalancedBatchSampler(datasets_by_class, batch_size_per_class=BATCH_SIZE_PER_CLASS, num_batches=NUM_BATCHES)
+    train_dataloader = DataLoader(train_dataset, batch_sampler=sampler)
     test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE_TEST)
 
-    min_loss_test = 100
-    # loss_test = 0.0
-    # f1 = ""
+    # Инициализация DataFrame для статистики
+    # Статистика по каждому классу и общей метрике
+    epoch_statistics = {
+        "epoch": [],
+        "train_loss": [],
+        "train_accuracy": [],
+        "test_loss": [],
+        "test_accuracy": [],
+        "f1_scores_per_class": [],
+        "balanced_accuracy_per_class": [],
+        "hamming_loss": [],
+        "jaccard_score": [],
+        "learning_rate": []
+    }
+
+    # Также можно создать CSV для хранения метрик каждой эпохи с разбивкой по классам
+    per_class_metrics = {feature_name: {"f1_score": [], "balanced_accuracy": []} for feature_name in FeaturesForDataset.TARGET}
+
+
+    current_lr = LEARNING_RATE
+    batch_count = 0
     for epoch in range(start_epoch,EPOCHS):
+        epoch_start_time = time.time()  # Начало отсчета времени для эпохи
+        if (epoch % 10 == 0) and (epoch != 0):
+            current_lr /= 2
+        optimizer = torch.optim.Adam(model.parameters(), lr=current_lr)
+        #optimizer = torch.optim.Adam(model.parameters(), lr=current_lr, weight_decay=L2_REGULARIZATION_COEFFICIENT)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode='min',
+            factor=0.5,
+            patience=1,
+        )
         with tqdm(train_dataloader, unit=" batch", mininterval=3) as t:
             loss_sum = 0.0
             for i, (batch, targets) in enumerate(t):
                 if (batch == None or targets == None):
                     # TODO: Защита от необрезанных массивов. Но сюда не должно попадать.
                     continue
-
+                
+                batch_count += 1  # Счётчик батчей
+                
                 targets = targets.to(device)
                 batch = batch.to(device)
 
                 output = model(batch)
-
-                # графики сигналов
-                # index_in_batch = 0
-                # plt.figure()
-                # for j in range(5):
-                #     plt.subplot(2, 3, j + 1)
-                #     plt.plot(batch[index_in_batch, :, j].cpu().numpy())
-                #     plt.gca().set_ylim(bottom=-2, top=2)
-                # plt.show()
-
                 loss = criterion(output, targets)
                 loss_sum += loss.item()
                 all_losses.append(loss.item())
@@ -429,29 +628,7 @@ if __name__ == "__main__":
                     f"LR={current_lr:.3e} "
                     f"Train loss: {(loss_sum / (i + 1)):.4f} "
                 )
-                # if epoch > 0:
-                #     message += (
-                #         f"Prev. test loss: {loss_test:.4f} "
-                #         #f"& F1: {', '.join([f'{score:.4f}' for score in f1])} "
-                #         f"F1: {', '.join([f'{signal_name}: {score:.4f}' for signal_name, score in zip(FeaturesForDataset.FEATURES_TARGET, f1)])} "
-                #         # f"& BA: {ba:.4f}" # TODO: Сделать ba мультимодальным, причём
-                #     )
                 t.set_postfix_str(s=message)
-
-                # plt.plot(all_losses, marker="o", linestyle="-")
-                # plt.grid(True)
-                # plt.show()
-
-                # smoothed plot
-                # window_size = 20
-                # smoothed_values = np.convolve(
-                #     all_losses, np.ones(window_size) / window_size, mode="valid"
-                # )
-                # plt.figure()
-                # plt.plot(smoothed_values, marker='o', linestyle='-')
-                # plt.grid(True)
-                # plt.show()
-
                 optimizer.zero_grad()
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(
@@ -459,102 +636,69 @@ if __name__ == "__main__":
                 )
                 optimizer.step()
 
-                # print(f"Epoch {epoch + 1}, Step {i + 1}, Loss: {loss.item()}")
-
             model.eval()
-            true_labels = []
-            predicted_labels = []
-            loss_test = 0.0
-            # FIXME: разобраться, почему не сходятся массивы меток. [12460, 172]
+
+            # Сохранение статистики каждую эпоху
+            # Выполняем оценку на тестовой выборке
+            test_loss = 0.0
+            true_labels, predicted_labels = [], []
             with torch.no_grad():
                 for inputs, labels in test_dataloader:
                     inputs = inputs.to(device)
                     outputs = model(inputs)
-                    loss_test += criterion(
-                        outputs, labels.to(device).squeeze()
-                    ).item()
-                    # _, predicted = torch.max(outputs.data, 1)
-                    predicted = outputs.data
-                    true_labels.extend(labels.numpy())
-                    predicted_labels.extend(predicted.cpu().numpy())
-                loss_test /= len(test_dataloader)
-
+                    test_loss += criterion(outputs, labels.to(device)).item()
+                    true_labels.extend(labels.cpu().numpy())
+                    predicted_labels.extend(outputs.cpu().numpy())
+            
+            # Рассчитываем метрики
             numpy_labels = np.array(predicted_labels) # промежуточные преобразования для ускорения
             predicted_labels_tensor = torch.from_numpy(numpy_labels)
             predicted_labels = torch.where(predicted_labels_tensor >= 0.5, torch.tensor(1), torch.tensor(0))
+            # Hamming Loss - чем меньше, тем лучше
+            hamming = hamming_loss(true_labels, predicted_labels)
+            # Jaccard Score - для многолейбловой задачи, 'samples' для подсчета по образцам - чем ближе к 1, тем лучше
+            jaccard = jaccard_score(true_labels, predicted_labels, average='samples')
             
             # TODO: Разобраться с метриками и модернизировать их
             numpy_true_labels = np.array(true_labels) # промежуточные преобразования для ускорения
             true_labels_tensor = torch.from_numpy(numpy_true_labels)
             ba, f1 = [], []
-            for i in range(len(FeaturesForDataset.FEATURES_TARGET)): # 'binary' для бинарной классификации на каждом классе
-                true_binary = true_labels_tensor[:, i].flatten()
-                pred_binary = predicted_labels[:, i].flatten()
+            for k in range(len(FeaturesForDataset.TARGET)): # 'binary' для бинарной классификации на каждом классе
+                true_binary = true_labels_tensor[:, k].flatten()
+                pred_binary = predicted_labels[:, k].flatten()
                 
                 ba.append(balanced_accuracy_score(true_binary, pred_binary))
                 f1.append(f1_score(true_binary, pred_binary, average='binary'))
+
             
+            # Сохраняем данные
+            # Рассчитываем метрики после каждой эпохи
+            test_loss = test_loss / len(test_dataloader) # Средние потери на тестовой выборке
+            mean_f1 = np.mean(f1)  # Средний F1-score по всем классам
+            mean_ba = np.mean(ba)  # Средний Balanced Accuracy по всем классам
+            
+            # Время обучения текущей эпохи
+            epoch_end_time = time.time()
+            epoch_duration = epoch_end_time - epoch_start_time  # Время в секундах
+
+            # Сохраняем данные в CSV
+            save_stats_to_csv(
+                epoch, batch_count, epoch_duration, loss_sum / len(train_dataloader), test_loss,
+                mean_f1, mean_ba, hamming, jaccard, current_lr,
+                f1_per_class=f1, ba_per_class=ba
+            )   
+
+
+            # Сообщение для tqdm
+            t.set_postfix_str(f"Batch: {batch_count}, Train loss: {loss_sum / (i + 1):.4f}, Test loss: {test_loss:.4f}, LR: {current_lr:.4e}")
             message_f1_ba = (
-                             f"Prev. test loss: {loss_test:.4f} "
-                             f"F1 / BA: {', '.join([f'{signal_name}: {f1_score:.4f}/{ba_score:.4f}' for signal_name, f1_score, ba_score in zip(FeaturesForDataset.FEATURES_TARGET, f1, ba)])} "
+                             f"Prev. test loss: {test_loss:.4f} "
+                             f"F1 / BA: {', '.join([f'{signal_name}: {f1_score:.4f}/{ba_score:.4f}' for signal_name, f1_score, ba_score in zip(FeaturesForDataset.TARGET, f1, ba)])} "
                              )
             print(message_f1_ba)
-            # Hamming Loss - чем меньше, тем лучше
-            hl = hamming_loss(true_labels, predicted_labels)
-            # Jaccard Score - для многолейбловой задачи, 'samples' для подсчета по образцам - чем ближе к 1, тем лучше
-            js = jaccard_score(true_labels, predicted_labels, average='samples')
-            print(f"Hamming Loss: {hl}, Jaccard Score: {js}")
-
-            torch.save(model, f"ML_model/trained_models/model_ep{epoch+1}_tl{loss_test:.4f}_train{loss_sum:.4f}.pt")
-            if loss_test < min_loss_test:
-                #torch.save(model, f"ML_model/trained_models/model_ep{epoch+1}_tl{loss_test:.4f}.pt")
-                min_loss_test = loss_test
+            print(f"Hamming Loss: {hamming}, Jaccard Score: {jaccard}")
+            
+            torch.save(model, f"ML_model/trained_models/model_{name_model}_ep{epoch+1}_tl{test_loss:.4f}_train{loss_sum:.4f}.pt")
             model.train()
-            # scheduler.step(loss_test) # constant LR
-            current_lr = optimizer.param_groups[0]["lr"]
     pass
 pass
-
-# KAN_first model
-# BATCH_SIZE_TRAIN = 128 
-# LEARNING_RATE = 1e-04
-# class_weights_tensor = tensor([0.1511, 0.3798, 1.0000], device='cuda:0')
-# 100%|██████████████████████████████████████████████████████████████████████████████| 537/537 [03:02<00:00,  2.95 batch/s, Epoch 1/100 LR=1.000e-03 Train loss: 0.0424 ] 
-# Prev. test loss: 0.0255 F1 / BA: opr_swch: 0.4188/0.8108, abnorm_evnt: 0.9885/0.9887, emerg_evnt: 0.3066/0.9017
-# Hamming Loss: 0.13182457486254956, Jaccard Score: 0.577982355197545
-# 100%|██████████████████████████████████████████████████████████████████████████████| 537/537 [02:34<00:00,  3.48 batch/s, Epoch 2/100 LR=1.000e-03 Train loss: 0.0179 ] 
-# Prev. test loss: 0.0157 F1 / BA: opr_swch: 0.4473/0.8301, abnorm_evnt: 0.9867/0.9869, emerg_evnt: 0.6082/0.9483
-# Hamming Loss: 0.10387418488684312, Jaccard Score: 0.6050249328730342
-# 100%|██████████████████████████████████████████████████████████████████████████████| 537/537 [02:29<00:00,  3.58 batch/s, Epoch 3/100 LR=1.000e-03 Train loss: 0.0140 ] 
-# Prev. test loss: 0.0176 F1 / BA: opr_swch: 0.4249/0.8152, abnorm_evnt: 0.9872/0.9873, emerg_evnt: 0.6600/0.9704 
-# Hamming Loss: 0.1113156885308784, Jaccard Score: 0.6113796189745556
-# 100%|██████████████████████████████████████████████████████████████████████████████| 537/537 [02:29<00:00,  3.59 batch/s, Epoch 4/100 LR=1.000e-03 Train loss: 0.0127 ]
-# Prev. test loss: 0.0174 F1 / BA: opr_swch: 0.5237/0.8713, abnorm_evnt: 0.9341/0.9319, emerg_evnt: 0.6991/0.8962 
-# Hamming Loss: 0.0950517836593786, Jaccard Score: 0.6095384221966501
-# 100%|██████████████████████████████████████████████████████████████████████████████| 537/537 [02:29<00:00,  3.58 batch/s, Epoch 5/100 LR=1.000e-03 Train loss: 0.0119 ] 
-# Prev. test loss: 0.0226 F1 / BA: opr_swch: 0.4573/0.8362, abnorm_evnt: 0.9711/0.9712, emerg_evnt: 0.5346/0.8954 
-# Hamming Loss: 0.10699399053829434, Jaccard Score: 0.6079657332821891
-# 100%|██████████████████████████████████████████████████████████████████████████████| 537/537 [02:29<00:00,  3.58 batch/s, Epoch 6/100 LR=1.000e-03 Train loss: 0.0118 ] 
-# Prev. test loss: 0.0235 F1 / BA: opr_swch: 0.4098/0.8045, abnorm_evnt: 0.9695/0.9695, emerg_evnt: 0.5442/0.9077 
-# Hamming Loss: 0.12655670630354174, Jaccard Score: 0.6088991177598773
-# 100%|██████████████████████████████████████████████████████████████████████████████| 537/537 [02:29<00:00,  3.59 batch/s, Epoch 7/100 LR=1.000e-03 Train loss: 0.0113 ] 
-# Prev. test loss: 0.0228 F1 / BA: opr_swch: 0.4210/0.8127, abnorm_evnt: 0.9494/0.9485, emerg_evnt: 0.6063/0.9067 
-# Hamming Loss: 0.12676128372330903, Jaccard Score: 0.6095000639304436
-# 100%|██████████████████████████████████████████████████████████████████████████████| 537/537 [02:29<00:00,  3.59 batch/s, Epoch 8/100 LR=1.000e-03 Train loss: 0.0112 ] 
-# Prev. test loss: 0.0149 F1 / BA: opr_swch: 0.4242/0.8150, abnorm_evnt: 0.9720/0.9721, emerg_evnt: 0.4543/0.9753 
-# Hamming Loss: 0.1255849635596471, Jaccard Score: 0.6128244470016622
-# 100%|██████████████████████████████████████████████████████████████████████████████| 537/537 [02:29<00:00,  3.59 batch/s, Epoch 9/100 LR=1.000e-03 Train loss: 0.0113 ] 
-# Prev. test loss: 0.0184 F1 / BA: opr_swch: 0.4786/0.8490, abnorm_evnt: 0.9613/0.9611, emerg_evnt: 0.4524/0.9732 
-# Hamming Loss: 0.10929548651067639, Jaccard Score: 0.607543792353919
-# 100%|█████████████████████████████████████████████████████████████████████████████| 537/537 [02:29<00:00,  3.59 batch/s, Epoch 10/100 LR=1.000e-03 Train loss: 0.0112 ] 
-# Prev. test loss: 0.0137 F1 / BA: opr_swch: 0.4220/0.8136, abnorm_evnt: 0.9608/0.9605, emerg_evnt: 0.6247/0.9807 
-# Hamming Loss: 0.12297660145761412, Jaccard Score: 0.6113156885308784
-# 100%|█████████████████████████████████████████████████████████████████████████████| 537/537 [02:32<00:00,  3.53 batch/s, Epoch 11/100 LR=1.000e-03 Train loss: 0.0109 ]
-# Prev. test loss: 0.0189 F1 / BA: opr_swch: 0.4169/0.8098, abnorm_evnt: 0.9572/0.9567, emerg_evnt: 0.5535/0.9514 
-# Hamming Loss: 0.12832118654903465, Jaccard Score: 0.6096151387290628
-# 100%|█████████████████████████████████████████████████████████████████████████████| 537/537 [02:32<00:00,  3.53 batch/s, Epoch 12/100 LR=1.000e-03 Train loss: 0.0109 ] 
-# Prev. test loss: 0.0176 F1 / BA: opr_swch: 0.4161/0.8093, abnorm_evnt: 0.9635/0.9633, emerg_evnt: 0.5436/0.9743 
-# Hamming Loss: 0.12742616033755275, Jaccard Score: 0.607825086306099
-# 100%|█████████████████████████████████████████████████████████████████████████████| 537/537 [02:31<00:00,  3.55 batch/s, Epoch 13/100 LR=1.000e-03 Train loss: 0.0112 ] 
-# Prev. test loss: 0.0181 F1 / BA: opr_swch: 0.4206/0.8130, abnorm_evnt: 0.9456/0.9444, emerg_evnt: 0.6314/0.9236 
-# Hamming Loss: 0.12806546477432554, Jaccard Score: 0.6079018028385117
