@@ -110,14 +110,14 @@ class CONV_MLP_v2(nn.Module):
         for i in range(self.channel_num):
             x_i = x[:, i:i+1, :]
             x1 = self.conv32(x_i)
-            x1 = x1.view(x1.size(0), -1)
+            x1 = x1.reshape(x1.size(0), -1)
             x3 = self.conv3(x_i[:, :, 32:])
-            x3 = x3.view(x3.size(0), -1)
+            x3 = x3.reshape(x3.size(0), -1)
             # Concatenate tensors along axis 0
             x_i = torch.cat((x1, x3), dim=1)
             X_sum[:,:, i] = x_i
             
-        X_sum = X_sum.view(X_sum.size(0), -1)  # Flatten the tensor to 2 dimensions
+        X_sum = X_sum.reshape(X_sum.size(0), -1)  # Flatten the tensor to 2 dimensions
         # FEATURES_TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt"]
         x_opr_swch = self.fc_opr_swch(X_sum)
         x_abnorm_evnt = self.fc_abnorm_evnt(X_sum)
@@ -200,10 +200,10 @@ class FFT_MLP(nn.Module):
         
     def forward(self, x):
         ## ТРЕБУЕТСЯ сделать независимые выходы для КАЖДОГО класса 
-        x = x.view(x.size(0), x.size(2), x.size(1))
+        x = x.reshape(x.size(0), x.size(2), x.size(1))
         x = self.fft_calc(x, count_harmonic = 8)
         # Concatenate tensors along axis 0
-        x = x.view(x.size(0), -1)
+        x = x.reshape(x.size(0), -1)
         x = self.fc(x)
         
         # FEATURES_TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt"]
@@ -321,10 +321,10 @@ class FFT_MLP_KAN_v1(nn.Module):
         return fft_combined
         
     def forward(self, x):
-        x = x.view(x.size(0), x.size(2), x.size(1))
+        x = x.reshape(x.size(0), x.size(2), x.size(1))
         x = self.fft_calc(x, count_harmonic = 8)
         # Concatenate tensors along axis 0
-        x = x.view(x.size(0), -1)
+        x = x.reshape(x.size(0), -1)
         x = self.kan1(x)
         x = self.kan2(x)
         x = self.kan3(x)
