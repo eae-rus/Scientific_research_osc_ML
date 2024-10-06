@@ -512,7 +512,11 @@ if __name__ == "__main__":
     dt_train_opr_swch = train_indexes[train_indexes["opr_swch"] == 1]
     dt_train_abnorm_evnt = train_indexes[train_indexes["abnorm_evnt"] == 1]
     dt_train_emerg_evnt = train_indexes[train_indexes["emerg_evnt"] == 1]
-    dt_train_no_event = train_indexes[train_indexes[["opr_swch", "abnorm_evnt", "emerg_evnt"]].all(axis=1) == 0]
+    
+    dt_train_no_event = train_indexes[train_indexes["opr_swch"] == 0]
+    dt_train_no_event = dt_train_no_event[dt_train_no_event["abnorm_evnt"] == 0]
+    dt_train_no_event = dt_train_no_event[dt_train_no_event["emerg_evnt"] == 0]
+    
     datasets_by_class = {
         'opr_swch': list(dt_train_opr_swch.index),
         'abnorm_evnt': list(dt_train_abnorm_evnt.index),
