@@ -80,6 +80,7 @@ class MarkingUpOscillograms(ComtradeProcessor):
     def __init__(self, norm_file_path: str, device: str = 'cuda'):
         super().__init__(norm_file_path, device)
         self.FRAME_SIZE = 64
+        self.threshold = 0.8
     
     def search_events_in_comtrade(self, 
                                    csv_name: str ='marking_up_oscillograms/sorted_files.csv', 
@@ -112,7 +113,6 @@ class MarkingUpOscillograms(ComtradeProcessor):
                 
                 names_osc = df["file_name"].unique()
                 for name_osc in names_osc:
-                    count_events = {name: 0 for name in FeaturesForDataset.FEATURES_TARGET}
                     df_osc_one_bus = df[df["file_name"] == name_osc].copy()
                     df_osc = pd.DataFrame(columns=FeaturesForDataset.FEATURES)
                     for name_cullum in FeaturesForDataset.FEATURES:
@@ -124,13 +124,28 @@ class MarkingUpOscillograms(ComtradeProcessor):
                     indexes = len(df_osc) - self.FRAME_SIZE + 1
                     df_osc.fillna(0, inplace=True)
                     
+                    # Initializing the output dictionary with empty predictions
+                    predict_labels = {name: np.zeros(len(df_osc)) for name in FeaturesForDataset.FEATURES_TARGET}
+                    left_predict_labels = {name: np.zeros(len(df_osc)) for name in FeaturesForDataset.FEATURES_TARGET}
+                    right_predict_labels = {name: np.zeros(len(df_osc)) for name in FeaturesForDataset.FEATURES_TARGET}
+                    
                     for ind in range(indexes):
                         df_window = df_osc.iloc[ind:ind + self.FRAME_SIZE]
                         df_window_tensor = torch.tensor(df_window.values.astype(np.float32)).unsqueeze(0).to(self.device).float()
                         model_prediction = self.model(df_window_tensor)
                         
                         for k, name in enumerate(FeaturesForDataset.FEATURES_TARGET):
-                            count_events[name] += int(model_prediction[0][k] > 0.5)
+                            predict_labels[name][self.FRAME_SIZE - 8 + ind] = int(model_prediction[0][k] > self.threshold)
+
+                    count_events = {name: 0 for name in FeaturesForDataset.FEATURES_TARGET}
+                    for name in FeaturesForDataset.FEATURES_TARGET:
+                        for i in range(len(predict_labels[name]) - 6):  # window length 7
+                            if np.sum(predict_labels[name][i:i + 7]) > 4:  # if the amount in the window is more than 3 from left to right
+                                left_predict_labels[name][i:i + 7] = 1
+                            if np.sum(predict_labels[name][-i-8:-i-1]) > 4:  # if the amount in the window is more than 3 help on the left
+                                right_predict_labels[name][-i-8:-i-1] = 1
+                        predict_labels[name] = np.logical_and(left_predict_labels[name], right_predict_labels[name])
+                        count_events = np.sum(predict_labels[name])
                     
                     events_predicted = {}
                     for name in FeaturesForDataset.FEATURES_TARGET:
@@ -159,6 +174,7 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
         self.start_point = strat_point
         self.end_point = end_point
         self.FRAME_SIZE = 64
+        self.threshold = 0.8
         self.ml_signals, self.ml_operational_switching, self.ml_abnormal_event, self.ml_emergency_event = self.get_short_names_ml_signals()
         self.f_networks, self.ADC_sampling_rate = f_networks, ADC_sampling_rate
 
@@ -210,8 +226,21 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
             model_prediction = self.model(df_window_tensor)
             
             for k, name in enumerate(FeaturesForDataset.FEATURES_TARGET):
-                predict_labels[name][self.FRAME_SIZE - 8 + ind] = int(model_prediction[0][k] > 0.5)
-        
+                predict_labels[name][self.FRAME_SIZE - 8 + ind] = int(model_prediction[0][k] > self.threshold)
+                
+                    
+        # Initializing the output dictionary with empty predictions
+        left_predict_labels = {name: np.zeros(len(df_osc)) for name in FeaturesForDataset.FEATURES_TARGET}
+        right_predict_labels = {name: np.zeros(len(df_osc)) for name in FeaturesForDataset.FEATURES_TARGET}
+
+        for name in FeaturesForDataset.FEATURES_TARGET:
+            for i in range(len(predict_labels[name]) - 6):  # window length 7
+                if np.sum(predict_labels[name][i:i + 7]) > 4:  # if the amount in the window is more than 3 from left to right
+                    left_predict_labels[name][i:i + 7] = 1
+                if np.sum(predict_labels[name][-i-8:-i-1]) > 4:  # if the amount in the window is more than 3 help on the left
+                    right_predict_labels[name][-i-8:-i-1] = 1
+            predict_labels[name] = np.logical_and(left_predict_labels[name], right_predict_labels[name])
+                
         return analog_signal, predict_labels, real_labels
     
     def get_real_labels(self, df: pd.DataFrame):
