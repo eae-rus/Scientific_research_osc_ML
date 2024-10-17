@@ -192,9 +192,17 @@ class MarkingUpOscillograms(ComtradeProcessor):
                         events_predicted[f"{name}_bool"] = count_events[name] > 0
                         events_predicted[f"{name}_count"] = count_events[name]
 
+                    # secure attempt to define a section
+                    bus = 1
+                    try:
+                        # Split the name of the waveform by the symbol "_" and extract the necessary parts
+                        bus = int(name_osc.split("_")[1].split(" ")[1])
+                    except (ValueError, IndexError):
+                        pass
+
                     new_row = pd.DataFrame({
                         "file_name": [name_osc.split("_")[0]],
-                        "bus": [int(name_osc.split("_")[1].split(" ")[1])],
+                        "bus": [bus],
                         **{k: [v] for k, v in events_predicted.items()}
                     })
 
