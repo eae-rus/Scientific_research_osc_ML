@@ -171,13 +171,14 @@ class MarkingUpOscillograms(ComtradeProcessor):
                     for name in FeaturesForDataset.FEATURES_TARGET:
                         # From left to right
                         for i in range(len(predict_labels[name]) - 6):
-                            if np.sum(predict_labels[name][i:i + 7]) > 4:
+                            window_sum = np.sum(predict_labels[name][i:i + 7]) > 4
+                            if predict_labels[name][i] and (window_sum > 4):
                                 left_predict_labels[name][i:i + 7] = 1
 
                         # From right to left
                         for i in range(len(predict_labels[name]) - 6):
                             window_sum = np.sum(predict_labels[name][-i-8:-i-1])
-                            if window_sum > 4:
+                            if predict_labels[name][-i-1] and(window_sum > 4):
                                 right_predict_labels[name][-i-8:-i-1] = 1
 
                         # Объединение предсказаний
@@ -319,13 +320,14 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
         for name in FeaturesForDataset.FEATURES_TARGET:
             # From left to right
             for i in range(len(predict_labels[name]) - 6):
-                if np.sum(predict_labels[name][i:i + 7]) > 4:
+                window_sum = np.sum(predict_labels[name][i:i + 7]) > 4
+                if predict_labels[name][i] and (window_sum > 4):
                     left_predict_labels[name][i:i + 7] = 1
 
             # From right to left
             for i in range(len(predict_labels[name]) - 6):
                 window_sum = np.sum(predict_labels[name][-i-8:-i-1])
-                if window_sum > 4:
+                if predict_labels[name][-i-1] and(window_sum > 4):
                     right_predict_labels[name][-i-8:-i-1] = 1
 
             # Combining predictions
