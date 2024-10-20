@@ -239,6 +239,7 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
         self.ml_signals, self.ml_operational_switching, self.ml_abnormal_event, self.ml_emergency_event = self.get_short_names_ml_signals()
         self.f_networks, self.ADC_sampling_rate = f_networks, ADC_sampling_rate
         self.batch_size = batch_size
+        self.len_df = 0
 
     def predict(self):
         """Applying a model to predict based on input data."""
@@ -246,7 +247,6 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
         if df.empty:
             return np.nan, np.nan, np.nan
 
-        analog_signal = {name: np.zeros(len(df)) for name in FeaturesForDataset.ANALOG_SIGNALS_FOR_PLOT}
         names_osc = df["file_name"].unique()
         try:
             name_osc = names_osc[int(self.uses_bus) - 1]
@@ -255,9 +255,11 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
             return np.nan, np.nan, np.nan
 
         df_osc_one_bus = df[df["file_name"] == name_osc].copy()
+        self.len_df = len(df_osc_one_bus)
+        analog_signal = {name: np.zeros(self.len_df) for name in FeaturesForDataset.ANALOG_SIGNALS_FOR_PLOT}
 
         # Initializing a DataFrame with zero values
-        df_osc = pd.DataFrame(0, index=np.arange(len(df_osc_one_bus)), columns=FeaturesForDataset.FEATURES)
+        df_osc = pd.DataFrame(0, index=np.arange(self.len_df), columns=FeaturesForDataset.FEATURES)
 
         # Filling in with real data, if present
         for feature in FeaturesForDataset.FEATURES:
@@ -269,7 +271,7 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
         # Normalization of signals
         df_osc = self.normalize_signals(df_osc, name_osc)
 
-        indexes = len(df_osc) - self.FRAME_SIZE + 1
+        indexes = self.len_df - self.FRAME_SIZE + 1
         df_osc.fillna(0, inplace=True)
 
         # Here is getting the real markup
@@ -280,7 +282,7 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
         real_labels = self.get_real_labels(df_osc_target)
 
         # Initialization of predictions
-        predict_labels = {name: np.zeros(len(df_osc)) for name in FeaturesForDataset.FEATURES_TARGET}
+        predict_labels = {name: np.zeros(self.len_df) for name in FeaturesForDataset.FEATURES_TARGET}
 
         # Creating windows
         windows = []
@@ -314,20 +316,20 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
                         predict_labels[name][target_idx] = predictions[k][j]
 
         # Double pass application (left and right)
-        left_predict_labels = {name: np.zeros(len(df_osc)) for name in FeaturesForDataset.FEATURES_TARGET}
-        right_predict_labels = {name: np.zeros(len(df_osc)) for name in FeaturesForDataset.FEATURES_TARGET}
+        left_predict_labels = {name: np.zeros(self.len_df) for name in FeaturesForDataset.FEATURES_TARGET}
+        right_predict_labels = {name: np.zeros(self.len_df) for name in FeaturesForDataset.FEATURES_TARGET}
 
         for name in FeaturesForDataset.FEATURES_TARGET:
             # From left to right
-            for i in range(len(predict_labels[name]) - 6):
-                window_sum = np.sum(predict_labels[name][i:i + 7]) > 4
-                if predict_labels[name][i] and (window_sum > 4):
+            for i in range(self.len_df - 6):
+                window_sum = np.sum(predict_labels[name][i:i + 7])
+                if predict_labels[name][i] and (window_sum > 3):
                     left_predict_labels[name][i:i + 7] = 1
 
             # From right to left
-            for i in range(len(predict_labels[name]) - 6):
+            for i in range(self.len_df - 6):
                 window_sum = np.sum(predict_labels[name][-i-8:-i-1])
-                if predict_labels[name][-i-1] and(window_sum > 4):
+                if predict_labels[name][-i-1] and(window_sum > 3):
                     right_predict_labels[name][-i-8:-i-1] = 1
 
             # Combining predictions
@@ -338,7 +340,7 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
 
     def get_real_labels(self, df: pd.DataFrame):
         """Getting real event markup based on a file."""
-        real_labels = {name: np.zeros(len(df)) for name in FeaturesForDataset.FEATURES_TARGET}
+        real_labels = {name: np.zeros(self.len_df) for name in FeaturesForDataset.FEATURES_TARGET}
         
         # opr_swch
         for name_cullum in self.ml_operational_switching:
