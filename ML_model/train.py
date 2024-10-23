@@ -19,7 +19,7 @@ from sklearn.metrics import hamming_loss, jaccard_score
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
-from model import CONV_MLP_v2, FFT_MLP, FFT_MLP_KAN_v1, FFT_MLP_KAN_v2
+from model import CONV_MLP_v2, FFT_MLP, FFT_MLP_KAN_v1, FFT_MLP_KAN_v2, FFT_MLP_COMPLEX_v1, FFT_MLP_COMPLEX_v2, FFT_MLP_COMPLEX_v3
 
 # Добавлено для исключения лишних предупреждений о возможных будущих проблемах.
 import warnings
@@ -551,11 +551,12 @@ if __name__ == "__main__":
 
     start_epoch = 0
     # !! создание новой !!
-    name_model = "FFT_MLP_KAN_v2" # "ConvMLP" # FftMLP , FftKAN
+    name_model = "FFT_MLP_COMPLEX_v2" # "ConvMLP" # FftMLP , FftKAN, FFT_MLP_COMPLEX_v1, FFT_MLP_COMPLEX_v2, FFT_MLP_COMPLEX_v2
     # model = CONV_MLP_v2(
     # model = FFT_MLP(
     # model = FFT_MLP_KAN_v1(
-    model = FFT_MLP_KAN_v2(
+    # model = FFT_MLP_KAN_v2(
+    model = FFT_MLP_COMPLEX_v2(
         FRAME_SIZE,
         channel_num=len(FeaturesForDataset.FEATURES),
         hidden_size=HIDDEN_SIZE,

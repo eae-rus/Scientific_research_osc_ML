@@ -433,6 +433,217 @@ class FFT_MLP_COMPLEX_v1(nn.Module):
         x = torch.cat((x_opr_swch, x_abnorm_evnt, x_emerg_evnt), dim=1)
         return x
 
+class FFT_MLP_COMPLEX_v2(nn.Module):
+    def __init__(
+        self, frame_size, channel_num=5, hidden_size=40, output_size=4, device = None,
+    ):
+        # TODO: разобраться в схеме обработки сигналов
+        # TODO: Подумать о создании более сложной схемы (2D свёртки, чтобы одновременно и I и U)
+        self.channel_num = channel_num
+        self.hidden_size = hidden_size
+        self.device = device
+        super(FFT_MLP_COMPLEX_v2, self).__init__()
+
+        # TODO: исправить расчётывание выходного размера после свёрток
+        # пока что задаю принудительно 128*16
+        self.fc_level = nn.Sequential(
+            nn.Linear(2*1*14, 4*hidden_size, dtype=torch.cfloat),
+            ComplexLeakyReLU(),
+            nn.Linear(4*hidden_size, 4*hidden_size, dtype=torch.cfloat),
+            ComplexLeakyReLU(),
+            nn.Linear(4*hidden_size, 2*hidden_size, dtype=torch.cfloat),
+            ComplexLeakyReLU(),
+            nn.Linear(2*hidden_size, hidden_size, dtype=torch.cfloat),
+            ComplexLeakyReLU(),
+        )
+        self.fc = nn.Sequential(
+            nn.Linear(40*9, hidden_size, dtype=torch.cfloat),
+            ComplexLeakyReLU(),
+            nn.Linear(hidden_size, hidden_size, dtype=torch.cfloat),
+            ComplexLeakyReLU(),
+        )
+        self.fc_opr_swch = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size//2, dtype=torch.cfloat),
+            ComplexLeakyReLU(),
+            nn.Linear(hidden_size//2, 1, dtype=torch.cfloat),
+            ComplexSigmoid(),
+        )
+        self.fc_abnorm_evnt = nn.Sequential(
+
+            nn.Linear(hidden_size, hidden_size//2, dtype=torch.cfloat),
+            ComplexLeakyReLU(),
+            nn.Linear(hidden_size//2, 1, dtype=torch.cfloat),
+            ComplexSigmoid(),
+        )
+        self.fc_emerg_evnt = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size//2, dtype=torch.cfloat),
+            ComplexLeakyReLU(),
+            nn.Linear(hidden_size//2, 1, dtype=torch.cfloat),
+            ComplexSigmoid(),
+        )
+
+    def fft_calc(self, input, count_harmonic=1):
+        # input - тензор формы (batch_size, channel_num, frame_size)
+        batch_size, channel_num, frame_size = input.size()
+        
+        # Вычисление FFT для каждого канала
+        fft_result_previous = torch.fft.rfft(input[:,:,:32])  # Одностороннее комплексное преобразование Фурье (работает с реальными числами)
+        fft_result_current = torch.fft.rfft(input[:,:,32:]) 
+
+        # Ограничиваем количество гармоник до count_harmonic + 1
+        fft_result_previous = fft_result_previous[:, :, :count_harmonic+1]
+        fft_result_current = fft_result_current[:, :, :count_harmonic+1]
+        
+        return (fft_result_previous, fft_result_current)
+        
+    def forward(self, x):
+        # Преобразование x так, чтобы каналы были последней размерностью
+        x = x.reshape(x.size(0), x.size(2), x.size(1))
+
+        # Вычисляем FFT с количеством гармоник 8
+        count_harmonic = 8
+        x_previous, x_current = self.fft_calc(x, count_harmonic=count_harmonic)
+
+        # Переменная для сохранения промежуточных расчетов
+        x_level_1 = []
+
+        # Обработка каждой гармоники по отдельности
+        for i in range(count_harmonic+1):  # Пробегаем по каждой гармонике
+            x1 = x_previous[:, :, i]  # Извлекаем i-ю гармонику
+            x2 = x_current[:, :, i]  # Извлекаем i-ю гармонику
+            
+            # Объединяем в один тензор с последующим разворачиванием
+            x_combined = torch.cat((x1, x2), dim=-1)  # Склеиваем по последней размерности
+            x_combined = x_combined.reshape(x_combined.size(0), -1)  # Выравнивание
+            x_combined = self.fc_level(x_combined)  # Пропускаем через fully connected сеть
+            x_level_1.append(x_combined)  # Сохраняем результат
+
+        # Объединяем все рассчитанные гармоники вдоль нового измерения
+        x_level_1 = torch.stack(x_level_1, dim=1)
+
+        # Последующий слой обработки, который будет принимать x_level_1
+        # Здесь можно добавить новый слой, аналогичный вашему текущему fc
+        # Для примера, допустим, что будет еще один слой, который объединяет результаты
+        x_level_1 = x_level_1.reshape(x_level_1.size(0), -1)  # Выравнивание
+        x_level_1 = self.fc(x_level_1)
+
+        # Создаем выходы для каждого класса
+        x_opr_swch = self.fc_opr_swch(x_level_1)
+        x_abnorm_evnt = self.fc_abnorm_evnt(x_level_1)
+        x_emerg_evnt = self.fc_emerg_evnt(x_level_1)
+
+        # Объединяем выходы в один тензор
+        x = torch.cat((x_opr_swch, x_abnorm_evnt, x_emerg_evnt), dim=1)
+
+        return x
+
+class FFT_MLP_COMPLEX_v3(nn.Module):
+    def __init__(
+        self, frame_size, channel_num=5, hidden_size=40, output_size=4, device = None,
+    ):
+        # TODO: разобраться в схеме обработки сигналов
+        # TODO: Подумать о создании более сложной схемы (2D свёртки, чтобы одновременно и I и U)
+        self.channel_num = channel_num
+        self.hidden_size = hidden_size
+        self.device = device
+        super(FFT_MLP_COMPLEX_v3, self).__init__()
+
+        # TODO: исправить расчётывание выходного размера после свёрток
+        # пока что задаю принудительно 128*16
+        # Создаем массив слоев fc, по одному для каждой гармоники (9 гармоник)
+        self.fc_layers = nn.ModuleList([
+            nn.Sequential(
+                nn.Linear(2 * 1 * 14, 4 * hidden_size, dtype=torch.cfloat),
+                ComplexLeakyReLU(),
+                nn.Linear(4 * hidden_size, 4 * hidden_size, dtype=torch.cfloat),
+                ComplexLeakyReLU(),
+                nn.Linear(4 * hidden_size, 2 * hidden_size, dtype=torch.cfloat),
+                ComplexLeakyReLU(),
+                nn.Linear(2 * hidden_size, hidden_size, dtype=torch.cfloat),
+                ComplexLeakyReLU(),
+            ) for _ in range(9)  # Для каждой гармоники
+        ])
+        self.fc = nn.Sequential(
+            nn.Linear(40*9, hidden_size, dtype=torch.cfloat),
+            ComplexLeakyReLU(),
+            nn.Linear(hidden_size, hidden_size, dtype=torch.cfloat),
+            ComplexLeakyReLU(),
+        )
+        self.fc_opr_swch = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size//2, dtype=torch.cfloat),
+            ComplexLeakyReLU(),
+            nn.Linear(hidden_size//2, 1, dtype=torch.cfloat),
+            ComplexSigmoid(),
+        )
+        self.fc_abnorm_evnt = nn.Sequential(
+
+            nn.Linear(hidden_size, hidden_size//2, dtype=torch.cfloat),
+            ComplexLeakyReLU(),
+            nn.Linear(hidden_size//2, 1, dtype=torch.cfloat),
+            ComplexSigmoid(),
+        )
+        self.fc_emerg_evnt = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size//2, dtype=torch.cfloat),
+            ComplexLeakyReLU(),
+            nn.Linear(hidden_size//2, 1, dtype=torch.cfloat),
+            ComplexSigmoid(),
+        )
+
+    def fft_calc(self, input, count_harmonic=1):
+        # input - тензор формы (batch_size, channel_num, frame_size)
+        batch_size, channel_num, frame_size = input.size()
+        
+        # Вычисление FFT для каждого канала
+        fft_result_previous = torch.fft.rfft(input[:,:,:32])  # Одностороннее комплексное преобразование Фурье (работает с реальными числами)
+        fft_result_current = torch.fft.rfft(input[:,:,32:]) 
+
+        # Ограничиваем количество гармоник до count_harmonic + 1
+        fft_result_previous = fft_result_previous[:, :, :count_harmonic+1]
+        fft_result_current = fft_result_current[:, :, :count_harmonic+1]
+        
+        return (fft_result_previous, fft_result_current)
+        
+    def forward(self, x):
+        # Преобразование x так, чтобы каналы были последней размерностью
+        x = x.reshape(x.size(0), x.size(2), x.size(1))
+
+        # Вычисляем FFT с количеством гармоник 8
+        count_harmonic = 8
+        x_previous, x_current = self.fft_calc(x, count_harmonic=count_harmonic)
+
+        # Переменная для сохранения промежуточных расчетов
+        x_level_1 = []
+
+        # Обработка каждой гармоники по отдельности
+        for i in range(count_harmonic+1):  # Пробегаем по каждой гармонике
+            x1 = x_previous[:, :, i]  # Извлекаем i-ю гармонику
+            x2 = x_current[:, :, i]  # Извлекаем i-ю гармонику
+            
+            # Объединяем в один тензор с последующим разворачиванием
+            x_combined = torch.cat((x1, x2), dim=-1)  # Склеиваем по последней размерности
+            x_combined = x_combined.reshape(x_combined.size(0), -1)  # Выравнивание
+            x_combined = self.fc_layers[i](x_combined)  # Пропускаем через fully connected сеть
+            x_level_1.append(x_combined)  # Сохраняем результат
+
+        # Объединяем все рассчитанные гармоники вдоль нового измерения
+        x_level_1 = torch.stack(x_level_1, dim=1)
+
+        # Последующий слой обработки, который будет принимать x_level_1
+        # Здесь можно добавить новый слой, аналогичный вашему текущему fc
+        # Для примера, допустим, что будет еще один слой, который объединяет результаты
+        x_level_1 = x_level_1.reshape(x_level_1.size(0), -1)  # Выравнивание
+        x_level_1 = self.fc(x_level_1)
+
+        # Создаем выходы для каждого класса
+        x_opr_swch = self.fc_opr_swch(x_level_1)
+        x_abnorm_evnt = self.fc_abnorm_evnt(x_level_1)
+        x_emerg_evnt = self.fc_emerg_evnt(x_level_1)
+
+        # Объединяем выходы в один тензор
+        x = torch.cat((x_opr_swch, x_abnorm_evnt, x_emerg_evnt), dim=1)
+
+        return x
+
 class FFT_MLP_KAN_v2(nn.Module):
     def __init__(
         self, frame_size, channel_num=5, hidden_size=40, output_size=4, device = None,
