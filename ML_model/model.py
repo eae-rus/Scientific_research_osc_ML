@@ -5,7 +5,8 @@ import torch.nn as nn
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
-from kan_convolutional.KANLinear import KANLinear
+from kan_convolutional.KANLinear import KANLinear, KANLinearComplex
+
 
 # Требуется разобраться с базовой моделью KANLinear, у меня не работала норально.
 # У них можно график строить заполениня и другие фичи
@@ -432,6 +433,117 @@ class FFT_MLP_COMPLEX_v1(nn.Module):
         x = torch.cat((x_opr_swch, x_abnorm_evnt, x_emerg_evnt), dim=1)
         return x
 
+class FFT_MLP_KAN_v2(nn.Module):
+    def __init__(
+        self, frame_size, channel_num=5, hidden_size=40, output_size=4, device = None,
+    ):
+        # TODO: разобраться в схеме обработки сигналов
+        # TODO: Подумать о создании более сложной схемы (2D свёртки, чтобы одновременно и I и U)
+        self.channel_num = channel_num
+        self.hidden_size = hidden_size
+        self.device = device
+        super(FFT_MLP_KAN_v2, self).__init__()
+        
+        # TODO: Расписать # KANLayer
+        self.kan1 = KANLinearComplex(in_features=2*9*14,
+                                     out_features=2*hidden_size,
+                                     grid_size=10,
+                                     spline_order=3,
+                                     scale_noise=0.01,
+                                     scale_base=1,
+                                     scale_spline=1,
+                                     base_activation=nn.SiLU,
+                                     grid_eps=0.02,
+                                     grid_range=[0,1])
+        self.kan2 = KANLinearComplex(in_features=2*hidden_size,
+                                     out_features=4*hidden_size,
+                                     grid_size=10,
+                                     spline_order=3,
+                                     scale_noise=0.01,
+                                     scale_base=1,
+                                     scale_spline=1,
+                                     base_activation=nn.SiLU,
+                                     grid_eps=0.02,
+                                     grid_range=[0,1])
+        self.kan3 = KANLinearComplex(in_features=4*hidden_size,
+                                     out_features=2*hidden_size,
+                                     grid_size=10,
+                                     spline_order=3,
+                                     scale_noise=0.01,
+                                     scale_base=1,
+                                     scale_spline=1,
+                                     base_activation=nn.SiLU,
+                                     grid_eps=0.02,
+                                     grid_range=[0,1])
+        self.kan4 = KANLinearComplex(in_features=2*hidden_size,
+                                     out_features=hidden_size,
+                                     grid_size=10,
+                                     spline_order=3,
+                                     scale_noise=0.01,
+                                     scale_base=1,
+                                     scale_spline=1,
+                                     base_activation=nn.SiLU,
+                                     grid_eps=0.02,
+                                     grid_range=[0,1])
+        
+        self.fc_opr_swch = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size, dtype=torch.cfloat), # nn.Linear(hidden_size * 7, hidden_size),
+            ComplexLeakyReLU(),
+            nn.Linear(hidden_size, hidden_size//2, dtype=torch.cfloat),
+            ComplexLeakyReLU(),
+            nn.Linear(hidden_size//2, 1, dtype=torch.cfloat),
+            ComplexSigmoid(),
+        )
+        self.fc_abnorm_evnt = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size, dtype=torch.cfloat), # nn.Linear(hidden_size * 7, hidden_size),
+            ComplexLeakyReLU(),
+            nn.Linear(hidden_size, hidden_size//2, dtype=torch.cfloat),
+            ComplexLeakyReLU(),
+            nn.Linear(hidden_size//2, 1, dtype=torch.cfloat),
+            ComplexSigmoid(),
+        )
+        self.fc_emerg_evnt = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size, dtype=torch.cfloat), # nn.Linear(hidden_size * 7, hidden_size),
+            ComplexLeakyReLU(),
+            nn.Linear(hidden_size, hidden_size//2, dtype=torch.cfloat),
+            ComplexLeakyReLU(),
+            nn.Linear(hidden_size//2, 1, dtype=torch.cfloat),
+            ComplexSigmoid(),
+        )
+
+    def fft_calc(self, input, count_harmonic=1):
+        # input - тензор формы (batch_size, channel_num, frame_size)
+        batch_size, channel_num, frame_size = input.size()
+        
+        # Вычисление FFT для каждого канала
+        fft_result_previous = torch.fft.rfft(input[:,:,:32])  # Одностороннее комплексное преобразование Фурье (работает с реальными числами)
+        fft_result_current = torch.fft.rfft(input[:,:,32:]) 
+
+        # Ограничиваем количество гармоник до count_harmonic + 1
+        fft_result_previous = fft_result_previous[:, :, :count_harmonic+1]
+        fft_result_current = fft_result_current[:, :, :count_harmonic+1]
+
+        # Объединяем в один тензор с последующим разворачиванием
+        fft_combined = torch.cat((fft_result_previous, fft_result_current), dim=-1)  # Склеиваем по последней размерности
+        
+        return fft_combined
+        
+    def forward(self, x):
+        x = x.reshape(x.size(0), x.size(2), x.size(1))
+        x = self.fft_calc(x, count_harmonic = 8)
+        # Concatenate tensors along axis 0
+        x = x.reshape(x.size(0), -1)
+        x = self.kan1(x)
+        x = self.kan2(x)
+        x = self.kan3(x)
+        x = self.kan4(x)
+        
+        # FEATURES_TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt"]
+        x_opr_swch = self.fc_opr_swch(x)
+        x_abnorm_evnt = self.fc_abnorm_evnt(x)
+        x_emerg_evnt = self.fc_emerg_evnt(x)
+        x = torch.cat((x_opr_swch, x_abnorm_evnt, x_emerg_evnt), dim=1)
+        return x
 
 if __name__ == "__main__":
     print(CONV_MLP_v2())
