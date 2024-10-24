@@ -19,13 +19,16 @@ from kan_convolutional.KANLinear import KANLinear, KANLinearComplex
 ####################
 
 class cLeakyReLU(nn.Module):
-    def forward(self, input, negative_slope = 0.05):
+    def __init__(self, negative_slope=0.05):
+        super().__init__()
+        self.negative_slope = negative_slope
+    def forward(self, input):
         amp = torch.abs(input) # TODO: наверное можно как-то сразу, надо изучить, "что есть" в этих числах
         # можно будет сделать порог сдвигаемым
-        amp_LeakyReLU = torch._C._nn.leaky_relu_(amp, negative_slope)
+        amp_LeakyReLU = torch._C._nn.leaky_relu_(amp, self.negative_slope)
         # позитив и негатив - для создания полуплоскости (можно будет сделать их адаптивными)
         angle = torch.angle(input)
-        angle_LeakyReLU = torch._C._nn.leaky_relu_(angle, negative_slope)
+        angle_LeakyReLU = torch._C._nn.leaky_relu_(angle, self.negative_slope)
         
         real = amp_LeakyReLU * torch.cos(angle_LeakyReLU)
         imag = amp_LeakyReLU * torch.sin(angle_LeakyReLU)
@@ -66,20 +69,20 @@ class Features():
         VOLTAGE_LINE_BB = {"UAB BB" : -1,"UBC BB" : -1,"UCA BB" : -1}
         VOLTAGE_LINE_CL = {"UAB CL" : 11,"UBC CL": 12,"UCA CL": 13}
 
+def create_conv_block(in_channels, out_channels, maxPool_size = 2, kernel_size=3, stride=1, padding=1, padding_mode="circular", complex=False):
+    conv = nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding, padding_mode=padding_mode)
+    if complex:
+        return nn.Sequential(conv, cLeakyReLU(), cMaxPool1d(kernel_size=maxPool_size, stride=maxPool_size))
+    return nn.Sequential(conv, nn.LeakyReLU(True), nn.MaxPool1d(kernel_size=maxPool_size, stride=maxPool_size))
+
 class Conv_3(nn.Module):
     def __init__(self):
         super(Conv_3, self).__init__()
         # TODO: Добавить задание параметров
         self.layer = nn.Sequential(
-            nn.Conv1d(1, 2*8, kernel_size=3, stride=1, padding=1, padding_mode="circular",),
-            nn.LeakyReLU(True),
-            nn.MaxPool1d(kernel_size=2, stride=2), # 32*16 -> 16*16
-            nn.Conv1d(16, 4*8, kernel_size=3, stride=1, padding=1, padding_mode="circular",),
-            nn.LeakyReLU(True),
-            nn.MaxPool1d(kernel_size=2, stride=2), # 16*32 -> 8*32
-            nn.Conv1d(4*8, 4*8, kernel_size=3, stride=1, padding=1, padding_mode="circular", ),
-            nn.LeakyReLU(True),
-            nn.MaxPool1d(kernel_size=8, stride=8), # 8*32 -> 1*32
+            create_conv_block(1, 16), # 32*16 -> 16*16
+            create_conv_block(16, 32), # 16*32 -> 8*32
+            create_conv_block(32, 32, maxPool_size = 8) # 8*32 -> 1*32
         )
 
     def forward(self, x):
@@ -90,15 +93,9 @@ class cConv_3(nn.Module):
         super(cConv_3, self).__init__()
         # TODO: Добавить задание параметров
         self.layer = nn.Sequential(
-            nn.Conv1d(1, 2*8, kernel_size=3, stride=1, padding=1, padding_mode="circular", dtype=torch.cfloat),
-            cLeakyReLU(),
-            cMaxPool1d(kernel_size=2, stride=2),  # 32*16 -> 16*16
-            nn.Conv1d(16, 4*8, kernel_size=3, stride=1, padding=1, padding_mode="circular", dtype=torch.cfloat),
-            cLeakyReLU(),
-            cMaxPool1d(kernel_size=2, stride=2),  # 16*32 -> 8*32
-            nn.Conv1d(4*8, 4*8, kernel_size=3, stride=1, padding=1, padding_mode="circular", dtype=torch.cfloat),
-            cLeakyReLU(),
-            cMaxPool1d(kernel_size=8, stride=8)   # 8*32 -> 1*32
+            create_conv_block(1, 16, complex=True), # 32*16 -> 16*16
+            create_conv_block(16, 32, complex=True), # 16*32 -> 8*32
+            create_conv_block(32, 32, maxPool_size = 8, complex=True) # 8*32 -> 1*32
         )
 
     def forward(self, x):
@@ -132,19 +129,19 @@ def cubic_interpolate(tensor, output_size=64):
 
     return interpolated_tensor
 def fft_calc(self, input, count_harmonic=1):
-        previous = torch.fft.rfft(input[:, :, :32])
-        current = torch.fft.rfft(input[:, :, 32:])
+        prev_signals = torch.fft.rfft(input[:, :, :32])
+        current_signals = torch.fft.rfft(input[:, :, 32:])
         
-        return (previous[:, :, :count_harmonic+1], current[:, :, :count_harmonic+1])
+        return (prev_signals[:, :, :count_harmonic+1], current_signals[:, :, :count_harmonic+1])
 
 def fft_calc_abs_angle(self, input, count_harmonic=1):
-        previous = torch.fft.rfft(input[:, :, :32])
-        current = torch.fft.rfft(input[:, :, 32:])
+        prev_signals = torch.fft.rfft(input[:, :, :32])
+        current_signals = torch.fft.rfft(input[:, :, 32:])
         
-        previous = previous[:, :, :count_harmonic+1]
-        current = current[:, :, :count_harmonic+1]
+        prev_signals = prev_signals[:, :, :count_harmonic+1]
+        current_signals = current_signals[:, :, :count_harmonic+1]
         
-        return (torch.abs(previous), torch.abs(current), torch.angle(current), torch.angle(current))
+        return (torch.abs(prev_signals), torch.abs(current_signals), torch.angle(current_signals), torch.angle(current_signals))
 
 #####################
 # МОДЕЛИ
