@@ -540,11 +540,11 @@ if __name__ == "__main__":
         dt=dt_train, indexes=train_indexes,
         frame_size=FRAME_SIZE,  # Указываем размер окна
         target_position=FRAME_SIZE-8,  # Целевая позиция – последний элемент окна
-        apply_inversion=False, # Активируем рандомную инверсию сигнала
-        apply_noise=False, # Активируем добавление шума
-        apply_amplitude_scaling=False, # Активируем изменение масштаба
+        apply_inversion=True, # Активируем рандомную инверсию сигнала
+        apply_noise=True, current_noise_level=0, # Активируем добавление шума, но зануляем его по току
+        apply_amplitude_scaling=True, # Активируем изменение масштаба
         apply_offset=False, # Активирует добавление рандомной постоянной составляющей
-        apply_phase_shuffling=False  # Активируем рандомнуюперетасовку фаз
+        apply_phase_shuffling=True  # Активируем рандомнуюп еретасовку фаз
     )
     
     test_dataset = CustomDataset(dt_test, test_indexes, FRAME_SIZE, FRAME_SIZE-8)
