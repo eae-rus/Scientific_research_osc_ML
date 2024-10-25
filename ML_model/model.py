@@ -69,21 +69,21 @@ class Features():
         VOLTAGE_LINE_BB = {"UAB BB" : -1,"UBC BB" : -1,"UCA BB" : -1}
         VOLTAGE_LINE_CL = {"UAB CL" : 11,"UBC CL": 12,"UCA CL": 13}
 
-def create_conv_block(in_channels, out_channels, maxPool_size = 2, kernel_size=3, stride=1, padding=1, padding_mode="circular", complex=False):
-    if complex:
+def create_conv_block(in_channels, out_channels, maxPool_size = 2, kernel_size=3, stride=1, padding=1, padding_mode="circular", useComplex=False):
+    if useComplex:
         conv = nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding, padding_mode=padding_mode, dtype=torch.cfloat)
         return nn.Sequential(conv, cLeakyReLU(), cMaxPool1d(kernel_size=maxPool_size, stride=maxPool_size))
     conv = nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding, padding_mode=padding_mode)
     return nn.Sequential(conv, nn.LeakyReLU(True), nn.MaxPool1d(kernel_size=maxPool_size, stride=maxPool_size))
 
 class Conv_3(nn.Module):
-    def __init__(self, complex = False):
+    def __init__(self, useComplex=False):
         super(Conv_3, self).__init__()
         # TODO: Добавить задание параметров
         self.layer = nn.Sequential(
-            create_conv_block(1, 16, complex=complex), # 32*16 -> 16*16
-            create_conv_block(16, 32, complex=complex), # 16*32 -> 8*32
-            create_conv_block(32, 32, maxPool_size = 8, complex=complex) # 8*32 -> 1*32
+            create_conv_block(1, 16, useComplex=useComplex), # 32*16 -> 16*16
+            create_conv_block(16, 32, useComplex=useComplex), # 16*32 -> 8*32
+            create_conv_block(32, 32, maxPool_size = 8, useComplex=useComplex) # 8*32 -> 1*32
         )
 
     def forward(self, x):
@@ -239,7 +239,7 @@ class CONV_COMPLEX_v1(nn.Module):
             nn.Conv1d(1,8, kernel_size=32, stride=16, dtype=torch.cfloat),
             cLeakyReLU()
         )
-        self.conv3 = Conv_3(compile=True)
+        self.conv3 = Conv_3(useComplex=True)
 
         # TODO: исправить расчётывание выходного размера после свёрток
         # пока что задаю принудительно 128*16
