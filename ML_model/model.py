@@ -77,26 +77,13 @@ def create_conv_block(in_channels, out_channels, maxPool_size = 2, kernel_size=3
     return nn.Sequential(conv, nn.LeakyReLU(True), nn.MaxPool1d(kernel_size=maxPool_size, stride=maxPool_size))
 
 class Conv_3(nn.Module):
-    def __init__(self):
+    def __init__(self, complex = False):
         super(Conv_3, self).__init__()
         # TODO: Добавить задание параметров
         self.layer = nn.Sequential(
-            create_conv_block(1, 16), # 32*16 -> 16*16
-            create_conv_block(16, 32), # 16*32 -> 8*32
-            create_conv_block(32, 32, maxPool_size = 8) # 8*32 -> 1*32
-        )
-
-    def forward(self, x):
-        return self.layer(x)
-
-class cConv_3(nn.Module):
-    def __init__(self):
-        super(cConv_3, self).__init__()
-        # TODO: Добавить задание параметров
-        self.layer = nn.Sequential(
-            create_conv_block(1, 16, complex=True), # 32*16 -> 16*16
-            create_conv_block(16, 32, complex=True), # 16*32 -> 8*32
-            create_conv_block(32, 32, maxPool_size = 8, complex=True) # 8*32 -> 1*32
+            create_conv_block(1, 16, complex=complex), # 32*16 -> 16*16
+            create_conv_block(16, 32, complex=complex), # 16*32 -> 8*32
+            create_conv_block(32, 32, maxPool_size = 8, complex=complex) # 8*32 -> 1*32
         )
 
     def forward(self, x):
@@ -252,7 +239,7 @@ class CONV_COMPLEX_v1(nn.Module):
             nn.Conv1d(1,8, kernel_size=32, stride=16, dtype=torch.cfloat),
             cLeakyReLU()
         )
-        self.conv3 = cConv_3()
+        self.conv3 = Conv_3(compile=True)
 
         # TODO: исправить расчётывание выходного размера после свёрток
         # пока что задаю принудительно 128*16
@@ -887,7 +874,7 @@ class CONV_AND_FFT_COMPLEX_v2(nn.Module):
             ) for _ in range(self.harmonic_count)  # Для каждой гармоники
         ])
         
-        self.conv3 = cConv_3()
+        self.conv3 = Conv_3(compile=True)
         
         self.fc = nn.Sequential(
             nn.Linear(self.harmonic_count*hidden_size + 32*14, hidden_size, dtype=torch.cfloat),
