@@ -70,9 +70,10 @@ class Features():
         VOLTAGE_LINE_CL = {"UAB CL" : 11,"UBC CL": 12,"UCA CL": 13}
 
 def create_conv_block(in_channels, out_channels, maxPool_size = 2, kernel_size=3, stride=1, padding=1, padding_mode="circular", complex=False):
-    conv = nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding, padding_mode=padding_mode)
     if complex:
+        conv = nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding, padding_mode=padding_mode, dtype=torch.cfloat)
         return nn.Sequential(conv, cLeakyReLU(), cMaxPool1d(kernel_size=maxPool_size, stride=maxPool_size))
+    conv = nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding, padding_mode=padding_mode)
     return nn.Sequential(conv, nn.LeakyReLU(True), nn.MaxPool1d(kernel_size=maxPool_size, stride=maxPool_size))
 
 class Conv_3(nn.Module):
@@ -128,13 +129,13 @@ def cubic_interpolate(tensor, output_size=64):
     )
 
     return interpolated_tensor
-def fft_calc(self, input, count_harmonic=1):
+def fft_calc(input, count_harmonic=1):
         prev_signals = torch.fft.rfft(input[:, :, :32])
         current_signals = torch.fft.rfft(input[:, :, 32:])
         
         return (prev_signals[:, :, :count_harmonic+1], current_signals[:, :, :count_harmonic+1])
 
-def fft_calc_abs_angle(self, input, count_harmonic=1):
+def fft_calc_abs_angle(input, count_harmonic=1):
         prev_signals = torch.fft.rfft(input[:, :, :32])
         current_signals = torch.fft.rfft(input[:, :, 32:])
         
@@ -142,6 +143,23 @@ def fft_calc_abs_angle(self, input, count_harmonic=1):
         current_signals = current_signals[:, :, :count_harmonic+1]
         
         return (torch.abs(prev_signals), torch.abs(current_signals), torch.angle(current_signals), torch.angle(current_signals))
+
+def create_signal_group(x, currents, voltages, device = "cpu"):
+    group = torch.zeros(x.size(0), len(currents), x.size(2), device=device, dtype=torch.cfloat)
+    for i, (ic, iv) in enumerate(zip(currents, voltages)):
+        if ic != -1 and iv != -1:
+            group[:, i, :] = x[:, ic, :] + 1j * x[:, iv, :]
+        elif ic == -1:
+            group[:, i, :] = 1j * x[:, iv, :]
+        else:
+            group[:, i, :] = x[:, ic, :]
+    return group
+
+def create_line_group(x, ic_L, voltages, device="cpu"):
+        group = torch.zeros(x.size(0), len(ic_L), x.size(2), device=device, dtype=torch.cfloat)
+        for i, (ic_pair, iv) in enumerate(zip(ic_L, voltages)):
+            group[:, i, :] = x[:, ic_pair[0], :] - x[:, ic_pair[1], :] + 1j * x[:, iv, :]
+        return group
 
 #####################
 # МОДЕЛИ
@@ -241,23 +259,6 @@ class CONV_COMPLEX_v1(nn.Module):
         self.fc_opr_swch = self.Head_fc(hidden_size)
         self.fc_abnorm_evnt = self.Head_fc(hidden_size)
         self.fc_emerg_evnt = self.Head_fc(hidden_size)
-    
-    def create_signal_group(self, x, currents, voltages):
-        group = torch.zeros(x.size(0), len(currents), x.size(2), device=self.device, dtype=torch.cfloat)
-        for i, (ic, iv) in enumerate(zip(currents, voltages)):
-            if ic != -1 and iv != -1:
-                group[:, i, :] = x[:, ic, :] + 1j * x[:, iv, :]
-            elif ic == -1:
-                group[:, i, :] = 1j * x[:, iv, :]
-            else:
-                group[:, i, :] = x[:, ic, :]
-        return group
-    
-    def create_line_group(ic_L, voltages):
-            group = torch.zeros(x.size(0), len(ic_L), x.size(2), device=self.device, dtype=torch.cfloat)
-            for i, (ic_pair, iv) in enumerate(zip(ic_L, voltages)):
-                group[:, i, :] = x[:, ic_pair[0], :] - x[:, ic_pair[1], :] + 1j * x[:, iv, :]
-            return group
 
     def forward(self, x):
         x = x.permute(0, 2, 1)
@@ -266,8 +267,8 @@ class CONV_COMPLEX_v1(nn.Module):
         voltages_bb = [Features.VOLTAGE_PHAZE_BB["UA BB"], Features.VOLTAGE_PHAZE_BB["UB BB"], Features.VOLTAGE_PHAZE_BB["UC BB"], Features.VOLTAGE_PHAZE_BB["UN BB"]]
         voltages_cl = [Features.VOLTAGE_PHAZE_CL["UA CL"], Features.VOLTAGE_PHAZE_CL["UB CL"], Features.VOLTAGE_PHAZE_CL["UC CL"], Features.VOLTAGE_PHAZE_CL["UN CL"]]
         
-        x_g1 = self.create_signal_group(x, currents, voltages_bb)
-        x_g2 = self.create_signal_group(x, currents, voltages_cl)
+        x_g1 = create_signal_group(x, currents, voltages_bb, device = self.device)
+        x_g2 = create_signal_group(x, currents, voltages_cl, device = self.device)
         
         ic_L = [
             [Features.CURRENT["IA"], Features.CURRENT["IB"]],
@@ -277,8 +278,8 @@ class CONV_COMPLEX_v1(nn.Module):
         voltages_line_bb = [Features.VOLTAGE_LINE_BB["UAB BB"], Features.VOLTAGE_LINE_BB["UBC BB"], Features.VOLTAGE_LINE_BB["UCA BB"]]
         voltages_line_cl = [Features.VOLTAGE_LINE_CL["UAB CL"], Features.VOLTAGE_LINE_CL["UBC CL"], Features.VOLTAGE_LINE_CL["UCA CL"]]
 
-        x_g3 = self.create_line_group(ic_L, voltages_line_bb)
-        x_g4 = self.create_line_group(ic_L, voltages_line_cl)
+        x_g3 = create_line_group(x, ic_L, voltages_line_bb, device=self.device)
+        x_g4 = create_line_group(x, ic_L, voltages_line_cl, device=self.device)
 
         x_new = torch.cat((x_g1, x_g2, x_g3, x_g4), dim=1)
         
@@ -901,23 +902,6 @@ class CONV_AND_FFT_COMPLEX_v2(nn.Module):
         self.fc_abnorm_evnt = self.Head_fc(hidden_size)
         self.fc_emerg_evnt = self.Head_fc(hidden_size)
     
-    def create_signal_group(self, x, currents, voltages):
-        group = torch.zeros(x.size(0), len(currents), x.size(2), device=self.device, dtype=torch.cfloat)
-        for i, (ic, iv) in enumerate(zip(currents, voltages)):
-            if ic != -1 and iv != -1:
-                group[:, i, :] = x[:, ic, :] + 1j * x[:, iv, :]
-            elif ic == -1:
-                group[:, i, :] = 1j * x[:, iv, :]
-            else:
-                group[:, i, :] = x[:, ic, :]
-        return group
-    
-    def create_line_group(ic_L, voltages):
-            group = torch.zeros(x.size(0), len(ic_L), x.size(2), device=self.device, dtype=torch.cfloat)
-            for i, (ic_pair, iv) in enumerate(zip(ic_L, voltages)):
-                group[:, i, :] = x[:, ic_pair[0], :] - x[:, ic_pair[1], :] + 1j * x[:, iv, :]
-            return group
-    
     def forward(self, x):
         x = x.reshape(x.size(0), x.size(2), x.size(1))
         
@@ -925,8 +909,8 @@ class CONV_AND_FFT_COMPLEX_v2(nn.Module):
         voltages_bb = [Features.VOLTAGE_PHAZE_BB["UA BB"], Features.VOLTAGE_PHAZE_BB["UB BB"], Features.VOLTAGE_PHAZE_BB["UC BB"], Features.VOLTAGE_PHAZE_BB["UN BB"]]
         voltages_cl = [Features.VOLTAGE_PHAZE_CL["UA CL"], Features.VOLTAGE_PHAZE_CL["UB CL"], Features.VOLTAGE_PHAZE_CL["UC CL"], Features.VOLTAGE_PHAZE_CL["UN CL"]]
         
-        x_g1 = self.create_signal_group(x, currents, voltages_bb)
-        x_g2 = self.create_signal_group(x, currents, voltages_cl)
+        x_g1 = create_signal_group(x, currents, voltages_bb, device=self.device)
+        x_g2 = create_signal_group(x, currents, voltages_cl, device=self.device)
         
         ic_L = [
             [Features.CURRENT["IA"], Features.CURRENT["IB"]],
@@ -936,8 +920,8 @@ class CONV_AND_FFT_COMPLEX_v2(nn.Module):
         voltages_line_bb = [Features.VOLTAGE_LINE_BB["UAB BB"], Features.VOLTAGE_LINE_BB["UBC BB"], Features.VOLTAGE_LINE_BB["UCA BB"]]
         voltages_line_cl = [Features.VOLTAGE_LINE_CL["UAB CL"], Features.VOLTAGE_LINE_CL["UBC CL"], Features.VOLTAGE_LINE_CL["UCA CL"]]
 
-        x_g3 = self.create_line_group(ic_L, voltages_line_bb)
-        x_g4 = self.create_line_group(ic_L, voltages_line_cl)
+        x_g3 = create_line_group(x, ic_L, voltages_line_bb, device=self.device)
+        x_g4 = create_line_group(x, ic_L, voltages_line_cl, device=self.device)
 
         x_new = torch.cat((x_g1, x_g2, x_g3, x_g4), dim=1)
 
@@ -956,6 +940,7 @@ class CONV_AND_FFT_COMPLEX_v2(nn.Module):
         ]
 
         x_level_1 = torch.stack(x_level_1, dim=1)
+        x_level_1 = x_level_1.reshape(x_level_1.size(0), -1)
         
         x_sum = torch.cat((x_level_1, x_conv), dim=1)
         x_sum = self.fc(x_sum)
