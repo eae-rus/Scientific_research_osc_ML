@@ -89,6 +89,22 @@ class Conv_3(nn.Module):
     def forward(self, x):
         return self.layer(x)
 
+class cDropout1d(nn.Module):
+    def __init__(self, p=0.1):
+        super().__init__()
+        self.p = p
+
+    def forward(self, x):
+        if not self.training or self.p == 0:
+            return x
+        # Создаем маску зануления как тензор float/double
+        mask = (torch.rand(x.shape[:-1], device=x.device) >= self.p).to(x.real.dtype)
+        mask = mask.unsqueeze(-1)  # Добавляем измерение для применения к complex
+        
+        # Применяем маску одновременно к real и imag частям
+        real = x.real * mask
+        imag = x.imag * mask
+        return torch.complex(real, imag)
 
 ####################
 # Общшие функции
@@ -116,6 +132,7 @@ def cubic_interpolate(tensor, output_size=64):
     )
 
     return interpolated_tensor
+
 def fft_calc(input, count_harmonic=1):
         prev_signals = torch.fft.rfft(input[:, :, :32])
         current_signals = torch.fft.rfft(input[:, :, 32:])
@@ -913,8 +930,8 @@ class CONV_AND_FFT_COMPLEX_v2(nn.Module):
         x_new = torch.cat((x_g1, x_g2, x_g3, x_g4), dim=1)
 
         # Apply conv to each signal
-        coung_signal_group = 4+4+3+3 # g1+g2+g3+g4
-        x_conv = x_conv = torch.stack([self.conv3(x_new[:, i:i+1, 32:]).reshape(x.size(0), -1) for i in range(coung_signal_group)], dim=-1)
+        count_signal_group = 4+4+3+3 # g1+g2+g3+g4
+        x_conv = x_conv = torch.stack([self.conv3(x_new[:, i:i+1, 32:]).reshape(x.size(0), -1) for i in range(count_signal_group)], dim=-1)
         x_conv = x_conv.reshape(x_conv.size(0), -1)
         
         
@@ -940,6 +957,137 @@ class CONV_AND_FFT_COMPLEX_v2(nn.Module):
         x = torch.cat((x_opr_swch, x_abnorm_evnt, x_emerg_evnt), dim=1)
 
         return x
+
+class CONV_AND_FFT_COMPLEX_v3(nn.Module):
+    class Head_fc(nn.Module):
+        def __init__(self, hidden_size):
+            super().__init__()
+            self.layer = nn.Sequential(
+            nn.Linear(hidden_size, 4*hidden_size, dtype=torch.cfloat),
+            cLeakyReLU(),
+            cDropout1d(0.1),
+            nn.Linear(4*hidden_size, hidden_size//2, dtype=torch.cfloat),
+            cLeakyReLU(),
+            cDropout1d(0.1),
+            nn.Linear(hidden_size//2, 1, dtype=torch.cfloat),
+            cSigmoid(),
+        )
+        def forward(self, x):
+            return self.layer(x)
+    def __init__(
+        self, frame_size, channel_num=5, hidden_size=40, output_size=4, device = None,
+    ):
+        self.channel_num = channel_num
+        self.hidden_size = hidden_size
+        self.device = device
+        self.harmonic_count = 16
+
+        super(CONV_AND_FFT_COMPLEX_v3, self).__init__()
+
+        # TODO: исправить расчётывание выходного размера после свёрток
+        # пока что задаю принудительно 128*16
+        self.fc_layers = nn.ModuleList([
+            nn.Sequential(
+                nn.Linear(2*1*14, hidden_size, dtype=torch.cfloat),
+                cLeakyReLU(),
+                nn.Linear(hidden_size, hidden_size, dtype=torch.cfloat),
+                cLeakyReLU(),
+                nn.Linear(hidden_size, hidden_size, dtype=torch.cfloat),
+                cLeakyReLU(),
+            ) for _ in range(self.harmonic_count)  # Для каждой гармоники
+        ])
+        
+        self.conv32 = nn.Sequential(
+            nn.Conv1d(1,8, kernel_size=32, stride=16, dtype=torch.cfloat),
+            cLeakyReLU()
+        )
+        self.conv3 = Conv_3(useComplex=True)
+        
+        self.conv_layer = nn.Sequential(
+            nn.Linear((24+32)*14, hidden_size, dtype=torch.cfloat),
+            cLeakyReLU(),
+            cDropout1d(0.1),
+            nn.Linear(hidden_size, 4*hidden_size, dtype=torch.cfloat),
+            cLeakyReLU(),
+            cDropout1d(0.1),
+            nn.Linear(4*hidden_size, hidden_size, dtype=torch.cfloat),
+            cLeakyReLU(),
+            cDropout1d(0.1),
+            nn.Linear(hidden_size, hidden_size//2, dtype=torch.cfloat),
+            cLeakyReLU(),
+        )
+        
+        self.fft_layer = nn.Sequential(
+            nn.Linear(self.harmonic_count*hidden_size, hidden_size, dtype=torch.cfloat),
+            cLeakyReLU(),
+            cDropout1d(0.1),
+            nn.Linear(hidden_size, 4*hidden_size, dtype=torch.cfloat),
+            cLeakyReLU(),
+            cDropout1d(0.1),
+            nn.Linear(4*hidden_size, hidden_size, dtype=torch.cfloat),
+            cLeakyReLU(),
+            cDropout1d(0.1),
+            nn.Linear(hidden_size, hidden_size//2, dtype=torch.cfloat),
+            cLeakyReLU(),
+        )
+        
+        self.fc_opr_swch = self.Head_fc(hidden_size)
+        self.fc_abnorm_evnt = self.Head_fc(hidden_size)
+        self.fc_emerg_evnt = self.Head_fc(hidden_size)
+    
+    def forward(self, x):
+        x = x.reshape(x.size(0), x.size(2), x.size(1))
+        
+        currents = [Features.CURRENT["IA"], Features.CURRENT["IB"], Features.CURRENT["IC"], Features.CURRENT["IN"]]
+        voltages_bb = [Features.VOLTAGE_PHAZE_BB["UA BB"], Features.VOLTAGE_PHAZE_BB["UB BB"], Features.VOLTAGE_PHAZE_BB["UC BB"], Features.VOLTAGE_PHAZE_BB["UN BB"]]
+        voltages_cl = [Features.VOLTAGE_PHAZE_CL["UA CL"], Features.VOLTAGE_PHAZE_CL["UB CL"], Features.VOLTAGE_PHAZE_CL["UC CL"], Features.VOLTAGE_PHAZE_CL["UN CL"]]
+        
+        x_g1 = create_signal_group(x, currents, voltages_bb, device=self.device)
+        x_g2 = create_signal_group(x, currents, voltages_cl, device=self.device)
+        
+        ic_L = [
+            [Features.CURRENT["IA"], Features.CURRENT["IB"]],
+            [Features.CURRENT["IB"], Features.CURRENT["IC"]],
+            [Features.CURRENT["IC"], Features.CURRENT["IA"]]
+        ]
+        voltages_line_bb = [Features.VOLTAGE_LINE_BB["UAB BB"], Features.VOLTAGE_LINE_BB["UBC BB"], Features.VOLTAGE_LINE_BB["UCA BB"]]
+        voltages_line_cl = [Features.VOLTAGE_LINE_CL["UAB CL"], Features.VOLTAGE_LINE_CL["UBC CL"], Features.VOLTAGE_LINE_CL["UCA CL"]]
+
+        x_g3 = create_line_group(x, ic_L, voltages_line_bb, device=self.device)
+        x_g4 = create_line_group(x, ic_L, voltages_line_cl, device=self.device)
+
+        x_new = torch.cat((x_g1, x_g2, x_g3, x_g4), dim=1)
+
+        # Apply conv to each signal
+        count_signal_group = 4+4+3+3 # g1+g2+g3+g4
+        x_conv_3 = torch.stack([self.conv3(x_new[:, i:i+1, 32:]).reshape(x.size(0), -1) for i in range(count_signal_group)], dim=-1)
+        x_conv_3 = x_conv_3.reshape(x_conv_3.size(0), -1)
+        x_conv_32 = torch.stack([self.conv32(x_new[:, i:i+1, :]).reshape(x.size(0), -1) for i in range(count_signal_group)], dim=-1)
+        x_conv_32 = x_conv_32.reshape(x_conv_32.size(0), -1)
+        
+        x_conv = torch.cat((x_conv_3, x_conv_32), dim=1)
+        x_conv = self.conv_layer(x_conv)
+
+        
+        # Process FFT harmonics
+        x_previous, x_current = fft_calc(x, count_harmonic=self.harmonic_count-1)
+        
+        x_fft = torch.stack([self.fc_layers[i](torch.cat((x_previous[:, :, i], x_current[:, :, i]), dim=-1).reshape(x.size(0), -1)) for i in range(self.harmonic_count)], dim=1)
+        x_fft = x_fft.reshape(x_fft.size(0), -1)
+        
+        x_fft = self.fft_layer(x_fft)
+
+        x_sum = torch.cat((x_fft, x_conv), dim=1)
+
+        # Create outputs for each class
+        x_opr_swch = self.fc_opr_swch(x_sum)
+        x_abnorm_evnt = self.fc_abnorm_evnt(x_sum)
+        x_emerg_evnt = self.fc_emerg_evnt(x_sum)
+
+        x = torch.cat((x_opr_swch, x_abnorm_evnt, x_emerg_evnt), dim=1)
+
+        return x
+
 
 class FFT_MLP_KAN_v2(nn.Module):
     class Head_fc(nn.Module):
