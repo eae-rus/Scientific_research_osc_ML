@@ -874,7 +874,7 @@ class CONV_AND_FFT_COMPLEX_v2(nn.Module):
             ) for _ in range(self.harmonic_count)  # Для каждой гармоники
         ])
         
-        self.conv3 = Conv_3(compile=True)
+        self.conv3 = Conv_3(useComplex=True)
         
         self.fc = nn.Sequential(
             nn.Linear(self.harmonic_count*hidden_size + 32*14, hidden_size, dtype=torch.cfloat),
