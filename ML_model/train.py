@@ -28,15 +28,14 @@ import pandas
 
 class FeaturesForDataset():
         CURRENT = ["IA", "IB", "IC"]
-        # CURRENT = ["IA", "IC"]
+
         VOLTAGE = ["UA BB", "UB BB", "UC BB", "UN BB",
                    "UA CL", "UB CL", "UC CL", "UN CL",
                    "UAB CL","UBC CL","UCA CL"]
-        # VOLTAGE = ["UA BB", "UB BB", "UC BB", "UN BB"]
         
 
         VOLTAGE_PHAZE = ["UA BB", "UB BB", "UC BB",
-                                 "UA CL", "UB CL", "UC CL"]
+                         "UA CL", "UB CL", "UC CL"]
         VOLTAGE_LINE_NOMINAL = ["UN BB", "UN CL", "UAB CL", "UBC CL", "UCA CL"]
         
         VOLTAGE_PHAZE_BB = ["UA BB", "UB BB", "UC BB"]
@@ -44,6 +43,7 @@ class FeaturesForDataset():
 
         VOLTAGE_LINE_CL = ["UAB CL", "UBC CL", "UCA CL"]
         
+        ZERO_SIGNAL = ["UN BB", "UN CL"] # не хватает тока
         
         FEATURES = CURRENT.copy()
         FEATURES.extend(VOLTAGE)
@@ -61,6 +61,7 @@ class CustomDataset_train(Dataset):
                  apply_amplitude_scaling: bool = False, current_amplitude_factor: float = 5.0, voltage_amplitude_factor: float = 1.05,
                  apply_offset: bool = False, offset_range: tuple = (-0.001, 0.001),
                  apply_phase_shuffling: bool = False,
+                 apply_delet_zero_signal: bool = False,
                  augmentation_probabilities: dict = None):
         """
         Initialize the dataset.
@@ -109,10 +110,11 @@ class CustomDataset_train(Dataset):
         self.apply_offset = apply_offset
         self.offset_range = offset_range
         self.apply_phase_shuffling = apply_phase_shuffling
+        self.apply_delet_zero_signal = apply_delet_zero_signal
 
         # Вероятности активации аугментаций
         # По умолчанию вероятность для всех аугментаций = 0.5
-        default_probabilities = {"inversion": 0.5, "noise": 0.5, "scaling": 0.5, "offset": 0.5, "phase_shuffling": 0.5}
+        default_probabilities = {"inversion": 0.5, "noise": 0.5, "scaling": 0.5, "offset": 0.5, "phase_shuffling": 0.5, "delet_zero_singnal": 0.5}
         self.augmentation_probabilities = default_probabilities if augmentation_probabilities is None else augmentation_probabilities
 
     def __len__(self):
@@ -206,6 +208,11 @@ class CustomDataset_train(Dataset):
             # Сдвиг линейных напряжений (UAB CL, UBC CL, UCA CL)
             line_CL_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_LINE_CL]
             x[:, line_CL_indices] = torch.roll(x[:, line_CL_indices], shifts=phase_shift, dims=1)
+
+        # 6. Удаление входов нулевой последовательности
+        if self.apply_delet_zero_signal and random.random() < self.augmentation_probabilities["delet_zero_singnal"]:
+            zeroSignal_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.ZERO_SIGNAL]
+            x[:, zeroSignal_indices] = torch.zeros_like(x[:, zeroSignal_indices])
 
         # === ИЗВЛЕЧЕНИЕ ЦЕЛЕВОГО ЗНАЧЕНИЯ === #
         target_index = start + self.target_position
@@ -531,7 +538,8 @@ if __name__ == "__main__":
         apply_noise=True, current_noise_level=0, # Активируем добавление шума, но зануляем его по току
         apply_amplitude_scaling=True, # Активируем изменение масштаба
         apply_offset=False, # Активирует добавление рандомной постоянной составляющей
-        apply_phase_shuffling=True  # Активируем рандомнуюп еретасовку фаз
+        apply_phase_shuffling=True,  # Активируем рандомнуюп перетасовку фаз
+        apply_delet_zero_signal=True  # Активируем рандомное зануление входов нулевой последователности
     )
     
     test_dataset = CustomDataset(dt_test, test_indexes, FRAME_SIZE, FRAME_SIZE-8)
