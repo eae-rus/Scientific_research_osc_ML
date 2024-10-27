@@ -24,7 +24,6 @@ import model as Model
 # Добавлено для исключения лишних предупреждений о возможных будущих проблемах.
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
-import pandas
 
 class FeaturesForDataset():
         CURRENT = ["IA", "IB", "IC"]
@@ -295,6 +294,19 @@ class FastBalancedBatchSampler(torch.utils.data.Sampler):
                 batch.extend(selected_indices)
 
             yield batch
+
+class MultiLabelFocalLoss(torch.nn.Module):
+    def __init__(self, alpha=0.25, gamma=2.0):
+        super(MultiLabelFocalLoss, self).__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+
+    def forward(self, outputs, targets):
+        # Рассчитываем Focal Loss вручную
+        pt = targets * outputs + (1 - targets) * (1 - outputs)
+        focal_loss = -self.alpha * (1 - pt) ** self.gamma * (targets * torch.log(outputs + 1e-8) + (1 - targets) * torch.log(1 - outputs + 1e-8))
+        
+        return focal_loss.mean()
 
 def seed_everything(seed: int = 42):
     """
@@ -600,8 +612,7 @@ if __name__ == "__main__":
     # start_epoch = int(filename_model.split("ep")[1].split("_")[0])
     # model.eval()  # Set the model to evaluation mode
 
-    # criterion = nn.CrossEntropyLoss()
-    criterion = nn.BCELoss() # Лучше для многоклассовой пересекающейся модели
+    criterion = MultiLabelFocalLoss(gamma=3) # Пока это лучшая метрика. Можно будет поиграться с гамма.
     
     all_losses = []
 
@@ -661,7 +672,7 @@ if __name__ == "__main__":
                 message = (
                     f"Epoch {epoch+1}/{EPOCHS} "
                     f"LR={current_lr:.3e} "
-                    f"Train loss: {(loss_sum / (i + 1)):.4f} "
+                    f"Train loss: {1000*(loss_sum / (i + 1)):.4f} "
                 )
                 t.set_postfix_str(s=message)
                 optimizer.zero_grad()
@@ -727,7 +738,7 @@ if __name__ == "__main__":
             # Сообщение для tqdm
             t.set_postfix_str(f"Batch: {batch_count}, Train loss: {loss_sum / (i + 1):.4f}, Test loss: {test_loss:.4f}, LR: {current_lr:.4e}")
             message_f1_ba = (
-                             f"Prev. test loss: {test_loss:.4f} "
+                             f"Prev. test loss: {1000*test_loss:.4f} "
                              f"F1 / BA: {', '.join([f'{signal_name}: {f1_score:.4f}/{ba_score:.4f}' for signal_name, f1_score, ba_score in zip(FeaturesForDataset.TARGET, f1, ba)])} "
                              )
             print(message_f1_ba)
