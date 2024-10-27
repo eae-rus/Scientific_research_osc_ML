@@ -87,6 +87,7 @@ class Conv_3(nn.Module):
         )
 
     def forward(self, x):
+        # FIXME: Не задаётся "devise" и от этого падает при расчёте.
         return self.layer(x)
 
 class cDropout1d(nn.Module):
