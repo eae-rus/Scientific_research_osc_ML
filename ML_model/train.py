@@ -359,6 +359,22 @@ def save_stats_to_csv(epoch, batch_count, epoch_duration, train_loss, test_loss,
         f1_per_class=f1, ba_per_class=ba
     )
 
+def expand_array(arr, expand_left, expand_right):
+    if expand_left < 0 or expand_right < 0 or (expand_left == 0 and expand_right == 0):
+        return arr
+
+    expanded = np.zeros_like(arr)  # создаем новый массив такой же длины, заполненный нулями
+    n = len(arr)
+        
+    for i in range(n):
+        if arr[i] == 1:
+            # Определяем границы расширения
+            left = max(0, i - expand_left)
+            right = min(n, i + expand_right + 1)
+            # Проставляем единицы в расширенных пределах
+            expanded[left:right] = 1
+    
+    return expanded
 
 def save_stats_to_json(filename, epoch, batch_count, epoch_duration, train_loss, test_loss, mean_f1, mean_ba, hamming, jaccard, lr, f1_per_class, ba_per_class):
     """Сохранение статистики в JSON формате."""
@@ -384,6 +400,7 @@ def save_stats_to_json(filename, epoch, batch_count, epoch_duration, train_loss,
 
 if __name__ == "__main__":
     FRAME_SIZE = 64 # 64
+    POINT_TARGET_SHIFT = 0
     BATCH_SIZE_PER_CLASS = 32  # Например, 128/4=32
     BATCH_SIZE_TRAIN = 4 * BATCH_SIZE_PER_CLASS # 4 - количество фич, сделать через Гипер Параметр
     NUM_BATCHES = 1000 # Количество генерируемых батчей
@@ -492,6 +509,23 @@ if __name__ == "__main__":
         dt_train.to_csv(file_with_target_frame_train, index=False)
         dt_test.to_csv(file_with_target_frame_test, index=False)
     
+    
+    files_train = dt_train["file_name"].unique()
+    for file in files_train: # Непонятно почему не улучшает, надо отдельно проверить
+        for target in FeaturesForDataset.TARGET:
+            # Извлекаем строки, где file_name соответствует текущему файлу
+            mask = dt_train["file_name"] == file
+            # Обновляем нужный столбец после применения функции expand_array
+            dt_train.loc[mask, target] = expand_array(dt_train.loc[mask, target].values, expand_left=0, expand_right=31)
+    
+    files_test = dt_test["file_name"].unique()
+    for file in files_test: # Непонятно почему не улучшает, надо отдельно проверить
+        for target in FeaturesForDataset.TARGET:
+            # Извлекаем строки, где file_name соответствует текущему файлу
+            mask = dt_test["file_name"] == file
+            # Обновляем нужный столбец после применения функции expand_array
+            dt_test.loc[mask, target] = expand_array(dt_test.loc[mask, target].values, expand_left=0, expand_right=31)
+    
     # копия датафрейма для получения индексов начал фреймов для трейн
     dt_indexes_train = dt_train[FeaturesForDataset.TARGET_WITH_FILENAME]
     files_train = dt_indexes_train["file_name"].unique()
@@ -533,7 +567,7 @@ if __name__ == "__main__":
     train_dataset = CustomDataset_train(
         dt=dt_train, indexes=train_indexes,
         frame_size=FRAME_SIZE,  # Указываем размер окна
-        target_position=FRAME_SIZE-8,  # Целевая позиция – последний элемент окна
+        target_position=FRAME_SIZE-1-POINT_TARGET_SHIFT,  # Целевая позиция – последний элемент окна
         apply_inversion=True, # Активируем рандомную инверсию сигнала
         apply_noise=True, current_noise_level=0, # Активируем добавление шума, но зануляем его по току
         apply_amplitude_scaling=True, # Активируем изменение масштаба
@@ -542,7 +576,7 @@ if __name__ == "__main__":
         apply_delet_zero_signal=True  # Активируем рандомное зануление входов нулевой последователности
     )
     
-    test_dataset = CustomDataset(dt_test, test_indexes, FRAME_SIZE, FRAME_SIZE-8)
+    test_dataset = CustomDataset(dt_test, test_indexes, FRAME_SIZE, FRAME_SIZE-1-POINT_TARGET_SHIFT)
 
     start_epoch = 0
     # !! создание новой !!
