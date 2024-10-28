@@ -1,0 +1,121 @@
+//Секция 1\\
+U | BusBar-1 | phase: A
+U | BusBar-1 | phase: B
+U | BusBar-1 | phase: C
+U | BusBar-1 | phase: N
+U | BusBar-1 | phase: AB
+U | BusBar-1 | phase: BC
+U | BusBar-1 | phase: CA
+
+
+U | CableLine-1 | phase: A
+U | CableLine-1 | phase: B
+U | CableLine-1 | phase: C
+U | CableLine-1 | phase: N
+U | CableLine-1 | phase: AB
+U | CableLine-1 | phase: BC
+U | CableLine-1 | phase: CA
+
+
+I | Bus-1 | phase: A
+I | Bus-1 | phase: B
+I | Bus-1 | phase: C
+I | Bus-1 | phase: N
+
+-------------------------------------------
+//Секция 2\\
+U | BusBar-2 | phase: A
+U | BusBar-2 | phase: B
+U | BusBar-2 | phase: C
+U | BusBar-2 | phase: N
+U | BusBar-2 | phase: AB
+U | BusBar-2 | phase: BC
+U | BusBar-2 | phase: CA
+
+
+U | CableLine-2 | phase: A
+U | CableLine-2 | phase: B
+U | CableLine-2 | phase: C
+U | CableLine-2 | phase: N
+U | CableLine-2 | phase: AB
+U | CableLine-2 | phase: BC
+U | CableLine-2 | phase: CA
+
+
+I | Bus-2 | phase: A
+I | Bus-2 | phase: B
+I | Bus-2 | phase: C
+I | Bus-2 | phase: N
+
+-------------------------------------------
+//Секция 3\\
+U | BusBar-3 | phase: A
+U | BusBar-3 | phase: B
+U | BusBar-3 | phase: C
+U | BusBar-3 | phase: N
+
+
+I | Bus-3 | phase: A
+I | Bus-3 | phase: B
+I | Bus-3 | phase: C
+I | Bus-3 | phase: N
+
+U | CableLine-3 | phase: CA
+
+-------------------------------------------
+//Секция 4\\
+U | BusBar-4 | phase: A
+U | BusBar-4 | phase: B
+U | BusBar-4 | phase: C
+
+I | Bus-4 | phase: A
+I | Bus-4 | phase: B
+I | Bus-4 | phase: C
+I | Bus-4 | phase: N
+
+-------------------------------------------
+//Секция 5\\
+I | Bus-5 | phase: A
+I | Bus-5 | phase: B
+I | Bus-5 | phase: C
+I | Bus-5 | phase: N
+
+-------------------------------------------
+//Секция 6\\
+I | Bus-6 | phase: A
+I | Bus-6 | phase: B
+I | Bus-6 | phase: C
+I | Bus-6 | phase: N
+
+-------------------------------------------
+//Дифференциальные защиты\\
+I | dif-1 | phase: A
+I | dif-1 | phase: B
+I | dif-1 | phase: C
+
+I | braking-1 | phase: A
+I | braking-1 | phase: B
+I | braking-1 | phase: C
+
+-------------------------------------------
+//Сырые сигналы (с катушек Роговского и ёмкостных делителей)\\
+U_raw | CableLine-1 | phase: A
+U_raw | CableLine-1 | phase: B
+U_raw | CableLine-1 | phase: C
+
+I_raw | Bus-1 | phase: A
+I_raw | Bus-1 | phase: B
+I_raw | Bus-1 | phase: C
+
+U_raw | CableLine-2 | phase: A
+U_raw | CableLine-2 | phase: B
+U_raw | CableLine-2 | phase: C
+
+I_raw | Bus-2 | phase: A
+I_raw | Bus-2 | phase: B
+I_raw | Bus-2 | phase: C
+
+-------------------------------------------
+//Спорные (требуют уточнения)\\
+"?" - не совсем понятно, зачем именно, скорее всего никогда не нужны будут
+"-" - пропущены, считаются не нужными для исследования

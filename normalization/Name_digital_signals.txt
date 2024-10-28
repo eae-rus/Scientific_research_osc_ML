@@ -1,0 +1,82 @@
+//Секция 1\\
+PDR | Bus-1 | phase: A
+PDR | Bus-1 | phase: B
+PDR | Bus-1 | phase: C
+PDR | Bus-1 | phase: PS
+
+IFB | Bus-1 | open
+IFB | Bus-1 | close
+IFB | Bus-1 | open | phase: A
+IFB | Bus-1 | open | phase: B
+IFB | Bus-1 | open | phase: C
+IFB | Bus-1 | close | phase: A
+IFB | Bus-1 | close | phase: B
+IFB | Bus-1 | close | phase: C
+IFB | Bus-1 | command open
+IFB | Bus-1 | command close
+IFB | Bus-1 | command open | phase: A
+IFB | Bus-1 | command open | phase: B
+IFB | Bus-1 | command open | phase: C
+IFB | Bus-1 | command close | phase: A
+IFB | Bus-1 | command close | phase: B
+IFB | Bus-1 | command close | phase: C
+
+BC | Bus-1 | open
+BC | Bus-1 | close
+BC | Bus-1 | command open
+BC | Bus-1 | command close
+
+BC Bypass | Bus-1 | open
+BC Bypass | Bus-1 | close
+BC Bypass | Bus-1 | command open
+BC Bypass | Bus-1 | command close
+
+-------------------------------------------
+//Секция 2\\
+PDR | Bus-2 | phase: A
+PDR | Bus-2 | phase: B
+PDR | Bus-2 | phase: C
+PDR | Bus-2 | phase: PS
+
+IFB | Bus-2 | open
+IFB | Bus-2 | close
+IFB | Bus-2 | command open
+IFB | Bus-2 | command close
+
+BC | Bus-2 | open
+BC | Bus-2 | close
+BC | Bus-2 | command open
+BC | Bus-2 | command close
+
+-------------------------------------------
+//Секция 3\\
+PDR | Bus-3 | phase: A
+PDR | Bus-3 | phase: B
+PDR | Bus-3 | phase: C
+PDR | Bus-3 | phase: PS
+
+IFB | Bus-3 | open
+IFB | Bus-3 | close
+IFB | Bus-3 | command open
+IFB | Bus-3 | command close
+
+-------------------------------------------
+//Секция 4\\
+
+
+-------------------------------------------
+//Секция 5\\
+
+
+-------------------------------------------
+//Секция 6\\
+
+
+-------------------------------------------
+//Общие сигналы\\
+
+
+-------------------------------------------
+//Спорные (требуют уточнения)\\
+"?" - не совсем понятно, зачем именно, скорее всего никогда не нужны будут
+"-" - пропущены, считаются не нужными для исследования

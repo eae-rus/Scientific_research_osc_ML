@@ -1,0 +1,1136 @@
+Key;universal_code;Value
+UA1СШ | phase:A | unit:V;U | BusBar-1 | phase: A;4701
+UB1СШ | phase:B | unit:V;U | BusBar-1 | phase: B;4701
+UC1СШ | phase:C | unit:V;U | BusBar-1 | phase: C;4701
+UA2СШ | phase:A | unit:V;U | BusBar-2 | phase: A;4307
+UB2СШ | phase:B | unit:V;U | BusBar-2 | phase: B;4307
+UC2СШ | phase:C | unit:V;U | BusBar-2 | phase: C;4307
+Адап.уст.поуглу1СШ | phase: | unit:°;-;3541
+Адап.уст.поуглу2СШ | phase: | unit:°;-;3541
+IC1ВВ | phase:C | unit:A;I | Bus-1 | phase: C;3392
+IA1ВВ | phase:A | unit:A;I | Bus-1 | phase: A;3390
+IA2ВВ | phase:A | unit:A;I | Bus-2 | phase: A;3350
+IC2ВВ | phase:C | unit:A;I | Bus-2 | phase: C;3350
+UA1КЛ | phase:A | unit:V;U | CableLine-1 | phase: A;3298
+UB1КЛ | phase:B | unit:V;U | CableLine-1 | phase: B;3298
+UC1КЛ | phase:C | unit:V;U | CableLine-1 | phase: C;3298
+UN1СШ | phase:N | unit:V;U | BusBar-1 | phase: N;2934
+UA2КЛ | phase:A | unit:V;U | CableLine-2 | phase: A;2932
+UB2КЛ | phase:B | unit:V;U | CableLine-2 | phase: B;2932
+UC2КЛ | phase:C | unit:V;U | CableLine-2 | phase: C;2932
+UN2СШ | phase:N | unit:V;U | BusBar-2 | phase: N;2780
+IB1ВВ | phase:B | unit:A;I | Bus-1 | phase: B;2739
+IB2ВВ | phase:B | unit:A;I | Bus-2 | phase: B;2696
+Прогнозныйугол | phase: | unit:°;-;1956
+IA1 | phase:A | unit:A;I | Bus-1 | phase: A;1743
+IC1 | phase:C | unit:A;I | Bus-1 | phase: C;1742
+IA2 | phase:A | unit:A;I | Bus-2 | phase: A;1731
+IC2 | phase:C | unit:A;I | Bus-2 | phase: C;1731
+Адап.уст.РНМ1СШ | phase: | unit:A;-;1605
+Адап.уст.РНМ2СШ | phase: | unit:A;-;1605
+Адап.уст.27/27S1СШ | phase: | unit:%;-;1570
+Адап.уст.27/27S2СШ | phase: | unit:%;-;1570
+IВ1СШ | phase:A | unit:A;I | Bus-1 | phase: A;1568
+IВ1СШ | phase:C | unit:A;I | Bus-1 | phase: C;1567
+U1СШ | phase:A | unit:V;U | BusBar-1 | phase: A;1567
+U1СШ | phase:B | unit:V;U | BusBar-1 | phase: B;1567
+U1СШ | phase:C | unit:V;U | BusBar-1 | phase: C;1567
+IВ2СШ | phase:A | unit:A;I | Bus-2 | phase: A;1567
+IВ2СШ | phase:C | unit:A;I | Bus-2 | phase: C;1567
+U2СШ | phase:A | unit:V;U | BusBar-2 | phase: A;1567
+U2СШ | phase:B | unit:V;U | BusBar-2 | phase: B;1567
+U2СШ | phase:C | unit:V;U | BusBar-2 | phase: C;1567
+Прогнозныйугол1СШ | phase: | unit:°;-;1550
+Прогнозныйугол2СШ | phase: | unit:°;-;1550
+Адап.уст.591СШ | phase: | unit:%;-;1549
+Адап.уст.592СШ | phase: | unit:%;-;1549
+UN1КЛ | phase:N | unit:V;U | CableLine-1 | phase: N;1432
+УголФимчРНМ1СШ | phase: | unit:°;-;1229
+УголФимчРНМ2СШ | phase: | unit:°;-;1229
+UN2КЛ | phase:N | unit:V;U | CableLine-2 | phase: N;1174
+IB1 | phase:B | unit:A;I | Bus-1 | phase: B;1009
+IA | phase:A | unit:A;I | Bus-1 | phase: A;990
+IC | phase:C | unit:A;I | Bus-1 | phase: C;990
+IB2 | phase:B | unit:A;I | Bus-2 | phase: B;966
+IВ1СШ | phase:B | unit:A;I | Bus-1 | phase: B;929
+IВ2СШ | phase:B | unit:A;I | Bus-2 | phase: B;929
+U1СШ | phase:н-к | unit:V;U | BusBar-1 | phase: N;911
+U2СШ | phase:н-к | unit:V;U | BusBar-2 | phase: N;911
+IB | phase:B | unit:A;I | Bus-1 | phase: B;887
+UВ1СШ | phase:A | unit:V;U | BusBar-1 | phase: A;747
+UВ2СШ | phase:A | unit:V;U | BusBar-2 | phase: A;738
+UAB2КЛ | phase:AB | unit:V;U | CableLine-2 | phase: AB;706
+IN1ВВ | phase:N | unit:A;I | Bus-1 | phase: N;698
+Адап.уст.потоку1СШ | phase: | unit:A;-;694
+Адап.уст.потоку2СШ | phase: | unit:A;-;694
+U1СШ_ | phase:н-к | unit:V;U | BusBar-1 | phase: N;647
+U2СШ_ | phase:н-к | unit:V;U | BusBar-2 | phase: N;647
+UAСШ | phase:A | unit:V;U | BusBar-1 | phase: A;647
+UBСШ | phase:B | unit:V;U | BusBar-1 | phase: B;647
+UCСШ | phase:C | unit:V;U | BusBar-1 | phase: C;647
+UBC2КЛ | phase:BC | unit:V;U | CableLine-2 | phase: BC;586
+UCA2КЛ | phase:CA | unit:V;U | CableLine-2 | phase: CA;585
+UAB1КЛ | phase:AB | unit:V;U | CableLine-1 | phase: AB;537
+UAКЛ | phase:A | unit:V;U | CableLine-1 | phase: A;506
+UBКЛ | phase:B | unit:V;U | CableLine-1 | phase: B;506
+UCКЛ | phase:C | unit:V;U | CableLine-1 | phase: C;506
+UNКЛ | phase:N | unit:V;U | CableLine-1 | phase: N;506
+УголАльфа1СШ | phase: | unit:°;-;501
+УголАльфа2СШ | phase: | unit:°;-;501
+IN | phase:N | unit:A;I | Bus-1 | phase: N;490
+UNСШ | phase:N | unit:V;U | BusBar-1 | phase: N;482
+IAдиф. | phase: | unit:p.u.;I | dif-1 | phase: A;481
+IBдиф. | phase: | unit:p.u.;I | dif-1 | phase: B;481
+ICдиф. | phase: | unit:p.u.;I | dif-1 | phase: C;481
+IAторм. | phase: | unit:p.u.;I | braking-1 | phase: A;481
+IBторм. | phase: | unit:p.u.;I | braking-1 | phase: B;481
+ICторм. | phase: | unit:p.u.;I | braking-1 | phase: C;481
+UВ1СШ | phase:C | unit:V;I | Bus-1 | phase: B;477
+IA1ВВRaw | phase:A | unit:V;I_raw | Bus-1 | phase: A;474
+IC1ВВRaw | phase:C | unit:V;I_raw | Bus-1 | phase: C;474
+UВ2СШ | phase:C | unit:V;U | BusBar-2 | phase: C;468
+IB1ВВRaw | phase:B | unit:V;I_raw | Bus-1 | phase: B;467
+UВ1СШ | phase:B | unit:V;U | BusBar-1 | phase: B;453
+IA2ВВRaw | phase:A | unit:V;I_raw | Bus-2 | phase: A;450
+IC2ВВRaw | phase:C | unit:V;I_raw | Bus-2 | phase: C;450
+UВ2СШ | phase:B | unit:V;U | BusBar-2 | phase: B;444
+IB2ВВRaw | phase:B | unit:V;I_raw | Bus-2 | phase: B;444
+Прогнозныйугол1ВВ | phase: | unit:°;-;440
+Прогнозныйугол2ВВ | phase: | unit:°;-;440
+IВ1СШA | phase:A | unit:A;I | Bus-1 | phase: A;425
+IВ1СШC | phase:C | unit:A;I | Bus-1 | phase: C;419
+U1СШA | phase:A | unit:V;U | BusBar-1 | phase: A;419
+U1СШB | phase:B | unit:V;U | BusBar-1 | phase: B;419
+U1СШC | phase:C | unit:V;U | BusBar-1 | phase: C;419
+IВ2СШA | phase:A | unit:A;I | Bus-2 | phase: A;417
+IВ2СШC | phase:C | unit:A;I | Bus-2 | phase: C;417
+U2СШA | phase:A | unit:V;U | BusBar-2 | phase: A;417
+U2СШB | phase:B | unit:V;U | BusBar-2 | phase: B;417
+U2СШC | phase:C | unit:V;U | BusBar-2 | phase: C;417
+UBC1КЛ | phase:BC | unit:V;U | CableLine-1 | phase: BC;416
+UCA1КЛ | phase:CA | unit:V;U | CableLine-1 | phase: CA;415
+АдаптивныйФиМч1СШ | phase: | unit:°;-;411
+АдаптивныйФиМч2СШ | phase: | unit:°;-;411
+Пуск_по_dFi_1СШUg | phase: | unit:;-;375
+Пуск_по_dFi_1СШUs | phase: | unit:;-;375
+Пуск_по_dFi_1СШdFi | phase: | unit:;-;375
+Пуск_по_dFi_2СШUg | phase: | unit:;-;375
+Пуск_по_dFi_2СШUs | phase: | unit:;-;375
+Пуск_по_dFi_2СШdFi | phase: | unit:;-;375
+Адап.уст.РНМ1ВВ | phase: | unit:A;-;354
+Адап.уст.РНМ2ВВ | phase: | unit:A;-;354
+IВ1СШB | phase:B | unit:A;I | Bus-1 | phase: B;345
+IВ2СШB | phase:B | unit:A;I | Bus-2 | phase: B;343
+UВ1СШA | phase:A | unit:V;U | BusBar-1 | phase: A;342
+IN2ВВ | phase:N | unit:A;I | Bus-2 | phase: N;332
+UAB_СШ | phase:AB | unit:V;U | BusBar-1 | phase: AB;328
+UBC_СШ | phase:BC | unit:V;U | BusBar-1 | phase: BC;328
+UВ1СШB | phase:B | unit:V;U | BusBar-1 | phase: B;317
+UВ1СШC | phase:C | unit:V;U | BusBar-1 | phase: C;317
+Machinetemperature | phase: | unit:;-;309
+I49 | phase: | unit:;-;309
+Ip49 | phase: | unit:;-;309
+I149 | phase: | unit:A;-;309
+UВ2СШA | phase:A | unit:V;I | Bus-2 | phase: A;292
+УголФимч1СШ | phase: | unit:°;-;282
+УголФимч2СШ | phase: | unit:°;-;282
+Адап.уст.РНМA1СШ | phase:A | unit:A;-;277
+Адап.уст.РНМB1СШ | phase:B | unit:A;-;277
+Адап.уст.РНМC1СШ | phase:C | unit:A;-;277
+Адап.уст.РНМA2СШ | phase:A | unit:A;-;277
+Адап.уст.РНМB2СШ | phase:B | unit:A;-;277
+Адап.уст.РНМC2СШ | phase:C | unit:A;-;277
+РНМВ1S1 | phase: | unit:;-;269
+РНМВ2S1 | phase: | unit:;-;269
+UВ2СШB | phase:B | unit:V;U | BusBar-2 | phase: B;267
+UВ2СШC | phase:C | unit:V;U | BusBar-2 | phase: C;267
+U1СШ_н-к | phase:н-к | unit:V;U | BusBar-1 | phase: N;226
+U2СШ_н-к | phase:н-к | unit:V;U | BusBar-2 | phase: N;226
+IВ1СШA | phase: | unit:A;I | Bus-1 | phase: A;219
+IВ1СШB | phase: | unit:A;I | Bus-1 | phase: B;219
+IВ1СШC | phase: | unit:A;I | Bus-1 | phase: C;219
+U1СШA | phase: | unit:B;U | BusBar-1 | phase: A;219
+U1СШB | phase: | unit:B;U | BusBar-1 | phase: B;219
+U1СШC | phase: | unit:B;U | BusBar-1 | phase: C;219
+IВ2СШA | phase: | unit:A;I | Bus-2 | phase: A;219
+IВ2СШB | phase: | unit:A;I | Bus-2 | phase: B;219
+IВ2СШC | phase: | unit:A;I | Bus-2 | phase: C;219
+U2СШA | phase: | unit:B;U | BusBar-2 | phase: A;219
+U2СШB | phase: | unit:B;U | BusBar-2 | phase: B;219
+U2СШC | phase: | unit:B;U | BusBar-2 | phase: C;219
+U2СШ_н-к | phase: | unit:B;U | BusBar-2 | phase: N;189
+U1СШ_н-к | phase: | unit:B;U | BusBar-1 | phase: N;187
+Адап.уст.поуглу1ВВ | phase: | unit:°;-;180
+Адап.уст.поуглу2ВВ | phase: | unit:°;-;180
+I1 | phase:7 | unit:A;I | Bus-1 | phase: A;168
+I2 | phase:8 | unit:A;I | Bus-1 | phase: B;168
+I3 | phase:9 | unit:A;I | Bus-1 | phase: C;168
+Uo.тр1 | phase: | unit:В;U | BusBar-1 | phase: N;160
+Uo.тр2 | phase: | unit:В;U | BusBar-2 | phase: N;160
+Io | phase:10 | unit:A;I | Bus-1 | phase: N;158
+Прогнозныйугол1 | phase: | unit:°;-;155
+Прогнозныйугол2 | phase: | unit:°;-;155
+UA1КЛRaw | phase:A | unit:V;U_raw | CableLine-1 | phase: A;154
+UB1КЛRaw | phase:B | unit:V;U_raw | CableLine-1 | phase: B;154
+UC1КЛRaw | phase:C | unit:V;U_raw | CableLine-1 | phase: C;154
+UA2КЛRaw | phase:A | unit:V;U_raw | CableLine-2 | phase: A;154
+UB2КЛRaw | phase:B | unit:V;U_raw | CableLine-2 | phase: B;154
+UC2КЛRaw | phase:C | unit:V;U_raw | CableLine-2 | phase: C;154
+V1 | phase:3 | unit:V;U | BusBar-1 | phase: A;149
+V2 | phase:4 | unit:V;U | BusBar-1 | phase: B;149
+V3 | phase:5 | unit:V;U | BusBar-1 | phase: C;149
+UВ1СШA | phase: | unit:B;U | BusBar-1 | phase: A;142
+UВ1СШB | phase: | unit:B;U | BusBar-1 | phase: B;142
+UВ1СШC | phase: | unit:B;U | BusBar-1 | phase: C;142
+UВ2СШA | phase: | unit:B;U | BusBar-2 | phase: A;142
+UВ2СШB | phase: | unit:B;U | BusBar-2 | phase: B;142
+UВ2СШC | phase: | unit:B;U | BusBar-2 | phase: C;142
+IВ1СШA | phase:A | unit:А;I | Bus-1 | phase: A;141
+IВ1СШC | phase:C | unit:А;I | Bus-1 | phase: C;141
+IВ1СШB | phase:B | unit:А;I | Bus-1 | phase: B;140
+U1СШн-к | phase:н-к | unit:V;U | BusBar-1 | phase: N;134
+U2СШн-к | phase:н-к | unit:V;U | BusBar-2 | phase: N;134
+Адап.уст.27/27S1ВВ | phase: | unit:%;-;134
+Адап.уст.27/27S2ВВ | phase: | unit:%;-;134
+Адап.уст.591ВВ | phase: | unit:%;-;134
+Адап.уст.592ВВ | phase: | unit:%;-;134
+IY | phase:A | unit:A;I | Bus-1 | phase: A;128
+IY | phase:B | unit:A;I | Bus-1 | phase: B;128
+IY | phase:C | unit:A;I | Bus-1 | phase: C;128
+Адап.уст.РНМA1ВВ | phase:A | unit:A;-;122
+Адап.уст.РНМB1ВВ | phase:B | unit:A;-;122
+Адап.уст.РНМC1ВВ | phase:C | unit:A;-;122
+Адап.уст.РНМA2ВВ | phase:A | unit:A;-;122
+Адап.уст.РНМB2ВВ | phase:B | unit:A;-;122
+Адап.уст.РНМC2ВВ | phase:C | unit:A;-;122
+IB3СШ | phase:A | unit:A;I | Bus-3 | phase: A;111
+IB3СШ | phase:B | unit:A;I | Bus-3 | phase: B;111
+IB3СШ | phase:C | unit:A;I | Bus-3 | phase: C;111
+U3СШ | phase:A | unit:V;U | BusBar-3 | phase: A;111
+U3СШ | phase:B | unit:V;U | BusBar-3 | phase: B;111
+U3СШ | phase:C | unit:V;U | BusBar-3 | phase: C;111
+U3СШ_н-к | phase: | unit:V;U | BusBar-3 | phase: N;111
+Ua.СШ1 | phase:A | unit:В;U | BusBar-1 | phase: A;108
+Ub.СШ1 | phase:B | unit:В;U | BusBar-1 | phase: B;108
+Uc.СШ1 | phase:C | unit:В;U | BusBar-1 | phase: C;108
+Ia.сш1 | phase:A | unit:А;I | Bus-1 | phase: A;108
+Ib.сш1 | phase:B | unit:А;I | Bus-1 | phase: B;108
+Ic.сш1 | phase:C | unit:А;I | Bus-1 | phase: C;108
+Ua.СШ2 | phase:A | unit:В;U | BusBar-2 | phase: A;108
+Ub.СШ2 | phase:B | unit:В;U | BusBar-2 | phase: B;108
+Uc.СШ2 | phase:C | unit:В;U | BusBar-2 | phase: C;108
+Ia.сш2 | phase:A | unit:А;I | Bus-2 | phase: A;108
+Ib.сш2 | phase:B | unit:А;I | Bus-2 | phase: B;108
+Ic.сш2 | phase:C | unit:А;I | Bus-2 | phase: C;108
+Uа.вв1 | phase: | unit:В;U | CableLine-1 | phase: A;103
+Uа.вв2 | phase: | unit:В;U | CableLine-2 | phase: A;103
+UAB2СШ | phase:AB | unit:V;U | BusBar-2 | phase: AB;102
+UBC2СШ | phase:BC | unit:V;U | BusBar-2 | phase: BC;102
+UCA2СШ | phase:CA | unit:V;U | BusBar-2 | phase: CA;102
+IA | phase:A | unit:А;I | Bus-1 | phase: A;101
+IB | phase:B | unit:А;I | Bus-1 | phase: B;101
+IC | phase:C | unit:А;I | Bus-1 | phase: C;101
+UAB1СШ | phase:AB | unit:V;U | BusBar-1 | phase: AB;96
+UBC1СШ | phase:BC | unit:V;U | BusBar-1 | phase: BC;96
+UCA1СШ | phase:CA | unit:V;U | BusBar-1 | phase: CA;96
+UY | phase:A | unit:V;U | BusBar-1 | phase: A;93
+UY | phase:B | unit:V;U | BusBar-1 | phase: B;93
+UY | phase:C | unit:V;U | BusBar-1 | phase: C;93
+U | phase:н-к | unit:V;U | BusBar-1 | phase: N;93
+U | phase:н-к(ф) | unit:V;U | BusBar-1 | phase: N;93
+Номерзоныпускапоуглу | phase: | unit:;-;93
+"DEBUG:ТаймерDT1;1ступень | phase:A | unit:с";-;90
+"DEBUG:ТаймерDT1;1ступень | phase:B | unit:с";-;90
+"DEBUG:ТаймерDT1;1ступень | phase:C | unit:с";-;90
+I1' | phase:57 | unit:A;?;89
+I2' | phase:58 | unit:A;?;89
+I3' | phase:59 | unit:A;?;89
+Iттнп | phase:н-к(ф) | unit:A;I | Bus-1 | phase: N;87
+DEBUG:TimemSeconds | phase:B | unit:с;-;86
+DEBUG:Seconds | phase:B | unit:с;-;86
+Uo.тр1 | phase: | unit:кВ;U | BusBar-1 | phase: N;83
+Uo.тр2 | phase: | unit:кВ;U | BusBar-2 | phase: N;83
+Ua1 | phase: | unit:В/В;U | BusBar-1 | phase: A;82
+Ub1 | phase: | unit:В/В;U | BusBar-1 | phase: B;82
+Uc1 | phase: | unit:В/В;U | BusBar-1 | phase: C;82
+Ia1 | phase: | unit:А/А;I | Bus-1 | phase: A;82
+Ib1 | phase: | unit:А/А;I | Bus-1 | phase: B;82
+Ic1 | phase: | unit:А/А;I | Bus-1 | phase: C;82
+UВВa1 | phase: | unit:В/В;U | CableLine-1 | phase: A;82
+UВВb1 | phase: | unit:В/В;U | CableLine-1 | phase: B;82
+UВВc1 | phase: | unit:В/В;U | CableLine-1 | phase: C;82
+Ua2 | phase: | unit:В/В;U | BusBar-2 | phase: A;82
+Ub2 | phase: | unit:В/В;U | BusBar-2 | phase: B;82
+Uc2 | phase: | unit:В/В;U | BusBar-2 | phase: C;82
+Ia2 | phase: | unit:А/А;I | Bus-2 | phase: A;82
+Ib2 | phase: | unit:А/А;I | Bus-2 | phase: B;82
+Ic2 | phase: | unit:А/А;I | Bus-2 | phase: C;82
+UВВa2 | phase: | unit:В/В;U | CableLine-2 | phase: A;82
+UВВb2 | phase: | unit:В/В;U | CableLine-2 | phase: B;82
+UВВc2 | phase: | unit:В/В;U | CableLine-2 | phase: C;82
+Ua.СШ1 | phase:A | unit:кВ;U | BusBar-1 | phase: A;82
+Uc.СШ1 | phase:C | unit:кВ;U | BusBar-1 | phase: C;82
+Ua.СШ2 | phase:A | unit:кВ;U | BusBar-2 | phase: A;82
+Uc.СШ2 | phase:C | unit:кВ;U | BusBar-2 | phase: C;82
+Ia.сш1 | phase:A | unit:кА;I | Bus-1 | phase: A;80
+Ib.сш1 | phase:B | unit:кА;I | Bus-1 | phase: B;80
+Ic.сш1 | phase:C | unit:кА;I | Bus-1 | phase: C;80
+Ia.сш2 | phase:A | unit:кА;I | Bus-2 | phase: A;80
+Ib.сш2 | phase:B | unit:кА;I | Bus-2 | phase: B;80
+Ic.сш2 | phase:C | unit:кА;I | Bus-2 | phase: C;80
+SV_SmpCnt_1 | phase: | unit:;-;79
+SV_SmpCnt_2 | phase: | unit:;-;79
+SV_SmpCntRaw_1 | phase: | unit:;-;79
+SV_SmpCntRaw_2 | phase: | unit:;-;79
+Ub.СШ1 | phase:B | unit:кВ;U | BusBar-1 | phase: B;78
+Ub.СШ2 | phase:B | unit:кВ;U | BusBar-2 | phase: B;78
+SV_LocalSmpCnt | phase: | unit:;-;70
+Ia | phase: | unit:A;I | Bus-1 | phase: A;68
+IA1ВВIntegral | phase:A | unit:A;?;68
+IC1ВВIntegral | phase:C | unit:A;?;68
+УголФимчРНМA1СШ | phase:A | unit:°;-;68
+УголФимчРНМB1СШ | phase:B | unit:°;-;68
+УголФимчРНМC1СШ | phase:C | unit:°;-;68
+УголФимчРНМA2СШ | phase:A | unit:°;-;68
+УголФимчРНМB2СШ | phase:B | unit:°;-;68
+УголФимчРНМC2СШ | phase:C | unit:°;-;68
+IB1ВВIntegral | phase:B | unit:A;?;67
+Токпрямойпоследовательности | phase: | unit:;-;61
+Токобратнойпоследовательности | phase: | unit:;-;61
+Токнулевойпоследовательности | phase: | unit:;-;61
+Ic | phase: | unit:A;I | Bus-1 | phase: C;59
+UВ1СШAB | phase:AB | unit:В;U | BusBar-1 | phase: AB;59
+Ib | phase: | unit:A;I | Bus-1 | phase: B;58
+Test1 | phase: | unit:V;-;58
+U1СШн-к | phase:н- | unit:V;U | BusBar-1 | phase: N;57
+U2СШн-к | phase:н- | unit:V;U | BusBar-2 | phase: N;57
+Напряжениепрямойпоследовательности | phase: | unit:;-;56
+Напряжениеобратнойпоследовательности | phase: | unit:;-;56
+Напряжениенулевойпоследовательности | phase: | unit:;-;56
+UВ2СШ | phase:н-к | unit:V;U | BusBar-2 | phase: N;55
+Счётчикмиллисекунд | phase: | unit:s;-;55
+Счётчиксекунд | phase: | unit:s;-;55
+Номервыборки | phase: | unit:;-;55
+Времявыборки | phase: | unit:%;-;55
+Бездействиесистемы | phase: | unit:;-;55
+UВ1СШ | phase:н-к | unit:V;U | BusBar-1 | phase: N;54
+Ua.1сш | phase:A | unit:В;U | BusBar-1 | phase: A;51
+Ub.1сш | phase:B | unit:В;U | BusBar-1 | phase: B;51
+Uc.1сш | phase:C | unit:В;U | BusBar-1 | phase: C;51
+Ia.вв1 | phase:A | unit:А;I | Bus-1 | phase: A;51
+Ib.вв1 | phase:B | unit:А;I | Bus-1 | phase: B;51
+Ic.вв1 | phase:C | unit:А;I | Bus-1 | phase: C;51
+Ua.2сш | phase:A | unit:В;U | BusBar-2 | phase: A;51
+Ub.2сш | phase:B | unit:В;U | BusBar-2 | phase: B;51
+Uc.2сш | phase:C | unit:В;U | BusBar-2 | phase: C;51
+Ia.вв2 | phase:A | unit:А;I | Bus-2 | phase: A;51
+Ib.вв2 | phase:B | unit:А;I | Bus-2 | phase: B;51
+Ic.вв2 | phase:C | unit:А;I | Bus-2 | phase: C;51
+unused | phase: | unit:A;-;50
+UВ1СШA | phase:A | unit:В;U | BusBar-1 | phase: A;50
+UВ1СШB | phase:B | unit:В;U | BusBar-1 | phase: B;50
+UВ1СШC | phase:C | unit:В;U | BusBar-1 | phase: C;50
+IA2ВВIntegral | phase:A | unit:A;?;50
+IB2ВВIntegral | phase:B | unit:A;?;50
+IC2ВВIntegral | phase:C | unit:A;?;50
+Uа.вв1 | phase: | unit:кВ;U | CableLine-1 | phase: A;49
+Uа.вв2 | phase: | unit:кВ;U | CableLine-2 | phase: A;49
+Ib | phase: | unit:А;I | Bus-1 | phase: B;43
+Ic | phase: | unit:А;I | Bus-1 | phase: C;43
+IA1ВВRMS_H1 | phase:A | unit:A;-;43
+IB1ВВRMS_H1 | phase:B | unit:A;-;43
+IC1ВВRMS_H1 | phase:C | unit:A;-;43
+IA2ВВRMS_H1 | phase:A | unit:A;-;43
+IB2ВВRMS_H1 | phase:B | unit:A;-;43
+IC2ВВRMS_H1 | phase:C | unit:A;-;43
+Uса.вв1 | phase: | unit:В;U | CableLine-1 | phase: CA;42
+Uса.вв2 | phase: | unit:В;U | CableLine-2 | phase: CA;42
+Ua.3сш | phase:A | unit:В;U | BusBar-3 | phase: A;42
+Ub.3сш | phase:B | unit:В;U | BusBar-3 | phase: B;42
+Uc.3сш | phase:C | unit:В;U | BusBar-3 | phase: C;42
+Uo.тр3 | phase: | unit:В;U | BusBar-3 | phase: N;42
+Ia.вв3 | phase:A | unit:А;I | Bus-3 | phase: A;42
+Ib.вв3 | phase:B | unit:А;I | Bus-3 | phase: B;42
+Ic.вв3 | phase:C | unit:А;I | Bus-3 | phase: C;42
+Uса.вв3 | phase: | unit:В;U | CableLine-3 | phase: CA;42
+Ia | phase: | unit:А;I | Bus-1 | phase: A;42
+UВ1СШн-к | phase:н- | unit:V;U | BusBar-1 | phase: N;40
+UВ2СШн-к | phase:н- | unit:V;U | BusBar-2 | phase: N;40
+Z_Re1 | phase: | unit:Ohm;-;39
+Z_Im1 | phase: | unit:Ohm;-;39
+Z_Abs1 | phase: | unit:Ohm;-;39
+Z'_Re1 | phase: | unit:Ohm;-;39
+Z'_Im1 | phase: | unit:Ohm;-;39
+Z'_Abs1 | phase: | unit:Ohm;-;39
+Z_Re2 | phase: | unit:Ohm;-;39
+Z_Im2 | phase: | unit:Ohm;-;39
+Z_Abs2 | phase: | unit:Ohm;-;39
+Z'_Re2 | phase: | unit:Ohm;-;39
+Z'_Im2 | phase: | unit:Ohm;-;39
+Z'_Abs2 | phase: | unit:Ohm;-;39
+DEBUG:50/51ТаймерDT1A1ст | phase:A | unit:с;-;36
+DEBUG:50/51ТаймерDT1B1ст | phase:B | unit:с;-;36
+DEBUG:50/51ТаймерDT1C1ст | phase:C | unit:с;-;36
+IYA | phase:A | unit:A;I | Bus-1 | phase: A;35
+IYB | phase:B | unit:A;I | Bus-1 | phase: B;35
+IYC | phase:C | unit:A;I | Bus-1 | phase: C;35
+I | phase:ттнп | unit:A;I | Bus-1 | phase: N;35
+UсекY | phase:A | unit:V;U | BusBar-1 | phase: A;35
+UсекY | phase:B | unit:V;U | BusBar-1 | phase: B;35
+UсекY | phase:C | unit:V;U | BusBar-1 | phase: C;35
+Uсек | phase:н-к | unit:V;U | BusBar-1 | phase: N;35
+DEBUG:ТаймерDT1.фаза«A».1ступень | phase:A | unit:с;-;35
+DEBUG:ТаймерDT1.фаза«B».1ступень | phase:B | unit:с;-;35
+DEBUG:ТаймерDT1.фаза«C».1ступень | phase:C | unit:с;-;35
+U1СШA | phase:A | unit:В;U | BusBar-1 | phase: A;35
+U1СШB | phase:B | unit:В;U | BusBar-1 | phase: B;35
+U1СШC | phase:C | unit:В;U | BusBar-1 | phase: C;35
+UYA | phase:A | unit:V;U | BusBar-1 | phase: A;34
+UYB | phase:B | unit:V;U | BusBar-1 | phase: B;34
+UYC | phase:C | unit:V;U | BusBar-1 | phase: C;34
+Uн-к | phase:н-к | unit:V;U | BusBar-1 | phase: N;34
+IВ1СШN | phase:N | unit:А;I | Bus-1 | phase: B;34
+IARaw | phase:A | unit:V;I_raw | Bus-1 | phase: A;33
+tx.step1 | phase:A | unit:с;-;33
+Дейстующеезначение(СКЗ) | phase: | unit:А;-;33
+U1СШ | phase: | unit:V;?;32
+U2СШ | phase: | unit:V;?;32
+UABСШ | phase:AB | unit:В;U | BusBar-1 | phase: AB;31
+UAСШ | phase:A | unit:В;U | BusBar-1 | phase: A;31
+UBСШ | phase:B | unit:В;U | BusBar-1 | phase: B;31
+UCСШ | phase:C | unit:В;U | BusBar-1 | phase: C;31
+ICRaw | phase:C | unit:V;I_raw | Bus-1 | phase: C;31
+Uса.вв1 | phase: | unit:кВ;U | CableLine-1 | phase: CA;30
+Uса.вв2 | phase: | unit:кВ;U | CableLine-2 | phase: CA;30
+Ua | phase: | unit:V;U | BusBar-1 | phase: A;30
+Ub | phase: | unit:V;U | BusBar-1 | phase: B;30
+Uc | phase: | unit:V;U | BusBar-1 | phase: C;30
+UввY | phase:A | unit:V;U | CableLine-1 | phase: A;29
+UввY | phase:B | unit:V;U | CableLine-1 | phase: B;29
+UввY | phase:C | unit:V;U | CableLine-1 | phase: C;29
+Uвв | phase:н-к | unit:V;U | CableLine-1 | phase: N;29
+КСdU | phase: | unit:;-;28
+КСdF | phase: | unit:;-;28
+КСdFi | phase: | unit:;-;28
+ПускпоdFi1СШdFi | phase: | unit:;-;28
+ПускпоdFi2СШdFi | phase: | unit:;-;28
+РНМТБВ1Fi_a | phase: | unit:;-;28
+РНМТБВ1Fi_b | phase: | unit:;-;28
+РНМТБВ1Fi_c | phase: | unit:;-;28
+РНМТБВ2Fi_a | phase: | unit:;-;28
+РНМТБВ2Fi_b | phase: | unit:;-;28
+РНМТБВ2Fi_c | phase: | unit:;-;28
+U1СШAB | phase:AB | unit:В;U | BusBar-1 | phase: AB;28
+Ua.платаA0 | phase: | unit:V;U | BusBar-1 | phase: A;28
+Ub.платаA0 | phase: | unit:V;U | BusBar-1 | phase: B;28
+Uc.платаA0 | phase: | unit:V;U | BusBar-1 | phase: C;28
+Ua.платаB0 | phase: | unit:V;U | BusBar-2 | phase: A;28
+Ub.платаB0 | phase: | unit:V;U | BusBar-2 | phase: B;28
+Uc.платаB0 | phase: | unit:V;U | BusBar-2 | phase: C;28
+Test2 | phase: | unit:V;-;28
+Voltage | phase: | unit:V;-;26
+Current | phase: | unit:A;-;26
+IBRaw | phase:B | unit:V;I_raw | Bus-1 | phase: B;26
+Iaincom1 | phase: | unit:A;-;25
+Iaincom2 | phase: | unit:A;-;25
+Ua-bincom2 | phase: | unit:V;U | CableLine-2 | phase: A;25
+Ua-bincom1 | phase: | unit:V;U | CableLine-1 | phase: A;25
+Ua-bBusBar2 | phase: | unit:V;U | BusBar-2 | phase: A;25
+Ua-bBusBar1 | phase: | unit:V;U | BusBar-1 | phase: A;25
+UCA_СШ | phase:CA | unit:V;U | BusBar-1 | phase: CA;24
+IВ1СШ | phase:A | unit:А;I | Bus-1 | phase: A;23
+IВ1СШ | phase:B | unit:А;I | Bus-1 | phase: B;23
+IВ1СШ | phase:C | unit:А;I | Bus-1 | phase: C;23
+UВ1СШ | phase:A | unit:В;U | BusBar-1 | phase: A;23
+UВ1СШ | phase:B | unit:В;U | BusBar-1 | phase: B;23
+UВ1СШ | phase:C | unit:В;U | BusBar-1 | phase: C;23
+U1СШ | phase:A | unit:В;U | BusBar-1 | phase: A;23
+U1СШ | phase:B | unit:В;U | BusBar-1 | phase: B;23
+U1СШ | phase:C | unit:В;U | BusBar-1 | phase: C;23
+U1СШ | phase:н-к | unit:В;U | BusBar-1 | phase: N;23
+IВ2СШ | phase:A | unit:А;I | Bus-2 | phase: A;23
+IВ2СШ | phase:B | unit:А;I | Bus-2 | phase: B;23
+IВ2СШ | phase:C | unit:А;I | Bus-2 | phase: C;23
+UВ2СШ | phase:A | unit:В;U | BusBar-2 | phase: A;23
+UВ2СШ | phase:B | unit:В;U | BusBar-2 | phase: B;23
+UВ2СШ | phase:C | unit:В;U | BusBar-2 | phase: C;23
+U2СШ | phase:A | unit:В;U | BusBar-2 | phase: A;23
+U2СШ | phase:B | unit:В;U | BusBar-2 | phase: B;23
+U2СШ | phase:C | unit:В;U | BusBar-2 | phase: C;23
+U2СШ | phase:н-к | unit:В;U | BusBar-2 | phase: N;23
+IA1СШ | phase:A | unit:А;I | Bus-1 | phase: A;23
+IC1СШ | phase:C | unit:А;I | Bus-1 | phase: C;23
+UВ1СШ_н-к | phase: | unit:B;U | BusBar-1 | phase: N;21
+UВ2СШ_н-к | phase: | unit:B;U | BusBar-2 | phase: N;21
+IB1СШ | phase:B | unit:А;I | Bus-1 | phase: B;21
+UBCСШ | phase:BC | unit:В;U | BusBar-1 | phase: BC;21
+U1СШBC | phase:BC | unit:В;U | BusBar-1 | phase: BC;21
+IC | phase: | unit:A;I | Bus-1 | phase: C;20
+UВ1СШ | phase:н-к | unit:В;U | BusBar-1 | phase: N;20
+UВ2СШ | phase:н-к | unit:В;U | BusBar-2 | phase: N;20
+IВ1СШ | phase: | unit:A;?;20
+IВ2СШ | phase: | unit:A;?;20
+UB1СШAСКЗH1 | phase:A | unit:В;-;20
+UB1СШBСКЗH1 | phase:B | unit:В;-;20
+UB1СШCСКЗH1 | phase:C | unit:В;-;20
+3U0 | phase: | unit:V;U | BusBar-1 | phase: N;19
+Uн-к(ф) | phase:н-к(ф) | unit:V;U | BusBar-1 | phase: N;19
+UB1СШAСКЗH1 | phase:AB | unit:В;-;19
+U21 | phase:0 | unit:V;U | BusBar-1 | phase: AB;19
+U32 | phase:1 | unit:V;U | BusBar-1 | phase: BC;19
+UAB | phase: | unit:V;U | BusBar-1 | phase: AB;18
+UBC | phase: | unit:V;U | BusBar-1 | phase: BC;18
+Iттнп2н-к | phase:н-к | unit:A;I | Bus-2 | phase: N;18
+Vo | phase:6 | unit:V;U | BusBar-1 | phase: N;18
+IА | phase: | unit:A;I | Bus-1 | phase: A;17
+Uвнр | phase: | unit:V;-;17
+Iттнпн-к(ф) | phase:н-к(ф) | unit:A;I | Bus-1 | phase: N;16
+РНМТБВ1Sa | phase: | unit:;-;16
+РНМТБВ1Sb | phase: | unit:;-;16
+РНМТБВ1Sc | phase: | unit:;-;16
+РНМТБВ2Sa | phase: | unit:;-;16
+РНМТБВ2Sb | phase: | unit:;-;16
+РНМТБВ2Sc | phase: | unit:;-;16
+IA1СШ | phase: | unit:A;I | Bus-1 | phase: A;16
+IB1СШ | phase: | unit:A;I | Bus-1 | phase: B;16
+IC1СШ | phase: | unit:A;I | Bus-1 | phase: C;16
+AI_Iaкаждуювыборку | phase: | unit:А;?;16
+AI_Ibкаждуювыборку | phase: | unit:А;?;16
+AI_Icкаждуювыборку | phase: | unit:А;?;16
+AI_Ia1развпериод | phase: | unit:А;?;16
+AI_Ib1развпериод | phase: | unit:А;?;16
+AI_Ic1развпериод | phase: | unit:А;?;16
+Ia | phase: | unit:;I | Bus-1 | phase: A;16
+Ia | phase:a | unit:A;I | Bus-1 | phase: A;15
+Iттнп1н-к | phase:н-к | unit:A;I | Bus-1 | phase: N;15
+U(ф)н-к | phase:н-к | unit:V;U | BusBar-1 | phase: N;15
+Iттнп1(ф)н-к | phase:н-к | unit:A;I | Bus-1 | phase: N;15
+UВ1СШ_ | phase:н-к | unit:V;U | BusBar-1 | phase: N;15
+UВ2СШ_ | phase:н-к | unit:V;U | BusBar-2 | phase: N;15
+UA_СШ | phase:A | unit:V;U | BusBar-1 | phase: A;15
+UB_СШ | phase:B | unit:V;U | BusBar-1 | phase: B;15
+UC_СШ | phase:C | unit:V;U | BusBar-1 | phase: C;15
+UN_СШ | phase:N | unit:V;U | BusBar-1 | phase: N;15
+УголФимчРНМ1ВВ | phase: | unit:°;-;14
+УголФимчРНМ2ВВ | phase: | unit:°;-;14
+U1СШCA | phase:CA | unit:В;U | BusBar-1 | phase: CA;14
+Ib | phase:b | unit:A;I | Bus-1 | phase: B;13
+Iттнпн-к | phase: | unit:A;I | Bus-1 | phase: N;13
+1_U1СШ | phase:A | unit:V;U | BusBar-1 | phase: A;13
+1_U1СШ | phase:B | unit:V;U | BusBar-1 | phase: B;13
+1_U1СШ | phase:C | unit:V;U | BusBar-1 | phase: C;13
+2_U2СШ | phase:A | unit:V;U | BusBar-2 | phase: A;13
+2_U2СШ | phase:B | unit:V;U | BusBar-2 | phase: B;13
+2_U2СШ | phase:C | unit:V;U | BusBar-2 | phase: C;13
+Ua | phase: | unit:кВ;U | BusBar-1 | phase: A;13
+Ub | phase: | unit:кВ;U | BusBar-1 | phase: B;13
+Uc | phase: | unit:кВ;U | BusBar-1 | phase: C;13
+UВ1СШN | phase:N | unit:В;U | BusBar-1 | phase: N;13
+UB1СШCСКЗH1 | phase: | unit:В;-;13
+UВ1СШBC | phase:BC | unit:В;U | BusBar-1 | phase: BC;13
+UA1 | phase:A | unit:A;U | BusBar-1 | phase: A;12
+UB1 | phase:B | unit:A;U | BusBar-1 | phase: B;12
+UC1 | phase:C | unit:A;U | BusBar-1 | phase: C;12
+UB1СШBСКЗH1 | phase:BC | unit:В;-;12
+iL1 | phase: | unit:A;I | Bus-1 | phase: A;11
+iL2 | phase: | unit:A;I | Bus-1 | phase: B;11
+iL3 | phase: | unit:A;I | Bus-1 | phase: C;11
+Адап.уст.поуглу1 | phase: | unit:°;-;11
+Адап.уст.поуглу2 | phase: | unit:°;-;11
+UA1КЛ | phase:A | unit:В;U | CableLine-1 | phase: A;11
+UB1КЛ | phase:B | unit:В;U | CableLine-1 | phase: B;11
+UC1КЛ | phase:C | unit:В;U | CableLine-1 | phase: C;11
+UN1КЛ | phase:N | unit:В;U | CableLine-1 | phase: N;11
+UCAСШ | phase:CA | unit:В;U | BusBar-1 | phase: CA;11
+DEBUG:Счётчикмиллисекунд | phase: | unit:s;-;11
+DEBUG:Счётчиксекунд | phase: | unit:s;-;11
+DEBUG:Номервыборки | phase: | unit:;-;11
+DEBUG:Времявыборки | phase: | unit:s;-;11
+DEBUG:Бездействиесистемы | phase: | unit:;-;11
+Uca.вв1 | phase: | unit:В;U | CableLine-1 | phase: CA;10
+Uca.вв2 | phase: | unit:В;U | CableLine-2 | phase: CA;10
+UВ1СШCA | phase:CA | unit:В;U | BusBar-1 | phase: CA;10
+ўс¶ОДёПЯUA | phase:A | unit:V;?;9
+ўс¶ОДёПЯUB | phase:B | unit:V;?;9
+ўс¶ОДёПЯUC | phase:C | unit:V;?;9
+ўс¶ОДёПЯ3U0 | phase:N | unit:V;?;9
+ПЯВ·1IA | phase:A | unit:A;I | Bus-1 | phase: A;9
+ПЯВ·1IB | phase:B | unit:A;I | Bus-1 | phase: B;9
+ПЯВ·1IC | phase:C | unit:A;I | Bus-1 | phase: C;9
+ПЯВ·13I0 | phase:O | unit:A;I | Bus-1 | phase: N;9
+ПЯВ·2IA | phase:A | unit:A;I | Bus-2 | phase: A;9
+ПЯВ·2IB | phase:B | unit:A;I | Bus-2 | phase: B;9
+ПЯВ·2IC | phase:C | unit:A;I | Bus-2 | phase: C;9
+ПЯВ·23I0 | phase:O | unit:A;I | Bus-2 | phase: N;9
+ПЯВ·3IA | phase:A | unit:A;I | Bus-3 | phase: A;9
+ПЯВ·3IB | phase:B | unit:A;I | Bus-3 | phase: B;9
+ПЯВ·3IC | phase:C | unit:A;I | Bus-3 | phase: C;9
+ПЯВ·33I0 | phase:O | unit:A;I | Bus-3 | phase: N;9
+ПЯВ·4IA | phase:A | unit:A;I | Bus-4 | phase: A;9
+ПЯВ·4IB | phase:B | unit:A;I | Bus-4 | phase: B;9
+ПЯВ·4IC | phase:C | unit:A;I | Bus-4 | phase: C;9
+ПЯВ·43I0 | phase:O | unit:A;I | Bus-4 | phase: N;9
+ПЯВ·5IA | phase:A | unit:A;I | Bus-5 | phase: A;9
+ПЯВ·5IB | phase:B | unit:A;I | Bus-5 | phase: B;9
+ПЯВ·5IC | phase:C | unit:A;I | Bus-5 | phase: C;9
+ПЯВ·53I0 | phase:O | unit:A;I | Bus-5 | phase: N;9
+ПЯВ·6IA | phase:A | unit:A;I | Bus-6 | phase: A;9
+ПЯВ·6IB | phase:B | unit:A;I | Bus-6 | phase: B;9
+ПЯВ·6IC | phase:C | unit:A;I | Bus-6 | phase: C;9
+ПЯВ·63I0 | phase:O | unit:A;I | Bus-6 | phase: N;9
+A4 | phase: | unit:В;?;9
+A5 | phase: | unit:А;?;9
+A6 | phase: | unit:А;?;9
+A7 | phase: | unit:А;?;9
+A8 | phase: | unit:В;?;9
+A9 | phase: | unit:В;?;9
+A10 | phase: | unit:В;?;9
+A11 | phase: | unit:В;?;9
+A12 | phase: | unit:В;?;9
+A13 | phase: | unit:А;?;9
+A14 | phase: | unit:А;?;9
+A15 | phase: | unit:А;?;9
+A16 | phase: | unit:В;?;9
+UABСШ | phase:AB | unit:V;U | BusBar-1 | phase: AB;9
+UBCСШ | phase:BC | unit:V;U | BusBar-1 | phase: BC;9
+Ib | phase: | unit:;I | Bus-1 | phase: B;9
+Ic | phase: | unit:;I | Bus-1 | phase: C;9
+TEST:50/51t.step1.phaseA | phase: | unit:;-;9
+TEST:50/51tsrab.step1.phaseA | phase: | unit:;-;9
+TEST:50/51tvos.step1.phaseA | phase: | unit:;-;9
+A1 | phase: | unit:В;-;8
+A2 | phase: | unit:В;-;8
+A3 | phase: | unit:В;-;8
+IN1СШ | phase:N | unit:А;I | Bus-1 | phase: N;8
+TEST:50/51k.step1.phaseA | phase: | unit:;-;8
+TEST:50/51ttransform.step1.phaseA | phase: | unit:;-;8
+Fims_B1 | phase: | unit:°;-;8
+Fims_B2 | phase: | unit:°;-;8
+Alpha_B1 | phase: | unit:°;-;8
+Alpha_B2 | phase: | unit:°;-;8
+AbsThreshold_B1 | phase: | unit:A;-;8
+AbsThreshold_B2 | phase: | unit:A;-;8
+PDR1_Abs_B1 | phase: | unit:A;-;8
+PDR1_Abs_B2 | phase: | unit:A;-;8
+PDR1_Fi_B1 | phase: | unit:°;-;8
+PDR1_Fi_B2 | phase: | unit:°;-;8
+IA1СШ.мгновенные | phase: | unit:A;I | Bus-1 | phase: A;8
+IB1СШ.мгновенные | phase: | unit:A;I | Bus-1 | phase: B;8
+IC1СШ.мгновенные | phase: | unit:A;I | Bus-1 | phase: C;8
+IA_1 | phase:A | unit:A;I | Bus-1 | phase: A;8
+IB_1 | phase:B | unit:A;I | Bus-1 | phase: B;8
+IC_1 | phase:C | unit:A;I | Bus-1 | phase: C;8
+UA_СШ_1 | phase:A | unit:V;U | BusBar-1 | phase: A;8
+UB_СШ_1 | phase:B | unit:V;U | BusBar-1 | phase: B;8
+UC_СШ_1 | phase:C | unit:V;U | BusBar-1 | phase: C;8
+UN_СШ_1 | phase:N | unit:V;U | BusBar-1 | phase: N;8
+IA_2 | phase:A | unit:A;I | Bus-2 | phase: A;8
+IB_2 | phase:B | unit:A;I | Bus-2 | phase: B;8
+IC_2 | phase:C | unit:A;I | Bus-2 | phase: C;8
+UA_СШ_2 | phase:A | unit:V;U | BusBar-2 | phase: A;8
+UB_СШ_2 | phase:B | unit:V;U | BusBar-2 | phase: B;8
+UC_СШ_2 | phase:C | unit:V;U | BusBar-2 | phase: C;8
+UN_СШ_2 | phase:N | unit:V;U | BusBar-2 | phase: N;8
+S1_UAB | phase:AB | unit:B;U | BusBar-1 | phase: AB;8
+S1_UBC | phase:BC | unit:B;U | BusBar-1 | phase: BC;8
+S1_UA | phase:A | unit:B;U | BusBar-1 | phase: A;8
+S1_UB | phase:B | unit:B;U | BusBar-1 | phase: B;8
+S1_UC | phase:C | unit:B;U | BusBar-1 | phase: C;8
+S2_UAB | phase:AB | unit:B;U | BusBar-2 | phase: AB;8
+S2_UBC | phase:BC | unit:B;U | BusBar-2 | phase: BC;8
+S2_UA | phase:A | unit:B;U | BusBar-2 | phase: A;8
+S2_UB | phase:B | unit:B;U | BusBar-2 | phase: B;8
+S2_UC | phase:C | unit:B;U | BusBar-2 | phase: C;8
+S1_IA | phase:A | unit:A;I | Bus-1 | phase: A;8
+S1_IB | phase:B | unit:A;I | Bus-1 | phase: B;8
+S1_IC | phase:C | unit:A;I | Bus-1 | phase: C;8
+S2_IA | phase:A | unit:A;I | Bus-2 | phase: A;8
+S2_IB | phase:B | unit:A;I | Bus-2 | phase: B;8
+S2_IC | phase:C | unit:A;I | Bus-2 | phase: C;8
+S1_V3U0 | phase:U0 | unit:B;U | BusBar-1 | phase: N;8
+S1_V3T0 | phase:T0 | unit:B;?;8
+S2_V3U0 | phase:U0 | unit:B;U | BusBar-2 | phase: N;8
+S2_V3T0 | phase:T0 | unit:B;?;8
+Ia1 | phase: | unit:A;I | Bus-1 | phase: A;8
+Ib1 | phase: | unit:Ђ;I | Bus-1 | phase: B;8
+Ic1 | phase: | unit:Ђ;I | Bus-1 | phase: C;8
+Ia2 | phase: | unit:A;I | Bus-2 | phase: A;8
+Ib2 | phase: | unit:Ђ;I | Bus-2 | phase: B;8
+Ic2 | phase: | unit:Ђ;I | Bus-2 | phase: C;8
+Uab | phase: | unit:Є‚;U | BusBar-1 | phase: AB;8
+Ubc | phase: | unit:Є‚;U | BusBar-1 | phase: BC;8
+Ia_10P | phase: | unit:;I | Bus-1 | phase: A;8
+Ic_10P | phase: | unit:;I | Bus-1 | phase: C;8
+Ib_10P | phase: | unit:;I | Bus-1 | phase: B;8
+Ua_sekcii | phase: | unit:;U | BusBar-1 | phase: A;8
+Uc_sekcii | phase: | unit:;U | BusBar-1 | phase: C;8
+Ub_sekcii | phase: | unit:;U | BusBar-1 | phase: B;8
+Ia_05 | phase: | unit:;I | Bus-1 | phase: A;8
+Ic_05 | phase: | unit:;I | Bus-1 | phase: C;8
+Ib_05 | phase: | unit:;I | Bus-1 | phase: B;8
+Ua_vvod | phase: | unit:;U | CableLine-1 | phase: A;8
+Uc_vvod | phase: | unit:;U | CableLine-1 | phase: C;8
+Ub_vvod | phase: | unit:;U | CableLine-1 | phase: B;8
+Ic | phase:c | unit:A;I | Bus-1 | phase: C;7
+iE | phase: | unit:A;?;7
+Резерв1 | phase: | unit:кВ;-;7
+UB1СШBСКЗH1 | phase: | unit:В;-;7
+Ua | phase: | unit:;U | BusBar-1 | phase: A;7
+Ub | phase: | unit:;U | BusBar-1 | phase: B;7
+Uc | phase: | unit:;U | BusBar-1 | phase: C;7
+Test1 | phase: | unit:;-;7
+Test2 | phase: | unit:;-;7
+IA1СШ.СКЗ | phase: | unit:A;-;7
+IB1СШ.СКЗ | phase: | unit:A;-;7
+IC1СШ.СКЗ | phase: | unit:A;-;7
+UAB1КЛ | phase:AB | unit:В;U | CableLine-1 | phase: AB;7
+UBC1КЛ | phase:BC | unit:В;U | CableLine-1 | phase: BC;7
+Прогнозныйугол | phase: | unit:В°;-;7
+AI_1_h0 | phase: | unit:A;-;7
+3Io | phase: | unit:А;I | Bus-1 | phase: N;7
+Ia_VV1 | phase: | unit:;I | Bus-1 | phase: A;7
+Ic_VV1 | phase: | unit:;I | Bus-1 | phase: C;7
+Ib_VV1 | phase: | unit:;I | Bus-1 | phase: B;7
+Ua_1SCH | phase: | unit:;U | BusBar-1 | phase: A;7
+Uc_1SCH | phase: | unit:;U | BusBar-1 | phase: C;7
+Ub_1SCH | phase: | unit:;U | BusBar-1 | phase: B;7
+_3Uo_1SCH | phase: | unit:;U | BusBar-1 | phase: N;7
+Ia_VV2 | phase: | unit:;I | Bus-2 | phase: A;7
+Ic_VV2 | phase: | unit:;I | Bus-2 | phase: B;7
+Ib_VV2 | phase: | unit:;I | Bus-2 | phase: C;7
+Ua_2SCH | phase: | unit:;U | BusBar-2 | phase: A;7
+Uc_2SCH | phase: | unit:;U | BusBar-2 | phase: C;7
+Ub_2SCH | phase: | unit:;U | BusBar-2 | phase: B;7
+_3Uo_2SCH | phase: | unit:;U | BusBar-2 | phase: N;7
+Ua_VV1 | phase: | unit:;U | CableLine-1 | phase: A;7
+Uc_VV1 | phase: | unit:;U | CableLine-1 | phase: C;7
+Ub_VV1 | phase: | unit:;U | CableLine-1 | phase: B;7
+_3Uo_VV1 | phase: | unit:;U | CableLine-1 | phase: N;7
+Ua_VV2 | phase: | unit:;U | CableLine-2 | phase: A;7
+Uc_VV2 | phase: | unit:;U | CableLine-2 | phase: C;7
+Ub_VV2 | phase: | unit:;U | CableLine-2 | phase: B;7
+_3Uo_VV2 | phase: | unit:;U | CableLine-2 | phase: N;7
+Ua | phase:a | unit:V;U | BusBar-1 | phase: A;6
+Ub | phase:b | unit:V;U | BusBar-1 | phase: B;6
+Uc | phase:c | unit:V;U | BusBar-1 | phase: C;6
+vL1 | phase: | unit:V;U | BusBar-1 | phase: A;6
+vL2 | phase: | unit:V;U | BusBar-1 | phase: B;6
+vL3 | phase: | unit:V;U | BusBar-1 | phase: C;6
+Iттнп2 | phase:н-к | unit:A;I | Bus-2 | phase: N;6
+Iттнп1 | phase:н-к(ф) | unit:A;I | Bus-1 | phase: N;6
+Uни | phase: | unit:кВ;?;6
+3Io// | phase: | unit:А;I | Bus-1 | phase: N;6
+Uик | phase: | unit:кВ;?;6
+Uшон | phase: | unit:кВ;?;6
+UB1СШCСКЗH1 | phase:CA | unit:В;-;6
+IA1СШ.1гармоника | phase: | unit:A;-;6
+IB1СШ.1гармоника | phase: | unit:A;-;6
+IC1СШ.1гармоника | phase: | unit:A;-;6
+Englishname | phase: | unit:;-;6
+uL1 | phase: | unit:V;U | BusBar-1 | phase: A;5
+uL2 | phase: | unit:V;U | BusBar-1 | phase: B;5
+uL3 | phase: | unit:V;U | BusBar-1 | phase: C;5
+3U01 | phase: | unit:В/В;U | BusBar-1 | phase: N;5
+3U02 | phase: | unit:В/В;U | BusBar-2 | phase: N;5
+Резерв3 | phase: | unit:кВ;-;5
+UВ1СШн-к | phase:н-к | unit:V;U | BusBar-1 | phase: N;5
+UВ2СШн-к | phase:н-к | unit:V;U | BusBar-2 | phase: N;5
+Ubc.вв1 | phase: | unit:В;U | CableLine-1 | phase: BC;5
+Ubc.вв2 | phase: | unit:В;U | CableLine-2 | phase: BC;5
+t.step1.phaseA | phase: | unit:;-;5
+tsrab.phaseA | phase: | unit:;-;5
+tvos.phaseA | phase: | unit:;-;5
+Imax.phaseA | phase: | unit:;-;5
+Частота | phase: | unit:Гц;-;5
+Угол | phase: | unit:°;-;5
+UA_КЛ | phase:A | unit:V;U | CableLine-1 | phase: A;5
+UB_КЛ | phase:B | unit:V;U | CableLine-1 | phase: B;5
+UC_КЛ | phase:C | unit:V;U | CableLine-1 | phase: C;5
+UN_КЛ | phase:N | unit:V;U | CableLine-1 | phase: N;5
+Ia1 | phase:a | unit:A;I | Bus-1 | phase: A;4
+Ib1 | phase:b | unit:A;I | Bus-1 | phase: B;4
+Ic1 | phase:c | unit:A;I | Bus-1 | phase: C;4
+Ua1 | phase:a | unit:V;U | BusBar-1 | phase: A;4
+Ub1 | phase:b | unit:V;U | BusBar-1 | phase: B;4
+Uc1 | phase:c | unit:V;U | BusBar-1 | phase: C;4
+iD1 | phase: | unit:A;-;4
+iD2 | phase: | unit:A;-;4
+iD3 | phase: | unit:A;-;4
+iS1 | phase: | unit:A;-;4
+iS2 | phase: | unit:A;-;4
+iS3 | phase: | unit:A;-;4
+UВ1СШ | phase: | unit:V;?;4
+UВ2СШ | phase: | unit:V;?;4
+UA.сш1 | phase:A | unit:кВ;U | BusBar-1 | phase: A;4
+UB.сш1 | phase:B | unit:кВ;U | BusBar-1 | phase: B;4
+UC.сш1 | phase:C | unit:кВ;U | BusBar-1 | phase: C;4
+IA.сш1 | phase:A | unit:кА;I | Bus-1 | phase: A;4
+IB.сш1 | phase:B | unit:кА;I | Bus-1 | phase: B;4
+IC.сш1 | phase:C | unit:кА;I | Bus-1 | phase: C;4
+Uвв1 | phase: | unit:кВ;?;4
+UA.сш2 | phase:A | unit:кВ;U | BusBar-2 | phase: A;4
+UB.сш2 | phase:B | unit:кВ;U | BusBar-2 | phase: B;4
+UC.сш2 | phase:C | unit:кВ;U | BusBar-2 | phase: C;4
+IA.сш2 | phase:A | unit:кА;I | Bus-2 | phase: A;4
+IB.сш2 | phase:B | unit:кА;I | Bus-2 | phase: B;4
+IC.сш2 | phase:C | unit:кА;I | Bus-2 | phase: C;4
+Uвв2 | phase: | unit:кВ;?;4
+UB3СШ | phase:A | unit:V;U | BusBar-3 | phase: A;4
+UB3СШ | phase:B | unit:V;U | BusBar-3 | phase: B;4
+UB3СШ | phase:C | unit:V;U | BusBar-3 | phase: C;4
+UB3СШ_н-к | phase: | unit:V;U | BusBar-3 | phase: N;4
+U1СШ | phase:B | unit:кВ;U | BusBar-1 | phase: B;4
+CurrentIL1 | phase: | unit:A;I | Bus-1 | phase: A;4
+CurrentIL2 | phase: | unit:A;I | Bus-1 | phase: B;4
+CurrentIL3 | phase: | unit:A;I | Bus-1 | phase: C;4
+VoltageUL1E | phase: | unit:V;U | BusBar-1 | phase: A;4
+VoltageUL2E | phase: | unit:V;U | BusBar-1 | phase: B;4
+VoltageUL3E | phase: | unit:V;U | BusBar-1 | phase: C;4
+CurrentIo | phase: | unit:A;I | Bus-1 | phase: N;4
+unused | phase: | unit:;-;4
+1IFB_Timer1 | phase:C | unit:;-;4
+1IFB_Timer2 | phase:A | unit:;-;4
+2IFB_Timer1 | phase:B | unit:;-;4
+2IFB_Timer2 | phase:C | unit:;-;4
+BC_Timer1 | phase:B | unit:;-;4
+BC_Timer2 | phase:C | unit:;-;4
+UA1СШ.мгновенные | phase: | unit:V;U | BusBar-1 | phase: A;4
+UB1СШ.мгновенные | phase: | unit:V;U | BusBar-1 | phase: B;4
+UC1СШ.мгновенные | phase: | unit:V;U | BusBar-1 | phase: C;4
+UA1СШ | phase:A | unit:В;U | BusBar-1 | phase: A;4
+UB1СШ | phase:B | unit:В;U | BusBar-1 | phase: B;4
+UC1СШ | phase:C | unit:В;U | BusBar-1 | phase: C;4
+UN1СШ | phase:N | unit:В;U | BusBar-1 | phase: N;4
+t | phase:A | unit:s;-;4
+tsrab | phase:A | unit:s;-;4
+tvos | phase:A | unit:s;-;4
+Imax | phase:A | unit:A;-;4
+t | phase:B | unit:s;-;4
+tsrab | phase:B | unit:s;-;4
+tvos | phase:B | unit:s;-;4
+Imax | phase:B | unit:A;-;4
+t | phase:C | unit:s;-;4
+tsrab | phase:C | unit:s;-;4
+tvos | phase:C | unit:s;-;4
+Imax | phase:C | unit:A;-;4
+IA1СШ.2гармоника | phase: | unit:A;-;4
+IB1СШ.2гармоника | phase: | unit:A;-;4
+IC1СШ.2гармоника | phase: | unit:A;-;4
+Обр | phase: | unit:В;-;4
+IA | phase: | unit:A;I | Bus-1 | phase: A;3
+IB | phase: | unit:A;I | Bus-1 | phase: B;3
+Ua.1сш | phase:A | unit:кВ;U | BusBar-1 | phase: A;3
+Ub.1сш | phase:B | unit:кВ;U | BusBar-1 | phase: B;3
+Uc.1сш | phase:C | unit:кВ;U | BusBar-1 | phase: C;3
+Ia.вв1 | phase:A | unit:кА;I | Bus-1 | phase: A;3
+Ib.вв1 | phase:B | unit:кА;I | Bus-1 | phase: B;3
+Ic.вв1 | phase:C | unit:кА;I | Bus-1 | phase: C;3
+Ua.2сш | phase:A | unit:кВ;U | BusBar-2 | phase: A;3
+Ub.2сш | phase:B | unit:кВ;U | BusBar-2 | phase: B;3
+Uc.2сш | phase:C | unit:кВ;U | BusBar-2 | phase: C;3
+Ia.вв2 | phase:A | unit:кА;I | Bus-2 | phase: A;3
+Ib.вв2 | phase:B | unit:кА;I | Bus-2 | phase: B;3
+Ic.вв2 | phase:C | unit:кА;I | Bus-2 | phase: C;3
+Ua1 | phase: | unit:В;U | BusBar-1 | phase: A;3
+Ub1 | phase: | unit:В;U | BusBar-1 | phase: B;3
+Uc1 | phase: | unit:В;U | BusBar-1 | phase: C;3
+UaСШ | phase: | unit:В;U | BusBar-1 | phase: A;3
+Ia1 | phase: | unit:А;I | Bus-1 | phase: A;3
+Ib1 | phase: | unit:А;I | Bus-1 | phase: B;3
+Ic1 | phase: | unit:А;I | Bus-1 | phase: C;3
+UbСШ | phase: | unit:В;U | BusBar-1 | phase: B;3
+Ua2 | phase: | unit:В;U | BusBar-2 | phase: A;3
+Ub2 | phase: | unit:В;U | BusBar-2 | phase: B;3
+Uc2 | phase: | unit:В;U | BusBar-2 | phase: C;3
+Резерв | phase: | unit:В;-;3
+Ia2 | phase: | unit:А;I | Bus-2 | phase: A;3
+Ib2 | phase: | unit:А;I | Bus-2 | phase: B;3
+Ic2 | phase: | unit:А;I | Bus-2 | phase: C;3
+UcСШ | phase: | unit:В;U | BusBar-1 | phase: C;3
+Iттнп1н-к(ф) | phase:н-к(ф) | unit:A;I | Bus-1 | phase: N;3
+U2СШ | phase:B | unit:кВ;U | BusBar-2 | phase: B;3
+avgV | phase: | unit:V;-;3
+minV | phase: | unit:V;-;3
+maxV | phase: | unit:V;-;3
+UA1СШ.СКЗ | phase: | unit:V;-;3
+UB1СШ.СКЗ | phase: | unit:V;-;3
+UC1СШ.СКЗ | phase: | unit:V;-;3
+UA1СШ.1гармоника | phase: | unit:V;-;3
+UB1СШ.1гармоника | phase: | unit:V;-;3
+UC1СШ.1гармоника | phase: | unit:V;-;3
+R1 | phase: | unit:Ohm;-;3
+X1 | phase: | unit:Ohm;-;3
+R2 | phase: | unit:Ohm;-;3
+X2 | phase: | unit:Ohm;-;3
+R3 | phase: | unit:Ohm;-;3
+X3 | phase: | unit:Ohm;-;3
+dFdt | phase: | unit:Гц;-;3
+Дейстующеезначение(СКЗ)H1 | phase: | unit:А;-;3
+3Uo | phase: | unit:кВ;U | BusBar-1 | phase: N;3
+IL1 | phase: | unit:A;I | Bus-1 | phase: A;2
+IL2 | phase: | unit:A;I | Bus-1 | phase: B;2
+IL3 | phase: | unit:A;I | Bus-1 | phase: C;2
+UL1NVV | phase: | unit:kV;U | CableLine-1 | phase: A;2
+UL2NVV | phase: | unit:kV;U | CableLine-1 | phase: B;2
+UL3NVV | phase: | unit:kV;U | CableLine-1 | phase: C;2
+3U0SH | phase: | unit:kV;U | BusBar-1 | phase: N;2
+UL1NSH | phase: | unit:kV;U | BusBar-1 | phase: A;2
+UL2NSH | phase: | unit:kV;U | BusBar-1 | phase: B;2
+UL3NSH | phase: | unit:kV;U | BusBar-1 | phase: C;2
+Fсети: | phase: | unit:Hz;-;2
+Оснзащ:OMV:Мощн.:f: | phase: | unit:Hz;-;2
+ТНСШ:OMV:Мощн.:f: | phase: | unit:Hz;-;2
+3Uo:FdOMV:ОснГрм:U:амплитуда | phase: | unit:kV;-;2
+3Uo:FdOMV:ОснГрм:U:фаза | phase: | unit:Deg;-;2
+3I0 | phase: | unit:A;I | Bus-1 | phase: N;2
+3Io | phase: | unit:A;I | Bus-1 | phase: N;2
+TAL1 | phase: | unit:A;-;2
+TAL2 | phase: | unit:A;-;2
+TAL3 | phase: | unit:A;-;2
+TVSH21L1-N | phase: | unit:V;-;2
+TVSH21L2-N | phase: | unit:V;-;2
+TVSH21L3-N | phase: | unit:V;-;2
+TVSH213U0 | phase: | unit:V;-;2
+TVSH11L1-N | phase: | unit:V;-;2
+TVSH11L2-N | phase: | unit:V;-;2
+TVSH11L3-N | phase: | unit:V;-;2
+TVSH113U0 | phase: | unit:V;-;2
+FсетиСШ11: | phase: | unit:Hz;-;2
+FсетиСШ21: | phase: | unit:Hz;-;2
+ОснзащСШ22:OMV:Действ.:Uф:ф.А | phase: | unit:V;-;2
+ОснзащСШ22:OMV:Действ.:Uф:ф.В | phase: | unit:V;-;2
+ОснзащСШ22:OMV:Действ.:Uф:ф.С | phase: | unit:V;-;2
+Uca.вв1 | phase: | unit:кВ;U | CableLine-1 | phase: CA;2
+Uca.вв2 | phase: | unit:кВ;U | CableLine-2 | phase: CA;2
+Uab.вв1 | phase: | unit:кВ;U | CableLine-1 | phase: AB;2
+Uab.вв2 | phase: | unit:кВ;U | CableLine-2 | phase: AB;2
+Uв1.СШ1 | phase: | unit:кВ;?;2
+Uв2.СШ1 | phase: | unit:кВ;?;2
+Uв3.СШ1 | phase: | unit:кВ;?;2
+Uв4.СШ1 | phase: | unit:кВ;?;2
+Резерв2 | phase: | unit:кВ;;2
+Uв1.СШ2 | phase: | unit:кВ;?;2
+Uв2.СШ2 | phase: | unit:кВ;?;2
+Uв3.СШ2 | phase: | unit:кВ;?;2
+Uв4.СШ2 | phase: | unit:кВ;?;2
+Ia.в1.СШ1 | phase: | unit:кА;?;2
+Ia.в2.СШ1 | phase: | unit:кА;?;2
+Ia.в3.СШ1 | phase: | unit:кА;?;2
+Ia.в4.СШ1 | phase: | unit:кА;?;2
+Ia.в1.СШ2 | phase: | unit:кА;?;2
+Ia.в2.СШ2 | phase: | unit:кА;?;2
+Ia.в3.СШ2 | phase: | unit:кА;?;2
+Ia.в4.СШ2 | phase: | unit:кА;?;2
+Ib.в1.СШ1 | phase: | unit:кА;?;2
+Ib.в2.СШ1 | phase: | unit:кА;?;2
+Ib.в3.СШ1 | phase: | unit:кА;?;2
+Ib.в4.СШ1 | phase: | unit:кА;?;2
+Ib.в1.СШ2 | phase: | unit:кА;?;2
+Ib.в2.СШ2 | phase: | unit:кА;?;2
+Ib.в3.СШ2 | phase: | unit:кА;?;2
+Ib.в4.СШ2 | phase: | unit:кА;?;2
+Ic.в1.СШ1 | phase: | unit:кА;?;2
+Ic.в2.СШ1 | phase: | unit:кА;?;2
+Ic.в3.СШ1 | phase: | unit:кА;?;2
+Ic.в4.СШ1 | phase: | unit:кА;?;2
+Ic.в1.СШ2 | phase: | unit:кА;?;2
+Ic.в2.СШ2 | phase: | unit:кА;?;2
+Ic.в3.СШ2 | phase: | unit:кА;?;2
+Ic.в4.СШ2 | phase: | unit:кА;?;2
+UВ1СШN | phase:н-к | unit:V;U | BusBar-1 | phase: N;2
+U1СШN | phase:н-к | unit:V;U | BusBar-1 | phase: N;2
+IA | phase:A | unit:└;I | Bus-1 | phase: A;2
+IB | phase:B | unit:└;I | Bus-1 | phase: B;2
+IC | phase:C | unit:└;I | Bus-1 | phase: C;2
+UAB╤╪ | phase:AB | unit:┬;?;2
+"DEBUG:╥рщьхЁDT1;1ёЄєяхэ№ | phase:A | unit:ё";-;2
+"DEBUG:╥рщьхЁDT1;1ёЄєяхэ№ | phase:B | unit:ё";-;2
+"DEBUG:╥рщьхЁDT1;1ёЄєяхэ№ | phase:C | unit:ё";-;2
+TEST:testSin | phase: | unit:;-;2
+UA1СШ | phase: | unit:V;U | BusBar-1 | phase: A;2
+UB1СШ | phase: | unit:V;U | BusBar-1 | phase: B;2
+UC1СШ | phase: | unit:V;U | BusBar-1 | phase: C;2
+UA2СШ | phase: | unit:V;U | BusBar-2 | phase: A;2
+UB2СШ | phase: | unit:V;U | BusBar-2 | phase: B;2
+UC2СШ | phase: | unit:V;U | BusBar-2 | phase: C;2
+IA2СШ | phase: | unit:A;I | Bus-2 | phase: A;2
+IB2СШ | phase: | unit:A;I | Bus-2 | phase: B;2
+IC2СШ | phase: | unit:A;I | Bus-2 | phase: C;2
+IAIntegral | phase:A | unit:A;-;2
+UB1СШСКЗH1 | phase:AB | unit:В;-;2
+UB1СШСКЗH2 | phase:AB | unit:В;-;2
+UB1СШУгол | phase:AB | unit:°;-;2
+UB1СШЧастота | phase:AB | unit:Гц;-;2
+UB1СШdFdt | phase:AB | unit:Гц/с;-;2
+A1:A1 | phase:A | unit:kA;I | Bus-1 | phase: A;2
+A2:A2 | phase:B | unit:kA;I | Bus-1 | phase: B;2
+A3:A3 | phase:C | unit:kA;I | Bus-1 | phase: C;2
+A4:A4 | phase:A | unit:kV;U | BusBar-1 | phase: A;2
+A5:A5 | phase:B | unit:kV;U | BusBar-1 | phase: B;2
+A6:A6 | phase:C | unit:kV;U | BusBar-1 | phase: C;2
+RC#22200022:UX1 | phase:A | unit:V;-;2
+RC#22200022:UX2 | phase:B | unit:V;-;2
+RC#22200022:UX3 | phase:C | unit:V;-;2
+RC#22200022:IX1 | phase:A | unit:A;-;2
+RC#22200022:IX2 | phase:B | unit:A;-;2
+RC#22200022:IX3 | phase:C | unit:A;-;2
+RC#22200022:IX0 | phase:N | unit:A;-;2
+RC#22200718:UX1 | phase:A | unit:V;-;2
+RC#22200718:UX2 | phase:B | unit:V;-;2
+RC#22200718:UX3 | phase:C | unit:V;-;2
+RC#22200718:IX1 | phase:A | unit:A;-;2
+RC#22200718:IX2 | phase:B | unit:A;-;2
+RC#22200718:IX3 | phase:C | unit:A;-;2
+RC#22200718:IX0 | phase:N | unit:A;-;2
+1СШ | phase:A | unit:kV;U | BusBar-1 | phase: A;1
+1СШ | phase:B | unit:kV;U | BusBar-1 | phase: B;1
+1СШ | phase:C | unit:kV;U | BusBar-1 | phase: C;1
+Верба2 | phase:A | unit:kA;-;1
+Верба2 | phase:B | unit:kA;-;1
+Верба2 | phase:C | unit:kA;-;1
+Iс | phase: | unit:A;I | Bus-1 | phase: C;1
+3Uo | phase: | unit:V;U | BusBar-1 | phase: N;1
+Uab | phase: | unit:V;U | BusBar-1 | phase: AB;1
+Ubc | phase: | unit:V;U | BusBar-1 | phase: BC;1
+"КлючБАВР | phase: | unit:0
+";-;1
+"КлючВНР | phase: | unit:0
+";-;1
+(1_)(I1)()(A)(OPG_140821_190133209)(W | phase: | unit:;-;1
+Upper_L1_avgV | phase: | unit:V;-;1
+Upper_L2_avgV | phase: | unit:V;-;1
+Upper_L3_avgV | phase: | unit:V;-;1
+Upper_L1_minV | phase: | unit:V;-;1
+Upper_L2_minV | phase: | unit:V;-;1
+Upper_L3_minV | phase: | unit:V;-;1
+Upper_L1_maxV | phase: | unit:V;-;1
+Upper_L2_maxV | phase: | unit:V;-;1
+Upper_L3_maxV | phase: | unit:V;-;1
+Lower_L1_avgV | phase: | unit:V;-;1
+Lower_L2_avgV | phase: | unit:V;-;1
+Lower_L3_avgV | phase: | unit:V;-;1
+Lower_L1_minV | phase: | unit:V;-;1
+Lower_L2_minV | phase: | unit:V;-;1
+Lower_L3_minV | phase: | unit:V;-;1
+Lower_L1_maxV | phase: | unit:V;-;1
+Lower_L2_maxV | phase: | unit:V;-;1
+Lower_L3_maxV | phase: | unit:V;-;1
+ia | phase:1 | unit:A;I | Bus-1 | phase: A;1
+ib | phase:1 | unit:A;I | Bus-1 | phase: B;1
+ic | phase:1 | unit:A;I | Bus-1 | phase: C;1
+in | phase:1 | unit:A;I | Bus-1 | phase: N;1
+Ua.вв1 | phase: | unit:кВ;U | CableLine-1 | phase: A;1
+Ub.вв1 | phase: | unit:кВ;U | CableLine-1 | phase: B;1
+A20 | phase: | unit:кВ;-;1
+Ua.вв2 | phase: | unit:кВ;U | CableLine-2 | phase: A;1
+Ub.вв2 | phase: | unit:кВ;U | CableLine-2 | phase: B;1
+A24 | phase: | unit:кВ;-;1
+Ubc.вв1 | phase: | unit:кВ;U | CableLine-1 | phase: BC;1
+Ubc.вв2 | phase: | unit:кВ;U | CableLine-2 | phase: BC;1
+U2сш | phase:B | unit:кВ;U | BusBar-2 | phase: B;1
+A1 | phase:A | unit:В;U | BusBar-1 | phase: A;1
+A2 | phase:B | unit:В;U | BusBar-1 | phase: B;1
+A3 | phase:C | unit:В;U | BusBar-1 | phase: C;1
+ТТШСВ-110кВ(A) | phase:A | unit:А;;1
+ТТШСВ-110кВ(B) | phase:B | unit:А;-;1
+ТТШСВ-110кВ(C) | phase:C | unit:А;-;1
+ТТ110АТ-1(A) | phase:A | unit:А;-;1
+ТТ110АТ-1(B) | phase:B | unit:А;-;1
+ТТ110АТ-1(C) | phase:C | unit:А;-;1
+ТТ110КГПТО(A) | phase:A | unit:А;-;1
+ТТ110КГПТО(B) | phase:B | unit:А;-;1
+ТТ110КГПТО(C) | phase:C | unit:А;-;1
+ТТ110ГПП(A) | phase:A | unit:А;-;1
+ТТ110ГПП(B) | phase:B | unit:А;-;1
+ТТ110ГПП(C) | phase:C | unit:А;-;1
+3UoТН1СШ110к | phase: | unit:В;-;1
+ТН1СШ110к(A) | phase:A | unit:В;-;1
+ТН1СШ110к(B) | phase:B | unit:В;-;1
+ТН1СШ110к(C) | phase:C | unit:В;-;1
++-земля | phase: | unit:В;-;1
+--земля | phase: | unit:В;-;1
+Iттнп | phase:ттнп | unit:A;-;1
+UсекYA | phase:A | unit:V;U | BusBar-1 | phase: A;1
+UсекYB | phase:B | unit:V;U | BusBar-1 | phase: B;1
+UсекYC | phase:C | unit:V;U | BusBar-1 | phase: C;1
+Uсекн-к | phase:н-к | unit:V;U | BusBar-1 | phase: N;1
+UввYA | phase:A | unit:V;U | CableLine-1 | phase: A;1
+UввYB | phase:B | unit:V;U | CableLine-1 | phase: B;1
+UввYC | phase:C | unit:V;U | CableLine-1 | phase: C;1
+Uввн-к | phase:н-к | unit:V;U | CableLine-1 | phase: N;1
+UA.сш3 | phase:A | unit:кВ;U | BusBar-3 | phase: A;1
+UB.сш3 | phase:B | unit:кВ;U | BusBar-3 | phase: B;1
+UC.сш3 | phase:C | unit:кВ;U | BusBar-3 | phase: C;1
+IA.сш3 | phase:A | unit:кА;I | Bus-3 | phase: A;1
+IB.сш3 | phase:B | unit:кА;I | Bus-3 | phase: B;1
+IC.сш3 | phase:C | unit:кА;I | Bus-3 | phase: C;1
+Uвв3 | phase: | unit:кВ;?;1
+UA.сш4 | phase:A | unit:кВ;U | BusBar-4 | phase: A;1
+UB.сш4 | phase:B | unit:кВ;U | BusBar-4 | phase: B;1
+UC.сш4 | phase:C | unit:кВ;U | BusBar-4 | phase: C;1
+IA.сш4 | phase:A | unit:кА;I | Bus-4 | phase: A;1
+IB.сш4 | phase:B | unit:кА;I | Bus-4 | phase: B;1
+IC.сш4 | phase:C | unit:кА;I | Bus-4 | phase: C;1
+Uвв4 | phase: | unit:кВ;?;1
+TEST:testSin | phase: | unit:A;-;1
+U1СШFREQ | phase: | unit:Hz;-;1
+IaFi | phase: | unit:В°;-;1
+t.step1 | phase:A | unit:с;-;1
+IB1СШAДействующеезначение | phase:A | unit:А;-;1
+IB1СШАУгол | phase:A | unit:°;-;1
+IB1СШАЧастота | phase:A | unit:Гц;-;1
+UBC╤╪ | phase:BC | unit:┬;?;1
+I2Токторможениявторойгармоники | phase: | unit:;-;1
+TEST:50/51t1.step1.phaseA | phase: | unit:;-;1
+UAB1СШ | phase:AB | unit:В;U | BusBar-1 | phase: AB;1
+ | phase: | unit:Гц;-;1
+ | phase: | unit:°;-;1
+IN | phase: | unit:A;I | Bus-1 | phase: N;1
+INSensible | phase: | unit:A;I | Bus-1 | phase: N;1
+VA | phase: | unit:V;U | BusBar-1 | phase: A;1
+VB | phase: | unit:V;U | BusBar-1 | phase: B;1
+VC | phase: | unit:V;U | BusBar-1 | phase: C;1
+IM | phase: | unit:A;-;1
+VChequeoSinc | phase: | unit:V;-;1
+Частота | phase:system | unit:Hz;-;1
+3IoЧЗЗ | phase: | unit:A;-;1
+UA | phase: | unit:V;U | BusBar-1 | phase: A;1
+UB | phase: | unit:V;U | BusBar-1 | phase: B;1
+UC | phase: | unit:V;U | BusBar-1 | phase: C;1
+IA2 | phase: | unit:A;I | Bus-2 | phase: A;1
+IB2 | phase: | unit:A;I | Bus-2 | phase: B;1
+IC2 | phase: | unit:A;I | Bus-2 | phase: C;1
+3Io2 | phase: | unit:A;I | Bus-2 | phase: N;1
+A7:A7 | phase:A | unit:kV;-;1
+A8:A8 | phase:A | unit:kV;-;1
+A9:A9 | phase:A | unit:kV;-;1
+3Uo1би | phase: | unit:V;-;1
+Ua1би | phase:(1000) | unit:kV;-;1
+Ub1би | phase:(1000) | unit:kV;-;1
+Uc1би | phase:(1000) | unit:kV;-;1
+Ia1Ђ’ | phase:(15000) | unit:kA;-;1
+Ib | phase: | unit:Ђ;I | Bus-1 | phase: B;1
+Ic | phase: | unit:Ђ;I | Bus-1 | phase: C;1
+3Io | phase: | unit:Ђ;I | Bus-1 | phase: N;1
+3Uo | phase: | unit:Є‚;U | BusBar-1 | phase: N;1
+Ua | phase: | unit:Є‚;U | BusBar-1 | phase: A;1
+Ub | phase: | unit:Є‚;U | BusBar-1 | phase: B;1
+Uc | phase: | unit:Є‚;U | BusBar-1 | phase: C;1
+RC#21501122:UX1 | phase:A | unit:V;-;1
+RC#21501122:UX2 | phase:B | unit:V;-;1
+RC#21501122:UX3 | phase:C | unit:V;-;1
+RC#21501122:IX1 | phase:A | unit:A;-;1
+RC#21501122:IX2 | phase:B | unit:A;-;1
+RC#21501122:IX3 | phase:C | unit:A;-;1
+RC#21501122:IX0 | phase:N | unit:A;-;1
+uEn | phase: | unit:V;-;1
+uL12 | phase: | unit:V;U | BusBar-1 | phase: AB;1
+uL23 | phase: | unit:V;U | BusBar-1 | phase: BC;1
+uL31 | phase: | unit:V;U | BusBar-1 | phase: CA;1
+RC#21600383:UX1 | phase:A | unit:V;-;1
+RC#21600383:UX2 | phase:B | unit:V;-;1
+RC#21600383:UX3 | phase:C | unit:V;-;1
+RC#21600383:IX1 | phase:A | unit:A;-;1
+RC#21600383:IX2 | phase:B | unit:A;-;1
+RC#21600383:IX3 | phase:C | unit:A;-;1
+RC#21600383:IX0 | phase:N | unit:A;-;1
