@@ -455,25 +455,20 @@ if __name__ == "__main__":
             dt[name] = dt[name] / (Inom*20)
         for name in FeaturesForDataset.VOLTAGE:
             dt[name] = dt[name] / (Unom*3)
-                
-        files_to_test = [
-            "a3a1591bc548a7faf784728430499837_Bus 1 _event N1",  # "Осц_1_2_1",
-            "4d8cbe560afd5f7f50ee476b9651f95d_Bus 1 _event N1",  # "Осц_1_8_1",
-            "5718d1a5fc834efcfc0cf98f19485db7_Bus 1 _event N1",  # "Осц_1_15_1",
-            "a2321d3375dbade8cd9afecfc2571a99_Bus 1 _event N1",  # "Осц_1_25_1",
-            "5e01b6ca41575c55ebd68978d6f3227c_Bus 1 _event N1",  # "Осц_1_38_1",
-            "9a26f30ebb02b8dd74a65c8c33c1dbcd_Bus 1 _event N1",  # "Осц_1_42_1",
-              
-            "a3a1591bc548a7faf784728430499837_Bus 2 _event N1"  # "Осц_1_2_2",
-            "4d8cbe560afd5f7f50ee476b9651f95d_Bus 2 _event N1",  # "Осц_1_8_2",
-            "5718d1a5fc834efcfc0cf98f19485db7_Bus 2 _event N1",  # "Осц_1_15_2",
-            "a2321d3375dbade8cd9afecfc2571a99_Bus 2 _event N1",  # "Осц_1_25_2",
-            "5e01b6ca41575c55ebd68978d6f3227c_Bus 2 _event N1",  # "Осц_1_38_2",
-            "9a26f30ebb02b8dd74a65c8c33c1dbcd_Bus 2 _event N1"  # "Осц_1_42_2",
-            # TODO: Добавить другие осциллограммы или подумать над тем, как лучше разделить их
-        ]
-        dt_test = dt[dt["file_name"].str.strip().isin(files_to_test)]
-        dt_train = dt[~dt["file_name"].str.strip().isin(files_to_test)]
+        
+        with open('ML_model/test_files.json', 'r') as infile:
+            data = json.load(infile)  
+        files_to_test = data["test_files"]
+        
+        # Create a new list to store the full file names
+        full_files_to_test = []
+        for full_file_name in dt["file_name"].unique():
+            for file_name in files_to_test:
+                if file_name in full_file_name:
+                    full_files_to_test.append(full_file_name)
+        
+        dt_test = dt[dt["file_name"].str.strip().isin(full_files_to_test)]
+        dt_train = dt[~dt["file_name"].str.strip().isin(full_files_to_test)]
 
         std_scaler = StandardScaler()
         
