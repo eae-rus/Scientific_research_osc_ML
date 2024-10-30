@@ -382,7 +382,7 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
             axs[0].plot(time_range, signal_data, label=f'{current}', color=['yellow', 'green', 'red'][i])
             data[current] = analog_signal[current][start:end]
         axs[0].legend()
-        axs[0].set_title('Currents')
+        axs[0].set_ylabel('Currents', rotation=90, labelpad=10, loc='center')
         axs[0].axhline(0, color='black', linestyle='--', linewidth=1)
         
         # Plot voltages
@@ -391,7 +391,7 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
             axs[1].plot(time_range, signal_data, label=f'{voltage}', color=['yellow', 'green', 'red'][i])
             data[voltage] = analog_signal[voltage][start:end]
         axs[1].legend()
-        axs[1].set_title('Voltages')
+        axs[1].set_ylabel('Voltages', rotation=90, labelpad=10, loc='center')
         axs[1].axhline(0, color='black', linestyle='--', linewidth=1)
         
         # Plot discrete signals
@@ -417,14 +417,14 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
         axs[2].text(time_range[int(len(time_range) * 0.5)], 3, 'Pred', horizontalalignment='center', fontsize=12, color='black')
         axs[2].text(time_range[int(len(time_range) * 0.5)], -3, 'Real', horizontalalignment='center', fontsize=12, color='black')
         axs[2].legend()
-        axs[2].set_title('Discrete Signals')
+        axs[2].set_ylabel('Discrete signals', rotation=90, labelpad=10, loc='center')
         axs[2].axhline(0, color='black', linestyle='--', linewidth=1)
         
         # Saving all data in CSV
         data.to_csv(f'marking_up_oscillograms/{self.osc_name}_bus_{self.uses_bus}.csv', index=False)
         plt.xlabel('Time (ms)')
         plt.tight_layout()
-        plt.savefig(f'marking_up_oscillograms/{self.osc_name}_bus_{self.uses_bus}.png')
+        plt.savefig(f'marking_up_oscillograms/{self.osc_name}_bus_{self.uses_bus}.png', dpi=600)
         plt.show()
 
     def process_and_plot(self):
