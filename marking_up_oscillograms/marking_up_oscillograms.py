@@ -439,11 +439,11 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
 class CalcFlops():
     """A class for calculating FLOPS."""
 
-    def __init__(self, device: str = 'cpu', batch_size: int = 1):
+    def __init__(self, device: str = 'cuda', batch_size: int = 1):
         super().__init__()
         self.FRAME_SIZE = 64
         self.batch_size = batch_size
-        self.device = device#torch.device(device if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device(device if torch.cuda.is_available() else 'cpu')
         
     def calc_FPLOPS(
         self,
