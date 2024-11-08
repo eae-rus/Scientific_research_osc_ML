@@ -12,6 +12,7 @@ sys.path.append(ROOT_DIR)
 from raw_to_csv.raw_to_csv import RawToCSV
 from ML_model import model # FIXME: It doesn't work, I had to copy it to a folder, it's temporary
 from torchinfo import summary
+from ptflops import get_model_complexity_info
 
 class FeaturesForDataset:
     FEATURES_CURRENT = ["IA", "IB", "IC"]
@@ -451,9 +452,22 @@ class CalcFlops():
     ):
         """The process of marking oscillograms using a machine model."""
         model = torch.load(ML_model_path, map_location=self.device).to(self.device)
-        input_tensor = torch.randn(1, self.FRAME_SIZE, len(FeaturesForDataset.FEATURES)).to(self.device)
         # Подсчёт FLOPS и параметров
         summary(model, input_size=(1, self.FRAME_SIZE, len(FeaturesForDataset.FEATURES)))
+        
+        print("-------------------------Other parametrs-------------------------")
+        # Получение FLOPS и параметров
+        with torch.cuda.device(self.device):
+            macs, params = get_model_complexity_info(
+                model, 
+                (self.FRAME_SIZE, len(FeaturesForDataset.FEATURES)),
+                as_strings=True,
+                print_per_layer_stat=True
+            )
+        
+        print("-------------------------Other parametrs-------------------------")
+        print(f"FLOPS: {macs}")
+        print(f"Параметры: {params}")
  
         
 # Usage example
