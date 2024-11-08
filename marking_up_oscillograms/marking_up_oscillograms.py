@@ -11,7 +11,7 @@ sys.path.append(ROOT_DIR)
 
 from raw_to_csv.raw_to_csv import RawToCSV
 from ML_model import model # FIXME: It doesn't work, I had to copy it to a folder, it's temporary
-from fvcore.nn import FlopCountAnalysis, parameter_count
+from torchinfo import summary
 
 class FeaturesForDataset:
     FEATURES_CURRENT = ["IA", "IB", "IC"]
@@ -453,11 +453,7 @@ class CalcFlops():
         model = torch.load(ML_model_path, map_location=self.device).to(self.device)
         input_tensor = torch.randn(1, self.FRAME_SIZE, len(FeaturesForDataset.FEATURES)).to(self.device)
         # Подсчёт FLOPS и параметров
-        flops = FlopCountAnalysis(model, input_tensor)
-        params = parameter_count(model)
-
-        print(f"FLOPS: {flops.total()}")
-        print(f"Параметров: {params['']}")
+        summary(model, input_size=(1, self.FRAME_SIZE, len(FeaturesForDataset.FEATURES)))
  
         
 # Usage example
