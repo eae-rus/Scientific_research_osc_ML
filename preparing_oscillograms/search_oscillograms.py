@@ -50,11 +50,12 @@ class SearchOscillograms():
 
 
     def copy_new_oscillograms(self, source_dir: str, dest_dir: str, copied_hashes: dict = {},
-                              preserve_dir_structure: bool = True, use_hashes: bool = True,
-                              use_comtrade: bool = True, use_new_comtrade: bool = True, use_brs: bool = True,
-                              use_neva: bool = True, use_ekra: bool = True, use_parma: bool = True,
-                              use_black_box: bool = True, use_res_3: bool = True, use_osc: bool = True,
-                              _new_copied_hashes: dict = {}, _first_run: bool = True, _path_temp = None) -> int:
+                            preserve_dir_structure: bool = True, use_hashes: bool = True,
+                            use_comtrade: bool = True, use_new_comtrade: bool = True, use_brs: bool = True,
+                            use_neva: bool = True, use_ekra: bool = True, use_parma: bool = True,
+                            use_black_box: bool = True, use_res_3: bool = True, use_osc: bool = True,
+                            _new_copied_hashes: dict = {}, _first_run: bool = True, _path_temp = None, 
+                            progress_callback = None, stop_processing_fn = None, is_write_names = None, **kwargs) -> int:
         """
         Copies oscillogram files from the source directory to the target directory, keeping track of the copied files.
     
@@ -71,6 +72,11 @@ class SearchOscillograms():
             _new_copied_hashes (dict): Dictionary of hashes of newly copied files.
             _first_run (bool): Flag indicating the first launch.
             _path_temp (str): Temporary path.
+            
+            External variables
+            progress_callback (callback): Called when the progress callback (For external reading by the program)
+            stop_processing_fn (callback): Called when the program stops processing 
+            is_write_names_fn (bool): Flag indicating whether to write names of processed files.
         Returns:
             Returns the number of saved oscillograms.
             At the same time, new files are created in the target directory:
@@ -81,14 +87,30 @@ class SearchOscillograms():
          
         if _first_run:
             # TODO: rewrite the functions into one so as not to repeat
+            if progress_callback:
+                progress_callback("Starting the process of counting total files in the source directory...")
             print("We count the total number of files in the source directory...")
             total_files = sum([len(files) for r, d, files in os.walk(source_dir)])
             print(f"Total number of files: {total_files}, starting processing...")
+            if progress_callback:
+                progress_callback(f"Total number of files: {total_files}, starting processing...")
             with tqdm(total=total_files, desc="Copying files") as pbar:
                 for root, dirs, files in os.walk(source_dir):
+                    if stop_processing_fn and stop_processing_fn():
+                        progress_callback("The process was interrupted by the user.")
+                        break
                     for file in files:
+                        if stop_processing_fn and stop_processing_fn():
+                            progress_callback("The process was interrupted by the user.")
+                            break
+                        
                         pbar.update(1)
                         file_lower = file.lower()
+                        if progress_callback and is_write_names:
+                            if is_write_names:
+                                progress_callback(f"Processing file: {root} / {file}")
+                            else:
+                                progress_callback()
                         if use_comtrade and file_lower.endswith(self.CFG_EXTENSION):
                             count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                                   preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
@@ -151,32 +173,49 @@ class SearchOscillograms():
                                                                           preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                                           _first_run=_first_run, _path_temp=_path_temp,
                                                                           use_comtrade=use_comtrade, use_new_comtrade=use_new_comtrade, use_neva=use_neva, use_ekra=use_ekra,
-                                                                          use_brs=use_brs, use_black_box=use_black_box, use_res_3=use_res_3, use_parma=use_parma, use_osc=use_osc)
+                                                                          use_brs=use_brs, use_black_box=use_black_box, use_res_3=use_res_3, use_parma=use_parma, use_osc=use_osc, 
+                                                                          progress_callback=progress_callback, stop_processing_fn=stop_processing_fn, is_write_names=is_write_names)
     
             
             print(f"The number of newly copied files: {count_new_files}") 
+            if progress_callback:
+                progress_callback(f"The number of newly copied files: {count_new_files}")
             # Saving hash_table and new_hash_table JSON files                      
             hash_table_file_path = os.path.join(dest_dir, '_hash_table.json')
             if use_hashes: 
                 try:
                     with open(hash_table_file_path, 'w') as file:
                         json.dump(copied_hashes, file) # Saving the file
+                    if progress_callback:
+                        progress_callback("Successfully saved _hash_table.json")
                 except:
                     print("Failed to save hash_table to JSON file")
+                    if progress_callback:
+                        progress_callback("Failed to save _hash_table.json")
     
                 data_now = datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S")
                 new_copied_hashes_file_path = os.path.join(dest_dir, f'new_hash_table_{data_now}.json')
                 try:
                     with open(new_copied_hashes_file_path, 'w') as file:
                         json.dump(_new_copied_hashes, file)
+                        if progress_callback:
+                            progress_callback(f"Successfully saved new hash table as {new_copied_hashes_file_path}")
                 except:
                     print("Failed to save new_hash_table to JSON file")
+                    if progress_callback:
+                        progress_callback("Failed to save new_hash_table JSON file")
             return count_new_files
         else:
             # A copy of the work inside the archives
             # TODO: rewrite the functions into one so as not to repeat
             for root, dirs, files in os.walk(source_dir):
+                if stop_processing_fn and stop_processing_fn():
+                    progress_callback("The process was interrupted by the user.")
+                    break
                 for file in files:
+                    if stop_processing_fn and stop_processing_fn():
+                        progress_callback("The process was interrupted by the user.")
+                        break
                     file_lower = file.lower()
                     if use_comtrade and file_lower.endswith(self.CFG_EXTENSION):
                         count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
@@ -237,7 +276,8 @@ class SearchOscillograms():
                                                                  preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                                  _first_run=_first_run, _path_temp=_path_temp,
                                                                  use_comtrade=use_comtrade, use_new_comtrade=use_new_comtrade, use_neva=use_neva, use_ekra=use_ekra,
-                                                                 use_brs=use_brs, use_black_box=use_black_box, use_res_3=use_res_3, use_parma=use_parma, use_osc=use_osc)
+                                                                 use_brs=use_brs, use_black_box=use_black_box, use_res_3=use_res_3, use_parma=use_parma, use_osc=use_osc, 
+                                                                 progress_callback=progress_callback, stop_processing_fn=stop_processing_fn, is_write_names=is_write_names)
             
             return count_new_files
 
@@ -368,7 +408,8 @@ class SearchOscillograms():
                              _first_run: bool = False, _path_temp = None,
                              use_comtrade: bool = True, use_new_comtrade: bool = True, use_brs: bool = True,
                              use_neva: bool = True, use_ekra: bool = True, use_parma: bool = True,
-                             use_black_box: bool = True, use_res_3: bool = True, use_osc: bool = True) -> int:
+                             use_black_box: bool = True, use_res_3: bool = True, use_osc: bool = True, 
+                             progress_callback = None, stop_processing_fn = None, is_write_names = None, **kwargs) -> int:
         """
         Processes a single file, copying it to the destination directory and updating the copied_hashes dictionary.
 
@@ -422,7 +463,8 @@ class SearchOscillograms():
                                                       use_hashes=use_hashes, 
                                                       _new_copied_hashes=_new_copied_hashes, _first_run = False, _path_temp=_path_temp,
                                                       use_comtrade=use_comtrade, use_new_comtrade=use_new_comtrade, use_neva=use_neva, use_ekra=use_ekra,
-                                                      use_brs=use_brs, use_black_box=use_black_box, use_res_3=use_res_3, use_parma=use_parma, use_osc=use_osc)
+                                                      use_brs=use_brs, use_black_box=use_black_box, use_res_3=use_res_3, use_parma=use_parma, use_osc=use_osc, 
+                                                      progress_callback=progress_callback, stop_processing_fn=stop_processing_fn, is_write_names=is_write_names)
         try:
             shutil.rmtree(source_dir_temp) # Deleting the temporary directory
         except Exception as e:
