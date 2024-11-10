@@ -19,24 +19,22 @@ from sklearn.metrics import hamming_loss, jaccard_score
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
-from model import CONV_MLP_v2, FFT_MLP, FFT_MLP_KAN_v1, FFT_MLP_KAN_v2
+import model as Model
 
 # Добавлено для исключения лишних предупреждений о возможных будущих проблемах.
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
-import pandas
 
 class FeaturesForDataset():
         CURRENT = ["IA", "IB", "IC"]
-        # CURRENT = ["IA", "IC"]
+
         VOLTAGE = ["UA BB", "UB BB", "UC BB", "UN BB",
                    "UA CL", "UB CL", "UC CL", "UN CL",
                    "UAB CL","UBC CL","UCA CL"]
-        # VOLTAGE = ["UA BB", "UB BB", "UC BB", "UN BB"]
         
 
         VOLTAGE_PHAZE = ["UA BB", "UB BB", "UC BB",
-                                 "UA CL", "UB CL", "UC CL"]
+                         "UA CL", "UB CL", "UC CL"]
         VOLTAGE_LINE_NOMINAL = ["UN BB", "UN CL", "UAB CL", "UBC CL", "UCA CL"]
         
         VOLTAGE_PHAZE_BB = ["UA BB", "UB BB", "UC BB"]
@@ -44,6 +42,7 @@ class FeaturesForDataset():
 
         VOLTAGE_LINE_CL = ["UAB CL", "UBC CL", "UCA CL"]
         
+        ZERO_SIGNAL = ["UN BB", "UN CL"] # не хватает тока
         
         FEATURES = CURRENT.copy()
         FEATURES.extend(VOLTAGE)
@@ -61,6 +60,7 @@ class CustomDataset_train(Dataset):
                  apply_amplitude_scaling: bool = False, current_amplitude_factor: float = 5.0, voltage_amplitude_factor: float = 1.05,
                  apply_offset: bool = False, offset_range: tuple = (-0.001, 0.001),
                  apply_phase_shuffling: bool = False,
+                 apply_delet_zero_signal: bool = False,
                  augmentation_probabilities: dict = None):
         """
         Initialize the dataset.
@@ -109,10 +109,11 @@ class CustomDataset_train(Dataset):
         self.apply_offset = apply_offset
         self.offset_range = offset_range
         self.apply_phase_shuffling = apply_phase_shuffling
+        self.apply_delet_zero_signal = apply_delet_zero_signal
 
         # Вероятности активации аугментаций
         # По умолчанию вероятность для всех аугментаций = 0.5
-        default_probabilities = {"inversion": 0.5, "noise": 0.5, "scaling": 0.5, "offset": 0.5, "phase_shuffling": 0.5}
+        default_probabilities = {"inversion": 0.5, "noise": 0.5, "scaling": 0.5, "offset": 0.5, "phase_shuffling": 0.5, "delet_zero_singnal": 0.5}
         self.augmentation_probabilities = default_probabilities if augmentation_probabilities is None else augmentation_probabilities
 
     def __len__(self):
@@ -207,6 +208,11 @@ class CustomDataset_train(Dataset):
             line_CL_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_LINE_CL]
             x[:, line_CL_indices] = torch.roll(x[:, line_CL_indices], shifts=phase_shift, dims=1)
 
+        # 6. Удаление входов нулевой последовательности
+        if self.apply_delet_zero_signal and random.random() < self.augmentation_probabilities["delet_zero_singnal"]:
+            zeroSignal_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.ZERO_SIGNAL]
+            x[:, zeroSignal_indices] = torch.zeros_like(x[:, zeroSignal_indices])
+
         # === ИЗВЛЕЧЕНИЕ ЦЕЛЕВОГО ЗНАЧЕНИЯ === #
         target_index = start + self.target_position
         target_sample = self.data.loc[target_index][FeaturesForDataset.TARGET]
@@ -289,6 +295,19 @@ class FastBalancedBatchSampler(torch.utils.data.Sampler):
 
             yield batch
 
+class MultiLabelFocalLoss(torch.nn.Module):
+    def __init__(self, alpha=0.25, gamma=2.0):
+        super(MultiLabelFocalLoss, self).__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+
+    def forward(self, outputs, targets):
+        # Рассчитываем Focal Loss вручную
+        pt = targets * outputs + (1 - targets) * (1 - outputs)
+        focal_loss = -self.alpha * (1 - pt) ** self.gamma * (targets * torch.log(outputs + 1e-8) + (1 - targets) * torch.log(1 - outputs + 1e-8))
+        
+        return focal_loss.mean()
+
 def seed_everything(seed: int = 42):
     """
     This function is used to maintain repeatability
@@ -352,6 +371,22 @@ def save_stats_to_csv(epoch, batch_count, epoch_duration, train_loss, test_loss,
         f1_per_class=f1, ba_per_class=ba
     )
 
+def expand_array(arr, expand_left, expand_right):
+    if expand_left < 0 or expand_right < 0 or (expand_left == 0 and expand_right == 0):
+        return arr
+
+    expanded = np.zeros_like(arr)  # создаем новый массив такой же длины, заполненный нулями
+    n = len(arr)
+        
+    for i in range(n):
+        if arr[i] == 1:
+            # Определяем границы расширения
+            left = max(0, i - expand_left)
+            right = min(n, i + expand_right + 1)
+            # Проставляем единицы в расширенных пределах
+            expanded[left:right] = 1
+    
+    return expanded
 
 def save_stats_to_json(filename, epoch, batch_count, epoch_duration, train_loss, test_loss, mean_f1, mean_ba, hamming, jaccard, lr, f1_per_class, ba_per_class):
     """Сохранение статистики в JSON формате."""
@@ -377,6 +412,7 @@ def save_stats_to_json(filename, epoch, batch_count, epoch_duration, train_loss,
 
 if __name__ == "__main__":
     FRAME_SIZE = 64 # 64
+    POINT_TARGET_SHIFT = 0
     BATCH_SIZE_PER_CLASS = 32  # Например, 128/4=32
     BATCH_SIZE_TRAIN = 4 * BATCH_SIZE_PER_CLASS # 4 - количество фич, сделать через Гипер Параметр
     NUM_BATCHES = 1000 # Количество генерируемых батчей
@@ -412,19 +448,6 @@ if __name__ == "__main__":
         dt_test = pd.read_csv(file_with_target_frame_test)
     else:
         dt = pd.read_csv(file_csv)
-        # удаляю осциллограммы с данными, которые плохо поддаются БПФ (резкие выбросы)
-        # Не актуальны, сейчас другие имена
-        files_to_remove = [
-            "Осц_1_26_1",
-            "Осц_1_27_1",
-            "Осц_1_28_1",
-            "Осц_1_41_1",
-            "Осц_1_26_2",
-            "Осц_1_27_2",
-            "Осц_1_28_2",
-            "Осц_1_41_2",
-        ]
-        dt = dt[~dt["file_name"].str.strip().isin(files_to_remove)]
         
         # TODO: Нормальизацию стоит делать отдельно. Здесь я её закладываю временно
         Inom, Unom = 5, 100
@@ -432,25 +455,20 @@ if __name__ == "__main__":
             dt[name] = dt[name] / (Inom*20)
         for name in FeaturesForDataset.VOLTAGE:
             dt[name] = dt[name] / (Unom*3)
-                
-        files_to_test = [
-            "a3a1591bc548a7faf784728430499837_Bus 1 _event N1",  # "Осц_1_2_1",
-            "4d8cbe560afd5f7f50ee476b9651f95d_Bus 1 _event N1",  # "Осц_1_8_1",
-            "5718d1a5fc834efcfc0cf98f19485db7_Bus 1 _event N1",  # "Осц_1_15_1",
-            "a2321d3375dbade8cd9afecfc2571a99_Bus 1 _event N1",  # "Осц_1_25_1",
-            "5e01b6ca41575c55ebd68978d6f3227c_Bus 1 _event N1",  # "Осц_1_38_1",
-            "9a26f30ebb02b8dd74a65c8c33c1dbcd_Bus 1 _event N1",  # "Осц_1_42_1",
-              
-            "a3a1591bc548a7faf784728430499837_Bus 2 _event N1"  # "Осц_1_2_2",
-            "4d8cbe560afd5f7f50ee476b9651f95d_Bus 2 _event N1",  # "Осц_1_8_2",
-            "5718d1a5fc834efcfc0cf98f19485db7_Bus 2 _event N1",  # "Осц_1_15_2",
-            "a2321d3375dbade8cd9afecfc2571a99_Bus 2 _event N1",  # "Осц_1_25_2",
-            "5e01b6ca41575c55ebd68978d6f3227c_Bus 2 _event N1",  # "Осц_1_38_2",
-            "9a26f30ebb02b8dd74a65c8c33c1dbcd_Bus 2 _event N1"  # "Осц_1_42_2",
-            # TODO: Добавить другие осциллограммы или подумать над тем, как лучше разделить их
-        ]
-        dt_test = dt[dt["file_name"].str.strip().isin(files_to_test)]
-        dt_train = dt[~dt["file_name"].str.strip().isin(files_to_test)]
+        
+        with open('ML_model/test_files.json', 'r') as infile:
+            data = json.load(infile)  
+        files_to_test = data["test_files"]
+        
+        # Create a new list to store the full file names
+        full_files_to_test = []
+        for full_file_name in dt["file_name"].unique():
+            for file_name in files_to_test:
+                if file_name in full_file_name:
+                    full_files_to_test.append(full_file_name)
+        
+        dt_test = dt[dt["file_name"].str.strip().isin(full_files_to_test)]
+        dt_train = dt[~dt["file_name"].str.strip().isin(full_files_to_test)]
 
         std_scaler = StandardScaler()
         
@@ -498,6 +516,23 @@ if __name__ == "__main__":
         dt_train.to_csv(file_with_target_frame_train, index=False)
         dt_test.to_csv(file_with_target_frame_test, index=False)
     
+    
+    files_train = dt_train["file_name"].unique()
+    for file in files_train: # Непонятно почему не улучшает, надо отдельно проверить
+        for target in FeaturesForDataset.TARGET:
+            # Извлекаем строки, где file_name соответствует текущему файлу
+            mask = dt_train["file_name"] == file
+            # Обновляем нужный столбец после применения функции expand_array
+            dt_train.loc[mask, target] = expand_array(dt_train.loc[mask, target].values, expand_left=0, expand_right=31)
+    
+    files_test = dt_test["file_name"].unique()
+    for file in files_test: # Непонятно почему не улучшает, надо отдельно проверить
+        for target in FeaturesForDataset.TARGET:
+            # Извлекаем строки, где file_name соответствует текущему файлу
+            mask = dt_test["file_name"] == file
+            # Обновляем нужный столбец после применения функции expand_array
+            dt_test.loc[mask, target] = expand_array(dt_test.loc[mask, target].values, expand_left=0, expand_right=31)
+    
     # копия датафрейма для получения индексов начал фреймов для трейн
     dt_indexes_train = dt_train[FeaturesForDataset.TARGET_WITH_FILENAME]
     files_train = dt_indexes_train["file_name"].unique()
@@ -539,23 +574,25 @@ if __name__ == "__main__":
     train_dataset = CustomDataset_train(
         dt=dt_train, indexes=train_indexes,
         frame_size=FRAME_SIZE,  # Указываем размер окна
-        target_position=FRAME_SIZE-8,  # Целевая позиция – последний элемент окна
-        apply_inversion=False, # Активируем рандомную инверсию сигнала
-        apply_noise=False, # Активируем добавление шума
-        apply_amplitude_scaling=False, # Активируем изменение масштаба
+        target_position=FRAME_SIZE-1-POINT_TARGET_SHIFT,  # Целевая позиция – последний элемент окна
+        apply_inversion=True, # Активируем рандомную инверсию сигнала
+        apply_noise=True, current_noise_level=0, # Активируем добавление шума, но зануляем его по току
+        apply_amplitude_scaling=True, # Активируем изменение масштаба
         apply_offset=False, # Активирует добавление рандомной постоянной составляющей
-        apply_phase_shuffling=False  # Активируем рандомнуюперетасовку фаз
+        apply_phase_shuffling=True,  # Активируем рандомнуюп перетасовку фаз
+        apply_delet_zero_signal=True  # Активируем рандомное зануление входов нулевой последователности
     )
     
-    test_dataset = CustomDataset(dt_test, test_indexes, FRAME_SIZE, FRAME_SIZE-8)
+    test_dataset = CustomDataset(dt_test, test_indexes, FRAME_SIZE, FRAME_SIZE-1-POINT_TARGET_SHIFT)
 
     start_epoch = 0
     # !! создание новой !!
-    name_model = "FFT_MLP_KAN_v2" # "ConvMLP" # FftMLP , FftKAN
+    name_model = "FFT_MLP_COMPLEX_v2" # "ConvMLP" # FftMLP , FftKAN, FFT_MLP_COMPLEX_v1, FFT_MLP_COMPLEX_v2, FFT_MLP_COMPLEX_v2
     # model = CONV_MLP_v2(
     # model = FFT_MLP(
     # model = FFT_MLP_KAN_v1(
-    model = FFT_MLP_KAN_v2(
+    # model = FFT_MLP_KAN_v2(
+    model = Model.CONV_AND_FFT_COMPLEX_v3(
         FRAME_SIZE,
         channel_num=len(FeaturesForDataset.FEATURES),
         hidden_size=HIDDEN_SIZE,
@@ -570,8 +607,7 @@ if __name__ == "__main__":
     # start_epoch = int(filename_model.split("ep")[1].split("_")[0])
     # model.eval()  # Set the model to evaluation mode
 
-    # criterion = nn.CrossEntropyLoss()
-    criterion = nn.BCELoss() # Лучше для многоклассовой пересекающейся модели
+    criterion = MultiLabelFocalLoss(gamma=3) # Пока это лучшая метрика. Можно будет поиграться с гамма.
     
     all_losses = []
 
@@ -631,7 +667,7 @@ if __name__ == "__main__":
                 message = (
                     f"Epoch {epoch+1}/{EPOCHS} "
                     f"LR={current_lr:.3e} "
-                    f"Train loss: {(loss_sum / (i + 1)):.4f} "
+                    f"Train loss: {1000*(loss_sum / (i + 1)):.4f} "
                 )
                 t.set_postfix_str(s=message)
                 optimizer.zero_grad()
@@ -697,7 +733,7 @@ if __name__ == "__main__":
             # Сообщение для tqdm
             t.set_postfix_str(f"Batch: {batch_count}, Train loss: {loss_sum / (i + 1):.4f}, Test loss: {test_loss:.4f}, LR: {current_lr:.4e}")
             message_f1_ba = (
-                             f"Prev. test loss: {test_loss:.4f} "
+                             f"Prev. test loss: {1000*test_loss:.4f} "
                              f"F1 / BA: {', '.join([f'{signal_name}: {f1_score:.4f}/{ba_score:.4f}' for signal_name, f1_score, ba_score in zip(FeaturesForDataset.TARGET, f1, ba)])} "
                              )
             print(message_f1_ba)

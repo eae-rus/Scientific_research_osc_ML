@@ -11,6 +11,8 @@ sys.path.append(ROOT_DIR)
 
 from raw_to_csv.raw_to_csv import RawToCSV
 from ML_model import model # FIXME: It doesn't work, I had to copy it to a folder, it's temporary
+from torchinfo import summary
+from ptflops import get_model_complexity_info
 
 class FeaturesForDataset:
     FEATURES_CURRENT = ["IA", "IB", "IC"]
@@ -434,6 +436,39 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
             print("Prediction returned NaN. Skipping plotting.")
             return
         self.plot_predictions_vs_real(self.start_point, self.end_point, analog_signal, predict_labels, real_labels)
+ 
+class CalcFlops():
+    """A class for calculating FLOPS."""
+
+    def __init__(self, device: str = 'cuda', batch_size: int = 1):
+        super().__init__()
+        self.FRAME_SIZE = 64
+        self.batch_size = batch_size
+        self.device = torch.device(device if torch.cuda.is_available() else 'cpu')
+        
+    def calc_FPLOPS(
+        self,
+        ML_model_path: str,
+    ):
+        """The process of marking oscillograms using a machine model."""
+        model = torch.load(ML_model_path, map_location=self.device).to(self.device)
+        # Подсчёт FLOPS и параметров
+        summary(model, input_size=(1, self.FRAME_SIZE, len(FeaturesForDataset.FEATURES)))
+        
+        print("-------------------------Other parametrs-------------------------")
+        # Получение FLOPS и параметров
+        with torch.cuda.device(self.device):
+            macs, params = get_model_complexity_info(
+                model, 
+                (self.FRAME_SIZE, len(FeaturesForDataset.FEATURES)),
+                as_strings=True,
+                print_per_layer_stat=True
+            )
+        
+        print("-------------------------Other parametrs-------------------------")
+        print(f"FLOPS: {macs}")
+        print(f"Параметры: {params}")
+ 
         
 # Usage example
 if __name__ == "__main__":
@@ -444,6 +479,8 @@ if __name__ == "__main__":
     #     ML_model_path="marking_up_oscillograms/model/model_FftKAN_ep100_tl0.1193_train79.6926.pt",
     # )
     
+    сalcFlops = CalcFlops()
+    сalcFlops.calc_FPLOPS(ML_model_path='marking_up_oscillograms/model/model_FFT_MLP_ep100_tl0.3389_train60.7187.pt')
     
     # Initializing a class for prediction and plotting
     comtrade_predictor = ComtradePredictionAndPlotting(
