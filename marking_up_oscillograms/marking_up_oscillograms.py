@@ -426,7 +426,8 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
         data.to_csv(f'marking_up_oscillograms/{self.osc_name}_bus_{self.uses_bus}.csv', index=False)
         plt.xlabel('Time (ms)')
         plt.tight_layout()
-        plt.savefig(f'marking_up_oscillograms/{self.osc_name}_bus_{self.uses_bus}.png', dpi=600)
+        plt.savefig(f'marking_up_oscillograms/{self.osc_name}_bus_{self.uses_bus}.png', dpi=1000)
+        plt.savefig(f'marking_up_oscillograms/{self.osc_name}_bus_{self.uses_bus}.pdf', dpi=1000)
         plt.show()
 
     def process_and_plot(self):
