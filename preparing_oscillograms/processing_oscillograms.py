@@ -756,23 +756,16 @@ class ProcessingOscillograms():
             print(f"Error reading cfg file {file_path}: {e}")
         return signal_names
     
-    def _check_signals_in_one_file(self, file_path: str, required_signals, encoding_name: str = 'utf-8') -> bool:
+    def _default_signal_checker(self, file_signals: list) -> bool:
         """
         Checks if a single comtrade file contains the required signals (considering PDR as digital).
 
         Args:
-            file_path (str): Path to the .cfg file.
-            required_signals (dict): Dictionary of required signals (not used in this version).
-            encoding_name (str): Encoding of the cfg file
+            file_signals (list): list of signal names.
 
         Returns:
             bool: True if all required signals are present, False otherwise.
         """
-        # TODO: Функция проверки в будущем может отличаться, как сделать этот аспект изменяемым, или хотя бы задаваемым как параметр?
-        file_signals = self._get_signals_from_prepared_cfg(file_path, encoding_name)
-        if not file_signals:
-            return False
-
         has_voltage_busbar_1 = False
         has_voltage_cableline_1 = False
         has_voltage_busbar_2 = False
@@ -823,6 +816,15 @@ class ProcessingOscillograms():
         pdr_condition = has_pdr_bus_1
 
         return voltage_condition and current_condition and pdr_condition
+    
+    def _check_signals_in_one_file(self, file_path: str, signal_checker=None, encoding_name: str = 'utf-8') -> bool:
+        file_signals = self._get_signals_from_prepared_cfg(file_path, encoding_name)
+        if not file_signals:
+            return False
+        # Если функция проверки не передана, используем стандартную
+        if signal_checker is None:
+            signal_checker = self._default_signal_checker
+        return signal_checker(file_signals)
 
     def check_signals_in_folder(self, raw_path='raw_data/', output_csv_filename='signal_check_results.csv'):
         """
