@@ -826,13 +826,14 @@ class ProcessingOscillograms():
             signal_checker = self._default_signal_checker
         return signal_checker(file_signals)
 
-    def check_signals_in_folder(self, raw_path='raw_data/', output_csv_filename='signal_check_results.csv'):
+    def check_signals_in_folder(self, raw_path='raw_data/', output_csv_filename='signal_check_results.csv', signal_checker=None):
         """
         Checks all comtrade files in a folder for required signals and outputs results to a CSV.
 
         Args:
             raw_path (str): Path to the folder containing raw comtrade files.
             output_csv_filename (str): Filename for the output CSV file.
+            signal_checker (function): Function to check the required signals in a single file. Defaults to self._default_signal_checker.
         """
         output_csv_path = os.path.join(raw_path, output_csv_filename)
         results = []
@@ -855,7 +856,7 @@ class ProcessingOscillograms():
                         contains_required_signals = False
                         
                         try:
-                            contains_required_signals = self._check_signals_in_one_file(file_path, None, 'utf-8')
+                            contains_required_signals = self._check_signals_in_one_file(file_path, signal_checker, 'utf-8')
                         except Exception as e:
                             # windows-1251 и ОЕМ 866 не проверяются, так как предполагается, что уже выполнена требуемая стандартизация
                             print(f"Error processing {file_path}: {e}")
