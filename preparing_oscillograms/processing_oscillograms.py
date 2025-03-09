@@ -675,3 +675,203 @@ class ProcessingOscillograms():
             writer = csv.writer(csv_file)
             writer.writerow(['Номер', 'Частота сети', 'Частота дискретизации', 'Имя файла', 'Хеш'])
             writer.writerows(results)
+
+    def _get_signals_from_prepared_cfg(self, file_path: str, encoding_name: str) -> list:
+        """
+        Parses a .cfg file file prepared for standard names and returns a list of full signal names (both analog and digital).
+
+        Args:
+            file_path (str): The path to the .cfg file.
+            encoding_name (str): Encoding of the cfg file
+
+        Returns:
+            list: List of full signal names in the cfg file.
+        """
+        signal_names = []
+        try:
+            with open(file_path, 'r', encoding=encoding_name) as file:
+                lines = file.readlines()
+                count_all_signals_str, count_analog_signals_str, count_digital_signals_str = lines[1].split(',')
+                count_analog_signals = int(count_analog_signals_str[:-1])
+                count_digital_signals = int(count_digital_signals_str[:-2])
+
+                # Analog signals processing
+                for i in range(count_analog_signals):
+                    signal_name = lines[2 + i].split(',')
+                    name = signal_name[1].split('|')
+                    if len(name) < 2: # защита от некорректных строк
+                        return signal_names.append({
+                        'signal_type': "error_name",
+                        'location_type': None,
+                        'section_number': None,
+                        'phase': None
+                    })
+                    signal_type = name[0].strip() # U, I
+                    section_info = name[1].strip().split("-")
+                    location_type = section_info[0] # BusBar, CableLine, Bus
+                    section_number = section_info[1] if len(section_info)>1 else None # 1, 2 ..., None
+                    phase_info = name[2].strip().split(":")
+                    phase = phase_info[1].strip() if len(phase_info)>1 else None # A, B, C ..., None
+                    signal_names.append({
+                        'signal_type': signal_type,
+                        'location_type': location_type,
+                        'section_number': section_number,
+                        'phase': phase
+                    })
+
+                # Digital signals processing
+                for i in range(count_digital_signals):
+                    signal_name = lines[2 + count_analog_signals + i].split(',')
+                    if len(signal_name) < 2: # защита от некорректных строк
+                        return signal_names.append({
+                        'signal_type': "error_digital_signal",
+                        'location_type': None,
+                        'section_number': None,
+                        'phase': None
+                    })
+                    name = signal_name[1].split('|')
+                    if len(name) < 2: # защита от некорректных строк
+                        return signal_names.append({
+                        'signal_type': "error_name",
+                        'location_type': None,
+                        'section_number': None,
+                        'phase': None
+                    })
+                    signal_type = name[0].strip() # PDR...
+                    section_info = name[1].strip().split("-")
+                    location_type = section_info[0] # BusBar, CableLine, Bus
+                    section_number = section_info[1] if len(section_info)>1 else None # 1, 2 ..., None
+                    phase_info = name[-1].strip().split(":")
+                    phase = None # A, B, C ..., None
+                    if len(phase_info)>1 and (phase_info[0] == "phase"):
+                        phase = phase_info[1].strip()
+                    signal_names.append({
+                        'signal_type': signal_type,
+                        'location_type': location_type,
+                        'section_number': section_number,
+                        'phase': phase
+                    })
+
+        except Exception as e:
+            print(f"Error reading cfg file {file_path}: {e}")
+        return signal_names
+    
+    def _check_signals_in_one_file(self, file_path: str, required_signals, encoding_name: str = 'utf-8') -> bool:
+        """
+        Checks if a single comtrade file contains the required signals (considering PDR as digital).
+
+        Args:
+            file_path (str): Path to the .cfg file.
+            required_signals (dict): Dictionary of required signals (not used in this version).
+            encoding_name (str): Encoding of the cfg file
+
+        Returns:
+            bool: True if all required signals are present, False otherwise.
+        """
+        # TODO: Функция проверки в будущем может отличаться, как сделать этот аспект изменяемым, или хотя бы задаваемым как параметр?
+        file_signals = self._get_signals_from_prepared_cfg(file_path, encoding_name)
+        if not file_signals:
+            return False
+
+        has_voltage_busbar_1 = False
+        has_voltage_cableline_1 = False
+        has_voltage_busbar_2 = False
+        has_voltage_cableline_2 = False
+        has_current_bus_1_ac = False
+        has_current_bus_2_ac = False
+        has_pdr_bus_1 = False
+
+        voltage_busbar_1_phases = set()
+        voltage_cableline_1_phases = set()
+        voltage_busbar_2_phases = set()
+        voltage_cableline_2_phases = set()
+        current_bus_1_phases = set()
+        current_bus_2_phases = set()
+        pdr_bus_1_phases = set()
+
+        for signal in file_signals:
+            if signal['signal_type'] == 'U':
+                if signal['location_type'] == 'BusBar' and signal['section_number'] == '1':
+                    voltage_busbar_1_phases.add(signal['phase'])
+                elif signal['location_type'] == 'CableLine' and signal['section_number'] == '1':
+                    voltage_cableline_1_phases.add(signal['phase'])
+                elif signal['location_type'] == 'BusBar' and signal['section_number'] == '2':
+                    voltage_busbar_2_phases.add(signal['phase'])
+                elif signal['location_type'] == 'CableLine' and signal['section_number'] == '2':
+                    voltage_cableline_2_phases.add(signal['phase'])
+            elif signal['signal_type'] == 'I':
+                if signal['location_type'] == 'Bus' and signal['section_number'] == '1':
+                    current_bus_1_phases.add(signal['phase'])
+                elif signal['location_type'] == 'Bus' and signal['section_number'] == '2':
+                    current_bus_2_phases.add(signal['phase'])
+            elif signal['signal_type'] == 'PDR': # Проверка для PDR как дискретного сигнала
+                if signal['location_type'] == 'Bus' and signal['section_number'] == '1':
+                    pdr_bus_1_phases.add(signal['phase'])
+
+        has_voltage_busbar_1 = {'A', 'B', 'C'}.issubset(voltage_busbar_1_phases)
+        has_voltage_cableline_1 = {'A', 'B', 'C'}.issubset(voltage_cableline_1_phases)
+        has_voltage_busbar_2 = {'A', 'B', 'C'}.issubset(voltage_busbar_2_phases)
+        has_voltage_cableline_2 = {'A', 'B', 'C'}.issubset(voltage_cableline_2_phases)
+
+        has_current_bus_1_ac = {'A', 'C'}.issubset(current_bus_1_phases) and len(current_bus_1_phases) >= 2
+        has_current_bus_2_ac = {'A', 'C'}.issubset(current_bus_2_phases) and len(current_bus_2_phases) >= 2
+
+        has_pdr_bus_1 = {'PS'}.issubset(pdr_bus_1_phases) or {'A', 'B', 'C'}.issubset(pdr_bus_1_phases)
+
+        voltage_condition = (has_voltage_busbar_1 or has_voltage_cableline_1) and (has_voltage_busbar_2 or has_voltage_cableline_2)
+        current_condition = has_current_bus_1_ac and has_current_bus_2_ac
+        pdr_condition = has_pdr_bus_1
+
+        return voltage_condition and current_condition and pdr_condition
+
+    def check_signals_in_folder(self, raw_path='raw_data/', output_csv_filename='signal_check_results.csv'):
+        """
+        Checks all comtrade files in a folder for required signals and outputs results to a CSV.
+
+        Args:
+            raw_path (str): Path to the folder containing raw comtrade files.
+            output_csv_filename (str): Filename for the output CSV file.
+        """
+        output_csv_path = os.path.join(raw_path, output_csv_filename)
+        results = []
+
+        print(f"Checking signals in folder: {raw_path}")
+        total_files = 0
+        for root, dirs, files in os.walk(raw_path):
+            for file in files:
+                if file.endswith(".cfg"):
+                    total_files += 1
+        print(f"Total CFG files found: {total_files}, starting processing...")
+
+        with tqdm(total=total_files, desc="Checking signals") as pbar:
+            for root, dirs, files in os.walk(raw_path):
+                for file in files:
+                    if file.endswith(".cfg"):
+                        pbar.update(1)
+                        file_path = os.path.join(root, file)
+                        file_hash = file[:-4] # Assuming filename is hash.cfg
+                        contains_required_signals = False
+                        
+                        try:
+                            contains_required_signals = self._check_signals_in_one_file(file_path, None, 'utf-8')
+                        except Exception as e:
+                            # windows-1251 и ОЕМ 866 не проверяются, так как предполагается, что уже выполнена требуемая стандартизация
+                            print(f"Error processing {file_path}: {e}")
+                            contains_required_signals = "Error"
+
+                        if contains_required_signals == True:
+                            signal_status = "Yes"
+                        elif contains_required_signals == False:
+                            signal_status = "No"
+                        else:
+                            signal_status = "Error"
+
+                        results.append({'filename': file_hash, 'contains_required_signals': signal_status})
+        
+        with open(output_csv_path, 'w', newline='', encoding='utf-8') as csvfile:
+           fieldnames = ['filename', 'contains_required_signals']
+           writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter=',', quotechar='"')
+           writer.writeheader()
+           writer.writerows(results)
+
+        print(f"Signal check results saved to {output_csv_path}")
