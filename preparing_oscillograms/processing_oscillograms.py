@@ -5,6 +5,7 @@ import datetime
 import csv
 import json
 from tqdm import tqdm
+import re
 
 class ProcessingOscillograms():
     """
@@ -623,3 +624,54 @@ class ProcessingOscillograms():
                 file_hash = hashlib.md5(file.read()).hexdigest()
 
             dict_all_dates[file_hash] = dict_date
+            
+    def process_dat_files(root_dir, output_csv):
+        """
+        Проходит по папкам, вычисляет хеш MD5 для файлов .dat и сохраняет результаты в CSV.
+        Названия папок содержат частоту сети и частоту дискретизации в формате:
+        f_network = X and f_rate = Y
+        
+        :param root_dir: Корневая папка для обработки
+        :param output_csv: Путь к выходному CSV-файлу
+        """
+        results = []
+        file_counter = 1
+
+        # Регулярное выражение для извлечения значений f_network и f_rate
+        pattern = re.compile(r"f_network\s*=\s*(\d+)\s*and\s*f_rate\s*=\s*(\d+)")
+
+        for folder_name in os.listdir(root_dir):
+            folder_path = os.path.join(root_dir, folder_name)
+            if not os.path.isdir(folder_path):
+                continue  # Пропускаем не папки
+
+            # Извлекаем частоту сети и дискретизации из имени папки
+            match = pattern.match(folder_name)
+            if not match:
+                continue  # Пропускаем папки с некорректными названиями
+
+            network_frequency, sampling_frequency = match.groups()
+
+            for file_name in os.listdir(folder_path):
+                if file_name.endswith('.dat'):
+                    file_path = os.path.join(folder_path, file_name)
+
+                    # Вычисление хеш-значения MD5
+                    with open(file_path, 'rb') as file:
+                        file_hash = hashlib.md5(file.read()).hexdigest()
+
+                    # Добавляем данные в результаты
+                    results.append([
+                        file_counter,
+                        network_frequency,
+                        sampling_frequency,
+                        file_name,
+                        file_hash
+                    ])
+                    file_counter += 1
+
+        # Запись результатов в CSV
+        with open(output_csv, mode='w', newline='', encoding='utf-8') as csv_file:
+            writer = csv.writer(csv_file)
+            writer.writerow(['Номер', 'Частота сети', 'Частота дискретизации', 'Имя файла', 'Хеш'])
+            writer.writerows(results)
