@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import os
 import json
 import comtrade # comtrade 0.1.2
@@ -9,9 +10,10 @@ class RawToCSV():
     """
     This class implemented to convert raw comtrade files to csv file.
     """
-    def __init__(self, raw_path='raw_data/', csv_path='', uses_buses = ['1', '2', '12']):
+    def __init__(self, raw_path='raw_data/', csv_path='', norm_coef_file_path='norm_coef.csv', uses_buses = ['1', '2', '12']):
         if not os.path.exists(raw_path):
             raise FileNotFoundError("Path for raw files does not exist")
+         
         # FIXME: You need to add a workaround to the problem when these files are missing. Because they have to be taken from somewhere.
         with open("dict_analog_names.json", "r") as file:
             analog_names = json.load(file)
@@ -19,7 +21,14 @@ class RawToCSV():
             discrete_names = json.load(file)
         self.analog_names = analog_names
         self.discrete_names = discrete_names
-        self.buses_names = self.get_bus_names()
+        # TODO: Может и не быть коэффициент, пока закладывается как нужный для будущих разработок
+        self.norm_coef = None
+        if os.path.exists(norm_coef_file_path):
+            with open(norm_coef_file_path, "r") as file:
+                self.norm_coef = pd.read_csv(file, encoding='utf-8')
+
+        self.analog_names_dict = self.get_bus_names(analog=True, discrete=False)
+        self.discrete_names_dict = self.get_bus_names(analog=False, discrete=True)
         self.all_names = self.get_all_names()
         self.raw_path = raw_path
         self.csv_path = csv_path
@@ -30,6 +39,8 @@ class RawToCSV():
         self.uses_CT_B, self.uses_CT_zero = True, True
         self.uses_VT_ph, self.uses_VT_iph, self.uses_VT_zero  = True, True, True
         self.use_VT_CL, self.use_VT_BB = True, True
+        # TODO: подумать о большей понятности и оптимальности, так как use_PDR нужна только сейчас, а требует проверки всех дискрет
+        self.use_PDR = True
         # TODO: Add variables for combining accident levels (ML signals)
         self.number_periods = 10 # TODO: The number of samples is being set now. Think about a time-to-date task, or something similar.
         self.ml_all, self.ml_opr_swch, self.ml_abnorm_evnt, self.ml_emerg_evnt  = self.get_short_names_ml_signals()
@@ -52,7 +63,6 @@ class RawToCSV():
                 # TODO: Add secondary/primary checks to the dataset reading and processing.
                 self.check_columns(raw_df)
                 if not raw_df.empty:
-                    raw_df = self.rename_raw_columns(raw_df)
                     raw_df = raw_df.reset_index()
                     buses_df = self.split_buses(raw_df, file)
 
@@ -76,6 +86,185 @@ class RawToCSV():
         dataset_df.to_csv(self.csv_path + csv_name, index=False)
         return dataset_df
     
+    # TODO: подумать об универсанолизации данной функции с create_csv (основные замечания указаны там)
+    def create_csv_for_PDR(self, csv_name='datset.csv', signal_check_results_path='signal_check_results.csv', is_cut_out_area = False, yes_prase = "YES", is_print_error = False):
+        """
+        This function DataFrame and save csv file from raw comtrade data.
+
+        Args:
+            csv_name (str): The name of csv file.
+        """
+        if not os.path.exists(signal_check_results_path):
+            raise FileNotFoundError("Path for signal check results does not exist")
+        # TODO: Пока что это локальный файл, но надо подумать о том, чтобы он был глобальный, но пока может мешать.
+        signal_check_df = pd.read_csv(signal_check_results_path) # Загрузка файла проверки сигналов
+        
+        dataset_df = pd.DataFrame()
+        raw_files = sorted([file for file in os.listdir(self.raw_path)
+                            if 'cfg' in file])
+        with tqdm(total=len(raw_files), desc="Convert Comtrade to CSV") as pbar:
+            for file in raw_files:
+                filename_without_ext = file[:-4] # Имя файла без расширения
+                # FIXME: На будущее - возможно этот файл и лишний, ибо проверки заложил в "_process_signals_for_PDR"
+                check_result_row = signal_check_df[signal_check_df['filename'] == filename_without_ext]
+
+                if check_result_row.empty or not (check_result_row['contains_required_signals'].iloc[0] == yes_prase):
+                    pbar.update(1) # Пропускаем файл, если его нет в signal_check_results_csv или contains_required_signals False
+                    continue
+                
+                raw_date, raw_df = self.read_comtrade(self.raw_path + file)
+                if not raw_df.empty:
+                    buses_df = self.split_buses_for_PDR(raw_df, file)
+                    buses_df = self._normalize_bus_signals(buses_df, filename_without_ext, yes_prase=yes_prase, is_print_error=is_print_error) # Нормализация сигналов
+                    if buses_df is not None:
+                        buses_df = self._process_signals_for_PDR(buses_df, is_print_error=is_print_error) # Обработка аналоговых сигналов (выбор BusBar/CableLine, расчет Ib)
+                    else:
+                        if is_print_error:
+                            print(f"Предупреждение: В {filename_without_ext} нормализацию провести нельзя, значения не используем.")
+                        pbar.update(1)
+                        continue
+                    
+                    if buses_df is None:
+                        if is_print_error:
+                            print(f"Предупреждение: В {filename_without_ext} ошибка обработки осциллограммы.")
+                        pbar.update(1)
+                        continue
+                    
+                    # !!!
+                    # TODO: Подготовить усечение зон, чтобы записывать переходные участки. (именно переходные)
+                    # !!!
+                    # frequency = raw_date.cfg.frequency
+                    # samples_rate = raw_date.cfg.sample_rates[0][0]
+                    # number_samples = int(samples_rate / frequency) # TODO: It won't always be whole, but it's rare.
+                    # samples_before, samples_after = number_samples * self.number_periods, number_samples * self.number_periods
+                    # if is_cut_out_area:
+                    #     buses_df = self.cut_out_area(buses_df, samples_before, samples_after)
+                    #     dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
+                    # else:
+                    #     dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
+                    dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
+                    pbar.update(1)
+        
+        dataset_df.to_csv(self.csv_path + csv_name, index=False)
+        return dataset_df
+    
+    # TODO: подумать об унификации данной вещи, пока это локальная реализация
+    def _normalize_bus_signals(self, buses_df, filename_without_ext, yes_prase = "YES", is_print_error = False):
+        """Нормализация аналоговых сигналов для каждой секции."""
+        for bus_num in ['1', '2']:
+            bus_name_norm = f'{filename_without_ext}_Bus-{bus_num}'
+            norm_row = self.norm_coef[self.norm_coef["name"] == filename_without_ext] # Поиск строки нормализации по имени файла
+
+            if norm_row.empty or norm_row["norm"].values[0] != yes_prase: # Проверка наличия строки и разрешения на нормализацию
+                if is_print_error:
+                    print(f"Предупреждение: {bus_name_norm} не найден в файле norm.csv или нормализация не разрешена.")
+                return None
+
+            nominal_current = 20 * float(norm_row[f"{bus_num}Ip_base"].values[0]) # Номинальный ток
+            nominal_voltage_bb = 3 * float(norm_row[f"{bus_num}Ub_base"].values[0]) # Номинальное напряжение BusBar
+            nominal_voltage_cl = 3 * float(norm_row[f"{bus_num}Uc_base"].values[0]) # Номинальное напряжение CableLine
+
+            for phase in ['A', 'B', 'C']: # Нормализация токов
+                current_col_name = f'I{phase}'
+                if current_col_name in buses_df.columns:
+                    buses_df[current_col_name] = buses_df[current_col_name] / nominal_current
+
+            for phase in ['A', 'B', 'C']: # Нормализация напряжений BusBar
+                voltage_bb_col_name = f'U{phase} BB'
+                if voltage_bb_col_name in buses_df.columns:
+                    buses_df[voltage_bb_col_name] = buses_df[voltage_bb_col_name] / nominal_voltage_bb
+
+            for phase in ['A', 'B', 'C']: # Нормализация напряжений CableLine
+                voltage_cl_col_name = f'U{phase} CL'
+                if voltage_cl_col_name in buses_df.columns:
+                    buses_df[voltage_cl_col_name] = buses_df[voltage_cl_col_name] / nominal_voltage_cl
+
+        return buses_df
+    
+    # TODO: подумать об унификации данной вещи, пока это локальная реализация
+    def _process_signals_for_PDR(self, buses_df, is_print_error = False):
+        """Обработка аналоговых сигналов: выбор BusBar или CableLine, расчет Ib."""
+        
+        u_bb_names = {"UA BB", "UB BB", "UC BB"}
+        u_cl_names = {"UA CL", "UB CL", "UC CL"}
+        # i_names = {"IA", "IB", "IC"}
+        # pdr_PS_names = {"PDR PS"}
+        pdr_phase_names = {"PDR A", "PDR B", "PDR C"}
+        
+        # Список для аккумулирования обработанных групп
+        processed_groups = []
+        
+        # Группируем по file_name
+        for file_name, group_df in buses_df.groupby("file_name"):
+            # Работать будем с копией группы
+            group_df = group_df.copy()
+            
+            # 1. Определяем источник напряжения по первой строке группы
+            row0 = group_df.iloc[0]
+            if all(col in group_df.columns and pd.notna(row0[col]) for col in u_bb_names):
+                # Используем BusBar
+                group_df["UA"] = group_df["UA BB"]
+                group_df["UB"] = group_df["UB BB"]
+                group_df["UC"] = group_df["UC BB"]
+            elif all(col in group_df.columns and pd.notna(row0[col]) for col in u_cl_names):
+                # Используем CableLine
+                group_df["UA"] = group_df["UA CL"]
+                group_df["UB"] = group_df["UB CL"]
+                group_df["UC"] = group_df["UC CL"]
+            else:
+                if is_print_error:
+                    print(f"Предупреждение: В {file_name} не найдены фазые напряжения A/B/C.")
+                return None
+
+            # 2. Токи фаз: IA и IC копируются напрямую, если столбцы присутствуют
+            if not ("IA" in group_df.columns) or not ("IC" in group_df.columns):
+                if is_print_error:
+                    print(f"Предупреждение: В {file_name} не найдены фазые токи A/C.")
+                return None
+
+            # 3. Ток фазы B: если столбец "IB" есть и значение не NaN, используем его,
+            # иначе рассчитываем как -(IA + IC), если IA и IC заданы.
+            if "IB" in group_df.columns:
+                IB_series = group_df["IB"].copy()
+            else:
+                IB_series = pd.Series(np.nan, index=group_df.index)
+            # Находим строки, где IB отсутствует (NaN) и где IA и IC заданы
+            mask_replace = IB_series.isna() & group_df["IA"].notna() & group_df["IC"].notna()
+            IB_series.loc[mask_replace] = -(group_df.loc[mask_replace, "IA"] + group_df.loc[mask_replace, "IC"])
+            group_df["IB_proc"] = IB_series
+
+            # 4. Сигнал PDR:
+            # Если столбец "PDR PS" есть и в первой строке не NaN, берем его для всей группы.
+            if "PDR PS" in group_df.columns and pd.notna(row0["PDR PS"]):
+                group_df["PDR_proc"] = group_df["PDR PS"]
+            elif all(col in group_df.columns and pd.notna(row0[col]) for col in pdr_phase_names):
+                # Векторно проверяем для каждой строки: если все столбцы pdr_phase_names есть и равны 1, то PDR = 1, иначе 0.
+                cond = pd.Series(True, index=group_df.index)
+                for col in pdr_phase_names:
+                    if col in group_df.columns:
+                        cond = cond & (group_df[col] == 1)
+                    else:
+                        cond = cond & False
+                group_df["PDR_proc"] = cond.astype(int)
+            else:
+                if is_print_error:
+                    print(f"Предупреждение: В {file_name} не найдены фазые напряжения сигналы PDR.")
+                    # Но такое может случаться, это не ошибка системы.
+                continue
+            
+            # Выбираем нужные столбцы и переименовываем временные колонки
+            processed_group = group_df[["file_name", "UA", "UB", "UC", "IA", "IB_proc", "IC", "PDR_proc"]].rename(
+                columns={"IB_proc": "IB", "PDR_proc": "PDR"}
+            )
+            processed_groups.append(processed_group)
+        
+        # Объединяем все группы в итоговый DataFrame
+        if len(processed_groups) > 0:
+            signal_for_PDR_df = pd.concat(processed_groups, ignore_index=True)
+            return signal_for_PDR_df
+        else:
+            return None
+        
     def create_one_df(self, file_path, file_name) -> pd.DataFrame:
         """
         The function of converting a single Comtrade file to pd.DataFrame().
@@ -121,7 +310,7 @@ class RawToCSV():
         buses_df = pd.DataFrame()
         buses_cols = dict()
         raw_cols = set(raw_df.columns)
-        for bus, cols in self.buses_names.items():
+        for bus, cols in self.analog_names_dict.items():
             cols = raw_cols.intersection(cols)
             for i_bus in self.uses_buses:
                 if bus[-1] == i_bus or bus[-2] == i_bus:
@@ -137,8 +326,33 @@ class RawToCSV():
             buses_df = pd.concat([buses_df, bus_df], axis=0,
                                  ignore_index=False)    
         return buses_df
+    
+    def split_buses_for_PDR(self, raw_df, file_name):
+        """Implemented for bus 1 and bus 2 only"""
+        buses_df = pd.DataFrame()
+        buses_cols = dict()
+        raw_cols = set(raw_df.columns)
+        for bus, cols in self.analog_names_dict.items():
+            cols = raw_cols.intersection(cols)
+            for i_bus in self.uses_buses:
+                if bus[-1] == i_bus or bus[-2] == i_bus:
+                    # TODO: подумать о том, что может и любой другой дискретный сигнал использоваться, а не только PDR
+                    # и такой генератор (get_PDR_signals) - это временное решение в переборе аналоговых сигналов
+                    ml_all = self.get_PDR_signals(i_bus)
+                    raw_ml = raw_cols.intersection(ml_all)
+                    cols = cols.union(raw_ml)
+            if cols:
+                buses_cols[bus] = cols    
+        
+        for bus, columns in buses_cols.items():
+            bus_df = raw_df.loc[:, list(columns)]
+            bus_df.insert(0, 'file_name',  [file_name[:-4] + "_" + bus] * bus_df.shape[0])
+            bus_df = self.rename_bus_columns(bus_df, is_use_ML=False, is_use_discrete=True)
+            buses_df = pd.concat([buses_df, bus_df], axis=0,
+                                 ignore_index=False)    
+        return buses_df
 
-    def get_bus_names(self, discrete=False):
+    def get_bus_names(self, analog=True, discrete=False):
         """
         This function makes a dict of analog and discrete names
         for each bus.
@@ -150,10 +364,11 @@ class RawToCSV():
             dict: dict of analog and discrete names for each bus.
         """
         bus_names = dict()
-        for bus in self.analog_names.keys():
-            bus_names[bus] = set()
-            for v in self.analog_names[bus].values():
-                bus_names[bus] = bus_names[bus].union(v)
+        if analog:
+            for bus in self.analog_names.keys():
+                bus_names[bus] = set()
+                for v in self.analog_names[bus].values():
+                    bus_names[bus] = bus_names[bus].union(v)
         if discrete:
             for bus in self.discrete_names.keys():
                 if bus not in bus_names:
@@ -192,7 +407,7 @@ class RawToCSV():
         raw_df.rename(columns=raw_columns_to_rename, inplace=True)
         return raw_df
 
-    def rename_bus_columns(self, bus_df):
+    def rename_bus_columns(self, bus_df, is_use_ML = True, is_use_discrete = False):
         """
         This function renames columns in bus DataFrame.
 
@@ -205,14 +420,15 @@ class RawToCSV():
         bus_columns_to_rename = {}
 
         # Generate renaming for ML signals
-        for i_bus in self.uses_buses:
-            ml_signals = self.get_ml_signals(i_bus)
-            for signal in ml_signals:
-                new_name = signal.replace(f'MLsignal_{i_bus}_', 'ML_')
-                bus_columns_to_rename[signal] = new_name
+        if is_use_ML:
+            for i_bus in self.uses_buses:
+                ml_signals = self.get_ml_signals(i_bus)
+                for signal in ml_signals:
+                    new_name = signal.replace(f'MLsignal_{i_bus}_', 'ML_')
+                    bus_columns_to_rename[signal] = new_name
         
         # Generate renaming for analog signals
-        for bus, names in self.buses_names.items():
+        for bus, names in self.analog_names_dict.items():
             for name in names:
                 if 'I | Bus' in name:
                     phase = name.split(': ')[-1]
@@ -235,7 +451,15 @@ class RawToCSV():
                          (phase == 'N' and not self.uses_VT_zero)):
                         continue 
                     bus_columns_to_rename[name] = f'U{phase} CL'
-                        
+        
+        # Generate renaming for discret signals
+        if is_use_discrete:
+            for bus, names in self.discrete_names_dict.items():
+                for name in names:
+                    if self.use_PDR and 'PDR | Bus' in name:
+                        phase = name.split(': ')[-1]
+                        bus_columns_to_rename[name] = f'PDR {phase}' 
+                   
         # TODO: signals I_raw, U_raw, I|dif-1, I | braking-1 are not taken into account
 
         bus_df.rename(columns=bus_columns_to_rename, inplace=True)
@@ -279,18 +503,6 @@ class RawToCSV():
 
         ml_abnormal_event = {
             # --- Abnormal events
-            f'MLsignal_{i_bus}_2',      # Аномалия, без уточнения
-            f'MLsignal_{i_bus}_2_1',    # Однофазное замыкание на землю (ОЗЗ), без уточнения
-            f'MLsignal_{i_bus}_2_1_1',  # Устойчивое ОЗЗ
-            f'MLsignal_{i_bus}_2_1_2',  # Устойчивое затухающее ОЗЗ, с редкими пробоями
-            f'MLsignal_{i_bus}_2_1_3',  # Дуговое перемежающее однофазное замыкание на землю (ДПОЗЗ)
-            f'MLsignal_{i_bus}_2_2',    # Затухающие колебания от аварийных процессов
-            f'MLsignal_{i_bus}_2_3',    # Просадка напряжения
-            f'MLsignal_{i_bus}_2_3_1',  # Просадка напряжения при пуске двигателя
-            f'MLsignal_{i_bus}_2_4',    # Колебания тока, без уточнения
-            f'MLsignal_{i_bus}_2_4_1',  # Колебания тока при пуске двигателя
-            f'MLsignal_{i_bus}_2_4_2',  # Колебания тока, от двигателей с частотным приводом
-            
             f'MLsignal_{i_bus}_2',      # Anomaly, without clarification
             f'MLsignal_{i_bus}_2_1',    # Single phase-to-ground fault, without specification
             f'MLsignal_{i_bus}_2_1_1',  # Sustainable single phase-to-ground fault
@@ -319,6 +531,27 @@ class RawToCSV():
             ml_signals.update(ml_abnormal_event)
         if use_emergency_event:
             ml_signals.update(ml_emergency_event)
+
+        return ml_signals
+    
+    def get_PDR_signals(self, i_bus):
+        """
+        This function returns a set of ML signals for a given bus.
+
+        Args:
+            i_bus (str): The bus number.
+
+        Returns:
+            set: A set of PDR for ML signals for the given bus.
+        """
+
+        ml_signals = {
+            #--- Working switching ---
+            f'PDR | Bus-{i_bus} | phase: A',
+            f'PDR | Bus-{i_bus} | phase: B',
+            f'PDR | Bus-{i_bus} | phase: C',
+            f'PDR | Bus-{i_bus} | phase: PS',
+        }
 
         return ml_signals
     
@@ -388,29 +621,14 @@ class RawToCSV():
         """
 
         ml_current = [
-            'IA',
-            'IB',
-            'IC',
-            'IN'
+            'IA', 'IB', 'IC', 'IN'
         ]
         ml_votage_BB = [
-             'UA BB',
-             'UB BB',
-             'UC BB',
-             'UN BB',
-            'UAB BB',
-            'UBC BB',
-            'UCA BB',
+             'UA BB', 'UB BB', 'UC BB', 'UN BB', 'UAB BB', 'UBC BB', 'UCA BB',
         ]
         ml_votage_CL = [
-             'UA CL',
-             'UB CL',
-             'UC CL',
-             'UN CL',
-            'UAB CL',
-            'UBC CL',
-            'UCA CL',
-        ]
+             'UA CL', 'UB CL', 'UC CL', 'UN CL', 'UAB CL', 'UBC CL', 'UCA CL',
+        ]  
         # TODO: signals I_raw, U_raw, I|dif-1, I | braking-1 are not taken into account
         
         ml_signals = []
