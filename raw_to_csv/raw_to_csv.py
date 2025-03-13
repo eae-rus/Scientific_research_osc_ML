@@ -131,18 +131,15 @@ class RawToCSV():
                         pbar.update(1)
                         continue
                     
-                    # !!!
-                    # TODO: Подготовить усечение зон, чтобы записывать переходные участки. (именно переходные)
-                    # !!!
-                    # frequency = raw_date.cfg.frequency
-                    # samples_rate = raw_date.cfg.sample_rates[0][0]
-                    # number_samples = int(samples_rate / frequency) # TODO: It won't always be whole, but it's rare.
-                    # samples_before, samples_after = number_samples * self.number_periods, number_samples * self.number_periods
-                    # if is_cut_out_area:
-                    #     buses_df = self.cut_out_area(buses_df, samples_before, samples_after)
-                    #     dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
-                    # else:
-                    #     dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
+                    frequency = raw_date.cfg.frequency
+                    samples_rate = raw_date.cfg.sample_rates[0][0]
+                    number_samples = int(samples_rate / frequency) # TODO: It won't always be whole, but it's rare.
+                    samples_before, samples_after = number_samples * self.number_periods, number_samples * self.number_periods
+                    if is_cut_out_area:
+                        buses_df = self.cut_out_area_for_PDR(buses_df, samples_before, samples_after)
+                        dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
+                    else:
+                        dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
                     dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
                     number_ocs_found += 1
                     pbar.update(1)
@@ -705,6 +702,80 @@ class RawToCSV():
                     truncated_dataset = bus_df
 
             truncated_dataset = truncated_dataset.drop(columns=["is_save"])
+            dataset_df = pd.concat([dataset_df, truncated_dataset], axis=0, ignore_index=False)
+            
+        return dataset_df
+    
+    # TODO: переписать функции, обобщить. Чтобы набор / обработка столбцов была параметром.
+    # К тому же, раньше функция прост расширяла. А это регистрирует изменения (0-1 и 1-0) и расширяет вокруг них.
+    def cut_out_area_for_PDR(self, buses_df: pd.DataFrame, samples_before: int, samples_after: int) -> pd.DataFrame:
+        """
+        Функция обрабатывает DataFrame, регистрируя факты изменения сигнала (0→1 и 1→0)
+        и расширяя зону вокруг изменений на заданное число отсчётов.
+        
+        Аргументы:
+            buses_df (pd.DataFrame): Исходный DataFrame с данными.
+            samples_before (int): Количество строк до точки изменения, которые надо включить.
+            samples_after (int): Количество строк после точки изменения, которые надо включить.
+            
+        Возвращает:
+            pd.DataFrame: Обработанный DataFrame с выделенными зонами и новым столбцом change_event.
+        """
+        dataset_df = pd.DataFrame()
+
+        # Обрабатываем каждый файл (группу) отдельно
+        for _, bus_df in buses_df.groupby("file_name"):
+            # Сброс индекса для корректного обращения по позициям
+            bus_df = bus_df.reset_index(drop=True)
+
+            # Выбираем столбцы, содержащие ML сигналы (их названия содержатся в self.ml_all)
+            filtered_column_names = ["PDR"]
+
+            # Создаем булевый столбец signal: True, если хотя бы в одном из выбранных столбцов значение равно 1
+            bus_df["signal"] = bus_df[filtered_column_names].notna().any(axis=1) & (bus_df[filtered_column_names] == 1).any(axis=1)
+            
+            # Определяем предыдущую строку для выявления переходов
+            bus_df["prev_signal"] = bus_df["signal"].shift(1).fillna(False)
+            
+            # Регистрируем изменения в новом столбце change_event:
+            # Если переход от False к True, то "0-1"; если от True к False, то "1-0"
+            bus_df["change_event"] = None
+            bus_df.loc[(bus_df["prev_signal"] == False) & (bus_df["signal"] == True), "change_event"] = "0-1"
+            bus_df.loc[(bus_df["prev_signal"] == True) & (bus_df["signal"] == False), "change_event"] = "1-0"
+            
+            # Инициализируем столбец, который будет отмечать строки для сохранения
+            bus_df["is_save"] = False
+            
+            # Для каждой строки, где зафиксировано изменение, расширяем зону вокруг неё
+            for idx, row in bus_df.iterrows():
+                if idx>0 and pd.notna(row["change_event"]):
+                    start_idx = max(0, idx - samples_before)
+                    end_idx = min(len(bus_df), idx + samples_after + 1)
+                    bus_df.loc[start_idx:end_idx, "is_save"] = True
+
+            # Присвоение номеров событий в столбце file_name для визуального разделения событий
+            event_number = 0
+            for idx, row in bus_df.iterrows():
+                if bus_df.loc[idx, "is_save"]:
+                    # Начало нового события, если либо это первая строка, либо предыдущая не входит в зону
+                    if idx == 0 or not bus_df.loc[idx - 1, "is_save"]:
+                        event_number += 1
+                    bus_df.loc[idx, 'file_name'] = bus_df.loc[idx, 'file_name'] + " _event N" + str(event_number)
+                    
+            # Формируем подвыборку с сохраненными строками
+            truncated_dataset = bus_df[bus_df["is_save"]]
+            
+            # Если ни одно событие не обнаружено, выбираем центральный фрагмент
+            if len(truncated_dataset) == 0:
+                if len(bus_df) > samples_before + samples_after:
+                    middle = len(bus_df) // 2
+                    truncated_dataset = bus_df.iloc[middle - samples_before:middle + samples_after + 1]
+                else:
+                    truncated_dataset = bus_df
+            
+            # Удаляем временные столбцы, не нужные в финальном DataFrame
+            truncated_dataset = truncated_dataset.drop(columns=["is_save", "prev_signal", "signal"])
+            
             dataset_df = pd.concat([dataset_df, truncated_dataset], axis=0, ignore_index=False)
             
         return dataset_df
