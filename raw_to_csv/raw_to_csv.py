@@ -102,6 +102,7 @@ class RawToCSV():
         dataset_df = pd.DataFrame()
         raw_files = sorted([file for file in os.listdir(self.raw_path)
                             if 'cfg' in file])
+        number_ocs_found = 0
         with tqdm(total=len(raw_files), desc="Convert Comtrade to CSV") as pbar:
             for file in raw_files:
                 filename_without_ext = file[:-4] # Имя файла без расширения
@@ -143,8 +144,10 @@ class RawToCSV():
                     # else:
                     #     dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
                     dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
+                    number_ocs_found += 1
                     pbar.update(1)
         
+        print(f"Number of samples found = {number_ocs_found}")
         dataset_df.to_csv(self.csv_path + csv_name, index=False)
         return dataset_df
     
