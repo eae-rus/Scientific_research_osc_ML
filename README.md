@@ -1,7 +1,11 @@
 |---data
+
 |  |--raw
+
 |  |--csv
+
 |
+
 |---dataflow
 |  |--raw_to_csv.py
 |  |--normalization.py
