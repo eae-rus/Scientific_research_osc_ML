@@ -18,7 +18,7 @@
 │   └── mlp.py
 ├── tutorials
 │   └── notebook.ipynb
-├── scripts
-│   ├── marc_osc.py
-│   └── train_model.py
+└── scripts
+    ├── marc_osc.py
+    └── train_model.py
 ```
