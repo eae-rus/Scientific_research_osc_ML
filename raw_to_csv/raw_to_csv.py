@@ -150,6 +150,7 @@ class RawToCSV():
         dataset_df.to_csv(self.csv_path + csv_name, index=False)
         return dataset_df
     
+    def create_csv_for_SPEF(self, csv_name='dataset_spef.csv', signal_check_results_path='find_oscillograms_with_spef.csv', norm_coef_file_path='norm_coef.csv', is_cut_out_area = False):
     # TODO: подумать об унификации данной вещи, пока это локальная реализация
     def _process_signals_for_PDR(self, buses_df, is_print_error = False):
         """Обработка аналоговых сигналов: выбор BusBar или CableLine, расчет Ib."""
@@ -233,6 +234,22 @@ class RawToCSV():
             return signal_for_PDR_df
         else:
             return None
+        
+        # TODO: подумать об унификации данной вещи, пока это локальная реализация
+    def _process_signals_for_SPEF(self, buses_df, is_print_error = False):
+        file_name = {"file_name"}
+        u_bb_names = {"UA BB", "UB BB", "UC BB", "UN BB"}
+        u_cl_names = {"UA CL", "UB CL", "UC CL", "UN CL"}
+        i_names = {"IA", "IB", "IC", "IN"}
+        
+        # Объединяем имена столбцов в единое множество
+        all_signals = file_name | u_bb_names | u_cl_names | i_names
+
+        # Фильтруем столбцы, которые реально присутствуют в DataFrame
+        available_signals = [col for col in all_signals if col in buses_df.columns]
+
+        # Возвращаем датасет, состоящий только из нужных столбцов
+        return buses_df[available_signals]
         
     def create_one_df(self, file_path, file_name) -> pd.DataFrame:
         """
