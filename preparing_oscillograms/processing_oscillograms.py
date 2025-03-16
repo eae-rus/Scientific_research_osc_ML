@@ -903,9 +903,11 @@ class ProcessingOscillograms():
         raw_files = sorted([file for file in os.listdir(raw_path) if 'cfg' in file])
         norm_osc = NormOsc(norm_coef_file_path=norm_coef_file_path)
 
-        threshold = 0.05 / 3
+        threshold = 0.1 / 3
         samples_duration = 32 * 3
         samples_per_period = 32
+        
+        number_ocs_found = 0
 
         with tqdm(total=len(raw_files), desc="Searching for SPEF") as pbar:
             for file in raw_files:
@@ -928,8 +930,8 @@ class ProcessingOscillograms():
                         pbar.update(1)
                         continue
 
-                    is_spef = False
                     for file_name, group_df in buses_df.groupby("file_name"):
+                        is_spef = False
                         group_df = group_df.copy()
 
                         # Condition 1 & 2: 3U0 BB and 3U0 CL (combined for efficiency)
@@ -939,8 +941,6 @@ class ProcessingOscillograms():
                         for signal_3u0_name, col_name in signal_names_3u0.items():
                             if not group_df.empty and col_name in group_df.columns:
                                 u0_signal = group_df[col_name].fillna(0).values
-                                u0_fft = np.abs(fft(u0_signal[:samples_per_period])) / samples_per_period
-                                u0_h1 = 2 * u0_fft[1] if len(u0_fft) > 1 else 0  # First harmonic of the initial period (for general level check)
                                 u0_harmonics = np.zeros_like(u0_signal, dtype=float) # Array to store first harmonic values
 
                                 # Sliding window for harmonic calculation and check
@@ -954,9 +954,10 @@ class ProcessingOscillograms():
                                 for i in range(len(u0_harmonics) - samples_duration + 1):
                                     window_harmonics = u0_harmonics[i:i+samples_duration]
                                     if np.all(window_harmonics >= threshold): # Check harmonic level in sliding window
-                                        if u0_h1 >= threshold: # Initial harmonic level check
-                                            is_spef = True
-                                            break # Condition met, no need to check further conditions for this file
+                                        is_spef = True
+                                        number_ocs_found += 1
+                                        spef_files.append([filename_without_ext, file_name])
+                                        break # Condition met, no need to check further conditions for this file
                                 if is_spef:
                                     break # Break outer loop if SPEF is found
 
@@ -984,8 +985,6 @@ class ProcessingOscillograms():
 
                                 u0_3_signal = (ua_signal + ub_signal + uc_signal) / np.sqrt(3) # 3U0 calculation
                                 # /np.sqrt(3) - because we used phase signal
-                                u0_3_fft = np.abs(fft(u0_3_signal[:samples_per_period])) / samples_per_period
-                                u0_3_h1 = 2 * u0_3_fft[1] if len(u0_3_fft) > 1 else 0
 
                                 u0_3_harmonics = np.zeros_like(u0_3_signal, dtype=float) # Array for harmonics
                                 for i in range(len(u0_3_signal) - samples_per_period + 1):
@@ -1001,30 +1000,29 @@ class ProcessingOscillograms():
                                 for i in range(len(u0_3_harmonics) - samples_duration + 1):
                                     window_harmonics_u0 = u0_3_harmonics[i:i+samples_duration]
                                     if np.all(window_harmonics_u0 >= threshold_u0): # Check 3U0 harmonic level in sliding window
-                                        if u0_3_h1 >= threshold_u0: # Initial 3U0 harmonic level check
-                                            voltages_above_threshold = 0 # Reset counter for phase voltages for this window
-                                            for v in phase_voltages:
-                                                # Phase voltage check can be added here if needed, e.g., using harmonics or time-domain values in a window
-                                                # For now, just checking if any two voltages exist (as per original condition)
-                                                voltages_above_threshold += 1 # Increment if voltage signal exists (for simplicity, can be enhanced)
-
-                                            if voltages_above_threshold >= 2: # Check if at least two phase voltages are present (condition from original task)
-                                                is_spef = True
-                                                break # Condition met, no need to check further conditions for this file
+                                        voltages_above_threshold = 0 # Reset counter for phase voltages for this window
+                                        for v in phase_voltages:
+                                            # Phase voltage check can be added here if needed, e.g., using harmonics or time-domain values in a window
+                                            # For now, just checking if any two voltages exist (as per original condition)
+                                            voltages_above_threshold += 1 # Increment if voltage signal exists (for simplicity, can be enhanced)
+                                        
+                                        if voltages_above_threshold >= 2: # Check if at least two phase voltages are present (condition from original task)
+                                            is_spef = True
+                                            number_ocs_found += 1
+                                            spef_files.append([filename_without_ext, file_name])
+                                            break # Condition met, no need to check further conditions for this file
                                 if is_spef:
                                     break # Break location loop if SPEF is found
-
+                            
                             if is_spef:
                                 break # Break outer loop if SPEF is found
-
-                    if is_spef:
-                        spef_files.append(filename_without_ext)
 
                 except Exception as e:
                     print(f"Error processing file {file}: {e}")
 
                 pbar.update(1)
 
-        df_spef = pd.DataFrame({'filename': spef_files})
+        print(f"Number of samples found = {number_ocs_found}")
+        df_spef = pd.DataFrame(spef_files, columns=['filename', 'file_name_bus'])
         df_spef.to_csv(output_csv_path, index=False)
         print(f"SPEF files saved to: {output_csv_path}")
