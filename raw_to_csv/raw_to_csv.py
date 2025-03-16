@@ -88,17 +88,20 @@ class RawToCSV():
         return dataset_df
     
     # TODO: подумать об универсанолизации данной функции с create_csv (основные замечания указаны там)
-    def create_csv_for_PDR(self, csv_name='datset.csv', signal_check_results_path='signal_check_results.csv', norm_coef_file_path='norm_coef.csv', is_cut_out_area = False, yes_prase = "YES", is_print_error = False):
+    def create_csv_for_PDR(self, csv_name='datset.csv', signal_check_results_path='signal_check_results.csv', norm_coef_file_path='norm_coef.csv',
+                           is_check_PDR = True, is_cut_out_area = False, yes_prase = "YES", is_print_error = False):
         """
         This function DataFrame and save csv file from raw comtrade data.
 
         Args:
             csv_name (str): The name of csv file.
         """
-        if not os.path.exists(signal_check_results_path):
+        signal_check_df = pd.DataFrame()
+        if (is_check_PDR and (not os.path.exists(signal_check_results_path))):
             raise FileNotFoundError("Path for signal check results does not exist")
-        # TODO: Пока что это локальный файл, но надо подумать о том, чтобы он был глобальный, но пока может мешать.
-        signal_check_df = pd.read_csv(signal_check_results_path) # Загрузка файла проверки сигналов
+            # TODO: Пока что это локальный файл, но надо подумать о том, чтобы он был глобальный, но пока может мешать.
+        if is_check_PDR:
+            signal_check_df = pd.read_csv(signal_check_results_path) # Загрузка файла проверки сигналов
         
         dataset_df = pd.DataFrame()
         raw_files = sorted([file for file in os.listdir(self.raw_path)
@@ -109,18 +112,18 @@ class RawToCSV():
             for file in raw_files:
                 filename_without_ext = file[:-4] # Имя файла без расширения
                 # FIXME: На будущее - возможно этот файл и лишний, ибо проверки заложил в "_process_signals_for_PDR"
-                check_result_row = signal_check_df[signal_check_df['filename'] == filename_without_ext]
-
-                if check_result_row.empty or not (check_result_row['contains_required_signals'].iloc[0] == yes_prase):
-                    pbar.update(1) # Пропускаем файл, если его нет в signal_check_results_csv или contains_required_signals False
-                    continue
+                if is_check_PDR:
+                    check_result_row = signal_check_df[signal_check_df['filename'] == filename_without_ext]
+                    if check_result_row.empty or not (check_result_row['contains_required_signals'].iloc[0] == yes_prase):
+                        pbar.update(1) # Пропускаем файл, если его нет в signal_check_results_csv или contains_required_signals False
+                        continue
                 
                 raw_date, raw_df = self.read_comtrade(self.raw_path + file)
                 if not raw_df.empty:
                     buses_df = self.split_buses_for_PDR(raw_df, file)
                     buses_df = normOsc.normalize_bus_signals(buses_df, filename_without_ext, yes_prase=yes_prase, is_print_error=is_print_error) # Нормализация сигналов
                     if buses_df is not None:
-                        buses_df = self._process_signals_for_PDR(buses_df, is_print_error=is_print_error) # Обработка аналоговых сигналов (выбор BusBar/CableLine, расчет Ib)
+                        buses_df = self._process_signals_for_PDR(buses_df, is_print_error=is_print_error, is_check_PDR=is_check_PDR) # Обработка аналоговых сигналов (выбор BusBar/CableLine, расчет Ib)
                     else:
                         if is_print_error:
                             print(f"Предупреждение: В {filename_without_ext} нормализацию провести нельзя, значения не используем.")
@@ -137,7 +140,7 @@ class RawToCSV():
                     samples_rate = raw_date.cfg.sample_rates[0][0]
                     number_samples = int(samples_rate / frequency) # TODO: It won't always be whole, but it's rare.
                     samples_before, samples_after = number_samples * self.number_periods, number_samples * self.number_periods
-                    if is_cut_out_area:
+                    if is_cut_out_area and is_check_PDR:
                         buses_df = self.cut_out_area_for_PDR(buses_df, samples_before, samples_after)
                         dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
                     else:
@@ -152,7 +155,7 @@ class RawToCSV():
     
     def create_csv_for_SPEF(self, csv_name='dataset_spef.csv', signal_check_results_path='find_oscillograms_with_spef.csv', norm_coef_file_path='norm_coef.csv', is_cut_out_area = False):
     # TODO: подумать об унификации данной вещи, пока это локальная реализация
-    def _process_signals_for_PDR(self, buses_df, is_print_error = False):
+    def _process_signals_for_PDR(self, buses_df, is_print_error = False, is_check_PDR = True):
         """Обработка аналоговых сигналов: выбор BusBar или CableLine, расчет Ib."""
         
         u_bb_names = {"UA BB", "UB BB", "UC BB"}
@@ -205,27 +208,32 @@ class RawToCSV():
 
             # 4. Сигнал PDR:
             # Если столбец "PDR PS" есть и в первой строке не NaN, берем его для всей группы.
-            if "PDR PS" in group_df.columns and pd.notna(row0["PDR PS"]):
-                group_df["PDR_proc"] = group_df["PDR PS"]
-            elif all(col in group_df.columns and pd.notna(row0[col]) for col in pdr_phase_names):
-                # Векторно проверяем для каждой строки: если все столбцы pdr_phase_names есть и равны 1, то PDR = 1, иначе 0.
-                cond = pd.Series(True, index=group_df.index)
-                for col in pdr_phase_names:
-                    if col in group_df.columns:
-                        cond = cond & (group_df[col] == 1)
-                    else:
-                        cond = cond & False
-                group_df["PDR_proc"] = cond.astype(int)
-            else:
-                if is_print_error:
-                    print(f"Предупреждение: В {file_name} не найдены фазые напряжения сигналы PDR.")
-                    # Но такое может случаться, это не ошибка системы.
-                continue
-            
-            # Выбираем нужные столбцы и переименовываем временные колонки
-            processed_group = group_df[["file_name", "UA", "UB", "UC", "IA", "IB_proc", "IC", "PDR_proc"]].rename(
-                columns={"IB_proc": "IB", "PDR_proc": "PDR"}
-            )
+            if is_check_PDR:
+                if "PDR PS" in group_df.columns and pd.notna(row0["PDR PS"]):
+                    group_df["PDR_proc"] = group_df["PDR PS"]
+                elif all(col in group_df.columns and pd.notna(row0[col]) for col in pdr_phase_names):
+                    # Векторно проверяем для каждой строки: если все столбцы pdr_phase_names есть и равны 1, то PDR = 1, иначе 0.
+                    cond = pd.Series(True, index=group_df.index)
+                    for col in pdr_phase_names:
+                        if col in group_df.columns:
+                            cond = cond & (group_df[col] == 1)
+                        else:
+                            cond = cond & False
+                    group_df["PDR_proc"] = cond.astype(int)
+                else:
+                    if is_print_error:
+                        print(f"Предупреждение: В {file_name} не найдены фазые напряжения сигналы PDR.")
+                        # Но такое может случаться, это не ошибка системы.
+                    continue
+                
+                # Выбираем нужные столбцы и переименовываем временные колонки
+                processed_group = group_df[["file_name", "UA", "UB", "UC", "IA", "IB_proc", "IC", "PDR_proc"]].rename(
+                    columns={"IB_proc": "IB", "PDR_proc": "PDR"}
+                )
+            else: # Without PDR signals
+                processed_group = group_df[["file_name", "UA", "UB", "UC", "IA", "IB_proc", "IC"]].rename(
+                    columns={"IB_proc": "IB"}
+                )
             processed_groups.append(processed_group)
         
         # Объединяем все группы в итоговый DataFrame
