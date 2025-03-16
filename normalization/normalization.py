@@ -327,13 +327,15 @@ class NormOsc:
     # Пока прост скопировал из raw_to_csv
     def normalize_bus_signals(self, buses_df, filename_without_ext, yes_prase = "YES", is_print_error = False):
         """Нормализация аналоговых сигналов для каждой секции."""
-        for bus_num in ['1', '2']:
-            bus_name_norm = f'{filename_without_ext}_Bus-{bus_num}'
+        bus_num = 0
+        for file_name, group_df in buses_df.groupby("file_name"):
+            group_df = group_df.copy()
+            bus_num += 1 # TODO: временное решение, так как не всегда могу совпадать.
             norm_row = self.norm_coef[self.norm_coef["name"] == filename_without_ext] # Поиск строки нормализации по имени файла
 
             if norm_row.empty or norm_row["norm"].values[0] != yes_prase: # Проверка наличия строки и разрешения на нормализацию
                 if is_print_error:
-                    print(f"Предупреждение: {bus_name_norm} не найден в файле norm.csv или нормализация не разрешена.")
+                    print(f"Предупреждение: {file_name} не найден в файле norm.csv или нормализация не разрешена.")
                 return None
 
             nominal_current = 20 * float(norm_row[f"{bus_num}Ip_base"].values[0]) # Номинальный ток
@@ -342,18 +344,20 @@ class NormOsc:
 
             for phase in ['A', 'B', 'C']: # Нормализация токов
                 current_col_name = f'I{phase}'
-                if current_col_name in buses_df.columns:
-                    buses_df[current_col_name] = buses_df[current_col_name] / nominal_current
+                if current_col_name in group_df.columns:
+                    group_df[current_col_name] = group_df[current_col_name] / nominal_current
 
-            for phase in ['A', 'B', 'C']: # Нормализация напряжений BusBar
+            for phase in ['A', 'B', 'C', 'N']: # Нормализация напряжений BusBar
                 voltage_bb_col_name = f'U{phase} BB'
-                if voltage_bb_col_name in buses_df.columns:
-                    buses_df[voltage_bb_col_name] = buses_df[voltage_bb_col_name] / nominal_voltage_bb
+                if voltage_bb_col_name in group_df.columns:
+                    group_df[voltage_bb_col_name] = group_df[voltage_bb_col_name] / nominal_voltage_bb
 
-            for phase in ['A', 'B', 'C']: # Нормализация напряжений CableLine
+            for phase in ['A', 'B', 'C', 'N']: # Нормализация напряжений CableLine
                 voltage_cl_col_name = f'U{phase} CL'
-                if voltage_cl_col_name in buses_df.columns:
-                    buses_df[voltage_cl_col_name] = buses_df[voltage_cl_col_name] / nominal_voltage_cl
+                if voltage_cl_col_name in group_df.columns:
+                    group_df[voltage_cl_col_name] = group_df[voltage_cl_col_name] / nominal_voltage_cl
+                    
+            buses_df.loc[group_df.index] = group_df
 
         return buses_df
 
