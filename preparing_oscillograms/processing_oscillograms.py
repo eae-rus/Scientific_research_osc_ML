@@ -904,8 +904,7 @@ class ProcessingOscillograms():
         norm_osc = NormOsc(norm_coef_file_path=norm_coef_file_path)
 
         threshold = 0.1 / 3
-        samples_duration = 32 * 3
-        samples_per_period = 32
+        period_count = 3
         
         number_ocs_found = 0
 
@@ -916,6 +915,10 @@ class ProcessingOscillograms():
 
                 try:
                     raw_date, raw_df = RawToCSV.read_comtrade(RawToCSV(), file_path)
+                    # TODO: Модернизировать "read_comtrade", а точнее даже функцию "comtrade.load(file_name)"
+                    # Так как сейчас приходится искусственно вытягивать нужные коэффициент
+                    samples_per_period = int(raw_date._cfg.sample_rates[0][0] / raw_date.frequency)
+                    samples_duration = period_count * samples_per_period
                     if raw_df is None or raw_df.empty:
                         pbar.update(1)
                         continue
