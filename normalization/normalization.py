@@ -327,9 +327,9 @@ class NormOsc:
     # Пока прост скопировал из raw_to_csv
     def normalize_bus_signals(self, buses_df, filename_without_ext, yes_prase = "YES", is_print_error = False):
         """Нормализация аналоговых сигналов для каждой секции."""
+        processed_groups = []
         bus_num = 0
         for file_name, group_df in buses_df.groupby("file_name"):
-            group_df = group_df.copy()
             bus_num += 1 # TODO: временное решение, так как не всегда могу совпадать.
             norm_row = self.norm_coef[self.norm_coef["name"] == filename_without_ext] # Поиск строки нормализации по имени файла
 
@@ -357,9 +357,9 @@ class NormOsc:
                 if voltage_cl_col_name in group_df.columns:
                     group_df[voltage_cl_col_name] = group_df[voltage_cl_col_name] / nominal_voltage_cl
                     
-            buses_df.loc[group_df.index] = group_df
-
-        return buses_df
+            processed_groups.append(group_df)
+        result_df = pd.concat(processed_groups)
+        return result_df
 
 if __name__ == "__main__":
     osc_path='raw_data/'
