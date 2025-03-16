@@ -153,7 +153,69 @@ class RawToCSV():
         dataset_df.to_csv(self.csv_path + csv_name, index=False)
         return dataset_df
     
+    # TODO: подумать об универсанолизации данной функции с create_csv (основные замечания указаны там)
     def create_csv_for_SPEF(self, csv_name='dataset_spef.csv', signal_check_results_path='find_oscillograms_with_spef.csv', norm_coef_file_path='norm_coef.csv', is_cut_out_area = False):
+        """
+        This function finds SPEF oscillograms, optionally cuts out the area, and saves data to CSV.
+
+        Args:
+            csv_name (str): The name of the CSV file to save data.
+            signal_check_results_path (str): Path to save the CSV file with SPEF filenames.
+            norm_coef_file_path (str): Path to normalization coefficients CSV.
+            is_cut_out_area (bool): Whether to cut out the area around SPEF event.
+        """
+        spef_files_df = pd.read_csv(signal_check_results_path)
+        spef_filenames_dict = {}
+        for _, row in spef_files_df.iterrows():
+            filename = row['filename']
+            file_name_bus = row['file_name_bus']
+            if filename not in spef_filenames_dict:
+                spef_filenames_dict[filename] = set()
+            spef_filenames_dict[filename].add(file_name_bus)
+
+        columns = ["file_name", "IA", "IB", "IC", "IN", "UA BB", "UB BB", "UC BB", "UN BB", "UA CL", "UB CL", "UC CL", "UN CL"]
+        dataset_df = pd.DataFrame(columns=columns)
+        raw_files = sorted([file for file in os.listdir(self.raw_path)
+                            if 'cfg' in file])
+        number_spef_found = 0
+        normOsc = NormOsc(norm_coef_file_path = norm_coef_file_path)
+
+        with tqdm(total=len(raw_files), desc="Convert Comtrade to CSV for SPEF") as pbar:
+            for file in raw_files:
+                filename_without_ext = file[:-4]
+                if filename_without_ext not in spef_filenames_dict: # Optimization: Skip files not in SPEF list
+                    pbar.update(1)
+                    continue
+
+                raw_date, raw_df = self.read_comtrade(self.raw_path + file)
+                if not raw_df.empty:
+                    buses_df = self.split_buses(raw_df.reset_index(), file) # Use general split_buses as per your comment
+                    processed_bus_dfs = []
+                    for file_name_bus, bus_df in buses_df.groupby('file_name'):
+                        if file_name_bus in spef_filenames_dict[filename_without_ext]: # Further filter by bus name
+                            bus_df = normOsc.normalize_bus_signals(bus_df, filename_without_ext, yes_prase="YES", is_print_error=False)
+                            if bus_df is not None:
+                                bus_df = self._process_signals_for_SPEF(bus_df, is_print_error=False) # Keep processing as is, or replace if needed
+                                if bus_df is not None:
+                                    processed_bus_dfs.append(bus_df)
+
+                    if not processed_bus_dfs: # No processed bus dataframes for this file
+                        pbar.update(1)
+                        continue
+                    buses_df = pd.concat(processed_bus_dfs, ignore_index=True)
+
+                    # TODO: Написать cut_out_area_for_SPEF
+                    # В теории, можно по аналогии с поисковой функцией, но пока обойдусь без этого.
+                    # Либо можно по MLsignal_y_2_1 и всем наследникам - но пока что не много размечено осциллограмм.
+                    dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
+
+                    number_spef_found += 1
+                    pbar.update(1)
+
+        print(f"Number of SPEF samples found = {number_spef_found}")
+        dataset_df.to_csv(self.csv_path + csv_name, index=False)
+        return dataset_df
+    
     # TODO: подумать об унификации данной вещи, пока это локальная реализация
     def _process_signals_for_PDR(self, buses_df, is_print_error = False, is_check_PDR = True):
         """Обработка аналоговых сигналов: выбор BusBar или CableLine, расчет Ib."""
