@@ -1,3 +1,4 @@
+```
 |---data
 |  |--raw
 |  |--csv
@@ -22,4 +23,4 @@
 |---scripts
    |--train_model.py
    |--mark_osc.py
-   
+```
