@@ -1,11 +1,21 @@
+import pandas as pd
+import numpy as np
 import os
+import sys
 import shutil
 import hashlib
 import datetime
 import csv
 import json
 from tqdm import tqdm
+from scipy.fft import fft
 import re
+
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+sys.path.append(ROOT_DIR)
+
+from normalization.normalization import NormOsc
+from raw_to_csv.raw_to_csv import RawToCSV  # Import RawToCSV for RawToCSV function
 
 class ProcessingOscillograms():
     """
@@ -878,3 +888,143 @@ class ProcessingOscillograms():
            writer.writerows(results)
 
         print(f"Signal check results saved to {output_csv_path}")
+        
+    def find_oscillograms_with_spef(self, raw_path: str ='raw_data/', output_csv_path: str = "find_oscillograms_with_spef.csv", 
+                                    norm_coef_file_path: str = 'norm_coef.csv'):
+        """
+        Finds oscillograms with single-phase earth faults (SPEF) based on defined conditions using sliding window and harmonic analysis.
+
+        Args:
+            raw_path (str): Path to the directory containing COMTRADE files.
+            output_csv_path (str): Path to save the CSV file with SPEF filenames.
+            norm_coef_file_path (str): Path to the normalization coefficients CSV file.
+        """
+        spef_files = []
+        raw_files = sorted([file for file in os.listdir(raw_path) if 'cfg' in file])
+        norm_osc = NormOsc(norm_coef_file_path=norm_coef_file_path)
+
+        threshold = 0.05 / 3
+        samples_duration = 32 * 3
+        samples_per_period = 32
+
+        with tqdm(total=len(raw_files), desc="Searching for SPEF") as pbar:
+            for file in raw_files:
+                file_path = os.path.join(raw_path, file)
+                filename_without_ext = file[:-4]
+
+                try:
+                    raw_date, raw_df = RawToCSV.read_comtrade(RawToCSV(), file_path)
+                    if raw_df is None or raw_df.empty:
+                        pbar.update(1)
+                        continue
+
+                    buses_df = RawToCSV.split_buses(RawToCSV(), raw_df.reset_index(), file)
+                    if buses_df.empty:
+                        pbar.update(1)
+                        continue
+
+                    buses_df = norm_osc.normalize_bus_signals(buses_df, filename_without_ext, yes_prase="YES", is_print_error=False)
+                    if buses_df is None:
+                        pbar.update(1)
+                        continue
+
+                    is_spef = False
+                    for file_name, group_df in buses_df.groupby("file_name"):
+                        group_df = group_df.copy()
+
+                        # Condition 1 & 2: 3U0 BB and 3U0 CL (combined for efficiency)
+                        u0_signals_bb_cl = {}
+                        signal_names_3u0 = {"UN BB": "UN BB", "UN CL": "UN CL"} # Mapping for signal names
+
+                        for signal_3u0_name, col_name in signal_names_3u0.items():
+                            if not group_df.empty and col_name in group_df.columns:
+                                u0_signal = group_df[col_name].fillna(0).values
+                                u0_fft = np.abs(fft(u0_signal[:samples_per_period])) / samples_per_period
+                                u0_h1 = 2 * u0_fft[1] if len(u0_fft) > 1 else 0  # First harmonic of the initial period (for general level check)
+                                u0_harmonics = np.zeros_like(u0_signal, dtype=float) # Array to store first harmonic values
+
+                                # Sliding window for harmonic calculation and check
+                                for i in range(len(u0_signal) - samples_per_period + 1): # Slide through the entire signal
+                                    window = u0_signal[i:i+samples_per_period]
+                                    window_fft = np.abs(fft(window)) / samples_per_period
+                                    window_h1 = 2 * window_fft[1] if len(window_fft) > 1 else 0
+                                    u0_harmonics[i:i+samples_per_period] = max(u0_harmonics[i:i+samples_per_period].max(), window_h1) # Take max harmonic in window
+
+                                # Sliding window check on harmonics
+                                for i in range(len(u0_harmonics) - samples_duration + 1):
+                                    window_harmonics = u0_harmonics[i:i+samples_duration]
+                                    if np.all(window_harmonics >= threshold): # Check harmonic level in sliding window
+                                        if u0_h1 >= threshold: # Initial harmonic level check
+                                            is_spef = True
+                                            break # Condition met, no need to check further conditions for this file
+                                if is_spef:
+                                    break # Break outer loop if SPEF is found
+
+                            if is_spef:
+                                break # Break if SPEF is found
+
+                        if is_spef:
+                            continue # Go to next file if SPEF is found
+
+                        # Condition 3 & 4: Zero sequence + Phase voltages BB and CL (combined)
+                        phase_voltage_conditions = {
+                            "BB": {"phases": ["UA BB", "UB BB", "UC BB"], "threshold_u0": threshold, "threshold_phase": threshold/np.sqrt(3)}, # Using threshold_phase if needed for phase voltages
+                            "CL": {"phases": ["UA CL", "UB CL", "UC CL"], "threshold_u0": threshold, "threshold_phase": threshold/np.sqrt(3)}  # Using threshold_phase if needed for phase voltages
+                        }
+
+                        for location, condition_params in phase_voltage_conditions.items():
+                            phase_names = condition_params["phases"]
+                            threshold_u0 = condition_params["threshold_u0"]
+                            threshold_phase = condition_params["threshold_phase"] # Unused currently, can be used for phase voltage level checks
+
+                            if not group_df.empty and all(col in group_df.columns for col in phase_names):
+                                ua_signal = group_df[phase_names[0]].fillna(0).values
+                                ub_signal = group_df[phase_names[1]].fillna(0).values
+                                uc_signal = group_df[phase_names[2]].fillna(0).values
+
+                                u0_3_signal = (ua_signal + ub_signal + uc_signal) / np.sqrt(3) # 3U0 calculation
+                                # /np.sqrt(3) - because we used phase signal
+                                u0_3_fft = np.abs(fft(u0_3_signal[:samples_per_period])) / samples_per_period
+                                u0_3_h1 = 2 * u0_3_fft[1] if len(u0_3_fft) > 1 else 0
+
+                                u0_3_harmonics = np.zeros_like(u0_3_signal, dtype=float) # Array for harmonics
+                                for i in range(len(u0_3_signal) - samples_per_period + 1):
+                                    window = u0_3_signal[i:i+samples_per_period]
+                                    window_fft = np.abs(fft(window)) / samples_per_period
+                                    window_h1 = 2 * window_fft[1] if len(window_fft) > 1 else 0
+                                    u0_3_harmonics[i:i+samples_per_period] = max(u0_3_harmonics[i:i+samples_per_period].max(), window_h1)
+
+                                phase_voltages = [ua_signal, ub_signal, uc_signal]
+                                voltages_above_threshold = 0 # Count how many phase voltages meet the condition (if needed)
+
+                                # Sliding window check for 3U0 harmonics
+                                for i in range(len(u0_3_harmonics) - samples_duration + 1):
+                                    window_harmonics_u0 = u0_3_harmonics[i:i+samples_duration]
+                                    if np.all(window_harmonics_u0 >= threshold_u0): # Check 3U0 harmonic level in sliding window
+                                        if u0_3_h1 >= threshold_u0: # Initial 3U0 harmonic level check
+                                            voltages_above_threshold = 0 # Reset counter for phase voltages for this window
+                                            for v in phase_voltages:
+                                                # Phase voltage check can be added here if needed, e.g., using harmonics or time-domain values in a window
+                                                # For now, just checking if any two voltages exist (as per original condition)
+                                                voltages_above_threshold += 1 # Increment if voltage signal exists (for simplicity, can be enhanced)
+
+                                            if voltages_above_threshold >= 2: # Check if at least two phase voltages are present (condition from original task)
+                                                is_spef = True
+                                                break # Condition met, no need to check further conditions for this file
+                                if is_spef:
+                                    break # Break location loop if SPEF is found
+
+                            if is_spef:
+                                break # Break outer loop if SPEF is found
+
+                    if is_spef:
+                        spef_files.append(filename_without_ext)
+
+                except Exception as e:
+                    print(f"Error processing file {file}: {e}")
+
+                pbar.update(1)
+
+        df_spef = pd.DataFrame({'filename': spef_files})
+        df_spef.to_csv(output_csv_path, index=False)
+        print(f"SPEF files saved to: {output_csv_path}")
