@@ -37,6 +37,12 @@ class NormOsc:
         self.osc_files = sorted([file for file in os.listdir(self.osc_path)
                             if "cfg" in file], reverse=False)
     
+    # TODO: Подумать о том, что получается несколько "__init__"
+    def __init__(self, norm_coef_file_path='norm_coef.csv'):
+        if os.path.exists(norm_coef_file_path):
+            with open(norm_coef_file_path, "r") as file:
+                self.norm_coef = pd.read_csv(file, encoding='utf-8')
+    
     def get_summary(self,):
         unread = []
         c = 0
@@ -317,6 +323,39 @@ class NormOsc:
 
         result_df.to_csv('normalization/norm.csv', index=False)
 
+    # TODO: подумать об унификации данной вещи, пока это локальная реализация
+    # Пока прост скопировал из raw_to_csv
+    def normalize_bus_signals(self, buses_df, filename_without_ext, yes_prase = "YES", is_print_error = False):
+        """Нормализация аналоговых сигналов для каждой секции."""
+        for bus_num in ['1', '2']:
+            bus_name_norm = f'{filename_without_ext}_Bus-{bus_num}'
+            norm_row = self.norm_coef[self.norm_coef["name"] == filename_without_ext] # Поиск строки нормализации по имени файла
+
+            if norm_row.empty or norm_row["norm"].values[0] != yes_prase: # Проверка наличия строки и разрешения на нормализацию
+                if is_print_error:
+                    print(f"Предупреждение: {bus_name_norm} не найден в файле norm.csv или нормализация не разрешена.")
+                return None
+
+            nominal_current = 20 * float(norm_row[f"{bus_num}Ip_base"].values[0]) # Номинальный ток
+            nominal_voltage_bb = 3 * float(norm_row[f"{bus_num}Ub_base"].values[0]) # Номинальное напряжение BusBar
+            nominal_voltage_cl = 3 * float(norm_row[f"{bus_num}Uc_base"].values[0]) # Номинальное напряжение CableLine
+
+            for phase in ['A', 'B', 'C']: # Нормализация токов
+                current_col_name = f'I{phase}'
+                if current_col_name in buses_df.columns:
+                    buses_df[current_col_name] = buses_df[current_col_name] / nominal_current
+
+            for phase in ['A', 'B', 'C']: # Нормализация напряжений BusBar
+                voltage_bb_col_name = f'U{phase} BB'
+                if voltage_bb_col_name in buses_df.columns:
+                    buses_df[voltage_bb_col_name] = buses_df[voltage_bb_col_name] / nominal_voltage_bb
+
+            for phase in ['A', 'B', 'C']: # Нормализация напряжений CableLine
+                voltage_cl_col_name = f'U{phase} CL'
+                if voltage_cl_col_name in buses_df.columns:
+                    buses_df[voltage_cl_col_name] = buses_df[voltage_cl_col_name] / nominal_voltage_cl
+
+        return buses_df
 
 if __name__ == "__main__":
     osc_path='raw_data/'

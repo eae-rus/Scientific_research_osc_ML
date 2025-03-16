@@ -1,16 +1,22 @@
 import pandas as pd
 import numpy as np
 import os
+import sys
 import json
 import comtrade # comtrade 0.1.2
 from tqdm import tqdm
+
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+sys.path.append(ROOT_DIR)
+
+from normalization.normalization import NormOsc
 
 
 class RawToCSV():
     """
     This class implemented to convert raw comtrade files to csv file.
     """
-    def __init__(self, raw_path='raw_data/', csv_path='', norm_coef_file_path='norm_coef.csv', uses_buses = ['1', '2', '12']):
+    def __init__(self, raw_path='raw_data/', csv_path='', uses_buses = ['1', '2', '12']):
         if not os.path.exists(raw_path):
             raise FileNotFoundError("Path for raw files does not exist")
          
@@ -21,11 +27,6 @@ class RawToCSV():
             discrete_names = json.load(file)
         self.analog_names = analog_names
         self.discrete_names = discrete_names
-        # TODO: Может и не быть коэффициент, пока закладывается как нужный для будущих разработок
-        self.norm_coef = None
-        if os.path.exists(norm_coef_file_path):
-            with open(norm_coef_file_path, "r") as file:
-                self.norm_coef = pd.read_csv(file, encoding='utf-8')
 
         self.analog_names_dict = self.get_bus_names(analog=True, discrete=False)
         self.discrete_names_dict = self.get_bus_names(analog=False, discrete=True)
@@ -87,7 +88,7 @@ class RawToCSV():
         return dataset_df
     
     # TODO: подумать об универсанолизации данной функции с create_csv (основные замечания указаны там)
-    def create_csv_for_PDR(self, csv_name='datset.csv', signal_check_results_path='signal_check_results.csv', is_cut_out_area = False, yes_prase = "YES", is_print_error = False):
+    def create_csv_for_PDR(self, csv_name='datset.csv', signal_check_results_path='signal_check_results.csv', norm_coef_file_path='norm_coef.csv', is_cut_out_area = False, yes_prase = "YES", is_print_error = False):
         """
         This function DataFrame and save csv file from raw comtrade data.
 
@@ -103,6 +104,7 @@ class RawToCSV():
         raw_files = sorted([file for file in os.listdir(self.raw_path)
                             if 'cfg' in file])
         number_ocs_found = 0
+        normOsc = NormOsc(norm_coef_file_path = norm_coef_file_path)
         with tqdm(total=len(raw_files), desc="Convert Comtrade to CSV") as pbar:
             for file in raw_files:
                 filename_without_ext = file[:-4] # Имя файла без расширения
@@ -116,7 +118,7 @@ class RawToCSV():
                 raw_date, raw_df = self.read_comtrade(self.raw_path + file)
                 if not raw_df.empty:
                     buses_df = self.split_buses_for_PDR(raw_df, file)
-                    buses_df = self._normalize_bus_signals(buses_df, filename_without_ext, yes_prase=yes_prase, is_print_error=is_print_error) # Нормализация сигналов
+                    buses_df = normOsc.normalize_bus_signals(buses_df, filename_without_ext, yes_prase=yes_prase, is_print_error=is_print_error) # Нормализация сигналов
                     if buses_df is not None:
                         buses_df = self._process_signals_for_PDR(buses_df, is_print_error=is_print_error) # Обработка аналоговых сигналов (выбор BusBar/CableLine, расчет Ib)
                     else:
@@ -147,39 +149,6 @@ class RawToCSV():
         print(f"Number of samples found = {number_ocs_found}")
         dataset_df.to_csv(self.csv_path + csv_name, index=False)
         return dataset_df
-    
-    # TODO: подумать об унификации данной вещи, пока это локальная реализация
-    def _normalize_bus_signals(self, buses_df, filename_without_ext, yes_prase = "YES", is_print_error = False):
-        """Нормализация аналоговых сигналов для каждой секции."""
-        for bus_num in ['1', '2']:
-            bus_name_norm = f'{filename_without_ext}_Bus-{bus_num}'
-            norm_row = self.norm_coef[self.norm_coef["name"] == filename_without_ext] # Поиск строки нормализации по имени файла
-
-            if norm_row.empty or norm_row["norm"].values[0] != yes_prase: # Проверка наличия строки и разрешения на нормализацию
-                if is_print_error:
-                    print(f"Предупреждение: {bus_name_norm} не найден в файле norm.csv или нормализация не разрешена.")
-                return None
-
-            nominal_current = 20 * float(norm_row[f"{bus_num}Ip_base"].values[0]) # Номинальный ток
-            nominal_voltage_bb = 3 * float(norm_row[f"{bus_num}Ub_base"].values[0]) # Номинальное напряжение BusBar
-            nominal_voltage_cl = 3 * float(norm_row[f"{bus_num}Uc_base"].values[0]) # Номинальное напряжение CableLine
-
-            for phase in ['A', 'B', 'C']: # Нормализация токов
-                current_col_name = f'I{phase}'
-                if current_col_name in buses_df.columns:
-                    buses_df[current_col_name] = buses_df[current_col_name] / nominal_current
-
-            for phase in ['A', 'B', 'C']: # Нормализация напряжений BusBar
-                voltage_bb_col_name = f'U{phase} BB'
-                if voltage_bb_col_name in buses_df.columns:
-                    buses_df[voltage_bb_col_name] = buses_df[voltage_bb_col_name] / nominal_voltage_bb
-
-            for phase in ['A', 'B', 'C']: # Нормализация напряжений CableLine
-                voltage_cl_col_name = f'U{phase} CL'
-                if voltage_cl_col_name in buses_df.columns:
-                    buses_df[voltage_cl_col_name] = buses_df[voltage_cl_col_name] / nominal_voltage_cl
-
-        return buses_df
     
     # TODO: подумать об унификации данной вещи, пока это локальная реализация
     def _process_signals_for_PDR(self, buses_df, is_print_error = False):
