@@ -311,9 +311,12 @@ class RawToCSV():
         u_bb_names = {"UA BB", "UB BB", "UC BB", "UN BB"}
         u_cl_names = {"UA CL", "UB CL", "UC CL", "UN CL"}
         i_names = {"IA", "IB", "IC", "IN"}
+        ml_names = set(self.get_short_names_ml_signals()[0])
+        
+        #ml_names = {col for col in self.get_short_names_ml_signals()[0]}
         
         # Объединяем имена столбцов в единое множество
-        all_signals = file_name | u_bb_names | u_cl_names | i_names
+        all_signals = file_name | u_bb_names | u_cl_names | i_names | ml_names
 
         # Фильтруем столбцы, которые реально присутствуют в DataFrame
         available_signals = [col for col in all_signals if col in buses_df.columns]
