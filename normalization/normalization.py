@@ -339,10 +339,12 @@ class NormOsc:
                 return None
 
             nominal_current = 20 * float(norm_row[f"{bus_num}Ip_base"].values[0]) # Номинальный ток
-            nominal_current_I0 = 5 * float(norm_row[f"{bus_num}Iz_PS"].values[0]) # Номинальный ток ТТНП
+            nominal_current_I0 = 5 * float(norm_row[f"{bus_num}Iz_base"].values[0]) # Номинальный ток ТТНП
             nominal_voltage_bb = 3 * float(norm_row[f"{bus_num}Ub_base"].values[0]) # Номинальное напряжение BusBar
             nominal_voltage_cl = 3 * float(norm_row[f"{bus_num}Uc_base"].values[0]) # Номинальное напряжение CableLine
 
+            # TODO: ПЕРЕПИСАТЬ ФУНКИИ НА ИМЕНА АНАЛОГОИЧНЫЕ С "I | Bus-1 | phase: A"
+            # и после поменять точку вхождения
             for phase in ['A', 'B', 'C']: # Нормализация токов
                 current_col_name = f'I{phase}'
                 if current_col_name in group_df.columns:
