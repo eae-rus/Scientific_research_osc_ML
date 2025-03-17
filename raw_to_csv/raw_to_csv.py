@@ -46,7 +46,7 @@ class RawToCSV():
         self.number_periods = 10 # TODO: The number of samples is being set now. Think about a time-to-date task, or something similar.
         self.ml_all, self.ml_opr_swch, self.ml_abnorm_evnt, self.ml_emerg_evnt  = self.get_short_names_ml_signals()
 
-    def create_csv(self, csv_name='datset.csv', is_cut_out_area = False, is_simple_csv = False):
+    def create_csv(self, csv_name='dataset.csv', is_cut_out_area = False, is_simple_csv = False):
         """
         This function DataFrame and save csv file from raw comtrade data.
 
@@ -88,7 +88,7 @@ class RawToCSV():
         return dataset_df
     
     # TODO: подумать об универсанолизации данной функции с create_csv (основные замечания указаны там)
-    def create_csv_for_PDR(self, csv_name='datset.csv', signal_check_results_path='signal_check_results.csv', norm_coef_file_path='norm_coef.csv',
+    def create_csv_for_PDR(self, csv_name='dataset.csv', signal_check_results_path='signal_check_results.csv', norm_coef_file_path='norm_coef.csv',
                            is_check_PDR = True, is_cut_out_area = False, yes_prase = "YES", is_print_error = False):
         """
         This function DataFrame and save csv file from raw comtrade data.
@@ -836,7 +836,7 @@ class RawToCSV():
             
         return dataset_df
     
-    def get_simple_dataset(self, dataset_df: pd.DataFrame, csv_name='datset_simpl.csv'):
+    def get_simple_dataset(self, dataset_df: pd.DataFrame, csv_name='dataset_simpl.csv'):
         """ 
         Create new columns for simplified version. Only 4 groups of signals are formed:
         1) Operating switches
