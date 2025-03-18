@@ -10,6 +10,7 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
 
 from normalization.normalization import NormOsc
+from dataflow.comtrade_processing import ReadComtrade
 
 
 class RawToCSV():
@@ -33,6 +34,7 @@ class RawToCSV():
         self.all_names = self.get_all_names()
         self.raw_path = raw_path
         self.csv_path = csv_path
+        self.readComtrade = ReadComtrade()
         self.unread_files = set()
         self.uses_buses = uses_buses # 12 - intersectional, is not taken into account in any way, when adding it, it is necessary to correct the discretionary check
         # while everything is saved, think about how to set them more conveniently
@@ -60,7 +62,7 @@ class RawToCSV():
             for file in raw_files:
                 # TODO: it is not rational to use two variables, but the necessary global data.
                 # it will be necessary to think about optimizing this issue.
-                raw_date, raw_df = self.read_comtrade(self.raw_path + file)
+                raw_date, raw_df = self.readComtrade.read_comtrade(self.raw_path + file)
                 
                 # TODO: Добавить нормировку значений по аналогии с PDR и SPEF
                 # Но с параметром выбора (чтобы можно было её и не осуществлять)
@@ -122,7 +124,7 @@ class RawToCSV():
                         pbar.update(1) # Пропускаем файл, если его нет в signal_check_results_csv или contains_required_signals False
                         continue
                 
-                raw_date, raw_df = self.read_comtrade(self.raw_path + file)
+                raw_date, raw_df = self.readComtrade.read_comtrade(self.raw_path + file)
                 raw_df = normOsc.normalize_bus_signals(raw_df, filename_without_ext, yes_prase="YES", is_print_error=False)
                 if raw_df is None:
                     pbar.update(1)
@@ -190,7 +192,7 @@ class RawToCSV():
                     pbar.update(1)
                     continue
 
-                raw_date, raw_df = self.read_comtrade(self.raw_path + file)
+                raw_date, raw_df = self.readComtrade.read_comtrade(self.raw_path + file)
                 if not raw_df.empty:
                     raw_df = normOsc.normalize_bus_signals(raw_df, filename_without_ext, yes_prase="YES", is_print_error=False)
                     if raw_df is None:
@@ -344,33 +346,13 @@ class RawToCSV():
             pd.DataFrame: The DataFrame of the comtrade file.
         """
         dataset_df = pd.DataFrame()
-        _, raw_df = self.read_comtrade(file_path)
+        _, raw_df = self.readComtrade.read_comtrade(file_path)
         self.check_columns(raw_df)
         if not raw_df.empty:
             raw_df = raw_df.reset_index()
             dataset_df = self.split_buses(raw_df, file_name)
 
         return dataset_df
-
-    def read_comtrade(self, file_name):
-        """
-        Load and read comtrade files contents.
-
-        Args:
-            file_name (str): The name of comtrade file.
-
-        Returns:
-            tuple:
-            - raw_date (Comtrade): The raw comtrade
-            - raw_df (pandas.DataFrame): DataFrame of raw comtrade file.
-        """
-        raw_df = None
-        try:
-            raw_date = comtrade.load(file_name)
-            raw_df = raw_date.to_dataframe()
-        except Exception as ex:
-            self.unread_files.add((file_name, ex))
-        return raw_date, raw_df
     
     def split_buses(self, raw_df, file_name):
         """Implemented for bus 1 and bus 2 only"""
