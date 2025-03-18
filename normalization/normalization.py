@@ -8,17 +8,19 @@ import comtrade
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
 
-class NormOsc:
+from dataflow.comtrade_processing import ReadComtrade
+
+class CreateNormOsc:
     def __init__(self,
                  osc_path,
-                 f_rate, f_power,
                  prev_norm_csv_path = "",
                  step_size=1,
                  bus = 6
                  ):
         self.osc_path = osc_path
+        self.readComtrade = ReadComtrade()
         self.prev_norm_csv_path = prev_norm_csv_path
-        self.window_size = f_rate // f_power
+        self.window_size = 32
         self.step_size = step_size
        
         self.ru_cols, self.u_cols = self.generate_VT_cols(bus=bus)
@@ -36,12 +38,6 @@ class NormOsc:
 
         self.osc_files = sorted([file for file in os.listdir(self.osc_path)
                             if "cfg" in file], reverse=False)
-    
-    # TODO: Подумать о том, что получается несколько "__init__"
-    def __init__(self, norm_coef_file_path='norm_coef.csv'):
-        if os.path.exists(norm_coef_file_path):
-            with open(norm_coef_file_path, "r") as file:
-                self.norm_coef = pd.read_csv(file, encoding='utf-8')
     
     def get_summary(self,):
         unread = []
@@ -283,8 +279,6 @@ class NormOsc:
             prev_norm_csv = pd.read_csv(self.prev_norm_csv_path)
             name_prev_norm = prev_norm_csv["name"].values
         
-        # TODO: Добавить проверку на наименования файлов с raw.
-        
         unread = []
         result_df = pd.DataFrame(data=self.result_cols)
         for file in tqdm(self.osc_files):
@@ -293,10 +287,14 @@ class NormOsc:
                 continue
             
             try:
-                osc_df = comtrade.load_as_dataframe(self.osc_path + file)
+                raw_date, osc_df = self.readComtrade.read_comtrade(self.osc_path + file)
             except:
                 unread.append(file)
                 continue
+            frequency = raw_date.cfg.frequency
+            samples_rate = raw_date.cfg.sample_rates[0][0]
+            self.window_size = int(samples_rate / frequency)
+            
             osc_columns = osc_df.columns
             osc_features = []
             to_drop = []
@@ -323,6 +321,13 @@ class NormOsc:
 
         result_df.to_csv('normalization/norm.csv', index=False)
 
+class NormOsc:
+    # TODO: Подумать о том, что получается несколько "__init__"
+    def __init__(self, norm_coef_file_path='norm_coef.csv'):
+        if os.path.exists(norm_coef_file_path):
+            with open(norm_coef_file_path, "r") as file:
+                self.norm_coef = pd.read_csv(file, encoding='utf-8')
+                
     # TODO: подумать об унификации данной вещи, пока это локальная реализация
     # Пока прост скопировал из raw_to_csv
     def normalize_bus_signals(self, raw_df, file_name, yes_prase = "YES", is_print_error = False):
@@ -369,10 +374,3 @@ class NormOsc:
             # TODO: Добавить дифференциальный ток
             
         return raw_df
-
-if __name__ == "__main__":
-    osc_path='raw_data/'
-    prev_norm_csv_path = ""#"normalization/norm_1600_v2.1.csv"
-    normOsc = NormOsc(osc_path=osc_path, f_rate=1600, f_power=50, prev_norm_csv_path = prev_norm_csv_path)
-    normOsc.normalization()
-    pass
