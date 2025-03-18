@@ -325,49 +325,50 @@ class NormOsc:
 
     # TODO: подумать об унификации данной вещи, пока это локальная реализация
     # Пока прост скопировал из raw_to_csv
-    def normalize_bus_signals(self, buses_df, filename_without_ext, yes_prase = "YES", is_print_error = False):
+    def normalize_bus_signals(self, raw_df, file_name, yes_prase = "YES", is_print_error = False):
         """Нормализация аналоговых сигналов для каждой секции."""
-        processed_groups = []
-        bus_num = 0
-        for file_name, group_df in buses_df.groupby("file_name"):
-            bus_num += 1 # TODO: временное решение, так как не всегда могу совпадать.
-            norm_row = self.norm_coef[self.norm_coef["name"] == filename_without_ext] # Поиск строки нормализации по имени файла
+        norm_row = self.norm_coef[self.norm_coef["name"] == file_name] # Поиск строки нормализации по имени файла
+        if norm_row.empty or norm_row["norm"].values[0] != yes_prase: # Проверка наличия строки и разрешения на нормализацию
+            if is_print_error:
+                print(f"Предупреждение: {file_name} не найден в файле norm.csv или нормализация не разрешена.")
+            return None
 
-            if norm_row.empty or norm_row["norm"].values[0] != yes_prase: # Проверка наличия строки и разрешения на нормализацию
-                if is_print_error:
-                    print(f"Предупреждение: {file_name} не найден в файле norm.csv или нормализация не разрешена.")
-                return None
+        for bus in range(1, 9):
+            nominal_current_series = norm_row.get(f"{bus}Ip_base")
+            if nominal_current_series is not None and not pd.isna(nominal_current_series.values[0]):
+                nominal_current = 20 * float(nominal_current_series.values[0])
+                for phase in ['A', 'B', 'C']: # Нормализация токов
+                    current_col_name = f'I | Bus-{bus} | phase: {phase}'
+                    if current_col_name in raw_df.columns:
+                        raw_df[current_col_name] = raw_df[current_col_name] / nominal_current
 
-            nominal_current = 20 * float(norm_row[f"{bus_num}Ip_base"].values[0]) # Номинальный ток
-            nominal_current_I0 = 5 * float(norm_row[f"{bus_num}Iz_base"].values[0]) # Номинальный ток ТТНП
-            nominal_voltage_bb = 3 * float(norm_row[f"{bus_num}Ub_base"].values[0]) # Номинальное напряжение BusBar
-            nominal_voltage_cl = 3 * float(norm_row[f"{bus_num}Uc_base"].values[0]) # Номинальное напряжение CableLine
+            nominal_current_I0_series = norm_row.get(f"{bus}Iz_base")
+            if nominal_current_I0_series is not None and not pd.isna(nominal_current_I0_series.values[0]):
+                nominal_current_I0 = 5 * float(nominal_current_I0_series.values[0])
+                for phase in ['N']: # Нормализация тока нулевой последовательности
+                    current_I0_col_name = f'I | Bus-{bus} | phase: {phase}'
+                    if current_I0_col_name in raw_df.columns:
+                        raw_df[current_I0_col_name] = raw_df[current_I0_col_name] / nominal_current_I0
 
-            # TODO: ПЕРЕПИСАТЬ ФУНКИИ НА ИМЕНА АНАЛОГОИЧНЫЕ С "I | Bus-1 | phase: A"
-            # и после поменять точку вхождения
-            for phase in ['A', 'B', 'C']: # Нормализация токов
-                current_col_name = f'I{phase}'
-                if current_col_name in group_df.columns:
-                    group_df[current_col_name] = group_df[current_col_name] / nominal_current
-                    
-            for phase in ['N']: # Нормализация тока нулевой последовательности
-                current_I0_col_name = f'I{phase}'
-                if current_I0_col_name in group_df.columns:
-                    group_df[current_I0_col_name] = group_df[current_I0_col_name] / nominal_current_I0
+            nominal_voltage_bb_series = norm_row.get(f"{bus}Ub_base")
+            if nominal_voltage_bb_series is not None and not pd.isna(nominal_voltage_bb_series.values[0]):
+                nominal_voltage_bb = 3 * float(nominal_voltage_bb_series.values[0])
+                for phase in ['A', 'B', 'C', 'AB', 'BC', 'CA', 'N']: # Нормализация напряжений BusBar
+                    voltage_bb_col_name = f'U | BusBar-{bus} | phase: {phase}'
+                    if voltage_bb_col_name in raw_df.columns:
+                        raw_df[voltage_bb_col_name] = raw_df[voltage_bb_col_name] / nominal_voltage_bb
 
-            for phase in ['A', 'B', 'C', 'N']: # Нормализация напряжений BusBar
-                voltage_bb_col_name = f'U{phase} BB'
-                if voltage_bb_col_name in group_df.columns:
-                    group_df[voltage_bb_col_name] = group_df[voltage_bb_col_name] / nominal_voltage_bb
+            nominal_voltage_cl_series = norm_row.get(f"{bus}Uc_base")
+            if nominal_voltage_cl_series is not None and not pd.isna(nominal_voltage_cl_series.values[0]):
+                nominal_voltage_cl = 3 * float(nominal_voltage_cl_series.values[0])
+                for phase in ['A', 'B', 'C', 'AB', 'BC', 'CA', 'N']: # Нормализация напряжений CableLine
+                    voltage_cl_col_name = f'U | CableLine-{bus} | phase: {phase}'
+                    if voltage_cl_col_name in raw_df.columns:
+                        raw_df[voltage_cl_col_name] = raw_df[voltage_cl_col_name] / nominal_voltage_cl
 
-            for phase in ['A', 'B', 'C', 'N']: # Нормализация напряжений CableLine
-                voltage_cl_col_name = f'U{phase} CL'
-                if voltage_cl_col_name in group_df.columns:
-                    group_df[voltage_cl_col_name] = group_df[voltage_cl_col_name] / nominal_voltage_cl
-                    
-            processed_groups.append(group_df)
-        result_df = pd.concat(processed_groups)
-        return result_df
+            # TODO: Добавить дифференциальный ток
+            
+        return raw_df
 
 if __name__ == "__main__":
     osc_path='raw_data/'

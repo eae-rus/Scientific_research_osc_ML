@@ -123,16 +123,15 @@ class RawToCSV():
                         continue
                 
                 raw_date, raw_df = self.read_comtrade(self.raw_path + file)
+                raw_df = normOsc.normalize_bus_signals(raw_df, filename_without_ext, yes_prase="YES", is_print_error=False)
+                if raw_df is None:
+                    pbar.update(1)
+                    if is_print_error:
+                        print(f"Предупреждение: В {filename_without_ext} нормализацию провести нельзя, значения не используем.")
+                    continue
+                    
                 if not raw_df.empty:
                     buses_df = self.split_buses_for_PDR(raw_df, file)
-                    buses_df = normOsc.normalize_bus_signals(buses_df, filename_without_ext, yes_prase=yes_prase, is_print_error=is_print_error) # Нормализация сигналов
-                    if buses_df is not None:
-                        buses_df = self._process_signals_for_PDR(buses_df, is_print_error=is_print_error, is_check_PDR=is_check_PDR) # Обработка аналоговых сигналов (выбор BusBar/CableLine, расчет Ib)
-                    else:
-                        if is_print_error:
-                            print(f"Предупреждение: В {filename_without_ext} нормализацию провести нельзя, значения не используем.")
-                        pbar.update(1)
-                        continue
                     
                     if buses_df is None:
                         if is_print_error:
@@ -158,7 +157,7 @@ class RawToCSV():
         return dataset_df
     
     # TODO: подумать об универсанолизации данной функции с create_csv (основные замечания указаны там)
-    def create_csv_for_SPEF(self, csv_name='dataset_spef.csv', signal_check_results_path='find_oscillograms_with_spef.csv', norm_coef_file_path='norm_coef.csv', is_cut_out_area = False):
+    def create_csv_for_SPEF(self, csv_name='dataset_spef.csv', signal_check_results_path='find_oscillograms_with_spef.csv', norm_coef_file_path='norm_coef.csv', is_cut_out_area = False, is_print_error = False):
         """
         This function finds SPEF oscillograms, optionally cuts out the area, and saves data to CSV.
 
@@ -193,15 +192,20 @@ class RawToCSV():
 
                 raw_date, raw_df = self.read_comtrade(self.raw_path + file)
                 if not raw_df.empty:
+                    raw_df = normOsc.normalize_bus_signals(raw_df, filename_without_ext, yes_prase="YES", is_print_error=False)
+                    if raw_df is None:
+                        pbar.update(1)
+                        if is_print_error:
+                            print(f"Предупреждение: В {filename_without_ext} нормализацию провести нельзя, значения не используем.")
+                        continue
+                        
                     buses_df = self.split_buses(raw_df.reset_index(), file) # Use general split_buses as per your comment
                     processed_bus_dfs = []
                     for file_name_bus, bus_df in buses_df.groupby('file_name'):
                         if file_name_bus in spef_filenames_dict[filename_without_ext]: # Further filter by bus name
-                            bus_df = normOsc.normalize_bus_signals(bus_df, filename_without_ext, yes_prase="YES", is_print_error=False)
+                            bus_df = self._process_signals_for_SPEF(bus_df, is_print_error=False) # Keep processing as is, or replace if needed
                             if bus_df is not None:
-                                bus_df = self._process_signals_for_SPEF(bus_df, is_print_error=False) # Keep processing as is, or replace if needed
-                                if bus_df is not None:
-                                    processed_bus_dfs.append(bus_df)
+                                processed_bus_dfs.append(bus_df)
 
                     if not processed_bus_dfs: # No processed bus dataframes for this file
                         pbar.update(1)
