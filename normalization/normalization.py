@@ -288,12 +288,15 @@ class CreateNormOsc:
             
             try:
                 raw_date, osc_df = self.readComtrade.read_comtrade(self.osc_path + file)
+                if raw_date == None or raw_date == None:
+                    unread.append(file)
+                    continue
+                frequency = raw_date.cfg.frequency
+                samples_rate = raw_date.cfg.sample_rates[0][0]
+                self.window_size = int(samples_rate / frequency)
             except:
                 unread.append(file)
                 continue
-            frequency = raw_date.cfg.frequency
-            samples_rate = raw_date.cfg.sample_rates[0][0]
-            self.window_size = int(samples_rate / frequency)
             
             osc_columns = osc_df.columns
             osc_features = []
