@@ -356,6 +356,16 @@ class RawToCSV():
     
     def split_buses(self, raw_df, file_name):
         """Implemented for bus 1 and bus 2 only"""
+        # TODO: Подумать / учесть обработку случаев, когда имена сигналов одинаковы. Это недоработки стандартизации имён
+        # Такого может попадаться часто. Для случаев "U | BusBar-1 | phase: A" и похожих, это часто раделение на
+        # BusBar / CableLine.
+        # Для токов - порой является разделением по секциям
+        # English:
+        # Think about/consider handling cases where the names of the signals are the same. These are flaws in the standardization of names
+        # This can happen often. For cases of "U|BusBar-1 | phase: A" and similar, this is often a division into
+        # BusBar / CableLine.
+        # For currents - sometimes it is divided into sections
+        
         buses_df = pd.DataFrame()
         buses_cols = dict()
         raw_cols = set(raw_df.columns)
