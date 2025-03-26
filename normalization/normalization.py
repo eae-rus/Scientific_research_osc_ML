@@ -153,15 +153,16 @@ class CreateNormOsc:
         return all_features
 
     def analyze(self,
-                file, h1_df, hx_df):
+                file, h1_df, hx_df, coef_p_s):
         features = h1_df.columns
         df = pd.DataFrame({'name': [file[:-4]]})
         df['norm'] = 'YES'
 
         # voltage
-        t1 = 20 * np.sqrt(2)
-        t2 = 140 * np.sqrt(2)
-        t3 = 560 * np.sqrt(2)
+        t1_s = 20 * np.sqrt(2)
+        t1_p = 500 * np.sqrt(2)
+        t2_s = 140 * np.sqrt(2)
+        t3_s = 560 * np.sqrt(2)
         for r in self.ru_cols:
             c = list(self.u_cols[r].intersection(features))
             m1 = h1_df[c].max(axis=1)[0]
@@ -171,21 +172,32 @@ class CreateNormOsc:
             df[r + '_h1'] = m1
             df[r + '_hx'] = mx
             # TODO: add a check for primary values
-            if m1 <= t1:
+            if m1 <= t1_s:
                 if m1 <= 1.5 * mx:
                     df[r + '_PS'] = 's'
                     df[r + '_base'] = 'Noise'
-                else: 
-                    df[r + '_PS'] = 'p'
-                    df[r + '_base'] = '?1'#None
-            elif t1 < m1 <= t2:
+                else:
+                    # TODO: refactor this
+                    max_value = 0
+                    for name in c:
+                        primary_value = h1_df[name][0] * coef_p_s[name]
+                        if primary_value > max_value:
+                            max_value = primary_value
+                    if max_value > t1_p:
+                        df[r + '_PS'] = 'p'
+                        df[r + '_base'] = '?1'#None
+                    else:
+                        df[r + '_PS'] = 's'
+                        df[r + '_base'] = 'Noise'
+                    # TODO: refactor this
+            elif t1_s < m1 <= t2_s:
                 if m1 <= 1.5 * mx:
                     df[r + '_PS'] = 's'
                     df[r + '_base'] = '?2'
                 else:
                     df[r + '_PS'] = 's'
                     df[r + '_base'] = 100
-            elif t2 < m1 <= t3:
+            elif t2_s < m1 <= t3_s:
                 if m1 <= 1.5 * mx:
                     df[r + '_PS'] = 's'
                     df[r + '_base'] = '?2'
@@ -197,8 +209,9 @@ class CreateNormOsc:
                 df[r + '_base'] = '?3'
                 
         # current
-        t1 = 0.03 * np.sqrt(2)
-        t2 = 30 * np.sqrt(2)
+        t1_s = 0.03 * np.sqrt(2)
+        t1_p = 20 * np.sqrt(2)
+        t2_s = 30 * np.sqrt(2)
         for r in self.ri_cols:
             c = list(self.i_cols[r].intersection(features))
             m1 = h1_df[c].max(axis=1)[0]
@@ -207,14 +220,24 @@ class CreateNormOsc:
                 continue
             df[r + '_h1'] = m1
             df[r + '_hx'] = mx
-            if m1 <= t1:
+            if m1 <= t1_s:
                 if m1 <= 1.5 * mx:
                     df[r + '_PS'] = 's'
                     df[r + '_base'] = 'Noise'
                 else:
-                    df[r + '_PS'] = 'p'
-                    df[r + '_base'] = '?1'
-            elif t1 < m1 <= t2:
+                    max_value = 0
+                    for name in c:
+                        primary_value = h1_df[name][0] * coef_p_s[name]
+                        if primary_value > max_value:
+                            max_value = primary_value
+                    if max_value > t1_p:
+                        df[r + '_PS'] = 'p'
+                        df[r + '_base'] = '?1'#None
+                    else:
+                        df[r + '_PS'] = 's'
+                        df[r + '_base'] = 'Noise'
+                    # TODO: refactor this
+            elif t1_s < m1 <= t2_s:
                 if m1 <= 1.5 * mx:
                     df[r + '_PS'] = 's'
                     df[r + '_base'] = '?2'
@@ -226,8 +249,8 @@ class CreateNormOsc:
                 df[r + '_base'] = '?3'
         
         # residual current    
-        t1 = 0.02 * np.sqrt(2)
-        t2 = 5 * np.sqrt(2)
+        t1_s = 0.02 * np.sqrt(2)
+        t2_s = 5 * np.sqrt(2)
         for r in self.riz_cols:
             c_r = set([self.iz_cols[r]])
             c = list(c_r.intersection(features))
@@ -238,10 +261,10 @@ class CreateNormOsc:
             
             df[r + 'Iz_h1'] = m1
             df[r + 'Iz_hx'] = mx
-            if m1 <= t1 or mx <= t1:
+            if m1 <= t1_s or mx <= t1_s:
                 df[r + 'Iz_PS'] = 's'
                 df[r + 'Iz_base'] = 'Noise'
-            elif t1 < m1 <= t2 or t1 < mx <= t2:
+            elif t1_s < m1 <= t2_s or t1_s < mx <= t2_s:
                 df[r + 'Iz_PS'] = 's'
                 df[r + 'Iz_base'] = '1'
             else:
@@ -298,6 +321,11 @@ class CreateNormOsc:
                 unread.append(file)
                 continue
             
+            coef_p_s = {}
+            for analog_channel in raw_date.cfg.analog_channels:
+                coef = analog_channel.primary / analog_channel.secondary
+                coef_p_s[analog_channel.name] = coef
+            
             osc_columns = osc_df.columns
             osc_features = []
             to_drop = []
@@ -319,7 +347,7 @@ class CreateNormOsc:
                 hx = 0
             h1_df = pd.DataFrame([dict(zip(osc_features, h1))])
             hx_df = pd.DataFrame([dict(zip(osc_features, hx))])
-            result = self.analyze(file, h1_df, hx_df)
+            result = self.analyze(file, h1_df, hx_df, coef_p_s)
             result_df = pd.concat([result_df, result])
 
         result_df.to_csv('normalization/norm.csv', index=False)
