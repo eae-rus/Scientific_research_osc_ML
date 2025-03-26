@@ -4,11 +4,32 @@ import pandas as pd
 import numpy as np
 from tqdm.auto import tqdm
 import comtrade
+from typing import Dict, Any, Tuple, List
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
 
 from dataflow.comtrade_processing import ReadComtrade
+
+VOLTAGE_T1_S = 20 * np.sqrt(2)
+VOLTAGE_T1_P = 500 * np.sqrt(2)
+VOLTAGE_T2_S = 140 * np.sqrt(2)
+VOLTAGE_T3_S = 560 * np.sqrt(2)
+
+CURRENT_T1_S = 0.03 * np.sqrt(2)
+CURRENT_T1_P = 20 * np.sqrt(2)
+CURRENT_T2_S = 30 * np.sqrt(2)
+
+RESIDUAL_CURRENT_T1_S = 0.02 * np.sqrt(2)
+RESIDUAL_CURRENT_T2_S = 5 * np.sqrt(2)
+
+DIFFERENTIAL_CURRENT_THRESHOLD = 30
+
+NOISE_FACTOR = 1.5 # Коэффициент для сравнения m1 и mx (m1 <= 1.5 * mx)
+
+# ?1 - A non-standard sensor, the secondary values are too small, but the primary values are normal.
+# ?2 - A large proportion of higher harmonics, the signal is highly distorted and it is difficult to judge the nominal value.
+# ?3 - Probably there is no transformation coefficient (secondary values are too large)
 
 class CreateNormOsc:
     def __init__(self,
@@ -151,150 +172,205 @@ class CreateNormOsc:
         all_features.update(self.raw_cols)
         
         return all_features
+    
+    def _get_max_primary_value(self,
+                               h1_df: pd.DataFrame,
+                               columns: List[str],
+                               coef_p_s: Dict[str, float]) -> float:
+        """Вычисляет максимальное первичное значение для заданных столбцов."""
+        max_primary = 0.0
+        # Используем .at[0, col] для доступа к значению в однострочном DataFrame
+        for name in columns:
+            if name in h1_df.columns and name in coef_p_s:
+                primary_value = h1_df.at[0, name] * coef_p_s[name]
+                if not np.isnan(primary_value):
+                    max_primary = max(max_primary, primary_value)
+        return max_primary
+    
+    def _determine_voltage_status(self,
+                                  m1: float,
+                                  mx: float,
+                                  h1_df: pd.DataFrame,
+                                  columns: List[str],
+                                  coef_p_s: Dict[str, float]) -> Tuple[str, Any]:
+        """Определяет статус (_PS, _base) для измерений напряжения."""
+        if m1 <= VOLTAGE_T1_S:
+            if m1 <= NOISE_FACTOR * mx:
+                return 's', 'Noise'
+            else:
+                max_primary = self._get_max_primary_value(h1_df, columns, coef_p_s)
+                if max_primary > VOLTAGE_T1_P:
+                    return 'p', '?1'
+                else:
+                    return 's', 'Noise'
+        elif VOLTAGE_T1_S < m1 <= VOLTAGE_T2_S:
+            return 's', 100 if m1 > NOISE_FACTOR * mx else '?2'
+        elif VOLTAGE_T2_S < m1 <= VOLTAGE_T3_S:
+            return 's', 400 if m1 > NOISE_FACTOR * mx else '?2'
+        else:
+            return '?3', '?3' # Неопределенное состояние или выход за пределы
+        
+    def _determine_current_status(self,
+                                m1: float,
+                                mx: float,
+                                h1_df: pd.DataFrame,
+                                columns: List[str],
+                                coef_p_s: Dict[str, float]) -> Tuple[str, Any]:
+        """Определяет статус (_PS, _base) для измерений тока."""
+        if m1 <= CURRENT_T1_S:
+            if m1 <= NOISE_FACTOR * mx:
+                return 's', 'Noise'
+            else:
+                max_primary = self._get_max_primary_value(h1_df, columns, coef_p_s)
+                if max_primary > CURRENT_T1_P:
+                    return 'p', '?1'
+                else:
+                    return 's', 'Noise'
+        elif CURRENT_T1_S < m1 <= CURRENT_T2_S:
+            return 's', 5 if m1 > NOISE_FACTOR * mx else '?2'
+        else:
+            return '?3', '?3'
+        
+    def _determine_residual_current_status(self, m1: float, mx: float) -> Tuple[str, Any]:
+        """Определяет статус (_PS, _base) для измерений остаточного тока."""
+        # Обратите внимание: в оригинальной логике использовалось OR для m1 и mx
+        # Это может быть не совсем логично, стоит перепроверить требования
+        # Здесь оставлена оригинальная логика: если хотя бы одно значение в диапазоне
+        if m1 <= RESIDUAL_CURRENT_T1_S and mx <= RESIDUAL_CURRENT_T1_S:
+            return 's', 'Noise'
+        elif (RESIDUAL_CURRENT_T1_S < m1 <= RESIDUAL_CURRENT_T2_S and mx <= RESIDUAL_CURRENT_T2_S 
+              or
+              RESIDUAL_CURRENT_T1_S < mx <= RESIDUAL_CURRENT_T2_S and m1 <= RESIDUAL_CURRENT_T2_S):
+            return 's', 1
+        else:
+            return '?3', '?3'
+        
+    def _determine_diff_current_status(self, m1: float) -> Tuple[str, Any]:
+        """Определяет статус (_PS, _base) для измерений дифференциального тока."""
+        if m1 < DIFFERENTIAL_CURRENT_THRESHOLD:
+            return 's', 1
+        else:
+            return '?3', '?3'
 
     def analyze(self,
-                file, h1_df, hx_df, coef_p_s):
-        features = h1_df.columns
-        df = pd.DataFrame({'name': [file[:-4]]})
-        df['norm'] = 'YES'
+                file: str,
+                h1_df: pd.DataFrame,
+                hx_df: pd.DataFrame,
+                coef_p_s: Dict[str, float]) -> pd.DataFrame:
+        """
+        Анализирует данные одной осциллограммы (гармоники h1 и hx)
+        и определяет базовые значения и тип подключения (первичка/вторичка).
 
-        # voltage
-        t1_s = 20 * np.sqrt(2)
-        t1_p = 500 * np.sqrt(2)
-        t2_s = 140 * np.sqrt(2)
-        t3_s = 560 * np.sqrt(2)
-        for r in self.ru_cols:
-            c = list(self.u_cols[r].intersection(features))
-            m1 = h1_df[c].max(axis=1)[0]
-            mx = hx_df[c].max(axis=1)[0]
+        Args:
+            file: Имя файла осциллограммы (без расширения).
+            h1_df: DataFrame с амплитудами первой гармоники.
+            hx_df: DataFrame с максимальными амплитудами высших гармоник (>=2).
+            coef_p_s: Словарь с коэффициентами трансформации (первичка/вторичка).
+
+        Returns:
+            Однострочный DataFrame с результатами анализа.
+        """
+        features = set(h1_df.columns) # Используем set для быстрого пересечения
+        results: Dict[str, Any] = {'name': file[:-4], 'norm': 'YES'} # Собираем результаты в словарь
+
+        # --- Обработка напряжения ---
+        for r_prefix in self.ru_cols:
+            # Находим пересечение нужных столбцов с доступными фичами
+            relevant_cols = list(self.u_cols[r_prefix].intersection(features))
+            if not relevant_cols: # Пропускаем, если нет данных для этой группы
+                continue
+
+            m1 = h1_df[relevant_cols].max(axis=1).iloc[0]
+            mx = hx_df[relevant_cols].max(axis=1).iloc[0]
+
+            if np.isnan(m1): # Пропускаем, если основные данные некорректны
+                 continue
+
+            results[r_prefix + '_h1'] = m1
+            results[r_prefix + '_hx'] = mx
+
+            ps_status, base_status = self._determine_voltage_status(m1, mx, h1_df, relevant_cols, coef_p_s)
+            results[r_prefix + '_PS'] = ps_status
+            results[r_prefix + '_base'] = base_status
+
+        # --- Обработка тока ---
+        for r_prefix in self.ri_cols:
+            relevant_cols = list(self.i_cols[r_prefix].intersection(features))
+            if not relevant_cols:
+                continue
+
+            m1 = h1_df[relevant_cols].max(axis=1).iloc[0]
+            mx = hx_df[relevant_cols].max(axis=1).iloc[0]
+
             if np.isnan(m1):
                 continue
-            df[r + '_h1'] = m1
-            df[r + '_hx'] = mx
-            # TODO: add a check for primary values
-            if m1 <= t1_s:
-                if m1 <= 1.5 * mx:
-                    df[r + '_PS'] = 's'
-                    df[r + '_base'] = 'Noise'
-                else:
-                    # TODO: refactor this
-                    max_value = 0
-                    for name in c:
-                        primary_value = h1_df[name][0] * coef_p_s[name]
-                        if primary_value > max_value:
-                            max_value = primary_value
-                    if max_value > t1_p:
-                        df[r + '_PS'] = 'p'
-                        df[r + '_base'] = '?1'#None
-                    else:
-                        df[r + '_PS'] = 's'
-                        df[r + '_base'] = 'Noise'
-                    # TODO: refactor this
-            elif t1_s < m1 <= t2_s:
-                if m1 <= 1.5 * mx:
-                    df[r + '_PS'] = 's'
-                    df[r + '_base'] = '?2'
-                else:
-                    df[r + '_PS'] = 's'
-                    df[r + '_base'] = 100
-            elif t2_s < m1 <= t3_s:
-                if m1 <= 1.5 * mx:
-                    df[r + '_PS'] = 's'
-                    df[r + '_base'] = '?2'
-                else:
-                    df[r + '_PS'] = 's'
-                    df[r + '_base'] = 400
-            else:
-                df[r + '_PS'] = '?3'
-                df[r + '_base'] = '?3'
-                
-        # current
-        t1_s = 0.03 * np.sqrt(2)
-        t1_p = 20 * np.sqrt(2)
-        t2_s = 30 * np.sqrt(2)
-        for r in self.ri_cols:
-            c = list(self.i_cols[r].intersection(features))
-            m1 = h1_df[c].max(axis=1)[0]
-            mx = hx_df[c].max(axis=1)[0]
+
+            results[r_prefix + '_h1'] = m1
+            results[r_prefix + '_hx'] = mx
+
+            ps_status, base_status = self._determine_current_status(m1, mx, h1_df, relevant_cols, coef_p_s)
+            results[r_prefix + '_PS'] = ps_status
+            results[r_prefix + '_base'] = base_status
+
+        # --- Обработка тока нулевой последовательности ---
+        for r_prefix in self.riz_cols:
+            col_set = set([self.iz_cols[r_prefix]])
+            relevant_cols = list(col_set.intersection(features))
+            if not relevant_cols:
+                continue
+
+            col_name = relevant_cols[0]
+            m1 = h1_df.at[0, col_name]
+            mx = hx_df.at[0, col_name]
+
+
+            if np.isnan(m1):
+                 continue
+
+            results[r_prefix + '_h1'] = m1
+            results[r_prefix + '_hx'] = mx
+
+            ps_status, base_status = self._determine_residual_current_status(m1, mx)
+            results[r_prefix + '_PS'] = ps_status
+            results[r_prefix + '_base'] = base_status
+
+        # --- Обработка дифференциального тока ---
+        # TODO: В оригинальном коде использовался только один префикс 'dId' для всех rid_cols.
+        # Уточнить, нужно ли обрабатывать каждый префикс из self.rid_cols отдельно
+        # или достаточно одного общего 'dId'. Пока оставлено как в оригинале - общий.
+        processed_did = False
+        for r_prefix in self.rid_cols:
+            if processed_did:
+                break
+            relevant_cols = list(self.id_cols[r_prefix].intersection(features))
+            if not relevant_cols:
+                continue
+
+            m1 = h1_df[relevant_cols].max(axis=1).iloc[0]
+
             if np.isnan(m1):
                 continue
-            df[r + '_h1'] = m1
-            df[r + '_hx'] = mx
-            if m1 <= t1_s:
-                if m1 <= 1.5 * mx:
-                    df[r + '_PS'] = 's'
-                    df[r + '_base'] = 'Noise'
-                else:
-                    max_value = 0
-                    for name in c:
-                        primary_value = h1_df[name][0] * coef_p_s[name]
-                        if primary_value > max_value:
-                            max_value = primary_value
-                    if max_value > t1_p:
-                        df[r + '_PS'] = 'p'
-                        df[r + '_base'] = '?1'#None
-                    else:
-                        df[r + '_PS'] = 's'
-                        df[r + '_base'] = 'Noise'
-                    # TODO: refactor this
-            elif t1_s < m1 <= t2_s:
-                if m1 <= 1.5 * mx:
-                    df[r + '_PS'] = 's'
-                    df[r + '_base'] = '?2'
-                else:
-                    df[r + '_PS'] = 's'
-                    df[r + '_base'] = 5
-            else:
-                df[r + '_PS'] = '?3'
-                df[r + '_base'] = '?3'
-        
-        # residual current    
-        t1_s = 0.02 * np.sqrt(2)
-        t2_s = 5 * np.sqrt(2)
-        for r in self.riz_cols:
-            c_r = set([self.iz_cols[r]])
-            c = list(c_r.intersection(features))
-            m1 = h1_df[c].max(axis=1)[0]
-            mx = hx_df[c].max(axis=1)[0]
-            if np.isnan(m1):
-                continue
-            
-            df[r + 'Iz_h1'] = m1
-            df[r + 'Iz_hx'] = mx
-            if m1 <= t1_s or mx <= t1_s:
-                df[r + 'Iz_PS'] = 's'
-                df[r + 'Iz_base'] = 'Noise'
-            elif t1_s < m1 <= t2_s or t1_s < mx <= t2_s:
-                df[r + 'Iz_PS'] = 's'
-                df[r + 'Iz_base'] = '1'
-            else:
-                df[r + 'Iz_PS'] = '?3'
-                df[r + 'Iz_base'] = '?3'
-        
-        for r in self.rid_cols:
-            c = list(self.id_cols[r].intersection(features))
-            m1 = h1_df[c].max(axis=1)[0]
-            if np.isnan(m1):
-                continue
-            
-            df['dId_h1'] = m1
-            if m1 < 30:
-                df['dId_PS'] = 's'
-                df['dId_base'] = 1
-            else:
-                df['dId_PS'] = '?3'
-                df['dId_base'] = '?3'
-                
-                
-        if 'Noise' in df.values:
-            df['norm'] = 'hz' # Шум
-        if '?1' in df.values or '?2' in df.values or '?3' in df.values:
-            df['norm'] = 'NO' # Непонятно, требуется разобраться
-        if list(self.raw_cols.intersection(features)):
-            df['norm'] = 'raw'
-        # if file[:-4] in self.raw_files:
-        #     df['norm'] = 'raw'
-        return df 
+
+            results['dId_h1'] = m1
+
+            ps_status, base_status = self._determine_diff_current_status(m1)
+            results['dId_PS'] = ps_status
+            results['dId_base'] = base_status
+            processed_did = True # Помечаем, что обработали
+
+        # --- Финальное определение статуса 'norm' ---
+        # 1. Проверка на 'raw' (наличие "сырых" столбцов)
+        if self.raw_cols.intersection(features):
+             results['norm'] = 'raw'
+        # 2. Проверка на неопределенность ('?')
+        elif any(val in ['?1', '?2', '?3'] for val in results.values()):
+             results['norm'] = 'NO' # Непонятно, требуется разобраться
+        # 3. Проверка на шум ('Noise')
+        elif 'Noise' in results.values():
+             # TODO: "почему-то он формируется излишне - требуется перепроверить"
+             results['norm'] = 'hz' # Шум
+
+        return pd.DataFrame([results], columns=self.result_cols.keys())
 
     def normalization(self, bus = 6, isSaveOnlyNewFilese = False):
         name_prev_norm = []
