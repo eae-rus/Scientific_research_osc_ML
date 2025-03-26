@@ -275,7 +275,7 @@ class CreateNormOsc:
 
     def normalization(self, bus = 6, isSaveOnlyNewFilese = False):
         name_prev_norm = []
-        if prev_norm_csv_path != "":
+        if self.prev_norm_csv_path != "":
             prev_norm_csv = pd.read_csv(self.prev_norm_csv_path)
             name_prev_norm = prev_norm_csv["name"].values
         
