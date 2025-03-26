@@ -8,3 +8,32 @@ __pycache__/
 
 # Ignore trained_models folder
 ML_model/trained_models
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# IDE - JetBrains (PyCharm, IntelliJ, etc)
+.idea/
+*.iml
+*.iws
+*.ipr
+.idea_modules/
+
+# VS Code
+.vscode/
+*.code-workspace
+.history/
+
+# Other common files to ignore
+*.pyc
+*.swp
+*.swo
+.env
+.venv
+env/
+venv/
+ENV/
