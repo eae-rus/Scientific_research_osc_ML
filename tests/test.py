@@ -3,28 +3,28 @@
 import os
 import sys
 
-# Добавляем корневую директорию проекта в PYTHONPATH
+# Adding the project's root directory to PYTHONPATH
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
 sys.path.append(project_root)
 
-# Импортируем необходимые классы
-from dataflow.comtrade_processing import ReadComtrade
+# Importing the necessary classes
+from dataflow.comtrade_processing import ComtradeProcessing
 from dataflow.raw_to_csv import RawToCSV
 
 
 def main():
-    # Определяем пути к директориям
+    # Defining paths to directories
     raw_path = os.path.join(project_root, 'data', 'raw')
     csv_path = os.path.join(project_root, 'data', 'csv')
 
-    # Создаем директорию для выходных CSV-файлов, если она не существует
+    # Creating a directory for the output CSV files, if it does not exist
     os.makedirs(csv_path, exist_ok=True)
 
     # Инициализируем класс для конвертации Comtrade в CSV
     converter = RawToCSV(raw_path=raw_path, csv_path=csv_path)
 
-    # Проверка наличия файлов в директории
+    # Checking for files in the directory
     cfg_files = [f for f in os.listdir(raw_path) if f.endswith('.cfg')]
     if not cfg_files:
         print(f"Ошибка: В директории {raw_path} не найдены .cfg файлы.")
@@ -33,16 +33,16 @@ def main():
     print(f"Найдено {len(cfg_files)} файлов .cfg в директории {raw_path}")
 
     try:
-        # Запускаем конвертацию
+        # Launching the conversion
         print("Начинаем конвертацию Comtrade в CSV...")
         output_df = converter.create_csv(csv_name='output.csv')
 
-        # Выводим информацию о результатах
+        # We display information about the results
         print(f"Конвертация завершена успешно.")
         print(f"Размер выходного DataFrame: {output_df.shape}")
         print(f"CSV-файл сохранен в: {os.path.join(csv_path, 'output.csv')}")
 
-        # Выводим первые несколько строк для проверки
+        # We output the first few lines for verification
         print("\nПервые 5 строк результата:")
         print(output_df.head())
 
