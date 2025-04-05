@@ -58,7 +58,7 @@ class RawToCSV():
         # Initialization of ML signal lists
         self.ml_all, self.ml_opr_swch, self.ml_abnorm_evnt, self.ml_emerg_evnt = get_short_names_ml_signals()
 
-    def create_csv(self, csv_name='dataset.csv', is_cut_out_area=False):
+    def create_csv(self, csv_name='dataset.csv', is_cut_out_area=True):
         """
         This function DataFrame and save csv file from raw comtrade data.
 
@@ -100,7 +100,7 @@ class RawToCSV():
         #     # We do not overwrite the original data, but only create another csv file
         #     self.get_simple_dataset(dataset_df.copy())
 
-        dataset_df.to_csv(self.csv_path + csv_name, index=False)
+        dataset_df.to_csv(self.csv_path + csv_name, index=True, index_label='sample')
         return dataset_df
 
     def check_columns(self, raw_df):
@@ -138,7 +138,6 @@ class RawToCSV():
 
     def _split_buses(self, raw_df, file_name):
         """Implemented for bus 1 and bus 2 only"""
-        # English:
         # Think about/consider handling cases where the names of the signals are the same. These are flaws in the standardization of names
         # This can happen often. For cases of "U|BusBar-1 | phase: A" and similar, this is often a division into
         # BusBar / CableLine.
@@ -224,79 +223,63 @@ class RawToCSV():
 
     def cut_out_area(self, buses_df: pd.DataFrame, samples_before: int, samples_after: int) -> pd.DataFrame:
         """
-        The function cuts off sections that do not contain ML signals, leaving before and after them at a given boundary.
+        Cuts sections not containing ML signals, leaving samples before/after the signals.
 
         Args:
-            buses_df (pd.DataFrame): DataFrame for processing
-            samples_before (int): Number of samples to cut off before the first ML signal.
-            samples_after (int): Number of samples to cut off after the last ML signal.
+            buses_df: DataFrame to process.
+            samples_before: Number of samples to keep before the first ML signal.
+            samples_after: Number of samples to keep after the last ML signal.
 
         Returns:
-            pd.DataFrame: The DataFrame with cut-out sections.
+            DataFrame with non-ML sections removed and file names annotated with event numbers.
         """
-        dataset_df = pd.DataFrame()
+        ml_columns = [col for col in buses_df.columns if col in self.ml_all]
+        dataset_dfs = []
 
-        for _, bus_df in buses_df.groupby("file_name"):
-            truncated_dataset = pd.DataFrame()
-            # Reset the index before slicing
+        for file_name, bus_df in buses_df.groupby("file_name", sort=False):
             bus_df = bus_df.reset_index(drop=True)
+            is_save = (bus_df[ml_columns] == 1).any(axis=1).to_numpy()
 
-            bus_df["is_save"] = False
-            filtered_column_names = [col for col in bus_df.columns if col in self.ml_all]
-
-            # Identify rows with ML signals
-            bus_df["is_save"] = bus_df[filtered_column_names].notna().any(axis=1) & (
-                    bus_df[filtered_column_names] == 1).any(axis=1)
-
-            # Getting the Boolean mask "is_save" in the form of a numpy array
-            is_save_array = bus_df["is_save"].values
-
-            # Forward fill: Extend "is_save" to cover sections before ML signals
-            # Finding the indexes where the True sequences begin
-            # (the current value is True and the previous one is also True)
-            consecutive_mask = np.logical_and(is_save_array[1:], is_save_array[:-1])
-            consecutive_indices = np.where(consecutive_mask)[0] + 1  # +1 since we compare with the previous one
-
-            # Extending "is_save" by samples_before points before each sequence
-            for idx in consecutive_indices:
-                start_idx = max(0, idx - samples_before)
-                is_save_array[start_idx:idx] = True
-
-            # Backward fill: Extend "is_save" to cover sections after ML signals
-            # Finding the indexes where the sequences end.
-            # (the current value is True and the next one is also True)
-            consecutive_mask_backward = np.logical_and(is_save_array[:-1], is_save_array[1:])
-            consecutive_indices_backward = np.where(consecutive_mask_backward)[0]
-
-            # Extending "is_save" by samples_before points before each sequence
-            for idx in consecutive_indices_backward:
-                end_idx = min(len(is_save_array) - 1, idx + samples_after + 1)
-                is_save_array[idx + 1:end_idx] = True
-
-            # Writing the processed array back to the DataFrame
-            bus_df["is_save"] = is_save_array
-
-            # Add event numbers to file names
-            event_number = 0
-            for index, row in bus_df.iterrows():
-                if bus_df.loc[index, "is_save"]:
-                    if (index == 0 or not bus_df.loc[index - 1, "is_save"]):
-                        event_number += 1
-                    bus_df.loc[index, 'file_name'] = bus_df.loc[index, 'file_name'] + " _event N" + str(event_number)
-
-            truncated_dataset = bus_df[bus_df["is_save"]]
-            # If the array is empty, then we take from the piece in the middle equal to the sum of the lengths before and after
-            if len(truncated_dataset) == 0:
+            # Handle case with no ML signals
+            if not is_save.any():
                 if len(bus_df) > samples_before + samples_after:
-                    middle = len(bus_df) // 2
-                    truncated_dataset = bus_df.iloc[middle - samples_before:middle + samples_after + 1]
+                    mid = len(bus_df) // 2
+                    truncated = bus_df.iloc[mid - samples_before: mid + samples_after + 1]
                 else:
-                    truncated_dataset = bus_df
+                    truncated = bus_df
+                dataset_dfs.append(truncated)
+                continue
 
-            truncated_dataset = truncated_dataset.drop(columns=["is_save"])
-            dataset_df = pd.concat([dataset_df, truncated_dataset], axis=0, ignore_index=False)
+            # Extend regions around ML signals
+            padded = np.concatenate([[False], is_save, [False]])
+            diffs = np.diff(padded.astype(int))
+            starts = np.where(diffs == 1)[0]
+            ends = np.where(diffs == -1)[0] - 1
 
-        return dataset_df
+            starts_adj = np.maximum(0, starts - samples_before)
+            ends_adj = np.minimum(len(is_save) - 1, ends + samples_after)
+
+            new_mask = np.zeros_like(is_save)
+            for s, e in zip(starts_adj, ends_adj):
+                new_mask[s:e+1] = True
+
+            # Event numbering
+            bus_df['is_save'] = new_mask
+            event_starts = (~bus_df['is_save'].shift(fill_value=False)) & bus_df['is_save']
+            
+            bus_df['event'] = (
+                event_starts.cumsum()
+                .where(bus_df['is_save'])  # Only keep numbers where is_save is True
+                .ffill()
+                .fillna(0)  # Fill remaining NA with 0 (before first event)
+                .astype(int)
+            )
+
+            bus_df.loc[bus_df['is_save'], 'file_name'] += ' _event N' + bus_df['event'].astype(str)
+            truncated = bus_df[bus_df['is_save']].drop(columns=['is_save', 'event'])
+            dataset_dfs.append(truncated)
+
+        return pd.concat(dataset_dfs, ignore_index=False)
 
     def structure_columns(self, dataset_df: pd.DataFrame) -> pd.DataFrame:
         """

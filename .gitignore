@@ -37,3 +37,7 @@ Icon
 env/
 venv/
 ENV/
+
+**data/
+exp.ipynb
+**.ipynb_checkpoints/
