@@ -120,7 +120,7 @@ class RawToCSV():
                 # FIXME: На будущее - возможно этот файл и лишний, ибо проверки заложил в "_process_signals_for_PDR"
                 if is_check_PDR:
                     check_result_row = signal_check_df[signal_check_df['filename'] == filename_without_ext]
-                    if check_result_row.empty or not (check_result_row['contains_required_signals'].iloc[0] == yes_prase):
+                    if check_result_row.empty or not (str(check_result_row['contains_required_signals'].iloc[0]).upper()  == yes_prase):
                         pbar.update(1) # Пропускаем файл, если его нет в signal_check_results_csv или contains_required_signals False
                         continue
                 
@@ -517,7 +517,10 @@ class RawToCSV():
                 for name in names:
                     if self.use_PDR and 'PDR | Bus' in name:
                         phase = name.split(': ')[-1]
-                        bus_columns_to_rename[name] = f'PDR {phase}' 
+                        bus_columns_to_rename[name] = f'rPDR {phase}'
+                    elif self.use_PDR and 'PDR_ideal | Bus' in name:
+                        phase = name.split(': ')[-1]
+                        bus_columns_to_rename[name] = f'iPDR {phase}' 
                    
         # TODO: signals I_raw, U_raw, I|dif-1, I | braking-1 are not taken into account
 
@@ -610,6 +613,10 @@ class RawToCSV():
             f'PDR | Bus-{i_bus} | phase: B',
             f'PDR | Bus-{i_bus} | phase: C',
             f'PDR | Bus-{i_bus} | phase: PS',
+            f'PDR_ideal | Bus-{i_bus} | phase: A',
+            f'PDR_ideal | Bus-{i_bus} | phase: B',
+            f'PDR_ideal | Bus-{i_bus} | phase: C',
+            f'PDR_ideal | Bus-{i_bus} | phase: PS',
         }
 
         return ml_signals

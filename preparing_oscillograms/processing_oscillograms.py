@@ -782,7 +782,8 @@ class ProcessingOscillograms():
         has_voltage_cableline_2 = False
         has_current_bus_1_ac = False
         has_current_bus_2_ac = False
-        has_pdr_bus_1 = False
+        r_has_pdr_bus_1 = False
+        i_has_pdr_bus_1 = False
 
         voltage_busbar_1_phases = set()
         voltage_cableline_1_phases = set()
@@ -790,9 +791,11 @@ class ProcessingOscillograms():
         voltage_cableline_2_phases = set()
         current_bus_1_phases = set()
         current_bus_2_phases = set()
-        pdr_bus_1_phases = set()
+        r_pdr_bus_1_phases = set()
+        i_pdr_bus_1_phases = set()
 
         for signal in file_signals:
+            # проверка аналоговых сигналов
             if signal['signal_type'] == 'U':
                 if signal['location_type'] == 'BusBar' and signal['section_number'] == '1':
                     voltage_busbar_1_phases.add(signal['phase'])
@@ -807,9 +810,13 @@ class ProcessingOscillograms():
                     current_bus_1_phases.add(signal['phase'])
                 elif signal['location_type'] == 'Bus' and signal['section_number'] == '2':
                     current_bus_2_phases.add(signal['phase'])
-            elif signal['signal_type'] == 'PDR': # Проверка для PDR как дискретного сигнала
+            # проверка дискретных сигналов
+            elif signal['signal_type'] == 'PDR': # реальный сигнал из осциллограмм
                 if signal['location_type'] == 'Bus' and signal['section_number'] == '1':
-                    pdr_bus_1_phases.add(signal['phase'])
+                    r_pdr_bus_1_phases.add(signal['phase'])
+            elif signal['signal_type'] == 'PDR_ideal': # сигнал идеальной разметки
+                if signal['location_type'] == 'Bus' and signal['section_number'] == '1':
+                    i_pdr_bus_1_phases.add(signal['phase'])
 
         has_voltage_busbar_1 = {'A', 'B', 'C'}.issubset(voltage_busbar_1_phases)
         has_voltage_cableline_1 = {'A', 'B', 'C'}.issubset(voltage_cableline_1_phases)
@@ -819,11 +826,12 @@ class ProcessingOscillograms():
         has_current_bus_1_ac = {'A', 'C'}.issubset(current_bus_1_phases) and len(current_bus_1_phases) >= 2
         has_current_bus_2_ac = {'A', 'C'}.issubset(current_bus_2_phases) and len(current_bus_2_phases) >= 2
 
-        has_pdr_bus_1 = {'PS'}.issubset(pdr_bus_1_phases) or {'A', 'B', 'C'}.issubset(pdr_bus_1_phases)
+        r_has_pdr_bus_1 = {'PS'}.issubset(r_pdr_bus_1_phases) or {'A', 'B', 'C'}.issubset(r_pdr_bus_1_phases)
+        i_has_pdr_bus_1 = {'PS'}.issubset(i_pdr_bus_1_phases) or {'A', 'B', 'C'}.issubset(i_pdr_bus_1_phases)
 
         voltage_condition = (has_voltage_busbar_1 or has_voltage_cableline_1) and (has_voltage_busbar_2 or has_voltage_cableline_2)
         current_condition = has_current_bus_1_ac and has_current_bus_2_ac
-        pdr_condition = has_pdr_bus_1
+        pdr_condition = r_has_pdr_bus_1 or i_has_pdr_bus_1
 
         return voltage_condition and current_condition and pdr_condition
     

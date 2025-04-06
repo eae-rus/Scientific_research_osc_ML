@@ -1,5 +1,10 @@
 import csv
 import json
+import os
+import sys
+
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+sys.path.append(ROOT_DIR)
 
 def generate_analog_signals_name(is_print_to_console: bool = False, is_print_to_json: bool = False, path_to_json_file: str = "") -> dict:
     """
@@ -139,6 +144,11 @@ def generate_discrete_signals_name(is_print_to_console: bool = False, is_print_t
         dict_names_new[f"PDR B{i}"].append(f"PDR | Bus-{i} | phase: B")
         dict_names_new[f"PDR B{i}"].append(f"PDR | Bus-{i} | phase: C")
         dict_names_new[f"PDR B{i}"].append(f"PDR | Bus-{i} | phase: PS") # Direct sequence or common signal
+        # "PDR_ideal" - for scientific research
+        dict_names_new[f"PDR B{i}"].append(f"PDR_ideal | Bus-{i} | phase: A")
+        dict_names_new[f"PDR B{i}"].append(f"PDR_ideal | Bus-{i} | phase: B")
+        dict_names_new[f"PDR B{i}"].append(f"PDR_ideal | Bus-{i} | phase: C")
+        dict_names_new[f"PDR B{i}"].append(f"PDR_ideal | Bus-{i} | phase: PS") # Direct sequence or common signal
         
         dict_names_new[f"IFB B{i}"].append(f"IFB | Bus-{i} | open")
         dict_names_new[f"IFB B{i}"].append(f"IFB | Bus-{i} | close")
