@@ -36,41 +36,62 @@ class Utils():
         
         print(f"File saved: {output_file}")
         
-    def process_cfg_files(self, input_folder, output_folder, file_list_path):
+    def process_cfg_files(self, input_folder, output_folder, mapping_file_path, file_list_path="processed_files.txt"):
         """
         Обрабатывает файлы с расширением .cfg:
-        - Находит строку с подстрокой "I | Bus-2 | phase: A, A, , V" и заменяет её на "U | BusBar-2 | phase: A, A, , V"
-        - Сохраняет изменённый файл в выходную папку
-        - Формирует текстовый документ с именами всех файлов
+        - Загружает маппинг замен из файла mapping_file_path. Каждая строка должна иметь формат:
+            <искомая подстрока> -> <заменяемая подстрока>
+        - Для каждого файла из input_folder проверяет каждую строку и, если находится одна из подстрок для замены, 
+        выполняет замену (может быть более одной замены на файл).
+        - Если в файле произведены изменения, сохраняет его в output_folder под тем же именем и добавляет имя файла
+        в список processed_files.
+        - Записывает список имён обработанных файлов в file_list_path.
         """
         # Создаём выходную папку, если её нет
         os.makedirs(output_folder, exist_ok=True)
+
+        # Загружаем маппинг замен из файла
+        mapping = {}
+        with open(mapping_file_path, 'r', encoding='utf-8') as mf:
+            for line in mf:
+                line = line.strip()
+                # Пропускаем пустые строки и комментарии
+                if not line or line.startswith("#"):
+                    continue
+                if "->" in line:
+                    old, new = line.split("->", 1)
+                    mapping[old.strip()] = new.strip()
         
-        # Список для имён файлов
         processed_files = []
-        
-        # Проходим по всем файлам с расширением .cfg во входной папке
+
+        # Обрабатываем все файлы с расширением .cfg во входной папке
         for file_path in glob.glob(os.path.join(input_folder, '*.cfg')):
             file_name = os.path.basename(file_path)
-            
+
             # Чтение содержимого файла
             with open(file_path, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
-            
-            # Ищем и заменяем строку (замена только первого вхождения)
-            for index, line in enumerate(lines):
-                if "I | Bus-1 | phase: B, C, , V" in line:
-                    lines[index] = line.replace("I | Bus-1 | phase: B, C, , V",
-                                                "U | BusBar-1 | phase: C, C, , V")
-                    processed_files.append(file_name)
-                    # Записываем изменённый файл в выходную папку с тем же именем
-                    output_file_path = os.path.join(output_folder, file_name)
-                    with open(output_file_path, 'w', encoding='utf-8') as f:
-                        f.writelines(lines)
 
-                    break  # После замены выходим из цикла, остальные строки не проверяем
-        
-        # Записываем список имён файлов в отдельный текстовый документ
+            file_modified = False
+            # Проходим по всем строкам файла
+            for i, line in enumerate(lines):
+                # Для каждой подстроки из маппинга выполняем проверку и замену
+                for old_substr, new_substr in mapping.items():
+                    if old_substr in line:
+                        # Если нужно заменить только первое вхождение, можно использовать параметр count=1
+                        lines[i] = line.replace(old_substr, new_substr, 1)
+                        file_modified = True
+                        # Если требуется делать только одну замену в строке, можно добавить break здесь:
+                        # break
+
+            # Если в файле были изменения, сохраняем его и фиксируем имя файла
+            if file_modified:
+                processed_files.append(file_name)
+                output_file_path = os.path.join(output_folder, file_name)
+                with open(output_file_path, 'w', encoding='utf-8') as f:
+                    f.writelines(lines)
+
+        # Записываем список имён обработанных файлов в указанный файл
         with open(file_list_path, 'w', encoding='utf-8') as f:
             f.write('\n'.join(processed_files))
             
