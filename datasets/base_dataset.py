@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 import pandas as pd
-from sklearn.model_selection import train_test_split
-
-from common.utils import get_short_names_ml_signals
+import numpy as np
+from torch.utils.data import Dataset
+from tqdm.auto import tqdm
 
 
 class BaseDataset(ABC):
@@ -26,53 +26,51 @@ class BaseDataset(ABC):
         """
         pass
 
-class FDDDataset(BaseDataset):
-    def _set_target(self):
-        # Get lists of signals for each event
-        _, ml_opr_swch, ml_abnorm_evnt, ml_emerg_evnt = get_short_names_ml_signals()
-        
-        # Masks for each event
-        target_opr = self.df.filter(ml_opr_swch).any(axis=1).astype(int)
-        target_abnorm = self.df.filter(ml_abnorm_evnt).any(axis=1).astype(int)
-        target_emerg = self.df.filter(ml_emerg_evnt).any(axis=1).astype(int)
-        
-        # Combine into a DataFrame
-        target = pd.DataFrame({
-            'opr_swch': target_opr,
-            'abnorm_evnt': target_abnorm,
-            'emerg_evnt': target_emerg
-        }, index=self.df.index)
-        return target
 
-    def _train_test_split(self):
-        # Первые 32 символа из имени файла для группировки
-        file_groups = self.df.index.get_level_values('file_name').str[:32]
-        unique_files = file_groups.unique()
+class SlidingWindowDataset(Dataset):
+    def __init__(self, df: pd.DataFrame, target: pd.Series, window_size: int, stride: int = 1):
+        # Convert data and targets to numpy 
+        self.data = df.values.astype('float32')
+        self.target = target.values.astype('float32') if target is not None else None
         
-        # Стратификация по emerg_evnt (максимум в группе файлов)
-        file_labels = self.target.groupby(file_groups).max()
-        strat_col = file_labels['emerg_evnt']  # Только emerg_evnt
+        # Save multindex for safety checks
+        self.index = df.index
+        self.window_size = window_size
         
-        # Первое разделение (train_val + test)
-        files_train_val, files_test = train_test_split(
-            unique_files,
-            test_size=0.2,
-            stratify=strat_col,  # Стратификация по emerg_evnt
-            random_state=42
-        )
+        # Calculate valid windows for each run_id
+        self.valid_windows = self._precompute_valid_windows(stride)
+
+    def _precompute_valid_windows(self, stride):
+        valid_windows = []
+        run_ids = self.index.get_level_values(0).unique()
+
+        for run_id in tqdm(run_ids, desc="Building safe windows"):
+            # Get all indices for running run_id
+            run_mask = self.index.get_level_values(0) == run_id
+            run_indices = np.where(run_mask)[0]
         
-        # Второе разделение (train + val)
-        strat_train_val = file_labels.loc[files_train_val, 'emerg_evnt']  # Только emerg_evnt
-        files_train, files_val = train_test_split(
-            files_train_val,
-            test_size=0.25,
-            stratify=strat_train_val,  # Стратификация по emerg_evnt
-            random_state=42
-        )
-        
-        # Создание масок
-        return (
-            file_groups.isin(files_train),
-            file_groups.isin(files_val),
-            file_groups.isin(files_test)
-        )
+            # Check run_id has enough points
+            if len(run_indices) < self.window_size:
+                continue
+                
+            # Generate end window indices ONLY in the borders of this run_id
+            for end_pos in range(self.window_size, len(run_indices), stride):
+                start_pos = end_pos - self.window_size
+                start_idx = run_indices[start_pos]
+                end_idx = run_indices[end_pos]
+                
+                # Extra check
+                assert self.index[start_idx][0] == self.index[end_idx-1][0], "Window crosses run_id boundary!"
+                
+                valid_windows.append((start_idx, end_idx))
+                
+        return valid_windows
+
+    def __len__(self):
+        return len(self.valid_windows)
+
+    def __getitem__(self, idx):
+        start_idx, end_idx = self.valid_windows[idx]
+        sample = self.data[start_idx:end_idx]
+        target = self.target[start_idx:end_idx].max() if self.target is not None else sample[-1]
+        return sample, target

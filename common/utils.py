@@ -1,3 +1,6 @@
+import torch
+
+
 def get_short_names_ml_signals(use_operational_switching: bool = True, use_abnormal_event: bool = True,
                                use_emergency_event: bool = True) -> list:
     """
@@ -136,3 +139,13 @@ def get_ml_signals(i_bus, use_operational_switching=True, use_abnormal_event=Tru
         ml_signals.update(ml_emergency_event)
 
     return ml_signals
+
+def get_available_device():
+    """Get available device (GPU or CPU)."""
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+        print(f"Using GPU: {torch.cuda.get_device_name(0)}")
+    else:
+        device = torch.device("cpu")
+        print("GPU not available, using CPU")
+    return device
