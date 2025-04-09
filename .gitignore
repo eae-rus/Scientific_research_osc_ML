@@ -38,6 +38,6 @@ env/
 venv/
 ENV/
 
-**data/
+data/
 exp.ipynb
 **.ipynb_checkpoints/

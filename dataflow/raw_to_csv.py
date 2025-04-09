@@ -275,7 +275,7 @@ class RawToCSV():
                 .astype(int)
             )
 
-            bus_df.loc[bus_df['is_save'], 'file_name'] += ' _event N' + bus_df['event'].astype(str)
+            bus_df.loc[bus_df['is_save'], 'file_name'] += '_event N' + bus_df['event'].astype(str)
             truncated = bus_df[bus_df['is_save']].drop(columns=['is_save', 'event'])
             dataset_dfs.append(truncated)
 
