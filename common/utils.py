@@ -3,6 +3,7 @@ import sys
 import pandas as pd
 from pathlib import Path
 import glob
+from typing import List
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
@@ -167,3 +168,150 @@ class Utils():
         df.loc[mask, 'norm'] = 'YES'
         
         df.to_csv(output_path, index=False)
+        
+    def merge_normalization_csvs(self, file_paths: List[str], output_path: str = "new_norm_coef.csv"):
+        """
+        Объединяет CSV файлы с коэффициентами нормализации, добавляя только строки с новыми 'name'.
+
+        Функция читает первый файл из списка, сохраняет его данные и уникальные значения
+        из столбца 'name'. Затем итерирует по остальным файлам, читает их,
+        и добавляет только те строки, чьи значения 'name' еще не встречались.
+        Столбец 'Column1', если он присутствует, игнорируется и удаляется.
+
+        Args:
+            file_paths (List[str]): Список путей к CSV файлам для объединения.
+                                    Порядок файлов в списке важен: первый файл
+                                    считается основным, из последующих добавляются
+                                    только новые записи.
+
+        Returns:
+            Сохраняет файл по пути output_path
+        """
+        if not file_paths:
+            print("Ошибка: Список путей к файлам пуст.")
+            return None
+
+        master_df = None
+        known_names = set()
+        expected_columns = None
+
+        # Обрабатываем первый файл
+        first_file_path = file_paths[0]
+        try:
+            print(f"Обработка основного файла: {first_file_path}...")
+            df = pd.read_csv(first_file_path)
+
+            # Проверяем наличие ключевого столбца 'name'
+            if 'name' not in df.columns:
+                df = pd.read_csv(file_path, delimiter=';')
+                if 'name' not in df.columns:
+                    print(f"Ошибка: Ключевой столбец 'name' не найден в файле {first_file_path}. Невозможно продолжить.")
+                    return None
+
+            # Удаляем 'Column1', если он существует
+            if 'Column1' in df.columns:
+                print(f"  Найден и будет удален столбец 'Column1' в {first_file_path}")
+                df = df.drop('Column1', axis=1)
+            
+            # Проверяем наличие дубликатов 'name' в первом файле (опционально, но полезно)
+            if df['name'].duplicated().any():
+                print(f"Предупреждение: Найдены дублирующиеся значения 'name' в основном файле {first_file_path}. Будут сохранены все строки.")
+                # Можно добавить логику обработки дубликатов, если нужно (например, брать первую встреченную)
+                # df = df.drop_duplicates(subset=['name'], keep='first')
+
+            master_df = df
+            known_names = set(master_df['name'].astype(str).unique()) # Приводим к строке на всякий случай и берем уникальные
+            expected_columns = list(master_df.columns)
+            print(f"  Загружено {len(master_df)} строк. Уникальных имен: {len(known_names)}.")
+            print(f"  Ожидаемые столбцы: {expected_columns}")
+
+        except FileNotFoundError:
+            print(f"Ошибка: Файл не найден: {first_file_path}. Невозможно инициализировать процесс.")
+            return None
+        except Exception as e:
+            print(f"Ошибка при чтении или обработке основного файла {first_file_path}: {e}")
+            return None
+
+        # Обрабатываем остальные файлы
+        for file_path in file_paths[1:]:
+            try:
+                print(f"\nОбработка дополнительного файла: {file_path}...")
+                current_df = pd.read_csv(file_path)
+
+                # Проверяем наличие 'name'
+                if 'name' not in current_df.columns:
+                    current_df = pd.read_csv(file_path, delimiter=';')
+                    if 'name' not in current_df.columns:
+                        print(f"  Предупреждение: столбец 'name' отсутствует в файле {file_path}. Файл пропущен.")
+                        continue
+
+                # Запоминаем оригинальные колонки для проверки перед удалением 'Column1'
+                original_cols = list(current_df.columns)
+                cols_to_check = original_cols
+
+                # Удаляем 'Column1', если он есть
+                column1_present = 'Column1' in current_df.columns
+                if column1_present:
+                    print(f"  Найден и будет удален столбец 'Column1' в {file_path}")
+                    current_df = current_df.drop('Column1', axis=1)
+                    cols_to_check = list(current_df.columns)
+
+                # Сравниваем столбцы текущего файла со столбцами мастер-файла НА ДАННЫЙ МОМЕНТ
+                master_cols = set(master_df.columns)
+                current_cols = set(current_df.columns)
+
+                # Столбцы, которые есть в текущем, но нет в мастере
+                new_cols_in_current = list(current_cols - master_cols)
+                # Столбцы, которые есть в мастере, но нет в текущем
+                missing_cols_in_current = list(master_cols - current_cols)
+
+                # Добавляем НОВЫЕ столбцы (из текущего файла) в master_df, заполняя NA
+                if new_cols_in_current:
+                    print(f"  Обнаружены новые столбцы в {file_path}: {new_cols_in_current}. Добавляю их в основную таблицу.")
+                    for col in new_cols_in_current:
+                        # Добавляем столбец в master_df, заполняя его pd.NA или np.nan
+                        # pd.NA - новый рекомендуемый способ для обозначения пропусков,
+                        # который лучше работает с разными типами данных (int, bool)
+                        master_df[col] = pd.NA
+                    # Обновляем master_cols для следующего шага
+                    master_cols.update(new_cols_in_current)
+
+
+                # Добавляем НЕДОСТАЮЩИЕ столбцы (из мастера) в current_df, заполняя NA
+                if missing_cols_in_current:
+                    print(f"  В файле {file_path} отсутствуют столбцы: {missing_cols_in_current}. Добавляю их.")
+                    for col in missing_cols_in_current:
+                        current_df[col] = pd.NA
+
+                # После добавления столбцов, УПОРЯДОЧИВАЕМ столбцы в current_df
+                # так же, как в master_df, чтобы concat работал корректно
+                # Убедимся, что master_df содержит все столбцы перед упорядочиванием
+                all_columns = list(master_df.columns) # Теперь это полный набор столбцов
+                current_df = current_df[all_columns]
+
+                # Отбираем строки с НОВЫМИ именами
+                # Приводим 'name' к строке перед сравнением для надежности
+                new_rows = current_df[~current_df['name'].astype(str).isin(known_names)]
+
+                if not new_rows.empty:
+                    print(f"  Найдено {len(new_rows)} строк с новыми именами.")
+                    # Добавляем новые строки в основной DataFrame
+                    master_df = pd.concat([master_df, new_rows], ignore_index=True)
+                    # Обновляем множество известных имен
+                    new_names_found = set(new_rows['name'].astype(str).unique())
+                    known_names.update(new_names_found)
+                    print(f"  Добавлены новые имена")
+                    print(f"  Общее количество строк теперь: {len(master_df)}. Уникальных имен: {len(known_names)}")
+                else:
+                    print(f"  Новых имен в файле {file_path} не найдено.")
+
+            except FileNotFoundError:
+                print(f"  Предупреждение: Файл не найден {file_path}. Файл пропущен.")
+                continue
+            except Exception as e:
+                print(f"  Предупреждение: Ошибка при чтении или обработке файла {file_path}: {e}. Файл пропущен.")
+                continue
+
+        print("\nОбъединение завершено.")
+        master_df.to_csv(output_path, index=False)
+        print(f"\nСохранение завершено, файл имеет имя: {output_path}.")
