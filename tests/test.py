@@ -2,7 +2,6 @@
 # 2) make csv
 import os
 import sys
-
 # Adding the project's root directory to PYTHONPATH
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
@@ -15,8 +14,8 @@ from dataflow.raw_to_csv import RawToCSV
 
 def main():
     # Defining paths to directories
-    raw_path = os.path.join(project_root, 'data', 'raw')
-    csv_path = os.path.join(project_root, 'data', 'csv')
+    raw_path = os.path.join(project_root, 'tests', 'test_data' ,'test_raw')
+    csv_path = os.path.join(project_root, 'tests', 'test_data' ,'test_csv')
 
     # Creating a directory for the output CSV files, if it does not exist
     os.makedirs(csv_path, exist_ok=True)
@@ -35,7 +34,7 @@ def main():
     try:
         # Launching the conversion
         print("Начинаем конвертацию Comtrade в CSV...")
-        output_df = converter.create_csv(csv_name='output.csv')
+        output_df = converter.create_csv(csv_name='test_output.csv')
 
         # We display information about the results
         print(f"Конвертация завершена успешно.")
@@ -45,6 +44,7 @@ def main():
         # We output the first few lines for verification
         print("\nПервые 5 строк результата:")
         print(output_df.head())
+
 
     except Exception as e:
         print(f"Ошибка при конвертации: {str(e)}")
