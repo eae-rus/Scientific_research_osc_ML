@@ -1,19 +1,24 @@
 name: Check CSV File Hashes
 on:
+  push:
+    branches:
+      - '**'  # Запуск при push в любую ветку
   pull_request:
-    branches: [ refactoring ]
+    branches: 
+      - refactoring  # Запуск при PR в refactoring
+
 jobs:
   check-csv-hashes:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout PR branch
+      - name: Checkout branch
         uses: actions/checkout@v3
-
+        
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-
+      
       - name: Check CSV file hashes
         id: check-hashes
         run: |
@@ -46,20 +51,10 @@ jobs:
           # Проверяем, существуют ли оба файла
           if not os.path.exists(test_csv_path):
               print(f"❌ Ошибка: Файл {test_csv_path} не найден")
-              print("Содержимое директории tests:")
-              if os.path.exists('tests'):
-                  print(os.listdir('tests'))
-              else:
-                  print("Директория tests не найдена")
               sys.exit(1)
               
           if not os.path.exists(original_csv_path):
               print(f"❌ Ошибка: Файл {original_csv_path} не найден")
-              print("Содержимое директории tests:")
-              if os.path.exists('tests'):
-                  print(os.listdir('tests'))
-              else:
-                  print("Директория tests не найдена")
               sys.exit(1)
           
           # Вычисляем хеши
@@ -78,9 +73,10 @@ jobs:
               sys.exit(1)
           EOF
         continue-on-error: true
-
+      
+      # Только для pull request: закрываем PR если хеши не совпадают
       - name: Comment and close PR on hash mismatch
-        if: steps.check-hashes.outcome == 'failure'
+        if: github.event_name == 'pull_request' && steps.check-hashes.outcome == 'failure'
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -98,9 +94,10 @@ jobs:
               repo: context.repo.repo,
               state: 'closed'
             });
-
+      
+      # Только для pull request: комментируем успех если хеши совпадают
       - name: Comment on PR when hashes match
-        if: steps.check-hashes.outcome == 'success'
+        if: github.event_name == 'pull_request' && steps.check-hashes.outcome == 'success'
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -111,3 +108,15 @@ jobs:
               repo: context.repo.repo,
               body: '✅ Проверка хешей CSV файлов пройдена успешно! Файлы test_output.csv и original.csv идентичны.'
             });
+      
+      # Только для push: выводим результат в status check
+      - name: Set status check for push
+        if: github.event_name == 'push'
+        run: |
+          if [ "${{ steps.check-hashes.outcome }}" == "success" ]; then
+            echo "✅ CSV hashes match - files are identical"
+            exit 0
+          else
+            echo "❌ CSV hashes do not match - files are different"
+            exit 1
+          fi
