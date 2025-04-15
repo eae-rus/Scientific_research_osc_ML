@@ -1,21 +1,19 @@
 name: Check CSV File Hashes
-
 on:
   pull_request:
     branches: [ refactoring ]
-
 jobs:
   check-csv-hashes:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v3
-        
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      
+
       - name: Check CSV file hashes
         id: check-hashes
         run: |
@@ -23,7 +21,7 @@ jobs:
           import hashlib
           import sys
           import os
-
+          
           def calculate_file_hash(file_path, algorithm='sha256'):
               """Вычисляет хеш файла с использованием указанного алгоритма."""
               hash_obj = hashlib.new(algorithm)
@@ -33,26 +31,43 @@ jobs:
                       hash_obj.update(chunk)
                       
               return hash_obj.hexdigest()
-
+          
+          # Используем текущую директорию как корень проекта
+          project_root = os.getcwd()
+          print(f"Текущая директория (корень проекта): {project_root}")
+          
           # Пути к CSV файлам, которые нужно сравнить
           original_csv_path = os.path.join(project_root, 'tests', 'test_data', 'test_csv', 'original.csv')
-          test_csv_path = os.path.join(project_root, 'tests', 'test_data' ,'test_csv', 'test_output.csv')
+          test_csv_path = os.path.join(project_root, 'tests', 'test_data', 'test_csv', 'test_output.csv')
+          
+          print(f"Путь к original.csv: {original_csv_path}")
+          print(f"Путь к test_output.csv: {test_csv_path}")
           
           # Проверяем, существуют ли оба файла
           if not os.path.exists(test_csv_path):
               print(f"❌ Ошибка: Файл {test_csv_path} не найден")
+              print("Содержимое директории tests:")
+              if os.path.exists('tests'):
+                  print(os.listdir('tests'))
+              else:
+                  print("Директория tests не найдена")
               sys.exit(1)
               
           if not os.path.exists(original_csv_path):
               print(f"❌ Ошибка: Файл {original_csv_path} не найден")
+              print("Содержимое директории tests:")
+              if os.path.exists('tests'):
+                  print(os.listdir('tests'))
+              else:
+                  print("Директория tests не найдена")
               sys.exit(1)
           
           # Вычисляем хеши
           test_hash = calculate_file_hash(test_csv_path)
           original_hash = calculate_file_hash(original_csv_path)
           
-          print(f"Хеш файла {test_csv}: {test_hash}")
-          print(f"Хеш файла {original_csv}: {original_hash}")
+          print(f"Хеш файла {test_csv_path}: {test_hash}")
+          print(f"Хеш файла {original_csv_path}: {original_hash}")
           
           # Сравниваем хеши
           if test_hash == original_hash:
@@ -63,7 +78,7 @@ jobs:
               sys.exit(1)
           EOF
         continue-on-error: true
-      
+
       - name: Comment and close PR on hash mismatch
         if: steps.check-hashes.outcome == 'failure'
         uses: actions/github-script@v6
@@ -83,7 +98,7 @@ jobs:
               repo: context.repo.repo,
               state: 'closed'
             });
-      
+
       - name: Comment on PR when hashes match
         if: steps.check-hashes.outcome == 'success'
         uses: actions/github-script@v6
@@ -94,5 +109,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '✅ Проверка хешей CSV файлов пройдена успешно! Файлы test.csv и original.csv идентичны.'
+              body: '✅ Проверка хешей CSV файлов пройдена успешно! Файлы test_output.csv и original.csv идентичны.'
             });
