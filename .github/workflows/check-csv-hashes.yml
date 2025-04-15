@@ -1,0 +1,98 @@
+name: Check CSV File Hashes
+
+on:
+  pull_request:
+    branches: [ refactoring ]
+
+jobs:
+  check-csv-hashes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Check CSV file hashes
+        id: check-hashes
+        run: |
+          python <<EOF
+          import hashlib
+          import sys
+          import os
+
+          def calculate_file_hash(file_path, algorithm='sha256'):
+              """Вычисляет хеш файла с использованием указанного алгоритма."""
+              hash_obj = hashlib.new(algorithm)
+              
+              with open(file_path, 'rb') as f:
+                  for chunk in iter(lambda: f.read(4096), b''):
+                      hash_obj.update(chunk)
+                      
+              return hash_obj.hexdigest()
+
+          # Пути к CSV файлам, которые нужно сравнить
+          original_csv_path = os.path.join(project_root, 'tests', 'test_data', 'test_csv', 'original.csv')
+          test_csv_path = os.path.join(project_root, 'tests', 'test_data' ,'test_csv', 'test_output.csv')
+          
+          # Проверяем, существуют ли оба файла
+          if not os.path.exists(test_csv_path):
+              print(f"❌ Ошибка: Файл {test_csv_path} не найден")
+              sys.exit(1)
+              
+          if not os.path.exists(original_csv_path):
+              print(f"❌ Ошибка: Файл {original_csv_path} не найден")
+              sys.exit(1)
+          
+          # Вычисляем хеши
+          test_hash = calculate_file_hash(test_csv_path)
+          original_hash = calculate_file_hash(original_csv_path)
+          
+          print(f"Хеш файла {test_csv}: {test_hash}")
+          print(f"Хеш файла {original_csv}: {original_hash}")
+          
+          # Сравниваем хеши
+          if test_hash == original_hash:
+              print("✅ Хеши совпадают - файлы идентичны")
+              sys.exit(0)
+          else:
+              print("❌ Хеши не совпадают - файлы различаются")
+              sys.exit(1)
+          EOF
+        continue-on-error: true
+      
+      - name: Comment and close PR on hash mismatch
+        if: steps.check-hashes.outcome == 'failure'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ Pull request автоматически отклонен: хеши CSV файлов не совпадают. Файлы test_output.csv и original.csv должны быть идентичны.'
+            });
+            
+            github.rest.pulls.update({
+              pull_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'closed'
+            });
+      
+      - name: Comment on PR when hashes match
+        if: steps.check-hashes.outcome == 'success'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ Проверка хешей CSV файлов пройдена успешно! Файлы test.csv и original.csv идентичны.'
+            });
