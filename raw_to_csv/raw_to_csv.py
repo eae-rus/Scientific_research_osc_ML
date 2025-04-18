@@ -776,74 +776,137 @@ class RawToCSV():
     # К тому же, раньше функция прост расширяла. А это регистрирует изменения (0-1 и 1-0) и расширяет вокруг них.
     def cut_out_area_for_PDR(self, buses_df: pd.DataFrame, samples_before: int, samples_after: int) -> pd.DataFrame:
         """
-        Функция обрабатывает DataFrame, регистрируя факты изменения сигнала (0→1 и 1→0)
+        Обрабатывает DataFrame, регистрируя факты изменения сигнала (0→1 и 1→0)
         и расширяя зону вокруг изменений на заданное число отсчётов.
-        
+
+        Сигнал для обнаружения изменений определяется по следующей логике:
+        1. Если столбец "rPDR PS" существует и содержит не только NaN, используется он (1 если значение == 1, иначе 0).
+        2. Иначе, если столбцы "rPDR A", "rPDR B", "rPDR C" существуют, 
+           сигнал равен 1 только если все три столбца равны 1, иначе 0.
+        3. Иначе (если ни один из источников сигнала не доступен), сигнал считается равным 0 для всех строк.
+
         Аргументы:
-            buses_df (pd.DataFrame): Исходный DataFrame с данными.
+            buses_df (pd.DataFrame): Исходный DataFrame с данными. Должен содержать столбец 'file_name'.
             samples_before (int): Количество строк до точки изменения, которые надо включить.
             samples_after (int): Количество строк после точки изменения, которые надо включить.
-            
+
         Возвращает:
             pd.DataFrame: Обработанный DataFrame с выделенными зонами и новым столбцом change_event.
+                          Строки из разных исходных файлов могут быть перемешаны, но сгруппированы по событиям.
         """
         dataset_df = pd.DataFrame()
+        
+        # Define signal column names
+        primary_signal_col = "rPDR PS"
+        composite_signal_cols = ["rPDR A", "rPDR B", "rPDR C"]
 
-        # Обрабатываем каждый файл (группу) отдельно
-        for _, bus_df in buses_df.groupby("file_name"):
-            # Сброс индекса для корректного обращения по позициям
+        # Process each file (group) separately
+        for file_name, bus_df in buses_df.groupby("file_name"):
+            # Reset index for correct positional access and slicing
             bus_df = bus_df.reset_index(drop=True)
-
-            # Выбираем столбцы, содержащие ML сигналы (их названия содержатся в self.ml_all)
-            filtered_column_names = ["PDR"]
-
-            # Создаем булевый столбец signal: True, если хотя бы в одном из выбранных столбцов значение равно 1
-            bus_df["signal"] = bus_df[filtered_column_names].notna().any(axis=1) & (bus_df[filtered_column_names] == 1).any(axis=1)
             
-            # Определяем предыдущую строку для выявления переходов
+            signal_calculated = False
+            
+            # --- Determine the signal source ---
+            # 1. Try primary signal "rPDR PS"
+            if primary_signal_col in bus_df.columns and bus_df[primary_signal_col].notna().any():
+                # Use primary signal if it exists and is not all NaN
+                # Ensure comparison handles potential NaNs gracefully (NaN == 1 is False)
+                bus_df["signal"] = (bus_df[primary_signal_col] == 1)
+                signal_calculated = True
+                # print(f"File {file_name}: Using primary signal '{primary_signal_col}'.") # Optional: for debugging
+
+            # 2. If primary signal not used, try composite signals
+            if not signal_calculated:
+                # Check if all required composite columns exist
+                if all(col in bus_df.columns for col in composite_signal_cols):
+                    # Check if there's *any* non-NaN data in these columns before calculating
+                    if bus_df[composite_signal_cols].notna().any().any():
+                        # Calculate composite signal: 1 only if ALL are 1
+                        bus_df[primary_signal_col] = (bus_df[composite_signal_cols] == 1).all(axis=1)
+                        bus_df["signal"] = (bus_df[primary_signal_col] == 1)
+                        signal_calculated = True
+                        # print(f"File {file_name}: Using composite signals {composite_signal_cols}.") # Optional: for debugging
+                    else:
+                         # Composite columns exist but are all NaN
+                         # print(f"File {file_name}: Composite columns {composite_signal_cols} exist but are all NaN. Signal set to False.") # Optional: for debugging
+                         pass # signal_calculated remains False, will default to False below
+
+                else:
+                    # Not all composite columns are present
+                    missing_cols = [col for col in composite_signal_cols if col not in bus_df.columns]
+                    # print(f"File {file_name}: Primary signal '{primary_signal_col}' not usable. Composite columns missing: {missing_cols}. Signal set to False.") # Optional: for debugging
+                    pass # signal_calculated remains False, will default to False below
+
+            # 3. Default to False if no signal source was found/usable
+            if not signal_calculated:
+                 # print(f"File {file_name}: No usable signal source found. Skipping this file.") # Optional: for debugging
+                 continue 
+
+            # --- Continue with the original logic using the calculated 'signal' ---
+
+            # Determine the previous signal state to detect changes
             bus_df["prev_signal"] = bus_df["signal"].shift(1).fillna(False)
-            
-            # Регистрируем изменения в новом столбце change_event:
-            # Если переход от False к True, то "0-1"; если от True к False, то "1-0"
-            bus_df["change_event"] = None
+
+            # Register changes in 'change_event': "0-1" or "1-0"
+            bus_df["change_event"] = np.nan # Initialize with NaN instead of None for better pandas compatibility
             bus_df.loc[(bus_df["prev_signal"] == False) & (bus_df["signal"] == True), "change_event"] = "0-1"
             bus_df.loc[(bus_df["prev_signal"] == True) & (bus_df["signal"] == False), "change_event"] = "1-0"
-            
-            # Инициализируем столбец, который будет отмечать строки для сохранения
-            bus_df["is_save"] = False
-            
-            # Для каждой строки, где зафиксировано изменение, расширяем зону вокруг неё
-            for idx, row in bus_df.iterrows():
-                if idx>0 and pd.notna(row["change_event"]):
-                    start_idx = max(0, idx - samples_before)
-                    end_idx = min(len(bus_df), idx + samples_after + 1)
-                    bus_df.loc[start_idx:end_idx, "is_save"] = True
 
-            # Присвоение номеров событий в столбце file_name для визуального разделения событий
-            event_number = 0
-            for idx, row in bus_df.iterrows():
-                if bus_df.loc[idx, "is_save"]:
-                    # Начало нового события, если либо это первая строка, либо предыдущая не входит в зону
-                    if idx == 0 or not bus_df.loc[idx - 1, "is_save"]:
-                        event_number += 1
-                    bus_df.loc[idx, 'file_name'] = bus_df.loc[idx, 'file_name'] + " _event N" + str(event_number)
-                    
-            # Формируем подвыборку с сохраненными строками
-            truncated_dataset = bus_df[bus_df["is_save"]]
-            
-            # Если ни одно событие не обнаружено, выбираем центральный фрагмент
-            if len(truncated_dataset) == 0:
+            # Initialize column to mark rows to keep
+            bus_df["is_save"] = False
+
+            # Find indices where a change occurred (ignoring potential NaN in change_event)
+            change_indices = bus_df.index[bus_df["change_event"].notna()]
+
+            # Expand the area around each change event
+            for idx in change_indices:
+                 # Check idx > 0 is implicitly handled by shift(1) for change_event detection
+                 start_idx = max(0, idx - samples_before)
+                 # end_idx needs to be inclusive for .loc, so +1 compared to slicing
+                 end_idx = min(len(bus_df) - 1, idx + samples_after) # Adjust end index for .loc
+                 bus_df.loc[start_idx:end_idx, "is_save"] = True
+
+            # Filter rows marked for saving
+            truncated_dataset = bus_df[bus_df["is_save"]].copy() # Use .copy() to avoid SettingWithCopyWarning
+
+            # Assign event numbers within the file_name for saved rows
+            if not truncated_dataset.empty:
+                 event_number = 0
+                 # Identify the start of each contiguous block of 'is_save' == True
+                 # A block starts if 'is_save' is True and the previous was False (or it's the first row)
+                 is_start_of_event = truncated_dataset.index.to_series().diff().fillna(1) != 1
+                 event_groups = is_start_of_event.cumsum()
+                 
+                 # Efficiently apply event numbers using the calculated groups
+                 truncated_dataset['file_name'] = truncated_dataset['file_name'] + " _event N" + event_groups.astype(str)
+
+            # Handle case where no events were found in this file_df
+            if len(truncated_dataset) == 0 and len(bus_df) > 0: # Check if bus_df wasn't empty
                 if len(bus_df) > samples_before + samples_after:
                     middle = len(bus_df) // 2
-                    truncated_dataset = bus_df.iloc[middle - samples_before:middle + samples_after + 1]
+                    # Use iloc for slicing by position after reset_index
+                    truncated_dataset = bus_df.iloc[max(0, middle - samples_before) : min(len(bus_df), middle + samples_after + 1)].copy()
                 else:
-                    truncated_dataset = bus_df
-            
-            # Удаляем временные столбцы, не нужные в финальном DataFrame
-            truncated_dataset = truncated_dataset.drop(columns=["is_save", "prev_signal", "signal"])
-            
-            dataset_df = pd.concat([dataset_df, truncated_dataset], axis=0, ignore_index=False)
-            
+                    truncated_dataset = bus_df.copy()
+                # Ensure the columns added during processing are present even if no events found, set to default values
+                if "signal" not in truncated_dataset.columns: truncated_dataset["signal"] = False # Or appropriate default
+                if "prev_signal" not in truncated_dataset.columns: truncated_dataset["prev_signal"] = False
+                if "change_event" not in truncated_dataset.columns: truncated_dataset["change_event"] = np.nan
+
+
+            # Drop temporary columns not needed in the final DataFrame
+            # Check if columns exist before dropping to avoid errors if no events were found and columns weren't added
+            cols_to_drop = ["is_save", "prev_signal", "signal", "rPDR A", "rPDR B", "rPDR C"]
+            existing_cols_to_drop = [col for col in cols_to_drop if col in truncated_dataset.columns]
+            if existing_cols_to_drop:
+                 truncated_dataset = truncated_dataset.drop(columns=existing_cols_to_drop)
+
+            # Append the processed data for this file to the overall dataset
+            # Use ignore_index=True if you want a clean 0..N index in the final result
+            # Set ignore_index=False if you want to preserve original indices (might be less useful here)
+            dataset_df = pd.concat([dataset_df, truncated_dataset], axis=0, ignore_index=True) 
+
         return dataset_df
     
     def get_simple_dataset(self, dataset_df: pd.DataFrame, csv_name='dataset_simpl.csv'):
