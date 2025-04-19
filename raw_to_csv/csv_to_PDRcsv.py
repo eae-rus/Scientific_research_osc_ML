@@ -484,7 +484,8 @@ def process_oscillograms(
             unique_files = final_df['file_name'].unique()
             # Генерируем ID начиная с start_id
             filename_mapping = {i + start_id: old_name for i, old_name in enumerate(unique_files)}
-            final_df['file_name'] = final_df['file_name'].map(filename_mapping)
+            mapping = {old_name: i + start_id for i, old_name in enumerate(unique_files)}
+            final_df['file_name'] = final_df['file_name'].map(mapping)
 
             filename_mapping_df = pd.DataFrame(list(filename_mapping.items()), columns=['new_id', 'original_name'])
             if verbose: print(f"    Имена файлов заменены на ID от {start_id} до {start_id + len(unique_files) - 1}.")
@@ -681,7 +682,7 @@ if __name__ == "__main__":
         ],
         # 'output_signals': 'ALL', # Можно использовать для отладки
         'rename_files': True,
-        'start_file_id': 10733, # Начало нумерации при переименовывании файлов
+        'start_file_id': 0, # Начало нумерации при переименовывании файлов
         'min_current_threshold': 1e-6,
         'verbose': False,                # Ставим False для чистого вывода (только прогресс-бар и ошибки)
                                          # Ставим True для детальной информации по каждой группе
@@ -691,15 +692,15 @@ if __name__ == "__main__":
     }
 
     # --- Обработка данных ---
-    #input_csv_file = "dataset_cut_out_PDR_1600_v1.2 — копия.csv"
-    input_csv_file = "dataset_cut_out_PDR_1200_v1.2 — копия.csv"   
+    input_csv_file = "dataset_cut_out_PDR_1600_v1.2 — копия.csv"
+    #input_csv_file = "dataset_cut_out_PDR_1200_v1.2 — копия.csv"   
     process_oscillograms(
         csv_path=input_csv_file,
         config=config,
-        #output_csv_path="output/dataset_cut_out_PDR_1600_v2.csv",
-        #mapping_csv_path="output/filename_map_PDR_1600_v2.csv"
-        output_csv_path="output/dataset_cut_out_PDR_1200_v2.csv",
-        mapping_csv_path="output/filename_map_PDR_1200_v2.csv"
+        output_csv_path="output/dataset_cut_out_PDR_1600_v2.csv",
+        mapping_csv_path="output/filename_map_PDR_1600_v2.csv"
+        #output_csv_path="output/dataset_cut_out_PDR_1200_v2.csv",
+        #mapping_csv_path="output/filename_map_PDR_1200_v2.csv"
     )
     
     # --- Нормализация ---
