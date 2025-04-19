@@ -483,25 +483,25 @@ def process_oscillograms(
 
             unique_files = final_df['file_name'].unique()
             # Генерируем ID начиная с start_id
-            filename_mapping = {old_name: i + start_id for i, old_name in enumerate(unique_files)}
+            filename_mapping = {i + start_id: old_name for i, old_name in enumerate(unique_files)}
             final_df['file_name'] = final_df['file_name'].map(filename_mapping)
 
-            filename_mapping_df = pd.DataFrame(list(filename_mapping.items()), columns=['original_name', 'new_id'])
+            filename_mapping_df = pd.DataFrame(list(filename_mapping.items()), columns=['new_id', 'original_name'])
             if verbose: print(f"    Имена файлов заменены на ID от {start_id} до {start_id + len(unique_files) - 1}.")
 
     # --- Сохранение результатов ---
     print("\n--- Сохранение результатов ---")
     try:
+        if filename_mapping_df is not None:
+             filename_mapping_df.to_csv(mapping_csv_path, index=False)
+             print(f"Словарь имен файлов сохранен в: {mapping_csv_path}")
+        
         # Замена Inf на очень большие числа или NaN перед сохранением
         final_df = final_df.replace([np.inf, -np.inf], np.nan) 
         # Можно заменить NaN на что-то другое, если требуется CSV без пустых полей
         # final_df.fillna('NaN', inplace=True) 
         final_df.to_csv(output_csv_path, index=False, float_format='%.6g') # Форматирование для float
         print(f"Обработанный датасет сохранен в: {output_csv_path}")
-        
-        if filename_mapping_df is not None:
-             filename_mapping_df.to_csv(mapping_csv_path, index=False)
-             print(f"Словарь имен файлов сохранен в: {mapping_csv_path}")
              
     except Exception as e:
         print(f"Критическая ошибка при сохранении результатов: {e}")
@@ -655,9 +655,6 @@ def normalize(
 if __name__ == "__main__":
 
     # --- Конфигурация ---
-    # Предполагаем, что файл 'dummy_oscillograms.csv' существует (создан ранее или есть реальный)
-    input_csv_file = "dataset_cut_out_PDR_1600_v1.2 — копия.csv" 
-
     config = {
         'target_signal': 'rPDR PS',      # iPDR PS - идеальный сигнал, rPDR PS - реальные
         'use_voltage_source': 'BB',      
@@ -675,8 +672,8 @@ if __name__ == "__main__":
              # Линейные: Z_AB, Z_BC, Z_CA
              'Z_pos_seq',               
              # Мощности
-             'P_total', 'Q_total',       
-             'P_pos_seq', 'Q_pos_seq',   
+             'P_pos_seq', 'P_neg_seq',       
+             'Q_pos_seq', 'Q_neg_seq',   
              # Линейные напряжения
              # 'UAB_h1', 'UBC_h1', 'UCA_h1' 
              # Исходный ток IB (если был рассчитан)
@@ -684,7 +681,7 @@ if __name__ == "__main__":
         ],
         # 'output_signals': 'ALL', # Можно использовать для отладки
         'rename_files': True,
-        'start_file_id': 0, # Начало нумерации при переименовывании файлов
+        'start_file_id': 10733, # Начало нумерации при переименовывании файлов
         'min_current_threshold': 1e-6,
         'verbose': False,                # Ставим False для чистого вывода (только прогресс-бар и ошибки)
                                          # Ставим True для детальной информации по каждой группе
@@ -692,12 +689,17 @@ if __name__ == "__main__":
         'normalize': True,
         'normalization_params_path': 'output/normalization_params.csv' # путь, куда сохранянтся параметры нормализации
     }
-    
+
+    # --- Обработка данных ---
+    #input_csv_file = "dataset_cut_out_PDR_1600_v1.2 — копия.csv"
+    input_csv_file = "dataset_cut_out_PDR_1200_v1.2 — копия.csv"   
     process_oscillograms(
         csv_path=input_csv_file,
         config=config,
-        output_csv_path="output/dataset_cut_out_PDR_1600_v2.csv",
-        mapping_csv_path="output/filename_map_PDR_1600_v2.csv"
+        #output_csv_path="output/dataset_cut_out_PDR_1600_v2.csv",
+        #mapping_csv_path="output/filename_map_PDR_1600_v2.csv"
+        output_csv_path="output/dataset_cut_out_PDR_1200_v2.csv",
+        mapping_csv_path="output/filename_map_PDR_1200_v2.csv"
     )
     
     # --- Нормализация ---
