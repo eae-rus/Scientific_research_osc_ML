@@ -316,3 +316,49 @@ class Utils():
         print("\nОбъединение завершено.")
         master_df.to_csv(output_path, index=False)
         print(f"\nСохранение завершено, файл имеет имя: {output_path}.")
+
+    def filter_noise(self, csv_source: str, threshold: int, resave: bool = False, output_dir: str = "output"):
+        """
+        Фильтрует шумные группы в CSV-файле и сохраняет результаты.
+
+        :param csv_source: путь или URL к исходному CSV-файлу
+        :param threshold: максимальное число непустых change_event до того, как группа считается шумной
+        :param resave: флаг, сохранять ли очищенный CSV с удалёнными записями
+        :param output_dir: директория для сохранения выходных файлов
+        :return: список префиксов, отмеченных для удаления
+        """
+        # Создаём папку для вывода, если её нет
+        os.makedirs(output_dir, exist_ok=True)
+
+        # Загружаем данные
+        df = pd.read_csv(csv_source)
+
+        # Выделяем префикс (часть до первого пробела)
+        df['prefix'] = df['file_name'].astype(str).map(lambda x: x.split(' ')[0])
+
+        # Группируем и считаем непустые значения change_event
+        counts = (
+            df.groupby('prefix')['change_event']
+            .apply(lambda s: s.fillna('')
+                            .astype(str)
+                            .str.strip()
+                            .astype(bool)
+                            .sum())
+        )
+
+        # Определяем шумные префиксы
+        noisy_prefixes = counts[counts > threshold].index.tolist()
+
+        # Сохраняем текстовый файл со списком префиксов для удаления
+        delete_list_path = os.path.join(output_dir, 'to_delete.txt')
+        with open(delete_list_path, 'w') as f:
+            for prefix in noisy_prefixes:
+                f.write(f"{prefix}\n")
+
+        # При необходимости сохраняем очищенный CSV
+        if resave:
+            cleaned = df[~df['prefix'].isin(noisy_prefixes)].drop(columns=['prefix'])
+            cleaned_path = os.path.join(output_dir, 'cleaned.csv')
+            cleaned.to_csv(cleaned_path, index=False)
+
+        return noisy_prefixes
