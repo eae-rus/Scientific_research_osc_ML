@@ -170,6 +170,46 @@ def create_line_group(x, ic_L, voltages, device="cpu"):
 # МОДЕЛИ
 #####################
 
+class PDR_MLP_v1(nn.Module):
+    class Head_fc(nn.Module):
+        def __init__(self, channel_num, hidden_size):
+            super().__init__()
+            self.layer = nn.Sequential(
+            nn.Linear(channel_num, hidden_size),
+            nn.LeakyReLU(True),
+            nn.Linear(hidden_size, hidden_size),
+            nn.LeakyReLU(),
+            nn.Linear(hidden_size, hidden_size//2),
+            nn.LeakyReLU(),
+            nn.Linear(hidden_size//2, 1),
+            nn.Sigmoid(),
+        )
+        def forward(self, x):
+            return self.layer(x)
+    def __init__(
+        self, frame_size, channel_num=4, device = None,
+    ):
+        self.channel_num = channel_num
+        self.device = device
+        super(PDR_MLP_v1, self).__init__()
+        self.fc = self.Head_fc(self.channel_num, hidden_size=20)
+
+    def forward(self, x):
+        # x: (batch_size, *, *) — например (1178, 4, 1) или (1178, 1, 4)
+        x = x.flatten(start_dim=1)  # → (batch_size, feature_dim), здесь feature_dim=4*1=4
+        return self.fc(x)
+
+
+
+
+
+
+
+#####################
+# СТАРЫЕ
+#####################
+
+
 class CONV_MLP_v2(nn.Module):
     class Head_fc(nn.Module):
         def __init__(self, hidden_size):
