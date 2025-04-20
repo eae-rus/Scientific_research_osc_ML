@@ -651,15 +651,120 @@ def normalize(
 
     print(f"--- Нормализация и переименование файла {input_csv_path} завершены ---")
 
+def apply_normalization(
+    input_csv_path: str,
+    params_csv_path: str,
+    output_normalized_csv_path: str,
+    verbose: bool = False
+) -> None:
+    """
+    Применяет ранее рассчитанные параметры нормализации к новому CSV файлу.
+
+    Args:
+        input_csv_path (str): Путь к CSV файлу, который нужно нормализовать.
+                               (Предполагается, что он имеет структуру,
+                               аналогичную той, для которой считались параметры).
+        params_csv_path (str): Путь к CSV файлу с параметрами нормализации
+                               (созданному функцией normalize_and_rename).
+        output_normalized_csv_path (str): Путь для сохранения нормализованного CSV файла.
+        verbose (bool): Выводить ли подробные сообщения во время обработки.
+    """
+    print(f"\n--- Начало применения нормализации к файлу: {input_csv_path} ---")
+    print(f"  Используются параметры из: {params_csv_path}")
+
+    # --- Загрузка данных ---
+    if not os.path.exists(input_csv_path):
+         raise FileNotFoundError(f"Входной CSV файл для нормализации не найден: {input_csv_path}")
+    if not os.path.exists(params_csv_path):
+         raise FileNotFoundError(f"Файл с параметрами нормализации не найден: {params_csv_path}")
+
+    try:
+        df_to_normalize = pd.read_csv(input_csv_path)
+        if verbose: print(f"Загружен файл для нормализации: {input_csv_path}, строк: {len(df_to_normalize)}")
+    except Exception as e:
+        print(f"Критическая ошибка загрузки CSV файла {input_csv_path}: {e}")
+        return
+
+    try:
+        # Пропускаем строки с комментариями при чтении параметров
+        params_df = pd.read_csv(params_csv_path, comment='#')
+        if verbose: print(f"Загружены параметры нормализации: {params_csv_path}, строк: {len(params_df)}")
+    except Exception as e:
+        print(f"Критическая ошибка загрузки файла параметров {params_csv_path}: {e}")
+        return
+
+    # --- Применение нормализации ---
+    df_normalized = df_to_normalize.copy() # Работаем с копией
+
+    # Итерация по строкам (группам параметров) в файле параметров
+    for index, params_row in params_df.iterrows():
+        norm_type = params_row['normalization_type']
+        # Получаем список столбцов из строки, убираем пробелы
+        cols_str = params_row['columns_normalized']
+        if pd.isna(cols_str):
+            if verbose: print(f"  Предупреждение: Пустой список столбцов для группы {params_row['group_type']}. Пропуск.")
+            continue
+            
+        target_cols = [col.strip() for col in cols_str.split(',')]
+        
+        # Отбираем только те столбцы, которые реально есть в нашем датафрейме
+        existing_cols = [col for col in target_cols if col in df_normalized.columns]
+        
+        if not existing_cols:
+            if verbose: print(f"  Предупреждение: Ни один из столбцов группы '{params_row['group_type']}' не найден в {input_csv_path}. Пропуск группы.")
+            continue
+        
+        if verbose: print(f"  Применение '{norm_type}' к группе '{params_row['group_type']}' (столбцы: {', '.join(existing_cols)})...")
+
+        # Применяем соответствующий тип нормализации
+        if norm_type == 'z_score':
+            mean = params_row['mean']
+            std_dev = params_row['std_dev']
+            
+            if pd.isna(mean) or pd.isna(std_dev):
+                 print(f"  Предупреждение: Отсутствуют mean или std_dev для группы '{params_row['group_type']}'. Пропуск.")
+                 continue
+
+            # Применяем к существующим столбцам
+            if std_dev > 1e-9: # Порог, как и при расчете
+                df_normalized[existing_cols] = (df_normalized[existing_cols] - mean) / std_dev
+            else: # Если стандартное отклонение было нулевым (константа)
+                df_normalized[existing_cols] = df_normalized[existing_cols] - mean
+                
+        elif norm_type == 'divide_by_pi':
+            divisor = params_row['divisor']
+            
+            if pd.isna(divisor) or divisor == 0:
+                 print(f"  Предупреждение: Некорректный 'divisor' для группы '{params_row['group_type']}'. Пропуск.")
+                 continue
+                 
+            # Применяем к существующим столбцам
+            df_normalized[existing_cols] = df_normalized[existing_cols] / divisor
+            
+        else:
+            print(f"  Предупреждение: Неизвестный тип нормализации '{norm_type}' для группы '{params_row['group_type']}'. Пропуск.")
+
+    # --- Сохранение результата ---
+    print("\n--- Сохранение нормализованного файла ---")
+    try:
+        # Замена Inf на NaN перед сохранением (на всякий случай)
+        df_normalized = df_normalized.replace([np.inf, -np.inf], np.nan)
+        df_normalized.to_csv(output_normalized_csv_path, index=False, float_format='%.6g')
+        print(f"Нормализованный датасет сохранен в: {output_normalized_csv_path}")
+    except Exception as e:
+        print(f"Критическая ошибка при сохранении нормализованного файла: {e}")
+
+    print(f"--- Применение нормализации к файлу {input_csv_path} завершено ---")
+
 
 # --- Пример использования ---
 if __name__ == "__main__":
 
     # --- Конфигурация ---
     config = {
-        'target_signal': 'rPDR PS',      # iPDR PS - идеальный сигнал, rPDR PS - реальные
+        'target_signal': 'iPDR PS',      # iPDR PS - идеальный сигнал, rPDR PS - реальные
         'use_voltage_source': 'BB',      
-        'samples_per_period': 32,        # Окно FFT (20 точек для 50 Гц при Fd=1600 Гц)
+        'samples_per_period': 32,        # Окно FFT (32 точек для 50 Гц при Fd=1600 Гц)
         'num_harmonics': 1,              
         # 'complex_format': 'mag_angle', # Закомментировано, т.к. теперь только этот формат
         'output_signals': [              # Запрашиваем только нужные сигналы
@@ -683,7 +788,7 @@ if __name__ == "__main__":
         # 'output_signals': 'ALL', # Можно использовать для отладки
         'rename_files': True,
         'start_file_id': 0, # Начало нумерации при переименовывании файлов
-        'min_current_threshold': 1e-6,
+        'min_current_threshold': 1e-9,
         'verbose': False,                # Ставим False для чистого вывода (только прогресс-бар и ошибки)
                                          # Ставим True для детальной информации по каждой группе
         # --- Параметры для normalize_and_rename ---
@@ -692,22 +797,35 @@ if __name__ == "__main__":
     }
 
     # --- Обработка данных ---
-    input_csv_file = "dataset_cut_out_PDR_1600_v1.2 — копия.csv"
+    #input_csv_file = "dataset_cut_out_PDR_1600_v1.2 — копия.csv"
     #input_csv_file = "dataset_cut_out_PDR_1200_v1.2 — копия.csv"   
-    process_oscillograms(
-        csv_path=input_csv_file,
-        config=config,
-        output_csv_path="output/dataset_cut_out_PDR_1600_v2.csv",
-        mapping_csv_path="output/filename_map_PDR_1600_v2.csv"
-        #output_csv_path="output/dataset_cut_out_PDR_1200_v2.csv",
-        #mapping_csv_path="output/filename_map_PDR_1200_v2.csv"
-    )
+    #input_csv_file = "dataset_iPDR_v1.1.csv"   
+    #process_oscillograms(
+    #    csv_path=input_csv_file,
+    #    config=config,
+    #    #output_csv_path="output/dataset_cut_out_PDR_1600_v2.csv",
+    #    #mapping_csv_path="output/filename_map_PDR_1600_v2.csv"
+    #    #output_csv_path="output/dataset_cut_out_PDR_1200_v2.csv",
+    #    #mapping_csv_path="output/filename_map_PDR_1200_v2.csv"
+    #    output_csv_path="output/dataset_iPDR_v1.csv",
+    #    mapping_csv_path="output/filename_map_iPDR_v1.csv"
+    #)
     
     # --- Нормализация ---
-    #new_input_csv_file = "dataset_cut_out_PDR_all_v1.2 — копия.csv" 
+    #new_input_csv_file = "output/dataset_cut_out_PDR_v2.csv" 
     #final_output_path = "output/dataset_cut_out_PDR_norm_v1.csv"
     #normalize(
     #    input_csv_path=new_input_csv_file, # объединённый датасет
     #    config=config, # Передаем весь конфиг, функция возьмет нужное
     #    output_normalized_csv_path=final_output_path
     #)
+    
+    # --- Применение нормализации ---
+    another_processed_file = "output/dataset_iPDR_v1.csv"
+    params_file_to_apply = "output/normalization_params.csv" # Используем ранее сохраненные параметры
+    output_path_for_applied = "output/dataset_iPDR_norm_v1.csv"
+    apply_normalization(
+        input_csv_path=another_processed_file,
+        params_csv_path=params_file_to_apply,
+        output_normalized_csv_path=output_path_for_applied,
+    )
