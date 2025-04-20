@@ -64,8 +64,8 @@ def calculate_impedance(voltage: np.ndarray, current: np.ndarray, min_current_th
     zero_current_mask = np.abs(current_safe) < min_current_threshold
     current_safe[zero_current_mask] = np.nan # Замена на NaN для избежания деления на 0
     impedance = voltage / current_safe
-    # Можно вернуть 0 или inf там, где ток был 0, но NaN безопаснее
-    # impedance[zero_current_mask] = np.inf + 0j # Или np.nan + 0j
+    # Защита от слишком малых токов
+    impedance[zero_current_mask] = 1/min_current_threshold + (1/min_current_threshold)*1j # Задаём максимальный порог, чтобы исключить nan
     return impedance
 
 def calculate_power(voltage: np.ndarray, current: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -115,6 +115,19 @@ def format_complex_to_mag_angle(df: pd.DataFrame, columns: List[str]) -> pd.Data
         #     print(f"Предупреждение: Столбец {col} не найден для форматирования.")
 
     return new_df
+
+def cols_exist_and_not_all_nan(df: pd.DataFrame, cols: List[str]) -> bool:
+    """
+    Возвращает True, если все колонки из cols есть в df и ни одна из них
+    не заполнена целиком NaN.
+    """
+    for col in cols:
+        if col not in df.columns:
+            return False
+        # если все значения в столбце — NaN, то отбрасываем
+        if df[col].isna().all():
+            return False
+    return True
 
 
 # --- Основная функция обработки ---
@@ -214,10 +227,10 @@ def process_oscillograms(
             u_source = config['use_voltage_source']
             ua_col, ub_col, uc_col = f'UA {u_source}', f'UB {u_source}', f'UC {u_source}'
             
-            if not all(col in group_data.columns for col in [ua_col, ub_col, uc_col]):
+            if not cols_exist_and_not_all_nan(group_data, [ua_col, ub_col, uc_col]):
                 alt_source = 'CL' if u_source == 'BB' else 'BB'
                 ua_col_alt, ub_col_alt, uc_col_alt = f'UA {alt_source}', f'UB {alt_source}', f'UC {alt_source}'
-                if all(col in group_data.columns for col in [ua_col_alt, ub_col_alt, uc_col_alt]):
+                if cols_exist_and_not_all_nan(group_data, [ua_col_alt, ub_col_alt, uc_col_alt]):
                     ua_col, ub_col, uc_col = ua_col_alt, ub_col_alt, uc_col_alt
                     if verbose: print(f"    Предупреждение: Напряжения '{u_source}' не найдены, используются '{alt_source}'.")
                 else:
