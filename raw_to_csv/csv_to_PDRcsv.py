@@ -160,18 +160,28 @@ def process_oscillograms(
     
     # Проверка конфигурации
     required_keys = ['target_signal', 'use_voltage_source', 'samples_per_period', 
-                     'num_harmonics', 'output_signals', 
+                     'num_harmonics', 'output_signals',  'phase_reference_signal',
                      'rename_files', 'min_current_threshold', 'verbose']
-    default_config = {'verbose': False} # Значение по умолчанию для verbose
+    # Значения по умолчанию
+    default_config = {
+        'verbose': False,
+        'phase_reference_signal': 'UA_h1'
+    }
     
     # Установка значений по умолчанию
     for key, value in default_config.items():
         config.setdefault(key, value)
-        
+
     if not all(key in config for key in required_keys):
         missing_keys = [k for k in required_keys if k not in config]
         raise ValueError(f"Конфигурация неполная. Отсутствуют ключи: {missing_keys}")
-        
+
+    # Проверка допустимости значения phase_reference_signal
+    allowed_refs = ['UA_h1', 'V_pos_seq']
+    if config['phase_reference_signal'] not in allowed_refs:
+        raise ValueError(f"Недопустимое значение для 'phase_reference_signal': {config['phase_reference_signal']}. "
+                        f"Допустимые значения: {allowed_refs}")
+
     verbose = config['verbose']
     window_size = config['samples_per_period']
     fft_start_offset = window_size # Сколько точек обрезать в начале
@@ -214,6 +224,8 @@ def process_oscillograms(
         if verbose: print(f"\n--- Обработка группы: {name} ---")
         try:
             group_data = group.copy() # Работаем с копией данных группы
+            sym_comp_V_calculated_early = False
+            calculated_sym_comp_V = {} 
             
             # --- Шаг 1: Валидация и выбор сигналов ---
             if verbose: print("  Шаг 1: Валидация и выбор сигналов...")
@@ -273,14 +285,37 @@ def process_oscillograms(
             for sig_name, sig_data in signals.items():
                 fft_complex = sliding_window_fft(sig_data, window_size, num_harmonics, verbose)
                 fft_results[sig_name] = fft_complex # Shape: (n_points, num_harmonics)
-
-            # Коррекция фаз относительно первой гармоники UA
-            ua_h1_complex = fft_results['UA'][:, 0] # Первая гармоника UA (индекс 0)
-            ua_h1_angles = np.full(ua_h1_complex.shape, np.nan)
-            valid_ua_mask = pd.notna(ua_h1_complex)
-            ua_h1_angles[valid_ua_mask] = np.angle(ua_h1_complex[valid_ua_mask])
-
-            if verbose: print("    Коррекция фаз относительно UA H1...")
+                
+            # --- Определение и расчет опорного сигнала для фазы ---
+            phase_ref_signal_name = config['phase_reference_signal']
+            if verbose: print(f"    Выбран опорный сигнал для фазы: {phase_ref_signal_name}")
+            
+            reference_phasors = np.full(fft_results['UA'][:, 0].shape, np.nan + 1j*np.nan) # Инициализация NaN
+            
+            # Получаем фазоры 1-й гармоники U для расчета V_pos_seq, если нужно
+            ua_h1_fft = fft_results['UA'][:, 0]
+            ub_h1_fft = fft_results['UB'][:, 0]
+            uc_h1_fft = fft_results['UC'][:, 0]
+            
+            if phase_ref_signal_name == 'UA_h1':
+                reference_phasors = ua_h1_fft # Первая гармоника UA
+            elif phase_ref_signal_name == 'V_pos_seq':
+                # Рассчитываем симметричные составляющие НАПРЯЖЕНИЯ здесь
+                if verbose: print("    Расчет V_pos_seq для использования в качестве опорного сигнала фазы...")
+                V1, V2, V0 = calculate_symmetrical_components(ua_h1_fft, ub_h1_fft, uc_h1_fft)
+                reference_phasors = V1 # V1 это V_pos_seq
+                # Сохраним V1, V2, V0 для возможного использования в Шаге 3
+                calculated_sym_comp_V = {'V_pos_seq': V1, 'V_neg_seq': V2, 'V_zero_seq': V0}
+                sym_comp_V_calculated_early = True # <--- Устанавливаем флаг
+            # else: # Проверка уже сделана выше при валидации конфига
+            #     raise ValueError(...)
+            
+            # Расчет опорных углов
+            reference_angles = np.full(reference_phasors.shape, np.nan)
+            valid_ref_mask = pd.notna(reference_phasors)
+            reference_angles[valid_ref_mask] = np.angle(reference_phasors[valid_ref_mask])            
+            
+            if verbose: print(f"    Коррекция фаз относительно {phase_ref_signal_name}...")
             corrected_fft_results = {} # Словарь для хранения скорректированных комплексных результатов FFT
             all_complex_signal_names = [] # Собираем имена всех комплексных сигналов
 
@@ -288,22 +323,25 @@ def process_oscillograms(
                 corrected_data = np.full_like(complex_data, np.nan + 1j*np.nan)
                 for h in range(num_harmonics):
                     harmonic_phasors = complex_data[:, h]
-                    valid_mask = pd.notna(harmonic_phasors) & pd.notna(ua_h1_angles)
-                    
+                    # Используем общие reference_angles для маски и расчета
+                    valid_mask = pd.notna(harmonic_phasors) & pd.notna(reference_angles)
+
                     magnitudes = np.abs(harmonic_phasors[valid_mask])
                     original_angles = np.angle(harmonic_phasors[valid_mask])
-                    corrected_angles = np.angle(np.exp(1j * (original_angles - ua_h1_angles[valid_mask]))) 
-                    
+                    # Используем общие reference_angles для коррекции
+                    corrected_angles = np.angle(np.exp(1j * (original_angles - reference_angles[valid_mask])))
+
                     corrected_data[valid_mask, h] = magnitudes * np.exp(1j * corrected_angles)
-                    if sig_name == 'UA' and h == 0: # Угол UA H1 должен стать 0
-                        corrected_data[valid_mask, h] = magnitudes * np.exp(1j * 0)
+
+                    # Принудительно ставим угол опорного сигнала UA H1 в 0, *только* если он выбран как опорный
+                    if phase_ref_signal_name == 'UA_h1' and sig_name == 'UA' and h == 0:
+                        corrected_data[valid_mask, h] = magnitudes * np.exp(1j * 0) 
 
                 corrected_fft_results[sig_name] = corrected_data
                 # Добавляем имена гармоник в список комплексных сигналов
                 for h in range(num_harmonics):
-                     all_complex_signal_names.append(f"{sig_name}_h{h+1}")
-
-
+                    all_complex_signal_names.append(f"{sig_name}_h{h+1}")
+            
             # Создаем DataFrame для обработанных данных этой группы
             # Изначально содержит только результаты FFT и позже другие расчеты
             processed_data = pd.DataFrame(index=group_data.index) # Сохраняем исходные индексы
@@ -330,15 +368,37 @@ def process_oscillograms(
             min_current = config['min_current_threshold']
 
             # 3.1 Симметричные составляющие
-            if calc_sym_comp_V or calc_sym_comp_I or calc_Z_seq or calc_Power_seq:
-                 V1, V2, V0 = calculate_symmetrical_components(ua_h1, ub_h1, uc_h1)
-                 I1, I2, I0 = calculate_symmetrical_components(ia_h1, ib_h1, ic_h1)
-                 if calc_sym_comp_V:
-                      calculated_signals.update({'V_pos_seq': V1, 'V_neg_seq': V2, 'V_zero_seq': V0})
-                      all_complex_signal_names.extend(['V_pos_seq', 'V_neg_seq', 'V_zero_seq'])
-                 if calc_sym_comp_I:
-                      calculated_signals.update({'I_pos_seq': I1, 'I_neg_seq': I2, 'I_zero_seq': I0})
-                      all_complex_signal_names.extend(['I_pos_seq', 'I_neg_seq', 'I_zero_seq'])
+            # Инициализируем переменные V1, V2, V0, I1, I2, I0 как None
+            V1, V2, V0 = None, None, None
+            I1, I2, I0 = None, None, None
+
+            # Расчет составляющих НАПРЯЖЕНИЯ (V)
+            needs_V_sym_comp = calc_sym_comp_V or calc_Z_seq or calc_Power_seq
+            if needs_V_sym_comp:
+                # TODO: Переписать, а то пока что не осуществляется корректировка по углу для последовательностей
+                
+                #if sym_comp_V_calculated_early:
+                #    if verbose: print("    Использование V симм. сост., рассчитанных на Шаге 2.")
+                #    V1, V2, V0 = calculated_sym_comp_V['V_pos_seq'], calculated_sym_comp_V['V_neg_seq'], calculated_sym_comp_V['V_zero_seq']
+                #    # Если нужно добавить на выход, добавляем из уже посчитанных
+                #    if calc_sym_comp_V:
+                #        calculated_signals.update(calculated_sym_comp_V)
+                #        all_complex_signal_names.extend(['V_pos_seq', 'V_neg_seq', 'V_zero_seq'])
+                #else:
+                if verbose: print("    Расчет V симм. сост. на Шаге 3.")
+                V1, V2, V0 = calculate_symmetrical_components(ua_h1, ub_h1, uc_h1)
+                if calc_sym_comp_V:
+                    calculated_signals.update({'V_pos_seq': V1, 'V_neg_seq': V2, 'V_zero_seq': V0})
+                    all_complex_signal_names.extend(['V_pos_seq', 'V_neg_seq', 'V_zero_seq'])
+
+            # Расчет составляющих ТОКА (I) - всегда считаем если нужны
+            needs_I_sym_comp = calc_sym_comp_I or calc_Z_seq or calc_Power_seq
+            if needs_I_sym_comp:
+                if verbose: print("    Расчет I симм. сост. на Шаге 3.")
+                I1, I2, I0 = calculate_symmetrical_components(ia_h1, ib_h1, ic_h1)
+                if calc_sym_comp_I:
+                    calculated_signals.update({'I_pos_seq': I1, 'I_neg_seq': I2, 'I_zero_seq': I0})
+                    all_complex_signal_names.extend(['I_pos_seq', 'I_neg_seq', 'I_zero_seq'])
 
             # 3.2 Сопротивления
             if calc_Z_phase:
@@ -347,12 +407,13 @@ def process_oscillograms(
                 calculated_signals['Z_C'] = calculate_impedance(uc_h1, ic_h1, min_current)
                 all_complex_signal_names.extend(['Z_A', 'Z_B', 'Z_C'])
             if calc_Z_seq:
-                 # Убедимся, что V1, I1, V2, I2 рассчитаны
-                 if 'V_pos_seq' not in calculated_signals: V1, V2, V0 = calculate_symmetrical_components(ua_h1, ub_h1, uc_h1)
-                 if 'I_pos_seq' not in calculated_signals: I1, I2, I0 = calculate_symmetrical_components(ia_h1, ib_h1, ic_h1)
-                 calculated_signals['Z_pos_seq'] = calculate_impedance(V1, I1, min_current)
-                 calculated_signals['Z_neg_seq'] = calculate_impedance(V2, I2, min_current) 
-                 all_complex_signal_names.extend(['Z_pos_seq', 'Z_neg_seq'])
+                # V1, I1, V2, I2 должны быть доступны из расчетов выше
+                if V1 is None or I1 is None or V2 is None or I2 is None:
+                    print(f"\nПредупреждение (Группа {name}): Не удалось рассчитать симм. сост. для Z_seq. Пропуск расчета Z_seq.")
+                else:
+                    calculated_signals['Z_pos_seq'] = calculate_impedance(V1, I1, min_current)
+                    calculated_signals['Z_neg_seq'] = calculate_impedance(V2, I2, min_current)
+                    all_complex_signal_names.extend(['Z_pos_seq', 'Z_neg_seq'])
             if calc_Z_linear:
                 # Расчет линейных напряжений (разность фазных фазоров)
                 vab_h1 = ua_h1 - ub_h1
@@ -389,16 +450,17 @@ def process_oscillograms(
                 all_complex_signal_names.append('S_total')
                 
             if calc_Power_seq:
-                 # Убедимся, что V1, I1 и т.д. рассчитаны
-                 if 'V_pos_seq' not in calculated_signals: V1, V2, V0 = calculate_symmetrical_components(ua_h1, ub_h1, uc_h1)
-                 if 'I_pos_seq' not in calculated_signals: I1, I2, I0 = calculate_symmetrical_components(ia_h1, ib_h1, ic_h1)
-                 S1, P1, Q1 = calculate_power(3 * V1, I1)
-                 S2, P2, Q2 = calculate_power(3 * V2, I2)
-                 S0, P0, Q0 = calculate_power(3 * V0, I0)
-                 calculated_signals.update({'S_pos_seq': S1, 'P_pos_seq': P1, 'Q_pos_seq': Q1,
-                                            'S_neg_seq': S2, 'P_neg_seq': P2, 'Q_neg_seq': Q2,
-                                            'S_zero_seq': S0,'P_zero_seq': P0,'Q_zero_seq': Q0})
-                 all_complex_signal_names.extend(['S_pos_seq', 'S_neg_seq', 'S_zero_seq'])
+                # V1, I1, V2, I2, V0, I0 должны быть доступны из расчетов выше
+                if V1 is None or I1 is None or V2 is None or I2 is None or V0 is None or I0 is None:
+                    print(f"\nПредупреждение (Группа {name}): Не удалось рассчитать симм. сост. для Power_seq. Пропуск расчета Power_seq.")
+                else:
+                    S1, P1, Q1 = calculate_power(3 * V1, I1)
+                    S2, P2, Q2 = calculate_power(3 * V2, I2)
+                    S0, P0, Q0 = calculate_power(3 * V0, I0)
+                    calculated_signals.update({'S_pos_seq': S1, 'P_pos_seq': P1, 'Q_pos_seq': Q1,
+                                                'S_neg_seq': S2, 'P_neg_seq': P2, 'Q_neg_seq': Q2,
+                                                'S_zero_seq': S0,'P_zero_seq': P0,'Q_zero_seq': Q0})
+                    all_complex_signal_names.extend(['S_pos_seq', 'S_neg_seq', 'S_zero_seq'])
                  
             # 3.4 Линейные напряжения (1-й гармоники)
             if calc_linear_V:
@@ -776,16 +838,17 @@ if __name__ == "__main__":
     # --- Конфигурация ---
     config = {
         'target_signal': 'iPDR PS',      # iPDR PS - идеальный сигнал, rPDR PS - реальные
-        'use_voltage_source': 'BB',      
+        'use_voltage_source': 'BB',    
         'samples_per_period': 32,        # Окно FFT (32 точек для 50 Гц при Fd=1600 Гц)
-        'num_harmonics': 1,              
+        'num_harmonics': 1,
+        'phase_reference_signal': 'V_pos_seq', # 'UA_h1' или 'V_pos_seq'
         # 'complex_format': 'mag_angle', # Закомментировано, т.к. теперь только этот формат
         'output_signals': [              # Запрашиваем только нужные сигналы
              # Гармоники U/I (они всегда считаются для расчетов, но добавим если нужны на выход)
              # 'UA_h1', 'UB_h1', 'UC_h1', 'IA_h1', 'IB_h1', 'IC_h1',
              # Симметричные составляющие
-             'V_pos_seq', 'V_neg_seq',    
-             'I_pos_seq', 'I_neg_seq',    
+             'V_pos_seq', 'V_neg_seq',
+             'I_pos_seq', 'I_neg_seq',
              # Сопротивления
              # Фазыне: Z_A, Z_B, Z_C
              # Линейные: Z_AB, Z_BC, Z_CA
