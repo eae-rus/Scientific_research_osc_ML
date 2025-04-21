@@ -87,53 +87,74 @@ class CustomDataset(Dataset):
         return x, target
 
 
-class SingleOscillogramSampler(torch.utils.data.Sampler):
+class MultiFileRandomPointSampler(torch.utils.data.Sampler):
     """
-    Сэмплер, который формирует батчи, где каждый батч содержит
-    все данные из одной случайно выбранной осциллограммы (файла).
+    Сэмплер, который формирует батчи, выбирая K случайных точек
+    из N случайно выбранных файлов.
     """
-    def __init__(self, all_files, file_to_indices_map, num_batches, shuffle=True):
+    def __init__(self, all_files, file_to_valid_start_indices_map,
+                 num_batches_per_epoch, num_files_per_batch, num_samples_per_file):
         """
         Args:
             all_files (list): Список имен всех файлов для сэмплирования.
-            file_to_indices_map (dict): Словарь {имя_файла: [индекс1, индекс2, ...]}
-            num_batches (int): Общее количество батчей (осциллограмм) для генерации за эпоху.
-            shuffle (bool): Перемешивать ли индексы внутри батча (обычно не нужно, т.к. порядок важен).
-                             Но мы можем перемешивать *выбор* файлов.
+            file_to_valid_start_indices_map (dict): Словарь {имя_файла: [валидный_индекс1, ...]}
+            num_batches_per_epoch (int): Количество батчей, генерируемых за эпоху.
+            num_files_per_batch (int): N - сколько файлов выбирать для одного батча.
+            num_samples_per_file (int): K - сколько точек сэмплировать из каждого файла.
         """
         self.all_files = all_files
-        self.file_to_indices_map = file_to_indices_map
-        self.num_batches = num_batches
-        # self.shuffle = shuffle # Перемешивание внутри батча тут может нарушить временную структуру
+        self.file_to_valid_start_indices_map = file_to_valid_start_indices_map
+        self.num_batches_per_epoch = num_batches_per_epoch
+        self.num_files_per_batch = num_files_per_batch
+        self.num_samples_per_file = num_samples_per_file
 
         if not self.all_files:
             raise ValueError("List of files cannot be empty.")
+        if self.num_files_per_batch <= 0 or self.num_samples_per_file <= 0:
+            raise ValueError("num_files_per_batch and num_samples_per_file must be positive.")
 
     def __len__(self):
-        return self.num_batches
+        # Длина сэмплера - это количество батчей за эпоху
+        return self.num_batches_per_epoch
 
     def __iter__(self):
-        # Выбираем num_batches случайных имен файлов (с возможностью повторений)
-        selected_files = np.random.choice(
-            self.all_files,
-            size=self.num_batches,
-            replace=True # Разрешаем повторный выбор файлов внутри эпохи
-        )
+        for _ in range(self.num_batches_per_epoch):
+            # 1. Выбрать N случайных файлов (можно с повторениями)
+            selected_files = np.random.choice(
+                self.all_files,
+                size=self.num_files_per_batch,
+                replace=True
+            )
 
-        for file_name in selected_files:
-            # Получаем все индексы для выбранного файла
-            batch_indices = self.file_to_indices_map[file_name]
+            batch_indices = []
+            # 2. Для каждого выбранного файла взять K случайных точек
+            for file_name in selected_files:
+                valid_indices = self.file_to_valid_start_indices_map[file_name]
+                num_valid = len(valid_indices)
 
-            # Проверка на пустой батч (если файл пустой или не содержит нужных строк)
+                if num_valid == 0:
+                    # Такого быть не должно, если мы фильтровали all_files, но на всякий случай
+                    continue
+
+                # Выбираем K индексов из списка валидных для этого файла
+                # Если в файле меньше K точек, берем все с повторениями или без?
+                # Берем с повторениями, чтобы размер батча был стабильным N*K
+                sampled_indices_for_file = np.random.choice(
+                    valid_indices,
+                    size=self.num_samples_per_file,
+                    replace=True # Разрешаем повторы, если num_valid < K
+                ).tolist()
+                batch_indices.extend(sampled_indices_for_file)
+
             if not batch_indices:
-                print(f"Warning: File {file_name} resulted in an empty batch. Skipping.")
+                # Если по какой-то причине батч пустой, пропускаем
+                # (например, если все выбранные файлы оказались пустыми, что маловероятно)
+                print("Warning: Generated an empty batch. Skipping.")
                 continue
 
-            # Перемешивание индексов внутри батча здесь обычно не делают для временных рядов.
-            # if self.shuffle:
-            #     random.shuffle(batch_indices)
-
-            yield batch_indices # Возвращаем список индексов для этого батча (одной осциллограммы)
+            # Перемешиваем индексы внутри итогового батча (опционально, но может быть полезно)
+            random.shuffle(batch_indices)
+            yield batch_indices # Возвращаем объединенный список индексов для батча
 
 class MultiLabelFocalLoss(torch.nn.Module):
     def __init__(self, alpha=0.25, gamma=2.0):
@@ -250,12 +271,26 @@ def save_stats_to_json(filename, epoch, batch_count, epoch_duration, train_loss,
     with open(filename, "a") as file:
         json.dump(data, file, indent=4)
 
+def compute_loss(criterion, outputs, targets):
+    # Подгружаем таргеты и предсказания в одинаковой форме:
+    if outputs.dim() == targets.dim() + 1:
+        # output [B,1], targets [B] → подтягиваем targets
+        targets = targets.unsqueeze(1)
+    elif targets.dim() == outputs.dim() + 1:
+        # редкий случай, наоборот — подтягиваем output
+        outputs = outputs.unsqueeze(1)
+
+    return criterion(outputs, targets)
+
 if __name__ == "__main__":
     FRAME_SIZE = 1 # 64
-    NUM_BATCHES = 1000 # Количество генерируемых батчей
+    # BATCH_SIZE_TRAIN = NUM_FILES_PER_BATCH * SAMPLES_PER_FILE
+    NUM_FILES_PER_BATCH = 10 # N: Сколько файлов брать для одного батча
+    SAMPLES_PER_FILE = 100  # K: Сколько точек брать из каждого файла
+    NUM_TRAIN_BATCHES_PER_EPOCH = 1000 # Сколько таких N*K батчей делать за эпоху
     BATCH_SIZE_TEST = 8192
     EPOCHS = 100
-    LEARNING_RATE = 1e-4
+    LEARNING_RATE = 1e-2
     L2_REGULARIZATION_COEFFICIENT = 0.001
     MAX_GRAD_NORM = 10
     SEED = 42
@@ -265,13 +300,13 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     # device = "cpu"
 
-    file_csv = "ML_model/dataset_cut_out_PDR_norm_v2.csv"
+    # file_csv = "ML_model/dataset_cut_out_PDR_norm_v2.csv"
     # Create the folder if it doesn't exist
     folder_path = "/ML_model"
     os.makedirs(folder_path, exist_ok=True)
     #file_with_target_frame_train = "ML_model/dataset_cut_out_PDR_norm_v2.csv"
-    file_with_target_frame_train = "ML_model/dataset_iPDR_norm_v1.csv"
-    file_with_target_frame_test = "ML_model/dataset_iPDR_norm_v1.csv"
+    file_with_target_frame_train = "ML_model/train_dataset_rPDR_norm_v1.csv"
+    file_with_target_frame_test = "ML_model/test_dataset_iPDR_1600_norm_v1.csv"
 
     if os.path.isfile(file_with_target_frame_train) and os.path.isfile(file_with_target_frame_test):
         dt_train = pd.read_csv(file_with_target_frame_train)
@@ -280,9 +315,7 @@ if __name__ == "__main__":
         
         # TODO: добиться, чтобы не было этих ошибок в датасете
         # Проверим, есть ли NaN в интересующих столбцах
-        columns_to_check = FeaturesForDataset.FEATURES
-        # Проверка по столбцам
-        nan_check = dt_train[columns_to_check].isna().sum()
+        nan_check = dt_train[FeaturesForDataset.FEATURES].isna().sum()
         # Выведем только те столбцы, где есть хотя бы один NaN
         print("NaN values found in:")
         print(nan_check[nan_check > 0])
@@ -296,24 +329,46 @@ if __name__ == "__main__":
         # TODO: Написать если нужно будет.
 
     # --- Обновленная ЛОГИКА ПОДГОТОВКИ ИНДЕКСОВ ДЛЯ ОБУЧЕНИЯ ---
-    print("Preparing train indices grouped by file...")
-    # 1. Группируем индексы по файлам
-    file_to_indices_map_train = dt_train.groupby('file_name').apply(lambda x: list(x.index))
-    # 2. Получаем список всех имен файлов для обучения
-    all_train_files = list(file_to_indices_map_train.keys())
-    
-    print(f"Total train files: {len(all_train_files)}")
-    # --- КОНЕЦ ЛОГИКИ ПОДГОТОВКИ ИНДЕКСОВ ДЛЯ ОБУЧЕНИЯ ---
+    print("Preparing train indices grouped by file (valid start points only)...")
+    file_to_valid_start_indices_map_train = {}
+    grouped_train = dt_train.groupby('file_name')
+    for file_name, group in grouped_train:
+        # Находим последний возможный стартовый индекс для этого файла
+        last_possible_start = group.index[-1] - FRAME_SIZE + 1
+        # Отбираем только те индексы группы, которые могут быть началом окна
+        valid_start_indices = group.index[group.index <= last_possible_start].tolist()
+        if valid_start_indices: # Добавляем, только если есть валидные точки
+            file_to_valid_start_indices_map_train[file_name] = valid_start_indices
 
-    # --- ЛОГИКА ПОДГОТОВКИ ИНДЕКСОВ ДЛЯ ТЕСТА ---
-    print("Preparing test indices...")
-    test_indexes = dt_test.index # Используем все строки для теста
-    print(f"Total test data points: {len(test_indexes)}")
-    # --- КОНЕЦ ЛОГИКИ ПОДГОТОВКИ ИНДЕКСОВ ДЛЯ ТЕСТА ---
+    all_train_files = list(file_to_valid_start_indices_map_train.keys())
+    # Удаляем файлы, у которых не оказалось валидных стартовых точек
+    all_train_files = [f for f in all_train_files if file_to_valid_start_indices_map_train[f]] 
+
+    print(f"Total train files with valid start points: {len(all_train_files)}")
+    if not all_train_files:
+        raise ValueError("No training files have enough data points for the given FRAME_SIZE.")
+    # --- КОНЕЦ ЛОГИКИ ПОДГОТОВКИ ИНДЕКСОВ ДЛЯ ОБУЧЕНИЯ ---
+    
+    # ---> НАЧАЛО ВСТАВКИ: ПОДГОТОВКА ИНДЕКСОВ ДЛЯ ТЕСТА <---
+    print("Preparing test indices (valid start points only)...")
+    # Находим последний возможный стартовый индекс для всего тестового датафрейма
+    last_possible_start_test = dt_test.index[-1] - FRAME_SIZE + 1
+    # Отбираем только те индексы dt_test, которые могут быть началом окна
+    valid_start_indices_test = dt_test.index[dt_test.index <= last_possible_start_test]
+
+    # Создаем DataFrame, содержащий эти валидные индексы.
+    # CustomDataset использует .iloc[idx].name на этом DataFrame для получения стартовой точки.
+    test_indexes_df = pd.DataFrame(index=valid_start_indices_test) # Индексы этого DF - это то, что нам нужно
+
+    if valid_start_indices_test.empty:
+        raise ValueError("Test dataset has no valid start points for the given FRAME_SIZE.")
+        
+    print(f"Total valid start points in test data: {len(test_indexes_df)}")
+    # ---> КОНЕЦ ВСТАВКИ: ПОДГОТОВКА ИНДЕКСОВ ДЛЯ ТЕСТА <---
 
     # В CustomDataset передаем ПОЛНЫЙ DataFrame
     train_dataset = CustomDataset(FeaturesForDataset.TARGET_train[0], dt_train, dt_train, FRAME_SIZE, 0)
-    test_dataset = CustomDataset(FeaturesForDataset.TARGET_test[0], dt_test, dt_test.loc[test_indexes], FRAME_SIZE, 0)
+    test_dataset = CustomDataset(FeaturesForDataset.TARGET_test[0], dt_test, test_indexes_df, FRAME_SIZE, 0)
 
     start_epoch = 0
     # !! создание новой !!
@@ -331,17 +386,27 @@ if __name__ == "__main__":
     # start_epoch = int(filename_model.split("ep")[1].split("_")[0])
     # model.eval()  # Set the model to evaluation mode
 
-    criterion = MultiLabelFocalLoss(gamma=3) # Пока это лучшая метрика. Можно будет поиграться с гамма.
+    # Расчет pos_weight (делать один раз перед циклом обучения)
+    neg = (dt_train[FeaturesForDataset.TARGET_train[0]] == 0).sum()
+    pos = (dt_train[FeaturesForDataset.TARGET_train[0]] == 1).sum()
+    pos_weight_value = neg / pos if pos > 0 else 1.0 # Защита от деления на ноль
+    print("Отношнеие 0 к 1 = ", pos_weight_value)
+    pos_weight_tensor = torch.tensor([pos_weight_value], device=device) # Создаем тензор
+    
+    # criterion = MultiLabelFocalLoss(gamma=3) # Пока это лучшая метрика. Можно будет поиграться с гамма.
+    criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight_tensor)
     
     all_losses = []
 
-    sampler = SingleOscillogramSampler(
+    train_sampler = MultiFileRandomPointSampler(
         all_files=all_train_files,
-        file_to_indices_map=file_to_indices_map_train,
-        num_batches=NUM_BATCHES # Количество осциллограмм в эпохе
+        file_to_valid_start_indices_map=file_to_valid_start_indices_map_train,
+        num_batches_per_epoch=NUM_TRAIN_BATCHES_PER_EPOCH,
+        num_files_per_batch=NUM_FILES_PER_BATCH,
+        num_samples_per_file=SAMPLES_PER_FILE
     )
-    train_dataloader = DataLoader(train_dataset, batch_sampler=sampler)
-    test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE_TEST, shuffle=False)
+    train_dataloader = DataLoader(train_dataset, batch_sampler=train_sampler, num_workers=0, pin_memory=True) # num_workers можно настроить
+    test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE_TEST, shuffle=False, num_workers=0, pin_memory=True)
 
     # Инициализация DataFrame для статистики
     # Статистика по каждому классу и общей метрике
@@ -389,7 +454,7 @@ if __name__ == "__main__":
                 batch = batch.to(device)
 
                 output = model(batch)
-                loss = criterion(output, targets)
+                loss = compute_loss(criterion, output, targets)
                 loss_sum += loss.item()
                 all_losses.append(loss.item())
                 message = (
@@ -406,68 +471,78 @@ if __name__ == "__main__":
                 optimizer.step()
 
             model.eval()
-
-            # Сохранение статистики каждую эпоху
-            # Выполняем оценку на тестовой выборке
             test_loss = 0.0
             true_labels, predicted_labels = [], []
-            with torch.no_grad():
-                for inputs, labels in test_dataloader:
-                    inputs = inputs.to(device)
-                    outputs = model(inputs)
-                    test_loss += criterion(outputs, labels.to(device)).item()
-                    true_labels.extend(labels.cpu().numpy())
-                    predicted_labels.extend(outputs.cpu().numpy())
-            
-            # Рассчитываем метрики
-            numpy_labels = np.array(predicted_labels) # промежуточные преобразования для ускорения
-            predicted_labels_tensor = torch.from_numpy(numpy_labels)
-            predicted_labels = torch.where(predicted_labels_tensor >= 0.5, torch.tensor(1), torch.tensor(0))
-            # Hamming Loss - чем меньше, тем лучше
-            hamming = hamming_loss(true_labels, predicted_labels)
-            # Jaccard Score - для многолейбловой задачи, 'samples' для подсчета по образцам - чем ближе к 1, тем лучше
-            jaccard = jaccard_score(true_labels, predicted_labels, average='samples')
-            
-            # TODO: Разобраться с метриками и модернизировать их
-            numpy_true_labels = np.array(true_labels) # промежуточные преобразования для ускорения
-            true_labels_tensor = torch.from_numpy(numpy_true_labels)
-            ba, f1 = [], []
-            for k in range(len(FeaturesForDataset.TARGET)): # 'binary' для бинарной классификации на каждом классе
-                true_binary = true_labels_tensor[:, k].flatten()
-                pred_binary = predicted_labels[:, k].flatten()
-                
-                ba.append(balanced_accuracy_score(true_binary, pred_binary))
-                f1.append(f1_score(true_binary, pred_binary, average='binary'))
+            f1 = [0.0] * len(FeaturesForDataset.TARGET_test) # Инициализация нулями
+            ba = [0.0] * len(FeaturesForDataset.TARGET_test) # Инициализация нулями
+            hamming = 1.0 # Худшее значение
+            jaccard = 0.0 # Худшее значение
 
-            
-            # Сохраняем данные
-            # Рассчитываем метрики после каждой эпохи
-            test_loss = test_loss / len(test_dataloader) # Средние потери на тестовой выборке
-            mean_f1 = np.mean(f1)  # Средний F1-score по всем классам
-            mean_ba = np.mean(ba)  # Средний Balanced Accuracy по всем классам
-            
+            try:
+                # Получаем итератор и берем ОДИН батч для быстрой валидации
+                test_iterator = iter(test_dataloader)
+                val_inputs, val_labels = next(test_iterator)
+
+                with torch.no_grad():
+                    val_inputs = val_inputs.to(device)
+                    val_labels = val_labels.to(device) # Переносим таргеты на device
+                    
+                    outputs = model(val_inputs)
+                    test_loss = compute_loss(outputs, val_labels).item() # Считаем loss по батчу
+
+                    # Преобразуем выходы в предсказания (0 или 1)
+                    preds = torch.where(outputs >= 0.5, torch.tensor(1.0, device=device), torch.tensor(0.0, device=device))
+
+                    # Собираем метки для расчета метрик (переносим обратно на CPU)
+                    true_labels_batch = val_labels.cpu().numpy()
+                    predicted_labels_batch = preds.cpu().numpy()
+
+                # Рассчитываем метрики ПО ЭТОМУ ОДНОМУ БАТЧУ
+                hamming = hamming_loss(true_labels_batch, predicted_labels_batch)
+                jaccard = jaccard_score(true_labels_batch, predicted_labels_batch, average='samples')
+
+                ba, f1 = [], []
+                for k in range(len(FeaturesForDataset.TARGET_test)):
+                    true_binary = true_labels_batch[:, k].flatten()
+                    pred_binary = predicted_labels_batch[:, k].flatten()
+                    # Добавим zero_division=0 для избежания предупреждений, если класс отсутствует в батче
+                    ba.append(balanced_accuracy_score(true_binary, pred_binary, adjusted=False)) # adjusted=False по умолчанию
+                    f1.append(f1_score(true_binary, pred_binary, average='binary', zero_division=0))
+
+            except StopIteration:
+                print("Warning: Test dataloader is empty or smaller than batch size. Skipping validation.")
+                test_loss = -1.0 # Индикация ошибки
+
+            # Рассчитываем средние метрики (по одному батчу)
+            mean_f1 = np.mean(f1)
+            mean_ba = np.mean(ba)
+
             # Время обучения текущей эпохи
             epoch_end_time = time.time()
-            epoch_duration = epoch_end_time - epoch_start_time  # Время в секундах
+            epoch_duration = epoch_end_time - epoch_start_time
 
-            # Сохраняем данные в CSV
+            # Сохраняем данные в CSV (теперь они основаны на одном батче)
             save_stats_to_csv(
-                epoch, batch_count, epoch_duration, loss_sum / len(train_dataloader), test_loss,
+                epoch, batch_count, epoch_duration, loss_sum / len(train_dataloader), test_loss, # test_loss теперь по батчу
                 mean_f1, mean_ba, hamming, jaccard, current_lr,
                 f1_per_class=f1, ba_per_class=ba
-            )   
+            )
 
+            # Обновляем scheduler на основе test_loss батча
+            # Важно: эта потеря может быть шумной! Возможно, лучше обновлять по средней по эпохе train_loss
+            scheduler.step(test_loss if test_loss >= 0 else float('inf')) # Используем test_loss батча
 
-            # Сообщение для tqdm
-            t.set_postfix_str(f"Batch: {batch_count}, Train loss: {loss_sum / (i + 1):.4f}, Test loss: {test_loss:.4f}, LR: {current_lr:.4e}")
+            # Сообщение для tqdm (оставляем старое, т.к. train_loss считается по эпохе)
+            t.set_postfix_str(f"Batch: {batch_count}, Train loss: {loss_sum / len(train_dataloader):.4f}, Val Batch loss: {test_loss:.4f}, LR: {current_lr:.4e}")
+            # Вывод метрик, рассчитанных по батчу
             message_f1_ba = (
-                             f"Prev. test loss: {1000*test_loss:.4f} "
-                             f"F1 / BA: {', '.join([f'{signal_name}: {f1_score:.4f}/{ba_score:.4f}' for signal_name, f1_score, ba_score in zip(FeaturesForDataset.TARGET, f1, ba)])} "
-                             )
+                            f"Val Batch loss: {1000*test_loss:.4f} "
+                            f"Val F1/BA: {', '.join([f'{signal_name}: {f1_score:.4f}/{ba_score:.4f}' for signal_name, f1_score, ba_score in zip(FeaturesForDataset.TARGET_test, f1, ba)])} "
+                            )
             print(message_f1_ba)
-            print(f"Hamming Loss: {hamming}, Jaccard Score: {jaccard}")
-            
-            torch.save(model, f"ML_model/trained_models/model_{name_model}_ep{epoch+1}_tl{test_loss:.4f}_train{loss_sum:.4f}.pt")
-            model.train()
+            print(f"Val Hamming: {hamming:.4f}, Val Jaccard: {jaccard:.4f}")
+
+            torch.save(model, f"ML_model/trained_models/model_{name_model}_ep{epoch+1}_vbl{test_loss:.4f}_train{loss_sum:.4f}.pt") # vbl = validation batch loss
+            model.train() # Возвращаем модель в режим обучения
     pass
 pass
