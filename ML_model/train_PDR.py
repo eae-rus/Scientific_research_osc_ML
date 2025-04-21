@@ -214,9 +214,9 @@ def save_stats_to_csv(epoch, batch_count, epoch_duration, train_loss, test_loss,
         # Записываем заголовок, если файл пустой
         if os.stat(per_class_metrics_file).st_size == 0:
             header = ["epoch", "batch_count", "epoch_duration"] + [
-                f"{feature}_f1" for feature in FeaturesForDataset.TARGET
+                f"{feature}_f1" for feature in FeaturesForDataset.TARGET_test
             ] + [
-                f"{feature}_ba" for feature in FeaturesForDataset.TARGET
+                f"{feature}_ba" for feature in FeaturesForDataset.TARGET_test
             ]
             writer.writerow(header)
 
@@ -263,8 +263,8 @@ def save_stats_to_json(filename, epoch, batch_count, epoch_duration, train_loss,
         "hamming_loss": hamming,
         "jaccard_score": jaccard,
         "learning_rate": lr,
-        "f1_scores_per_class": {feature: f1 for feature, f1 in zip(FeaturesForDataset.TARGET, f1_per_class)},
-        "balanced_accuracy_per_class": {feature: ba for feature, ba in zip(FeaturesForDataset.TARGET, ba_per_class)}
+        "f1_scores_per_class": {feature: f1 for feature, f1 in zip(FeaturesForDataset.TARGET_test, f1_per_class)},
+        "balanced_accuracy_per_class": {feature: ba for feature, ba in zip(FeaturesForDataset.TARGET_test, ba_per_class)}
     }
 
     # Записываем в файл
@@ -488,7 +488,7 @@ if __name__ == "__main__":
                     val_labels = val_labels.to(device) # Переносим таргеты на device
                     
                     outputs = model(val_inputs)
-                    test_loss = compute_loss(outputs, val_labels).item() # Считаем loss по батчу
+                    test_loss = compute_loss(criterion, outputs, val_labels).item() # Считаем loss по батчу
 
                     # Преобразуем выходы в предсказания (0 или 1)
                     preds = torch.where(outputs >= 0.5, torch.tensor(1.0, device=device), torch.tensor(0.0, device=device))
@@ -499,15 +499,14 @@ if __name__ == "__main__":
 
                 # Рассчитываем метрики ПО ЭТОМУ ОДНОМУ БАТЧУ
                 hamming = hamming_loss(true_labels_batch, predicted_labels_batch)
-                jaccard = jaccard_score(true_labels_batch, predicted_labels_batch, average='samples')
+                # jaccard = jaccard_score(true_labels_batch, predicted_labels_batch, average='samples')
 
                 ba, f1 = [], []
-                for k in range(len(FeaturesForDataset.TARGET_test)):
-                    true_binary = true_labels_batch[:, k].flatten()
-                    pred_binary = predicted_labels_batch[:, k].flatten()
-                    # Добавим zero_division=0 для избежания предупреждений, если класс отсутствует в батче
-                    ba.append(balanced_accuracy_score(true_binary, pred_binary, adjusted=False)) # adjusted=False по умолчанию
-                    f1.append(f1_score(true_binary, pred_binary, average='binary', zero_division=0))
+                true_binary = true_labels_batch[:].flatten()
+                pred_binary = predicted_labels_batch[:].flatten()
+                # Добавим zero_division=0 для избежания предупреждений, если класс отсутствует в батче
+                ba.append(balanced_accuracy_score(true_binary, pred_binary, adjusted=False)) # adjusted=False по умолчанию
+                f1.append(f1_score(true_binary, pred_binary, average='binary', zero_division=0))
 
             except StopIteration:
                 print("Warning: Test dataloader is empty or smaller than batch size. Skipping validation.")
@@ -524,9 +523,10 @@ if __name__ == "__main__":
             # Сохраняем данные в CSV (теперь они основаны на одном батче)
             save_stats_to_csv(
                 epoch, batch_count, epoch_duration, loss_sum / len(train_dataloader), test_loss, # test_loss теперь по батчу
-                mean_f1, mean_ba, hamming, jaccard, current_lr,
+                mean_f1, mean_ba, hamming, -1, current_lr,
                 f1_per_class=f1, ba_per_class=ba
             )
+            
 
             # Обновляем scheduler на основе test_loss батча
             # Важно: эта потеря может быть шумной! Возможно, лучше обновлять по средней по эпохе train_loss
