@@ -528,7 +528,7 @@ def normalize(
     output_normalized_csv_path: str,
 ) -> None:
     """
-    Выполняет нормализацию и переименование файлов для обработанного CSV.
+    Выполняет нормализацию файлов для обработанного CSV.
 
     Args:
         input_csv_path (str): Путь к CSV файлу, полученному от process_oscillograms.
@@ -536,9 +536,9 @@ def normalize(
             normalize (bool): Выполнять ли нормализацию.
             normalization_params_path (Optional[str]): Путь для сохранения CSV с коэфф. нормализации.
             verbose (bool): Выводить ли подробные сообщения.
-        output_normalized_csv_path (str): Путь для сохранения итогового нормализованного/переименован. CSV.
+        output_normalized_csv_path (str): Путь для сохранения итогового нормализованного. CSV.
     """
-    print(f"\n--- Начало нормализации и переименования файла: {input_csv_path} ---")
+    print(f"\n--- Начало нормализации: {input_csv_path} ---")
     verbose = config.get('verbose', False) # Получаем verbose из конфига
 
     # Проверка наличия обязательных ключей в конфиге для этой функции
@@ -657,12 +657,12 @@ def normalize(
         # Замена Inf на NaN перед сохранением
         final_df = final_df.replace([np.inf, -np.inf], np.nan)
         final_df.to_csv(output_normalized_csv_path, index=False, float_format='%.6g')
-        print(f"Нормализованный/переименованный датасет сохранен в: {output_normalized_csv_path}")
+        print(f"Нормализованный датасет сохранен в: {output_normalized_csv_path}")
 
     except Exception as e:
         print(f"Критическая ошибка при сохранении итоговых результатов: {e}")
 
-    print(f"--- Нормализация и переименование файла {input_csv_path} завершены ---")
+    print(f"--- Нормализация файла {input_csv_path} завершены ---")
 
 def apply_normalization(
     input_csv_path: str,
@@ -801,7 +801,7 @@ if __name__ == "__main__":
         # 'output_signals': 'ALL', # Можно использовать для отладки
         'rename_files': True,
         'start_file_id': 0, # Начало нумерации при переименовывании файлов
-        'min_current_threshold': 1e-9,
+        'min_current_threshold': 1e-7,
         'verbose': False,                # Ставим False для чистого вывода (только прогресс-бар и ошибки)
                                          # Ставим True для детальной информации по каждой группе
         # --- Параметры для normalize_and_rename ---
