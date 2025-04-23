@@ -213,15 +213,13 @@ class PDRBlock(nn.Module):
                  coeff_compare=2,
                  coeff_mul=1,
                  coeff_div=1,
-                 activation_type='sigmoid', # 'leaky_relu' или 'sigmoid'
+                 activation_type='leaky_relu', # 'leaky_relu' или 'sigmoid'
                  division_epsilon=1e-8):
         super().__init__()
 
         # --- Выбор функции активации ---
         if activation_type == 'leaky_relu':
-            # TODO: разобраться почему из-за неё уходит в ошибку при использовании функций умножения и деления с длинными цепочками
-            # self.activation = nn.LeakyReLU()
-            pass
+            self.activation = nn.LeakyReLU()
         elif activation_type == 'sigmoid':
             self.activation = nn.Sigmoid()
         else:
@@ -302,7 +300,8 @@ class PDRBlock(nn.Module):
 
         # Ветка 4: Умножение
         if self.lin_mul1:
-            out_mul = self.activation(self.lin_mul1(x) * self.lin_mul2(x))
+            # TODO: разобраться почему из-за неё уходит в "nan" при использовании функций "leaky_relu" с длинными цепочками
+            out_mul = torch.sigmoid(self.lin_mul1(x) * self.lin_mul2(x))
             outputs_to_cat.append(out_mul)
 
         # Ветка 5: Деление
@@ -310,7 +309,8 @@ class PDRBlock(nn.Module):
             numerator = self.lin_div_numerator(x)
             denominator = self.lin_div_denominator(x)
             # Используем модуль знаменателя для защиты
-            out_div = self.activation(numerator / (torch.abs(denominator) + self.division_epsilon))
+            # TODO: разобраться почему из-за неё уходит в "nan" при использовании функций "leaky_relu" с длинными цепочками
+            out_div = torch.sigmoid(numerator / (torch.abs(denominator) + self.division_epsilon))
             outputs_to_cat.append(out_div)
 
         # Если вдруг ни одна ветка не активна (хотя это странно)
@@ -333,7 +333,7 @@ class PDR_MLP_v2(nn.Module):
     def __init__(self,
                  input_features,
                  block_neuron_config=[3, 2, 1], # Список базовых нейронов для каждого блока
-                 activation_type='sigmoid',   # Тип активации для всех блоков
+                 activation_type='leaky_relu',   # Тип активации для всех блоков
                  use_skip_connection=True,
                  # Коэффициенты передаются в каждый блок, управление активностью веток через них
                  coeff_regular=4, coeff_min=2, coeff_compare=2, coeff_mul=1, coeff_div=1,
