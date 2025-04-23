@@ -199,6 +199,154 @@ class PDR_MLP_v1(nn.Module):
         x = x.flatten(start_dim=1)  # → (batch_size, feature_dim), здесь feature_dim=4*1=4
         return self.fc(x)
 
+class PDRBlock(nn.Module):
+    """ 
+    Универсальный блок PDR с параллельными ветками: 
+    обычной, min и опционально сравнения. 
+    """
+    def __init__(self, 
+                 input_size, 
+                 base_neurons, 
+                 coeff_regular=4, 
+                 coeff_min=4, 
+                 coeff_compare=2, 
+                 use_comparison_branch=True):
+        super().__init__()
+        self.use_comparison_branch = use_comparison_branch
+        
+        # Размеры веток
+        self.regular_size = base_neurons * coeff_regular
+        self.min_size = base_neurons * coeff_min
+        self.compare_size = base_neurons * coeff_compare if use_comparison_branch else 0
+        
+        # Ветка 1: Обычная (Linear -> Sigmoid)
+        self.lin_regular = nn.Linear(input_size, self.regular_size)
+        
+        # Ветка 2: Min (Linear1, Linear2 -> Min -> Sigmoid)
+        self.lin_min1 = nn.Linear(input_size, self.min_size)
+        self.lin_min2 = nn.Linear(input_size, self.min_size)
+        
+        # Ветка 3: Сравнение (если активна)
+        if self.use_comparison_branch:
+            self.lin_compare_signal = nn.Linear(input_size, self.compare_size)
+            self.lin_compare_threshold = nn.Linear(input_size, self.compare_size)
+            # крутизна обучаема:
+            self.comparison_steepness = nn.Parameter(torch.tensor(10.0))
+            # self.register_buffer('comparison_steepness', torch.tensor(10.0)) # Не обучаемый параметр
+            # self.comparison_steepness = nn.Parameter(torch.log(torch.tensor(10.0))) # Гарантировано не отрицательный (и всегда будет "больше")
+
+        # TODO: сделать через переменую выбора.
+        # self.activation = nn.Sigmoid()
+        self.activation = nn.LeakyReLU()
+
+        # Общая выходная размерность блока
+        self.output_size = self.regular_size + self.min_size + self.compare_size
+
+    def forward(self, x):
+        # Ветка 1: Обычная
+        out_regular = self.activation(self.lin_regular(x))
+        
+        # Ветка 2: Min
+        out_min = self.activation(torch.min(self.lin_min1(x), self.lin_min2(x)))
+
+        outputs_to_cat = [out_regular, out_min]
+
+        # Ветка 3: Сравнение
+        if self.use_comparison_branch:
+            signals = self.lin_compare_signal(x)
+            thresholds = self.lin_compare_threshold(x)
+            # Аппроксимация сравнения (выход уже в [0, 1])
+            out_compare = torch.sigmoid(self.comparison_steepness * (signals - thresholds)) 
+            outputs_to_cat.append(out_compare)
+
+        # Конкатенация выходов
+        return torch.cat(outputs_to_cat, dim=-1)
+
+class PDR_MLP_v2(nn.Module):
+    """ 
+    Модульная MLP на основе PDRBlock с опциональными skip-соединениями.
+    """
+    def __init__(self, 
+                 input_features, 
+                 base_neurons=2, 
+                 num_blocks=3, 
+                 use_skip_connection=True, 
+                 use_comparison_in_blocks=True,
+                 coeff_regular=4, coeff_min=4, coeff_compare=2, # Коэффициенты для всех блоков
+                 device=None):
+        super().__init__()
+        self.use_skip_connection = use_skip_connection
+        self.device = device
+        self.expected_input_features = input_features
+        
+        self.blocks = nn.ModuleList()
+        self.skip_projs = nn.ModuleList() 
+        
+        current_size = input_features
+        block_output_sizes = [] 
+
+        # Создаем блоки
+        for _ in range(num_blocks):
+            block = PDRBlock(current_size, 
+                             base_neurons,
+                             coeff_regular, coeff_min, coeff_compare,
+                             use_comparison_branch=use_comparison_in_blocks)
+            self.blocks.append(block)
+            block_output_sizes.append(block.output_size)
+            current_size = block.output_size 
+
+        # Настраиваем skip-соединения
+        if self.use_skip_connection:
+            # Проекции создаются для соединения выхода блока i-2 с входом блока i
+            # Вход блока i имеет размер block_output_sizes[i-1]
+            # Выход блока i-2 имеет размер block_output_sizes[i-2]
+            for i in range(num_blocks):
+                if i >= 2: 
+                    skip_source_size = block_output_sizes[i-2]
+                    skip_target_size = self.blocks[i-1].output_size # Размер входа i-го блока
+                    if skip_source_size != skip_target_size:
+                        proj = nn.Linear(skip_source_size, skip_target_size)
+                    else:
+                        proj = nn.Identity()
+                    self.skip_projs.append(proj)
+                else:
+                     self.skip_projs.append(None) # Skip невозможен для первых двух блоков
+
+        # Финальный слой
+        self.output_layer = nn.Linear(current_size, 1) 
+        self.output_activation = nn.Sigmoid()
+
+    def forward(self, x):
+        x = x.flatten(start_dim=1)
+        if x.shape[1] != self.expected_input_features:
+             raise ValueError(f"Input dimension mismatch! Expected {self.expected_input_features}, got {x.shape[1]}")
+        if self.device:
+             x = x.to(self.device)
+             
+        block_outputs = [] 
+        current_input = x
+
+        for i, block in enumerate(self.blocks):
+            block_input = current_input
+            # Применяем skip-соединение (если активно и возможно)
+            if self.use_skip_connection and i >= 2:
+                skip_source_output = block_outputs[i-2]
+                skip_proj = self.skip_projs[i] 
+                skip_projected = skip_proj(skip_source_output)
+                block_input = block_input + skip_projected 
+
+            block_output = block(block_input)
+            block_outputs.append(block_output)
+            current_input = block_output 
+
+        # Финальный слой
+        final_block_output = current_input 
+        output = self.output_layer(final_block_output)
+        output = self.output_activation(output)
+        
+        return output
+
+
 
 
 
