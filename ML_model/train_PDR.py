@@ -26,12 +26,29 @@ import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 class FeaturesForDataset():
-        CURRENT = ["I_pos_seq_mag", "I_pos_seq_angle"]
+        CURRENT_1 = ["I_pos_seq_mag", "I_pos_seq_angle"]
+        CURRENT_2 = ["I_neg_seq_mag", "I_neg_seq_angle"]
 
-        VOLTAGE = ["V_pos_seq_mag", "V_pos_seq_angle"]
+        VOLTAGE_1 = ["V_pos_seq_mag"] # V_pos_seq_angle - не нужно, так как от него расчёт
+        VOLTAGE_2 = ["V_neg_seq_mag", "V_neg_seq_angle"]
         
-        FEATURES = CURRENT.copy()
-        FEATURES.extend(VOLTAGE)
+        POWER_1 = ["P_pos_seq", "Q_pos_seq"]
+        POWER_2 = ["P_neg_seq", "Q_neg_seq"]
+        
+        IMPEDACY = ["Z_pos_seq_mag", "Z_pos_seq_angle"]
+        
+        # Простейшая - модель 1
+        FEATURES = CURRENT_1.copy()
+        FEATURES.extend(VOLTAGE_1)
+        
+        # Простейшая с всеми сигналами - модель 2
+        # FEATURES = CURRENT_1.copy()
+        # FEATURES.extend(CURRENT_2)
+        # FEATURES.extend(VOLTAGE_1)
+        # FEATURES.extend(VOLTAGE_2)
+        # FEATURES.extend(POWER_1)
+        # FEATURES.extend(POWER_2)
+        # FEATURES.extend(IMPEDACY)
         
         TARGET_train = ["rPDR PS"]
         TARGET_WITH_FILENAME_train = ["file_name"]
@@ -285,8 +302,8 @@ def compute_loss(criterion, outputs, targets):
 if __name__ == "__main__":
     FRAME_SIZE = 1 # 64
     # BATCH_SIZE_TRAIN = NUM_FILES_PER_BATCH * SAMPLES_PER_FILE
-    NUM_FILES_PER_BATCH = 10 # N: Сколько файлов брать для одного батча
-    SAMPLES_PER_FILE = 100  # K: Сколько точек брать из каждого файла
+    NUM_FILES_PER_BATCH = 100 # N: Сколько файлов брать для одного батча
+    SAMPLES_PER_FILE = 10  # K: Сколько точек брать из каждого файла
     NUM_TRAIN_BATCHES_PER_EPOCH = 1000 # Сколько таких N*K батчей делать за эпоху
     BATCH_SIZE_TEST = 8192
     EPOCHS = 100
@@ -349,7 +366,7 @@ if __name__ == "__main__":
         raise ValueError("No training files have enough data points for the given FRAME_SIZE.")
     # --- КОНЕЦ ЛОГИКИ ПОДГОТОВКИ ИНДЕКСОВ ДЛЯ ОБУЧЕНИЯ ---
     
-    # ---> НАЧАЛО ВСТАВКИ: ПОДГОТОВКА ИНДЕКСОВ ДЛЯ ТЕСТА <---
+    # ---> ПОДГОТОВКА ИНДЕКСОВ ДЛЯ ТЕСТА <---
     print("Preparing test indices (valid start points only)...")
     # Находим последний возможный стартовый индекс для всего тестового датафрейма
     last_possible_start_test = dt_test.index[-1] - FRAME_SIZE + 1
@@ -364,7 +381,7 @@ if __name__ == "__main__":
         raise ValueError("Test dataset has no valid start points for the given FRAME_SIZE.")
         
     print(f"Total valid start points in test data: {len(test_indexes_df)}")
-    # ---> КОНЕЦ ВСТАВКИ: ПОДГОТОВКА ИНДЕКСОВ ДЛЯ ТЕСТА <---
+    # ---> КОНЕЦ ПОДГОТОВКИ ИНДЕКСОВ ДЛЯ ТЕСТА <---
 
     # В CustomDataset передаем ПОЛНЫЙ DataFrame
     train_dataset = CustomDataset(FeaturesForDataset.TARGET_train[0], dt_train, dt_train, FRAME_SIZE, 0)
@@ -372,7 +389,7 @@ if __name__ == "__main__":
 
     start_epoch = 0
     # !! создание новой !!
-    name_model = "PDR_MLP_v1"
+    name_model = "PDR_MLP_v1" # PDR_MLP_v1_2 (модель та же)
     model = Model.PDR_MLP_v1(
         FRAME_SIZE,
         channel_num=len(FeaturesForDataset.FEATURES),
@@ -381,7 +398,7 @@ if __name__ == "__main__":
     
     model.to(device)
     # # !! Загрузка модели из файла !!
-    # filename_model = "ML_model/trained_models/model_ep2_tl0.3498_train1432.3669.pt"
+    # filename_model = "ML_model/trained_models/model_PDR_MLP_v1_ep18_vbl0.3872_train596.3803.pt"
     # model = torch.load(filename_model)
     # start_epoch = int(filename_model.split("ep")[1].split("_")[0])
     # model.eval()  # Set the model to evaluation mode
@@ -393,8 +410,8 @@ if __name__ == "__main__":
     print("Отношнеие 0 к 1 = ", pos_weight_value)
     pos_weight_tensor = torch.tensor([pos_weight_value], device=device) # Создаем тензор
     
-    # criterion = MultiLabelFocalLoss(gamma=3) # Пока это лучшая метрика. Можно будет поиграться с гамма.
-    criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight_tensor)
+    criterion = MultiLabelFocalLoss(gamma=3) # Пока это лучшая метрика. Можно будет поиграться с гамма.
+    # criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight_tensor)
     
     all_losses = []
 
@@ -431,7 +448,7 @@ if __name__ == "__main__":
     batch_count = 0
     for epoch in range(start_epoch,EPOCHS):
         epoch_start_time = time.time()  # Начало отсчета времени для эпохи
-        if (epoch % 10 == 0) and (epoch != 0):
+        if (epoch % 2 == 0) and (epoch != 0):
             current_lr /= 2
         optimizer = torch.optim.Adam(model.parameters(), lr=current_lr)
         #optimizer = torch.optim.Adam(model.parameters(), lr=current_lr, weight_decay=L2_REGULARIZATION_COEFFICIENT)
