@@ -200,120 +200,222 @@ class PDR_MLP_v1(nn.Module):
         return self.fc(x)
 
 class PDRBlock(nn.Module):
-    """ 
-    Универсальный блок PDR с параллельными ветками: 
-    обычной, min и опционально сравнения. 
     """
-    def __init__(self, 
-                 input_size, 
-                 base_neurons, 
-                 coeff_regular=4, 
-                 coeff_min=4, 
-                 coeff_compare=2, 
-                 use_comparison_branch=True):
+    Универсальный блок PDR с условно активными параллельными ветками:
+    обычной, min, сравнения, умножения и деления.
+    Активация выбирается параметром. Улучшена защита деления.
+    """
+    def __init__(self,
+                 input_size,
+                 base_neurons,
+                 coeff_regular=4,
+                 coeff_min=2,
+                 coeff_compare=2,
+                 coeff_mul=1,
+                 coeff_div=1,
+                 activation_type='sigmoid', # 'leaky_relu' или 'sigmoid'
+                 division_epsilon=1e-8):
         super().__init__()
-        self.use_comparison_branch = use_comparison_branch
-        
-        # Размеры веток
+
+        # --- Выбор функции активации ---
+        if activation_type == 'leaky_relu':
+            # TODO: разобраться почему из-за неё уходит в ошибку при использовании функций умножения и деления с длинными цепочками
+            # self.activation = nn.LeakyReLU()
+            pass
+        elif activation_type == 'sigmoid':
+            self.activation = nn.Sigmoid()
+        else:
+            raise ValueError(f"Неизвестный тип активации: {activation_type}")
+
+        self.register_buffer('division_epsilon', torch.tensor(division_epsilon))
+        current_output_size = 0 # Накапливаем размер активных веток
+
+        # --- Ветка 1: Обычная ---
         self.regular_size = base_neurons * coeff_regular
+        if self.regular_size > 0:
+            self.lin_regular = nn.Linear(input_size, self.regular_size)
+            current_output_size += self.regular_size
+        else:
+            self.lin_regular = None
+
+        # --- Ветка 2: Min ---
         self.min_size = base_neurons * coeff_min
-        self.compare_size = base_neurons * coeff_compare if use_comparison_branch else 0
-        
-        # Ветка 1: Обычная (Linear -> Sigmoid)
-        self.lin_regular = nn.Linear(input_size, self.regular_size)
-        
-        # Ветка 2: Min (Linear1, Linear2 -> Min -> Sigmoid)
-        self.lin_min1 = nn.Linear(input_size, self.min_size)
-        self.lin_min2 = nn.Linear(input_size, self.min_size)
-        
-        # Ветка 3: Сравнение (если активна)
-        if self.use_comparison_branch:
+        if self.min_size > 0:
+            self.lin_min1 = nn.Linear(input_size, self.min_size)
+            self.lin_min2 = nn.Linear(input_size, self.min_size)
+            current_output_size += self.min_size
+        else:
+            self.lin_min1, self.lin_min2 = None, None
+
+        # --- Ветка 3: Сравнение ---
+        self.compare_size = base_neurons * coeff_compare
+        if self.compare_size > 0:
             self.lin_compare_signal = nn.Linear(input_size, self.compare_size)
             self.lin_compare_threshold = nn.Linear(input_size, self.compare_size)
-            # крутизна обучаема:
             self.comparison_steepness = nn.Parameter(torch.tensor(10.0))
-            # self.register_buffer('comparison_steepness', torch.tensor(10.0)) # Не обучаемый параметр
-            # self.comparison_steepness = nn.Parameter(torch.log(torch.tensor(10.0))) # Гарантировано не отрицательный (и всегда будет "больше")
+            current_output_size += self.compare_size
+        else:
+            self.lin_compare_signal, self.lin_compare_threshold = None, None
+            self.comparison_steepness = None # Явно указываем отсутствие
 
-        # TODO: сделать через переменую выбора.
-        # self.activation = nn.Sigmoid()
-        self.activation = nn.LeakyReLU()
+        # --- Ветка 4: Умножение ---
+        self.mul_size = base_neurons * coeff_mul
+        if self.mul_size > 0:
+            self.lin_mul1 = nn.Linear(input_size, self.mul_size)
+            self.lin_mul2 = nn.Linear(input_size, self.mul_size)
+            current_output_size += self.mul_size
+        else:
+            self.lin_mul1, self.lin_mul2 = None, None
 
-        # Общая выходная размерность блока
-        self.output_size = self.regular_size + self.min_size + self.compare_size
+        # --- Ветка 5: Деление ---
+        self.div_size = base_neurons * coeff_div
+        if self.div_size > 0:
+            self.lin_div_numerator = nn.Linear(input_size, self.div_size)
+            self.lin_div_denominator = nn.Linear(input_size, self.div_size)
+            current_output_size += self.div_size
+        else:
+            self.lin_div_numerator, self.lin_div_denominator = None, None
+
+        # Общая фактическая выходная размерность блока
+        self.output_size = current_output_size
 
     def forward(self, x):
-        # Ветка 1: Обычная
-        out_regular = self.activation(self.lin_regular(x))
-        
-        # Ветка 2: Min
-        out_min = self.activation(torch.min(self.lin_min1(x), self.lin_min2(x)))
+        outputs_to_cat = []
 
-        outputs_to_cat = [out_regular, out_min]
+        # Ветка 1: Обычная
+        if self.lin_regular:
+            out_regular = self.activation(self.lin_regular(x))
+            outputs_to_cat.append(out_regular)
+
+        # Ветка 2: Min
+        if self.lin_min1:
+            out_min = self.activation(torch.min(self.lin_min1(x), self.lin_min2(x)))
+            outputs_to_cat.append(out_min)
 
         # Ветка 3: Сравнение
-        if self.use_comparison_branch:
+        if self.lin_compare_signal:
             signals = self.lin_compare_signal(x)
             thresholds = self.lin_compare_threshold(x)
-            # Аппроксимация сравнения (выход уже в [0, 1])
-            out_compare = torch.sigmoid(self.comparison_steepness * (signals - thresholds)) 
+            # Аппроксимация сравнения (выход всегда в [0, 1] из-за sigmoid)
+            out_compare = torch.sigmoid(self.comparison_steepness * (signals - thresholds))
             outputs_to_cat.append(out_compare)
 
-        # Конкатенация выходов
+        # Ветка 4: Умножение
+        if self.lin_mul1:
+            out_mul = self.activation(self.lin_mul1(x) * self.lin_mul2(x))
+            outputs_to_cat.append(out_mul)
+
+        # Ветка 5: Деление
+        if self.lin_div_numerator:
+            numerator = self.lin_div_numerator(x)
+            denominator = self.lin_div_denominator(x)
+            # Используем модуль знаменателя для защиты
+            out_div = self.activation(numerator / (torch.abs(denominator) + self.division_epsilon))
+            outputs_to_cat.append(out_div)
+
+        # Если вдруг ни одна ветка не активна (хотя это странно)
+        if not outputs_to_cat:
+             # Можно вернуть тензор нулей нужного размера или бросить ошибку
+             # Вернем тензор нулей с размером 0 в последней дименсии, чтобы cat не упал
+             # Хотя лучше настроить коэффициенты так, чтобы хоть одна ветка была > 0
+             print(f"Warning: PDRBlock с input_size={x.shape[-1]} не имеет активных веток!")
+             return torch.empty((*x.shape[:-1], 0), device=x.device, dtype=x.dtype)
+
+        # Конкатенация выходов активных веток
         return torch.cat(outputs_to_cat, dim=-1)
 
 class PDR_MLP_v2(nn.Module):
-    """ 
-    Модульная MLP на основе PDRBlock с опциональными skip-соединениями.
     """
-    def __init__(self, 
-                 input_features, 
-                 base_neurons=2, 
-                 num_blocks=3, 
-                 use_skip_connection=True, 
-                 use_comparison_in_blocks=True,
-                 coeff_regular=4, coeff_min=4, coeff_compare=2, # Коэффициенты для всех блоков
+    Модульная MLP на основе PDRBlock с опциональными skip-соединениями.
+    Конфигурация слоев задается списком базовых нейронов.
+    Функция активации и активные ветки в блоках настраиваются.
+    """
+    def __init__(self,
+                 input_features,
+                 block_neuron_config=[3, 2, 1], # Список базовых нейронов для каждого блока
+                 activation_type='sigmoid',   # Тип активации для всех блоков
+                 use_skip_connection=True,
+                 # Коэффициенты передаются в каждый блок, управление активностью веток через них
+                 coeff_regular=4, coeff_min=2, coeff_compare=2, coeff_mul=1, coeff_div=1,
                  device=None):
         super().__init__()
         self.use_skip_connection = use_skip_connection
         self.device = device
         self.expected_input_features = input_features
-        
-        self.blocks = nn.ModuleList()
-        self.skip_projs = nn.ModuleList() 
-        
-        current_size = input_features
-        block_output_sizes = [] 
+        self.num_blocks = len(block_neuron_config) # TODO: Решить как обходить проблему разного количества слоёв для скипа.
 
-        # Создаем блоки
-        for _ in range(num_blocks):
-            block = PDRBlock(current_size, 
-                             base_neurons,
-                             coeff_regular, coeff_min, coeff_compare,
-                             use_comparison_branch=use_comparison_in_blocks)
+        self.blocks = nn.ModuleList()
+        self.skip_projs = nn.ModuleList()
+
+        current_size = input_features
+        block_output_sizes = []
+
+        # Создаем блоки на основе конфигурации
+        for i, base_neurons in enumerate(block_neuron_config):
+            # Проверяем, есть ли смысл создавать блок
+            # (сумма размеров всех потенциальных веток > 0)
+            potential_size = base_neurons * (coeff_regular + coeff_min + coeff_compare + coeff_mul + coeff_div)
+            if potential_size <= 0 and base_neurons <=0: # Добавил проверку base_neurons на всякий случай
+                print(f"Info: Пропуск создания блока {i}, т.к. base_neurons={base_neurons} или все коэффициенты <= 0.")
+                self.num_blocks -= 1 # Уменьшаем фактическое число блоков
+                continue # Не создаем этот блок
+
+            block = PDRBlock(input_size=current_size,
+                             base_neurons=base_neurons,
+                             coeff_regular=coeff_regular,
+                             coeff_min=coeff_min,
+                             coeff_compare=coeff_compare,
+                             coeff_mul=coeff_mul,
+                             coeff_div=coeff_div,
+                             activation_type=activation_type) # Передаем тип активации
+
+            # Проверка, что блок реально что-то выводит
+            if block.output_size <= 0:
+                 print(f"Warning: Созданный блок {i} имеет output_size=0. Проверьте коэффициенты.")
+                 # Можно его не добавлять, но это может сломать skip connections
+                 # Пока оставляем, но надо следить за конфигурацией
+            
             self.blocks.append(block)
             block_output_sizes.append(block.output_size)
-            current_size = block.output_size 
+            current_size = block.output_size
 
-        # Настраиваем skip-соединения
+        # Настраиваем skip-соединения на основе ФАКТИЧЕСКИ созданных блоков
         if self.use_skip_connection:
-            # Проекции создаются для соединения выхода блока i-2 с входом блока i
-            # Вход блока i имеет размер block_output_sizes[i-1]
-            # Выход блока i-2 имеет размер block_output_sizes[i-2]
-            for i in range(num_blocks):
-                if i >= 2: 
+            # Важно: block_output_sizes теперь может быть короче, чем len(block_neuron_config)
+            actual_num_blocks = len(self.blocks)
+            for i in range(actual_num_blocks):
+                if i >= 2: # Skip от i-2 к входу i (т.е. после выхода i-1)
                     skip_source_size = block_output_sizes[i-2]
-                    skip_target_size = self.blocks[i-1].output_size # Размер входа i-го блока
+                    skip_target_size = self.blocks[i-1].output_size # == block_output_sizes[i-1]
                     if skip_source_size != skip_target_size:
-                        proj = nn.Linear(skip_source_size, skip_target_size)
-                    else:
+                        # Добавляем проверку, что skip_target_size > 0, иначе Linear не создать
+                        if skip_target_size > 0:
+                            proj = nn.Linear(skip_source_size, skip_target_size)
+                        else:
+                             # Это странная ситуация, пропускаем проекцию
+                             print(f"Warning: Skip target size для блока {i} равен 0. Проекция не создана.")
+                             proj = None # или nn.Identity(), если source_size=0
+                    elif skip_source_size == 0 and skip_target_size == 0:
+                        proj = nn.Identity() # Для случая 0 -> 0
+                    elif skip_source_size > 0: # Размеры равны и не нулевые
                         proj = nn.Identity()
+                    else: # source=0, target>0 - нельзя сделать Identity
+                        print(f"Warning: Skip source size=0, target size>0 для блока {i}. Проекция не создана.")
+                        proj = None
+
                     self.skip_projs.append(proj)
                 else:
-                     self.skip_projs.append(None) # Skip невозможен для первых двух блоков
+                     self.skip_projs.append(None) # Для первых двух блоков проекции нет
 
         # Финальный слой
-        self.output_layer = nn.Linear(current_size, 1) 
+        # current_size теперь содержит размер выхода последнего *фактически созданного* блока
+        if current_size > 0:
+             self.output_layer = nn.Linear(current_size, 1)
+        else:
+             # Если после всех блоков размер 0, сеть не может работать
+             print("Error: Выходной размер сети после всех блоков равен 0. Проверьте конфигурацию.")
+             self.output_layer = None # Или создать фиктивный слой, который не будет использоваться
+
         self.output_activation = nn.Sigmoid()
 
     def forward(self, x):
@@ -322,30 +424,48 @@ class PDR_MLP_v2(nn.Module):
              raise ValueError(f"Input dimension mismatch! Expected {self.expected_input_features}, got {x.shape[1]}")
         if self.device:
              x = x.to(self.device)
-             
-        block_outputs = [] 
-        current_input = x
 
-        for i, block in enumerate(self.blocks):
+        block_outputs = []
+        current_input = x
+        actual_block_index = 0 # Индекс для skip_projs
+
+        for i, block in enumerate(self.blocks): # Итерируемся по фактически созданным блокам
             block_input = current_input
             # Применяем skip-соединение (если активно и возможно)
             if self.use_skip_connection and i >= 2:
-                skip_source_output = block_outputs[i-2]
-                skip_proj = self.skip_projs[i] 
-                skip_projected = skip_proj(skip_source_output)
-                block_input = block_input + skip_projected 
+                 # Используем actual_block_index для доступа к skip_projs
+                skip_proj = self.skip_projs[actual_block_index]
+                if skip_proj is not None: # Проверяем, что проекция была создана
+                    skip_source_output = block_outputs[i-2] # Доступ к выходам по индексу i
+                    skip_projected = skip_proj(skip_source_output)
+                    block_input = block_input + skip_projected
+                actual_block_index += 1 # Увеличиваем индекс только если i >= 2
 
             block_output = block(block_input)
             block_outputs.append(block_output)
-            current_input = block_output 
+            current_input = block_output
 
         # Финальный слой
-        final_block_output = current_input 
-        output = self.output_layer(final_block_output)
-        output = self.output_activation(output)
-        
+        final_block_output = current_input
+        if self.output_layer is not None: # Проверка, что слой был создан
+            output = self.output_layer(final_block_output)
+            output = self.output_activation(output)
+        else:
+            # Если финальный слой не создан, вернуть что-то осмысленное или ошибку
+            print("Error: Финальный слой не инициализирован.")
+            # Можно вернуть тензор нулей или NaN, чтобы показать проблему
+            output = torch.zeros((x.shape[0], 1), device=x.device, dtype=x.dtype) * torch.nan
+
         return output
 
+class PDR_MLP_v3(nn.Module):
+    """
+    Модель на основе PDR_MLP_v2.
+    Но на вход она принимает не только точечные значения тока/напряжения и их же из памяти,
+    а весь массив этих точек, например за 2 периода + более редкие за 10 периодов.
+    А затем по ним проходится нейроннка на основе свёрточной и выдаёт значения уже PDR_MLP_v2.
+    """
+    pass
 
 
 

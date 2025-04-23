@@ -389,16 +389,21 @@ if __name__ == "__main__":
 
     start_epoch = 0
     # !! создание новой !!
-    name_model = "PDR_MLP_v1" # PDR_MLP_v1_2 (модель та же)
-    model = Model.PDR_MLP_v1(
-        FRAME_SIZE,
-        channel_num=len(FeaturesForDataset.FEATURES),
+    name_model = "PDR_MLP_v2" # PDR_MLP_v1_2 (модель та же) 
+    # model = Model.PDR_MLP_v1(
+    #     FRAME_SIZE,
+    #     channel_num=len(FeaturesForDataset.FEATURES),
+    #     device=device,
+    # )
+    model = Model.PDR_MLP_v2(
+        input_features=len(FeaturesForDataset.FEATURES),
+        block_neuron_config=[3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
         device=device,
     )
-    
     model.to(device)
-    # # !! Загрузка модели из файла !!
-    # filename_model = "ML_model/trained_models/model_PDR_MLP_v1_ep18_vbl0.3872_train596.3803.pt"
+    
+    # !! Загрузка модели из файла !!
+    # filename_model = "ML_model/trained_models/model_PDR_MLP_v2_ep6_vbl0.0072_train12.9364.pt"
     # model = torch.load(filename_model)
     # start_epoch = int(filename_model.split("ep")[1].split("_")[0])
     # model.eval()  # Set the model to evaluation mode
@@ -448,7 +453,7 @@ if __name__ == "__main__":
     batch_count = 0
     for epoch in range(start_epoch,EPOCHS):
         epoch_start_time = time.time()  # Начало отсчета времени для эпохи
-        if (epoch % 2 == 0) and (epoch != 0):
+        if (epoch % 5 == 0) and (epoch != 0):
             current_lr /= 2
         optimizer = torch.optim.Adam(model.parameters(), lr=current_lr)
         #optimizer = torch.optim.Adam(model.parameters(), lr=current_lr, weight_decay=L2_REGULARIZATION_COEFFICIENT)
