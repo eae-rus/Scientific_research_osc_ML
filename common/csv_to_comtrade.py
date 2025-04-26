@@ -297,14 +297,18 @@ def start_conversion_thread(app_instance):
             'net_freq': float(app_instance.freq_entry.get()),
             'data_type': app_instance.data_type_var.get(),
         }
-        input_folder = app_instance.input_folder_var.get()
-        output_folder = app_instance.output_folder_var.get()
-
-        if not input_folder or not Path(input_folder).is_dir():
-            messagebox.showerror("Error", "Please select a valid input folder.")
+        # Получаем список выбранных файлов из переменной экземпляра
+        files_to_process_str = app_instance.selected_files_list
+        if not files_to_process_str:
+            messagebox.showerror("Error", "Please select at least one CSV file using 'Browse Files...'.")
             app_instance.run_button.config(state=tk.NORMAL)
             app_instance.status_label.config(text="Ready.")
             return
+
+        # Преобразуем строки путей в объекты Path
+        files_to_process = [Path(f) for f in files_to_process_str]
+        
+        output_folder = app_instance.output_folder_var.get()
         if not output_folder or not Path(output_folder).is_dir():
              # Попытаемся создать папку, если она не существует
              try:
@@ -324,27 +328,25 @@ def start_conversion_thread(app_instance):
         return
 
     # Запуск обработки в отдельном потоке
-    thread = threading.Thread(target=run_conversion, args=(app_instance, input_folder, output_folder, params), daemon=True)
+    thread = threading.Thread(target=run_conversion, args=(app_instance, files_to_process, output_folder, params), daemon=True) # Передаем список Path объектов
     thread.start()
 
-def run_conversion(app_instance, input_folder, output_folder, params):
+def run_conversion(app_instance, files_to_process, output_folder, params):
     """Основная функция конвертации, выполняемая в потоке."""
-    input_path = Path(input_folder)
     output_path = Path(output_folder)
-    csv_files = list(input_path.glob('*.csv'))
 
-    if not csv_files:
-        app_instance.update_status("No CSV files found in the input folder.")
+    if not files_to_process: # Дополнительная проверка
+        app_instance.update_status("No files selected for processing.")
         app_instance.run_button.config(state=tk.NORMAL)
         return
 
-    total_files = len(csv_files)
+    total_files = len(files_to_process)
     app_instance.progress_bar['maximum'] = total_files
     files_processed = 0
     files_succeeded = 0
 
-    for i, csv_file in enumerate(csv_files):
-        success = process_csv_to_comtrade(csv_file, output_path, params, app_instance.update_status)
+    for i, csv_file_path in enumerate(files_to_process):
+        success = process_csv_to_comtrade(csv_file_path, output_path, params, app_instance.update_status)
         files_processed += 1
         if success:
              files_succeeded += 1
@@ -366,7 +368,6 @@ class ConverterApp:
         master.geometry("550x450") # Немного увеличим размер
 
         # Переменные для хранения путей
-        self.input_folder_var = tk.StringVar()
         self.output_folder_var = tk.StringVar()
         
         # Переменная для хранения выбора типа данных
@@ -413,16 +414,18 @@ class ConverterApp:
         #ttk.Radiobutton(param_frame, text="Первичные", variable=self.data_type_var, value="Первичные").grid(row=3, column=1, sticky=tk.W)
         #ttk.Radiobutton(param_frame, text="Вторичные", variable=self.data_type_var, value="Вторичные").grid(row=3, column=2, sticky=tk.W)
 
-        # Фрейм для выбора папок
-        folder_frame = ttk.LabelFrame(master, text="Folders", padding=(10, 5))
+        # Фрейм для выбора папок/файлов
+        folder_frame = ttk.LabelFrame(master, text="Input/Output", padding=(10, 5)) # Можно переименовать LabelFrame
         folder_frame.pack(padx=10, pady=5, fill=tk.X)
+        folder_frame.columnconfigure(1, weight=1) # Позволим второй колонке расширяться
 
-        # --- Выбор входной папки ---
-        ttk.Label(folder_frame, text="Input CSV Folder:").grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
-        self.input_entry = ttk.Entry(folder_frame, textvariable=self.input_folder_var, width=40)
-        self.input_entry.grid(row=0, column=1, padx=5, pady=5)
-        self.input_button = ttk.Button(folder_frame, text="Browse...", command=self.select_input_folder)
-        self.input_button.grid(row=0, column=2, padx=5, pady=5)
+        # --- Выбор входных файлов ---
+        ttk.Label(folder_frame, text="Input CSV Files:").grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
+        self.input_button = ttk.Button(folder_frame, text="Browse Files...", command=self.select_input_files) # Изменена команда и текст
+        self.input_button.grid(row=0, column=1, columnspan=2, padx=5, pady=5, sticky=tk.EW) # Растянем кнопку на 2 колонки
+        
+        # Добавим переменную для хранения списка выбранных файлов
+        self.selected_files_list = []
 
         # --- Выбор выходной папки ---
         ttk.Label(folder_frame, text="Output COMTRADE Folder:").grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
@@ -451,10 +454,21 @@ class ConverterApp:
         self.output_folder_var.set(os.getcwd())
 
 
-    def select_input_folder(self):
-        folder_selected = filedialog.askdirectory()
-        if folder_selected:
-            self.input_folder_var.set(folder_selected)
+    def select_input_files(self):
+        # Открываем диалог выбора нескольких файлов, фильтруя по CSV
+        files_selected = filedialog.askopenfilenames(
+            title="Select CSV files",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
+        )
+        if files_selected:
+            # filedialog возвращает кортеж, преобразуем в список
+            self.selected_files_list = list(files_selected)
+            # Обновляем статус, чтобы показать количество выбранных файлов
+            self.update_status(f"Selected {len(self.selected_files_list)} CSV file(s).")
+        else:
+            # Если пользователь ничего не выбрал, очищаем список
+            self.selected_files_list = []
+            self.update_status("No CSV files selected.")
 
     def select_output_folder(self):
         folder_selected = filedialog.askdirectory()
