@@ -37,6 +37,8 @@ Icon
 env/
 venv/
 ENV/
+models/MLP
+models/CNN
 
 data/
 exp.ipynb
