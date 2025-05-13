@@ -1,6 +1,8 @@
 import torch
 from torch import nn
 from torch.optim import Adam
+from torch.utils.data import DataLoader, random_split
+from tqdm import tqdm
 from sklearn.preprocessing import StandardScaler
 from abc import ABC
 import time
@@ -11,12 +13,12 @@ from datasets.fdd_dataset import FDDDataset
 from datasets.base_dataset import SlidingWindowDataset
 
 
-class BaseTrainer(ABC):
-    """Base trainer class that all model trainers should inherit from."""
+class FDDTrainer(ABC):
+    """FDD trainer."""
 
-    def __init__(self, config, experiment_dir=None):
+    def __init__(self, config, model, dataset, experiment_dir=None):
         """
-        Initialize the base trainer.
+        Initialize the trainer.
 
         Args:
             config_path: Path to the configuration file
@@ -25,12 +27,13 @@ class BaseTrainer(ABC):
         self.config = config
         self.experiment_dir = experiment_dir
         self.device = get_available_device()
-        self.model = None
+        self.model = model
+        self.dataset = dataset
         self.train_loader = None
         self.val_loader = None
         self.criterion = None
         self.optimizer = None
-        self.best_f1 = 0
+        self.best_loss = float('inf')
         self.best_checkpoint_path = None
 
     def train(self, ):
@@ -39,13 +42,14 @@ class BaseTrainer(ABC):
 
         for epoch in range(1, epochs + 1):
             start_time = time.time()
-            val_f1 = self._train_epoch(epoch)
+            _, val_loss = self._train_epoch(epoch)
             elapsed_time = time.time() - start_time
 
             # Save best model
-            if val_f1 > self.best_val_f1:
-                self.best_val_f1 = val_f1
-                self.save_checkpoint(epoch, val_f1)
+            print(val_loss)
+            if val_loss < self.best_loss:
+                self.best_loss = val_loss
+                self.save_checkpoint(epoch, val_loss)
 
     def save_checkpoint(self, epoch, val_loss):
         """Save model checkpoint."""
@@ -64,52 +68,39 @@ class BaseTrainer(ABC):
 
         # Save checkpoint
         torch.save(checkpoint, self.best_checkpoint_path)
+        print("was here")
 
     def setup(self):
-        """Set up the model, training parameters, dataset and data loaders."""
+        """Set up the model, training parameters, self.dataset and data loaders."""
 
-        # Check if we're using windowed data
+        # Load parameters
         window_size = self.config.get('data', {}).get('window_size', None)
+        batch_size = self.config.get('training', {}).get('batch_size', 128)
         stride = self.config.get('data', {}).get('stride', 1)
-
-        # Set up model
-        model_config = self.config.get('model', {})
-
-        self.model = self._setup_model(model_config)
+        lr = self.config.get('training', {}).get('learning_rate', 0.001)
 
         # Move model to device
         self.model = self.model.to(self.device)
 
         # Set up optimizer
-        lr = self.config.get('training', {}).get('learning_rate', 0.001)
         self.optimizer = Adam(self.model.parameters(), lr=lr)
 
         # Set up loss function
-        self.criterion = nn.L1Loss()
-
-        # Create dataset
-        dataset = FDDDataset()
-
-        # Scale the data
-        scaler = StandardScaler()
-        dataset.df[dataset.train_mask] = scaler.fit_transform(dataset.df[dataset.train_mask])
+        self.criterion = nn.CrossEntropyLoss()
 
         # Create dataloaders
-        dataset = SlidingWindowDataset(
-            dataset.df[dataset.train_mask],
-            target=None,
+        train_dataset = SlidingWindowDataset(
+            self.dataset.df[self.dataset.train_mask],
+            self.dataset.target[self.dataset.train_mask],
             window_size=window_size,
             stride=stride
         )
-        val_size = self.config.get('data', {}).get('val_size', 0)
-        val_size = max(int(len(dataset) * val_size), 1)
-        train_size = len(dataset) - val_size
-        train_dataset, val_dataset = random_split(
-            dataset,
-            [train_size, val_size],
-            generator=torch.Generator(),
+        val_dataset = SlidingWindowDataset(
+            self.dataset.df[self.dataset.val_mask],
+            self.dataset.target[self.dataset.train_mask],
+            window_size=window_size,
+            stride=stride
         )
-        batch_size = self.config.get('training', {}).get('batch_size', 32)
         self.train_loader = DataLoader(
             train_dataset, batch_size=batch_size, shuffle=True
         )
@@ -119,12 +110,11 @@ class BaseTrainer(ABC):
 
     def _train_epoch(self, epoch):
         """Train for one epoch."""
-        self.model.train()
-        total_loss = 0
-        total_val_loss = 0
 
         # train
         pbar = tqdm(self.train_loader, desc=f"Epoch {epoch} [Train]")
+        self.model.train()
+        total_loss = 0
 
         for data, target in pbar:
             # Move data to device
@@ -134,7 +124,7 @@ class BaseTrainer(ABC):
             output = self.model(data)
 
             # Calculate loss
-            loss = self.criterion(output, data)
+            loss = self.criterion(output, target)
 
             # Zero gradients
             self.optimizer.zero_grad()
@@ -153,6 +143,8 @@ class BaseTrainer(ABC):
 
         # validation
         pbar = tqdm(self.val_loader, desc=f"Epoch {epoch} [Train]")
+        self.model.eval()
+        total_val_loss = 0
 
         for data, target in pbar:
             # Move data to device
@@ -162,16 +154,7 @@ class BaseTrainer(ABC):
             output = self.model(data)
 
             # Calculate loss
-            loss = self.criterion(output, data)
-
-            # Zero gradients
-            self.optimizer.zero_grad()
-
-            # Backward pass
-            loss.backward()
-
-            # Update weights
-            self.optimizer.step()
+            loss = self.criterion(output, target)
 
             # Update metrics
             total_val_loss += loss.item()

@@ -6,6 +6,10 @@ from common.utils import get_short_names_ml_signals
 
 
 class FDDDataset(BaseDataset):
+    def __init__(self, csv_path=None):
+        super().__init__(csv_path)
+        self.df = self.df[['IA', 'IC', 'UA BB', 'UB BB', 'UC BB']]
+
     def _set_target(self):
         # Get lists of signals for each event
         _, ml_opr_swch, ml_abnorm_evnt, ml_emerg_evnt = get_short_names_ml_signals()
@@ -24,32 +28,32 @@ class FDDDataset(BaseDataset):
         return target
 
     def _train_test_split(self):
-        # Первые 32 символа из имени файла для группировки
+        # Grouping by first 32 symbols from file name
         file_groups = self.df.index.get_level_values('file_name').str[:32]
         unique_files = file_groups.unique()
         
-        # Стратификация по emerg_evnt (максимум в группе файлов)
+        # Stratification by emerg_evnt
         file_labels = self.target.groupby(file_groups).max()
-        strat_col = file_labels['emerg_evnt']  # Только emerg_evnt
+        strat_col = file_labels['emerg_evnt']
         
-        # Первое разделение (train_val + test)
+        # (train_val + test)
         files_train_val, files_test = train_test_split(
             unique_files,
             test_size=0.2,
-            stratify=strat_col,  # Стратификация по emerg_evnt
+            stratify=strat_col,
             random_state=42
         )
         
-        # Второе разделение (train + val)
+        # (train + val)
         strat_train_val = file_labels.loc[files_train_val, 'emerg_evnt']  # Только emerg_evnt
         files_train, files_val = train_test_split(
             files_train_val,
-            test_size=0.25,
-            stratify=strat_train_val,  # Стратификация по emerg_evnt
+            test_size=0.1,
+            stratify=strat_train_val,
             random_state=42
         )
         
-        # Создание масок
+        # Create masks
         return (
             file_groups.isin(files_train),
             file_groups.isin(files_val),

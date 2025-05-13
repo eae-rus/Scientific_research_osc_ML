@@ -72,5 +72,5 @@ class SlidingWindowDataset(Dataset):
     def __getitem__(self, idx):
         start_idx, end_idx = self.valid_windows[idx]
         sample = self.data[start_idx:end_idx]
-        target = self.target[start_idx:end_idx].max() if self.target is not None else sample[-1]
+        target = self.target[end_idx]
         return sample, target

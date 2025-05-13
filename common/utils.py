@@ -1,4 +1,10 @@
 import torch
+import os
+import yaml
+import numpy as np
+from datetime import datetime
+import random
+from pathlib import Path
 
 
 def get_short_names_ml_signals(use_operational_switching: bool = True, use_abnormal_event: bool = True,
@@ -149,3 +155,30 @@ def get_available_device():
         device = torch.device("cpu")
         print("GPU not available, using CPU")
     return device
+
+def set_seed(seed=42):
+    """Set random seed for reproducibility."""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
+def create_experiment_dir(base_dir, experiment_name=None):
+    """Create experiment directory with timestamp."""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    exp_name = f"{experiment_name}_{timestamp}" if experiment_name else f"experiment_{timestamp}"
+    exp_dir = Path(base_dir) / exp_name
+
+    # Create subdirectories
+    os.makedirs(exp_dir / "checkpoints", exist_ok=True)
+    os.makedirs(exp_dir / "metrics", exist_ok=True)
+
+    return exp_dir
+
+def load_config(config_path):
+    with open(config_path, 'r') as f:
+        return yaml.safe_load(f)

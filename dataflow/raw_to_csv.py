@@ -12,8 +12,8 @@ class RawToCSV():
     def __init__(self, raw_path=None, csv_path=None, uses_buses=['1', '2', '12']):
         # The relative path from the script directory to the data directory
         # FIXME: You need to add a workaround to the problem when these files are missing. Because they have to be taken from somewhere.
-        default_raw_path = os.path.join('..', '..', 'data', 'raw')
-        default_csv_path = os.path.join('..', '..', 'data', 'csv')
+        default_raw_path = os.path.join('data', 'raw')
+        default_csv_path = os.path.join('data', 'csv')
 
         self.raw_path = raw_path if raw_path is not None else default_raw_path
         self.csv_path = csv_path if csv_path is not None else default_csv_path
