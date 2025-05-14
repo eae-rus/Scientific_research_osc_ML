@@ -1,15 +1,17 @@
+import json
+
 import torch
 from torch import nn
 from torch.optim import Adam
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
-from sklearn.preprocessing import StandardScaler
+# from sklearn.preprocessing import StandardScaler
 from abc import ABC
 import time
 import os
 
 from common.utils import get_available_device
-from datasets.fdd_dataset import FDDDataset
+# from datasets.fdd_dataset import FDDDataset
 from datasets.base_dataset import SlidingWindowDataset
 
 
@@ -35,6 +37,10 @@ class FDDTrainer(ABC):
         self.optimizer = None
         self.best_loss = float('inf')
         self.best_checkpoint_path = None
+        self.patience_counter = 0
+        self.patience = config.get('training', {}).get('early_stopping_patience', None)
+        self.train_losses = []
+        self.val_losses = []
 
     def train(self, ):
         """Train the model for the specified number of epochs."""
@@ -42,13 +48,35 @@ class FDDTrainer(ABC):
 
         for epoch in range(1, epochs + 1):
             start_time = time.time()
-            _, val_loss = self._train_epoch(epoch)
+            train_loss, val_loss = self._train_epoch(epoch)
             elapsed_time = time.time() - start_time
+            # Сохраните историю
+
+            self.train_losses.append(train_loss)
+            self.val_losses.append(val_loss)
 
             # Save best model
             if val_loss < self.best_loss:
                 self.best_loss = val_loss
+                self.patience_counter = 0
                 self.save_checkpoint(epoch, val_loss)
+            else:
+                self.patience_counter += 1
+
+            # Early stopping check (ДОБАВЬТЕ ЭТИ СТРОКИ СЮДА)
+            if self.patience and self.patience_counter >= self.patience:
+                print(f"Early stopping at epoch {epoch} (patience={self.patience})")
+                break
+        self._save_training_history()
+
+    def _save_training_history(self):
+        history = {
+            'train_losses': self.train_losses,
+            'val_losses': self.val_losses
+        }
+        history_path = os.path.join(self.experiment_dir, "training_history.json")
+        with open(history_path, 'w') as f:
+            json.dump(history, f, indent=4)
 
     def save_checkpoint(self, epoch, val_loss):
         """Save model checkpoint."""
@@ -75,6 +103,7 @@ class FDDTrainer(ABC):
         window_size = self.config.get('data', {}).get('window_size', None)
         batch_size = self.config.get('training', {}).get('batch_size', 128)
         stride = self.config.get('data', {}).get('stride', 1)
+        val_stride = self.config.get('data', {}).get('val_stride', stride * 5)
         lr = self.config.get('training', {}).get('learning_rate', 0.001)
 
         # Move model to device
@@ -95,9 +124,9 @@ class FDDTrainer(ABC):
         )
         val_dataset = SlidingWindowDataset(
             self.dataset.df[self.dataset.val_mask],
-            self.dataset.target[self.dataset.train_mask],
+            self.dataset.target[self.dataset.val_mask],
             window_size=window_size,
-            stride=stride
+            stride=val_stride
         )
         self.train_loader = DataLoader(
             train_dataset, batch_size=batch_size, shuffle=True
@@ -158,6 +187,8 @@ class FDDTrainer(ABC):
             total_val_loss += loss.item()
 
         # Calculate average loss and metrics
-        avg_val_loss = total_loss / len(self.train_loader)
+        avg_val_loss = total_val_loss / len(self.val_loader)
+
+        print(f"Epoch {epoch}: Train Loss = {avg_loss:.4f}, Val Loss = {avg_val_loss:.4f}")
 
         return avg_loss, avg_val_loss

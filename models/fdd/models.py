@@ -54,6 +54,7 @@ class CNN(nn.Module):
         )
 
         self.enc_fc = nn.Linear(320, hidden_size)
+        self.dropout = nn.Dropout(0.3)
         self.out_fc = nn.Linear(hidden_size, output_dim)
         self.fft_fc = nn.Linear(hidden_size, 5)
 
@@ -61,5 +62,6 @@ class CNN(nn.Module):
         x = self.conv(x.permute(0, 2, 1))
         x = x.view(x.size(0), -1)
         x = self.enc_fc(x).relu()
+        x = self.dropout(x)
         out = self.out_fc(x)
         return out
