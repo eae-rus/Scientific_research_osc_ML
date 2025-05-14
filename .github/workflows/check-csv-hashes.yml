@@ -7,6 +7,12 @@ on:
     branches: 
       - refactoring  # Запуск при PR в refactoring
 
+# Добавленные разрешения для решения проблемы доступа
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   check-csv-hashes:
     runs-on: ubuntu-latest
@@ -51,10 +57,20 @@ jobs:
           # Проверяем, существуют ли оба файла
           if not os.path.exists(test_csv_path):
               print(f"❌ Ошибка: Файл {test_csv_path} не найден")
+              print("Содержимое директории tests:")
+              if os.path.exists('tests'):
+                  print(os.listdir('tests'))
+              else:
+                  print("Директория tests не найдена")
               sys.exit(1)
               
           if not os.path.exists(original_csv_path):
               print(f"❌ Ошибка: Файл {original_csv_path} не найден")
+              print("Содержимое директории tests:")
+              if os.path.exists('tests'):
+                  print(os.listdir('tests'))
+              else:
+                  print("Директория tests не найдена")
               sys.exit(1)
           
           # Вычисляем хеши
@@ -75,6 +91,7 @@ jobs:
         continue-on-error: true
       
       # Только для pull request: закрываем PR если хеши не совпадают
+      # Обновлено для правильного доступа к данным PR
       - name: Comment and close PR on hash mismatch
         if: github.event_name == 'pull_request' && steps.check-hashes.outcome == 'failure'
         uses: actions/github-script@v6
@@ -82,20 +99,21 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             github.rest.issues.createComment({
-              issue_number: context.issue.number,
+              issue_number: context.payload.pull_request.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: '❌ Pull request автоматически отклонен: хеши CSV файлов не совпадают. Файлы test_output.csv и original.csv должны быть идентичны.'
             });
             
             github.rest.pulls.update({
-              pull_number: context.issue.number,
+              pull_number: context.payload.pull_request.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'closed'
             });
       
       # Только для pull request: комментируем успех если хеши совпадают
+      # Обновлено для правильного доступа к данным PR
       - name: Comment on PR when hashes match
         if: github.event_name == 'pull_request' && steps.check-hashes.outcome == 'success'
         uses: actions/github-script@v6
@@ -103,7 +121,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             github.rest.issues.createComment({
-              issue_number: context.issue.number,
+              issue_number: context.payload.pull_request.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: '✅ Проверка хешей CSV файлов пройдена успешно! Файлы test_output.csv и original.csv идентичны.'
