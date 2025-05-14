@@ -72,12 +72,14 @@ class FDDEvaluator(ABC):
                 output = self.model(data)
 
                 all_targets.extend(target.cpu().numpy())
-                all_predictions.extend(output.detach().cpu().numpy())
+                # Apply sigmoid and threshold for binary classification
+                probs = torch.sigmoid(output)
+                preds = (probs > 0.5).float()
+                all_predictions.extend(preds.detach().cpu().numpy())
 
         # Convert to numpy arrays for metric calculation
         all_targets = np.array(all_targets)
         all_predictions = np.array(all_predictions)
-        all_predictions = (all_predictions > 0.5)
 
         # Calculate metrics and convert numpy arrays to lists
         metric = f1_score(all_targets, all_predictions, average=None).tolist()

@@ -12,7 +12,7 @@ training:
 # Data parameters
 data:
   dim: 5
-  classes: 3
+  classes: 4
   window_size: 32
   random_state: 42
   stride: 1

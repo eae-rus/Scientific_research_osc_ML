@@ -21,10 +21,16 @@ class FDDDataset(BaseDataset):
         
         # Combine into a DataFrame
         target = pd.DataFrame({
+            'norm_state': ((target_opr + target_abnorm + target_emerg) == 0).astype(int),
             'opr_swch': target_opr,
             'abnorm_evnt': target_abnorm,
             'emerg_evnt': target_emerg
         }, index=self.df.index)
+        
+        # Add normal state column
+        target['norm_state'] = ((target['opr_swch'] == 0)
+                               & (target['abnorm_evnt'] == 0)
+                               & (target['emerg_evnt'] == 0)).astype(int)
         return target
 
     def _train_test_split(self):
