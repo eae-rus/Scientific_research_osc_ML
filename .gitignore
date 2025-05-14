@@ -32,6 +32,8 @@ Icon
 *.pyc
 *.swp
 *.swo
+*.ipynb
+*.csv
 .env
 .venv
 env/
@@ -39,6 +41,7 @@ venv/
 ENV/
 models/MLP
 models/CNN
+models/GRU
 
 data/
 exp.ipynb

@@ -58,8 +58,8 @@ def main():
     dataset = FDDDataset('data/csv/dataset.csv')
 
     # Scale the data
-    scaler = StandardScaler()
-    dataset.df[dataset.train_mask] = scaler.fit_transform(dataset.df[dataset.train_mask])
+    #scaler = StandardScaler()
+    #dataset.df[dataset.train_mask] = scaler.fit_transform(dataset.df[dataset.train_mask])
 
     # Create trainer instance with the loaded config
     trainer = FDDTrainer(config=config, 

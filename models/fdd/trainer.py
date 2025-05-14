@@ -46,7 +46,6 @@ class FDDTrainer(ABC):
             elapsed_time = time.time() - start_time
 
             # Save best model
-            print(val_loss)
             if val_loss < self.best_loss:
                 self.best_loss = val_loss
                 self.save_checkpoint(epoch, val_loss)
@@ -68,7 +67,6 @@ class FDDTrainer(ABC):
 
         # Save checkpoint
         torch.save(checkpoint, self.best_checkpoint_path)
-        print("was here")
 
     def setup(self):
         """Set up the model, training parameters, self.dataset and data loaders."""
