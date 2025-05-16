@@ -118,13 +118,13 @@ class FDDTrainer(ABC):
         # Create dataloaders
         train_dataset = SlidingWindowDataset(
             self.dataset.df[self.dataset.train_mask],
-            self.dataset.target[self.dataset.train_mask],
+            self.dataset.target[self.dataset.train_mask].astype(int),
             window_size=window_size,
             stride=stride
         )
         val_dataset = SlidingWindowDataset(
             self.dataset.df[self.dataset.val_mask],
-            self.dataset.target[self.dataset.val_mask],
+            self.dataset.target[self.dataset.val_mask].astype(int),
             window_size=window_size,
             stride=val_stride
         )
@@ -145,7 +145,7 @@ class FDDTrainer(ABC):
 
         for data, target in pbar:
             # Move data to device
-            data, target = data.to(self.device), target.to(self.device)
+            data, target = data.to(self.device), target.to(self.device).long()
 
             # Forward pass
             output = self.model(data)
@@ -175,7 +175,7 @@ class FDDTrainer(ABC):
 
         for data, target in pbar:
             # Move data to device
-            data, target = data.to(self.device), target.to(self.device)
+            data, target = data.to(self.device), target.to(self.device).long()
 
             # Forward pass
             output = self.model(data)

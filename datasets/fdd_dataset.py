@@ -1,7 +1,7 @@
 from datasets.base_dataset import BaseDataset
 from sklearn.model_selection import train_test_split
 import pandas as pd
-
+import numpy as np
 from common.utils import get_short_names_ml_signals
 
 
@@ -19,18 +19,18 @@ class FDDDataset(BaseDataset):
         target_abnorm = self.df.filter(ml_abnorm_evnt).any(axis=1).astype(int)
         target_emerg = self.df.filter(ml_emerg_evnt).any(axis=1).astype(int)
         
-        # Combine into a DataFrame
-        target = pd.DataFrame({
-            'norm_state': ((target_opr + target_abnorm + target_emerg) == 0).astype(int),
-            'opr_swch': target_opr,
-            'abnorm_evnt': target_abnorm,
-            'emerg_evnt': target_emerg
-        }, index=self.df.index)
+        # Calculate norm_state where all events are 0
+        norm_state = ((target_opr + target_abnorm + target_emerg) == 0).astype(int)
         
-        # Add normal state column
-        target['norm_state'] = ((target['opr_swch'] == 0)
-                               & (target['abnorm_evnt'] == 0)
-                               & (target['emerg_evnt'] == 0)).astype(int)
+        # Create target with priority: emerg_evnt (2) > abnorm_evnt (1) > (opr_swch or norm_state) (0)
+        conditions = [
+            target_emerg.astype(bool),
+            target_abnorm.astype(bool),
+            (target_opr.astype(bool) | norm_state.astype(bool))
+        ]
+        choices = [2, 1, 0]
+        target = pd.Series(np.select(conditions, choices, default=0), index=self.df.index, name='target')
+        
         return target
 
     def _train_test_split(self):
@@ -38,9 +38,9 @@ class FDDDataset(BaseDataset):
         file_groups = self.df.index.get_level_values('file_name').str[:32]
         unique_files = file_groups.unique()
         
-        # Stratification by emerg_evnt
+        # Stratification by emerg_evnt (target ==2)
         file_labels = self.target.groupby(file_groups).max()
-        strat_col = file_labels['emerg_evnt']
+        strat_col = (file_labels == 2).astype(int)
         
         # (train_val + test)
         files_train_val, files_test = train_test_split(
@@ -51,7 +51,7 @@ class FDDDataset(BaseDataset):
         )
         
         # (train + val)
-        strat_train_val = file_labels.loc[files_train_val, 'emerg_evnt']  # Только emerg_evnt
+        strat_train_val = (file_labels.loc[files_train_val] == 2).astype(int)
         files_train, files_val = train_test_split(
             files_train_val,
             test_size=0.1,

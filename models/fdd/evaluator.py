@@ -45,7 +45,7 @@ class FDDEvaluator(ABC):
         # Create dataloader
         test_dataset = SlidingWindowDataset(
             df=self.dataset.df[self.dataset.test_mask],
-            target=self.dataset.target[self.dataset.test_mask],
+            target=self.dataset.target[self.dataset.test_mask].astype(int),
             window_size=window_size,
             stride=stride
         )
@@ -66,15 +66,14 @@ class FDDEvaluator(ABC):
 
             for data, target in pbar:
                 # Move data to device
-                data, target = data.to(self.device), target.to(self.device)
+                data, target = data.to(self.device), target.to(self.device).long()
 
                 # Forward pass
                 output = self.model(data)
 
                 all_targets.extend(target.cpu().numpy())
-                # Apply sigmoid and threshold for binary classification
-                probs = torch.sigmoid(output)
-                preds = (probs > 0.5).float()
+                # Get class predictions
+                _, preds = torch.max(output, 1)
                 all_predictions.extend(preds.detach().cpu().numpy())
 
         # Convert to numpy arrays for metric calculation
