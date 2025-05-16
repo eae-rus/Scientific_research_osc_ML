@@ -1,0 +1,30 @@
+{
+    "weighted_average": {
+        "ensemble_method": "weighted_average",
+        "model_weights": [
+            0.5,
+            0.5
+        ],
+        "f1_scores": [
+            0.8123123123123123,
+            0.612580834803057,
+            0.8393782383419689,
+            0.24
+        ],
+        "average_f1": 0.6260678463643345
+    },
+    "simple_average": {
+        "ensemble_method": "simple_average",
+        "model_weights": [
+            0.5,
+            0.5
+        ],
+        "f1_scores": [
+            0.8123123123123123,
+            0.612580834803057,
+            0.8393782383419689,
+            0.24
+        ],
+        "average_f1": 0.6260678463643345
+    }
+}

@@ -63,7 +63,7 @@ class FDDTrainer(ABC):
             else:
                 self.patience_counter += 1
 
-            # Early stopping check (ДОБАВЬТЕ ЭТИ СТРОКИ СЮДА)
+            # Early stopping check
             if self.patience and self.patience_counter >= self.patience:
                 print(f"Early stopping at epoch {epoch} (patience={self.patience})")
                 break
