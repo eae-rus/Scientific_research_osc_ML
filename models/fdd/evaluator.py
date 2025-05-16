@@ -82,6 +82,8 @@ class FDDEvaluator(ABC):
 
         # Calculate metrics and convert numpy arrays to lists
         metric = f1_score(all_targets, all_predictions, average=None).tolist()
+        f1_all = f1_score(all_targets, all_predictions, average='macro')
+        print('f1_macro: ', f1_all)
 
         # Store results with serializable types
         self.results = {

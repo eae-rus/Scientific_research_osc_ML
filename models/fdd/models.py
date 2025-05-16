@@ -65,3 +65,32 @@ class CNN(nn.Module):
         x = self.dropout(x)
         out = self.out_fc(x)
         return out
+
+
+class GRU(nn.Module):
+    '''
+    Gated recurrent unit
+    '''    
+    def __init__(self, window_size: int, input_dim: int, output_dim: int):
+        super().__init__()
+        hidden_dim=60
+        num_layers=1
+        dropout=0.4
+        self.num_layers = num_layers
+        self.hidden_size = hidden_dim
+        self.gru = nn.GRU(input_dim, hidden_dim, num_layers, batch_first=True)
+        self.linear1 = nn.Linear(hidden_dim*num_layers, hidden_dim)
+        self.dropout = nn.Dropout(dropout)
+        self.linear2 = nn.Linear(hidden_dim, output_dim)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x):
+        '''
+        Forward step
+        '''
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
+        out, _ = self.gru(x, h0)
+        linear_out = self.linear1(out[:, -1, :]).relu()
+        linear_out = self.dropout(linear_out)
+        out = self.linear2(linear_out)
+        return out

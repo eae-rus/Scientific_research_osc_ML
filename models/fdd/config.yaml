@@ -1,6 +1,6 @@
 # Model parameters
 model:
-  name: "CNN"
+  name: "GRU"
 
 # Training parameters
 training:
