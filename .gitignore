@@ -3,11 +3,6 @@ _ALL_OSC/
 # Ignore raw_data folder
 raw_data/
 
-# Ignore __pycache__ folder in all subdirectories
-__pycache__/
-
-# Ignore trained_models folder
-ML_model/trained_models
 
 # macOS system files
 .DS_Store
@@ -16,33 +11,69 @@ ML_model/trained_models
 Icon
 ._*
 
-# IDE - JetBrains (PyCharm, IntelliJ, etc)
-.idea/
-*.iml
-*.iws
-*.ipr
-.idea_modules/
+# Результаты экспериментов
+models/*/experiments/
+advanced_experiments/
+*.pth
+*.pt
+training_history.json
+evaluation_results.json
+metrics_summary.json
 
-# VS Code
-.vscode/
-*.code-workspace
-.history/
+# Данные (если большие)
+data/csv/dataset.csv
+data/raw/
 
-# Other common files to ignore
-*.pyc
-*.swp
-*.swo
-*.ipynb
-*.csv
-.env
-.venv
-env/
+# Python
+__pycache__/
+*.py[cod]
+.Python
+*.so
+
+# Виртуальные окружения
+.venv/
 venv/
-ENV/
-models/MLP
-models/CNN
-models/GRU
+.env
 
-data/
-exp.ipynb
-**.ipynb_checkpoints/
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Логи и временные файлы
+*.log
+logs/
+temp_*.yaml
+*.tmp
+
+# Результаты анализа
+*.png
+*.pdf
+*.html
+model_comparison*.csv
+*_test.py
+analyze_*.py
+check_*.py
+
+# Экспериментальные скрипты
+scripts/integration_script.py
+scripts/results_analyzer.py
+scripts/advanced_experiment_runner.py
+scripts/find_best_models*.py
+
+# Лишние конфиги
+configs/config_clustering_based.yaml
+configs/config_temporal_aware.yaml
+configs/config_emergency_stratified.yaml
+configs/config_original.yaml
+configs/config_balanced_minority.yaml
+configs/temp_*.yaml
+
+common/enhanced_utils.py
+configs/config_original_improved.yaml
+configs/config_seed_*.yaml
+ensemble_config.yaml
+ensemble_results/
+scripts/ensemble_eval.py
+scripts/virtualize_results.py
+test_*.py

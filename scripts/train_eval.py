@@ -5,6 +5,9 @@ import os
 import yaml
 from sklearn.preprocessing import StandardScaler
 import json
+import torch
+import numpy as np
+import random
 
 # Add the project root to the path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -13,8 +16,9 @@ from models.fdd.trainer import FDDTrainer
 from models.fdd.evaluator import FDDEvaluator
 from models.fdd.models import MLP, CNN
 from models.fdd.advanced_models import LSTM_CNN_Hybrid, TransformerFDD, ResNet1D, DualBranchFDD
-from common.utils import set_seed, create_experiment_dir, load_config
+from common.enhanced_utils import set_seed, create_experiment_dir, load_config
 from datasets.fdd_dataset import FDDDataset
+from datasets.enhanced_fdd_dataset import EnhancedFDDDataset
 
 
 def create_model(config):
@@ -44,6 +48,30 @@ def create_model(config):
 
 
 def main():
+    def set_all_seeds(seed=42):
+        """Устанавливает все возможные seeds для воспроизводимости"""
+        # Python random
+        random.seed(seed)
+
+        # NumPy
+        np.random.seed(seed)
+
+        # PyTorch
+        torch.manual_seed(seed)
+
+        # PyTorch GPU
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(seed)
+            torch.cuda.manual_seed_all(seed)
+
+            # Делаем CUDA детерминистичным (медленнее, но воспроизводимо)
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
+
+        # Для Apple Silicon
+        if hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+            torch.mps.manual_seed(seed)
+
     parser = argparse.ArgumentParser(description="Train model")
     parser.add_argument('--config', type=str, required=True, help="Path to the configuration file")
     parser.add_argument('--experiment_name', type=str, default=None, help="Name for the experiment")
@@ -57,7 +85,7 @@ def main():
     model_class_name = config.get('model', {}).get('name', 'CNN')
 
     # Set random seed for reproducibility
-    set_seed(args.seed)
+    set_all_seeds(args.seed)
 
     # Create experiment directory (используем имя модели для папки)
     base_results_dir = f"models/{model_class_name}/experiments"
@@ -74,7 +102,16 @@ def main():
     print(f"Starting training for {model_class_name}")
 
     # Create dataset
-    dataset = FDDDataset('data/csv/dataset.csv')
+    # Проверяем, есть ли в конфигурации стратегия разбиения
+    split_strategy = config.get('data', {}).get('split_strategy', 'original')
+    if split_strategy == 'original':
+        dataset = FDDDataset('data/csv/dataset.csv')
+    else:
+        # Создаем копию конфигурации данных и убираем split_strategy если он там есть
+        data_config = config.get('data', {}).copy()
+        data_config.pop('split_strategy', None)  # Убираем если есть, чтобы избежать дублирования
+
+        dataset = EnhancedFDDDataset('data/csv/dataset.csv', split_strategy=split_strategy, **data_config)
 
     # Scale the data (optional - uncomment if needed)
     # scaler = StandardScaler()

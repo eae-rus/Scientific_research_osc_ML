@@ -1,30 +1,26 @@
-# Model parameters
 model:
   name: "LSTM_CNN_Hybrid"
 
-# Training parameters
 training:
   batch_size: 64
   epochs: 20
-  learning_rate: 0.0002
+  learning_rate: 0.0001
   optimizer: "adam"
   early_stopping_patience: 10
 
-  # Learning rate scheduler
   use_scheduler: true
-  scheduler_step_size: 5
-  scheduler_gamma: 0.8
+  scheduler_step_size: 6
+  scheduler_gamma: 0.7
 
-  # Loss function configuration
   loss_function: "focal"
   weight_strategy: "balanced_sqrt"
-  focal_gamma: 3.0
+  focal_gamma: 4.0
 
-# Data parameters
 data:
   dim: 5
   classes: 3
-  window_size: 64
+  window_size: 80
   random_state: 42
   stride: 1
   val_stride: 8
+  split_strategy: "clustering_based"

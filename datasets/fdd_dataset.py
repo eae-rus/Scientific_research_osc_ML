@@ -3,7 +3,7 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 import numpy as np
 from common.utils import get_short_names_ml_signals
-
+from .enhanced_fdd_dataset import EnhancedFDDDataset
 
 class FDDDataset(BaseDataset):
     def __init__(self, csv_path=None):
@@ -65,3 +65,8 @@ class FDDDataset(BaseDataset):
             file_groups.isin(files_val),
             file_groups.isin(files_test)
         )
+
+
+    def create_advanced_dataset(csv_path, split_strategy='original', **kwargs):
+        """Создает датасет с продвинутыми стратегиями разбиения"""
+        return EnhancedFDDDataset(csv_path, split_strategy, **kwargs)
