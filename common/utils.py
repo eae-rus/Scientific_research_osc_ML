@@ -115,25 +115,31 @@ def get_ml_signals(i_bus, use_operational_switching=True, use_abnormal_event=Tru
 
     ml_abnormal_event = {
         # --- Abnormal events
-        f'MLsignal_{i_bus}_2',  # Anomaly, without clarification
-        f'MLsignal_{i_bus}_2_1',  # Single phase-to-ground fault, without specification
+        f'MLsignal_{i_bus}_2',      # Anomaly, without clarification
+        f'MLsignal_{i_bus}_2_1',    # Single phase-to-ground fault, without specification
         f'MLsignal_{i_bus}_2_1_1',  # Sustainable single phase-to-ground fault
         f'MLsignal_{i_bus}_2_1_2',  # Steady attenuating single phase-to-ground fault, with rare breakouts
         f'MLsignal_{i_bus}_2_1_3',  # Arc intermittent single phase-to-ground fault
-        f'MLsignal_{i_bus}_2_2',  # Damping fluctuations from emergency processes
-        f'MLsignal_{i_bus}_2_3',  # Voltage drawdown
+        f'MLsignal_{i_bus}_2_2',    # Damping fluctuations from emergency processes
+        f'MLsignal_{i_bus}_2_3',    # Voltage drawdown
         f'MLsignal_{i_bus}_2_3_1',  # Voltage drawdown when starting the engine
-        f'MLsignal_{i_bus}_2_4',  # Current fluctuations, without specification
+        f'MLsignal_{i_bus}_2_4',    # Current fluctuations, without specification
         f'MLsignal_{i_bus}_2_4_1',  # Current fluctuations when starting the engine
         f'MLsignal_{i_bus}_2_4_2',  # Current fluctuations from frequency-driven motors
+        f'MLsignal_{i_bus}_2_5_1',  # Voltage fluctuations
+        f'MLsignal_{i_bus}_2_6',    # Tests
+        f'MLsignal_{i_bus}_2_7_1',  # Reversed voltage phases
+        f'MLsignal_{i_bus}_2_7_2',  # Reversed current phases
     }
 
     ml_emergency_event = {
         # --- Emergency events ----
-        f'MLsignal_{i_bus}_3',  # Emergency events, without clarification
+        f'MLsignal_{i_bus}_3',    # Emergency events, without clarification
         f'MLsignal_{i_bus}_3_1',  # An accident due to incorrect operation of the device, without clarification
         f'MLsignal_{i_bus}_3_2',  # Terminal malfunction
-        f'MLsignal_{i_bus}_3_3'  # Two-phase earth fault
+        f'MLsignal_{i_bus}_3_3',  # Two-phase earth fault
+        f'MLsignal_{i_bus}_3_4',  # Phase break in voltage circuits
+        f'MLsignal_{i_bus}_3_5'   # Signal noise resulting in failure to operate
     }
 
     ml_signals = set()

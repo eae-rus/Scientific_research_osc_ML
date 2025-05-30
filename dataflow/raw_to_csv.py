@@ -78,7 +78,7 @@ class RawToCSV():
                 # but with a selection parameter (so that it can be omitted)
 
                 # TODO: Add secondary/primary checks to the dataset reading and processing.
-                self.check_columns(raw_df)
+                self.check_columns(raw_df, file)
                 if not raw_df.empty:
                     raw_df = raw_df.reset_index()
                     buses_df = self._split_buses(raw_df, file)
@@ -103,7 +103,7 @@ class RawToCSV():
         dataset_df.to_csv(self.csv_path + csv_name, index=True, index_label='sample')
         return dataset_df
 
-    def check_columns(self, raw_df):
+    def check_columns(self, raw_df, file):
         """check for unknown columns"""
         ml_signals = set()
         for i_bus in self.uses_buses:
@@ -113,7 +113,7 @@ class RawToCSV():
         columns = raw_df.columns
         for c in columns:
             if c not in all_names:
-                raise NameError("Unknown column: " + c)
+                raise NameError("Unknown column: " + c + " In file: " + file)
 
 
     def _create_one_df(self, file_path, file_name) -> pd.DataFrame:
