@@ -31,25 +31,31 @@ def get_short_names_ml_signals(use_operational_switching: bool = True, use_abnor
     ]
     ml_abnormal_event = [
         # --- Abnormal events
-        'ML_2',  # Anomaly, without clarification
-        'ML_2_1',  # Single phase-to-ground fault, without specification
+        'ML_2',      # Anomaly, without clarification
+        'ML_2_1',    # Single phase-to-ground fault, without specification
         'ML_2_1_1',  # Sustainable single phase-to-ground fault
         'ML_2_1_2',  # Steady attenuating single phase-to-ground fault, with rare breakouts
         'ML_2_1_3',  # Arc intermittent single phase-to-ground fault
-        'ML_2_2',  # Damping fluctuations from emergency processes
-        'ML_2_3',  # Voltage drawdown
+        'ML_2_2',    # Damping fluctuations from emergency processes
+        'ML_2_3',    # Voltage drawdown
         'ML_2_3_1',  # Voltage drawdown when starting the engine
-        'ML_2_4',  # Current fluctuations, without specification
+        'ML_2_4',    # Current fluctuations, without specification
         'ML_2_4_1',  # Current fluctuations when starting the engine
-        'ML_2_4_2'  # Current fluctuations from frequency-driven motors
+        'ML_2_4_2',  # Current fluctuations from frequency-driven motors
+        'ML_2_5_1',  # Voltage fluctuations
+        'ML_2_6',    # Tests
+        'ML_2_7_1',  # Reversed voltage phases
+        'ML_2_7_2',  # Reversed current phases
     ]
 
     ml_emergency_event = [
         # --- Emergency events ----
-        'ML_3',  # Emergency events, without clarification
+        'ML_3',    # Emergency events, without clarification
         'ML_3_1',  # An accident due to incorrect operation of the device, without clarification
         'ML_3_2',  # Terminal malfunction
-        'ML_3_3'  # Two-phase earth fault
+        'ML_3_3',  # Two-phase earth fault
+        'ML_3_4',  # Phase break in voltage circuits
+        'ML_3_5',  # Signal noise resulting in failure to operate
     ]
 
     ml_signals = []
