@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from torch.utils.data import Dataset
 from tqdm.auto import tqdm
+from scipy import stats
 
 
 class BaseDataset(ABC):
@@ -73,4 +74,5 @@ class SlidingWindowDataset(Dataset):
         start_idx, end_idx = self.valid_windows[idx]
         sample = self.data[start_idx:end_idx]
         target = self.target[end_idx]
+        #target = stats.mode(self.target[start_idx:end_idx])[0]
         return sample, target
