@@ -33,7 +33,7 @@ class SearchOscillograms():
     Library for primary search of waveforms in folders and primary processing.
     Supports file formats: 'cfg'+'dat', 'cff', 'brs', 'dfr', 'osc', 'os2' and analogues, 'bb', 'sg2', 'do' and analogues, 'to'.
     """
-    
+
     def __init__(self):
         self.CFG_EXTENSION, self.DAT_EXTENSION = '.cfg', '.dat'
         self.CFF_EXTENSION = '.cff'
@@ -477,46 +477,89 @@ class SearchOscillograms():
             _path_temp = _path_temp[:-5] # subtracts "/temp"
 
         return count_new_files
-
-    def match_oscillograms_to_terminals(self, source_dir: str, copied_hashes: dict, terminal_oscillogram_names: dict) -> None:
+            
+    def find_terminal_hashes_from_json(
+        self,
+        input_json_path: str,
+        terminal_numbers_to_find: list[int],
+        output_json_path: str
+    ) -> None:
         """
-        Searches for oscillogram codes in the hash table and adds them to a new hash list.
+        Ищет хеши осциллограмм для указанных номеров терминалов в JSON-файле
+        и сохраняет результат в новый JSON.
 
         Args:
-            dest_dir (str): A directory to save the waveform dictionary.
-            copied_hashes (dict): A hash table for tracking copied files.
-            terminal_oscillogram_name (dict): a dictionary for storing waveform codes and their hash sums.
-        Returns:
-            None
+            input_json_path (str): Путь к исходному JSON-файлу с данными осциллограмм.
+                                   Формат: {"hash": ["filename.cfg", "path/to/filename.cfg"], ...}
+            terminal_numbers_to_find (list[int]): Список целочисленных номеров терминалов для поиска.
+            output_json_path (str): Путь для сохранения выходного JSON-файла.
+                                    Формат: {"terminal_num_str": ["hash1", "hash2"], ...}
         """
-        SCM_NAME = '\\ИПМ'
-        new_osc_name_dict = {}
-        new_osc_name_arr = [] # It is taken out separately to speed up the work of cycles
-        for osc_name in terminal_oscillogram_names.keys():
-            new_osc_name_arr.append(osc_name)
-            new_osc_name_dict[osc_name] = '\\'+osc_name[1:]
+        SHIPPED_MARKER = "ОТГРУЖЕННЫЕ ТЕРМИНАЛЫ И ШКАФЫ" # Имя папки хранения осциллограмм
+        FILENAME_PREFIX = "t" # Префикс для поиска по имени файла
 
-        # Go through all the files in the folder
-        with tqdm(total=len(copied_hashes), desc="Matching oscillograms") as pbar:
-            for key in copied_hashes.keys():  # there are many times more names for hash sums than terminals. Therefore, we go through the terminals.
-                pbar.update(1)
-                for osc_name in new_osc_name_arr:
-                    if osc_name in copied_hashes[key][0]:
-                        terminal_oscillogram_names[osc_name].append(key)
-                        break # if the name of the waveform is found, then we interrupt the cycle.
-                    elif ('ОТГРУЖЕННЫЕ ТЕРМИНАЛЫ И ШКАФЫ' in copied_hashes[key][1] and new_osc_name_dict[osc_name] in copied_hashes[key][1] and 
-                          not SCM_NAME in copied_hashes[key][1]):
-                        # done separately to make sure that the check was added for a reason.
-                        terminal_oscillogram_names[osc_name].append(key)
-                        break
-                    
-                    
-        osc_name_dict_file_path = os.path.join(source_dir, '_osc_name_dict.json')
         try:
-            with open(osc_name_dict_file_path, 'w') as file:
-                json.dump(terminal_oscillogram_names, file)  # Saving the file
-        except:
-            print("Не удалось сохранить osc_name_dict в JSON файл")
+            with open(input_json_path, 'r', encoding='utf-8') as f:
+                oscillogram_data = json.load(f)
+        except FileNotFoundError:
+            print(f"Ошибка: Входной JSON-файл не найден: {input_json_path}")
+            return
+        except json.JSONDecodeError:
+            print(f"Ошибка: Не удалось декодировать JSON из файла: {input_json_path}")
+            return
+
+        # Инициализируем словарь для результатов.
+        # Ключи - строковые представления номеров терминалов, значения - списки хешей.
+        # Используем уникальные отсортированные номера терминалов для предсказуемого порядка ключей.
+        unique_sorted_term_numbers = sorted(list(set(terminal_numbers_to_find)))
+        found_hashes_by_terminal = {str(tn): [] for tn in unique_sorted_term_numbers}
+
+        # Оборачиваем внешний цикл в tqdm для отображения прогресса
+        for hash_code, (filename, filepath) in tqdm(oscillogram_data.items(), desc="Обработка осциллограмм"):
+            filename_lower = filename.lower() # Для регистронезависимого сравнения имени файла
+
+            for term_num in unique_sorted_term_numbers:
+                # Паттерн 1: Поиск по имени файла
+                # Имя файла осциллограммы начинается с "t" + номер терминала (5 цифр, дополненных нулями).
+                filename_search_pattern = f"{FILENAME_PREFIX}{term_num:05d}".lower()
+
+                found_for_current_hash_and_term = False
+
+                if filename_lower.startswith(filename_search_pattern):
+                    if hash_code not in found_hashes_by_terminal[str(term_num)]:
+                        found_hashes_by_terminal[str(term_num)].append(hash_code)
+                    found_for_current_hash_and_term = True
+                    # Для данной пары (hash_code, term_num) совпадение найдено по имени.
+                    # По ТЗ, если нашли по имени, по пути для этой же пары искать не нужно.
+
+                # Паттерн 2: Поиск по пути к файлу (если не найдено по имени для текущего term_num)
+                if not found_for_current_hash_and_term:
+                    # Проверяем наличие ключевой фразы в пути (регистрочувствительно, как в ТЗ)
+                    if SHIPPED_MARKER in filepath:
+                        # Готовим паттерны номера для поиска в пути
+                        path_number_patterns = [f"{term_num:05d}"]
+                        if term_num < 10:
+                            path_number_patterns.append(f"{term_num:04d}")
+
+                        # Нормализуем разделители и разбиваем путь на компоненты
+                        path_components = filepath.replace("\\", "/").split("/")
+
+                        for num_pattern_for_path in path_number_patterns:
+                            if num_pattern_for_path in path_components:
+                                if hash_code not in found_hashes_by_terminal[str(term_num)]:
+                                    found_hashes_by_terminal[str(term_num)].append(hash_code)
+                                # Нашли по одному из паттернов в пути, дальше для этой пары (hash_code, term_num)
+                                # и этого типа паттерна (путь) искать не нужно.
+                                break # Выход из цикла по path_number_patterns
+
+        # Сохраняем результаты в выходной JSON-файл
+        try:
+            with open(output_json_path, 'w', encoding='utf-8') as f:
+                json.dump(found_hashes_by_terminal, f, indent=4, ensure_ascii=False)
+            print(f"Результаты успешно сохранены в: {output_json_path}")
+        except IOError:
+            print(f"Ошибка: Не удалось записать результаты в файл: {output_json_path}")
+    
 
     def organize_oscillograms_by_terminal(self, source_dir: str, dest_dir: str, terminal_list: list, terminal_oscillogram_names: dict, is_hashes: bool = True) -> None:
         """
@@ -566,3 +609,16 @@ class SearchOscillograms():
                                 if not os.path.exists(dat_dest_path):
                                     os.makedirs(os.path.dirname(dat_dest_path), exist_ok=True)
                                     shutil.copy2(dat_file_path, dat_dest_path)
+
+if __name__ == '__main__':
+    # --- Пути ---
+    # Укажите правильные пути
+    comtrade_directory = "Путь к папке с файлами осциллограмм"
+    input_json_path = "Путь к файлу с исходным JSON файлом содержащем информацию о всех осциллограммах"
+    output_json_path = "Путь к итоговому файлу"
+
+    # --- Запуск функций ---
+    f = SearchOscillograms()
+    # список искомых терминалов
+    terminals_to_search = [1, 2, 3]
+    f.find_terminal_hashes_from_json(input_json_path, terminals_to_search, output_json_path)
