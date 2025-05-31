@@ -5,6 +5,8 @@ import numpy as np
 from tqdm.auto import tqdm
 import comtrade
 from typing import Dict, Any, Tuple, List
+import re # Для регулярных выражений
+from typing import List, Set
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
@@ -251,6 +253,30 @@ class CreateNormOsc:
             return 's', 1
         else:
             return '?3', '?3'
+        
+    # Вспомогательная функция для определения максимального номера секции
+    def _get_max_bus_number_from_columns(self, columns: Set[str]) -> int:
+        """
+        Определяет максимальный номер секции из имен столбцов.
+        Пример: "1Ub_PS", "12Ip_base" -> 12
+        """
+        max_bus = 0
+        # Паттерн для извлечения номера секции из имен столбцов
+        # ^(\d+) - число в начале строки (номер секции)
+        # (Ub|Uc|Ip|Iz) - один из типов датчиков (напряжение СШ, КЛ, ток, ток НП)
+        # _ - обязательный разделитель перед суффиксом
+        pattern = re.compile(r"^(\d+)(Ub|Uc|Ip|Iz)_") 
+        for col_name in columns:
+            match = pattern.match(col_name)
+            if match:
+                try:
+                    bus_num = int(match.group(1)) # Извлекаем номер секции
+                    if bus_num > max_bus:
+                        max_bus = bus_num
+                except ValueError:
+                    # На случай, если первая группа не число (хотя паттерн должен это обеспечить)
+                    continue
+        return max_bus
 
     def analyze(self,
                 file: str,
@@ -427,6 +453,133 @@ class CreateNormOsc:
             result_df = pd.concat([result_df, result])
 
         result_df.to_csv('normalization/norm.csv', index=False)
+        
+    def merge_normalization_files(self, input_csv_paths: List[str], output_csv_path: str) -> None:
+        """
+        Объединяет несколько CSV-файлов нормализации в один с кастомным порядком столбцов.
+
+        Порядок столбцов:
+        1. "name", "norm"
+        2. Группы для каждой секции (1..N): {i}Ub_*, {i}Uc_*, {i}Ip_*, {i}Iz_* 
+        (суффиксы в порядке: _PS, _base, _h1, _hx)
+        3. Дифференциальные токи: dId_PS, dId_base, dId_h1
+        4. Остальные столбцы в алфавитном порядке.
+
+        Args:
+            input_csv_paths (List[str]): Список путей к входным CSV-файлам.
+            output_csv_path (str): Путь для сохранения объединенного CSV-файла.
+        """
+        
+        dataframes_list = []
+        all_columns_ever_seen = set() # Множество для хранения всех уникальных имен столбцов
+
+        print(f"Начинается процесс объединения {len(input_csv_paths)} файлов нормализации.")
+
+        for file_path in input_csv_paths:
+            if not os.path.exists(file_path):
+                print(f"Предупреждение: Файл '{file_path}' не найден. Пропускается.")
+                continue
+            
+            try:
+                # Проверяем, не пустой ли файл, чтобы избежать EmptyDataError
+                if os.path.getsize(file_path) > 0:
+                    df = pd.read_csv(file_path, dtype=str) # Читаем все как строки для начала, чтобы избежать смеш. типов
+                    if df.empty:
+                        print(f"Предупреждение: Файл '{file_path}' пуст (не содержит данных после заголовков). Пропускается.")
+                        continue
+                    dataframes_list.append(df)
+                    all_columns_ever_seen.update(df.columns)
+                    print(f"Файл '{file_path}' успешно прочитан ({len(df)} строк, {len(df.columns)} столбцов).")
+                else:
+                    print(f"Предупреждение: Файл '{file_path}' пустой (0 байт). Пропускается.")
+            except pd.errors.EmptyDataError:
+                print(f"Предупреждение: Файл '{file_path}' пуст или не содержит данных (EmptyDataError). Пропускается.")
+            except Exception as e:
+                print(f"Ошибка при чтении файла '{file_path}': {e}. Файл пропускается.")
+
+        if not dataframes_list:
+            print("Нет данных для объединения. Выходной файл не будет создан.")
+            return
+
+        print(f"\nОбъединение {len(dataframes_list)} DataFrame'ов...")
+        # sort=False чтобы сохранить исходный порядок перед нашей кастомной сортировкой столбцов
+        merged_df = pd.concat(dataframes_list, ignore_index=True, sort=False)
+        print(f"Объединенный DataFrame содержит {merged_df.shape[0]} строк и {merged_df.shape[1]} столбцов.")
+        print(f"Всего уникальных столбцов обнаружено: {len(all_columns_ever_seen)}")
+
+        # Формирование кастомного порядка столбцов
+        final_ordered_columns = []
+        
+        # 1. Обязательные первые столбцы
+        if "name" in all_columns_ever_seen:
+            final_ordered_columns.append("name")
+        if "norm" in all_columns_ever_seen and "norm" not in final_ordered_columns:
+            # Проверка "not in" на случай, если 'norm' как-то совпадет с 'name' (маловероятно)
+            final_ordered_columns.append("norm")
+
+        # 2. Группы по секциям
+        max_bus = self._get_max_bus_number_from_columns(all_columns_ever_seen)
+        if max_bus > 0:
+            print(f"Определен максимальный номер секции: {max_bus}")
+        
+        # Порядок типов и суффиксов соответствует CreateNormOsc.generate_result_cols
+        bus_types = ["Ub", "Uc", "Ip", "Iz"]
+        bus_suffixes = ["_PS", "_base", "_h1", "_hx"]
+        
+        for i in range(1, max_bus + 1): # Итерация по номерам секций
+            for b_type in bus_types: # Для каждого типа измерений (U шин, U кабеля, Ток, Ток НП)
+                for suffix in bus_suffixes: # Для каждого типа данных (_PS, _base, _h1, _hx)
+                    col_name = f"{i}{b_type}{suffix}"
+                    if col_name in all_columns_ever_seen and col_name not in final_ordered_columns:
+                        final_ordered_columns.append(col_name)
+        
+        # 3. Дифференциальные токи
+        # Порядок и набор соответствуют CreateNormOsc.generate_result_cols
+        diff_current_cols = ["dId_PS", "dId_base", "dId_h1"] 
+        for col_name in diff_current_cols:
+            if col_name in all_columns_ever_seen and col_name not in final_ordered_columns:
+                final_ordered_columns.append(col_name)
+                
+        # 4. Остальные столбцы (не попавшие в шаблон), отсортированные по алфавиту
+        processed_cols_set = set(final_ordered_columns)
+        remaining_cols = sorted([col for col in all_columns_ever_seen if col not in processed_cols_set])
+        final_ordered_columns.extend(remaining_cols)
+        
+        # Применяем новый порядок столбцов.
+        # reindex гарантирует, что все столбцы из final_ordered_columns будут присутствовать.
+        # Если какой-то столбец был в all_columns_ever_seen, но не попал в merged_df из-за пустых файлов,
+        # он будет добавлен с NaN, обеспечивая "максимальный набор столбцов".
+        merged_df = merged_df.reindex(columns=final_ordered_columns)
+
+        print(f"Порядок столбцов определен. Итоговое количество столбцов: {len(final_ordered_columns)}.")
+
+        # Сортировка данных по столбцу 'name'
+        if 'name' in merged_df.columns:
+            print("Сортировка данных по столбцу 'name'...")
+            # Перед сортировкой убедимся, что 'name' имеет строковый тип для консистентности
+            merged_df['name'] = merged_df['name'].astype(str)
+            merged_df.sort_values(by='name', ascending=True, inplace=True)
+        else:
+            # Эта ситуация маловероятна, если файлы создаются CreateNormOsc, но для полноты
+            print("Предупреждение: Столбец 'name' отсутствует в объединенных данных. Сортировка данных не выполнена.")
+            
+        # Создание директории для выходного файла, если она не существует
+        output_dir = os.path.dirname(output_csv_path)
+        if output_dir and not os.path.exists(output_dir): # output_dir может быть пустым, если путь - просто имя файла
+            try:
+                os.makedirs(output_dir)
+                print(f"Создана директория: {output_dir}")
+            except OSError as e:
+                print(f"Ошибка при создании директории '{output_dir}': {e}. Файл может не сохраниться.")
+                return # Выходим, если не можем создать директорию
+
+        # Сохранение результата
+        try:
+            merged_df.to_csv(output_csv_path, index=False, encoding='utf-8')
+            print(f"Объединенный файл успешно сохранен: '{output_csv_path}'")
+        except Exception as e:
+            print(f"Ошибка при сохранении объединенного файла '{output_csv_path}': {e}")
+    
 
 class NormOsc:
     # TODO: Подумать о том, что получается несколько "__init__"
