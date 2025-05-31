@@ -8,6 +8,7 @@ import zipfile
 import aspose.zip as az
 from tqdm import tqdm
 from enum import Enum
+import comtrade
 
 # TODO: add file logging
 
@@ -610,15 +611,91 @@ class SearchOscillograms():
                                     os.makedirs(os.path.dirname(dat_dest_path), exist_ok=True)
                                     shutil.copy2(dat_file_path, dat_dest_path)
 
+    def find_oscillograms_with_neutral_current(self, cfg_directory: str, output_txt_path: str) -> None:
+        """
+        Находит CFG-файлы, в которых есть аналоговые каналы,
+        предположительно являющиеся токами нулевой последовательности (содержат "I" и "N" в имени).
+        Сохраняет хеш-имена (имена файлов без расширения) таких CFG-файлов в текстовый файл.
+
+        Args:
+            cfg_directory (str): Путь к директории с CFG-файлами.
+            output_txt_path (str): Путь для сохранения TXT-файла со списком хеш-имен.
+        """
+        found_cfg_hashes = set()
+        
+        print(f"Поиск CFG-файлов с токами нулевой последовательности в директории: {cfg_directory}")
+
+        cfg_files_to_scan = []
+        for root, _, files in os.walk(cfg_directory):
+            for file in files:
+                if file.lower().endswith(self.CFG_EXTENSION):
+                    cfg_files_to_scan.append(os.path.join(root, file))
+        
+        if not cfg_files_to_scan:
+            print("CFG-файлы не найдены.")
+            # Создаем пустой файл, если не найдено
+            with open(output_txt_path, 'w', encoding='utf-8') as f:
+                pass
+            return
+
+        for cfg_file_path in tqdm(cfg_files_to_scan, desc="Анализ CFG-файлов"):
+            # TODO: Лучше бы анализировать как текстовый файл. Наверное быстрее заметно будет. Ведь не надо считывать данные
+            # Но пока что оставил так, наиболее простым подходом.
+            try:
+                rec = comtrade.load(cfg_file_path, encoding='cp1251') # Попробуйте cp1251 или другую кодировку, если utf-8 не сработает
+            except Exception as e:
+                try:
+                    rec = comtrade.load(cfg_file_path) # По умолчанию comtrade пытается определить кодировку
+                except Exception as e_fallback:
+                    print(f"Не удалось прочитать файл {cfg_file_path}: {e_fallback}")
+                    continue
+
+            file_hash_name = os.path.splitext(os.path.basename(cfg_file_path))[0]
+
+            for channel in rec.analog_channel_ids: # type: ignore
+                # rec.analog_channel_ids - это список объектов AnalogChannelInfo из comtradeio
+                # у них есть атрибут .name, который является строкой
+                channel_name_lower = channel.lower() # type: ignore
+                # Ищем "i" и "n" в имени канала.
+                # Пример целевого имени: "I | Bus-1 | phase: N"
+                # Учитывая позиции в кодировке
+                parts = [part.strip() for part in channel_name_lower.split("|")]
+                # Проверяем, что всего три части, и ищем 'i' в первой и 'n' в третьей
+                if len(parts) == 3 and 'i' in parts[0] and 'n' in parts[2]:
+                    found_cfg_hashes.add(file_hash_name)
+                    break  # Достаточно одного такого канала в файле
+
+        # Сохраняем результаты
+        try:
+            output_dir = os.path.dirname(output_txt_path)
+            if output_dir and not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+
+            with open(output_txt_path, 'w', encoding='utf-8') as f:
+                for file_hash in sorted(list(found_cfg_hashes)): # Сортируем для консистентности
+                    f.write(f"{file_hash}\n")
+            print(f"Найдено {len(found_cfg_hashes)} CFG-файлов с предполагаемыми токами нулевой последовательности.")
+            print(f"Список сохранен в: {output_txt_path}")
+        except IOError:
+            print(f"Ошибка: Не удалось записать результаты в файл: {output_txt_path}")
+
 if __name__ == '__main__':
-    # --- Пути ---
+    # --- Вызов класса ---
+    f = SearchOscillograms()
+
+    # ---!!! Вызов новой функции !!!---
+    # ---find_terminal_hashes_from_json---    
     # Укажите правильные пути
     comtrade_directory = "Путь к папке с файлами осциллограмм"
     input_json_path = "Путь к файлу с исходным JSON файлом содержащем информацию о всех осциллограммах"
     output_json_path = "Путь к итоговому файлу"
-
-    # --- Запуск функций ---
-    f = SearchOscillograms()
     # список искомых терминалов
     terminals_to_search = [1, 2, 3]
     f.find_terminal_hashes_from_json(input_json_path, terminals_to_search, output_json_path)
+    
+    # ---!!! Вызов новой функции !!!---
+    # ---find_oscillograms_with_neutral_current---
+    comtrade_directory = "Путь к папке с файлами осциллограмм"
+    neutral_current_hashes_file = "Путь к выходному файлу с именами всех осциллограмм с ТТНП"
+    f.find_oscillograms_with_neutral_current(comtrade_directory, neutral_current_hashes_file)
+
