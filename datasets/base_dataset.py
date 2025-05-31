@@ -11,7 +11,7 @@ class BaseDataset(ABC):
     def __init__(self, csv_path=None):
         self.df = pd.read_csv(csv_path, index_col=['file_name', 'sample'])
         self.target = self._set_target()
-        self.train_mask, self.val_mask, self.test_mask = self._train_test_split()
+        self.train_mask, self.test_mask = self._train_test_split()
 
     @abstractmethod
     def _set_target(self, ):
@@ -73,6 +73,6 @@ class SlidingWindowDataset(Dataset):
     def __getitem__(self, idx):
         start_idx, end_idx = self.valid_windows[idx]
         sample = self.data[start_idx:end_idx]
-        target = self.target[end_idx]
-        #target = stats.mode(self.target[start_idx:end_idx])[0]
+        #target = self.target[end_idx]
+        target = stats.mode(self.target[start_idx:end_idx])[0]
         return sample, target

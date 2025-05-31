@@ -5,6 +5,7 @@ import os
 import yaml
 from sklearn.preprocessing import StandardScaler
 import json
+import torch
 
 # Add the project root to the path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -14,6 +15,7 @@ from models.fdd.evaluator import FDDEvaluator
 from models.fdd.models import MLP
 from common.utils import set_seed, create_experiment_dir, load_config
 from datasets.fdd_dataset import FDDDataset
+from common.utils import get_available_device
 
 
 def main():
@@ -60,7 +62,6 @@ def main():
     # Scale the data
     scaler = StandardScaler()
     dataset.df[dataset.train_mask] = scaler.fit_transform(dataset.df[dataset.train_mask])
-    dataset.df[dataset.val_mask] = scaler.transform(dataset.df[dataset.val_mask])
     dataset.df[dataset.test_mask] = scaler.transform(dataset.df[dataset.test_mask])
 
     # Create trainer instance with the loaded config
@@ -90,13 +91,22 @@ def main():
 
     print(f"Starting evaluation for {model_class_name}")
 
-    # Create evaluator instance
-    evaluator = FDDEvaluator(config=config, 
-                           model=model, 
-                           dataset=dataset, 
+    # Load best model weights from checkpoint
+    best_model_path = os.path.join(experiment_dir, "checkpoints", "best_model.pth")
+    if os.path.exists(best_model_path):
+        checkpoint = torch.load(best_model_path, map_location=get_available_device())
+        model.load_state_dict(checkpoint['model_state_dict'])
+        print(f"Loaded best model from epoch {checkpoint['epoch']} with val_loss={checkpoint['val_loss']:.4f}")
+    else:
+        print(f"Warning: Best model checkpoint not found at {best_model_path}")
+
+    # Create evaluator instance with the best model
+    evaluator = FDDEvaluator(config=config,
+                           model=model,
+                           dataset=dataset,
                            experiment_dir=experiment_dir)
     try:
-        # Load the model, Setup data
+        # Setup data
         evaluator.setup()
 
         # Run evaluation

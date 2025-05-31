@@ -52,16 +52,15 @@ class FDDDataset(BaseDataset):
         
         # (train + val)
         strat_train_val = (file_labels.loc[files_train_val] == 2).astype(int)
-        files_train, files_val = train_test_split(
-            files_train_val,
-            test_size=0.1,
-            stratify=strat_train_val,
-            random_state=42
-        )
+        #files_train, files_val = train_test_split(
+        #    files_train_val,
+        #    test_size=0.0,
+        #    stratify=strat_train_val,
+        #    random_state=42
+        #)
         
         # Create masks
         return (
-            file_groups.isin(files_train),
-            file_groups.isin(files_val),
+            file_groups.isin(files_train_val),
             file_groups.isin(files_test)
         )

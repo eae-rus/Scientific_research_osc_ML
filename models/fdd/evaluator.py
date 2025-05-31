@@ -37,7 +37,6 @@ class FDDEvaluator(ABC):
         window_size = self.config.get('data', {}).get('window_size', None)
         batch_size = self.config.get('training', {}).get('batch_size', 128)
         stride = self.config.get('data', {}).get('stride', 10)
-        lr = self.config.get('training', {}).get('learning_rate', 0.001)
 
         # Move model to device
         self.model = self.model.to(self.device)

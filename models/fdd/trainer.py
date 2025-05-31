@@ -1,4 +1,5 @@
 import json
+import numpy as np
 
 import torch
 from torch import nn
@@ -48,22 +49,21 @@ class FDDTrainer(ABC):
 
         for epoch in range(1, epochs + 1):
             start_time = time.time()
-            train_loss, val_loss = self._train_epoch(epoch)
+            train_loss = self._train_epoch(epoch)
             elapsed_time = time.time() - start_time
             # Сохраните историю
 
             self.train_losses.append(train_loss)
-            self.val_losses.append(val_loss)
 
             # Save best model
-            if val_loss < self.best_loss:
-                self.best_loss = val_loss
+            if train_loss < self.best_loss:
+                self.best_loss = train_loss
                 self.patience_counter = 0
-                self.save_checkpoint(epoch, val_loss)
+                self.save_checkpoint(epoch, train_loss)
             else:
                 self.patience_counter += 1
 
-            # Early stopping check (ДОБАВЬТЕ ЭТИ СТРОКИ СЮДА)
+            # Early stopping check 
             if self.patience and self.patience_counter >= self.patience:
                 print(f"Early stopping at epoch {epoch} (patience={self.patience})")
                 break
@@ -112,8 +112,15 @@ class FDDTrainer(ABC):
         # Set up optimizer
         self.optimizer = Adam(self.model.parameters(), lr=lr)
 
-        # Set up loss function
-        self.criterion = nn.CrossEntropyLoss()
+        # Compute class weights for imbalanced datasets
+        train_targets = self.dataset.target[self.dataset.train_mask].astype(int)
+        class_counts = np.bincount(train_targets)
+        total = len(train_targets)
+        class_weights = total / (len(class_counts) * class_counts)
+        class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32).to(self.device)
+        
+        # Set up loss function with class weights
+        self.criterion = nn.CrossEntropyLoss()#weight=class_weights_tensor)
 
         # Create dataloaders
         train_dataset = SlidingWindowDataset(
@@ -122,18 +129,18 @@ class FDDTrainer(ABC):
             window_size=window_size,
             stride=stride
         )
-        val_dataset = SlidingWindowDataset(
+        """val_dataset = SlidingWindowDataset(
             self.dataset.df[self.dataset.val_mask],
             self.dataset.target[self.dataset.val_mask].astype(int),
             window_size=window_size,
             stride=val_stride
-        )
+        )"""
         self.train_loader = DataLoader(
             train_dataset, batch_size=batch_size, shuffle=True
         )
-        self.val_loader = DataLoader(
+        """self.val_loader = DataLoader(
             val_dataset, batch_size=batch_size, shuffle=False
-        )
+        )"""
 
     def _train_epoch(self, epoch):
         """Train for one epoch."""
@@ -169,7 +176,7 @@ class FDDTrainer(ABC):
         avg_loss = total_loss / len(self.train_loader)
 
         # validation
-        pbar = tqdm(self.val_loader, desc=f"Epoch {epoch} [Train]")
+        """pbar = tqdm(self.val_loader, desc=f"Epoch {epoch} [Train]")
         self.model.eval()
         total_val_loss = 0
 
@@ -187,8 +194,8 @@ class FDDTrainer(ABC):
             total_val_loss += loss.item()
 
         # Calculate average loss and metrics
-        avg_val_loss = total_val_loss / len(self.val_loader)
+        avg_val_loss = total_val_loss / len(self.val_loader)"""
 
-        print(f"Epoch {epoch}: Train Loss = {avg_loss:.4f}, Val Loss = {avg_val_loss:.4f}")
+        print(f"Epoch {epoch}: Train Loss = {avg_loss:.4f}")
 
-        return avg_loss, avg_val_loss
+        return avg_loss
