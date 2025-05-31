@@ -7,6 +7,8 @@ import comtrade
 from typing import Dict, Any, Tuple, List
 import re # Для регулярных выражений
 from typing import List, Set
+import json
+from tqdm import tqdm # Для визуализации прогресса
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
@@ -253,30 +255,31 @@ class CreateNormOsc:
             return 's', 1
         else:
             return '?3', '?3'
-        
+
     # Вспомогательная функция для определения максимального номера секции
-    def _get_max_bus_number_from_columns(self, columns: Set[str]) -> int:
+    def _get_max_bus_number_from_columns(self, columns: set[str]) -> int:
         """
         Определяет максимальный номер секции из имен столбцов.
-        Пример: "1Ub_PS", "12Ip_base" -> 12
+        Пример: "1Ub_PS", "12Ip_base" -> 12.
+        Если номера не найдены, возвращает 1 (предполагая хотя бы одну секцию).
         """
         max_bus = 0
-        # Паттерн для извлечения номера секции из имен столбцов
-        # ^(\d+) - число в начале строки (номер секции)
-        # (Ub|Uc|Ip|Iz) - один из типов датчиков (напряжение СШ, КЛ, ток, ток НП)
-        # _ - обязательный разделитель перед суффиксом
-        pattern = re.compile(r"^(\d+)(Ub|Uc|Ip|Iz)_") 
+        # Паттерн: число в начале, за которым следует один из типов и '_'.
+        # r"^(\d+)(Ub|Uc|Ip|Iz)_"
+        # Более общий паттерн, если суффиксы могут отличаться или быть _PS, _base, _h1, _hx
+        pattern = re.compile(r"^(\d+)(?:Ub|Uc|Ip|Iz)(?:_PS|_base|_h1|_hx)")
+        found_any_number = False
         for col_name in columns:
             match = pattern.match(col_name)
             if match:
                 try:
-                    bus_num = int(match.group(1)) # Извлекаем номер секции
+                    bus_num = int(match.group(1))
                     if bus_num > max_bus:
                         max_bus = bus_num
+                    found_any_number = True
                 except ValueError:
-                    # На случай, если первая группа не число (хотя паттерн должен это обеспечить)
-                    continue
-        return max_bus
+                    continue # На случай, если первая группа не число (маловероятно с таким паттерном)
+        return max_bus if found_any_number else 1 # Если номеров нет, по умолчанию 1 секция
 
     def analyze(self,
                 file: str,
@@ -580,6 +583,300 @@ class CreateNormOsc:
         except Exception as e:
             print(f"Ошибка при сохранении объединенного файла '{output_csv_path}': {e}")
     
+    def update_normalization_coefficients(
+        self,
+        norm_coef_path: str,
+        terminal_hashes_path: str,
+        output_path: str,
+        config: dict,
+        max_bus_num_override: int = None
+    ) -> None:
+        """
+        Корректирует файл с коэффициентами нормализации на основе хешей терминалов и конфигурации.
+
+        Args:
+            norm_coef_path (str): Путь к CSV-файлу с коэффициентами нормализации.
+            terminal_hashes_path (str): Путь к JSON-файлу, где ключи - номера терминалов (строки),
+                                        а значения - списки хешей осциллограмм.
+                                        Пример: {"694": ["hash1", "hash2"], ...}
+            output_path (str): Путь для сохранения обновленного CSV-файла.
+            config (dict): Словарь с настройками для обновления.
+            max_bus_num_override (int, optional): Максимальный номер секции для обработки.
+                                                Если None, будет определен автоматически.
+        """
+        try:
+            norm_df = pd.read_csv(norm_coef_path, dtype=str) # Читаем все как строки во избежание проблем с типами
+            # Позже нужные значения (base_value) будут преобразованы при записи
+        except FileNotFoundError:
+            print(f"Ошибка: Файл коэффициентов нормализации не найден: {norm_coef_path}")
+            return
+        except Exception as e:
+            print(f"Ошибка при чтении файла '{norm_coef_path}': {e}")
+            return
+
+        try:
+            with open(terminal_hashes_path, 'r', encoding='utf-8') as f:
+                terminal_hashes_data = json.load(f)
+        except FileNotFoundError:
+            print(f"Ошибка: JSON-файл с хешами терминалов не найден: {terminal_hashes_path}")
+            return
+        except json.JSONDecodeError:
+            print(f"Ошибка: Не удалось декодировать JSON из файла: {terminal_hashes_path}")
+            return
+        except Exception as e:
+            print(f"Ошибка при чтении файла '{terminal_hashes_path}': {e}")
+            return
+
+        # Создаем "обратный" словарь: {hash: terminal_number_str}
+        hash_to_terminal_map = {}
+        for term_num_str, hashes_list in terminal_hashes_data.items():
+            for h in hashes_list:
+                if h not in hash_to_terminal_map: # Первый встреченный терминал для хеша "выигрывает"
+                    hash_to_terminal_map[h] = term_num_str
+                # Можно добавить логику, если один хеш может быть у нескольких терминалов и это нужно учитывать
+                # например, собирать список терминалов:
+                else:
+                    if isinstance(hash_to_terminal_map[h], list):
+                        if term_num_str not in hash_to_terminal_map[h]:
+                            hash_to_terminal_map[h].append(term_num_str)
+                    else: # был один, станет список
+                        if hash_to_terminal_map[h] != term_num_str:
+                           hash_to_terminal_map[h] = [hash_to_terminal_map[h], term_num_str]
+
+        if not hash_to_terminal_map:
+            print("Предупреждение: В JSON-файле с хешами терминалов не найдено хешей для сопоставления.")
+            # Решаем, что делать: выйти или сохранить копию исходного файла
+            try:
+                norm_df.to_csv(output_path, index=False, encoding='utf-8')
+                print(f"Файл '{output_path}' сохранен без изменений, так как не было хешей для обработки.")
+            except Exception as e:
+                print(f"Ошибка при сохранении файла '{output_path}': {e}")
+            return
+
+        # Определяем максимальный номер секции
+        if max_bus_num_override is not None:
+            max_bus = max_bus_num_override
+        else:
+            max_bus = self._get_max_bus_number_from_columns(set(norm_df.columns))
+        
+        print(f"Определен максимальный номер секции для обработки: {max_bus}")
+
+        updated_rows_count = 0
+
+        # Итерация по строкам DataFrame
+        for index, row in tqdm(norm_df.iterrows(), total=norm_df.shape[0], desc="Обновление коэффициентов"):
+            file_hash_name = row.get('name') # Столбец 'name' содержит хеши
+
+            if file_hash_name and file_hash_name in hash_to_terminal_map:
+                terminal_number_str = hash_to_terminal_map[file_hash_name]
+                # Если хеш может принадлежать списку терминалов:
+                # terminal_numbers = hash_to_terminal_map[file_hash_name]
+                # terminal_number_str = terminal_numbers[0] if isinstance(terminal_numbers, list) else terminal_numbers
+
+                updated_rows_count += 1
+
+                # 1. Обновление графы "norm"
+                norm_base_prefix = config.get("norm_base_prefix", "YES_MODIFIED") # Значение по умолчанию
+                norm_df.at[index, 'norm'] = f"{norm_base_prefix}_{terminal_number_str}"
+
+                # Обновление для каждой секции от 1 до max_bus
+                for bus_idx in range(1, max_bus + 1):
+                    # 2. Исправление токов (Ip)
+                    current_config = config.get("currents", {})
+                    if current_config.get("apply", False):
+                        ps_val = current_config.get("ps_value")
+                        base_val = current_config.get("base_value") # Может быть числом или строкой
+                        
+                        col_ps = f"{bus_idx}Ip_PS"
+                        col_base = f"{bus_idx}Ip_base"
+                        if col_ps in norm_df.columns:
+                            norm_df.at[index, col_ps] = str(ps_val) # Приводим к строке для единообразия
+                        if col_base in norm_df.columns:
+                            norm_df.at[index, col_base] = str(base_val)
+
+                    # 3. Исправление напряжений СШ (Ub)
+                    vb_config = config.get("voltage_busbar", {})
+                    if vb_config.get("apply", False):
+                        ps_val = vb_config.get("ps_value")
+                        base_val = vb_config.get("base_value")
+                        
+                        col_ps = f"{bus_idx}Ub_PS"
+                        col_base = f"{bus_idx}Ub_base"
+                        if col_ps in norm_df.columns:
+                            norm_df.at[index, col_ps] = str(ps_val)
+                        if col_base in norm_df.columns:
+                            norm_df.at[index, col_base] = str(base_val)
+
+                    # 4. Исправление напряжений КЛ (Uc)
+                    vc_config = config.get("voltage_cableline", {})
+                    if vc_config.get("apply", False):
+                        ps_val = vc_config.get("ps_value")
+                        base_val = vc_config.get("base_value")
+
+                        col_ps = f"{bus_idx}Uc_PS"
+                        col_base = f"{bus_idx}Uc_base"
+                        if col_ps in norm_df.columns:
+                            norm_df.at[index, col_ps] = str(ps_val)
+                        if col_base in norm_df.columns:
+                            norm_df.at[index, col_base] = str(base_val)
+                    
+                    # 5. Исправление токов нулевой последовательности (Iz)
+                    rc_config = config.get("residual_currents", {})
+                    if rc_config.get("apply", False):
+                        ps_val = rc_config.get("ps_value")
+                        base_val = rc_config.get("base_value")
+
+                        col_ps = f"{bus_idx}Iz_PS"
+                        col_base = f"{bus_idx}Iz_base"
+                        if col_ps in norm_df.columns:
+                            norm_df.at[index, col_ps] = str(ps_val)
+                        if col_base in norm_df.columns:
+                            norm_df.at[index, col_base] = str(base_val)
+        
+        if updated_rows_count == 0:
+            print("Предупреждение: Ни одна строка в файле коэффициентов не соответствовала хешам из JSON. Файл не изменен.")
+        else:
+            print(f"Обновлено {updated_rows_count} строк.")
+
+        # Создание директории для выходного файла, если она не существует
+        output_dir = os.path.dirname(output_path)
+        if output_dir and not os.path.exists(output_dir): # output_dir может быть пустым, если путь - просто имя файла
+            try:
+                os.makedirs(output_dir)
+                print(f"Создана директория: {output_dir}")
+            except OSError as e:
+                print(f"Ошибка при создании директории '{output_dir}': {e}. Файл может не сохраниться.")
+                return
+
+        try:
+            norm_df.to_csv(output_path, index=False, encoding='utf-8')
+            print(f"Обновленный файл коэффициентов нормализации сохранен: {output_path}")
+        except Exception as e:
+            print(f"Ошибка при сохранении обновленного файла '{output_path}': {e}")
+
+    def mark_missing_neutral_current_normalization(self,
+                                                   input_csv_path: str,
+                                                   neutral_current_hashes_txt_path: str,
+                                                   output_csv_path: str,
+                                                   max_bus_num_override: int = None
+                                                   ) -> int:
+        """
+        Проверяет CSV-файл с коэффициентами нормализации.
+        Если для осциллограммы, имеющей ток нулевой последовательности (из TXT-файла),
+        все столбцы нормализации этого тока (XIz_PS, XIz_base, XIz_h1, XIz_hx) пусты,
+        то в столбец '1Iz_PS' записывается "MISTAKE".
+
+        Args:
+            input_csv_path (str): Путь к исходному CSV-файлу нормализации.
+            neutral_current_hashes_txt_path (str): Путь к TXT-файлу со списком хешей осциллограмм,
+                                                   имеющих ток нулевой последовательности.
+            output_csv_path (str): Путь для сохранения измененного CSV-файла.
+            max_bus_num_override (int, optional): Принудительное задание максимального номера секции.
+                                                Если None, будет определен из столбцов CSV.
+
+        Returns:
+            int: Количество найденных и помеченных ошибок (строк с "MISTAKE").
+        """
+        mistakes_found = 0
+
+        try:
+            df = pd.read_csv(input_csv_path, dtype=str) # Читаем все как строки
+        except FileNotFoundError:
+            print(f"Ошибка: CSV-файл не найден: {input_csv_path}")
+            return 0
+        except Exception as e:
+            print(f"Ошибка при чтении CSV-файла '{input_csv_path}': {e}")
+            return 0
+
+        if 'name' not in df.columns:
+            print(f"Ошибка: В CSV-файле '{input_csv_path}' отсутствует обязательный столбец 'name'.")
+            return 0
+        
+        target_mistake_column = "1Iz_PS" # Целевой столбец для записи "MISTAKE"
+        if target_mistake_column not in df.columns:
+            print(f"Предупреждение: В CSV-файле '{input_csv_path}' отсутствует целевой столбец '{target_mistake_column}'. Он будет создан.")
+            df[target_mistake_column] = pd.NA # или np.nan, или '' в зависимости от предпочтений для пустых ячеек
+
+        try:
+            with open(neutral_current_hashes_txt_path, 'r', encoding='utf-8') as f:
+                # Убираем пустые строки и лишние пробелы, если есть
+                hashes_with_neutral_current = {line.strip() for line in f if line.strip()}
+        except FileNotFoundError:
+            print(f"Ошибка: TXT-файл с хешами не найден: {neutral_current_hashes_txt_path}")
+            return 0
+        
+        if not hashes_with_neutral_current:
+            print(f"Предупреждение: TXT-файл '{neutral_current_hashes_txt_path}' пуст. Ошибки не будут помечены.")
+            # Сохраняем копию исходного файла или ничего не делаем
+            try:
+                df.to_csv(output_csv_path, index=False, encoding='utf-8')
+                print(f"Файл '{output_csv_path}' сохранен без изменений.")
+            except Exception as e:
+                print(f"Ошибка при сохранении файла '{output_csv_path}': {e}")
+            return 0
+
+        # Определяем максимальный номер секции
+        if max_bus_num_override is not None:
+            max_bus = max_bus_num_override
+        else:
+            # Используем self._get_max_bus_number_from_columns, который уже есть в классе
+            max_bus = self._get_max_bus_number_from_columns(set(df.columns))
+        
+        print(f"Анализ CSV. Максимальный номер секции для Iz: {max_bus}")
+
+        # Формируем список столбцов Iz_* для проверки
+        iz_columns_to_check = []
+        # Суффиксы, как в self.generate_result_cols
+        iz_suffixes = ["_PS", "_base", "_h1", "_hx"] 
+        for i in range(1, max_bus + 1):
+            for suffix in iz_suffixes:
+                col_name = f"{i}Iz{suffix}"
+                if col_name in df.columns:
+                    iz_columns_to_check.append(col_name)
+        
+        if not iz_columns_to_check:
+            print(f"Предупреждение: В CSV-файле не найдено столбцов для проверки нормализации тока нулевой последовательности (вида XIz_*).")
+            # Сохраняем и выходим
+            try:
+                df.to_csv(output_csv_path, index=False, encoding='utf-8')
+                print(f"Файл '{output_csv_path}' сохранен без изменений.")
+            except Exception as e:
+                print(f"Ошибка при сохранении файла '{output_csv_path}': {e}")
+            return 0
+        else:
+             print(f"Столбцы для проверки Iz: {iz_columns_to_check}")
+
+
+        # Итерация по строкам DataFrame
+        for index, row in tqdm(df.iterrows(), total=df.shape[0], desc="Проверка нормализации Iz"):
+            file_hash_name = row['name']
+
+            if file_hash_name in hashes_with_neutral_current:
+                all_iz_fields_empty = True
+                for iz_col in iz_columns_to_check:
+                    value = row.get(iz_col) # Используем .get для безопасности, хотя столбцы должны быть
+                    # Проверка на NaN (для численных NaN), None, и пустую строку
+                    if not (pd.isna(value) or value is None or str(value).strip() == ''):
+                        all_iz_fields_empty = False
+                        break
+                
+                if all_iz_fields_empty:
+                    df.loc[index, target_mistake_column] = "MISTAKE"
+                    mistakes_found += 1
+        
+        print(f"Найдено и помечено ошибок (отсутствие данных в XIz_* при наличии сигнала N): {mistakes_found}")
+
+        # Сохранение результата
+        try:
+            output_dir = os.path.dirname(output_csv_path)
+            if output_dir and not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            df.to_csv(output_csv_path, index=False, encoding='utf-8')
+            print(f"Обновленный CSV-файл сохранен: {output_csv_path}")
+        except Exception as e:
+            print(f"Ошибка при сохранении обновленного CSV-файла '{output_csv_path}': {e}")
+            
+        return mistakes_found
 
 class NormOsc:
     # TODO: Подумать о том, что получается несколько "__init__"
@@ -634,3 +931,89 @@ class NormOsc:
             # TODO: Добавить дифференциальный ток
             
         return raw_df
+
+if __name__ == '__main__':
+    # --- Вызов класса ---
+    osc_path='Путь к папке для обзора'
+    #osc_path='raw_data/PDR/'
+    prev_norm_csv_path = "Путь к имеющемуся файла csv"
+    createNormOsc = CreateNormOsc(osc_path=osc_path, prev_norm_csv_path = prev_norm_csv_path)
+
+
+    
+    # ---!!! Вызов новой функции !!!---
+    # ---createNormOsc---
+    createNormOsc.normalization()
+    
+    
+    
+    
+    # ---!!! Вызов новой функции !!!---
+    # ---merge_normalization_files---
+    # Объединение файлов нормализации
+    norm_file_path_1="Путь к первому файлу с CSV значениями"
+    norm_file_path_2="Путь ко второму файлу с CSV значениями"
+    input_files = [
+        norm_file_path_1,
+        norm_file_path_2
+    ]
+    output_file_path = "Путь к новому файлу с CSV значениями"
+    createNormOsc.merge_normalization_files(input_files, output_file_path)
+    
+    
+    
+    # ---!!! Вызов новой функции !!!---
+    # ---update_normalization_coefficients---
+    # Запись коэффциентов для заранее известных терминалов (по хеш-именам)
+    # Конфигурация для обновления
+    # Путь для выходного файла
+    mock_norm_coef_path = "Путь к имеющемуся файлу с CSV значениями"
+    output_updated_norm_coef_path = "Путь к новому файлу с CSV значениями"
+    mock_terminal_hashes_path = "Путь к файлу JSON содержащем информацию о группировки осциллограмм по признакам"
+    
+    update_config = {
+        "norm_base_prefix": "YES_SCM", # Префикс для столбца 'norm'
+        "currents": {
+            "apply": False,        # Надо ли вносить изменения?
+            "ps_value": "s",      # Новое значение для xIp_PS
+            "base_value": 0.1       # Новое значение для xIp_base (str или число)
+        },
+        "voltage_busbar": {        # Напряжения СШ (Ub)
+            "apply": False,
+            "ps_value": "s",
+            "base_value": 100
+        },
+        "voltage_cableline": {     # Напряжения КЛ (Uc)
+            "apply": False,
+            "ps_value": "s",
+            "base_value": 100
+        },
+        "residual_currents": {     # Токи нулевой последовательности (Iz)
+            "apply": False,
+            "ps_value": "",
+            "base_value": ""
+        }
+    }
+
+    print(f"\n--- Запуск функции update_normalization_coefficients для тестовых данных ---")
+    createNormOsc.update_normalization_coefficients(
+        norm_coef_path=mock_norm_coef_path,
+        terminal_hashes_path=mock_terminal_hashes_path,
+        output_path=output_updated_norm_coef_path,
+        config=update_config
+    )
+    
+
+    
+    
+    # ---!!! Вызов новой функции !!!---
+    # ---mark_missing_neutral_current_normalization---
+    mock_norm_coef_path = "Путь к имеющемуся файлу с CSV значениями"
+    neutral_current_hashes_file = "Путь к файлу с найденныеми именами осциллограмм содержащих ТТНП"
+    output_updated_norm_coef_path = "Путь к новому файлу с CSV значениями"
+    num_mistakes = createNormOsc.mark_missing_neutral_current_normalization(
+        input_csv_path=mock_norm_coef_path,
+        neutral_current_hashes_txt_path=neutral_current_hashes_file,
+        output_csv_path=output_updated_norm_coef_path
+    )
+    print(f"Итоговое количество помеченных ошибок: {num_mistakes}")   
