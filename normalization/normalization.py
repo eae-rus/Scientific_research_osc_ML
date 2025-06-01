@@ -890,7 +890,7 @@ class NormOsc:
     def normalize_bus_signals(self, raw_df, file_name, yes_prase = "YES", is_print_error = False):
         """Нормализация аналоговых сигналов для каждой секции."""
         norm_row = self.norm_coef[self.norm_coef["name"] == file_name] # Поиск строки нормализации по имени файла
-        if norm_row.empty or norm_row["norm"].values[0] != yes_prase: # Проверка наличия строки и разрешения на нормализацию
+        if norm_row.empty or yes_prase not in str(norm_row["norm"].values[0]): # Проверка наличия строки и разрешения на нормализацию
             if is_print_error:
                 print(f"Предупреждение: {file_name} не найден в файле norm.csv или нормализация не разрешена.")
             return None
