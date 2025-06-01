@@ -231,7 +231,7 @@ class EmptyOscFilter:
                 continue
             
             h1_series_to_analyze = h1_amplitudes_full_series.copy()
-            if not use_normalized_thresholds_for_this_file and h1_for_relative_norm is not None:
+            if (not use_normalized_thresholds_for_this_file or ("_dup" in str(col_name))) and h1_for_relative_norm is not None:
                 # h1_for_relative_norm здесь не может быть 0 или слишком мал, т.к. отсеяли ранее
                 h1_series_to_analyze = h1_series_to_analyze / h1_for_relative_norm
                 if self.verbose: print(f"    Амплитуды H1 для '{col_name}' нормализованы по начальной H1={h1_for_relative_norm:.4f}.")
