@@ -121,7 +121,7 @@ class EmptyOscFilter:
         # Извлекаем первую гармонику (единственный столбец)
         h1_complex_series_all_points = fft_complex_all_points[:, 0]
         
-        h1_amplitude_series_all_points = np.abs(h1_complex_series_all_points)
+        h1_amplitude_series_all_points = np.abs(h1_complex_series_all_points) / np.sqrt(2)
         
         # Отбрасываем NaN значения, возникшие там, где окно FFT не могло быть сформировано
         # (в основном, в конце сигнала)
@@ -208,7 +208,7 @@ class EmptyOscFilter:
             current_thresholds_set = None
             h1_for_relative_norm = None 
 
-            if use_normalized_thresholds_for_this_file:
+            if use_normalized_thresholds_for_this_file and not("_dup" in str(col_name)):
                 current_thresholds_set = self.config[f"thresholds_{channel_type.name.lower()}_normalized"]
                 if self.verbose: print(f"  Анализ канала: {col_name} (тип: {channel_type.name.lower()}, режим: NormOsc)")
             else: # Анализ "сырых" данных
@@ -257,6 +257,11 @@ class EmptyOscFilter:
                 else:
                     print("")
 
+            # Защита от необработанных сигналов при нормализации (Пока убрал: или вероятных ошибок по номиналу (220В при номинале 100В))
+            # if "_dup" in str(col_name) and use_normalized_thresholds_for_this_file: # or stat_h1_max_abs > 0.6:
+            #     continue
+            # Перенёс её выше
+            
             is_active_by_delta = stat_h1_delta > current_thresholds_set['delta']
             is_active_by_std = stat_h1_std_dev > current_thresholds_set['std_dev'] # np.nan > x is False
             is_active_by_max_abs = False
@@ -430,9 +435,9 @@ class EmptyOscFilter:
                 print(f"    Проверка чистоты: M1={m1_amplitude:.4f}, Max_HigherFreqComponent={mx_amplitude:.4f}")
 
             is_clean = False
-            # Если mx_amplitude очень мал (избегаем деления на 0, и считаем сигнал чистым)
+            # Если mx_amplitude очень мал (избегаем деления на 0, и считаем сигнал зашумлённым)
             if mx_amplitude < 1e-9: 
-                is_clean = True 
+                is_clean = False 
             else:
                 ratio_h1_hx = m1_amplitude / mx_amplitude
                 h1_vs_hx_ratio_threshold = raw_analysis_config['h1_vs_hx_ratio_threshold_U']
@@ -480,7 +485,7 @@ if __name__ == '__main__':
         },
         # Пороги для каналов НАПРЯЖЕНИЯ (когда use_norm_osc=True)
         'thresholds_voltage_normalized': {
-            'delta': 0.01/3, 'std_dev': 0.005/3, 'max_abs': 0.05/3
+            'delta': 0.05/3, 'std_dev': 0.05/3/2, 'max_abs': 0.05/3
         },
 
         # Параметры для анализа "сырых" сигналов (когда use_norm_osc=False или NormOsc не применим)
