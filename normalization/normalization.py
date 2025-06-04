@@ -919,12 +919,18 @@ class NormOsc:
                     voltage_bb_col_name = f'U | BusBar-{bus} | phase: {phase}'
                     if voltage_bb_col_name in raw_df.columns:
                         raw_df[voltage_bb_col_name] = raw_df[voltage_bb_col_name] / nominal_voltage_bb
+                    voltage_cl_col_name = f'U{phase} BB'
+                    if voltage_cl_col_name in raw_df.columns:
+                        raw_df[voltage_cl_col_name] = raw_df[voltage_cl_col_name] / nominal_voltage_bb
 
             nominal_voltage_cl_series = norm_row.get(f"{bus}Uc_base")
             if nominal_voltage_cl_series is not None and not pd.isna(nominal_voltage_cl_series.values[0]):
                 nominal_voltage_cl = 3 * float(nominal_voltage_cl_series.values[0])
                 for phase in ['A', 'B', 'C', 'AB', 'BC', 'CA', 'N']: # Нормализация напряжений CableLine
                     voltage_cl_col_name = f'U | CableLine-{bus} | phase: {phase}'
+                    if voltage_cl_col_name in raw_df.columns:
+                        raw_df[voltage_cl_col_name] = raw_df[voltage_cl_col_name] / nominal_voltage_cl
+                    voltage_cl_col_name = f'U{phase} CL'
                     if voltage_cl_col_name in raw_df.columns:
                         raw_df[voltage_cl_col_name] = raw_df[voltage_cl_col_name] / nominal_voltage_cl
 
