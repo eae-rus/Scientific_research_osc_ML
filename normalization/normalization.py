@@ -877,6 +877,99 @@ class CreateNormOsc:
             print(f"Ошибка при сохранении обновленного CSV-файла '{output_csv_path}': {e}")
             
         return mistakes_found
+    
+    
+    def filter_csv_by_folder_contents(
+        self,
+        input_csv_path: str,
+        oscillogram_folder_path: str,
+        output_csv_path: str,
+        name_column: str = 'name',
+        file_extension: str = '.cfg'
+    ) -> None:
+        """
+        Фильтрует строки CSV-файла, оставляя только те,
+        для которых значение в столбце 'name_column' соответствует
+        имени файла (без 'file_extension') в 'oscillogram_folder_path'.
+
+        Args:
+            input_csv_path (str): Путь к исходному CSV-файлу.
+            oscillogram_folder_path (str): Путь к папке с файлами осциллограмм.
+            output_csv_path (str): Путь для сохранения отфильтрованного CSV-файла.
+            name_column (str): Имя столбца в CSV, содержащего идентификаторы (имена файлов).
+                            По умолчанию 'name'.
+            file_extension (str): Расширение файлов в папке для проверки (например, '.cfg').
+                                По умолчанию '.cfg'. Убедитесь, что он включает точку.
+        """
+        print(f"Начало фильтрации CSV: '{input_csv_path}'")
+        print(f"Папка с осциллограммами: '{oscillogram_folder_path}'")
+        print(f"Проверяемое расширение файла: '{file_extension}'")
+
+        # 1. Проверка существования входных путей
+        if not os.path.exists(input_csv_path):
+            print(f"Ошибка: Входной CSV-файл не найден: '{input_csv_path}'")
+            return
+        if not os.path.isdir(oscillogram_folder_path):
+            print(f"Ошибка: Папка с осциллограммами не найдена: '{oscillogram_folder_path}'")
+            return
+
+        # 2. Получение имен файлов из папки осциллограмм
+        try:
+            existing_files_basenames: Set[str] = set()
+            for filename in os.listdir(oscillogram_folder_path):
+                if filename.lower().endswith(file_extension.lower()):
+                    basename = os.path.splitext(filename)[0]
+                    existing_files_basenames.add(basename)
+            
+            if not existing_files_basenames:
+                print(f"Предупреждение: В папке '{oscillogram_folder_path}' не найдено файлов с расширением '{file_extension}'.")
+                # Если файлов нет, то итоговый CSV будет пуст или не изменится, если и входной пуст
+        except OSError as e:
+            print(f"Ошибка при чтении содержимого папки '{oscillogram_folder_path}': {e}")
+            return
+        
+        print(f"Найдено {len(existing_files_basenames)} файлов с расширением '{file_extension}' в папке.")
+
+        # 3. Чтение и фильтрация CSV
+        try:
+            # Читаем столбец 'name' как строку, чтобы избежать проблем с типами, если хеши похожи на числа
+            df = pd.read_csv(input_csv_path, dtype={name_column: str})
+        except FileNotFoundError: # Дополнительная проверка, хотя первая уже есть
+            print(f"Ошибка: Входной CSV-файл не найден (повторно): '{input_csv_path}'")
+            return
+        except Exception as e:
+            print(f"Ошибка при чтении CSV-файла '{input_csv_path}': {e}")
+            return
+
+        if name_column not in df.columns:
+            print(f"Ошибка: Столбец '{name_column}' не найден в CSV-файле '{input_csv_path}'.")
+            print(f"Доступные столбцы: {df.columns.tolist()}")
+            return
+
+        original_row_count = len(df)
+        print(f"Исходное количество строк в CSV: {original_row_count}")
+
+        # Фильтрация DataFrame
+        # Убедимся, что сравнение происходит со строками, на случай если dtype не сработал идеально
+        mask = df[name_column].astype(str).isin(existing_files_basenames)
+        filtered_df = df[mask]
+        
+        filtered_row_count = len(filtered_df)
+        removed_row_count = original_row_count - filtered_row_count
+        print(f"Количество строк после фильтрации: {filtered_row_count}")
+        print(f"Количество удаленных строк: {removed_row_count}")
+
+        # 4. Сохранение результата
+        try:
+            output_dir = os.path.dirname(output_csv_path)
+            if output_dir and not os.path.exists(output_dir): # output_dir может быть пустым, если путь - просто имя файла
+                os.makedirs(output_dir)
+                print(f"Создана директория для выходного файла: '{output_dir}'")
+            
+            filtered_df.to_csv(output_csv_path, index=False, encoding='utf-8')
+            print(f"Отфильтрованный CSV-файл успешно сохранен: '{output_csv_path}'")
+        except Exception as e:
+            print(f"Ошибка при сохранении отфильтрованного CSV-файла '{output_csv_path}': {e}")
 
 class NormOsc:
     # TODO: Подумать о том, что получается несколько "__init__"
