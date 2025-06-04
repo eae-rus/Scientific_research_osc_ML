@@ -898,7 +898,7 @@ class ProcessingOscillograms():
         print(f"Signal check results saved to {output_csv_path}")
         
     def find_oscillograms_with_spef(self, raw_path: str ='raw_data/', output_csv_path: str = "find_oscillograms_with_spef.csv", 
-                                    norm_coef_file_path: str = 'norm_coef.csv'):
+                                    norm_coef_file_path: str = 'norm_coef.csv', filter_txt_path: str = None):
         """
         Finds oscillograms with single-phase earth faults (SPEF) based on defined conditions using sliding window and harmonic analysis.
 
@@ -907,6 +907,12 @@ class ProcessingOscillograms():
             output_csv_path (str): Path to save the CSV file with SPEF filenames.
             norm_coef_file_path (str): Path to the normalization coefficients CSV file.
         """
+        # Чтение фильтра (если указан)
+        filter_set = None
+        if filter_txt_path is not None:
+            with open(filter_txt_path, 'r') as f:
+                filter_set = set(line.strip() for line in f if line.strip())
+        
         spef_files = []
         raw_files = sorted([file for file in os.listdir(raw_path) if 'cfg' in file])
         norm_osc = NormOsc(norm_coef_file_path=norm_coef_file_path)
@@ -915,14 +921,18 @@ class ProcessingOscillograms():
         period_count = 3
         
         number_ocs_found = 0
-
+        rawToCSV = RawToCSV()
+        
         with tqdm(total=len(raw_files), desc="Searching for SPEF") as pbar:
             for file in raw_files:
                 file_path = os.path.join(raw_path, file)
                 filename_without_ext = file[:-4]
+                if filter_set is not None and filename_without_ext not in filter_set:
+                    pbar.update(1)
+                    continue
 
                 try:
-                    raw_date, raw_df = RawToCSV.read_comtrade(RawToCSV(), file_path)
+                    raw_date, raw_df = rawToCSV.readComtrade.read_comtrade(file_path)
                     # TODO: Модернизировать "read_comtrade", а точнее даже функцию "comtrade.load(file_name)"
                     # Так как сейчас приходится искусственно вытягивать нужные коэффициент
                     samples_per_period = int(raw_date._cfg.sample_rates[0][0] / raw_date.frequency)
@@ -955,14 +965,13 @@ class ProcessingOscillograms():
                                 u0_harmonics = np.zeros_like(u0_signal, dtype=float) # Array to store first harmonic values
 
                                 # Sliding window for harmonic calculation and check
-                                for i in range(len(u0_signal) - samples_per_period + 1): # Slide through the entire signal
+                                for i in range(len(u0_signal) - samples_per_period): # Slide through the entire signal
                                     window = u0_signal[i:i+samples_per_period]
                                     window_fft = np.abs(fft(window)) / samples_per_period
-                                    window_h1 = 2 * window_fft[1] if len(window_fft) > 1 else 0
-                                    u0_harmonics[i:i+samples_per_period] = max(u0_harmonics[i:i+samples_per_period].max(), window_h1) # Take max harmonic in window
+                                    u0_3_harmonics[i] = max(window_fft[1:samples_per_period//2])
 
                                 # Sliding window check on harmonics
-                                for i in range(len(u0_harmonics) - samples_duration + 1):
+                                for i in range(len(u0_harmonics) - samples_duration):
                                     window_harmonics = u0_harmonics[i:i+samples_duration]
                                     if np.all(window_harmonics >= threshold): # Check harmonic level in sliding window
                                         is_spef = True
@@ -998,17 +1007,16 @@ class ProcessingOscillograms():
                                 # /np.sqrt(3) - because we used phase signal
 
                                 u0_3_harmonics = np.zeros_like(u0_3_signal, dtype=float) # Array for harmonics
-                                for i in range(len(u0_3_signal) - samples_per_period + 1):
+                                for i in range(len(u0_3_signal) - samples_per_period):
                                     window = u0_3_signal[i:i+samples_per_period]
                                     window_fft = np.abs(fft(window)) / samples_per_period
-                                    window_h1 = 2 * window_fft[1] if len(window_fft) > 1 else 0
-                                    u0_3_harmonics[i:i+samples_per_period] = max(u0_3_harmonics[i:i+samples_per_period].max(), window_h1)
+                                    u0_3_harmonics[i] = max(window_fft[1:samples_per_period//2])
 
                                 phase_voltages = [ua_signal, ub_signal, uc_signal]
                                 voltages_above_threshold = 0 # Count how many phase voltages meet the condition (if needed)
 
                                 # Sliding window check for 3U0 harmonics
-                                for i in range(len(u0_3_harmonics) - samples_duration + 1):
+                                for i in range(len(u0_3_harmonics) - samples_duration):
                                     window_harmonics_u0 = u0_3_harmonics[i:i+samples_duration]
                                     if np.all(window_harmonics_u0 >= threshold_u0): # Check 3U0 harmonic level in sliding window
                                         voltages_above_threshold = 0 # Reset counter for phase voltages for this window
