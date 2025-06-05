@@ -968,7 +968,7 @@ class ProcessingOscillograms():
                                 for i in range(len(u0_signal) - samples_per_period): # Slide through the entire signal
                                     window = u0_signal[i:i+samples_per_period]
                                     window_fft = np.abs(fft(window)) / samples_per_period
-                                    u0_3_harmonics[i] = max(window_fft[1:samples_per_period//2])
+                                    u0_harmonics[i] = max(window_fft[1:samples_per_period//2])
 
                                 # Sliding window check on harmonics
                                 for i in range(len(u0_harmonics) - samples_duration):
