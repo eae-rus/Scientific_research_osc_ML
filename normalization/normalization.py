@@ -55,9 +55,9 @@ class CreateNormOsc:
         
         self.raw_cols = self.generate_raw_cols(bus=bus)
         
-        self.result_cols = self.generate_result_cols()
+        self.result_cols = self.generate_result_cols(bus=bus)
         
-        self.all_features = self.generate_all_features()
+        self.all_features = self.generate_all_features(bus=bus)
 
         self.df = pd.DataFrame(data=self.result_cols)
 
@@ -212,6 +212,8 @@ class CreateNormOsc:
         elif VOLTAGE_T2_S < m1 <= VOLTAGE_T3_S:
             return 's', 400 if m1 > NOISE_FACTOR * mx else '?2'
         else:
+            # TODO: Добавить разделение определения номиналов по линейным / фазным значениям для случая, когда это превичка
+            # Потому что по ним, для больниства случаев - можно определить
             return '?3', '?3' # Неопределенное состояние или выход за пределы
         
     def _determine_current_status(self,
@@ -422,38 +424,40 @@ class CreateNormOsc:
                 frequency = raw_date.cfg.frequency
                 samples_rate = raw_date.cfg.sample_rates[0][0]
                 self.window_size = int(samples_rate / frequency)
+
+                coef_p_s = {}
+                for analog_channel in raw_date.cfg.analog_channels:
+                    coef = analog_channel.primary / analog_channel.secondary
+                    coef_p_s[analog_channel.name] = coef
+                
+                osc_columns = osc_df.columns
+                osc_features = []
+                to_drop = []
+                for column in osc_columns:
+                    if column in self.all_features:
+                        osc_features.append(column)
+                    else:
+                        to_drop.append(column)
+                osc_df.drop(columns=to_drop, inplace=True)
+                osc_fft = np.abs(np.fft.fft(osc_df.iloc[:self.window_size],axis=0))
+                for i in range(self.window_size, osc_df.shape[0], self.step_size):
+                    window_fft = np.abs(np.fft.fft(osc_df.iloc[i - self.window_size: i],axis=0))
+                    osc_fft = np.maximum(osc_fft, window_fft)
+                h1 = 2 * osc_fft[1] / self.window_size
+                harmonic_count = self.window_size // 2
+                if harmonic_count >= 2:
+                    hx = 2 * np.max(osc_fft[2:harmonic_count+1], axis=0) / self.window_size
+                else:
+                    hx = 0
+                h1_df = pd.DataFrame([dict(zip(osc_features, h1))])
+                hx_df = pd.DataFrame([dict(zip(osc_features, hx))])
+                result = self.analyze(file, h1_df, hx_df, coef_p_s)
+                result_df = pd.concat([result_df, result])
             except:
+                # TODO: написать разбор более обширный, ибо ошибки могут быть разные.
                 unread.append(file)
                 continue
-            
-            coef_p_s = {}
-            for analog_channel in raw_date.cfg.analog_channels:
-                coef = analog_channel.primary / analog_channel.secondary
-                coef_p_s[analog_channel.name] = coef
-            
-            osc_columns = osc_df.columns
-            osc_features = []
-            to_drop = []
-            for column in osc_columns:
-                if column in self.all_features:
-                    osc_features.append(column)
-                else:
-                    to_drop.append(column)
-            osc_df.drop(columns=to_drop, inplace=True)
-            osc_fft = np.abs(np.fft.fft(osc_df.iloc[:self.window_size],axis=0))
-            for i in range(self.window_size, osc_df.shape[0], self.step_size):
-                window_fft = np.abs(np.fft.fft(osc_df.iloc[i - self.window_size: i],axis=0))
-                osc_fft = np.maximum(osc_fft, window_fft)
-            h1 = 2 * osc_fft[1] / self.window_size
-            harmonic_count = self.window_size // 2
-            if harmonic_count >= 2:
-                hx = 2 * np.max(osc_fft[2:harmonic_count+1], axis=0) / self.window_size
-            else:
-                hx = 0
-            h1_df = pd.DataFrame([dict(zip(osc_features, h1))])
-            hx_df = pd.DataFrame([dict(zip(osc_features, hx))])
-            result = self.analyze(file, h1_df, hx_df, coef_p_s)
-            result_df = pd.concat([result_df, result])
+
 
         result_df.to_csv('normalization/norm.csv', index=False)
         
