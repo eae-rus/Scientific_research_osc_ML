@@ -87,13 +87,13 @@ class CreateNormOsc:
         if isRaw:
             name = "U_raw"
         
-        for c in ru_cols:
-            base = f'{name} | BusBar-' + c[0][0] + ' | phase: '
-            u_cols[c[0]] = {base + 'A', base + 'B', base + 'C', base + 'N', 
-                            base + 'AB', base + 'BC', base + 'CA'}
-            cable = f'{name} | CableLine-' + c[1][0] + ' | phase: '
-            u_cols[c[1]] = {cable + 'A', cable + 'B', cable + 'C', cable + 'N', 
-                        cable + 'AB', cable + 'BC', cable + 'CA'}
+        for i in range(1, bus+1):
+            base = f'{name} | BusBar-' + str(i) + ' | phase: '
+            u_cols[ru_cols[i-1][0]] = {base + 'A', base + 'B', base + 'C', base + 'N', 
+                                     base + 'AB', base + 'BC', base + 'CA'}
+            cable = f'{name} | CableLine-' + str(i) + ' | phase: '
+            u_cols[ru_cols[i-1][1]] = {cable + 'A', cable + 'B', cable + 'C', cable + 'N', 
+                                     cable + 'AB', cable + 'BC', cable + 'CA'}
         
         ru_cols = [item for sublist in ru_cols for item in sublist]
         return ru_cols, u_cols
@@ -105,28 +105,30 @@ class CreateNormOsc:
         if isRaw:
             name = "I_raw"
         
-        for c in ri_cols:
-            phase = f'{name} | Bus-' + c[0] + ' | phase: '
-            i_cols[c] = {phase + 'A', phase + 'B', phase + 'C'}
+        for i in range(1, bus+1):
+            phase = f'{name} | Bus-' + str(i) + ' | phase: '
+            i_cols[ri_cols[i-1]] = {phase + 'A', phase + 'B', phase + 'C'}
             
         return ri_cols, i_cols
 
     def generate_rCT_cols(self, bus = 6): # Residual current transformer (rCT)
         riz_cols = [f"{i}Iz" for i in range(1, bus+1)]
         iz_cols = dict()
-        for c in riz_cols:
-            iz_cols[c] = 'I | Bus-' + c[0] + ' | phase: N'
+        
+        for i in range(1, bus+1):
+            iz_cols[riz_cols[i-1]] = 'I | Bus-' + str(i) + ' | phase: N'
             
         return riz_cols, iz_cols
 
     def generate_dI_cols(self, bus = 1): # different current (for protection - 87)
         rid_cols = [f"{i}Id" for i in range(1, bus+1)]
         id_cols = dict()
-        for c in rid_cols:
-            phase_d = 'I | dif-' + c[0] + ' | phase: '
-            phase_b = 'I | breaking-' + c[0] + ' | phase: '
-            id_cols[c] = {phase_d + 'A', phase_d + 'B', phase_d + 'C',
-                        phase_b + 'A', phase_b + 'B', phase_b + 'C' }
+        
+        for i in range(1, bus+1):
+            phase_d = 'I | dif-' + str(i) + ' | phase: '
+            phase_b = 'I | breaking-' + str(i) + ' | phase: '
+            id_cols[rid_cols[i-1]] = {phase_d + 'A', phase_d + 'B', phase_d + 'C',
+                                    phase_b + 'A', phase_b + 'B', phase_b + 'C' }
             
         return rid_cols, id_cols
 
