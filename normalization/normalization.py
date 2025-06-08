@@ -6,7 +6,7 @@ from tqdm.auto import tqdm
 import comtrade
 from typing import Dict, Any, Tuple, List
 import re # Для регулярных выражений
-from typing import List, Set
+from typing import List, Set, Union
 import json
 from tqdm import tqdm # Для визуализации прогресса
 
@@ -38,7 +38,7 @@ NOISE_FACTOR = 1.5 # Коэффициент для сравнения m1 и mx (
 class CreateNormOsc:
     def __init__(self,
                  osc_path,
-                 prev_norm_csv_path = "",
+                 prev_norm_csv_path = "", # TODO: На будущее требуется убрать подобные переменные как обязательные, они мешают внутренним функциям
                  step_size=1,
                  bus = 6
                  ):
@@ -261,7 +261,7 @@ class CreateNormOsc:
             return '?3', '?3'
 
     # Вспомогательная функция для определения максимального номера секции
-    def _get_max_bus_number_from_columns(self, columns: set[str]) -> int:
+    def _get_max_bus_number_from_columns(columns: set[str]) -> int:
         """
         Определяет максимальный номер секции из имен столбцов.
         Пример: "1Ub_PS", "12Ip_base" -> 12.
@@ -462,10 +462,15 @@ class CreateNormOsc:
 
 
         result_df.to_csv('normalization/norm.csv', index=False)
-        
-    def merge_normalization_files(self, input_csv_paths: List[str], output_csv_path: str) -> None:
+    
+    def merge_normalization_files(
+        input_paths_or_folder: Union[str, List[str]],
+        output_csv_path: str,
+        file_pattern: str = r'^norm_.*\.csv$'
+    ) -> None:
         """
-        Объединяет несколько CSV-файлов нормализации в один с кастомным порядком столбцов.
+        Объединяет несколько CSV-файлов нормализации в один.
+        Может принимать как список путей, так и путь к папке, где файлы ищутся по шаблону.
 
         Порядок столбцов:
         1. "name", "norm"
@@ -475,40 +480,46 @@ class CreateNormOsc:
         4. Остальные столбцы в алфавитном порядке.
 
         Args:
-            input_csv_paths (List[str]): Список путей к входным CSV-файлам.
-            output_csv_path (str): Путь для сохранения объединенного CSV-файла.
+            input_paths_or_folder (Union[str, List[str]]): Путь к папке или список путей к файлам.
+            output_csv_path (str): Путь для сохранения объединенного CSV.
+            file_pattern (str): Регулярное выражение для поиска файлов в папке.
         """
         
-        dataframes_list = []
-        all_columns_ever_seen = set() # Множество для хранения всех уникальных имен столбцов
+        input_csv_paths = []
+        if isinstance(input_paths_or_folder, str) and os.path.isdir(input_paths_or_folder):
+            print(f"Поиск файлов в папке: '{input_paths_or_folder}' по шаблону '{file_pattern}'")
+            for root, _, files in os.walk(input_paths_or_folder):
+                for filename in sorted(files):
+                    if re.match(file_pattern, filename, re.IGNORECASE):
+                        input_csv_paths.append(os.path.join(root, filename))
+            print(f"Найдено файлов для объединения: {len(input_csv_paths)}")
+        elif isinstance(input_paths_or_folder, list):
+            input_csv_paths = input_paths_or_folder
+        else:
+            print(f"Ошибка: 'input_paths_or_folder' должен быть путём к папке или списком строк.")
+            return
 
-        print(f"Начинается процесс объединения {len(input_csv_paths)} файлов нормализации.")
+        if not input_csv_paths:
+            print("Не найдено файлов для объединения.")
+            return
+        
+        dataframes_list = []
+        all_columns_ever_seen = set()
 
         for file_path in input_csv_paths:
-            if not os.path.exists(file_path):
-                print(f"Предупреждение: Файл '{file_path}' не найден. Пропускается.")
-                continue
-            
             try:
-                # Проверяем, не пустой ли файл, чтобы избежать EmptyDataError
                 if os.path.getsize(file_path) > 0:
-                    df = pd.read_csv(file_path, dtype=str) # Читаем все как строки для начала, чтобы избежать смеш. типов
-                    if df.empty:
-                        print(f"Предупреждение: Файл '{file_path}' пуст (не содержит данных после заголовков). Пропускается.")
-                        continue
+                    df = pd.read_csv(file_path, dtype=str)
                     dataframes_list.append(df)
                     all_columns_ever_seen.update(df.columns)
-                    print(f"Файл '{file_path}' успешно прочитан ({len(df)} строк, {len(df.columns)} столбцов).")
-                else:
-                    print(f"Предупреждение: Файл '{file_path}' пустой (0 байт). Пропускается.")
-            except pd.errors.EmptyDataError:
-                print(f"Предупреждение: Файл '{file_path}' пуст или не содержит данных (EmptyDataError). Пропускается.")
             except Exception as e:
                 print(f"Ошибка при чтении файла '{file_path}': {e}. Файл пропускается.")
 
         if not dataframes_list:
-            print("Нет данных для объединения. Выходной файл не будет создан.")
+            print("Нет данных для объединения.")
             return
+
+        merged_df = pd.concat(dataframes_list, ignore_index=True, sort=False)
 
         print(f"\nОбъединение {len(dataframes_list)} DataFrame'ов...")
         # sort=False чтобы сохранить исходный порядок перед нашей кастомной сортировкой столбцов
@@ -527,7 +538,7 @@ class CreateNormOsc:
             final_ordered_columns.append("norm")
 
         # 2. Группы по секциям
-        max_bus = self._get_max_bus_number_from_columns(all_columns_ever_seen)
+        max_bus = CreateNormOsc._get_max_bus_number_from_columns(all_columns_ever_seen)
         if max_bus > 0:
             print(f"Определен максимальный номер секции: {max_bus}")
         
@@ -663,7 +674,7 @@ class CreateNormOsc:
         if max_bus_num_override is not None:
             max_bus = max_bus_num_override
         else:
-            max_bus = self._get_max_bus_number_from_columns(set(norm_df.columns))
+            max_bus = CreateNormOsc._get_max_bus_number_from_columns(set(norm_df.columns))
         
         print(f"Определен максимальный номер секции для обработки: {max_bus}")
 
@@ -826,7 +837,7 @@ class CreateNormOsc:
             max_bus = max_bus_num_override
         else:
             # Используем self._get_max_bus_number_from_columns, который уже есть в классе
-            max_bus = self._get_max_bus_number_from_columns(set(df.columns))
+            max_bus = CreateNormOsc._get_max_bus_number_from_columns(set(df.columns))
         
         print(f"Анализ CSV. Максимальный номер секции для Iz: {max_bus}")
 
