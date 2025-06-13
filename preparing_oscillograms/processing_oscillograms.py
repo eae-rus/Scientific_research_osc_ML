@@ -10,6 +10,7 @@ import json
 from tqdm import tqdm
 from scipy.fft import fft
 import re
+from collections import Counter
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
@@ -917,7 +918,7 @@ class ProcessingOscillograms():
         raw_files = sorted([file for file in os.listdir(raw_path) if 'cfg' in file])
         norm_osc = NormOsc(norm_coef_file_path=norm_coef_file_path)
 
-        threshold = 0.1 / 3
+        threshold = 30/400/3
         period_count = 3
         
         number_ocs_found = 0
@@ -1045,3 +1046,421 @@ class ProcessingOscillograms():
         df_spef = pd.DataFrame(spef_files, columns=['filename', 'file_name_bus'])
         df_spef.to_csv(output_csv_path, index=False)
         print(f"SPEF files saved to: {output_csv_path}")
+
+    def _extract_signal_names_from_cfg_lines(self, lines: list[str], file_path_for_error_msg: str, include_digital_signals: bool = True) -> tuple[list[str], str | None]:
+        """
+        Extracts all signal names from the lines of a CFG file.
+
+        Args:
+            lines (list[str]): Content of the CFG file as a list of strings.
+            file_path_for_error_msg (str): Path to the file, used for error messages.
+
+        Returns:
+            tuple[list[str], str | None]: A tuple containing a list of signal names
+                                           and an error message string if any error occurred, otherwise None.
+        """
+        signal_names = []
+        
+        if len(lines) < 2:
+            return [], f"File {file_path_for_error_msg} has less than 2 lines."
+
+        # Parse second line for signal counts
+        try:
+            parts = lines[1].split(',')
+            if len(parts) < 3:
+                return [], f"Second line in {file_path_for_error_msg} has incorrect format: {lines[1].strip()}"
+            
+            # total_signals_str = parts[0].strip() # Не используется напрямую для извлечения имен
+            
+            analog_signals_str = parts[1].strip().upper()
+            digital_signals_str = parts[2].strip().upper()
+
+            # Извлекаем числа, удаляя нечисловые символы (например, 'A' или 'D')
+            count_analog_signals = int(re.sub(r'\D', '', analog_signals_str))
+            count_digital_signals = int(re.sub(r'\D', '', digital_signals_str))
+
+        except ValueError:
+            return [], f"Could not parse signal counts from second line in {file_path_for_error_msg}: {lines[1].strip()}"
+        except Exception as e:
+            return [], f"Unexpected error parsing signal counts in {file_path_for_error_msg}: {e}"
+
+        # Check if we have enough lines for analog signals
+        if len(lines) < 2 + count_analog_signals:
+            return [], f"File {file_path_for_error_msg} does not have enough lines for declared analog signals ({count_analog_signals}). Has {len(lines)} lines."
+
+        # Extract analog signal names
+        for i in range(count_analog_signals):
+            line_index = 2 + i
+            signal_line_parts = lines[line_index].split(',')
+            if len(signal_line_parts) > 1:
+                signal_names.append(signal_line_parts[1].strip())
+            else:
+                return [], f"Malformed analog signal line {line_index+1} in {file_path_for_error_msg}: {lines[line_index].strip()}"
+        
+        # Check if we have enough lines for digital signals
+        if len(lines) < 2 + count_analog_signals + count_digital_signals:
+            return [], f"File {file_path_for_error_msg} does not have enough lines for declared digital signals ({count_digital_signals})."
+
+        # Extract digital signal names
+        if include_digital_signals:
+            # Check if we have enough lines for digital signals
+            if len(lines) < 2 + count_analog_signals + count_digital_signals:
+                # Если include_digital_signals=True, но строк не хватает, это ошибка.
+                # Если include_digital_signals=False, эта проверка и извлечение не нужны.
+                return [], f"File {file_path_for_error_msg} does not have enough lines for declared digital signals ({count_digital_signals})."
+
+            for i in range(count_digital_signals):
+                line_index = 2 + count_analog_signals + i
+                signal_line_parts = lines[line_index].split(',')
+                if len(signal_line_parts) > 1:
+                    signal_names.append(signal_line_parts[1].strip())
+                else:
+                    return [], f"Malformed digital signal line {line_index+1} in {file_path_for_error_msg}: {lines[line_index].strip()}"
+                    
+        return signal_names, None
+    
+    def _parse_analog_signal_name_for_section(self, signal_name: str) -> dict | None:
+            """
+            Parses an analog signal name to extract its components, focusing on the section number.
+            Example: "U | BusBar-1 | phase: A" -> {'prefix': "U | BusBar-", 'section': "1", 'suffix': " | phase: A"}
+            Example: "I | Bus-12" -> {'prefix': "I | Bus-", 'section': "12", 'suffix': ""}
+            Args:
+                signal_name (str): The full name of the analog signal.
+            Returns:
+                dict | None: A dictionary with 'prefix', 'section', 'suffix' if parsable, else None.
+            """
+            parts = signal_name.split('|')
+            if len(parts) < 2:
+                return None
+
+            signal_type_part = parts[0].strip()
+            location_section_part = parts[1].strip()
+
+            # Regex to find 'LocationType-Number' at the end of the location_section_part
+            # It captures (anything before)-(digits)
+            match = re.search(r"^(.*?)-(\d+)$", location_section_part)
+            if not match:
+                # Try another pattern if location type itself has hyphens, e.g. "Some-Location-Type-1"
+                # This pattern looks for the last hyphen followed by digits.
+                match_alternative = re.match(r"^(.*[A-Za-z_])-(\d+)$", location_section_part)
+                if not match_alternative:
+                    return None
+                location_base = match_alternative.group(1)
+                section_number_str = match_alternative.group(2)
+            else:
+                location_base = match.group(1)
+                section_number_str = match.group(2)
+                
+            prefix = f"{signal_type_part} | {location_base}-"
+            
+            suffix = ""
+            if len(parts) > 2:
+                suffix_parts = [p.strip() for p in parts[2:]]
+                suffix = " | " + " | ".join(suffix_parts)
+
+            return {
+                "prefix": prefix,
+                "section": section_number_str,
+                "suffix": suffix,
+                "original_name": signal_name
+            }
+
+    def _rename_duplicate_analog_signals_in_lines(self, cfg_lines: list[str], file_path_for_log: str) -> tuple[list[str], bool, list[dict]]:
+        """
+        Identifies duplicate analog signal names in the provided CFG lines and renames them
+        by assigning new, unused section numbers.
+        Operates only on analog signals.
+
+        Args:
+            cfg_lines (list[str]): The content of the CFG file as a list of strings.
+            file_path_for_log (str): The path of the file, for logging purposes.
+
+        Returns:
+            tuple:
+                - list[str]: Modified list of CFG lines.
+                - bool: True if any changes were made, False otherwise.
+                - list[dict]: A log of renamed signals [{'file_path', 'line_index', 'old_name', 'new_name'}].
+        """
+        modified_lines = list(cfg_lines)
+        made_changes = False
+        rename_log = []
+
+        if len(modified_lines) < 2:
+            return modified_lines, False, rename_log
+
+        try:
+            parts = modified_lines[1].split(',')
+            analog_signals_str = parts[1].strip().upper()
+            count_analog_signals = int(re.sub(r'\D', '', analog_signals_str))
+        except (ValueError, IndexError):
+            return modified_lines, False, rename_log
+        
+        analog_signals_data = []
+        current_used_section_numbers = set()
+        all_current_analog_signal_names = set() 
+
+        for i in range(count_analog_signals):
+            line_idx = 2 + i
+            if line_idx >= len(modified_lines):
+                break
+            
+            line_content = modified_lines[line_idx]
+            line_parts = line_content.split(',')
+            if len(line_parts) <= 1:
+                continue
+
+            original_name = line_parts[1].strip()
+            all_current_analog_signal_names.add(original_name)
+            parsed_components = self._parse_analog_signal_name_for_section(original_name)
+            
+            analog_signals_data.append({
+                "line_index": line_idx,
+                "name": original_name,
+                "parsed": parsed_components
+            })
+            if parsed_components and parsed_components['section'].isdigit():
+                current_used_section_numbers.add(int(parsed_components['section']))
+
+        signals_by_name = {}
+        for data in analog_signals_data:
+            if not data['parsed']:
+                continue
+            name = data['name']
+            if name not in signals_by_name:
+                signals_by_name[name] = []
+            signals_by_name[name].append(data)
+
+        for name, instances in signals_by_name.items():
+            if len(instances) > 1:
+                instances.sort(key=lambda x: x['line_index'])
+                
+                # Сохраняем информацию о первом (оставляемом) экземпляре
+                first_instance_section = int(instances[0]['parsed']['section']) if instances[0]['parsed'] and instances[0]['parsed']['section'].isdigit() else None
+
+                for k in range(1, len(instances)):
+                    signal_to_rename_info = instances[k]
+                    parsed_parts = signal_to_rename_info['parsed']
+                    original_section_of_duplicate = int(parsed_parts['section']) if parsed_parts['section'].isdigit() else -1 # -1 если не число, чтобы не совпало
+
+                    chosen_section_number = None
+                    new_signal_name = None
+
+                    # Попытка 1: Найти существующую секцию (не оригинальную для этого дубля и не секцию первого экземпляра, если они разные)
+                    # где можно разместить сигнал без создания нового дубликата.
+                    # Сортируем номера секций для предсказуемого поведения.
+                    sorted_existing_sections = sorted(list(current_used_section_numbers))
+
+                    for target_section in sorted_existing_sections:
+                        # Не перемещаем в ту же секцию, откуда дубликат, если это не секция первого экземпляра,
+                        # и не перемещаем в секцию первого экземпляра, если это не та же самая секция, откуда дубликат.
+                        # Это условие сложное, проще: не перемещать в секцию первого экземпляра, если он там и остался.
+                        # И не перемещать в секцию, откуда мы "выселяем" дубликат, если это не секция первого экземпляра.
+                        # Главное - не создавать конфликт с УЖЕ СУЩЕСТВУЮЩИМИ сигналами в target_section.
+                        
+                        # Если мы пытаемся переназначить сигнал, который был в той же секции, что и первый (оставленный)
+                        # экземпляр, то мы не можем использовать эту секцию снова для этого же типа сигнала.
+                        # Пропускаем секцию, если она является секцией первого (оставленного) экземпляра *этого же имени*
+                        if first_instance_section is not None and target_section == first_instance_section:
+                            # Проверяем, не пытаемся ли мы создать дубликат с первым экземпляром
+                            potential_check_name_against_first = f"{parsed_parts['prefix']}{target_section}{parsed_parts['suffix']}"
+                            if potential_check_name_against_first == instances[0]['name']: # Сравниваем с именем первого экземпляра
+                                continue # Нельзя, создаст дубликат с первым экземпляром
+
+                        potential_new_name_in_existing_section = f"{parsed_parts['prefix']}{target_section}{parsed_parts['suffix']}"
+                        
+                        # Проверяем, существует ли УЖЕ такое имя в файле (после предыдущих переименований на этом шаге)
+                        # или оно было изначально. all_current_analog_signal_names содержит начальные имена.
+                        # Для проверки текущего состояния нужен более динамический список, либо просто проверка по modified_lines.
+                        # Проще всего будет проверять по текущему состоянию modified_lines.
+                        
+                        is_slot_free = True
+                        temp_all_names_in_modified_lines = set()
+                        for line_idx_check in range(2, 2 + count_analog_signals):
+                            if line_idx_check >= len(modified_lines): break
+                            cfg_line_parts_check = modified_lines[line_idx_check].split(',')
+                            if len(cfg_line_parts_check) > 1:
+                                temp_all_names_in_modified_lines.add(cfg_line_parts_check[1].strip())
+                        
+                        if potential_new_name_in_existing_section in temp_all_names_in_modified_lines:
+                            is_slot_free = False
+                        
+                        if is_slot_free:
+                            chosen_section_number = target_section
+                            new_signal_name = potential_new_name_in_existing_section
+                            break # Нашли подходящую существующую секцию
+
+                    # Попытка 2: Если не нашли места в существующих, создаем новую секцию
+                    if chosen_section_number is None:
+                        new_section_candidate = 1
+                        while new_section_candidate in current_used_section_numbers:
+                            new_section_candidate += 1
+                        chosen_section_number = new_section_candidate
+                        new_signal_name = f"{parsed_parts['prefix']}{chosen_section_number}{parsed_parts['suffix']}"
+                    
+                    # Обновляем строку и логи
+                    line_idx_to_change = signal_to_rename_info['line_index']
+                    cfg_line_parts = modified_lines[line_idx_to_change].split(',')
+                    cfg_line_parts[1] = new_signal_name
+                    modified_lines[line_idx_to_change] = ",".join(cfg_line_parts)
+                    
+                    made_changes = True
+                    current_used_section_numbers.add(chosen_section_number) # Добавляем новую или подтверждаем использование существующей
+                    # Если имя было изменено, его нужно обновить и в all_current_analog_signal_names для последующих проверок (если нужно)
+                    # Но проще пересобирать temp_all_names_in_modified_lines на каждой итерации, как сделано выше.
+
+                    rename_log.append({
+                        'file_path': file_path_for_log,
+                        'line_index': line_idx_to_change,
+                        'old_name': signal_to_rename_info['name'],
+                        'new_name': new_signal_name
+                    })
+        
+        return modified_lines, made_changes, rename_log
+
+    def find_duplicate_signal_names_in_cfg(self, 
+                                           source_dir: str, 
+                                           output_csv_duplicates_path: str, 
+                                           include_digital_signals: bool = True,
+                                           auto_rename_analog_duplicates: bool = False,
+                                           output_csv_rename_log_path: str = "rename_log.csv"
+                                           ) -> None:
+        """
+        Scans .cfg files for duplicate signal names. Optionally, renames duplicate *analog* signals.
+
+        Args:
+            source_dir (str): Directory containing .cfg files.
+            output_csv_duplicates_path (str): Path to save CSV of files with duplicates.
+            include_digital_signals (bool): Whether to include digital signals in the duplicate search.
+            auto_rename_analog_duplicates (bool): If True, automatically renames duplicate analog signals.
+            output_csv_rename_log_path (str): Path to save CSV log of renaming actions.
+        """
+        files_with_duplicates_overall = [] # Для CSV со списком файлов с дубликатами
+        error_log_scan = [] 
+        all_renaming_actions_log = [] # Для CSV с логом переименований
+
+        total_cfg_files = 0
+        for _, _, files_in_dir in os.walk(source_dir):
+            for file_name in files_in_dir:
+                if file_name.lower().endswith(".cfg"):
+                    total_cfg_files += 1
+        
+        print(f"Total .cfg files to scan: {total_cfg_files}")
+        encodings_to_try = ['utf-8', 'windows-1251', 'cp866']
+
+        with tqdm(total=total_cfg_files, desc="Scanning CFG for duplicates") as pbar:
+            for root, _, files_in_dir in os.walk(source_dir):
+                for file_name in files_in_dir:
+                    if not file_name.lower().endswith(".cfg"):
+                        continue
+                    
+                    pbar.update(1)
+                    file_path = os.path.join(root, file_name)
+                    
+                    file_content_lines = None
+                    used_encoding = None
+
+                    for enc in encodings_to_try:
+                        try:
+                            with open(file_path, 'r', encoding=enc) as f:
+                                file_content_lines = f.readlines()
+                            used_encoding = enc
+                            break 
+                        except Exception: # Более общее исключение для простоты
+                            continue
+                    
+                    if file_content_lines is None:
+                        error_log_scan.append(f"Could not read file {file_path} with any attempted encodings.")
+                        continue
+
+                    # 1. Анализ на дубликаты (как и раньше)
+                    # Используем include_digital_signals для определения, какие сигналы считать
+                    signal_names_for_duplicate_check, error_msg_extract = self._extract_signal_names_from_cfg_lines(
+                        file_content_lines, file_path, include_digital_signals
+                    )
+
+                    if error_msg_extract:
+                        error_log_scan.append(error_msg_extract)
+                        # Продолжаем, чтобы попытаться переименовать, если auto_rename включен
+                        # т.к. _extract_signal_names_from_cfg_lines мог споткнуться на цифровых,
+                        # а аналоговые еще могут быть обработаны для переименования
+                    
+                    has_duplicates_in_file_for_log = False
+                    if signal_names_for_duplicate_check: # Если извлечение имен для поиска дублей прошло успешно
+                        name_counts = Counter(signal_names_for_duplicate_check)
+                        for count in name_counts.values():
+                            if count > 1:
+                                has_duplicates_in_file_for_log = True
+                                break
+                    
+                    if has_duplicates_in_file_for_log:
+                        files_with_duplicates_overall.append({
+                            'file_path': file_path,
+                            'file_name': file_name
+                        })
+
+                    # 2. Автоматическое переименование АНАЛОГОВЫХ дубликатов (если включено)
+                    if auto_rename_analog_duplicates:
+                        # Важно: _rename_duplicate_analog_signals_in_lines работает с оригинальным file_content_lines
+                        # и сама определяет аналоговые сигналы.
+                        modified_lines, made_changes_flag, current_file_rename_log = \
+                            self._rename_duplicate_analog_signals_in_lines(file_content_lines, file_path)
+                        
+                        if made_changes_flag:
+                            try:
+                                with open(file_path, 'w', encoding=used_encoding) as f_write:
+                                    f_write.writelines(modified_lines)
+                                all_renaming_actions_log.extend(current_file_rename_log)
+                            except IOError as e:
+                                error_log_scan.append(f"Error writing changes to {file_path}: {e}")
+                        elif current_file_rename_log: # Если были ошибки внутри переименования, но флаг false
+                             error_log_scan.append(f"Rename function reported issues for {file_path} but no changes made. Log: {current_file_rename_log}")
+
+
+        # Сохранение CSV со списком файлов, где найдены дубликаты
+        try:
+            # Убедимся, что директория для output_csv_duplicates_path существует
+            os.makedirs(os.path.dirname(output_csv_duplicates_path), exist_ok=True)
+            with open(output_csv_duplicates_path, 'w', newline='', encoding='utf-8') as csvfile:
+                fieldnames = ['file_path', 'file_name']
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(files_with_duplicates_overall)
+            print(f"Successfully saved list of files with duplicate signal names to: {output_csv_duplicates_path}")
+        except IOError as e:
+            error_log_scan.append(f"Error writing duplicates CSV to {output_csv_duplicates_path}: {e}")
+
+        # Сохранение CSV с логом переименований (если были)
+        if auto_rename_analog_duplicates and all_renaming_actions_log:
+            try:
+                # Убедимся, что директория для output_csv_rename_log_path существует
+                # Если путь относительный, он будет относительно текущей рабочей директории
+                # Если путь абсолютный, то все ок.
+                # Если output_csv_rename_log_path это просто имя файла, он создастся в CWD.
+                # Для большей предсказуемости можно передавать полный путь или путь относительно source_dir
+                rename_log_full_path = output_csv_rename_log_path
+                if not os.path.isabs(rename_log_full_path): # Если путь не абсолютный
+                     rename_log_full_path = os.path.join(os.getcwd(), output_csv_rename_log_path) # Сохраняем в текущей рабочей папке
+                
+                os.makedirs(os.path.dirname(rename_log_full_path), exist_ok=True)
+
+                with open(rename_log_full_path, 'w', newline='', encoding='utf-8') as csvfile_rename:
+                    fieldnames_rename = ['file_path', 'line_index', 'old_name', 'new_name']
+                    writer_rename = csv.DictWriter(csvfile_rename, fieldnames=fieldnames_rename)
+                    writer_rename.writeheader()
+                    writer_rename.writerows(all_renaming_actions_log)
+                print(f"Successfully saved renaming log to: {rename_log_full_path}")
+            except IOError as e:
+                error_log_scan.append(f"Error writing rename log CSV to {rename_log_full_path}: {e}")
+        elif auto_rename_analog_duplicates:
+             print("Auto-renaming was enabled, but no signals were renamed.")
+
+
+        if error_log_scan:
+            error_log_path = os.path.join(os.path.dirname(output_csv_duplicates_path), "scan_and_rename_errors.txt")
+            try:
+                with open(error_log_path, 'w', encoding='utf-8') as err_file:
+                    for err in error_log_scan:
+                        err_file.write(f"{err}\n")
+                print(f"Scan/rename errors logged to: {error_log_path}")
+            except IOError as e:
+                 print(f"Could not write error log to {error_log_path}: {e}")
