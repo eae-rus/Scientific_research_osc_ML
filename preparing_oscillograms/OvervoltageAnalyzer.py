@@ -34,10 +34,10 @@ class OvervoltageAnalyzer:
         # TODO: подумать над параметром номиналов
         # VALID_NOMINAL_VOLTAGES - пока что так сделано, чтобы отсеивать осциллограммы с глухозаземлённой нейтралью (400В, 110кВ и т.д.)
         # Но всё же это решение не очень, когда датасет разрастётся.
-        self.VALID_NOMINAL_VOLTAGES = {0.221, 0.312, 0.33342, 100.0, 6000.0, 10000.0, 20000.0, 35000.0}
+        self.VALID_NOMINAL_VOLTAGES = {0.221, 0.312, 0.33342, 100.0, 400.0, 6000.0, 10000.0, 20000.0, 35000.0}
         self.SPEF_THRESHOLD_U0 = 0.1/np.sqrt(3) / 3 # Порог для нормализованного U0
-        self.SPEF_THRESHOLD_Un = 0.1 / 3 # Порог для нормализованного Un
-        self.SPEF_MIN_DURATION_PERIODS = 3
+        self.SPEF_THRESHOLD_Un = 0.05 / 3 # 0.1/3 Порог для нормализованного Un
+        self.SPEF_MIN_DURATION_PERIODS = 1
         self.MAX_BUS_COUNT = 10
 
     def _load_norm_coefficients(self):
@@ -142,7 +142,7 @@ class OvervoltageAnalyzer:
         # 4. Перебор групп сигналов, созданных функцией split_buses
         for group_full_name, group_df in buses_df.groupby('file_name'):
             # Извлекаем номер секции и тип группы (bb/cl) из имени группы
-            match = re.search(r'_bus (\d+)$', group_full_name.lower()) # <-- ЭТА СТРОКА БЫЛА ИЗМЕНЕНА
+            match = re.search(r'_bus (\d+)$', group_full_name.lower())
             if not match:
                 continue # Если имя не соответствует ожидаемому формату, пропускаем
             
