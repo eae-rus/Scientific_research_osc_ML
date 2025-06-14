@@ -527,7 +527,8 @@ class CreateNormOsc:
     def merge_normalization_files(
         input_paths_or_folder: Union[str, List[str]],
         output_csv_path: str,
-        file_pattern: str = r'^norm_.*\.csv$'
+        file_pattern: str = r'^norm_.*\.csv$',
+        combine_duplicates_by_name: bool = False # Новый параметр
     ) -> None:
         """
         Объединяет несколько CSV-файлов нормализации в один.
@@ -544,6 +545,11 @@ class CreateNormOsc:
             input_paths_or_folder (Union[str, List[str]]): Путь к папке или список путей к файлам.
             output_csv_path (str): Путь для сохранения объединенного CSV.
             file_pattern (str): Регулярное выражение для поиска файлов в папке.
+            combine_duplicates_by_name (bool): Если True, строки с одинаковым значением
+                                               в столбце 'name' будут объединены,
+                                               при этом для остальных столбцов будет взято
+                                               первое непустое значение из группы.
+                                               По умолчанию False (простое добавление всех строк).
         """
         
         input_csv_paths = []
@@ -577,16 +583,46 @@ class CreateNormOsc:
                 print(f"Ошибка при чтении файла '{file_path}': {e}. Файл пропускается.")
 
         if not dataframes_list:
-            print("Нет данных для объединения.")
-            return
+            print("Не найдено DataFrame'ов для объединения (после фильтрации пустых/ошибочных файлов).")
+            merged_df = pd.DataFrame(columns=list(all_columns_ever_seen))
+        else:
+            # Сначала объединяем все DataFrame'ы в один DataFrame.
+            # ignore_index=True важен для корректной обработки индексов.
+            # sort=False сохраняет порядок файлов, что важно для правила "берется из первого" при combine_duplicates_by_name=True.
+            merged_df = pd.concat(dataframes_list, ignore_index=True, sort=False)
+            print(f"\nПредварительно объединены {len(dataframes_list)} DataFrame'ов в "
+                f"{merged_df.shape[0]} строк и {merged_df.shape[1]} столбцов.")
 
-        merged_df = pd.concat(dataframes_list, ignore_index=True, sort=False)
+            if combine_duplicates_by_name:
+                print("Активирован режим объединения дубликатов по столбцу 'name'.")
+                if 'name' in merged_df.columns and not merged_df.empty:
+                    # Убедимся, что столбец 'name' имеет строковый тип для надежной группировки.
+                    merged_df['name'] = merged_df['name'].astype(str)
 
-        print(f"\nОбъединение {len(dataframes_list)} DataFrame'ов...")
-        # sort=False чтобы сохранить исходный порядок перед нашей кастомной сортировкой столбцов
-        merged_df = pd.concat(dataframes_list, ignore_index=True, sort=False)
-        print(f"Объединенный DataFrame содержит {merged_df.shape[0]} строк и {merged_df.shape[1]} столбцов.")
-        print(f"Всего уникальных столбцов обнаружено: {len(all_columns_ever_seen)}")
+                    # Вспомогательная функция для агрегации:
+                    def first_valid_value_in_group(series):
+                        for value in series:
+                            if value is not None and pd.notna(value) and str(value).strip() != '':
+                                return value
+                        return pd.NA 
+
+                    print("Группировка по столбцу 'name' и агрегация значений...")
+                    # Группируем по 'name'. Для всех остальных столбцов применяем 'first_valid_value_in_group'.
+                    merged_df = merged_df.groupby('name', as_index=False).agg(first_valid_value_in_group)
+                    
+                    print(f"DataFrame после группировки и слияния дубликатов: {merged_df.shape[0]} строк (уникальные 'name') "
+                        f"и {merged_df.shape[1]} столбцов.")
+                
+                elif not merged_df.empty:
+                    print("Предупреждение: Столбец 'name' не найден в объединенных данных или DataFrame пуст. "
+                        "Объединение дубликатов по 'name' не выполнено. Данные остаются просто объединенными.")
+                # Если merged_df пуст, ничего дополнительно делать не нужно.
+            
+            else: # combine_duplicates_by_name is False (стандартное поведение)
+                print("Стандартный режим объединения DataFrame'ов (без слияния дубликатов по 'name').")
+                # merged_df уже содержит результат простого объединения.
+
+        print(f"Всего уникальных столбцов, обнаруженных во всех файлах: {len(all_columns_ever_seen)}")
 
         # Формирование кастомного порядка столбцов
         final_ordered_columns = []
