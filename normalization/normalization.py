@@ -44,7 +44,16 @@ class CreateNormOsc:
                  ):
         self.osc_path = osc_path
         self.readComtrade = ReadComtrade()
-        self.prev_norm_csv_path = prev_norm_csv_path
+        self.existing_norm_df = pd.DataFrame() # Инициализация пустым DataFrame
+        if prev_norm_csv_path and os.path.exists(prev_norm_csv_path):
+            try:
+                self.existing_norm_df = pd.read_csv(prev_norm_csv_path, dtype=str) # Читаем все как строки для начала
+                print(f"Загружены существующие коэффициенты из: {prev_norm_csv_path}")
+            except Exception as e:
+                print(f"Ошибка при загрузке существующих коэффициентов из '{prev_norm_csv_path}': {e}")
+                # existing_norm_df останется пустым, обработка пойдет как без старых данных
+        elif prev_norm_csv_path:
+            print(f"Предупреждение: Файл существующих коэффициентов '{prev_norm_csv_path}' не найден.")
         self.window_size = 32
         self.step_size = step_size
        
@@ -285,11 +294,39 @@ class CreateNormOsc:
                     continue # На случай, если первая группа не число (маловероятно с таким паттерном)
         return max_bus if found_any_number else 1 # Если номеров нет, по умолчанию 1 секция
 
+    def _should_skip_calculation(self, 
+                                 results: Dict[str, Any], 
+                                 group_prefix: str, 
+                                 suffixes_to_check: List[str]) -> bool:
+        """
+        Проверяет, следует ли пропустить расчет для данной группы сигналов,
+        так как все необходимые данные уже присутствуют в results.
+
+        Args:
+            results (Dict[str, Any]): Текущий словарь с результатами анализа.
+            group_prefix (str): Префикс группы сигналов (например, "1Ub", "2Ip").
+            suffixes_to_check (List[str]): Список суффиксов (_PS, _base),
+                                           формирующих полные имена столбцов для проверки.
+
+        Returns:
+            bool: True, если все указанные поля для данной группы существуют и не пусты,
+                  иначе False.
+        """
+        for suffix in suffixes_to_check:
+            col_name = group_prefix + suffix
+            value = results.get(col_name)
+            # Проверка на None, пустую строку, или pandas/numpy NaN
+            if value is None or str(value).strip() == '' or pd.isna(value):
+                return False # Нашли отсутствующее или пустое значение, расчет нужен
+        return True # Все значения на месте и не пусты, можно пропустить расчет
+    
     def analyze(self,
                 file: str,
                 h1_df: pd.DataFrame,
                 hx_df: pd.DataFrame,
-                coef_p_s: Dict[str, float]) -> pd.DataFrame:
+                coef_p_s: Dict[str, float],
+                existing_row: pd.DataFrame = pd.DataFrame()
+                ) -> pd.DataFrame:
         """
         Анализирует данные одной осциллограммы (гармоники h1 и hx)
         и определяет базовые значения и тип подключения (первичка/вторичка).
@@ -304,10 +341,23 @@ class CreateNormOsc:
             Однострочный DataFrame с результатами анализа.
         """
         features = set(h1_df.columns) # Используем set для быстрого пересечения
-        results: Dict[str, Any] = {'name': file[:-4], 'norm': 'YES'} # Собираем результаты в словарь
+        if not existing_row.empty:
+            # Преобразуем строку DataFrame в словарь, обрабатывая возможные NaN/None
+            # fillna('') - чтобы не было проблем с типами при последующем сравнении или записи
+            results = existing_row.iloc[0].fillna('').to_dict()
+            results['name'] = file[:-4] # Убедимся, что имя файла корректное
+            # Статус 'norm' может быть переопределен позже, так что начальное значение из existing_row нормально
+        else:
+            results: Dict[str, Any] = {'name': file[:-4], 'norm': 'YES'} # Собираем результаты в словарь
 
+        suffixes = ['_PS', '_base']
+        
         # --- Обработка напряжения ---
         for r_prefix in self.ru_cols:
+            if self._should_skip_calculation(results, r_prefix, suffixes):
+                # print(f"Skipping recalculation for {r_prefix} for {file[:-4]} - data exists.") # Для отладки
+                continue
+            
             # Находим пересечение нужных столбцов с доступными фичами
             relevant_cols = list(self.u_cols[r_prefix].intersection(features))
             if not relevant_cols: # Пропускаем, если нет данных для этой группы
@@ -328,6 +378,10 @@ class CreateNormOsc:
 
         # --- Обработка тока ---
         for r_prefix in self.ri_cols:
+            if self._should_skip_calculation(results, r_prefix, suffixes):
+                # print(f"Skipping recalculation for {r_prefix} for {file[:-4]} - data exists.") # Для отладки
+                continue
+            
             relevant_cols = list(self.i_cols[r_prefix].intersection(features))
             if not relevant_cols:
                 continue
@@ -347,6 +401,10 @@ class CreateNormOsc:
 
         # --- Обработка тока нулевой последовательности ---
         for r_prefix in self.riz_cols:
+            if self._should_skip_calculation(results, r_prefix, suffixes):
+                # print(f"Skipping recalculation for {r_prefix} for {file[:-4]} - data exists.") # Для отладки
+                continue
+            
             col_set = set([self.iz_cols[r_prefix]])
             relevant_cols = list(col_set.intersection(features))
             if not relevant_cols:
@@ -373,6 +431,10 @@ class CreateNormOsc:
         # или достаточно одного общего 'dId'. Пока оставлено как в оригинале - общий.
         processed_did = False
         for r_prefix in self.rid_cols:
+            if self._should_skip_calculation(results, r_prefix, suffixes):
+                # print(f"Skipping recalculation for {r_prefix} for {file[:-4]} - data exists.") # Для отладки
+                continue
+            
             if processed_did:
                 break
             relevant_cols = list(self.id_cols[r_prefix].intersection(features))
@@ -405,18 +467,17 @@ class CreateNormOsc:
 
         return pd.DataFrame([results], columns=self.result_cols.keys())
 
-    def normalization(self, bus = 6, isSaveOnlyNewFilese = False):
-        name_prev_norm = []
-        if self.prev_norm_csv_path != "":
-            prev_norm_csv = pd.read_csv(self.prev_norm_csv_path)
-            name_prev_norm = prev_norm_csv["name"].values
-        
+    def normalization(self, bus = 6):     
         unread = []
         result_df = pd.DataFrame(data=self.result_cols)
         for file in tqdm(self.osc_files):
             name_osc = file[:-4]
-            if name_osc in name_prev_norm:
-                continue
+            existing_row_for_osc = pd.DataFrame() # Пустой DataFrame по умолчанию
+            if not self.existing_norm_df.empty and 'name' in self.existing_norm_df.columns:
+                # Убедимся, что сравниваем строки, если name_osc - хеш, который может быть числом
+                match = self.existing_norm_df[self.existing_norm_df['name'].astype(str) == str(name_osc)]
+                if not match.empty:
+                    existing_row_for_osc = match.iloc[[0]] # Берем первую строку, если вдруг дубликаты имен
             
             try:
                 raw_date, osc_df = self.readComtrade.read_comtrade(self.osc_path + file)
@@ -453,7 +514,7 @@ class CreateNormOsc:
                     hx = 0
                 h1_df = pd.DataFrame([dict(zip(osc_features, h1))])
                 hx_df = pd.DataFrame([dict(zip(osc_features, hx))])
-                result = self.analyze(file, h1_df, hx_df, coef_p_s)
+                result = self.analyze(file, h1_df, hx_df, coef_p_s, existing_row=existing_row_for_osc)
                 result_df = pd.concat([result_df, result])
             except:
                 # TODO: написать разбор более обширный, ибо ошибки могут быть разные.
@@ -493,7 +554,7 @@ class CreateNormOsc:
                     if re.match(file_pattern, filename, re.IGNORECASE):
                         input_csv_paths.append(os.path.join(root, filename))
             print(f"Найдено файлов для объединения: {len(input_csv_paths)}")
-        elif isinstance(input_paths_or_folder, list):
+        elif isinstance(input_paths_or_folder, (list, tuple, set, np.ndarray)):
             input_csv_paths = input_paths_or_folder
         else:
             print(f"Ошибка: 'input_paths_or_folder' должен быть путём к папке или списком строк.")
