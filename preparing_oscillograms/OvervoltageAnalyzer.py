@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import sys
+import shutil
 from tqdm import tqdm
 import re
 
@@ -265,3 +266,127 @@ class OvervoltageAnalyzer:
         
         self._save_results()
         
+    def copy_spef_oscillograms(report_csv_path: str, source_osc_folder_path: str, destination_folder_path: str):
+        """
+        Копирует файлы осциллограмм (.cfg и .dat) из исходной папки в целевую
+        на основе списка файлов из CSV-отчета.
+
+        Args:
+            report_csv_path (str): Путь к CSV-файлу с отчетом (например, "overvoltage_report.csv"),
+                                который содержит столбец "filename" с именами осциллограмм без расширения.
+            source_osc_folder_path (str): Путь к корневой папке, где находятся исходные
+                                        осциллограммы (поиск будет рекурсивным).
+            destination_folder_path (str): Путь к папке, куда будут скопированы осциллограммы.
+                                        Папка будет создана, если не существует.
+        """
+        print("--- Начало операции копирования осциллограмм ОЗЗ ---")
+        # 1. Чтение CSV-файла с отчетом
+        try:
+            report_df = pd.read_csv(report_csv_path)
+            print(f"Файл отчета '{report_csv_path}' успешно загружен.")
+        except FileNotFoundError:
+            print(f"Ошибка: Файл отчета '{report_csv_path}' не найден. Операция прервана.")
+            return
+        except Exception as e:
+            print(f"Ошибка при чтении файла отчета '{report_csv_path}': {e}. Операция прервана.")
+            return
+
+        if 'filename' not in report_df.columns:
+            print(f"Ошибка: В файле отчета '{report_csv_path}' отсутствует столбец 'filename'. Операция прервана.")
+            return
+
+        filenames_to_copy = report_df['filename'].unique().tolist()
+        if not filenames_to_copy:
+            print("В файле отчета нет имен файлов для копирования. Операция завершена.")
+            return
+        
+        print(f"Обнаружено {len(filenames_to_copy)} уникальных имен осциллограмм для копирования.")
+
+        # 2. Создание целевой папки
+        try:
+            os.makedirs(destination_folder_path, exist_ok=True)
+            print(f"Целевая папка '{destination_folder_path}' готова.")
+        except OSError as e:
+            print(f"Ошибка при создании целевой папки '{destination_folder_path}': {e}. Операция прервана.")
+            return
+
+        # 3. Сканирование исходной папки и создание карты файлов
+        # {filename_without_ext: {'cfg': cfg_path, 'dat': dat_path}}
+        source_file_map = {} 
+        print(f"Сканирование исходной папки '{source_osc_folder_path}' для поиска файлов осциллограмм...")
+        
+        # Подсчет общего количества файлов для tqdm (приблизительно)
+        total_files_to_scan = sum([len(files) for r, d, files in os.walk(source_osc_folder_path)])
+        
+        with tqdm(total=total_files_to_scan, desc="Сканирование исходных файлов", unit="файл") as pbar_scan:
+            for root, _, files in os.walk(source_osc_folder_path):
+                for file in files:
+                    pbar_scan.update(1)
+                    name, ext = os.path.splitext(file)
+                    ext_lower = ext.lower()
+                    
+                    if ext_lower == '.cfg':
+                        if name not in source_file_map:
+                            source_file_map[name] = {}
+                        source_file_map[name]['cfg'] = os.path.join(root, file)
+                    elif ext_lower == '.dat':
+                        if name not in source_file_map:
+                            source_file_map[name] = {}
+                        source_file_map[name]['dat'] = os.path.join(root, file)
+        
+        print(f"Сканирование завершено. Найдено {len(source_file_map)} уникальных имен осциллограмм (пар .cfg/.dat или одиночных файлов) в исходной папке.")
+
+        # 4. Копирование файлов
+        copied_count = 0
+        errors_during_copy = 0
+        skipped_missing_in_source_map = 0
+        skipped_missing_cfg_in_map = 0
+        skipped_missing_dat_in_map = 0
+
+        print(f"Начинается копирование {len(filenames_to_copy)} выбранных осциллограмм...")
+        for filename_no_ext in tqdm(filenames_to_copy, desc="Копирование осциллограмм", unit="осц."):
+            if filename_no_ext in source_file_map:
+                source_paths = source_file_map[filename_no_ext]
+                
+                cfg_source_path = source_paths.get('cfg')
+                dat_source_path = source_paths.get('dat')
+
+                if not cfg_source_path:
+                    # print(f"Предупреждение: .cfg файл для '{filename_no_ext}' не найден в карте исходных файлов. Пропуск.")
+                    skipped_missing_cfg_in_map += 1
+                    continue
+                if not dat_source_path:
+                    # print(f"Предупреждение: .dat файл для '{filename_no_ext}' не найден в карте исходных файлов. Пропуск.")
+                    skipped_missing_dat_in_map += 1
+                    continue
+
+                # Формируем целевые пути, сохраняя исходные имена файлов
+                cfg_dest_path = os.path.join(destination_folder_path, os.path.basename(cfg_source_path))
+                dat_dest_path = os.path.join(destination_folder_path, os.path.basename(dat_source_path))
+
+                try:
+                    shutil.copy2(cfg_source_path, cfg_dest_path)
+                    shutil.copy2(dat_source_path, dat_dest_path)
+                    copied_count += 1
+                except FileNotFoundError:
+                    # Эта ошибка более вероятна, если путь в source_file_map некорректен,
+                    # или файл был удален между сканированием и копированием.
+                    print(f"Ошибка FileNotFoundError: Один из файлов для '{filename_no_ext}' не найден по пути при копировании. Пропуск.")
+                    errors_during_copy += 1
+                except Exception as e:
+                    print(f"Ошибка при копировании файлов для '{filename_no_ext}': {e}. Пропуск.")
+                    errors_during_copy += 1
+            else:
+                # print(f"Предупреждение: Осциллограмма '{filename_no_ext}' из отчета не найдена среди просканированных файлов в '{source_osc_folder_path}'. Пропуск.")
+                skipped_missing_in_source_map += 1
+                
+        # 5. Вывод статистики
+        print("\n--- Статистика копирования ---")
+        print(f"Всего уникальных имен осциллограмм в отчете: {len(filenames_to_copy)}")
+        print(f"Успешно скопировано пар файлов (cfg+dat): {copied_count}")
+        print(f"Пропущено (осциллограмма из отчета не найдена в исходной папке при сканировании): {skipped_missing_in_source_map}")
+        print(f"Пропущено (в карте исходных файлов отсутствовал .cfg для имени из отчета): {skipped_missing_cfg_in_map}")
+        print(f"Пропущено (в карте исходных файлов отсутствовал .dat для имени из отчета): {skipped_missing_dat_in_map}")
+        print(f"Ошибок во время фактического копирования (файлы были в карте, но не скопировались): {errors_during_copy}")
+        print(f"Итоговые файлы сохранены в: '{destination_folder_path}'")
+        print("--- Завершение операции копирования ---")
