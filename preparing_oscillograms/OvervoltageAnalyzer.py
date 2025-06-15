@@ -40,6 +40,9 @@ class OvervoltageAnalyzer:
         self.SPEF_THRESHOLD_Un = 0.05 / 3 # 0.1/3 Порог для нормализованного Un
         self.SPEF_MIN_DURATION_PERIODS = 1
         self.MAX_BUS_COUNT = 10
+        self.SIMILAR_AMPLITUDES_FILTER_ENABLED = True
+        # Порог для относительной разницы амплитуд ( (max-min)/mean ). Если меньше, считаем схожими.
+        self.SIMILAR_AMPLITUDES_MAX_RELATIVE_DIFFERENCE = 0.05 # Например, 5%
 
     def _load_norm_coefficients(self):
         """Загружает единый файл с коэффициентами нормализации."""
@@ -52,7 +55,8 @@ class OvervoltageAnalyzer:
 
     def _find_spef_zones(self, df: pd.DataFrame, group_prefix: str, samples_per_period: int) -> list:
         """
-        Находит зоны ОЗЗ для группы сигналов (СШ или КЛ).
+        Находит зоны ОЗЗ для группы сигналов (СШ или КЛ), отфильтровывая зоны
+        со слишком похожими амплитудами фазных напряжений, если соответствующий фильтр включен.
         Возвращает список кортежей (start_index, end_index).
         """
         u0_calculated = None
@@ -60,9 +64,13 @@ class OvervoltageAnalyzer:
 
         # 1. Получаем сигналы U0
         # Пытаемся рассчитать из фазных
-        phase_cols = [f'U{ph} {group_prefix}' for ph in ['A', 'B', 'C']]
-        if all(col in df.columns for col in phase_cols):
-            u0_calculated = (df[phase_cols[0]] + df[phase_cols[1]] + df[phase_cols[2]]) / 3
+        phase_cols_candidate = [f'U{ph} {group_prefix}' for ph in ['A', 'B', 'C']]
+        # Проверяем, что все три фазы действительно присутствуют в DataFrame
+        # Это важно для фильтра схожести амплитуд
+        available_phase_cols = [col for col in phase_cols_candidate if col in df.columns]
+        
+        if len(available_phase_cols) == 3:
+            u0_calculated = (df[available_phase_cols[0]] + df[available_phase_cols[1]] + df[available_phase_cols[2]]) / 3
         
         # Пытаемся взять измеренный
         un_col = f'UN {group_prefix}'
@@ -72,7 +80,7 @@ class OvervoltageAnalyzer:
         if u0_calculated is None and un_measured is None:
             return []
 
-        # 2. Создаем общую маску превышения порога
+        # 2. Создаем общую маску превышения порога по U0/Un
         combined_mask = pd.Series(False, index=df.index)
         if u0_calculated is not None:
             combined_mask |= (u0_calculated.abs() > self.SPEF_THRESHOLD_U0)
@@ -82,27 +90,68 @@ class OvervoltageAnalyzer:
         if not combined_mask.any():
             return []
             
-        # 3. Эффективный поиск непрерывных блоков нужной длины
+        # 3. Эффективный поиск непрерывных блоков нужной длины (кандидатные зоны)
         min_len = self.SPEF_MIN_DURATION_PERIODS * samples_per_period
         
-        # Находим группы и их длины
         blocks = combined_mask.ne(combined_mask.shift()).cumsum()
         block_lengths = blocks.map(blocks.value_counts())
         
-        # Оставляем только те блоки, которые 'True' и имеют достаточную длину
-        valid_zones_mask = combined_mask & (block_lengths >= min_len)
+        # Кандидатные зоны, прошедшие проверку по U0/Un и длительности
+        candidate_zones_mask = combined_mask & (block_lengths >= min_len)
         
-        if not valid_zones_mask.any():
+        if not candidate_zones_mask.any():
             return []
             
-        # Находим начало и конец каждого истинного блока в итоговой маске
-        zone_starts = valid_zones_mask.ne(valid_zones_mask.shift()) & valid_zones_mask
-        zone_ends = valid_zones_mask.ne(valid_zones_mask.shift(-1)) & valid_zones_mask
+        zone_starts_indices = df.index[candidate_zones_mask.ne(candidate_zones_mask.shift()) & candidate_zones_mask]
+        zone_ends_indices = df.index[candidate_zones_mask.ne(candidate_zones_mask.shift(-1)) & candidate_zones_mask]
         
-        start_indices = df.index[zone_starts]
-        end_indices = df.index[zone_ends]
+        candidate_spef_tuples = list(zip(zone_starts_indices, zone_ends_indices))
         
-        return list(zip(start_indices, end_indices))
+        actual_spef_zones = []
+
+        # 4. Фильтрация кандидатных зон по схожести амплитуд фаз
+        for start_idx, end_idx in candidate_spef_tuples:
+            apply_similarity_filter = self.SIMILAR_AMPLITUDES_FILTER_ENABLED and (len(available_phase_cols) == 3)
+            
+            is_zone_valid = True # По умолчанию зона валидна
+
+            if apply_similarity_filter:
+                zone_df_segment = df.loc[start_idx:end_idx, available_phase_cols]
+                if zone_df_segment.empty:
+                    # Если сегмент пуст, считаем его валидным (пропускаем фильтр, т.к. нет данных для анализа)
+                    # или можно отбросить, но пропуск безопаснее.
+                    actual_spef_zones.append((start_idx, end_idx))
+                    continue
+
+                amplitudes = []
+                all_amplitudes_valid_for_segment = True
+                for phase_col in available_phase_cols:
+                    max_abs_val_in_phase_zone = zone_df_segment[phase_col].abs().max()
+                    if pd.isna(max_abs_val_in_phase_zone):
+                        all_amplitudes_valid_for_segment = False
+                        break
+                    amplitudes.append(max_abs_val_in_phase_zone)
+                
+                if not all_amplitudes_valid_for_segment or len(amplitudes) != 3:
+                    # Если не удалось получить 3 валидные амплитуды для этой зоны,
+                    # считаем, что фильтр на схожесть не может быть применен,
+                    # и зона проходит (т.е., is_zone_valid остается True).
+                    pass # is_zone_valid остается True
+                else:
+                    mean_amp = np.mean(amplitudes)
+                    if mean_amp < 1e-9: # Избегаем деления на ноль или очень малое число
+                        # Если все амплитуды ~0, то max_amp - min_amp тоже ~0. Разница будет 0.
+                        relative_difference = 0.0 if (np.max(amplitudes) - np.min(amplitudes)) < 1e-9 else float('inf')
+                    else:
+                        relative_difference = (np.max(amplitudes) - np.min(amplitudes)) / mean_amp
+                    
+                    if relative_difference < self.SIMILAR_AMPLITUDES_MAX_RELATIVE_DIFFERENCE:
+                        is_zone_valid = False # Амплитуды слишком похожи, зона не валидна
+
+            if is_zone_valid:
+                actual_spef_zones.append((start_idx, end_idx))
+                
+        return actual_spef_zones
 
     def _analyze_file(self, cfg_file_path: str):
         """Анализирует один файл осциллограммы."""
