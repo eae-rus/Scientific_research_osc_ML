@@ -4,6 +4,7 @@ import re # Not strictly needed for these two methods yet, but good for the clas
 import shutil
 import csv
 import hashlib
+from tqdm import tqdm # Added import
 
 class FileOrganizer:
     def __init__(self):
@@ -187,6 +188,73 @@ class FileOrganizer:
 
         if is_print_message:
             print(f"Finished grouping files. Moved {moved_files_count} pairs of CFG/DAT files into frequency/rate specific subdirectories.")
+
+    def organize_oscillograms_by_terminal(self, source_dir: str, dest_dir: str,
+                                          terminal_list: list, terminal_oscillogram_map: dict,
+                                          is_hashes_input: bool = True, is_print_message: bool = False) -> None:
+        if not os.path.isdir(source_dir):
+            if is_print_message: print(f"Error: Source directory '{source_dir}' not found.")
+            return
+        os.makedirs(dest_dir, exist_ok=True)
+
+        osc_id_to_terminal_map = {}
+        for terminal_name, osc_ids in terminal_oscillogram_map.items():
+            if terminal_name in terminal_list: # Process only specified terminals
+                for osc_id in osc_ids:
+                    osc_id_to_terminal_map[str(osc_id)] = terminal_name # Ensure osc_id is string for lookup
+
+        if is_print_message:
+            print(f"Prepared mapping for {len(osc_id_to_terminal_map)} oscillogram IDs across {len(terminal_list)} specified terminals.")
+
+        cfg_files_to_process = [os.path.join(r, f) for r, _, fs in os.walk(source_dir) for f in fs if f.lower().endswith(".cfg")]
+
+        if is_print_message: print(f"Found {len(cfg_files_to_process)} .cfg files to potentially organize.")
+
+        organized_count = 0
+        for cfg_file_path in tqdm(cfg_files_to_process, desc="Organizing oscillograms by terminal", disable=not is_print_message):
+            cfg_file_name = os.path.basename(cfg_file_path)
+            file_id_to_check = ""
+
+            if is_hashes_input:
+                file_id_to_check = os.path.splitext(cfg_file_name)[0] # Assumes filename is hash
+            else: # Need to calculate hash from DAT file
+                dat_file_path = os.path.splitext(cfg_file_path)[0] + ".dat"
+                if os.path.exists(dat_file_path):
+                    try:
+                        with open(dat_file_path, 'rb') as f_dat:
+                            file_id_to_check = hashlib.md5(f_dat.read()).hexdigest()
+                    except IOError as e:
+                        if is_print_message: print(f"  Error hashing DAT file {dat_file_path}: {e}. Skipping {cfg_file_name}.")
+                        continue
+                else:
+                    if is_print_message: print(f"  DAT file not found for {cfg_file_name}. Skipping.")
+                    continue
+
+            if not file_id_to_check: # If hash calculation failed or filename was empty
+                continue
+
+            if file_id_to_check in osc_id_to_terminal_map:
+                terminal_name = osc_id_to_terminal_map[file_id_to_check]
+                terminal_dest_dir = os.path.join(dest_dir, str(terminal_name)) # Ensure terminal_name is string for path
+                os.makedirs(terminal_dest_dir, exist_ok=True)
+
+                dat_file_path_source = os.path.splitext(cfg_file_path)[0] + ".dat"
+
+                try:
+                    # Copy CFG
+                    shutil.copy2(cfg_file_path, os.path.join(terminal_dest_dir, cfg_file_name))
+                    # Copy DAT if it exists
+                    if os.path.exists(dat_file_path_source):
+                        shutil.copy2(dat_file_path_source, os.path.join(terminal_dest_dir, os.path.basename(dat_file_path_source)))
+
+                    if is_print_message and organized_count < 10: # Print for first few
+                        print(f"  Copied {cfg_file_name} (and .dat) to {terminal_dest_dir}")
+                    organized_count += 1
+                except Exception as e:
+                    if is_print_message: print(f"  Error copying {cfg_file_name} to {terminal_dest_dir}: {e}")
+
+        if is_print_message: print(f"Finished organizing. Copied {organized_count} oscillogram pairs.")
+
 
     def generate_dat_hash_inventory(self, root_dir: str, output_csv_path: str) -> None:
         if not os.path.isdir(root_dir):
