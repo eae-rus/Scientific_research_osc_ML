@@ -3,17 +3,18 @@ import sys
 import pandas as pd
 import numpy as np
 from tqdm.auto import tqdm
-import comtrade
-from typing import Dict, Any, Tuple, List
+# import comtrade # Replaced by Oscillogram
+from typing import Dict, Any, Tuple, List, Union, Set # Added Set
 import re # Для регулярных выражений
-from typing import List, Set, Union
+# from typing import List, Set, Union # Duplicate typing import
 import json
-from tqdm import tqdm # Для визуализации прогресса
+# from tqdm import tqdm # Duplicate tqdm import, tqdm.auto is preferred generally
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
 
-from dataflow.comtrade_processing import ReadComtrade
+# from dataflow.comtrade_processing import ReadComtrade # Replaced by Oscillogram
+from core.oscillogram import Oscillogram
 
 VOLTAGE_T1_S = 20 * np.sqrt(2)
 VOLTAGE_T1_P = 500 * np.sqrt(2)
@@ -35,26 +36,29 @@ NOISE_FACTOR = 1.5 # Коэффициент для сравнения m1 и mx (
 # ?2 - A large proportion of higher harmonics, the signal is highly distorted and it is difficult to judge the nominal value.
 # ?3 - Probably there is no transformation coefficient (secondary values are too large)
 
-class CreateNormOsc:
+class NormalizationCoefficientGenerator: # Renamed from CreateNormOsc
     def __init__(self,
-                 osc_path,
-                 prev_norm_csv_path = "", # TODO: На будущее требуется убрать подобные переменные как обязательные, они мешают внутренним функциям
-                 step_size=1,
-                 bus = 6
+                 osc_path: str,
+                 prev_norm_csv_path: str = "",
+                 step_size: int = 1,
+                 bus: int = 6
                  ):
         self.osc_path = osc_path
-        self.readComtrade = ReadComtrade()
-        self.existing_norm_df = pd.DataFrame() # Инициализация пустым DataFrame
+        # self.readComtrade = ReadComtrade() # REMOVED
+        self.existing_norm_df = pd.DataFrame()
         if prev_norm_csv_path and os.path.exists(prev_norm_csv_path):
             try:
-                self.existing_norm_df = pd.read_csv(prev_norm_csv_path, dtype=str) # Читаем все как строки для начала
-                print(f"Загружены существующие коэффициенты из: {prev_norm_csv_path}")
+                self.existing_norm_df = pd.read_csv(prev_norm_csv_path, dtype=str)
+                if hasattr(self, 'is_print_message') and self.is_print_message: # Assuming is_print_message might be added
+                    print(f"Loaded existing normalization coefficients from: {prev_norm_csv_path}")
             except Exception as e:
-                print(f"Ошибка при загрузке существующих коэффициентов из '{prev_norm_csv_path}': {e}")
-                # existing_norm_df останется пустым, обработка пойдет как без старых данных
+                if hasattr(self, 'is_print_message') and self.is_print_message:
+                    print(f"Error loading existing normalization coefficients from '{prev_norm_csv_path}': {e}")
         elif prev_norm_csv_path:
-            print(f"Предупреждение: Файл существующих коэффициентов '{prev_norm_csv_path}' не найден.")
-        self.window_size = 32
+            if hasattr(self, 'is_print_message') and self.is_print_message:
+                print(f"Warning: File of existing normalization coefficients '{prev_norm_csv_path}' not found.")
+
+        self.window_size = 32 # Default, will be updated per file in normalization()
         self.step_size = step_size
        
         self.ru_cols, self.u_cols = self.generate_VT_cols(bus=bus)
@@ -321,7 +325,7 @@ class CreateNormOsc:
         return True # Все значения на месте и не пусты, можно пропустить расчет
     
     def analyze(self,
-                file: str,
+                file_identifier: str, # Changed from file
                 h1_df: pd.DataFrame,
                 hx_df: pd.DataFrame,
                 coef_p_s: Dict[str, float],
@@ -332,23 +336,21 @@ class CreateNormOsc:
         и определяет базовые значения и тип подключения (первичка/вторичка).
 
         Args:
-            file: Имя файла осциллограммы (без расширения).
+            file_identifier: Identifier for the oscillogram (e.g., file hash).
             h1_df: DataFrame с амплитудами первой гармоники.
             hx_df: DataFrame с максимальными амплитудами высших гармоник (>=2).
             coef_p_s: Словарь с коэффициентами трансформации (первичка/вторичка).
+            existing_row: Existing normalization data for this oscillogram.
 
         Returns:
             Однострочный DataFrame с результатами анализа.
         """
-        features = set(h1_df.columns) # Используем set для быстрого пересечения
+        features = set(h1_df.columns)
         if not existing_row.empty:
-            # Преобразуем строку DataFrame в словарь, обрабатывая возможные NaN/None
-            # fillna('') - чтобы не было проблем с типами при последующем сравнении или записи
             results = existing_row.iloc[0].fillna('').to_dict()
-            results['name'] = file[:-4] # Убедимся, что имя файла корректное
-            # Статус 'norm' может быть переопределен позже, так что начальное значение из existing_row нормально
+            results['name'] = file_identifier
         else:
-            results: Dict[str, Any] = {'name': file[:-4], 'norm': 'YES'} # Собираем результаты в словарь
+            results: Dict[str, Any] = {'name': file_identifier, 'norm': 'YES'}
 
         suffixes = ['_PS', '_base']
         
@@ -467,107 +469,280 @@ class CreateNormOsc:
 
         return pd.DataFrame([results], columns=self.result_cols.keys())
 
-    def normalization(self, bus = 6):     
+    def normalization(self, bus = 6): # Parameter 'bus' seems unused here if generate_cols in __init__ uses instance's bus
         unread = []
-        result_df = pd.DataFrame(data=self.result_cols)
-        for file in tqdm(self.osc_files):
-            name_osc = file[:-4]
-            existing_row_for_osc = pd.DataFrame() # Пустой DataFrame по умолчанию
-            if not self.existing_norm_df.empty and 'name' in self.existing_norm_df.columns:
-                # Убедимся, что сравниваем строки, если name_osc - хеш, который может быть числом
-                match = self.existing_norm_df[self.existing_norm_df['name'].astype(str) == str(name_osc)]
-                if not match.empty:
-                    existing_row_for_osc = match.iloc[[0]] # Берем первую строку, если вдруг дубликаты имен
+        # Ensure result_cols is a dictionary as expected by pd.DataFrame(data=...)
+        # Or, if it's for columns, pd.DataFrame(columns=list(self.result_cols.keys()))
+        if not hasattr(self, 'result_cols') or not isinstance(self.result_cols, dict):
+             # This should ideally be an error or handled more gracefully
+             print("Error: self.result_cols is not initialized correctly for DataFrame creation.")
+             return
+        result_df = pd.DataFrame(columns=list(self.result_cols.keys()))
+
+        for file_name_with_ext in tqdm(self.osc_files):
+            current_file_identifier = "" # Will be set by osc_obj.file_hash
+            existing_row_for_osc = pd.DataFrame()
             
             try:
-                raw_date, osc_df = self.readComtrade.read_comtrade(self.osc_path + file)
-                if raw_date == None or raw_date == None:
-                    unread.append(file)
+                cfg_file_full_path = os.path.join(self.osc_path, file_name_with_ext)
+                osc_obj = Oscillogram(cfg_file_full_path)
+                current_file_identifier = osc_obj.file_hash
+
+                if not self.existing_norm_df.empty and 'name' in self.existing_norm_df.columns:
+                    match = self.existing_norm_df[self.existing_norm_df['name'].astype(str) == str(current_file_identifier)]
+                    if not match.empty:
+                        existing_row_for_osc = match.iloc[[0]]
+
+                if osc_obj.data_frame is None or osc_obj.data_frame.empty:
+                    if hasattr(self, 'is_print_message') and self.is_print_message:
+                        print(f"Warning: No data in {file_name_with_ext}. Skipping.")
+                    unread.append(file_name_with_ext)
                     continue
-                frequency = raw_date.cfg.frequency
-                samples_rate = raw_date.cfg.sample_rates[0][0]
-                self.window_size = int(samples_rate / frequency)
+
+                osc_df = osc_obj.data_frame # This is already a DataFrame
+                frequency = osc_obj.frequency
+
+                if not osc_obj.cfg.sample_rates or len(osc_obj.cfg.sample_rates[0]) < 1 or frequency is None or frequency == 0:
+                    if hasattr(self, 'is_print_message') and self.is_print_message:
+                        print(f"Warning: Invalid frequency ({frequency}) or sample_rates for {file_name_with_ext}. Skipping.")
+                    unread.append(file_name_with_ext)
+                    continue
+                samples_rate = osc_obj.cfg.sample_rates[0][0]
+
+                if samples_rate == 0:
+                    self.window_size = 32 # Default or handle error
+                else:
+                    self.window_size = int(samples_rate / frequency)
+
+                if self.window_size <= 0:
+                    if hasattr(self, 'is_print_message') and self.is_print_message:
+                        print(f"Warning: window_size is {self.window_size} for {file_name_with_ext} (sample_rate: {samples_rate}, frequency: {frequency}). Skipping.")
+                    unread.append(file_name_with_ext)
+                    continue
 
                 coef_p_s = {}
-                for analog_channel in raw_date.cfg.analog_channels:
-                    coef = analog_channel.primary / analog_channel.secondary
+                for analog_channel in osc_obj.raw_comtrade_obj.cfg.analog_channels:
+                    if analog_channel.secondary != 0:
+                        coef = analog_channel.primary / analog_channel.secondary
+                    else:
+                        coef = float('inf')
                     coef_p_s[analog_channel.name] = coef
                 
-                osc_columns = osc_df.columns
-                osc_features = []
-                to_drop = []
-                for column in osc_columns:
-                    if column in self.all_features:
-                        osc_features.append(column)
-                    else:
-                        to_drop.append(column)
-                osc_df.drop(columns=to_drop, inplace=True)
-                osc_fft = np.abs(np.fft.fft(osc_df.iloc[:self.window_size],axis=0))
-                for i in range(self.window_size, osc_df.shape[0], self.step_size):
-                    window_fft = np.abs(np.fft.fft(osc_df.iloc[i - self.window_size: i],axis=0))
-                    osc_fft = np.maximum(osc_fft, window_fft)
-                h1 = 2 * osc_fft[1] / self.window_size
+                # Filter osc_df columns to only include those in self.all_features
+                # This ensures FFT is done only on relevant signals if all_features is correctly defined
+                # to match what analyze expects.
+                relevant_df_columns = [col for col in osc_df.columns if col in self.all_features]
+                filtered_osc_df = osc_df[relevant_df_columns]
+
+                if filtered_osc_df.empty or filtered_osc_df.shape[0] < self.window_size:
+                    if hasattr(self, 'is_print_message') and self.is_print_message:
+                        print(f"Warning: Not enough data points or relevant columns after filtering for {file_name_with_ext}. Skipping FFT.")
+                    unread.append(file_name_with_ext)
+                    continue
+
+                # FFT calculation logic based on original code
+                osc_fft = np.abs(np.fft.fft(filtered_osc_df.iloc[:self.window_size], axis=0))
+                for i_fft in range(self.window_size, filtered_osc_df.shape[0], self.step_size):
+                    if i_fft - self.window_size < 0 or i_fft > filtered_osc_df.shape[0]:
+                        break
+                    window_data = filtered_osc_df.iloc[i_fft - self.window_size: i_fft]
+                    if window_data.shape[0] == self.window_size:
+                        window_fft = np.abs(np.fft.fft(window_data, axis=0))
+                        osc_fft = np.maximum(osc_fft, window_fft)
+
+                h1 = np.zeros(filtered_osc_df.shape[1]) # Default to zeros
+                hx = np.zeros(filtered_osc_df.shape[1]) # Default to zeros
+
+                if self.window_size > 0 and osc_fft.shape[0] > 1: # Need at least DC and 1st harmonic
+                    h1 = 2 * osc_fft[1] / self.window_size
+
                 harmonic_count = self.window_size // 2
-                if harmonic_count >= 2:
+                if harmonic_count >= 2 and self.window_size > 0 and osc_fft.shape[0] > harmonic_count :
                     hx = 2 * np.max(osc_fft[2:harmonic_count+1], axis=0) / self.window_size
-                else:
-                    hx = 0
+
+                osc_features = filtered_osc_df.columns.tolist()
                 h1_df = pd.DataFrame([dict(zip(osc_features, h1))])
                 hx_df = pd.DataFrame([dict(zip(osc_features, hx))])
-                result = self.analyze(file, h1_df, hx_df, coef_p_s, existing_row=existing_row_for_osc)
-                result_df = pd.concat([result_df, result])
-            except:
-                # TODO: написать разбор более обширный, ибо ошибки могут быть разные.
-                unread.append(file)
+
+                result = self.analyze(current_file_identifier, h1_df, hx_df, coef_p_s, existing_row=existing_row_for_osc)
+                result_df = pd.concat([result_df, result], ignore_index=True)
+
+            except FileNotFoundError: # Should be caught by Oscillogram, but good to have a catch here
+                if hasattr(self, 'is_print_message') and self.is_print_message:
+                     print(f"Warning: File not found for {file_name_with_ext} by NormalizationCoefficientGenerator. Skipping.")
+                unread.append(file_name_with_ext)
+                continue
+            except RuntimeError as e:
+                if hasattr(self, 'is_print_message') and self.is_print_message:
+                     print(f"Warning: Runtime error loading/processing {file_name_with_ext} via Oscillogram: {e}. Skipping.")
+                unread.append(file_name_with_ext)
+                continue
+            except Exception as e:
+                if hasattr(self, 'is_print_message') and self.is_print_message: # Generic catch for safety
+                    print(f"Warning: Unexpected error processing {file_name_with_ext} in NormalizationCoefficientGenerator: {e}")
+                unread.append(file_name_with_ext)
                 continue
 
+        output_file_path = os.path.join(self.osc_path, 'norm.csv') # Save in the input osc_path, or make configurable
+        try:
+            result_df.to_csv(output_file_path, index=False)
+            if hasattr(self, 'is_print_message') and self.is_print_message:
+                print(f"Normalization coefficients saved to {output_file_path}")
+        except Exception as e:
+             if hasattr(self, 'is_print_message') and self.is_print_message:
+                print(f"Error saving normalization results to {output_file_path}: {e}")
 
-        result_df.to_csv('normalization/norm.csv', index=False)
-    
-    def merge_normalization_files(
-        input_paths_or_folder: Union[str, List[str]],
-        output_csv_path: str,
-        file_pattern: str = r'^norm_.*\.csv$',
-        combine_duplicates_by_name: bool = False # Новый параметр
-    ) -> None:
-        """
-        Объединяет несколько CSV-файлов нормализации в один.
-        Может принимать как список путей, так и путь к папке, где файлы ищутся по шаблону.
+        if unread and hasattr(self, 'is_print_message') and self.is_print_message:
+            print(f"Files not read or skipped during normalization: {unread}")
 
-        Порядок столбцов:
-        1. "name", "norm"
-        2. Группы для каждой секции (1..N): {i}Ub_*, {i}Uc_*, {i}Ip_*, {i}Iz_* 
-        (суффиксы в порядке: _PS, _base, _h1, _hx)
-        3. Дифференциальные токи: dId_PS, dId_base, dId_h1
-        4. Остальные столбцы в алфавитном порядке.
+    @staticmethod
+    def update_dataframe_static(df_path: str, processed_files_path: str, output_df_path: str, is_print_message: bool = False) -> None:
+        try:
+            df = pd.read_csv(df_path)
+        except FileNotFoundError:
+            if is_print_message: print(f"Error: DataFrame file not found at {df_path}")
+            return
+        except Exception as e:
+            if is_print_message: print(f"Error reading DataFrame from {df_path}: {e}")
+            return
 
-        Args:
-            input_paths_or_folder (Union[str, List[str]]): Путь к папке или список путей к файлам.
-            output_csv_path (str): Путь для сохранения объединенного CSV.
-            file_pattern (str): Регулярное выражение для поиска файлов в папке.
-            combine_duplicates_by_name (bool): Если True, строки с одинаковым значением
-                                               в столбце 'name' будут объединены,
-                                               при этом для остальных столбцов будет взято
-                                               первое непустое значение из группы.
-                                               По умолчанию False (простое добавление всех строк).
-        """
+        try:
+            with open(processed_files_path, 'r', encoding='utf-8') as f:
+                processed_files = [line.strip() for line in f if line.strip()]
+        except FileNotFoundError:
+            if is_print_message: print(f"Error: Processed files list not found at {processed_files_path}")
+            return
+        except Exception as e:
+            if is_print_message: print(f"Error reading processed files list from {processed_files_path}: {e}")
+            return
+
+        if not processed_files:
+            if is_print_message: print("No processed files listed. DataFrame not updated.")
+            # Optionally save the original df to the output path if no changes are to be made
+            # Or simply return if the convention is to only write if there are changes.
+            # For consistency with original logic, let's assume it might have been intended to save.
+            # However, if no processed_files, no mask is true, so df is unchanged.
+            # To avoid writing an identical file, we can just return.
+            return
+
+        # Ensure 'name' column exists in DataFrame
+        if 'name' not in df.columns:
+            if is_print_message: print(f"Error: 'name' column not found in DataFrame from {df_path}.")
+            return
+
+        mask = df['name'].astype(str).isin(processed_files)
+
+        # Columns to update
+        columns_to_update = {
+            '2Ip_PS': "s",
+            '2Ip_base': "5", # Original used string "5"
+            '2Ip_h1': "5",   # Original used string "5"
+            '2Ip_hx': "1"    # Original used string "1"
+        }
+
+        for col, value in columns_to_update.items():
+            if col in df.columns:
+                df.loc[mask, col] = value
+            elif is_print_message:
+                print(f"Warning: Column '{col}' not found in DataFrame. Cannot update.")
+
+        try:
+            output_dir = os.path.dirname(output_df_path)
+            if output_dir and not os.path.exists(output_dir): # Ensure output directory exists
+                os.makedirs(output_dir, exist_ok=True)
+            df.to_csv(output_df_path, index=False, encoding='utf-8')
+            if is_print_message: print(f"Updated DataFrame saved to {output_df_path}")
+        except Exception as e:
+            if is_print_message: print(f"Error saving updated DataFrame to {output_df_path}: {e}")
+
+    @staticmethod
+    def correct_df_static(input_path: str, output_path: str, is_print_message: bool = False) -> None:
+        try:
+            df = pd.read_csv(input_path)
+        except FileNotFoundError:
+            if is_print_message: print(f"Error: Input CSV file not found at {input_path}")
+            return
+        except Exception as e:
+            if is_print_message: print(f"Error reading CSV from {input_path}: {e}")
+            return
+
+        if 'norm' not in df.columns:
+            if is_print_message: print(f"Error: 'norm' column not found in {input_path}. Cannot perform corrections.")
+            # Optionally save the original df or return
+            # df.to_csv(output_path, index=False, encoding='utf-8')
+            return
+
+        mask = df['norm'].astype(str).isin(['NO', 'hz']) # astype(str) for safety
+
+        def correct_values_helper(row, prefix, target_values_set, default_ps, default_base):
+            # target_values_set should contain strings
+            candidates = [f"{i}{prefix}_base" for i in range(1, 7)] # Max 6 sections hardcoded in original
+            current_row_base_values = []
+            for col_candidate in candidates:
+                if col_candidate in row and str(row[col_candidate]) in target_values_set:
+                    current_row_base_values.append(str(row[col_candidate]))
+
+            replacement_base = default_base # Default if no specific condition met
+            if '100' in current_row_base_values: replacement_base = '100'
+            elif '400' in current_row_base_values: replacement_base = '400'
+
+            for i in range(1, 7):
+                base_col = f"{i}{prefix}_base"
+                ps_col = f"{i}{prefix}_PS"
+                if base_col in row and str(row[base_col]) in target_values_set:
+                    if base_col in df.columns: row[base_col] = replacement_base
+                    if ps_col in df.columns: row[ps_col] = default_ps
+            return row
+
+        # Ensure target_values are strings for comparison
+        target_vals_for_u = {'?1', '?2', 'Noise'}
+        target_vals_for_i = {'?1', '?2', 'Noise'} # Assuming same for Ip based on original
+
+        # Apply corrections row by row where mask is True
+        # Create a copy of the slice to avoid SettingWithCopyWarning
+        df_to_update = df[mask].copy()
+
+        df_to_update = df_to_update.apply(lambda row: correct_values_helper(row, 'Ub', target_vals_for_u, 's', '100'), axis=1)
+        df_to_update = df_to_update.apply(lambda row: correct_values_helper(row, 'Uc', target_vals_for_u, 's', '100'), axis=1)
+        df_to_update = df_to_update.apply(lambda row: correct_values_helper(row, 'Ip', target_vals_for_i, 's', '5'), axis=1)
+
+        df_to_update['norm'] = 'YES'
+
+        # Update original DataFrame
+        df.loc[mask] = df_to_update
+
+        try:
+            output_dir = os.path.dirname(output_path)
+            if output_dir and not os.path.exists(output_dir):
+                os.makedirs(output_dir, exist_ok=True)
+            df.to_csv(output_path, index=False, encoding='utf-8')
+            if is_print_message: print(f"Corrected DataFrame saved to {output_path}")
+        except Exception as e:
+            if is_print_message: print(f"Error saving corrected DataFrame to {output_path}: {e}")
+
+    @staticmethod
+    def merge_normalization_files_static(input_paths_or_folder: Union[str, List[str]],
+                                         output_csv_path: str,
+                                         file_pattern: str = r'^norm_.*\.csv$',
+                                         combine_duplicates_by_name: bool = False,
+                                         is_print_message: bool = False) -> None:
         
         input_csv_paths = []
         if isinstance(input_paths_or_folder, str) and os.path.isdir(input_paths_or_folder):
-            print(f"Поиск файлов в папке: '{input_paths_or_folder}' по шаблону '{file_pattern}'")
+            if is_print_message: print(f"Searching for files in folder: '{input_paths_or_folder}' with pattern '{file_pattern}'")
             for root, _, files in os.walk(input_paths_or_folder):
-                for filename in sorted(files):
+                for filename in sorted(files): # Sort for consistent processing order
                     if re.match(file_pattern, filename, re.IGNORECASE):
                         input_csv_paths.append(os.path.join(root, filename))
-            print(f"Найдено файлов для объединения: {len(input_csv_paths)}")
-        elif isinstance(input_paths_or_folder, (list, tuple, set, np.ndarray)):
+            if is_print_message: print(f"Found {len(input_csv_paths)} files to merge.")
+        elif isinstance(input_paths_or_folder, list):
             input_csv_paths = input_paths_or_folder
         else:
-            print(f"Ошибка: 'input_paths_or_folder' должен быть путём к папке или списком строк.")
+            if is_print_message: print(f"Error: 'input_paths_or_folder' must be a path to a folder or a list of file paths.")
             return
 
         if not input_csv_paths:
-            print("Не найдено файлов для объединения.")
+            if is_print_message: print("No files found to merge.")
             return
         
         dataframes_list = []
@@ -575,128 +750,94 @@ class CreateNormOsc:
 
         for file_path in input_csv_paths:
             try:
-                if os.path.getsize(file_path) > 0:
-                    df = pd.read_csv(file_path, dtype=str)
+                if os.path.getsize(file_path) > 0: # Check if file is not empty
+                    df = pd.read_csv(file_path, dtype=str) # Read all as string to avoid type issues
                     dataframes_list.append(df)
                     all_columns_ever_seen.update(df.columns)
+                elif is_print_message:
+                    print(f"  Skipping empty file: {file_path}")
+            except FileNotFoundError:
+                if is_print_message: print(f"  Warning: File not found {file_path}. Skipping.")
             except Exception as e:
-                print(f"Ошибка при чтении файла '{file_path}': {e}. Файл пропускается.")
+                if is_print_message: print(f"  Error reading file '{file_path}': {e}. Skipping.")
 
         if not dataframes_list:
-            print("Не найдено DataFrame'ов для объединения (после фильтрации пустых/ошибочных файлов).")
-            merged_df = pd.DataFrame(columns=list(all_columns_ever_seen))
-        else:
-            # Сначала объединяем все DataFrame'ы в один DataFrame.
-            # ignore_index=True важен для корректной обработки индексов.
-            # sort=False сохраняет порядок файлов, что важно для правила "берется из первого" при combine_duplicates_by_name=True.
-            merged_df = pd.concat(dataframes_list, ignore_index=True, sort=False)
-            print(f"\nПредварительно объединены {len(dataframes_list)} DataFrame'ов в "
-                f"{merged_df.shape[0]} строк и {merged_df.shape[1]} столбцов.")
-
-            if combine_duplicates_by_name:
-                print("Активирован режим объединения дубликатов по столбцу 'name'.")
-                if 'name' in merged_df.columns and not merged_df.empty:
-                    # Убедимся, что столбец 'name' имеет строковый тип для надежной группировки.
-                    merged_df['name'] = merged_df['name'].astype(str)
-
-                    # Вспомогательная функция для агрегации:
-                    def first_valid_value_in_group(series):
-                        for value in series:
-                            if value is not None and pd.notna(value) and str(value).strip() != '':
-                                return value
-                        return pd.NA 
-
-                    print("Группировка по столбцу 'name' и агрегация значений...")
-                    # Группируем по 'name'. Для всех остальных столбцов применяем 'first_valid_value_in_group'.
-                    merged_df = merged_df.groupby('name', as_index=False).agg(first_valid_value_in_group)
-                    
-                    print(f"DataFrame после группировки и слияния дубликатов: {merged_df.shape[0]} строк (уникальные 'name') "
-                        f"и {merged_df.shape[1]} столбцов.")
-                
-                elif not merged_df.empty:
-                    print("Предупреждение: Столбец 'name' не найден в объединенных данных или DataFrame пуст. "
-                        "Объединение дубликатов по 'name' не выполнено. Данные остаются просто объединенными.")
-                # Если merged_df пуст, ничего дополнительно делать не нужно.
+            if is_print_message: print("No DataFrames to merge (all files were empty, unreadable, or not found).")
+            # Create empty CSV with max possible columns if desired, or just return
+            # pd.DataFrame(columns=list(all_columns_ever_seen)).to_csv(output_csv_path, index=False, encoding='utf-8')
+            return
             
-            else: # combine_duplicates_by_name is False (стандартное поведение)
-                print("Стандартный режим объединения DataFrame'ов (без слияния дубликатов по 'name').")
-                # merged_df уже содержит результат простого объединения.
+        merged_df = pd.concat(dataframes_list, ignore_index=True, sort=False)
+        if is_print_message:
+            print(f"Initially merged {len(dataframes_list)} DataFrames into {merged_df.shape[0]} rows and {merged_df.shape[1]} columns.")
 
-        print(f"Всего уникальных столбцов, обнаруженных во всех файлах: {len(all_columns_ever_seen)}")
+        if combine_duplicates_by_name:
+            if is_print_message: print("Combining duplicates by 'name' column...")
+            if 'name' in merged_df.columns and not merged_df.empty:
+                merged_df['name'] = merged_df['name'].astype(str)
+                def first_valid_value_in_group(series):
+                    for value in series:
+                        if pd.notna(value) and str(value).strip() != '':
+                            return value
+                    return pd.NA
 
-        # Формирование кастомного порядка столбцов
+                # Ensure all columns that are not 'name' are passed to agg
+                agg_funcs = {col: first_valid_value_in_group for col in merged_df.columns if col != 'name'}
+                merged_df = merged_df.groupby('name', as_index=False).agg(agg_funcs)
+                if is_print_message:
+                    print(f"DataFrame after grouping by 'name': {merged_df.shape[0]} rows, {merged_df.shape[1]} columns.")
+            elif is_print_message:
+                print("Warning: 'name' column not found or DataFrame empty. Cannot combine duplicates by 'name'.")
+        
+        # Custom column ordering
         final_ordered_columns = []
-        
-        # 1. Обязательные первые столбцы
-        if "name" in all_columns_ever_seen:
-            final_ordered_columns.append("name")
-        if "norm" in all_columns_ever_seen and "norm" not in final_ordered_columns:
-            # Проверка "not in" на случай, если 'norm' как-то совпадет с 'name' (маловероятно)
-            final_ordered_columns.append("norm")
+        if "name" in all_columns_ever_seen: final_ordered_columns.append("name")
+        if "norm" in all_columns_ever_seen and "norm" not in final_ordered_columns: final_ordered_columns.append("norm")
 
-        # 2. Группы по секциям
-        max_bus = CreateNormOsc._get_max_bus_number_from_columns(all_columns_ever_seen)
-        if max_bus > 0:
-            print(f"Определен максимальный номер секции: {max_bus}")
+        max_bus = NormalizationCoefficientGenerator._get_max_bus_number_from_columns(all_columns_ever_seen)
+        if is_print_message and max_bus > 0: print(f"Max bus number determined from columns: {max_bus}")
         
-        # Порядок типов и суффиксов соответствует CreateNormOsc.generate_result_cols
         bus_types = ["Ub", "Uc", "Ip", "Iz"]
         bus_suffixes = ["_PS", "_base", "_h1", "_hx"]
-        
-        for i in range(1, max_bus + 1): # Итерация по номерам секций
-            for b_type in bus_types: # Для каждого типа измерений (U шин, U кабеля, Ток, Ток НП)
-                for suffix in bus_suffixes: # Для каждого типа данных (_PS, _base, _h1, _hx)
+        for i in range(1, max_bus + 1):
+            for b_type in bus_types:
+                for suffix in bus_suffixes:
                     col_name = f"{i}{b_type}{suffix}"
                     if col_name in all_columns_ever_seen and col_name not in final_ordered_columns:
                         final_ordered_columns.append(col_name)
         
-        # 3. Дифференциальные токи
-        # Порядок и набор соответствуют CreateNormOsc.generate_result_cols
         diff_current_cols = ["dId_PS", "dId_base", "dId_h1"] 
         for col_name in diff_current_cols:
             if col_name in all_columns_ever_seen and col_name not in final_ordered_columns:
                 final_ordered_columns.append(col_name)
                 
-        # 4. Остальные столбцы (не попавшие в шаблон), отсортированные по алфавиту
         processed_cols_set = set(final_ordered_columns)
         remaining_cols = sorted([col for col in all_columns_ever_seen if col not in processed_cols_set])
         final_ordered_columns.extend(remaining_cols)
         
-        # Применяем новый порядок столбцов.
-        # reindex гарантирует, что все столбцы из final_ordered_columns будут присутствовать.
-        # Если какой-то столбец был в all_columns_ever_seen, но не попал в merged_df из-за пустых файлов,
-        # он будет добавлен с NaN, обеспечивая "максимальный набор столбцов".
         merged_df = merged_df.reindex(columns=final_ordered_columns)
+        if is_print_message: print(f"Final column order set. Total columns: {len(final_ordered_columns)}.")
 
-        print(f"Порядок столбцов определен. Итоговое количество столбцов: {len(final_ordered_columns)}.")
-
-        # Сортировка данных по столбцу 'name'
         if 'name' in merged_df.columns:
-            print("Сортировка данных по столбцу 'name'...")
-            # Перед сортировкой убедимся, что 'name' имеет строковый тип для консистентности
-            merged_df['name'] = merged_df['name'].astype(str)
+            if is_print_message: print("Sorting DataFrame by 'name' column...")
+            merged_df['name'] = merged_df['name'].astype(str) # Ensure string type before sort
             merged_df.sort_values(by='name', ascending=True, inplace=True)
-        else:
-            # Эта ситуация маловероятна, если файлы создаются CreateNormOsc, но для полноты
-            print("Предупреждение: Столбец 'name' отсутствует в объединенных данных. Сортировка данных не выполнена.")
             
-        # Создание директории для выходного файла, если она не существует
-        output_dir = os.path.dirname(output_csv_path)
-        if output_dir and not os.path.exists(output_dir): # output_dir может быть пустым, если путь - просто имя файла
+        output_dir_path = os.path.dirname(output_csv_path)
+        if output_dir_path and not os.path.exists(output_dir_path):
             try:
-                os.makedirs(output_dir)
-                print(f"Создана директория: {output_dir}")
+                os.makedirs(output_dir_path, exist_ok=True)
+                if is_print_message: print(f"Created output directory: {output_dir_path}")
             except OSError as e:
-                print(f"Ошибка при создании директории '{output_dir}': {e}. Файл может не сохраниться.")
-                return # Выходим, если не можем создать директорию
+                if is_print_message: print(f"Error creating output directory {output_dir_path}: {e}. Cannot save.")
+                return
 
-        # Сохранение результата
         try:
             merged_df.to_csv(output_csv_path, index=False, encoding='utf-8')
-            print(f"Объединенный файл успешно сохранен: '{output_csv_path}'")
+            if is_print_message: print(f"Merged normalization file saved to: '{output_csv_path}'")
         except Exception as e:
-            print(f"Ошибка при сохранении объединенного файла '{output_csv_path}': {e}")
-    
+            if is_print_message: print(f"Error saving merged file to '{output_csv_path}': {e}")
+
     def update_normalization_coefficients(
         self,
         norm_coef_path: str,
@@ -771,7 +912,7 @@ class CreateNormOsc:
         if max_bus_num_override is not None:
             max_bus = max_bus_num_override
         else:
-            max_bus = CreateNormOsc._get_max_bus_number_from_columns(set(norm_df.columns))
+            max_bus = NormalizationCoefficientGenerator._get_max_bus_number_from_columns(set(norm_df.columns))
         
         print(f"Определен максимальный номер секции для обработки: {max_bus}")
 
@@ -934,7 +1075,7 @@ class CreateNormOsc:
             max_bus = max_bus_num_override
         else:
             # Используем self._get_max_bus_number_from_columns, который уже есть в классе
-            max_bus = CreateNormOsc._get_max_bus_number_from_columns(set(df.columns))
+            max_bus = NormalizationCoefficientGenerator._get_max_bus_number_from_columns(set(df.columns))
         
         print(f"Анализ CSV. Максимальный номер секции для Iz: {max_bus}")
 
@@ -1087,63 +1228,110 @@ class CreateNormOsc:
 
 class NormOsc:
     # TODO: Подумать о том, что получается несколько "__init__"
-    def __init__(self, norm_coef_file_path='norm_coef.csv'):
+    def __init__(self, norm_coef_file_path: str = 'norm_coef.csv', is_print_message: bool = False): # Add type hint and is_print_message
+        self.norm_coef = pd.DataFrame() # Initialize as empty DataFrame
+        self.is_print_message = is_print_message # Store for use in other methods if needed
         if os.path.exists(norm_coef_file_path):
-            with open(norm_coef_file_path, "r") as file:
-                self.norm_coef = pd.read_csv(file, encoding='utf-8')
+            try:
+                self.norm_coef = pd.read_csv(norm_coef_file_path, encoding='utf-8')
+                if self.is_print_message:
+                    print(f"OscillogramNormalizer: Successfully loaded normalization coefficients from {norm_coef_file_path}")
+            except Exception as e:
+                if self.is_print_message:
+                    print(f"OscillogramNormalizer: Error loading normalization coefficients from {norm_coef_file_path}: {e}")
+                # self.norm_coef remains an empty DataFrame
+        elif self.is_print_message: # File does not exist
+            print(f"OscillogramNormalizer: Warning - Normalization coefficient file not found: {norm_coef_file_path}. Normalizer will not be effective.")
                 
-    # TODO: подумать об унификации данной вещи, пока это локальная реализация
-    # Пока прост скопировал из raw_to_csv
-    def normalize_bus_signals(self, raw_df, file_name, yes_prase = "YES", is_print_error = False):
-        """Нормализация аналоговых сигналов для каждой секции."""
-        norm_row = self.norm_coef[self.norm_coef["name"] == file_name] # Поиск строки нормализации по имени файла
-        if norm_row.empty or yes_prase not in str(norm_row["norm"].values[0]): # Проверка наличия строки и разрешения на нормализацию
+    def normalize_bus_signals(self, bus_df: pd.DataFrame, file_identifier: str,
+                              yes_prase: str = "YES", is_print_error: bool = False) -> pd.DataFrame | None:
+        if self.norm_coef.empty:
             if is_print_error:
-                print(f"Предупреждение: {file_name} не найден в файле norm.csv или нормализация не разрешена.")
+                print(f"OscillogramNormalizer: Normalization coefficients are not loaded. Cannot normalize {file_identifier}.")
+            return None
+
+        # Ensure 'name' column exists and then filter
+        if "name" not in self.norm_coef.columns:
+            if is_print_error:
+                print(f"OscillogramNormalizer: 'name' column not found in normalization coefficients. Cannot normalize {file_identifier}.")
+            return None
+
+        norm_row_matches = self.norm_coef[self.norm_coef["name"].astype(str) == str(file_identifier)]
+
+        if norm_row_matches.empty:
+            if is_print_error:
+                print(f"OscillogramNormalizer: No normalization coefficients found for {file_identifier}.")
+            return None
+
+        norm_row = norm_row_matches.iloc[0]
+
+        norm_column_value = str(norm_row.get("norm", "")) # Get 'norm' status, default to empty string
+        # Original logic: if "YES" (yes_prase) is not in "YES_MODIFIED_XYZ" (norm_column_value), then skip.
+        if yes_prase not in norm_column_value:
+            if is_print_error:
+                print(f"OscillogramNormalizer: Normalization not permitted for {file_identifier} based on 'norm' column value ('{norm_column_value}').")
             return None
 
         for bus in range(1, 9):
             nominal_current_series = norm_row.get(f"{bus}Ip_base")
-            if nominal_current_series is not None and not pd.isna(nominal_current_series.values[0]):
-                nominal_current = 20 * float(nominal_current_series.values[0])
-                for phase in ['A', 'B', 'C']: # Нормализация токов
-                    current_col_name = f'I | Bus-{bus} | phase: {phase}'
-                    if current_col_name in raw_df.columns:
-                        raw_df[current_col_name] = raw_df[current_col_name] / nominal_current
+            if nominal_current_val_str is not None and pd.notna(nominal_current_val_str):
+                try:
+                    nominal_current = 20.0 * float(nominal_current_val_str)
+                    if nominal_current == 0:
+                        if is_print_error: print(f"OscillogramNormalizer: Zero nominal current for Ip, Bus {bus_idx} for {file_identifier}. Skipping Ip norm.")
+                    else:
+                        for phase in ['A', 'B', 'C']:
+                            col_name = f'I | Bus-{bus_idx} | phase: {phase}' # Original column name format
+                            if col_name in normalized_df.columns:
+                                normalized_df[col_name] = normalized_df[col_name] / nominal_current
+                except (ValueError, TypeError) as e:
+                    if is_print_error: print(f"OscillogramNormalizer: Invalid base current for {file_identifier}, Bus {bus_idx} (Ip): '{nominal_current_val_str}' ({e})")
 
-            nominal_current_I0_series = norm_row.get(f"{bus}Iz_base")
-            if nominal_current_I0_series is not None and not pd.isna(nominal_current_I0_series.values[0]):
-                nominal_current_I0 = 5 * float(nominal_current_I0_series.values[0])
-                for phase in ['N']: # Нормализация тока нулевой последовательности
-                    current_I0_col_name = f'I | Bus-{bus} | phase: {phase}'
-                    if current_I0_col_name in raw_df.columns:
-                        raw_df[current_I0_col_name] = raw_df[current_I0_col_name] / nominal_current_I0
+            # Residual current normalization (Iz)
+            nominal_current_I0_val_str = norm_row.get(f"{bus_idx}Iz_base")
+            if nominal_current_I0_val_str is not None and pd.notna(nominal_current_I0_val_str):
+                try:
+                    nominal_current_I0 = 5.0 * float(nominal_current_I0_val_str)
+                    if nominal_current_I0 == 0:
+                         if is_print_error: print(f"OscillogramNormalizer: Zero nominal current for Iz, Bus {bus_idx} for {file_identifier}. Skipping Iz norm.")
+                    else:
+                        col_name_N = f'I | Bus-{bus_idx} | phase: N'
+                        if col_name_N in normalized_df.columns:
+                            normalized_df[col_name_N] = normalized_df[col_name_N] / nominal_current_I0
+                except (ValueError, TypeError) as e:
+                    if is_print_error: print(f"OscillogramNormalizer: Invalid base I0 current for {file_identifier}, Bus {bus_idx} (Iz): '{nominal_current_I0_val_str}' ({e})")
 
-            nominal_voltage_bb_series = norm_row.get(f"{bus}Ub_base")
-            if nominal_voltage_bb_series is not None and not pd.isna(nominal_voltage_bb_series.values[0]):
-                nominal_voltage_bb = 3 * float(nominal_voltage_bb_series.values[0])
-                for phase in ['A', 'B', 'C', 'AB', 'BC', 'CA', 'N']: # Нормализация напряжений BusBar
-                    voltage_bb_col_name = f'U | BusBar-{bus} | phase: {phase}'
-                    if voltage_bb_col_name in raw_df.columns:
-                        raw_df[voltage_bb_col_name] = raw_df[voltage_bb_col_name] / nominal_voltage_bb
-                    voltage_cl_col_name = f'U{phase} BB'
-                    if voltage_cl_col_name in raw_df.columns:
-                        raw_df[voltage_cl_col_name] = raw_df[voltage_cl_col_name] / nominal_voltage_bb
+            # Voltage BusBar normalization (Ub)
+            nominal_voltage_bb_val_str = norm_row.get(f"{bus_idx}Ub_base")
+            if nominal_voltage_bb_val_str is not None and pd.notna(nominal_voltage_bb_val_str):
+                try:
+                    nominal_voltage_bb = 3.0 * float(nominal_voltage_bb_val_str)
+                    if nominal_voltage_bb == 0:
+                        if is_print_error: print(f"OscillogramNormalizer: Zero nominal voltage for Ub, Bus {bus_idx} for {file_identifier}. Skipping Ub norm.")
+                    else:
+                        for phase in ['A', 'B', 'C', 'AB', 'BC', 'CA', 'N']:
+                            col_name = f'U | BusBar-{bus_idx} | phase: {phase}'
+                            if col_name in normalized_df.columns:
+                                normalized_df[col_name] = normalized_df[col_name] / nominal_voltage_bb
+                except (ValueError, TypeError) as e:
+                     if is_print_error: print(f"OscillogramNormalizer: Invalid base BusBar voltage for {file_identifier}, Bus {bus_idx} (Ub): '{nominal_voltage_bb_val_str}' ({e})")
 
-            nominal_voltage_cl_series = norm_row.get(f"{bus}Uc_base")
-            if nominal_voltage_cl_series is not None and not pd.isna(nominal_voltage_cl_series.values[0]):
-                nominal_voltage_cl = 3 * float(nominal_voltage_cl_series.values[0])
-                for phase in ['A', 'B', 'C', 'AB', 'BC', 'CA', 'N']: # Нормализация напряжений CableLine
-                    voltage_cl_col_name = f'U | CableLine-{bus} | phase: {phase}'
-                    if voltage_cl_col_name in raw_df.columns:
-                        raw_df[voltage_cl_col_name] = raw_df[voltage_cl_col_name] / nominal_voltage_cl
-                    voltage_cl_col_name = f'U{phase} CL'
-                    if voltage_cl_col_name in raw_df.columns:
-                        raw_df[voltage_cl_col_name] = raw_df[voltage_cl_col_name] / nominal_voltage_cl
-
-            # TODO: Добавить дифференциальный ток
+            # Voltage CableLine normalization (Uc)
+            nominal_voltage_cl_val_str = norm_row.get(f"{bus_idx}Uc_base")
+            if nominal_voltage_cl_val_str is not None and pd.notna(nominal_voltage_cl_val_str):
+                try:
+                    nominal_voltage_cl = 3.0 * float(nominal_voltage_cl_val_str)
+                    if nominal_voltage_cl == 0:
+                        if is_print_error: print(f"OscillogramNormalizer: Zero nominal voltage for Uc, Bus {bus_idx} for {file_identifier}. Skipping Uc norm.")
+                    else:
+                        for phase in ['A', 'B', 'C', 'AB', 'BC', 'CA', 'N']:
+                            col_name = f'U | CableLine-{bus_idx} | phase: {phase}'
+                            if col_name in normalized_df.columns:
+                                normalized_df[col_name] = normalized_df[col_name] / nominal_voltage_cl
+                except (ValueError, TypeError) as e:
+                    if is_print_error: print(f"OscillogramNormalizer: Invalid base CableLine voltage for {file_identifier}, Bus {bus_idx} (Uc): '{nominal_voltage_cl_val_str}' ({e})")
             
-        return raw_df
+        return normalized_df
 
 if __name__ == '__main__':
     # --- Вызов класса ---

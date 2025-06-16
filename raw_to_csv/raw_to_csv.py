@@ -3,953 +3,790 @@ import numpy as np
 import os
 import sys
 import json
-import comtrade # comtrade 0.1.2
+# import comtrade # REMOVE
 from tqdm import tqdm
+import pandas as pd
+import numpy as np
+import re # Already imported in original, ensure it's kept if used by helpers
 
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-sys.path.append(ROOT_DIR)
+# Add ROOT_DIR and sys.path.append if they are specific to this file's execution context
+# For the subtask, assume imports will resolve if ROOT_DIR setup is handled project-wide.
 
-from normalization.normalization import NormOsc
-from dataflow.comtrade_processing import ReadComtrade
+# MODIFIED IMPORTS
+from core.oscillogram import Oscillogram
+from normalization.normalization import OscillogramNormalizer # RENAMED
+# from dataflow.comtrade_processing import ReadComtrade # REMOVE
 
+class OscillogramToCsvConverter(): # RENAMED from RawToCSV
+    def __init__(self, normalizer: OscillogramNormalizer,
+                 raw_path: str = 'raw_data/', csv_path: str = '',
+                 uses_buses: list = None,
+                 dict_analog_names_path="dict_analog_names.json",
+                 dict_discrete_names_path="dict_discrete_names.json",
+                 is_print_message: bool = False
+                ):
 
-class RawToCSV():
-    """
-    This class implemented to convert raw comtrade files to csv file.
-    """
-    def __init__(self, raw_path='raw_data/', csv_path='', uses_buses = ['1', '2', '12']):
-        if not os.path.exists(raw_path):
-            raise FileNotFoundError("Path for raw files does not exist")
-         
-        # FIXME: You need to add a workaround to the problem when these files are missing. Because they have to be taken from somewhere.
-        with open("dict_analog_names.json", "r") as file:
-            analog_names = json.load(file)
-        with open("dict_discrete_names.json", "r") as file:
-            discrete_names = json.load(file)
-        self.analog_names = analog_names
-        self.discrete_names = discrete_names
+        self.normalizer = normalizer
+        self.raw_path = raw_path
+        self.csv_path = csv_path
+        self.uses_buses = uses_buses if uses_buses is not None else ['1', '2', '12']
+        self.is_print_message = is_print_message
+
+        self.analog_names = {}
+        self.discrete_names = {}
+        try:
+            # Ensure paths are absolute or correctly relative if needed
+            # For now, assume dict_analog_names_path and dict_discrete_names_path are accessible
+            with open(dict_analog_names_path, "r", encoding='utf-8') as file: # Specify encoding
+                self.analog_names = json.load(file)
+        except FileNotFoundError:
+            if self.is_print_message: print(f"Warning: Analog names JSON not found at {dict_analog_names_path}. Initializing to empty.")
+        except json.JSONDecodeError:
+            if self.is_print_message: print(f"Warning: Could not decode JSON from {dict_analog_names_path}. Initializing to empty.")
+
+        try:
+            with open(dict_discrete_names_path, "r", encoding='utf-8') as file: # Specify encoding
+                self.discrete_names = json.load(file)
+        except FileNotFoundError:
+            if self.is_print_message: print(f"Warning: Discrete names JSON not found at {dict_discrete_names_path}. Initializing to empty.")
+        except json.JSONDecodeError:
+            if self.is_print_message: print(f"Warning: Could not decode JSON from {dict_discrete_names_path}. Initializing to empty.")
+
+        self.unread_files = set()
 
         self.analog_names_dict = self.get_bus_names(analog=True, discrete=False)
         self.discrete_names_dict = self.get_bus_names(analog=False, discrete=True)
-        self.all_names = self.get_all_names()
-        self.raw_path = raw_path
-        self.csv_path = csv_path
-        self.readComtrade = ReadComtrade()
-        self.unread_files = set()
-        self.uses_buses = uses_buses # 12 - intersectional, is not taken into account in any way, when adding it, it is necessary to correct the discretionary check
-        # while everything is saved, think about how to set them more conveniently
-        # TODO: by uses variables - add truncation of signals from arrays.
-        self.uses_CT_B, self.uses_CT_zero = True, True
+        self.all_names = self.get_all_names() # Based on loaded JSONs
+
+        self.uses_CT_B, self.uses_CT_zero = True, True # Defaults from original
         self.uses_VT_ph, self.uses_VT_iph, self.uses_VT_zero  = True, True, True
         self.use_VT_CL, self.use_VT_BB = True, True
-        # TODO: подумать о большей понятности и оптимальности, так как use_PDR нужна только сейчас, а требует проверки всех дискрет
         self.use_PDR = True
-        # TODO: Add variables for combining accident levels (ML signals)
-        self.number_periods = 10 # TODO: The number of samples is being set now. Think about a time-to-date task, or something similar.
+        self.number_periods = 10
         self.ml_all, self.ml_opr_swch, self.ml_abnorm_evnt, self.ml_emerg_evnt  = self.get_short_names_ml_signals()
 
     def create_csv(self, csv_name='dataset.csv', is_cut_out_area = False, is_simple_csv = False):
-        """
-        This function DataFrame and save csv file from raw comtrade data.
-
-        Args:
-            csv_name (str): The name of csv file.
-        """
         dataset_df = pd.DataFrame()
-        raw_files = sorted([file for file in os.listdir(self.raw_path)
-                            if 'cfg' in file])
-        with tqdm(total=len(raw_files), desc="Convert Comtrade to CSV") as pbar:
-            for file in raw_files:
-                # TODO: it is not rational to use two variables, but the necessary global data.
-                # it will be necessary to think about optimizing this issue.
-                raw_date, raw_df = self.readComtrade.read_comtrade(self.raw_path + file)
-                
-                # TODO: Добавить нормировку значений по аналогии с PDR и SPEF
-                # Но с параметром выбора (чтобы можно было её и не осуществлять)
-                
-                # TODO: Add secondary/primary checks to the dataset reading and processing.
-                self.check_columns(raw_df)
-                if not raw_df.empty:
-                    raw_df = raw_df.reset_index()
-                    buses_df = self.split_buses(raw_df, file)
+        if not os.path.isdir(self.raw_path):
+            if self.is_print_message: print(f"Error: Raw path '{self.raw_path}' does not exist.")
+            return dataset_df
 
-                    frequency = raw_date.cfg.frequency
-                    samples_rate = raw_date.cfg.sample_rates[0][0]
-                    number_samples = int(samples_rate / frequency) # TODO: It won't always be whole, but it's rare.
-                    samples_before, samples_after = number_samples * self.number_periods, number_samples * self.number_periods
-                    if is_cut_out_area:
-                        buses_df = self.cut_out_area(buses_df, samples_before, samples_after)
-                        dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
-                    else:
-                        dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
+        raw_files = sorted([f for f in os.listdir(self.raw_path) if f.lower().endswith('.cfg')])
+
+        with tqdm(total=len(raw_files), desc="Convert Comtrade to CSV") as pbar:
+            for file_cfg_name in raw_files:
+                osc = None # Define osc here for broader scope if needed after try-except
+                try:
+                    cfg_full_path = os.path.join(self.raw_path, file_cfg_name)
+                    osc = Oscillogram(cfg_full_path)
+                    if osc.data_frame is None or osc.data_frame.empty:
+                        self.unread_files.add(file_cfg_name)
+                        pbar.update(1)
+                        continue
+                    raw_df = osc.data_frame
+                except FileNotFoundError:
+                    self.unread_files.add(file_cfg_name)
+                    if self.is_print_message: print(f"File not found: {cfg_full_path}")
                     pbar.update(1)
-        
-        # TODO: Think about organizing the processing itself differently and not adding a function.
-        dataset_df = self.structure_columns(dataset_df)
-        if is_simple_csv:
-            # We do not overwrite the original data, but only create another csv file
-            self.get_simple_dataset(dataset_df.copy())
-        
-        dataset_df.to_csv(self.csv_path + csv_name, index=False)
-        return dataset_df
-    
-    # TODO: подумать об универсанолизации данной функции с create_csv (основные замечания указаны там)
-    def create_csv_for_PDR(self, csv_name='dataset.csv', signal_check_results_path='signal_check_results.csv', norm_coef_file_path='norm_coef.csv',
-                           is_check_PDR = True, is_cut_out_area = False, yes_prase = "YES", is_print_error = False):
-        """
-        This function DataFrame and save csv file from raw comtrade data.
+                    continue
+                except RuntimeError as e:
+                    self.unread_files.add(file_cfg_name)
+                    if self.is_print_message: print(f"Runtime error loading {cfg_full_path}: {e}")
+                    pbar.update(1)
+                    continue
+                except Exception as e:
+                    self.unread_files.add(file_cfg_name)
+                    if self.is_print_message: print(f"Unexpected error loading {cfg_full_path}: {e}")
+                    pbar.update(1)
+                    continue
+                
+                # raw_df doesn't need reset_index if osc.data_frame 'time' isn't index.
+                # Oscillogram.to_dataframe() currently makes 'time' a column.
+                buses_df = self.split_buses(raw_df, file_cfg_name)
 
-        Args:
-            csv_name (str): The name of csv file.
-        """
-        signal_check_df = pd.DataFrame()
-        if (is_check_PDR and (not os.path.exists(signal_check_results_path))):
-            raise FileNotFoundError("Path for signal check results does not exist")
-            # TODO: Пока что это локальный файл, но надо подумать о том, чтобы он был глобальный, но пока может мешать.
-        if is_check_PDR:
-            signal_check_df = pd.read_csv(signal_check_results_path) # Загрузка файла проверки сигналов
+                if osc.frequency is None or osc.frequency == 0 or \
+                   not osc.cfg.sample_rates or len(osc.cfg.sample_rates[0]) < 1 or osc.cfg.sample_rates[0][0] == 0:
+                    if self.is_print_message: print(f"Warning: Invalid frequency ({osc.frequency}) or sample_rates for {file_cfg_name}. Skipping area cut/further processing dependent on it.")
+                    dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=True)
+                    pbar.update(1)
+                    continue
+
+                samples_per_period = int(osc.cfg.sample_rates[0][0] / osc.frequency)
+                if samples_per_period <= 0:
+                    if self.is_print_message: print(f"Warning: Invalid samples_per_period ({samples_per_period}) for {file_cfg_name}. Skipping area cut.")
+                    dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=True)
+                    pbar.update(1)
+                    continue
+
+                samples_before = samples_per_period * self.number_periods
+                samples_after = samples_per_period * self.number_periods
+
+                if is_cut_out_area and not buses_df.empty: # Ensure buses_df is not empty
+                    buses_df = self.cut_out_area(buses_df, samples_before, samples_after)
+
+                if not buses_df.empty: # Concat only if buses_df has data
+                    dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=True)
+                pbar.update(1)
         
+        if not dataset_df.empty:
+            dataset_df = self.structure_columns(dataset_df)
+            if is_simple_csv:
+                self.get_simple_dataset(dataset_df.copy(), csv_name=os.path.splitext(csv_name)[0] + "_simple.csv")
+
+            output_path = os.path.join(self.csv_path, csv_name)
+            # Ensure self.csv_path directory exists
+            if self.csv_path and not os.path.exists(self.csv_path):
+                os.makedirs(self.csv_path, exist_ok=True)
+            dataset_df.to_csv(output_path, index=False)
+            if self.is_print_message: print(f"CSV created at {output_path}")
+        elif self.is_print_message:
+            print("No data processed, CSV not created.")
+
+        if self.unread_files and self.is_print_message:
+            print(f"Files that could not be read or were skipped: {self.unread_files}")
+        return dataset_df
+
+    def create_csv_for_PDR(self, csv_name='dataset_pdr.csv',
+                           signal_check_results_path='signal_check_results.csv',
+                           is_check_PDR = True, is_cut_out_area = False,
+                           yes_prase_norm = "YES",
+                           yes_prase_sigcheck = "YES"): # Removed is_print_error, use self.is_print_message
+
+        signal_check_df = pd.DataFrame()
+        if is_check_PDR:
+            if not os.path.exists(signal_check_results_path):
+                if self.is_print_message: print(f"Error: Path for signal check results does not exist: {signal_check_results_path}")
+                return pd.DataFrame() # Return empty if critical file missing
+            try:
+                signal_check_df = pd.read_csv(signal_check_results_path)
+            except Exception as e:
+                if self.is_print_message: print(f"Error reading signal check results {signal_check_results_path}: {e}")
+                return pd.DataFrame()
+
         dataset_df = pd.DataFrame()
-        raw_files = sorted([file for file in os.listdir(self.raw_path)
-                            if 'cfg' in file])
+        if not os.path.isdir(self.raw_path):
+            if self.is_print_message: print(f"Error: Raw path '{self.raw_path}' does not exist.")
+            return dataset_df
+
+        raw_files = sorted([f for f in os.listdir(self.raw_path) if f.lower().endswith('.cfg')])
         number_ocs_found = 0
-        normOsc = NormOsc(norm_coef_file_path = norm_coef_file_path)
-        with tqdm(total=len(raw_files), desc="Convert Comtrade to CSV") as pbar:
-            for file in raw_files:
-                filename_without_ext = file[:-4] # Имя файла без расширения
-                # FIXME: На будущее - возможно этот файл и лишний, ибо проверки заложил в "_process_signals_for_PDR"
+
+        with tqdm(total=len(raw_files), desc="Convert Comtrade to CSV for PDR") as pbar:
+            for file_cfg_name in raw_files:
+                filename_without_ext = file_cfg_name[:-4]
+                osc = None
+
                 if is_check_PDR:
                     check_result_row = signal_check_df[signal_check_df['filename'] == filename_without_ext]
-                    if check_result_row.empty or not (str(check_result_row['contains_required_signals'].iloc[0]).upper()  == yes_prase):
-                        pbar.update(1) # Пропускаем файл, если его нет в signal_check_results_csv или contains_required_signals False
-                        continue
-                
-                raw_date, raw_df = self.readComtrade.read_comtrade(self.raw_path + file)
-                raw_df = normOsc.normalize_bus_signals(raw_df, filename_without_ext, yes_prase="YES", is_print_error=False)
-                if raw_df is None:
-                    pbar.update(1)
-                    if is_print_error:
-                        print(f"Предупреждение: В {filename_without_ext} нормализацию провести нельзя, значения не используем.")
-                    continue
-                    
-                if not raw_df.empty:
-                    buses_df = self.split_buses_for_PDR(raw_df, file)
-                    
-                    if buses_df is None:
-                        if is_print_error:
-                            print(f"Предупреждение: В {filename_without_ext} ошибка обработки осциллограммы.")
+                    if check_result_row.empty or not (str(check_result_row['contains_required_signals'].iloc[0]).upper()  == yes_prase_sigcheck.upper()):
                         pbar.update(1)
                         continue
+                
+                try:
+                    cfg_full_path = os.path.join(self.raw_path, file_cfg_name)
+                    osc = Oscillogram(cfg_full_path)
+                    if osc.data_frame is None or osc.data_frame.empty:
+                        self.unread_files.add(file_cfg_name)
+                        pbar.update(1)
+                        continue
+                    raw_df = osc.data_frame
+                except Exception as e: # Catch-all for Oscillogram loading
+                    self.unread_files.add(file_cfg_name)
+                    if self.is_print_message: print(f"Error loading {file_cfg_name} with Oscillogram: {e}")
+                    pbar.update(1)
+                    continue
+
+                # Normalization using self.normalizer
+                normalized_df = self.normalizer.normalize_bus_signals(raw_df.copy(), filename_without_ext,
+                                                                    yes_prase=yes_prase_norm,
+                                                                    is_print_error=self.is_print_message)
+                if normalized_df is None:
+                    if self.is_print_message: print(f"Warning: Normalization failed for {filename_without_ext}.")
+                    pbar.update(1)
+                    continue
                     
-                    frequency = raw_date.cfg.frequency
-                    samples_rate = raw_date.cfg.sample_rates[0][0]
-                    number_samples = int(samples_rate / frequency) # TODO: It won't always be whole, but it's rare.
-                    samples_before, samples_after = number_samples * self.number_periods, number_samples * self.number_periods
-                    if is_cut_out_area and is_check_PDR:
-                        buses_df = self.cut_out_area_for_PDR(buses_df, samples_before, samples_after)
-                        dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
-                    else:
-                        dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
-                    dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
+                # Use normalized_df for further processing
+                # Assuming osc.data_frame is not indexed by 'time' from Oscillogram
+                buses_df = self.split_buses_for_PDR(normalized_df, file_cfg_name)
+
+                if buses_df is None or buses_df.empty:
+                    if self.is_print_message: print(f"Warning: Bus splitting for PDR failed for {filename_without_ext}.")
+                    pbar.update(1)
+                    continue
+
+                if osc.frequency is None or osc.frequency == 0 or \
+                   not osc.cfg.sample_rates or len(osc.cfg.sample_rates[0]) < 1 or osc.cfg.sample_rates[0][0] == 0:
+                    if self.is_print_message: print(f"Warning: Invalid frequency/sample_rate for {file_cfg_name}. Skipping area cut.")
+                    dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=True)
                     number_ocs_found += 1
                     pbar.update(1)
-        
-        print(f"Number of samples found = {number_ocs_found}")
-        dataset_df.to_csv(self.csv_path + csv_name, index=False)
-        return dataset_df
-    
-    # TODO: подумать об универсанолизации данной функции с create_csv (основные замечания указаны там)
-    def create_csv_for_SPEF(self, csv_name='dataset_spef.csv', signal_check_results_path='find_oscillograms_with_spef.csv', norm_coef_file_path='norm_coef.csv', is_cut_out_area = False, is_print_error = False):
-        """
-        This function finds SPEF oscillograms, optionally cuts out the area, and saves data to CSV.
+                    continue
 
-        Args:
-            csv_name (str): The name of the CSV file to save data.
-            signal_check_results_path (str): Path to save the CSV file with SPEF filenames.
-            norm_coef_file_path (str): Path to normalization coefficients CSV.
-            is_cut_out_area (bool): Whether to cut out the area around SPEF event.
-        """
-        spef_files_df = pd.read_csv(signal_check_results_path)
+                samples_per_period = int(osc.cfg.sample_rates[0][0] / osc.frequency)
+                if samples_per_period <= 0 :
+                     if self.is_print_message: print(f"Warning: Invalid samples_per_period for {file_cfg_name}. Skipping area cut.")
+                     dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=True)
+                     number_ocs_found += 1
+                     pbar.update(1)
+                     continue
+
+                samples_before = samples_per_period * self.number_periods
+                samples_after = samples_per_period * self.number_periods
+
+                if is_cut_out_area: # is_check_PDR is implicitly true if we are here due to earlier check
+                    buses_df = self.cut_out_area_for_PDR(buses_df, samples_before, samples_after)
+
+                if not buses_df.empty:
+                    dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=True)
+                    number_ocs_found += 1
+                pbar.update(1)
+        
+        if self.is_print_message: print(f"Number of PDR-relevant oscillograms processed = {number_ocs_found}")
+        if not dataset_df.empty:
+            output_path = os.path.join(self.csv_path, csv_name)
+            if self.csv_path and not os.path.exists(self.csv_path): os.makedirs(self.csv_path, exist_ok=True)
+            dataset_df.to_csv(output_path, index=False)
+            if self.is_print_message: print(f"PDR dataset saved to {output_path}")
+        elif self.is_print_message:
+            print("No PDR data processed, CSV not created.")
+        return dataset_df
+
+    def create_csv_for_SPEF(self, csv_name='dataset_spef.csv',
+                            spef_results_path='find_oscillograms_with_spef.csv', # Changed name
+                            is_cut_out_area = False,
+                            yes_prase_norm = "YES"): # Removed is_print_error
+
+        if not os.path.exists(spef_results_path):
+            if self.is_print_message: print(f"Error: SPEF results file not found: {spef_results_path}")
+            return pd.DataFrame()
+
+        try:
+            spef_files_df = pd.read_csv(spef_results_path)
+        except Exception as e:
+            if self.is_print_message: print(f"Error reading SPEF results {spef_results_path}: {e}")
+            return pd.DataFrame()
+
         spef_filenames_dict = {}
-        for _, row in spef_files_df.iterrows():
-            filename = row['filename']
-            file_name_bus = row['file_name_bus']
-            if filename not in spef_filenames_dict:
-                spef_filenames_dict[filename] = set()
-            spef_filenames_dict[filename].add(file_name_bus)
+        if 'filename' in spef_files_df.columns and 'file_name_bus' in spef_files_df.columns:
+            for _, row in spef_files_df.iterrows():
+                filename = str(row['filename'])
+                file_name_bus = str(row['file_name_bus']) # This is like "bus1", "bus2"
+                if filename not in spef_filenames_dict:
+                    spef_filenames_dict[filename] = set()
+                # We need to match bus_name_part from split_buses which is "hash_busX"
+                # So, store "hash_busX" if file_name_bus is "busX"
+                spef_filenames_dict[filename].add(f"{filename}_{file_name_bus}")
+        else:
+            if self.is_print_message: print(f"Error: Required columns ('filename', 'file_name_bus') not in {spef_results_path}")
+            return pd.DataFrame()
 
         columns = ["file_name", "IA", "IB", "IC", "IN", "UA BB", "UB BB", "UC BB", "UN BB", "UA CL", "UB CL", "UC CL", "UN CL"]
-        dataset_df = pd.DataFrame(columns=columns)
-        raw_files = sorted([file for file in os.listdir(self.raw_path)
-                            if 'cfg' in file])
+        # Add ML columns as they are processed by _process_signals_for_SPEF
+        columns.extend(self.ml_all) # self.ml_all contains short names like 'ML_1'
+        dataset_df = pd.DataFrame(columns=columns) # Initialize with all potential columns
+
+        if not os.path.isdir(self.raw_path):
+            if self.is_print_message: print(f"Error: Raw path '{self.raw_path}' does not exist.")
+            return dataset_df
+
+        raw_files = sorted([f for f in os.listdir(self.raw_path) if f.lower().endswith('.cfg')])
         number_spef_found = 0
-        normOsc = NormOsc(norm_coef_file_path = norm_coef_file_path)
 
         with tqdm(total=len(raw_files), desc="Convert Comtrade to CSV for SPEF") as pbar:
-            for file in raw_files:
-                filename_without_ext = file[:-4]
-                if filename_without_ext not in spef_filenames_dict: # Optimization: Skip files not in SPEF list
+            for file_cfg_name in raw_files:
+                filename_without_ext = file_cfg_name[:-4]
+                osc = None
+
+                if filename_without_ext not in spef_filenames_dict:
                     pbar.update(1)
                     continue
 
-                raw_date, raw_df = self.readComtrade.read_comtrade(self.raw_path + file)
-                if not raw_df.empty:
-                    raw_df = normOsc.normalize_bus_signals(raw_df, filename_without_ext, yes_prase="YES", is_print_error=False)
-                    if raw_df is None:
-                        pbar.update(1)
-                        if is_print_error:
-                            print(f"Предупреждение: В {filename_without_ext} нормализацию провести нельзя, значения не используем.")
-                        continue
-                        
-                    buses_df = self.split_buses(raw_df.reset_index(), file) # Use general split_buses as per your comment
-                    processed_bus_dfs = []
-                    for file_name_bus, bus_df in buses_df.groupby('file_name'):
-                        if file_name_bus in spef_filenames_dict[filename_without_ext]: # Further filter by bus name
-                            bus_df = self._process_signals_for_SPEF(bus_df, is_print_error=False) # Keep processing as is, or replace if needed
-                            if bus_df is not None:
-                                processed_bus_dfs.append(bus_df)
-
-                    if not processed_bus_dfs: # No processed bus dataframes for this file
+                try:
+                    cfg_full_path = os.path.join(self.raw_path, file_cfg_name)
+                    osc = Oscillogram(cfg_full_path)
+                    if osc.data_frame is None or osc.data_frame.empty:
+                        self.unread_files.add(file_cfg_name)
                         pbar.update(1)
                         continue
-                    buses_df = pd.concat(processed_bus_dfs, ignore_index=True)
-
-                    # TODO: Написать cut_out_area_for_SPEF
-                    # В теории, можно по аналогии с поисковой функцией, но пока обойдусь без этого.
-                    # Либо можно по MLsignal_y_2_1 и всем наследникам - но пока что не много размечено осциллограмм.
-                    dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
-
-                    number_spef_found += 1
+                    raw_df = osc.data_frame
+                except Exception as e:
+                    self.unread_files.add(file_cfg_name)
+                    if self.is_print_message: print(f"Error loading {file_cfg_name} with Oscillogram: {e}")
                     pbar.update(1)
+                    continue
 
-        print(f"Number of SPEF samples found = {number_spef_found}")
-        dataset_df.to_csv(self.csv_path + csv_name, index=False)
-        return dataset_df
-    
-    # TODO: подумать об унификации данной вещи, пока это локальная реализация
-    def _process_signals_for_PDR(self, buses_df, is_print_error = False, is_check_PDR = True):
-        """Обработка аналоговых сигналов: выбор BusBar или CableLine, расчет Ib."""
-        
-        u_bb_names = {"UA BB", "UB BB", "UC BB"}
-        u_cl_names = {"UA CL", "UB CL", "UC CL"}
-        # i_names = {"IA", "IB", "IC"}
-        # pdr_PS_names = {"PDR PS"}
-        pdr_phase_names = {"PDR A", "PDR B", "PDR C"}
-        
-        # Список для аккумулирования обработанных групп
-        processed_groups = []
-        
-        # Группируем по file_name
-        for file_name, group_df in buses_df.groupby("file_name"):
-            # Работать будем с копией группы
-            group_df = group_df.copy()
-            
-            # 1. Определяем источник напряжения по первой строке группы
-            row0 = group_df.iloc[0]
-            if all(col in group_df.columns and pd.notna(row0[col]) for col in u_bb_names):
-                # Используем BusBar
-                group_df["UA"] = group_df["UA BB"]
-                group_df["UB"] = group_df["UB BB"]
-                group_df["UC"] = group_df["UC BB"]
-            elif all(col in group_df.columns and pd.notna(row0[col]) for col in u_cl_names):
-                # Используем CableLine
-                group_df["UA"] = group_df["UA CL"]
-                group_df["UB"] = group_df["UB CL"]
-                group_df["UC"] = group_df["UC CL"]
-            else:
-                if is_print_error:
-                    print(f"Предупреждение: В {file_name} не найдены фазые напряжения A/B/C.")
-                return None
+                normalized_df = self.normalizer.normalize_bus_signals(raw_df.copy(), filename_without_ext,
+                                                                    yes_prase=yes_prase_norm,
+                                                                    is_print_error=self.is_print_message)
+                if normalized_df is None:
+                    if self.is_print_message: print(f"Warning: Normalization failed for {filename_without_ext}.")
+                    pbar.update(1)
+                    continue
 
-            # 2. Токи фаз: IA и IC копируются напрямую, если столбцы присутствуют
-            if not ("IA" in group_df.columns) or not ("IC" in group_df.columns):
-                if is_print_error:
-                    print(f"Предупреждение: В {file_name} не найдены фазые токи A/C.")
-                return None
+                # split_buses now returns df with 'file_name' like 'hash_busX'
+                buses_df = self.split_buses(normalized_df, file_cfg_name)
 
-            # 3. Ток фазы B: если столбец "IB" есть и значение не NaN, используем его,
-            # иначе рассчитываем как -(IA + IC), если IA и IC заданы.
-            if "IB" in group_df.columns:
-                IB_series = group_df["IB"].copy()
-            else:
-                IB_series = pd.Series(np.nan, index=group_df.index)
-            # Находим строки, где IB отсутствует (NaN) и где IA и IC заданы
-            mask_replace = IB_series.isna() & group_df["IA"].notna() & group_df["IC"].notna()
-            IB_series.loc[mask_replace] = -(group_df.loc[mask_replace, "IA"] + group_df.loc[mask_replace, "IC"])
-            group_df["IB_proc"] = IB_series
+                processed_bus_dfs = []
+                if not buses_df.empty:
+                    for bus_specific_name_from_splitter, bus_group_df in buses_df.groupby('file_name'):
+                        # bus_specific_name_from_splitter is like "hash_bus1", "hash_bus2"
+                        if bus_specific_name_from_splitter in spef_filenames_dict[filename_without_ext]:
+                            # _process_signals_for_SPEF expects renamed columns
+                            # rename_bus_columns is called inside split_buses.
+                            # So bus_group_df here already has renamed columns.
+                            processed_group = self._process_signals_for_SPEF(bus_group_df, is_print_error=self.is_print_message)
+                            if processed_group is not None and not processed_group.empty:
+                                processed_bus_dfs.append(processed_group)
 
-            # 4. Сигнал PDR:
-            # Если столбец "PDR PS" есть и в первой строке не NaN, берем его для всей группы.
-            if is_check_PDR:
-                if "PDR PS" in group_df.columns and pd.notna(row0["PDR PS"]):
-                    group_df["PDR_proc"] = group_df["PDR PS"]
-                elif all(col in group_df.columns and pd.notna(row0[col]) for col in pdr_phase_names):
-                    # Векторно проверяем для каждой строки: если все столбцы pdr_phase_names есть и равны 1, то PDR = 1, иначе 0.
-                    cond = pd.Series(True, index=group_df.index)
-                    for col in pdr_phase_names:
-                        if col in group_df.columns:
-                            cond = cond & (group_df[col] == 1)
+                if not processed_bus_dfs:
+                    pbar.update(1)
+                    continue
+
+                final_buses_df = pd.concat(processed_bus_dfs, ignore_index=True)
+
+                # TODO: Implement cut_out_area_for_SPEF if needed, or adapt existing cut_out_area
+                if is_cut_out_area and not final_buses_df.empty:
+                    if osc.frequency is None or osc.frequency == 0 or \
+                       not osc.cfg.sample_rates or len(osc.cfg.sample_rates[0]) < 1 or osc.cfg.sample_rates[0][0] == 0:
+                        if self.is_print_message: print(f"Warning: Invalid frequency/sample_rate for {file_cfg_name}. Cannot cut area for SPEF.")
+                    else:
+                        samples_per_period = int(osc.cfg.sample_rates[0][0] / osc.frequency)
+                        if samples_per_period > 0:
+                            samples_before = samples_per_period * self.number_periods
+                            samples_after = samples_per_period * self.number_periods
+                            # cut_out_area expects ML columns which might not be relevant for SPEF specific cut
+                            # For now, let's assume SPEF events might not need ML-based cutting, or use a generic cut if any.
+                            # final_buses_df = self.cut_out_area(final_buses_df, samples_before, samples_after) # This might not be appropriate
+                            if self.is_print_message: print(f"Warning: is_cut_out_area=True for SPEF but no specific SPEF cut logic implemented. Data not cut.")
                         else:
-                            cond = cond & False
-                    group_df["PDR_proc"] = cond.astype(int)
-                else:
-                    if is_print_error:
-                        print(f"Предупреждение: В {file_name} не найдены фазые напряжения сигналы PDR.")
-                        # Но такое может случаться, это не ошибка системы.
-                    continue
-                
-                # Выбираем нужные столбцы и переименовываем временные колонки
-                processed_group = group_df[["file_name", "UA", "UB", "UC", "IA", "IB_proc", "IC", "PDR_proc"]].rename(
-                    columns={"IB_proc": "IB", "PDR_proc": "PDR"}
-                )
-            else: # Without PDR signals
-                processed_group = group_df[["file_name", "UA", "UB", "UC", "IA", "IB_proc", "IC"]].rename(
-                    columns={"IB_proc": "IB"}
-                )
-            processed_groups.append(processed_group)
-        
-        # Объединяем все группы в итоговый DataFrame
-        if len(processed_groups) > 0:
-            signal_for_PDR_df = pd.concat(processed_groups, ignore_index=True)
-            return signal_for_PDR_df
-        else:
-            return None
-        
-        # TODO: подумать об унификации данной вещи, пока это локальная реализация
-    def _process_signals_for_SPEF(self, buses_df, is_print_error = False):
-        file_name = {"file_name"}
-        u_bb_names = {"UA BB", "UB BB", "UC BB", "UN BB"}
-        u_cl_names = {"UA CL", "UB CL", "UC CL", "UN CL"}
-        i_names = {"IA", "IB", "IC", "IN"}
-        ml_names = set(self.get_short_names_ml_signals()[0])
-        
-        #ml_names = {col for col in self.get_short_names_ml_signals()[0]}
-        
-        # Объединяем имена столбцов в единое множество
-        all_signals = file_name | u_bb_names | u_cl_names | i_names | ml_names
+                            if self.is_print_message: print(f"Warning: Invalid samples_per_period for {file_cfg_name}. Cannot cut area for SPEF.")
 
-        # Фильтруем столбцы, которые реально присутствуют в DataFrame
-        available_signals = [col for col in all_signals if col in buses_df.columns]
 
-        # Возвращаем датасет, состоящий только из нужных столбцов
-        return buses_df[available_signals]
-        
-    def create_one_df(self, file_path, file_name) -> pd.DataFrame:
-        """
-        The function of converting a single Comtrade file to pd.DataFrame().
+                if not final_buses_df.empty:
+                    dataset_df = pd.concat([dataset_df, final_buses_df], ignore_index=True) # Use True for clean index
+                    number_spef_found += 1
+                pbar.update(1)
 
-        Args:
-            file_path (str): The path to comtrade file.
-            file_name (str): The name of comtrade file.
-            
-        Returns:
-            pd.DataFrame: The DataFrame of the comtrade file.
-        """
+        if self.is_print_message: print(f"Number of SPEF oscillograms processed = {number_spef_found}")
+        if not dataset_df.empty:
+            dataset_df = self.structure_columns(dataset_df) # Ensure consistent column order
+            output_path = os.path.join(self.csv_path, csv_name)
+            if self.csv_path and not os.path.exists(self.csv_path): os.makedirs(self.csv_path, exist_ok=True)
+            dataset_df.to_csv(output_path, index=False)
+            if self.is_print_message: print(f"SPEF dataset saved to {output_path}")
+        elif self.is_print_message:
+            print("No SPEF data processed, CSV not created.")
+        return dataset_df
+
+    def create_one_df(self, cfg_full_file_path: str, file_cfg_name: str) -> pd.DataFrame: # Changed first param name
         dataset_df = pd.DataFrame()
-        _, raw_df = self.readComtrade.read_comtrade(file_path)
-        self.check_columns(raw_df)
-        if not raw_df.empty:
-            raw_df = raw_df.reset_index()
-            dataset_df = self.split_buses(raw_df, file_name)
+        osc = None
+        try:
+            osc = Oscillogram(cfg_full_file_path)
+            if osc.data_frame is None or osc.data_frame.empty:
+                if self.is_print_message: print(f"Warning: No data in {file_cfg_name} for create_one_df.")
+                return dataset_df
 
+            # self.check_columns(osc.data_frame) # check_columns might be too strict or need update
+            # osc.data_frame is expected to have 'time' as a regular column
+            dataset_df = self.split_buses(osc.data_frame, file_cfg_name)
+        except FileNotFoundError:
+            if self.is_print_message: print(f"File not found for create_one_df: {cfg_full_file_path}")
+        except RuntimeError as e:
+            if self.is_print_message: print(f"Runtime error for create_one_df {cfg_full_file_path}: {e}")
+        except Exception as e:
+            if self.is_print_message: print(f"Unexpected error for create_one_df {cfg_full_file_path}: {e}")
         return dataset_df
     
-    def split_buses(self, raw_df, file_name):
-        """Implemented for bus 1 and bus 2 only"""
-        # TODO: Подумать / учесть обработку случаев, когда имена сигналов одинаковы. Это недоработки стандартизации имён
-        # Такого может попадаться часто. Для случаев "U | BusBar-1 | phase: A" и похожих, это часто раделение на
-        # BusBar / CableLine.
-        # Для токов - порой является разделением по секциям
-        # English:
-        # Think about/consider handling cases where the names of the signals are the same. These are flaws in the standardization of names
-        # This can happen often. For cases of "U|BusBar-1 | phase: A" and similar, this is often a division into
-        # BusBar / CableLine.
-        # For currents - sometimes it is divided into sections
-        
+    # --- Helper Methods (Ensure these are consistent with the Python block from the prompt) ---
+
+    def split_buses(self, raw_df: pd.DataFrame, file_cfg_name: str) -> pd.DataFrame:
+        # This is the refined version from the prompt
         buses_df = pd.DataFrame()
         buses_cols = dict()
-        raw_cols = set(raw_df.columns)
-        for bus, cols in self.analog_names_dict.items():
-            cols = raw_cols.intersection(cols)
-            for i_bus in self.uses_buses:
-                if bus[-1] == i_bus or bus[-2] == i_bus:
-                    ml_all = self.get_ml_signals(i_bus)
-                    raw_ml = raw_cols.intersection(ml_all)
-                    cols = cols.union(raw_ml)
-            if cols:
-                buses_cols[bus] = cols
-        for bus, columns in buses_cols.items():
-            bus_df = raw_df.loc[:, list(columns)]
-            bus_df.insert(0, 'file_name',  [file_name[:-4] + "_" + bus] * bus_df.shape[0])
-            bus_df = self.rename_bus_columns(bus_df)
-            buses_df = pd.concat([buses_df, bus_df], axis=0,
-                                 ignore_index=False)    
+        raw_cols_set = set(raw_df.columns) # More efficient for intersection
+
+        # Iterate through bus definitions (e.g., 'bus1', 'bus1_cl', 'bus2_bb') from self.analog_names_dict
+        for bus_key, defined_signal_name_set in self.analog_names_dict.items():
+            current_bus_cols = raw_cols_set.intersection(defined_signal_name_set)
+
+            bus_num_match = re.search(r'(\d+)', bus_key) # Extracts first number found in bus_key like 'bus1', 'bus12'
+            if bus_num_match:
+                bus_num_str = bus_num_match.group(1)
+                if bus_num_str in self.uses_buses:
+                    ml_signals_for_this_bus_type = self.get_ml_signals(bus_num_str)
+                    raw_ml_cols = raw_cols_set.intersection(ml_signals_for_this_bus_type)
+                    current_bus_cols.update(raw_ml_cols)
+
+            if current_bus_cols:
+                buses_cols[bus_key] = current_bus_cols
+
+        for bus_identifier_key, columns_to_select in buses_cols.items():
+            bus_specific_df = raw_df.loc[:, list(columns_to_select)].copy()
+
+            # Create a unique file_name for this bus segment: "original_cfg_name_without_ext_bus_key"
+            output_file_name_col_val = os.path.splitext(file_cfg_name)[0] + "_" + bus_identifier_key
+            bus_specific_df.insert(0, 'file_name', [output_file_name_col_val] * bus_specific_df.shape[0])
+
+            bus_specific_df = self.rename_bus_columns(bus_specific_df)
+            buses_df = pd.concat([buses_df, bus_specific_df], axis=0, ignore_index=True)
         return buses_df
-    
-    def split_buses_for_PDR(self, raw_df, file_name):
-        """Implemented for bus 1 and bus 2 only"""
+
+    def split_buses_for_PDR(self, raw_df: pd.DataFrame, file_cfg_name: str) -> pd.DataFrame:
+        # This is the refined version from the prompt
         buses_df = pd.DataFrame()
         buses_cols = dict()
-        raw_cols = set(raw_df.columns)
-        for bus, cols in self.analog_names_dict.items():
-            cols = raw_cols.intersection(cols)
-            for i_bus in self.uses_buses:
-                if bus[-1] == i_bus or bus[-2] == i_bus:
-                    # TODO: подумать о том, что может и любой другой дискретный сигнал использоваться, а не только PDR
-                    # и такой генератор (get_PDR_signals) - это временное решение в переборе аналоговых сигналов
-                    ml_all = self.get_PDR_signals(i_bus)
-                    raw_ml = raw_cols.intersection(ml_all)
-                    cols = cols.union(raw_ml)
-            if cols:
-                buses_cols[bus] = cols    
+        raw_cols_set = set(raw_df.columns)
+        # analog_names_dict should contain all analog signals per bus definition
+        for bus_key, analog_signal_set in self.analog_names_dict.items():
+            current_bus_analog_cols = raw_cols_set.intersection(analog_signal_set)
+
+            bus_num_match = re.search(r'(\d+)', bus_key)
+            if bus_num_match:
+                bus_num_str = bus_num_match.group(1)
+                if bus_num_str in self.uses_buses:
+                    pdr_signals_for_this_bus = self.get_PDR_signals(bus_num_str) # Assumes get_PDR_signals is defined
+                    raw_pdr_cols = raw_cols_set.intersection(pdr_signals_for_this_bus)
+                    current_bus_analog_cols.update(raw_pdr_cols)
+
+            if current_bus_analog_cols:
+                buses_cols[bus_key] = current_bus_analog_cols
         
-        for bus, columns in buses_cols.items():
-            bus_df = raw_df.loc[:, list(columns)]
-            bus_df.insert(0, 'file_name',  [file_name[:-4] + "_" + bus] * bus_df.shape[0])
-            bus_df = self.rename_bus_columns(bus_df, is_use_ML=False, is_use_discrete=True)
-            buses_df = pd.concat([buses_df, bus_df], axis=0,
-                                 ignore_index=False)    
+        for bus_identifier_key, columns_to_select in buses_cols.items():
+            bus_specific_df = raw_df.loc[:, list(columns_to_select)].copy()
+            output_file_name_col_val = os.path.splitext(file_cfg_name)[0] + "_" + bus_identifier_key
+            bus_specific_df.insert(0, 'file_name',  [output_file_name_col_val] * bus_specific_df.shape[0])
+            bus_specific_df = self.rename_bus_columns(bus_specific_df, is_use_ML=False, is_use_discrete=True)
+            buses_df = pd.concat([buses_df, bus_specific_df], axis=0, ignore_index=True)
         return buses_df
 
     def get_bus_names(self, analog=True, discrete=False):
-        """
-        This function makes a dict of analog and discrete names
-        for each bus.
-
-        Args:
-            discrete (bool): False - only analog names.
-
-        Returns:
-            dict: dict of analog and discrete names for each bus.
-        """
+        # Refined version from prompt
         bus_names = dict()
-        if analog:
-            for bus in self.analog_names.keys():
-                bus_names[bus] = set()
-                for v in self.analog_names[bus].values():
-                    bus_names[bus] = bus_names[bus].union(v)
-        if discrete:
-            for bus in self.discrete_names.keys():
-                if bus not in bus_names:
-                    bus_names[bus] = set()
-                for v in self.discrete_names[bus].values():
-                    bus_names[bus] = bus_names[bus].union(v)
+        if analog and self.analog_names: # self.analog_names is loaded from JSON
+            for bus_key, names_config_or_list in self.analog_names.items():
+                current_bus_set = bus_names.get(bus_key, set())
+                if isinstance(names_config_or_list, dict):
+                    for signal_group_names_set in names_config_or_list.values():
+                        current_bus_set.update(signal_group_names_set)
+                elif isinstance(names_config_or_list, list):
+                     current_bus_set.update(names_config_or_list)
+                if current_bus_set: bus_names[bus_key] = current_bus_set
+
+        if discrete and self.discrete_names: # self.discrete_names is loaded from JSON
+            for bus_key, names_config_or_list in self.discrete_names.items():
+                current_bus_set = bus_names.get(bus_key, set())
+                if isinstance(names_config_or_list, dict):
+                    for signal_group_names_set in names_config_or_list.values():
+                        current_bus_set.update(signal_group_names_set)
+                elif isinstance(names_config_or_list, list):
+                     current_bus_set.update(names_config_or_list)
+                if current_bus_set: bus_names[bus_key] = current_bus_set
         return bus_names
 
     def get_all_names(self,):
-        """
-        This function makes a set of all analog and discrete names.
-
-        Returns:
-            set: set of all analog and discrete names.
-        """
         all_names = set()
-        buses_names = self.get_bus_names(discrete=True)
-        for bus, names in buses_names.items():
-            all_names = all_names.union(names)
+        buses_names_map = self.get_bus_names(analog=True, discrete=True)
+        for bus_key, names_set in buses_names_map.items():
+            all_names.update(names_set)
         return all_names
 
-    def rename_raw_columns(self, raw_df):
-        # TODO: probably outdated in the current implementation. Check if it will be called at least once.
-        """
-        This function renames columns in raw DataFrame.
-
-        Args:
-            raw_df (pandas.DataFrame): DataFrame of raw comtrade file.
-
-        Returns:
-            pandas.DataFrame: Dataframe with renamed columns.
-        """
-        raw_columns_to_rename = {'Mlsignal_2_2_1_1': 'MLsignal_2_2_1_1',
-                                 'Mlsignal_12_2_1_1': 'MLsignal_12_2_1_1',
-                                 'Mlsignal_2_3': 'MLsignal_2_3'}
-        raw_df.rename(columns=raw_columns_to_rename, inplace=True)
-        return raw_df
-
-    def rename_bus_columns(self, bus_df, is_use_ML = True, is_use_discrete = False):
-        """
-        This function renames columns in bus DataFrame.
-
-        Args:
-            buses_df (pandas.DataFrame): DataFrame with one bus.
-
-        Returns:
-            pandas.DataFrame: Dataframe with renamed columns.
-        """
+    def rename_bus_columns(self, bus_df: pd.DataFrame, is_use_ML = True, is_use_discrete = False):
+        # Refined version from prompt
         bus_columns_to_rename = {}
+        # Ensure self.uses_buses contains strings for matching with i_bus_str
+        # self.uses_buses should be like ['1', '2', '12']
 
-        # Generate renaming for ML signals
+        # ML Signals Renaming
         if is_use_ML:
-            for i_bus in self.uses_buses:
-                ml_signals = self.get_ml_signals(i_bus)
-                for signal in ml_signals:
-                    new_name = signal.replace(f'MLsignal_{i_bus}_', 'ML_')
-                    bus_columns_to_rename[signal] = new_name
+            for i_bus_str in self.uses_buses:
+                # get_ml_signals should return original long names like 'MLsignal_1_xyz'
+                ml_signals_original_names = self.get_ml_signals(i_bus_str)
+                for original_ml_name in ml_signals_original_names:
+                    if original_ml_name in bus_df.columns:
+                        # New short name will be like 'ML_xyz'
+                        new_ml_name = original_ml_name.replace(f'MLsignal_{i_bus_str}_', 'ML_')
+                        bus_columns_to_rename[original_ml_name] = new_ml_name
         
-        # Generate renaming for analog signals
-        for bus, names in self.analog_names_dict.items():
-            for name in names:
-                if 'I | Bus' in name:
-                    phase = name.split(': ')[-1]
-                    if (phase == 'B' and not self.uses_CT_B) or (phase == 'N' and not self.uses_CT_zero):
-                        continue
-                    bus_columns_to_rename[name] = f'I{phase}'
-                    
-                elif self.use_VT_BB and 'U | BusBar' in name:
-                    phase = name.split(': ')[-1]
-                    if (((phase == 'A' or phase == 'B' or phase == 'C') and not self.uses_VT_ph) or 
-                        ((phase == 'AB' or phase == 'BC' or phase == 'CA') and not self.uses_VT_iph) or
-                         (phase == 'N' and not self.uses_VT_zero)):
-                        continue
-                    bus_columns_to_rename[name] = f'U{phase} BB'
-                    
-                elif self.use_VT_CL and 'U | CableLine' in name:
-                    phase = name.split(': ')[-1]
-                    if (((phase == 'A' or phase == 'B' or phase == 'C') and not self.uses_VT_ph) or 
-                        ((phase == 'AB' or phase == 'BC' or phase == 'CA') and not self.uses_VT_iph) or
-                         (phase == 'N' and not self.uses_VT_zero)):
-                        continue 
-                    bus_columns_to_rename[name] = f'U{phase} CL'
-        
-        # Generate renaming for discret signals
-        if is_use_discrete:
-            for bus, names in self.discrete_names_dict.items():
-                for name in names:
-                    if self.use_PDR and 'PDR | Bus' in name:
-                        phase = name.split(': ')[-1]
-                        bus_columns_to_rename[name] = f'rPDR {phase}'
-                    elif self.use_PDR and 'PDR_ideal | Bus' in name:
-                        phase = name.split(': ')[-1]
-                        bus_columns_to_rename[name] = f'iPDR {phase}' 
-                   
-        # TODO: signals I_raw, U_raw, I|dif-1, I | braking-1 are not taken into account
+        # Analog and Discrete Signals Renaming (based on patterns)
+        for existing_col_name in bus_df.columns:
+            if existing_col_name in bus_columns_to_rename: continue # Already handled by ML rename
 
+            if 'I | Bus' in existing_col_name:
+                phase = existing_col_name.split(': ')[-1]
+                if not ((phase == 'B' and not self.uses_CT_B) or (phase == 'N' and not self.uses_CT_zero)):
+                    bus_columns_to_rename[existing_col_name] = f'I{phase}'
+            elif self.use_VT_BB and 'U | BusBar' in existing_col_name:
+                phase = existing_col_name.split(': ')[-1]
+                if not (((phase in ['A', 'B', 'C']) and not self.uses_VT_ph) or \
+                        ((phase in ['AB', 'BC', 'CA']) and not self.uses_VT_iph) or \
+                        (phase == 'N' and not self.uses_VT_zero)):
+                    bus_columns_to_rename[existing_col_name] = f'U{phase} BB'
+            elif self.use_VT_CL and 'U | CableLine' in existing_col_name:
+                phase = existing_col_name.split(': ')[-1]
+                if not (((phase in ['A', 'B', 'C']) and not self.uses_VT_ph) or \
+                        ((phase in ['AB', 'BC', 'CA']) and not self.uses_VT_iph) or \
+                        (phase == 'N' and not self.uses_VT_zero)):
+                    bus_columns_to_rename[existing_col_name] = f'U{phase} CL'
+
+            if is_use_discrete: # This flag controls if PDR signals are renamed
+                if self.use_PDR and 'PDR | Bus' in existing_col_name:
+                    phase = existing_col_name.split(': ')[-1]
+                    bus_columns_to_rename[existing_col_name] = f'rPDR {phase}'
+                elif self.use_PDR and 'PDR_ideal | Bus' in existing_col_name:
+                    phase = existing_col_name.split(': ')[-1]
+                    bus_columns_to_rename[existing_col_name] = f'iPDR {phase}'
+        
         bus_df.rename(columns=bus_columns_to_rename, inplace=True)
         return bus_df
-    
-    def check_columns(self, raw_df):
-        """check for unknown columns"""
+
+    def check_columns(self, raw_df: pd.DataFrame):
+        # Refined version from prompt
+        ml_signals_to_check = set()
+        for i_bus_str in self.uses_buses: # Ensure uses_buses are strings
+            ml_signals_to_check.update(self.get_ml_signals(i_bus_str))
+
+        expected_names = self.all_names.union(ml_signals_to_check)
+        # self.all_names is built from JSONs. Oscillogram.data_frame columns are the source of truth from CFG.
+        # This check is more about validating if JSON definitions cover all seen signals.
+
+        unknown_columns_found = []
+        for c in raw_df.columns:
+            if c not in expected_names and c != 'time': # 'time' might be index or column
+                 unknown_columns_found.append(c)
+
+        if unknown_columns_found and self.is_print_message:
+            print(f"Warning (check_columns): Unknown columns found: {unknown_columns_found}. These might be missing from JSON definitions or are unexpected.")
+
+
+    def get_ml_signals(self, i_bus_str: str, use_operational_switching=True, use_abnormal_event=True, use_emergency_event=True):
+        # Version from prompt (ensure i_bus_str is used in f-strings)
         ml_signals = set()
-        for i_bus in self.uses_buses:
-            ml_signals.update(self.get_ml_signals(i_bus))
-
-        all_names = self.all_names.union(ml_signals)
-        columns = raw_df.columns
-        for c in columns:
-            if c not in all_names:
-                raise NameError("Unknown column: " + c)
-
-    def get_ml_signals(self, i_bus, use_operational_switching=True, use_abnormal_event=True, use_emergency_event=True):
-        """
-        This function returns a set of ML signals for a given bus.
-
-        Args:
-            i_bus (str): The bus number.
-            use_operational_switching (bool): Include operational switching signals.
-            use_abnormal_event (bool): Include abnormal event signals.
-            use_emergency_even (bool): Include emergency event signals.
-
-        Returns:
-            set: A set of ML signals for the given bus.
-        """
-        # FIXME: rewrite so that it is recorded at the very beginning and counted 1 time, and not at every request
-        ml_signals = set()
-
-        ml_operational_switching = {
-            #--- Working switching ---
-            f'MLsignal_{i_bus}_1',      # Working switching, without specification
-            f'MLsignal_{i_bus}_1_1',    # Operational activation, without specification
-            f'MLsignal_{i_bus}_1_1_1',  # Operating start-up, engine start-up
-            f'MLsignal_{i_bus}_1_2',    # Operational shutdown, without specification
-        }
-
-        ml_abnormal_event = {
-            # --- Abnormal events
-            f'MLsignal_{i_bus}_2',      # Anomaly, without clarification
-            f'MLsignal_{i_bus}_2_1',    # Single phase-to-ground fault, without specification
-            f'MLsignal_{i_bus}_2_1_1',  # Sustainable single phase-to-ground fault
-            f'MLsignal_{i_bus}_2_1_2',  # Steady attenuating single phase-to-ground fault, with rare breakouts
-            f'MLsignal_{i_bus}_2_1_3',  # Arc intermittent single phase-to-ground fault
-            f'MLsignal_{i_bus}_2_2',    # Damping fluctuations from emergency processes
-            f'MLsignal_{i_bus}_2_3',    # Voltage drawdown
-            f'MLsignal_{i_bus}_2_3_1',  # Voltage drawdown when starting the engine
-            f'MLsignal_{i_bus}_2_4',    # Current fluctuations, without specification
-            f'MLsignal_{i_bus}_2_4_1',  # Current fluctuations when starting the engine
-            f'MLsignal_{i_bus}_2_4_2',  # Current fluctuations from frequency-driven motors
-        }
-
-        ml_emergency_event = {
-            # --- Emergency events ----
-            f'MLsignal_{i_bus}_3',      # Emergency events, without clarification
-            f'MLsignal_{i_bus}_3_1',    # An accident due to incorrect operation of the device, without clarification
-            f'MLsignal_{i_bus}_3_2',    # Terminal malfunction
-            f'MLsignal_{i_bus}_3_3'     # Two-phase earth fault
-        }
-            
-        ml_signals = set()
-        if use_operational_switching:
-            ml_signals.update(ml_operational_switching)
-        if use_abnormal_event:
-            ml_signals.update(ml_abnormal_event)
-        if use_emergency_event:
-            ml_signals.update(ml_emergency_event)
-
+        ml_ops = {f'MLsignal_{i_bus_str}_1', f'MLsignal_{i_bus_str}_1_1', f'MLsignal_{i_bus_str}_1_1_1', f'MLsignal_{i_bus_str}_1_2'}
+        ml_abn = {f'MLsignal_{i_bus_str}_2', f'MLsignal_{i_bus_str}_2_1', f'MLsignal_{i_bus_str}_2_1_1', f'MLsignal_{i_bus_str}_2_1_2', f'MLsignal_{i_bus_str}_2_1_3', f'MLsignal_{i_bus_str}_2_2', f'MLsignal_{i_bus_str}_2_3', f'MLsignal_{i_bus_str}_2_3_1', f'MLsignal_{i_bus_str}_2_4', f'MLsignal_{i_bus_str}_2_4_1', f'MLsignal_{i_bus_str}_2_4_2'}
+        ml_emg = {f'MLsignal_{i_bus_str}_3', f'MLsignal_{i_bus_str}_3_1', f'MLsignal_{i_bus_str}_3_2', f'MLsignal_{i_bus_str}_3_3'}
+        if use_operational_switching: ml_signals.update(ml_ops)
+        if use_abnormal_event: ml_signals.update(ml_abn)
+        if use_emergency_event: ml_signals.update(ml_emg)
         return ml_signals
-    
-    def get_PDR_signals(self, i_bus):
-        """
-        This function returns a set of ML signals for a given bus.
-
-        Args:
-            i_bus (str): The bus number.
-
-        Returns:
-            set: A set of PDR for ML signals for the given bus.
-        """
-
-        ml_signals = {
-            #--- Working switching ---
-            f'PDR | Bus-{i_bus} | phase: A',
-            f'PDR | Bus-{i_bus} | phase: B',
-            f'PDR | Bus-{i_bus} | phase: C',
-            f'PDR | Bus-{i_bus} | phase: PS',
-            f'PDR_ideal | Bus-{i_bus} | phase: A',
-            f'PDR_ideal | Bus-{i_bus} | phase: B',
-            f'PDR_ideal | Bus-{i_bus} | phase: C',
-            f'PDR_ideal | Bus-{i_bus} | phase: PS',
+        
+    def get_PDR_signals(self, i_bus_str: str):
+        return {
+            f'PDR | Bus-{i_bus_str} | phase: A', f'PDR | Bus-{i_bus_str} | phase: B',
+            f'PDR | Bus-{i_bus_str} | phase: C', f'PDR | Bus-{i_bus_str} | phase: PS',
+            f'PDR_ideal | Bus-{i_bus_str} | phase: A', f'PDR_ideal | Bus-{i_bus_str} | phase: B',
+            f'PDR_ideal | Bus-{i_bus_str} | phase: C', f'PDR_ideal | Bus-{i_bus_str} | phase: PS',
         }
 
-        return ml_signals
-    
-    def get_short_names_ml_signals(self, use_operational_switching: bool =True, use_abnormal_event: bool = True, use_emergency_event: bool = True) -> list:
-        """
-        This function returns a set of short names ML signals for (without i_bus).
-
-        Args:
-            use_operational_switching (bool): Include operational switching signals.
-            use_abnormal_event (bool): Include abnormal event signals.
-            use_emergency_event (bool): Include emergency event signals.
-
-        Returns:
-            list: A list of ML signals for the given bus.
-        """
-        # FIXME: rewrite so that it is recorded at the very beginning and counted 1 time, and not at every request
-
-        ml_operational_switching = [
-            #--- Working switching ---
-            'ML_1',      # Working switching, without specification
-            'ML_1_1',    # Operational activation, without specification
-            'ML_1_1_1',  # Operating start-up, engine start-up
-            'ML_1_2'    # Operational shutdown, without specification
-        ]
-        ml_abnormal_event = [
-            # --- Abnormal events
-            'ML_2',      # Anomaly, without clarification
-            'ML_2_1',    # Single phase-to-ground fault, without specification
-            'ML_2_1_1',  # Sustainable single phase-to-ground fault
-            'ML_2_1_2',  # Steady attenuating single phase-to-ground fault, with rare breakouts
-            'ML_2_1_3',  # Arc intermittent single phase-to-ground fault
-            'ML_2_2',    # Damping fluctuations from emergency processes
-            'ML_2_3',    # Voltage drawdown
-            'ML_2_3_1',  # Voltage drawdown when starting the engine
-            'ML_2_4',    # Current fluctuations, without specification
-            'ML_2_4_1',  # Current fluctuations when starting the engine
-            'ML_2_4_2'  # Current fluctuations from frequency-driven motors
-            ]
-
-        ml_emergency_event = [
-            # --- Emergency events ----
-            'ML_3',      # Emergency events, without clarification
-            'ML_3_1',    # An accident due to incorrect operation of the device, without clarification
-            'ML_3_2',    # Terminal malfunction
-            'ML_3_3'     # Two-phase earth fault
-        ]
-        
-        ml_signals = []
-        if use_operational_switching:
-            ml_signals.extend(ml_operational_switching)
-        if use_abnormal_event:
-            ml_signals.extend(ml_abnormal_event)
-        if use_emergency_event:
-            ml_signals.extend(ml_emergency_event)
-        
-        return ml_signals, ml_operational_switching, ml_abnormal_event, ml_emergency_event
-
+    def get_short_names_ml_signals(self, use_operational_switching: bool =True, use_abnormal_event: bool = True, use_emergency_event: bool = True) -> tuple[list,list,list,list]:
+        # Version from prompt
+        ml_op_sw = ['ML_1', 'ML_1_1', 'ML_1_1_1', 'ML_1_2']
+        ml_ab_ev = ['ML_2', 'ML_2_1', 'ML_2_1_1', 'ML_2_1_2', 'ML_2_1_3', 'ML_2_2', 'ML_2_3', 'ML_2_3_1', 'ML_2_4', 'ML_2_4_1', 'ML_2_4_2']
+        ml_em_ev = ['ML_3', 'ML_3_1', 'ML_3_2', 'ML_3_3']
+        ml_all_short = []
+        if use_operational_switching: ml_all_short.extend(ml_op_sw)
+        if use_abnormal_event: ml_all_short.extend(ml_ab_ev)
+        if use_emergency_event: ml_all_short.extend(ml_em_ev)
+        return ml_all_short, ml_op_sw, ml_ab_ev, ml_em_ev
 
     def get_short_names_ml_analog_signals(self) -> list:
-        """
-        This function returns a set of short names ML analog signals for (without i_bus).
-
-        Args:
-
-        Returns:
-            list: A set of ML signals for the given bus.
-        """
-
-        ml_current = [
-            'IA', 'IB', 'IC', 'IN'
-        ]
-        ml_votage_BB = [
-             'UA BB', 'UB BB', 'UC BB', 'UN BB', 'UAB BB', 'UBC BB', 'UCA BB',
-        ]
-        ml_votage_CL = [
-             'UA CL', 'UB CL', 'UC CL', 'UN CL', 'UAB CL', 'UBC CL', 'UCA CL',
-        ]  
-        # TODO: signals I_raw, U_raw, I|dif-1, I | braking-1 are not taken into account
-        
-        ml_signals = []
-        ml_signals.extend(ml_current)
-        ml_signals.extend(ml_votage_BB)
-        ml_signals.extend(ml_votage_CL)
-        
-        return ml_signals
+        # Version from prompt
+        return ['IA', 'IB', 'IC', 'IN', 'UA BB', 'UB BB', 'UC BB', 'UN BB', 'UAB BB', 'UBC BB', 'UCA BB', 'UA CL', 'UB CL', 'UC CL', 'UN CL', 'UAB CL', 'UBC CL', 'UCA CL']
 
     def cut_out_area(self, buses_df: pd.DataFrame, samples_before: int, samples_after: int) -> pd.DataFrame:
-        """
-        The function cuts off sections that do not contain ML signals, leaving before and after them at a given boundary.
-
-        Args:
-            buses_df (pd.DataFrame): DataFrame for processing
-            samples_before (int): Number of samples to cut off before the first ML signal.
-            samples_after (int): Number of samples to cut off after the last ML signal.
+        # Version from prompt
+        dataset_df_cut = pd.DataFrame()
+        for _, bus_df_group in buses_df.groupby("file_name"): # Group by the new 'file_name' (hash_busX)
+            temp_bus_df = bus_df_group.reset_index(drop=True)
             
-        Returns:
-            pd.DataFrame: The DataFrame with cut-out sections.
-        """
-        dataset_df = pd.DataFrame()
-        for _, bus_df in buses_df.groupby("file_name"):
-            truncated_dataset = pd.DataFrame()
-            # Reset the index before slicing
-            bus_df = bus_df.reset_index(drop=True)
+            # Ensure is_save column is fresh for each group
+            if "is_save" in temp_bus_df.columns: temp_bus_df.drop(columns=["is_save"], inplace=True)
+            temp_bus_df["is_save"] = False
 
-            bus_df["is_save"] = False
-            filtered_column_names = [col for col in bus_df.columns if col in self.ml_all]
+            # self.ml_all contains short names like 'ML_1'. bus_df_group should have these names
+            # if rename_bus_columns was called (it is, in split_buses).
+            ml_cols_in_df = [col for col in self.ml_all if col in temp_bus_df.columns]
 
-            # Identify rows with ML signals
-            bus_df["is_save"] = bus_df[filtered_column_names].notna().any(axis=1) & (bus_df[filtered_column_names] == 1).any(axis=1)
+            if ml_cols_in_df:
+                # Check for any ML signal == 1 (assuming they are 0 or 1 after processing)
+                # Handle potential NaN by filling with 0 before comparison, then checking any(axis=1)
+                temp_bus_df["is_save"] = (temp_bus_df[ml_cols_in_df].fillna(0) == 1).any(axis=1)
 
-            # TODO: Requires acceleration
-            # Forward fill: Extend "is_save" to cover sections before ML signals
-            for index, row in bus_df.iterrows():
-                if index == 0:
-                    continue
-                if bus_df.loc[index, "is_save"] and bus_df.loc[index-1, "is_save"]:
-                    if index >= samples_before:
-                        bus_df.loc[index-samples_before:index, "is_save"] = True
-                    else:
-                        bus_df.loc[0:index, "is_save"] = True
+                saved_indices = temp_bus_df.index[temp_bus_df["is_save"]].tolist()
+                final_indices_to_save = set(saved_indices)
 
-            # TODO: Requires acceleration
-            # Backward fill: Extend "is_save" to cover sections after ML signals
-            for index, row in reversed(list(bus_df.iterrows())):
-                if index == len(bus_df) - 1:
-                    continue
-                if bus_df.loc[index, "is_save"] and bus_df.loc[index+1, "is_save"]:
-                    if index + samples_after < len(bus_df):
-                        bus_df.loc[index+1:index+samples_after+1, "is_save"] = True
-                    else:
-                        bus_df.loc[index+1:len(bus_df), "is_save"] = True
+                for idx in saved_indices:
+                    start_mark_idx = max(0, idx - samples_before)
+                    end_mark_idx = min(len(temp_bus_df) -1, idx + samples_after)
+                    final_indices_to_save.update(range(start_mark_idx, end_mark_idx + 1))
 
-            # Add event numbers to file names
-            event_number = 0
-            for index, row in bus_df.iterrows():
-                if bus_df.loc[index, "is_save"]:
-                    if (index == 0 or not bus_df.loc[index - 1, "is_save"]):
-                        event_number += 1
-                    bus_df.loc[index, 'file_name'] = bus_df.loc[index, 'file_name'] + " _event N" + str(event_number)
+                temp_bus_df["is_save"] = False # Reset
+                if final_indices_to_save:
+                    temp_bus_df.loc[list(final_indices_to_save), "is_save"] = True
 
-            truncated_dataset = bus_df[bus_df["is_save"]]
-            # If the array is empty, then we take from the piece in the middle equal to the sum of the lengths before and after
-            if len(truncated_dataset) == 0:
-                if len(bus_df) > samples_before + samples_after:
-                    middle = len(bus_df) // 2
-                    truncated_dataset = bus_df.iloc[middle-samples_before:middle+samples_after+1]
+            final_cut_df = temp_bus_df[temp_bus_df["is_save"]].copy()
+
+            # Add event numbers
+            if not final_cut_df.empty:
+                # Identify change points to define events
+                final_cut_df['event_change'] = final_cut_df['is_save'].astype(int).diff().fillna(0)
+                event_starts = final_cut_df[final_cut_df['event_change'] == 1].index
+                if final_cut_df.iloc[0]['is_save']: # Handle if event starts at row 0
+                    event_starts = event_starts.insert(0,0)
+
+                event_number = 0
+                current_event_id_col = []
+                current_event_num_for_row = 0
+
+                for idx in final_cut_df.index:
+                    if idx in event_starts:
+                        event_number +=1
+                    current_event_num_for_row = event_number if final_cut_df.loc[idx, 'is_save'] else 0
+
+                    if current_event_num_for_row > 0 :
+                         current_event_id_col.append(final_cut_df.loc[idx, 'file_name'] + " _event N" + str(current_event_num_for_row))
+                    else: # Should not happen if only is_save=True rows are kept
+                         current_event_id_col.append(final_cut_df.loc[idx, 'file_name'])
+                final_cut_df['file_name'] = current_event_id_col
+                if 'event_change' in final_cut_df.columns: final_cut_df.drop(columns=['event_change'], inplace=True)
+
+
+            if final_cut_df.empty and not temp_bus_df.empty:
+                if len(temp_bus_df) > samples_before + samples_after:
+                    middle = len(temp_bus_df) // 2
+                    final_cut_df = temp_bus_df.iloc[max(0, middle-samples_before) : min(len(temp_bus_df), middle+samples_after+1)].copy()
                 else:
-                    truncated_dataset = bus_df
-
-            truncated_dataset = truncated_dataset.drop(columns=["is_save"])
-            dataset_df = pd.concat([dataset_df, truncated_dataset], axis=0, ignore_index=False)
+                    final_cut_df = temp_bus_df.copy()
             
-        return dataset_df
-    
-    # TODO: переписать функции, обобщить. Чтобы набор / обработка столбцов была параметром.
-    # К тому же, раньше функция прост расширяла. А это регистрирует изменения (0-1 и 1-0) и расширяет вокруг них.
+            if "is_save" in final_cut_df.columns:
+                 final_cut_df = final_cut_df.drop(columns=["is_save"])
+            dataset_df_cut = pd.concat([dataset_df_cut, final_cut_df], ignore_index=True)
+        return dataset_df_cut
+
     def cut_out_area_for_PDR(self, buses_df: pd.DataFrame, samples_before: int, samples_after: int) -> pd.DataFrame:
-        """
-        Обрабатывает DataFrame, регистрируя факты изменения сигнала (0→1 и 1→0)
-        и расширяя зону вокруг изменений на заданное число отсчётов.
-
-        Сигнал для обнаружения изменений определяется по следующей логике:
-        1. Если столбец "rPDR PS" существует и содержит не только NaN, используется он (1 если значение == 1, иначе 0).
-        2. Иначе, если столбцы "rPDR A", "rPDR B", "rPDR C" существуют, 
-           сигнал равен 1 только если все три столбца равны 1, иначе 0.
-        3. Иначе (если ни один из источников сигнала не доступен), сигнал считается равным 0 для всех строк.
-
-        Аргументы:
-            buses_df (pd.DataFrame): Исходный DataFrame с данными. Должен содержать столбец 'file_name'.
-            samples_before (int): Количество строк до точки изменения, которые надо включить.
-            samples_after (int): Количество строк после точки изменения, которые надо включить.
-
-        Возвращает:
-            pd.DataFrame: Обработанный DataFrame с выделенными зонами и новым столбцом change_event.
-                          Строки из разных исходных файлов могут быть перемешаны, но сгруппированы по событиям.
-        """
-        dataset_df = pd.DataFrame()
+        # Version from prompt (ensure it's adapted for current class structure if needed)
+        dataset_df_pdr_cut = pd.DataFrame()
         
-        # Define signal column names
-        primary_signal_col = "rPDR PS"
-        composite_signal_cols = ["rPDR A", "rPDR B", "rPDR C"]
+        primary_signal_col = "rPDR PS" # Renamed from PDR_PS in rename_bus_columns
+        composite_signal_cols = ["rPDR A", "rPDR B", "rPDR C"] # Renamed
 
-        # Process each file (group) separately
-        for file_name, bus_df in buses_df.groupby("file_name"):
-            # Reset index for correct positional access and slicing
-            bus_df = bus_df.reset_index(drop=True)
+        for file_name_val, bus_df_group in buses_df.groupby("file_name"):
+            temp_bus_df = bus_df_group.reset_index(drop=True)
             
-            signal_calculated = False
+            current_signal_series = pd.Series(False, index=temp_bus_df.index) # Default to no signal
             
-            # --- Determine the signal source ---
-            # 1. Try primary signal "rPDR PS"
-            if primary_signal_col in bus_df.columns and bus_df[primary_signal_col].notna().any():
-                # Use primary signal if it exists and is not all NaN
-                # Ensure comparison handles potential NaNs gracefully (NaN == 1 is False)
-                bus_df["signal"] = (bus_df[primary_signal_col] == 1)
-                signal_calculated = True
-                # print(f"File {file_name}: Using primary signal '{primary_signal_col}'.") # Optional: for debugging
+            if primary_signal_col in temp_bus_df.columns and temp_bus_df[primary_signal_col].notna().any():
+                current_signal_series = (temp_bus_df[primary_signal_col] == 1)
+            elif all(col in temp_bus_df.columns for col in composite_signal_cols) and \
+                 temp_bus_df[composite_signal_cols].notna().any().any():
+                current_signal_series = (temp_bus_df[composite_signal_cols] == 1).all(axis=1)
 
-            # 2. If primary signal not used, try composite signals
-            if not signal_calculated:
-                # Check if all required composite columns exist
-                if all(col in bus_df.columns for col in composite_signal_cols):
-                    # Check if there's *any* non-NaN data in these columns before calculating
-                    if bus_df[composite_signal_cols].notna().any().any():
-                        # Calculate composite signal: 1 only if ALL are 1
-                        bus_df[primary_signal_col] = (bus_df[composite_signal_cols] == 1).all(axis=1)
-                        bus_df["signal"] = (bus_df[primary_signal_col] == 1)
-                        signal_calculated = True
-                        # print(f"File {file_name}: Using composite signals {composite_signal_cols}.") # Optional: for debugging
-                    else:
-                         # Composite columns exist but are all NaN
-                         # print(f"File {file_name}: Composite columns {composite_signal_cols} exist but are all NaN. Signal set to False.") # Optional: for debugging
-                         pass # signal_calculated remains False, will default to False below
-
+            if not current_signal_series.any(): # No PDR signal activity found
+                # if self.is_print_message: print(f"  No PDR activity in {file_name_val}, taking middle/all.")
+                if len(temp_bus_df) > samples_before + samples_after:
+                    middle = len(temp_bus_df) // 2
+                    final_cut_df = temp_bus_df.iloc[max(0, middle-samples_before) : min(len(temp_bus_df), middle+samples_after+1)].copy()
                 else:
-                    # Not all composite columns are present
-                    missing_cols = [col for col in composite_signal_cols if col not in bus_df.columns]
-                    # print(f"File {file_name}: Primary signal '{primary_signal_col}' not usable. Composite columns missing: {missing_cols}. Signal set to False.") # Optional: for debugging
-                    pass # signal_calculated remains False, will default to False below
+                    final_cut_df = temp_bus_df.copy()
+                if "change_event" in final_cut_df.columns: final_cut_df.drop(columns=["change_event"], inplace=True)
+                dataset_df_pdr_cut = pd.concat([dataset_df_pdr_cut, final_cut_df], ignore_index=True)
+                continue
 
-            # 3. Default to False if no signal source was found/usable
-            if not signal_calculated:
-                 # print(f"File {file_name}: No usable signal source found. Skipping this file.") # Optional: for debugging
-                 continue 
+            temp_bus_df['change_event'] = current_signal_series.astype(int).diff().fillna(0)
+            change_indices = temp_bus_df.index[temp_bus_df['change_event'] != 0].tolist()
 
-            # --- Continue with the original logic using the calculated 'signal' ---
+            if not change_indices: # Constant signal, or no changes
+                 # If signal is constantly 1, treat whole segment as event. Otherwise, take middle.
+                if current_signal_series.all(): # All 1s
+                    final_cut_df = temp_bus_df.copy()
+                    final_cut_df['file_name'] = final_cut_df['file_name'] + " _event N1"
+                elif len(temp_bus_df) > samples_before + samples_after:
+                    middle = len(temp_bus_df) // 2
+                    final_cut_df = temp_bus_df.iloc[max(0, middle-samples_before) : min(len(temp_bus_df), middle+samples_after+1)].copy()
+                else:
+                    final_cut_df = temp_bus_df.copy()
+                if "change_event" in final_cut_df.columns: final_cut_df.drop(columns=["change_event"], inplace=True)
+                dataset_df_pdr_cut = pd.concat([dataset_df_pdr_cut, final_cut_df], ignore_index=True)
+                continue
 
-            # Determine the previous signal state to detect changes
-            bus_df["prev_signal"] = bus_df["signal"].shift(1).fillna(False)
-
-            # Register changes in 'change_event': "0-1" or "1-0"
-            bus_df["change_event"] = np.nan # Initialize with NaN instead of None for better pandas compatibility
-            bus_df.loc[(bus_df["prev_signal"] == False) & (bus_df["signal"] == True), "change_event"] = "0-1"
-            bus_df.loc[(bus_df["prev_signal"] == True) & (bus_df["signal"] == False), "change_event"] = "1-0"
-
-            # Initialize column to mark rows to keep
-            bus_df["is_save"] = False
-
-            # Find indices where a change occurred (ignoring potential NaN in change_event)
-            change_indices = bus_df.index[bus_df["change_event"].notna()]
-
-            # Expand the area around each change event
+            rows_to_save_indices = set()
             for idx in change_indices:
-                 # Check idx > 0 is implicitly handled by shift(1) for change_event detection
-                 start_idx = max(0, idx - samples_before)
-                 # end_idx needs to be inclusive for .loc, so +1 compared to slicing
-                 end_idx = min(len(bus_df) - 1, idx + samples_after) # Adjust end index for .loc
-                 bus_df.loc[start_idx:end_idx, "is_save"] = True
+                start_save_idx = max(0, idx - samples_before)
+                end_save_idx = min(len(temp_bus_df) - 1, idx + samples_after)
+                rows_to_save_indices.update(range(start_save_idx, end_save_idx + 1))
 
-            # Filter rows marked for saving
-            truncated_dataset = bus_df[bus_df["is_save"]].copy() # Use .copy() to avoid SettingWithCopyWarning
+            final_cut_df = temp_bus_df.loc[sorted(list(rows_to_save_indices))].copy()
 
-            # Assign event numbers within the file_name for saved rows
-            if not truncated_dataset.empty:
-                 event_number = 0
-                 # Identify the start of each contiguous block of 'is_save' == True
-                 # A block starts if 'is_save' is True and the previous was False (or it's the first row)
-                 is_start_of_event = truncated_dataset.index.to_series().diff().fillna(1) != 1
-                 event_groups = is_start_of_event.cumsum()
-                 
-                 # Efficiently apply event numbers using the calculated groups
-                 truncated_dataset['file_name'] = truncated_dataset['file_name'] + " _event N" + event_groups.astype(str)
+            if not final_cut_df.empty:
+                final_cut_df['event_group_id'] = (final_cut_df['change_event'] != 0).cumsum()
+                # Assign event numbers based on these groups
+                # This needs to map group_id to a sequential event number for file_name
+                event_number_map = {group_id: i+1 for i, group_id in enumerate(final_cut_df['event_group_id'].unique())}
+                final_cut_df['event_num_str'] = final_cut_df['event_group_id'].map(lambda x: " _event N" + str(event_number_map[x]))
+                final_cut_df['file_name'] = final_cut_df['file_name'] + final_cut_df['event_num_str']
+                final_cut_df.drop(columns=['change_event', 'event_group_id', 'event_num_str'], inplace=True)
 
-            # Handle case where no events were found in this file_df
-            if len(truncated_dataset) == 0 and len(bus_df) > 0: # Check if bus_df wasn't empty
-                if len(bus_df) > samples_before + samples_after:
-                    middle = len(bus_df) // 2
-                    # Use iloc for slicing by position after reset_index
-                    truncated_dataset = bus_df.iloc[max(0, middle - samples_before) : min(len(bus_df), middle + samples_after + 1)].copy()
-                else:
-                    truncated_dataset = bus_df.copy()
-                # Ensure the columns added during processing are present even if no events found, set to default values
-                if "signal" not in truncated_dataset.columns: truncated_dataset["signal"] = False # Or appropriate default
-                if "prev_signal" not in truncated_dataset.columns: truncated_dataset["prev_signal"] = False
-                if "change_event" not in truncated_dataset.columns: truncated_dataset["change_event"] = np.nan
+            dataset_df_pdr_cut = pd.concat([dataset_df_pdr_cut, final_cut_df], ignore_index=True)
+        return dataset_df_pdr_cut
 
-
-            # Drop temporary columns not needed in the final DataFrame
-            # Check if columns exist before dropping to avoid errors if no events were found and columns weren't added
-            cols_to_drop = ["is_save", "prev_signal", "signal", "rPDR A", "rPDR B", "rPDR C"]
-            existing_cols_to_drop = [col for col in cols_to_drop if col in truncated_dataset.columns]
-            if existing_cols_to_drop:
-                 truncated_dataset = truncated_dataset.drop(columns=existing_cols_to_drop)
-
-            # Append the processed data for this file to the overall dataset
-            # Use ignore_index=True if you want a clean 0..N index in the final result
-            # Set ignore_index=False if you want to preserve original indices (might be less useful here)
-            dataset_df = pd.concat([dataset_df, truncated_dataset], axis=0, ignore_index=True) 
-
-        return dataset_df
-    
     def get_simple_dataset(self, dataset_df: pd.DataFrame, csv_name='dataset_simpl.csv'):
-        """ 
-        Create new columns for simplified version. Only 4 groups of signals are formed:
-        1) Operating switches
-        2) Abnormal events 
-        3) Emergency events
-        4) Normal (no events)
-        """
+        # Version from prompt
         column_names = set(dataset_df.columns)
-        ml_opr_swch = set(self.ml_opr_swch).intersection(column_names)
-        ml_abnorm_evnt = set(self.ml_abnorm_evnt).intersection(column_names)
-        ml_emerg_evnt = set(self.ml_emerg_evnt).intersection(column_names)
-        ml_all = ml_opr_swch.union(ml_abnorm_evnt).union(ml_emerg_evnt)
+        # Use the lists of short names stored in self
+        ml_opr_swch_cols = [col for col in self.ml_opr_swch if col in column_names]
+        ml_abnorm_evnt_cols = [col for col in self.ml_abnorm_evnt if col in column_names]
+        ml_emerg_evnt_cols = [col for col in self.ml_emerg_evnt if col in column_names]
+
+        dataset_df["opr_swch"] = dataset_df[ml_opr_swch_cols].any(axis=1).astype(int) if ml_opr_swch_cols else 0
+        dataset_df["abnorm_evnt"] = dataset_df[ml_abnorm_evnt_cols].any(axis=1).astype(int) if ml_abnorm_evnt_cols else 0
+        dataset_df["emerg_evnt"] = dataset_df[ml_emerg_evnt_cols].any(axis=1).astype(int) if ml_emerg_evnt_cols else 0
         
-        dataset_df["emerg_evnt"] = dataset_df[list(ml_emerg_evnt)].apply(lambda x: 1 if x.any() else "", axis=1)
-        dataset_df["abnorm_evnt"] = dataset_df[list(ml_abnorm_evnt)].apply(lambda x: 1 if x.any() else "", axis=1)
-        dataset_df.loc[dataset_df['emerg_evnt'] == 1, 'abnorm_evnt'] = ""
-        dataset_df["emerg_evnt"] = dataset_df[list(ml_emerg_evnt)].apply(lambda x: 1 if x.any() else "", axis=1)
-        dataset_df["normal"] = dataset_df[list(ml_all)].apply(lambda x: "" if 1 in x.values else 1, axis=1)
-        dataset_df["no_event"] = dataset_df[["abnorm_evnt", 'emerg_evnt']].apply(lambda x: "" if 1 in x.values else 1, axis=1)
+        dataset_df.loc[dataset_df['emerg_evnt'] == 1, 'abnorm_evnt'] = 0
+        dataset_df.loc[dataset_df['emerg_evnt'] == 1, 'opr_swch'] = 0
+        dataset_df.loc[dataset_df['abnorm_evnt'] == 1, 'opr_swch'] = 0
         
-        # Drop ML signals
-        dataset_df = dataset_df.drop(columns=ml_all)
+        dataset_df["normal"] = 0
+        dataset_df.loc[(dataset_df["opr_swch"] == 0) & (dataset_df["abnorm_evnt"] == 0) & (dataset_df["emerg_evnt"] == 0), "normal"] = 1
         
-        dataset_df.to_csv(self.csv_path + csv_name, index=False)
+        cols_to_drop_in_simple = [col for col in self.ml_all if col in dataset_df.columns]
+        if cols_to_drop_in_simple:
+            dataset_df = dataset_df.drop(columns=cols_to_drop_in_simple)
+
+        output_simple_path = os.path.join(self.csv_path, csv_name)
+        # Ensure self.csv_path directory exists
+        if self.csv_path and not os.path.exists(self.csv_path):
+            os.makedirs(self.csv_path, exist_ok=True)
+        dataset_df.to_csv(output_simple_path, index=False)
+        if self.is_print_message: print(f"Simple dataset saved to {output_simple_path}")
 
     def structure_columns(self, dataset_df: pd.DataFrame) -> pd.DataFrame:
-        """
-        This function restructures the columns of the dataset for easier analysis.
-        """
-        # TODO: some names may be missing, so think about processing them.
-        # Specify the desired order of columns
+        # Version from prompt
         desired_order = ["file_name"]
+        # get_short_names_ml_analog_signals() returns a list of strings
         desired_order.extend(self.get_short_names_ml_analog_signals())
-        desired_order.extend(self.get_short_names_ml_signals()[0])
-        desired_order.extend(["opr_swch", "abnorm_evnt", "emerg_evnt", "normal"])
+        # self.ml_all is already a list of short ML signal names
+        desired_order.extend(self.ml_all)
         
-        # Check if each column in the desired order exists in the DataFrame
-        existing_columns = [col for col in desired_order if col in list(dataset_df.columns)]
+        simplified_cols = ["opr_swch", "abnorm_evnt", "emerg_evnt", "normal"]
+        
+        # Determine which set of columns to prioritize based on presence of simplified_cols
+        current_cols_in_df = set(dataset_df.columns)
+        is_simplified_dataset = any(s_col in current_cols_in_df for s_col in simplified_cols)
 
-        # Reorder the DataFrame columns based on the existing columns
-        dataset_df = dataset_df[existing_columns]
-        
-        return dataset_df
+        final_ordered_list = []
+        if is_simplified_dataset:
+            # Order: file_name, analog, then simplified event types
+            for col in ["file_name"] + self.get_short_names_ml_analog_signals() + simplified_cols:
+                if col in current_cols_in_df and col not in final_ordered_list:
+                    final_ordered_list.append(col)
+        else:
+            # Order: file_name, analog, then detailed ML event types
+            for col in desired_order: # desired_order already has file_name, analog, ml_all
+                if col in current_cols_in_df and col not in final_ordered_list:
+                    final_ordered_list.append(col)
+
+        # Add any remaining columns from the DataFrame that weren't in the desired_order
+        other_cols = [col for col in dataset_df.columns if col not in final_ordered_list]
+        final_ordered_list.extend(other_cols)
+
+        return dataset_df[final_ordered_list]
