@@ -1,4 +1,4 @@
-import comtrade # comtrade 0.1.2
+from comtrade_APS import Comtrade # comtrade 0.1.2
 
 class ReadComtrade():
     def init(self):
@@ -24,10 +24,14 @@ class ReadComtrade():
             - raw_df (pandas.DataFrame): DataFrame of raw comtrade file.
         """
         raw_df = None
+        raw_data_obj = None
         try:
-            raw_date = comtrade.load(file_name)
-            raw_df = raw_date.to_dataframe()
-            return raw_date, raw_df
+            raw_data_obj = Comtrade()
+            raw_data_obj.load(cfg_file=file_name)
+
+            raw_df = raw_data_obj.to_dataframe()
+            return raw_data_obj, raw_df
         except Exception as ex:
+            print(f"Error reading COMTRADE file {file_name}: {ex}")
             # TODO: Add "self.unread_files.add((file_name, ex))"
             return None, None

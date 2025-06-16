@@ -34,13 +34,22 @@ import re
 import struct
 import sys
 import warnings
-import numpy as np
 
+# Standardize numpy import
 try:
-    import numpy
+    import numpy as np
     HAS_NUMPY = True
 except ModuleNotFoundError:
     HAS_NUMPY = False
+    np = None # Define np as None if numpy is not found
+
+# Add pandas import
+try:
+    import pandas as pd
+    HAS_PANDAS = True
+except ModuleNotFoundError:
+    HAS_PANDAS = False
+    pd = None # Define pd as None if pandas is not found
 
 
 # COMTRADE standard revisions
@@ -88,7 +97,7 @@ def _read_sep_values(line, expected: int = -1, default: str = ''):
 def _preallocate_values(array_type, size, use_numpy_arrays):
     type_mapping_numpy = {"f": "float32", "i": "int32"}
     if HAS_NUMPY and use_numpy_arrays:
-        return numpy.zeros(size, dtype=type_mapping_numpy[array_type])
+        return np.zeros(size, dtype=type_mapping_numpy[array_type])
     return array.array(array_type, [0]) * size
 
 
@@ -247,6 +256,30 @@ class Cfg:
             self.ignore_warnings = kwargs["ignore_warnings"]
         else:
             self.ignore_warnings = False
+
+    def to_dataframe(self):
+        if not HAS_PANDAS:
+            raise ImportError("Pandas library is not installed. Please install it to use to_dataframe().")
+        if not HAS_NUMPY:
+            # Numpy is used for np.array
+            raise ImportError("Numpy library is not installed. Please install it to use to_dataframe().")
+
+        # Initialize data dictionary with time
+        # self.time should be suitable for np.array() directly.
+        # It's often array.array or could be numpy.ndarray already.
+        data = {'time': np.array(self.time)}
+
+        # Add analog channels to dictionary
+        for i, channel_id in enumerate(self.analog_channel_ids):
+            data[channel_id] = np.array(self.analog[i])
+
+        # Add status channels to dictionary
+        for i, channel_id in enumerate(self.status_channel_ids):
+            data[channel_id] = np.array(self.status[i])
+
+        df = pd.DataFrame(data)
+
+        return df
 
     @property
     def station_name(self) -> str:
