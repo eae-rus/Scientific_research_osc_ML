@@ -2,10 +2,13 @@ import os
 import csv
 import re
 from collections import Counter
+from tqdm import tqdm # Added import
+from typing import Optional, List, Dict, Any # For type hints
 
 class SignalNameManager:
-    def __init__(self):
-        pass
+    def __init__(self, verbose_logging: bool = False, show_progress_bars: bool = True): # Modified parameters
+        self.verbose_logging = verbose_logging
+        self.show_progress_bars = show_progress_bars
 
     def _extract_signal_names_from_cfg(self, cfg_file_path: str, encoding: str,
                                        include_analog: bool, include_digital: bool) -> list[str]:
@@ -72,16 +75,20 @@ class SignalNameManager:
             # print(f"Warning (_extract_signal_names_from_cfg): IOError for {cfg_file_path} with {encoding}")
             return [] # Signal file read error to caller
         except Exception:
-            # print(f"Warning (_extract_signal_names_from_cfg): Unexpected error for {cfg_file_path} with {encoding}: {e}")
-            return [] # Signal other error to caller
+            # if self.verbose_logging: print(f"Warning (_extract_signal_names_from_cfg): Unexpected error for {cfg_file_path} with {encoding}: {e}") # Reduce noise
+            return []
         return signal_names
 
     def find_signal_names(self, source_dir: str, signal_type_to_find: str = 'all',
                           output_csv_path: str = 'signal_catalog.csv',
-                          is_print_message: bool = False) -> None:
+                          verbose_logging_method: Optional[bool] = None,
+                          show_progress_method: Optional[bool] = None) -> None:
+
+        use_verbose = verbose_logging_method if verbose_logging_method is not None else self.verbose_logging
+        use_show_progress = show_progress_method if show_progress_method is not None else self.show_progress_bars
 
         if not os.path.isdir(source_dir):
-            if is_print_message: print(f"Error: Source directory '{source_dir}' not found.")
+            if use_verbose: print(f"Error: Source directory '{source_dir}' not found.")
             return
 
         include_analog = signal_type_to_find.lower() in ['analog', 'all']
@@ -99,15 +106,17 @@ class SignalNameManager:
                 if file_name.lower().endswith(".cfg"):
                     cfg_files_to_process.append(os.path.join(root, file_name))
 
-        if is_print_message:
-            total_files = len(cfg_files_to_process)
+        total_files = len(cfg_files_to_process)
+        if use_verbose:
             print(f"Found {total_files} .cfg files to scan for signal names in {source_dir}.")
 
         processed_count = 0
-        for cfg_file_path in cfg_files_to_process:
+        # Wrap with tqdm
+        for cfg_file_path in tqdm(cfg_files_to_process, total=total_files, desc="Finding signal names", unit="file", disable=not use_show_progress):
             processed_count += 1
-            if is_print_message and processed_count % 100 == 0:
-                print(f"Scanning file {processed_count}/{total_files}: {os.path.basename(cfg_file_path)}")
+            # tqdm handles progress, periodic print not essential but can be kept for very long runs if needed without progress bar
+            # if use_verbose and processed_count % 100 == 0 and use_show_progress == False: # Only if no progress bar
+            #     print(f"Scanning file {processed_count}/{total_files}: {os.path.basename(cfg_file_path)}")
 
             encodings_to_try = ['utf-8', 'windows-1251', 'cp866']
             file_signal_names = []
@@ -124,12 +133,12 @@ class SignalNameManager:
                 # Let's test readability with the encoding first.
                 try:
                     with open(cfg_file_path, 'r', encoding=encoding) as f_test:
-                        f_test.readline() # Try to read one line to check encoding
+                        f_test.readline()
                 except UnicodeDecodeError:
-                    if is_print_message and processed_count <= 20 : # Print for first few files to show encoding attempts
-                         print(f"  Skipping encoding {encoding} for {os.path.basename(cfg_file_path)} due to decode error.")
-                    continue # Try next encoding
-                except Exception: # Other read errors
+                    if use_verbose and processed_count <= 20 and total_files > 20 :
+                         if use_verbose: print(f"  Skipping encoding {encoding} for {os.path.basename(cfg_file_path)} due to decode error.")
+                    continue
+                except Exception:
                     continue
 
 
@@ -142,14 +151,14 @@ class SignalNameManager:
                 # 2. _extract_signal_names_from_cfg had an internal issue (other than UnicodeDecode which it returns [] for).
                 # We assume if we reach here, the encoding was "probably" okay for reading structure, even if no names found.
                 file_signal_names.extend(current_names)
-                extracted_successfully_for_file = True # At least one encoding was processed without decode error
-                if is_print_message and len(current_names) > 0:
+                extracted_successfully_for_file = True
+                if use_verbose and len(current_names) > 0:
                      print(f"  Extracted {len(current_names)} signal names from {os.path.basename(cfg_file_path)} using {encoding}.")
-                break # Successfully processed with this encoding (or determined no signals with it)
+                break
 
-            if extracted_successfully_for_file: # If any encoding allowed processing
-                all_signal_names_counter.update(file_signal_names) # Update with names found (could be empty)
-            elif is_print_message: # If all encodings failed at the read test stage
+            if extracted_successfully_for_file:
+                all_signal_names_counter.update(file_signal_names)
+            elif use_verbose:
                 print(f"  Warning: Could not read or extract signal names from {os.path.basename(cfg_file_path)} with any tried encoding.")
 
         sorted_signal_names = all_signal_names_counter.most_common()
@@ -168,12 +177,12 @@ class SignalNameManager:
                 writer.writerow(['Signal Name', 'Universal Code', 'Count'])
                 for name, count in sorted_signal_names:
                     writer.writerow([name, '-', count])
-            if is_print_message:
+            if use_verbose:
                 print(f"Signal name catalog saved to: {output_csv_path} with {len(sorted_signal_names)} unique names.")
         except IOError as e:
-            if is_print_message: print(f"Error writing signal catalog CSV to {output_csv_path}: {e}")
+            if use_verbose: print(f"Error writing signal catalog CSV to {output_csv_path}: {e}")
         except Exception as e:
-            if is_print_message: print(f"An unexpected error occurred while writing CSV {output_csv_path}: {e}")
+            if use_verbose: print(f"An unexpected error occurred while writing CSV {output_csv_path}: {e}")
 
     def _parse_analog_signal_name_for_section(self, signal_name_field: str) -> dict | None:
         """
@@ -261,8 +270,8 @@ class SignalNameManager:
             current_line_idx += 1
         return signal_info_list
 
-    def _rename_duplicate_analog_signals_in_lines(self, cfg_lines: list[str], file_path_for_log: str, is_print_message: bool = False) -> tuple[list[str], bool, list[dict]]:
-        modified_lines = list(cfg_lines) # Work on a copy
+    def _rename_duplicate_analog_signals_in_lines(self, cfg_lines: list[str], file_path_for_log: str, verbose_logging_method: bool = False) -> tuple[list[str], bool, list[dict]]: # Renamed is_print_message
+        modified_lines = list(cfg_lines)
         changes_made = False
         rename_actions = []
 
@@ -328,13 +337,12 @@ class SignalNameManager:
                                 new_raw_name_field = temp_raw_name
                                 break
                             next_num += 1
-                            if next_num > 1000: # Safety break
-                                if is_print_message: print(f"  Error: Could not find unique name for {old_raw_name_field} in {file_path_for_log} after 1000 tries.")
-                                new_raw_name_field = None # Mark as failed to find unique name
+                            if next_num > 1000:
+                                if verbose_logging_method: print(f"  Error: Could not find unique name for {old_raw_name_field} in {file_path_for_log} after 1000 tries.")
+                                new_raw_name_field = None
                                 break
 
                         if new_raw_name_field:
-                            # Modify the line
                             line_to_modify = modified_lines[line_idx_to_change]
                             parts = line_to_modify.split(',')
                             parts[1] = new_raw_name_field # Update the name field
@@ -353,17 +361,14 @@ class SignalNameManager:
                                 'new_raw_name_field': new_raw_name_field
                             }
                             rename_actions.append(action)
-                            if is_print_message:
+                            if verbose_logging_method:
                                 print(f"  LogRename: File: {action['file_path']}, Line: {action['line_index']}, OldCombined: '{action['old_combined_name']}', NewCombined: '{action['new_combined_name']}' (Raw: '{old_raw_name_field}' -> '{new_raw_name_field}')")
 
-                            # Update our reference set for future uniqueness checks in this file
-                            all_current_combined_names.remove(current_combined_name) # Remove one instance of the old name count
+                            all_current_combined_names.remove(current_combined_name)
                             all_current_combined_names.add(new_combined_name)
-                            # Update signal_infos as well if we were to iterate again (not done in this simplified version)
                         else:
-                            if is_print_message: print(f"  Failed to generate unique name for duplicate: {current_combined_name} at line {line_idx_to_change+1}")
+                            if verbose_logging_method: print(f"  Failed to generate unique name for duplicate: {current_combined_name} at line {line_idx_to_change+1}")
 
-                # Mark all instances of this duplicated name as processed ( conceptually, first one kept, others renamed)
                 for master_list_idx in indices_of_this_name:
                     processed_original_indices.add(master_list_idx)
 
@@ -375,7 +380,11 @@ class SignalNameManager:
                                  auto_rename_analog: bool = False,
                                  output_csv_rename_log_path: str = "rename_log.csv",
                                  cfg_encodings_to_try: list = None,
-                                 is_print_message: bool = False) -> None:
+                                 verbose_logging_method: Optional[bool] = None,
+                                 show_progress_method: Optional[bool] = None) -> None:
+
+        use_verbose = verbose_logging_method if verbose_logging_method is not None else self.verbose_logging
+        use_show_progress = show_progress_method if show_progress_method is not None else self.show_progress_bars
 
         if cfg_encodings_to_try is None:
             cfg_encodings_to_try = ['utf-8', 'windows-1251', 'cp866']
@@ -389,14 +398,15 @@ class SignalNameManager:
                 if file_name.lower().endswith(".cfg"):
                     cfg_files_to_scan.append(os.path.join(root, file_name))
 
-        if is_print_message:
-            print(f"Found {len(cfg_files_to_scan)} .cfg files to scan for duplicate signal names.")
+        total_files = len(cfg_files_to_scan)
+        if use_verbose:
+            print(f"Found {total_files} .cfg files to scan for duplicate signal names.")
 
         file_scan_count = 0
-        for cfg_file_path in cfg_files_to_scan:
+        for cfg_file_path in tqdm(cfg_files_to_scan, total=total_files, desc="Managing duplicates", unit="file", disable=not use_show_progress):
             file_scan_count +=1
-            if is_print_message and file_scan_count % 50 == 0:
-                print(f"Scanning file for duplicates {file_scan_count}/{len(cfg_files_to_scan)}: {os.path.basename(cfg_file_path)}")
+            # if use_verbose and file_scan_count % 50 == 0 and use_show_progress == False:
+            #     print(f"Scanning file for duplicates {file_scan_count}/{total_files}: {os.path.basename(cfg_file_path)}")
 
             determined_encoding = None
             cfg_lines = None
@@ -405,17 +415,17 @@ class SignalNameManager:
                     with open(cfg_file_path, 'r', encoding=encoding) as f:
                         cfg_lines = f.readlines()
                     determined_encoding = encoding
-                    if is_print_message and file_scan_count <=10 : print(f"  Successfully read {os.path.basename(cfg_file_path)} with encoding {encoding}")
+                    if use_verbose and file_scan_count <=10 and total_files > 10: print(f"  Successfully read {os.path.basename(cfg_file_path)} with encoding {encoding}")
                     break
                 except UnicodeDecodeError:
-                    if is_print_message and file_scan_count <=10 : print(f"  Encoding {encoding} failed for {os.path.basename(cfg_file_path)}")
+                    if use_verbose and file_scan_count <=10 and total_files > 10: print(f"  Encoding {encoding} failed for {os.path.basename(cfg_file_path)}")
                     continue
                 except Exception as e:
-                    if is_print_message: print(f"  Error reading {os.path.basename(cfg_file_path)} with {encoding}: {e}")
-                    continue # Skip this file if fundamental read error other than encoding
+                    if use_verbose: print(f"  Error reading {os.path.basename(cfg_file_path)} with {encoding}: {e}")
+                    continue
 
             if not cfg_lines or not determined_encoding:
-                if is_print_message: print(f"  Could not read or determine encoding for {os.path.basename(cfg_file_path)}. Skipping duplicate check.")
+                if use_verbose: print(f"  Could not read or determine encoding for {os.path.basename(cfg_file_path)}. Skipping duplicate check.")
                 files_with_duplicates_log.append({'file_path': cfg_file_path, 'file_name': os.path.basename(cfg_file_path), 'error': 'Could not read file with any encoding'})
                 continue
 
@@ -440,41 +450,38 @@ class SignalNameManager:
                         'lines': str(line_indices)
                     }
                     files_with_duplicates_log.append(duplicate_entry)
-                    if is_print_message:
+                    if use_verbose:
                          print(f"  Duplicate found in {os.path.basename(cfg_file_path)}: '{name}' (Count: {count}, Lines: {line_indices})")
 
             if duplicates_found_in_file and auto_rename_analog:
-                if is_print_message: print(f"  Attempting to auto-rename analog duplicates in {os.path.basename(cfg_file_path)}...")
-                modified_lines, changes_made, rename_actions = self._rename_duplicate_analog_signals_in_lines(cfg_lines, cfg_file_path, is_print_message)
+                if use_verbose: print(f"  Attempting to auto-rename analog duplicates in {os.path.basename(cfg_file_path)}...")
+                modified_lines, changes_made, rename_actions = self._rename_duplicate_analog_signals_in_lines(cfg_lines, cfg_file_path, use_verbose)
 
                 if changes_made:
                     try:
                         with open(cfg_file_path, 'w', encoding=determined_encoding) as f_write:
                             f_write.writelines(modified_lines)
-                        if is_print_message: print(f"  Successfully wrote changes to {os.path.basename(cfg_file_path)}")
+                        if use_verbose: print(f"  Successfully wrote changes to {os.path.basename(cfg_file_path)}")
                         all_renaming_actions_log.extend(rename_actions)
                     except Exception as e:
-                        if is_print_message: print(f"  Error writing modified file {os.path.basename(cfg_file_path)}: {e}")
-                elif is_print_message:
+                        if use_verbose: print(f"  Error writing modified file {os.path.basename(cfg_file_path)}: {e}")
+                elif use_verbose:
                      print(f"  No analog signal renames were performed for {os.path.basename(cfg_file_path)} (possibly no renamable analog duplicates or no unique names found).")
 
-        # Write duplicate log
         if files_with_duplicates_log:
             output_dup_dir = os.path.dirname(output_csv_duplicates_path)
             if output_dup_dir and not os.path.exists(output_dup_dir): os.makedirs(output_dup_dir, exist_ok=True)
             try:
                 with open(output_csv_duplicates_path, 'w', newline='', encoding='utf-8') as csvfile:
-                    # Adjust header if 'error' key might not exist for all entries
                     fieldnames = ['file_path', 'file_name', 'signal_name', 'count', 'lines', 'error']
                     writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction='ignore')
                     writer.writeheader()
                     for entry in files_with_duplicates_log:
-                         writer.writerow(entry) # entry is already a dict
-                if is_print_message: print(f"Duplicate signals log saved to: {output_csv_duplicates_path}")
+                         writer.writerow(entry)
+                if use_verbose: print(f"Duplicate signals log saved to: {output_csv_duplicates_path}")
             except IOError as e:
-                if is_print_message: print(f"Error writing duplicates log CSV: {e}")
+                if use_verbose: print(f"Error writing duplicates log CSV: {e}")
 
-        # Write rename log
         if all_renaming_actions_log:
             output_rename_dir = os.path.dirname(output_csv_rename_log_path)
             if output_rename_dir and not os.path.exists(output_rename_dir): os.makedirs(output_rename_dir, exist_ok=True)
@@ -484,25 +491,30 @@ class SignalNameManager:
                     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                     writer.writeheader()
                     writer.writerows(all_renaming_actions_log)
-                if is_print_message: print(f"Renaming actions log saved to: {output_csv_rename_log_path}")
+                if use_verbose: print(f"Renaming actions log saved to: {output_csv_rename_log_path}")
             except IOError as e:
-                if is_print_message: print(f"Error writing rename log CSV: {e}")
-        elif auto_rename_analog and is_print_message:
+                if use_verbose: print(f"Error writing rename log CSV: {e}")
+        elif auto_rename_analog and use_verbose:
             print("No renaming actions were logged.")
 
-        if is_print_message: print("Finished managing duplicate signals.")
+        if use_verbose: print("Finished managing duplicate signals.")
 
     def rename_signals_from_csv(self, source_dir: str, csv_map_path: str,
                                 signal_type_to_rename: str = 'all',
                                 cfg_encodings_to_try: list = None,
                                 csv_encoding: str = 'utf-8',
                                 csv_delimiter: str = ',',
-                                is_print_message: bool = False) -> None:
+                                verbose_logging_method: Optional[bool] = None,
+                                show_progress_method: Optional[bool] = None) -> None:
+
+        use_verbose = verbose_logging_method if verbose_logging_method is not None else self.verbose_logging
+        use_show_progress = show_progress_method if show_progress_method is not None else self.show_progress_bars
+
         if cfg_encodings_to_try is None:
             cfg_encodings_to_try = ['utf-8', 'windows-1251', 'cp866']
 
         if not os.path.isfile(csv_map_path):
-            if is_print_message: print(f"Error: CSV mapping file not found: {csv_map_path}")
+            if use_verbose: print(f"Error: CSV mapping file not found: {csv_map_path}")
             return
 
         name_map = {}
@@ -518,23 +530,24 @@ class SignalNameManager:
                     if universal_code and universal_code not in ['-', '?','']: # Skip if no valid new name
                         name_map[key] = universal_code
         except Exception as e:
-            if is_print_message: print(f"Error reading or parsing CSV map {csv_map_path}: {e}")
+            if use_verbose: print(f"Error reading or parsing CSV map {csv_map_path}: {e}")
             return
 
         if not name_map:
-            if is_print_message: print("No valid signal name mappings loaded from CSV. Nothing to rename.")
+            if use_verbose: print("No valid signal name mappings loaded from CSV. Nothing to rename.")
             return
 
-        if is_print_message: print(f"Loaded {len(name_map)} signal renaming rules from {csv_map_path}.")
+        if use_verbose: print(f"Loaded {len(name_map)} signal renaming rules from {csv_map_path}.")
 
         cfg_files_to_process = [os.path.join(r, f) for r, _, fs in os.walk(source_dir) for f in fs if f.lower().endswith(".cfg")]
-        if is_print_message: print(f"Found {len(cfg_files_to_process)} .cfg files to process for renaming.")
+        total_files = len(cfg_files_to_process)
+        if use_verbose: print(f"Found {total_files} .cfg files to process for renaming.")
 
         processed_file_count = 0
-        for cfg_file_path in cfg_files_to_process:
+        for cfg_file_path in tqdm(cfg_files_to_process, total=total_files, desc="Renaming signals from CSV", unit="file", disable=not use_show_progress):
             processed_file_count += 1
-            if is_print_message and processed_file_count % 50 == 0:
-                print(f"Processing file for CSV rename {processed_file_count}/{len(cfg_files_to_process)}: {os.path.basename(cfg_file_path)}")
+            # if use_verbose and processed_file_count % 50 == 0 and use_show_progress == False:
+            #     print(f"Processing file for CSV rename {processed_file_count}/{total_files}: {os.path.basename(cfg_file_path)}")
 
             determined_encoding = None
             cfg_lines = None
@@ -545,13 +558,13 @@ class SignalNameManager:
                     determined_encoding = encoding
                     break
                 except UnicodeDecodeError: continue
-                except Exception: continue
+                except Exception: continue # Catch other read errors silently for encoding trials
 
             if not cfg_lines or not determined_encoding:
-                if is_print_message: print(f"  Could not read {os.path.basename(cfg_file_path)} with any encoding. Skipping.")
+                if use_verbose: print(f"  Could not read {os.path.basename(cfg_file_path)} with any encoding. Skipping.")
                 continue
 
-            signal_infos = self._get_raw_signal_info_from_lines(cfg_lines, cfg_file_path)
+            signal_infos = self._get_raw_signal_info_from_lines(cfg_lines, cfg_file_path) # file_path_for_log can be omitted for less noise
             modified_this_file = False
 
             temp_cfg_lines = list(cfg_lines) # Work on a copy
@@ -581,41 +594,47 @@ class SignalNameManager:
 
                             temp_cfg_lines[line_idx] = reconstructed_line
                             modified_this_file = True
-                            if is_print_message:
+                            if use_verbose:
                                 print(f"  In {os.path.basename(cfg_file_path)} (line {line_idx+1}): Renamed '{current_combined_name}' (raw: '{old_raw_name_field}') to raw '{new_raw_name_field}'")
 
             if modified_this_file:
                 try:
                     with open(cfg_file_path, 'w', encoding=determined_encoding) as f_write:
                         f_write.writelines(temp_cfg_lines)
-                    if is_print_message: print(f"  Successfully updated {os.path.basename(cfg_file_path)} with renames from CSV.")
+                    if use_verbose: print(f"  Successfully updated {os.path.basename(cfg_file_path)} with renames from CSV.")
                 except Exception as e:
-                    if is_print_message: print(f"  Error writing changes to {os.path.basename(cfg_file_path)}: {e}")
+                    if use_verbose: print(f"  Error writing changes to {os.path.basename(cfg_file_path)}: {e}")
 
-        if is_print_message: print("Finished renaming signals from CSV.")
+        if use_verbose: print("Finished renaming signals from CSV.")
 
 
     def rename_single_signal(self, source_dir: str,
                              old_name_pattern: str, new_name_field_value: str,
                              cfg_encodings_to_try: list = None,
-                             is_print_message: bool = False) -> None:
+                             verbose_logging_method: Optional[bool] = None,
+                             show_progress_method: Optional[bool] = None) -> None:
+
+        use_verbose = verbose_logging_method if verbose_logging_method is not None else self.verbose_logging
+        use_show_progress = show_progress_method if show_progress_method is not None else self.show_progress_bars
+
         if cfg_encodings_to_try is None:
             cfg_encodings_to_try = ['utf-8', 'windows-1251', 'cp866']
 
-        if not old_name_pattern: # Cannot replace an empty pattern
-            if is_print_message: print("Error: 'old_name_pattern' cannot be empty.")
+        if not old_name_pattern:
+            if use_verbose: print("Error: 'old_name_pattern' cannot be empty.")
             return
 
         cfg_files_to_process = [os.path.join(r, f) for r, _, fs in os.walk(source_dir) for f in fs if f.lower().endswith(".cfg")]
-        if is_print_message: print(f"Found {len(cfg_files_to_process)} .cfg files to process for single signal rename.")
+        total_files = len(cfg_files_to_process)
+        if use_verbose: print(f"Found {total_files} .cfg files to process for single signal rename.")
 
         processed_file_count = 0
         renamed_in_any_file_count = 0
 
-        for cfg_file_path in cfg_files_to_process:
+        for cfg_file_path in tqdm(cfg_files_to_process, total=total_files, desc="Renaming single signal", unit="file", disable=not use_show_progress):
             processed_file_count += 1
-            if is_print_message and processed_file_count % 50 == 0:
-                 print(f"Processing file for single rename {processed_file_count}/{len(cfg_files_to_process)}: {os.path.basename(cfg_file_path)}")
+            # if use_verbose and processed_file_count % 50 == 0 and use_show_progress == False:
+            #      print(f"Processing file for single rename {processed_file_count}/{total_files}: {os.path.basename(cfg_file_path)}")
 
             determined_encoding = None
             cfg_lines = None
@@ -626,13 +645,13 @@ class SignalNameManager:
                     determined_encoding = encoding
                     break
                 except UnicodeDecodeError: continue
-                except Exception: continue
+                except Exception: continue # Catch other read errors silently for encoding trials
 
             if not cfg_lines or not determined_encoding:
-                if is_print_message: print(f"  Could not read {os.path.basename(cfg_file_path)} with any encoding. Skipping.")
+                if use_verbose: print(f"  Could not read {os.path.basename(cfg_file_path)} with any encoding. Skipping.")
                 continue
 
-            signal_infos = self._get_raw_signal_info_from_lines(cfg_lines, cfg_file_path)
+            signal_infos = self._get_raw_signal_info_from_lines(cfg_lines, cfg_file_path) # file_path_for_log can be omitted for less noise
             modified_this_file = False
             temp_cfg_lines = list(cfg_lines)
 
@@ -651,7 +670,7 @@ class SignalNameManager:
 
                             temp_cfg_lines[line_idx] = reconstructed_line
                             modified_this_file = True
-                            if is_print_message:
+                            if use_verbose:
                                 print(f"  In {os.path.basename(cfg_file_path)} (line {line_idx+1}): Replaced raw name '{old_name_pattern}' with '{new_name_field_value}'")
 
             if modified_this_file:
@@ -659,47 +678,49 @@ class SignalNameManager:
                     with open(cfg_file_path, 'w', encoding=determined_encoding) as f_write:
                         f_write.writelines(temp_cfg_lines)
                     renamed_in_any_file_count+=1
-                    if is_print_message: print(f"  Successfully updated {os.path.basename(cfg_file_path)} with single signal rename.")
+                    if use_verbose: print(f"  Successfully updated {os.path.basename(cfg_file_path)} with single signal rename.")
                 except Exception as e:
-                    if is_print_message: print(f"  Error writing changes to {os.path.basename(cfg_file_path)}: {e}")
+                    if use_verbose: print(f"  Error writing changes to {os.path.basename(cfg_file_path)}: {e}")
 
-        if is_print_message: print(f"Finished single signal rename. Changes made in {renamed_in_any_file_count} file(s).")
+        if use_verbose: print(f"Finished single signal rename. Changes made in {renamed_in_any_file_count} file(s).")
 
 
     def merge_signal_code_csvs(self, old_csv_path: str, new_csv_path: str, merged_csv_path: str,
                                old_csv_encoding: str = 'utf-8', new_csv_encoding: str = 'utf-8',
                                old_csv_delimiter: str = ',', new_csv_delimiter: str = ',',
-                               is_merge_values: bool = True, is_print_message: bool = False) -> None:
+                               is_merge_values: bool = True,
+                               verbose_logging_method: Optional[bool] = None) -> None: # Renamed is_print_message
 
-        merged_data = {} # Key: {'universal_code': str, 'Value': int}
+        use_verbose = verbose_logging_method if verbose_logging_method is not None else self.verbose_logging
+        # This method does not have a tqdm loop, so show_progress_method is not used here.
 
-        # Read OLD CSV
+        merged_data = {}
+
         try:
             with open(old_csv_path, mode='r', encoding=old_csv_encoding) as csvfile:
                 reader = csv.DictReader(csvfile, delimiter=old_csv_delimiter)
                 if not all(col in reader.fieldnames for col in ['Key', 'universal_code', 'Value']):
-                     if is_print_message: print(f"Error: Old CSV {old_csv_path} must have 'Key', 'universal_code', 'Value' columns. Found: {reader.fieldnames}")
+                     if use_verbose: print(f"Error: Old CSV {old_csv_path} must have 'Key', 'universal_code', 'Value' columns. Found: {reader.fieldnames}")
                      return
                 for row in reader:
                     try:
                         merged_data[row['Key']] = {
-                            'universal_code': row['universal_code'] if row['universal_code'] not in ['-', ''] else '?', # Default to ? if undefined
+                            'universal_code': row['universal_code'] if row['universal_code'] not in ['-', ''] else '?',
                             'Value': int(row['Value'])
                         }
                     except ValueError:
-                        if is_print_message: print(f"Warning: Skipping row in {old_csv_path} due to invalid 'Value': {row}")
+                        if use_verbose: print(f"Warning: Skipping row in {old_csv_path} due to invalid 'Value': {row}")
         except FileNotFoundError:
-            if is_print_message: print(f"Info: Old CSV {old_csv_path} not found. Starting fresh merge.")
+            if use_verbose: print(f"Info: Old CSV {old_csv_path} not found. Starting fresh merge.")
         except Exception as e:
-            if is_print_message: print(f"Error reading old CSV {old_csv_path}: {e}")
+            if use_verbose: print(f"Error reading old CSV {old_csv_path}: {e}")
             return
 
-        # Read NEW CSV and merge
         try:
             with open(new_csv_path, mode='r', encoding=new_csv_encoding) as csvfile:
                 reader = csv.DictReader(csvfile, delimiter=new_csv_delimiter)
-                if not all(col in reader.fieldnames for col in ['Key', 'universal_code', 'Value']): # Assuming new also has Key, universal_code, Value
-                     if is_print_message: print(f"Error: New CSV {new_csv_path} must have 'Key', 'universal_code', 'Value' columns. Found: {reader.fieldnames}")
+                if not all(col in reader.fieldnames for col in ['Key', 'universal_code', 'Value']):
+                     if use_verbose: print(f"Error: New CSV {new_csv_path} must have 'Key', 'universal_code', 'Value' columns. Found: {reader.fieldnames}")
                      return
                 for row in reader:
                     key = row['Key']
@@ -707,37 +728,31 @@ class SignalNameManager:
                     try:
                         new_value = int(row['Value'])
                     except ValueError:
-                        if is_print_message: print(f"Warning: Skipping row in {new_csv_path} for key '{key}' due to invalid 'Value': {row}")
+                        if use_verbose: print(f"Warning: Skipping row in {new_csv_path} for key '{key}' due to invalid 'Value': {row}")
                         continue
 
                     if key in merged_data:
-                        # Key exists, decide how to merge
                         if is_merge_values:
                             merged_data[key]['Value'] += new_value
-                        else: # Overwrite value
+                        else:
                             merged_data[key]['Value'] = new_value
 
-                        # Universal code: old takes precedence if it's not default '?'
                         if merged_data[key]['universal_code'] == '?':
                             merged_data[key]['universal_code'] = new_universal_code
-                        # else, keep the old one
                     else:
-                        # New key
                         merged_data[key] = {
                             'universal_code': new_universal_code,
                             'Value': new_value
                         }
         except FileNotFoundError:
-            if is_print_message: print(f"Error: New CSV {new_csv_path} not found. Cannot merge.")
-            return # Cannot proceed without new CSV
+            if use_verbose: print(f"Error: New CSV {new_csv_path} not found. Cannot merge.")
+            return
         except Exception as e:
-            if is_print_message: print(f"Error reading new CSV {new_csv_path}: {e}")
+            if use_verbose: print(f"Error reading new CSV {new_csv_path}: {e}")
             return
 
-        # Sort by 'Value' (count) descending
         sorted_merged_list = sorted(merged_data.items(), key=lambda item: item[1]['Value'], reverse=True)
 
-        # Write merged data
         output_dir = os.path.dirname(merged_csv_path)
         if output_dir and not os.path.exists(output_dir):
             os.makedirs(output_dir, exist_ok=True)
@@ -745,12 +760,12 @@ class SignalNameManager:
         try:
             with open(merged_csv_path, 'w', newline='', encoding='utf-8') as csvfile:
                 writer = csv.writer(csvfile)
-                writer.writerow(['Key', 'universal_code', 'Value']) # Header
+                writer.writerow(['Key', 'universal_code', 'Value'])
                 for key, data in sorted_merged_list:
                     writer.writerow([key, data['universal_code'], data['Value']])
-            if is_print_message:
+            if use_verbose:
                 print(f"Merged signal code CSV saved to: {merged_csv_path} with {len(sorted_merged_list)} entries.")
         except IOError as e:
-            if is_print_message: print(f"Error writing merged CSV to {merged_csv_path}: {e}")
+            if use_verbose: print(f"Error writing merged CSV to {merged_csv_path}: {e}")
         except Exception as e:
-            if is_print_message: print(f"An unexpected error occurred while writing merged CSV {merged_csv_path}: {e}")
+            if use_verbose: print(f"An unexpected error occurred while writing merged CSV {merged_csv_path}: {e}")

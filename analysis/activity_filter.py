@@ -91,10 +91,11 @@ def sliding_window_fft(signal: np.ndarray, fft_window_size: int, num_harmonics: 
 
 
 class OscillogramActivityFilter:
-    def __init__(self, config: Dict[str, Any], normalizer: Optional[OscillogramNormalizer] = None):
+    def __init__(self, config: Dict[str, Any], normalizer: Optional[OscillogramNormalizer] = None, show_progress_bars: bool = True):
         self.config = config
         self.normalizer = normalizer
         self.fft_window_size = -1 # To be set per oscillogram based on its frequency and sample rate
+        self.show_progress_bars = show_progress_bars
 
         # Default patterns if not in config
         default_analyze_patterns = ['i |', 'u |', 'phase: n'] # Matches current, voltage, neutral signals
@@ -397,7 +398,7 @@ class OscillogramActivityFilter:
 
         if self.verbose: print(f"OscillogramActivityFilter: Found {len(cfg_files)} .cfg files to filter.")
 
-        for cfg_file_path in tqdm(cfg_files, desc="Filtering oscillograms for activity", disable=not self.verbose):
+        for cfg_file_path in tqdm(cfg_files, desc="Filtering oscillograms for activity", disable=not self.show_progress_bars):
             base_name = os.path.basename(cfg_file_path)
             # if self.verbose: print(f"Processing file: {base_name}") # tqdm provides progress
             try:

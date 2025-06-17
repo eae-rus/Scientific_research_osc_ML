@@ -15,12 +15,14 @@ class OvervoltageDetector:
     def __init__(self, config: Dict[str, Any],
                  normalizer: OscillogramNormalizer,
                  bus_splitter: OscillogramToCsvConverter,
-                 norm_coef_df: pd.DataFrame):
+                 norm_coef_df: pd.DataFrame,
+                 show_progress_bars: bool = True): # Added show_progress_bars
         self.config = config
         self.normalizer = normalizer
         self.bus_splitter = bus_splitter
         self.norm_coef_df = norm_coef_df # DataFrame of normalization coefficients
         self.verbose = config.get('verbose', False)
+        self.show_progress_bars = show_progress_bars # Stored
 
         # Extract config values with defaults
         self.VALID_NOMINAL_VOLTAGES: Set[float] = set(config.get('VALID_NOMINAL_VOLTAGES', {6000.0, 10000.0, 35000.0}))
@@ -347,7 +349,7 @@ class OvervoltageDetector:
 
         if self.verbose: print(f"Found {len(cfg_files)} .cfg files for overvoltage analysis.")
 
-        for cfg_file_path in tqdm(cfg_files, desc="Analyzing oscillograms for overvoltage", disable=not self.verbose):
+        for cfg_file_path in tqdm(cfg_files, desc="Analyzing oscillograms for overvoltage", disable=not self.show_progress_bars):
             base_name = os.path.basename(cfg_file_path)
             if self.verbose and len(cfg_files) < 20: print(f"  Processing: {base_name}") # Print if few files
             try:

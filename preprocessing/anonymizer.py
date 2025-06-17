@@ -1,9 +1,11 @@
 import os
 import hashlib
+from tqdm import tqdm # Added import
 
 class DataAnonymizer:
-    def __init__(self):
-        pass
+    def __init__(self, verbose_logging: bool = False, show_progress_bars: bool = True): # Modified parameters
+        self.verbose_logging = verbose_logging
+        self.show_progress_bars = show_progress_bars
 
     def anonymize_file(self, cfg_file_path: str, encoding: str) -> bool:
         try:
@@ -173,14 +175,14 @@ class DataAnonymizer:
                     cfg_files_to_process.append(os.path.join(root, file))
 
         total_cfg_files_found = len(cfg_files_to_process)
-        print(f"Found {total_cfg_files_found} .cfg files to process in directory {source_dir}.")
+        if self.verbose_logging: # Changed to verbose_logging
+            print(f"Found {total_cfg_files_found} .cfg files to process in directory {source_dir}.")
 
-        for cfg_file_path in cfg_files_to_process:
-            # Store original path for logging, as cfg_file_path variable might represent a renamed path later if not careful,
-            # though anonymize_file takes the current path and renames it.
+        for cfg_file_path in tqdm(cfg_files_to_process, total=total_cfg_files_found, desc="Anonymizing files", unit="file", disable=not self.show_progress_bars): # Added tqdm
             original_path_for_logging = cfg_file_path
 
-            print(f"Processing {original_path_for_logging}...")
+            if self.verbose_logging: # Changed to verbose_logging
+                print(f"Processing {original_path_for_logging}...")
             successfully_processed = False
             encodings_to_try = ['utf-8', 'windows-1251', 'cp866']
 
@@ -194,29 +196,24 @@ class DataAnonymizer:
                 if not os.path.exists(current_path_to_try):
                     # This means the file was successfully processed and renamed by a previous encoding attempt.
                     # (or deleted, but success is implied if successfully_processed is True)
-                    if successfully_processed: # Should be true if renamed
-                         print(f"  File {original_path_for_logging} already processed and renamed.")
+                    if successfully_processed:
+                        if self.verbose_logging: print(f"  File {original_path_for_logging} already processed and renamed.")
                     else:
-                         # This case is unusual: file gone but not marked success. Could be external deletion.
-                         print(f"  File {original_path_for_logging} no longer exists, but wasn't marked as successfully processed. Skipping further attempts.")
-                    break # Stop trying encodings for this file.
+                        if self.verbose_logging: print(f"  File {original_path_for_logging} no longer exists, but wasn't marked as successfully processed. Skipping further attempts.")
+                    break
 
-                print(f"  Trying encoding: {encoding_attempt} for {current_path_to_try}")
+                if self.verbose_logging: print(f"  Trying encoding: {encoding_attempt} for {current_path_to_try}")
                 if self.anonymize_file(current_path_to_try, encoding=encoding_attempt):
                     successfully_processed = True
                     processed_files_count += 1
-                    # anonymize_file handles renaming, so current_path_to_try is now the old name.
-                    # The new name is hash-based.
-                    print(f"  Successfully anonymized {original_path_for_logging} using {encoding_attempt}. Files are now hash-named.")
-                    break # Move to the next file from os.walk list
+                    if self.verbose_logging: print(f"  Successfully anonymized {original_path_for_logging} using {encoding_attempt}. Files are now hash-named.")
+                    break
                 else:
-                    # anonymize_file returned False, error was printed by it.
-                    # File still has its original name (current_path_to_try), try next encoding.
-                    print(f"  Failed with encoding {encoding_attempt} for {current_path_to_try}.")
+                    if self.verbose_logging: print(f"  Failed with encoding {encoding_attempt} for {current_path_to_try}.")
 
             if not successfully_processed:
                 failed_files_log.append(f"{original_path_for_logging} - Could not process with any supported encoding or crucial error (e.g., DAT missing or unreadable).")
-                print(f"  Failed to anonymize {original_path_for_logging} after all attempts.")
+                if self.verbose_logging: print(f"  Failed to anonymize {original_path_for_logging} after all attempts.")
 
         if failed_files_log:
             log_path = os.path.join(source_dir, 'protected_files.txt')
@@ -224,8 +221,8 @@ class DataAnonymizer:
                 with open(log_path, 'w', encoding='utf-8') as log_file:
                     for entry in failed_files_log:
                         log_file.write(entry + "\n")
-                print(f"Wrote {len(failed_files_log)} failure logs to {log_path}")
+                if self.verbose_logging: print(f"Wrote {len(failed_files_log)} failure logs to {log_path}")
             except IOError as e:
-                print(f"Error writing protected_files.txt: {e}")
+                if self.verbose_logging: print(f"Error writing protected_files.txt: {e}")
 
-        print(f"Anonymization of directory {source_dir} complete. Successfully processed {processed_files_count} out of {total_cfg_files_found} found .cfg files.")
+        if self.verbose_logging: print(f"Anonymization of directory {source_dir} complete. Successfully processed {processed_files_count} out of {total_cfg_files_found} found .cfg files.")
