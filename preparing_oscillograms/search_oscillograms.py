@@ -52,9 +52,7 @@ class SearchOscillograms():
 
     def copy_new_oscillograms(self, source_dir: str, dest_dir: str, copied_hashes: dict = {},
                             preserve_dir_structure: bool = True, use_hashes: bool = True,
-                            use_comtrade: bool = True, use_new_comtrade: bool = True, use_brs: bool = True,
-                            use_neva: bool = True, use_ekra: bool = True, use_parma: bool = True,
-                            use_black_box: bool = True, use_res_3: bool = True, use_osc: bool = True,
+                            types_to_copy: list[TYPE_OSC] = None,
                             _new_copied_hashes: dict = {}, _first_run: bool = True, _path_temp = None, 
                             progress_callback = None, stop_processing_fn = None, is_write_names = None, **kwargs) -> int:
         """
@@ -64,10 +62,10 @@ class SearchOscillograms():
             source_dir (str): the path to the source directory.
             dest_dir (str): the path to the target directory.
             copied_hashes (dict): A hash table for tracking copied files (by default, an empty dictionary).
-            preserve_structure (bool): do I save the directory structure in the target directory?
+            preserve_dir_structure (bool): do I save the directory structure in the target directory?
             use_hashes (bool): do I use hash sums to verify the uniqueness of files?
-            copy_comtrade (bool): do I copy Comtrade files (.cfg and .dat)?
-            copy_brs (bool): do I copy Bresler files (.brs)?
+            types_to_copy (list[TYPE_OSC], optional): A list of oscillogram types (enum TYPE_OSC) to copy.
+                                                     If None or empty, all types will be copied. Defaults to None.
             
             local variables
             _new_copied_hashes (dict): Dictionary of hashes of newly copied files.
@@ -85,6 +83,7 @@ class SearchOscillograms():
             - a new file "_new_hash_table" is being created
         """
         count_new_files = 0
+        actual_types_to_copy = list(TYPE_OSC) if not types_to_copy else types_to_copy
          
         if _first_run:
             # TODO: rewrite the functions into one so as not to repeat
@@ -112,54 +111,54 @@ class SearchOscillograms():
                                 progress_callback(f"Processing file: {root} / {file}")
                             else:
                                 progress_callback()
-                        if use_comtrade and file_lower.endswith(self.CFG_EXTENSION):
+                        if TYPE_OSC.COMTRADE_CFG_DAT in actual_types_to_copy and file_lower.endswith(self.CFG_EXTENSION):
                             count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                                   preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                                   type_osc=TYPE_OSC.COMTRADE_CFG_DAT)
     
-                        elif use_new_comtrade and file_lower.endswith(self.CFF_EXTENSION):
+                        elif TYPE_OSC.COMTRADE_CFF in actual_types_to_copy and file_lower.endswith(self.CFF_EXTENSION):
                             count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                                   preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                                   type_osc=TYPE_OSC.COMTRADE_CFF)
     
-                        elif use_brs and file_lower.endswith(self.BRS_EXTENSION):
+                        elif TYPE_OSC.BRESLER in actual_types_to_copy and file_lower.endswith(self.BRS_EXTENSION):
                             count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                                   preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                                   type_osc=TYPE_OSC.BRESLER)
     
-                        elif use_black_box and file_lower.endswith(self.BLACK_BOX_EXTENSION):
+                        elif TYPE_OSC.BLACK_BOX in actual_types_to_copy and file_lower.endswith(self.BLACK_BOX_EXTENSION):
                             count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                                   preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                                   type_osc=TYPE_OSC.BLACK_BOX)
     
-                        elif use_res_3 and file_lower.endswith(self.RES_3_EXTENSION):
+                        elif TYPE_OSC.RES_3 in actual_types_to_copy and file_lower.endswith(self.RES_3_EXTENSION):
                             count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                                   preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                                   type_osc=TYPE_OSC.RES_3)
     
-                        elif use_osc and file_lower.endswith(self.OSC_EXTENSION):  # I have not yet found out who the osc format is typical for
+                        elif TYPE_OSC.OSC in actual_types_to_copy and file_lower.endswith(self.OSC_EXTENSION):  # I have not yet found out who the osc format is typical for
                             count_new_files +=self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                                  preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                                  type_osc=TYPE_OSC.OSC)
     
-                        elif use_neva and self.NEVA_EXTENSION in file_lower and not file_lower.endswith('.xml'):
+                        elif TYPE_OSC.NEVA in actual_types_to_copy and self.NEVA_EXTENSION in file_lower and not file_lower.endswith('.xml'):
                             # TODO: The search needs to be finalized. files do not always have the number 1 at the end (.os1). 
                             # It may be necessary to adjust the search, as it is not optimal right now.
                             count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                                   preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                                   type_osc=TYPE_OSC.NEVA)
     
-                        elif use_ekra and file_lower.endswith(self.EKRA_EXTENSION):
+                        elif TYPE_OSC.EKRA in actual_types_to_copy and file_lower.endswith(self.EKRA_EXTENSION):
                             count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                                   preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                                   type_osc=TYPE_OSC.EKRA)
     
-                        elif use_parma and (self.PARMA_TO_EXTENSION in file_lower or self.PARMA_T_ZERO_EXTENSION in file_lower):
+                        elif TYPE_OSC.PARMA_TO in actual_types_to_copy and (self.PARMA_TO_EXTENSION in file_lower or self.PARMA_T_ZERO_EXTENSION in file_lower):
                             count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                                   preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                                   type_osc=TYPE_OSC.PARMA_TO)
     
-                        elif (use_parma and 
+                        elif (TYPE_OSC.PARMA in actual_types_to_copy and
                               not (file_lower.endswith(self.WORD_1_EXTENSION) or file_lower.endswith(self.WORD_2_EXTENSION) or file_lower.endswith(self.WORD_3_EXTENSION) or 
                                    file_lower.endswith(self.PDF_EXTENSION) or ".doc" in file_lower) and
                               (self.PARMA_O_EXTENSION in file_lower or self.PARMA_ZERO_EXTENSION in file_lower)):  # Если файл имеет расширение .do, d0, ?d1? (характерно для специальных от ПАРМЫ)
@@ -173,8 +172,7 @@ class SearchOscillograms():
                             count_new_files += self._process_archive_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                                           preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                                           _first_run=_first_run, _path_temp=_path_temp,
-                                                                          use_comtrade=use_comtrade, use_new_comtrade=use_new_comtrade, use_neva=use_neva, use_ekra=use_ekra,
-                                                                          use_brs=use_brs, use_black_box=use_black_box, use_res_3=use_res_3, use_parma=use_parma, use_osc=use_osc, 
+                                                                          types_to_copy=actual_types_to_copy,
                                                                           progress_callback=progress_callback, stop_processing_fn=stop_processing_fn, is_write_names=is_write_names)
     
             
@@ -218,52 +216,52 @@ class SearchOscillograms():
                         progress_callback("The process was interrupted by the user.")
                         break
                     file_lower = file.lower()
-                    if use_comtrade and file_lower.endswith(self.CFG_EXTENSION):
+                    if TYPE_OSC.COMTRADE_CFG_DAT in actual_types_to_copy and file_lower.endswith(self.CFG_EXTENSION):
                         count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                               preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                               type_osc=TYPE_OSC.COMTRADE_CFG_DAT)
     
-                    elif use_new_comtrade and file_lower.endswith(self.CFF_EXTENSION):
+                    elif TYPE_OSC.COMTRADE_CFF in actual_types_to_copy and file_lower.endswith(self.CFF_EXTENSION):
                         count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                               preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                               type_osc=TYPE_OSC.COMTRADE_CFF)
     
-                    elif use_brs and file_lower.endswith(self.BRS_EXTENSION):
+                    elif TYPE_OSC.BRESLER in actual_types_to_copy and file_lower.endswith(self.BRS_EXTENSION):
                         count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                               preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                               type_osc=TYPE_OSC.BRESLER)
     
-                    elif use_black_box and file_lower.endswith(self.BLACK_BOX_EXTENSION):
+                    elif TYPE_OSC.BLACK_BOX in actual_types_to_copy and file_lower.endswith(self.BLACK_BOX_EXTENSION):
                         count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                               preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                               type_osc=TYPE_OSC.BLACK_BOX)
     
-                    elif use_res_3 and file_lower.endswith(self.RES_3_EXTENSION):
+                    elif TYPE_OSC.RES_3 in actual_types_to_copy and file_lower.endswith(self.RES_3_EXTENSION):
                         count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                               preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                               type_osc=TYPE_OSC.RES_3)
     
-                    elif use_osc and file_lower.endswith(self.OSC_EXTENSION):
+                    elif TYPE_OSC.OSC in actual_types_to_copy and file_lower.endswith(self.OSC_EXTENSION):
                         count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                               preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                               type_osc=TYPE_OSC.OSC)
     
-                    elif use_neva and self.NEVA_EXTENSION in file_lower and not file_lower.endswith('.xml'):
+                    elif TYPE_OSC.NEVA in actual_types_to_copy and self.NEVA_EXTENSION in file_lower and not file_lower.endswith('.xml'):
                         count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                               preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                               type_osc=TYPE_OSC.NEVA)
     
-                    elif use_ekra and file_lower.endswith(self.EKRA_EXTENSION):
+                    elif TYPE_OSC.EKRA in actual_types_to_copy and file_lower.endswith(self.EKRA_EXTENSION):
                         count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                               preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                               type_osc=TYPE_OSC.EKRA)
 
-                    elif use_parma and (self.PARMA_TO_EXTENSION in file_lower or self.PARMA_T_ZERO_EXTENSION in file_lower):
+                    elif TYPE_OSC.PARMA_TO in actual_types_to_copy and (self.PARMA_TO_EXTENSION in file_lower or self.PARMA_T_ZERO_EXTENSION in file_lower):
                         count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                               preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                               type_osc=TYPE_OSC.PARMA_TO)
 
-                    elif (use_parma and 
+                    elif (TYPE_OSC.PARMA in actual_types_to_copy and
                           not (file_lower.endswith(self.WORD_1_EXTENSION) or file_lower.endswith(self.WORD_2_EXTENSION) or file_lower.endswith(self.WORD_3_EXTENSION) or 
                                ".doc" in file_lower) and
                           (self.PARMA_O_EXTENSION in file_lower or self.PARMA_ZERO_EXTENSION)):
@@ -276,8 +274,7 @@ class SearchOscillograms():
                         count_new_files += self._process_archive_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                                  preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                                  _first_run=_first_run, _path_temp=_path_temp,
-                                                                 use_comtrade=use_comtrade, use_new_comtrade=use_new_comtrade, use_neva=use_neva, use_ekra=use_ekra,
-                                                                 use_brs=use_brs, use_black_box=use_black_box, use_res_3=use_res_3, use_parma=use_parma, use_osc=use_osc, 
+                                                                 types_to_copy=actual_types_to_copy,
                                                                  progress_callback=progress_callback, stop_processing_fn=stop_processing_fn, is_write_names=is_write_names)
             
             return count_new_files
@@ -407,20 +404,19 @@ class SearchOscillograms():
     def _process_archive_file(self, file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
                              preserve_dir_structure: bool = True, use_hashes: bool = True, _new_copied_hashes: dict = {},
                              _first_run: bool = False, _path_temp = None,
-                             use_comtrade: bool = True, use_new_comtrade: bool = True, use_brs: bool = True,
-                             use_neva: bool = True, use_ekra: bool = True, use_parma: bool = True,
-                             use_black_box: bool = True, use_res_3: bool = True, use_osc: bool = True, 
+                             types_to_copy: list[TYPE_OSC] = None,
                              progress_callback = None, stop_processing_fn = None, is_write_names = None, **kwargs) -> int:
         """
-        Processes a single file, copying it to the destination directory and updating the copied_hashes dictionary.
+        Processes a single archive file, extracting it and then processing its contents.
 
         Args:
-            file (str): The name of the file to process.
-            root (str): The root directory of the file.
+            file (str): The name of the archive file to process.
+            root (str): The root directory of the archive file.
             dest_dir (str): The destination directory for the copied files.
             copied_hashes (dict): The dictionary of copied file hashes.
             preserve_dir_structure (bool): Whether to preserve the directory structure.
             use_hashes (bool): Whether to use file hashes for comparison.
+            types_to_copy (list[TYPE_OSC]): A list of oscillogram types to copy from the archive.
 
             local variables
             _new_copied_hashes (dict): The dictionary of new copied file hashes.
@@ -461,10 +457,8 @@ class SearchOscillograms():
 
         # FIXME: Think about saving the path inside the archives - this feature does not work fully yet.
         count_new_files += self.copy_new_oscillograms(source_dir=_path_temp, dest_dir=dest_dir, copied_hashes=copied_hashes, preserve_dir_structure=preserve_dir_structure,
-                                                      use_hashes=use_hashes, 
+                                                      use_hashes=use_hashes, types_to_copy=types_to_copy,
                                                       _new_copied_hashes=_new_copied_hashes, _first_run = False, _path_temp=_path_temp,
-                                                      use_comtrade=use_comtrade, use_new_comtrade=use_new_comtrade, use_neva=use_neva, use_ekra=use_ekra,
-                                                      use_brs=use_brs, use_black_box=use_black_box, use_res_3=use_res_3, use_parma=use_parma, use_osc=use_osc, 
                                                       progress_callback=progress_callback, stop_processing_fn=stop_processing_fn, is_write_names=is_write_names)
         try:
             shutil.rmtree(source_dir_temp) # Deleting the temporary directory
