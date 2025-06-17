@@ -18,6 +18,7 @@ except ImportError:
 
 # Define TYPE_OSC Enum as it exists in search_oscillograms.py
 class TYPE_OSC(Enum):
+    #  ?? WTF ??
     COMTRADE_CFG_DAT = "COMTRADE files (*.cfg/*.dat)"
     COMTRADE_CFF = "COMTRADE files (*.cff)"
     ARCH_7Z = "Archive files (*.7z)"
