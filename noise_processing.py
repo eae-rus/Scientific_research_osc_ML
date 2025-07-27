@@ -19,7 +19,7 @@ def generate_analog_signals_name(is_print_to_console: bool = False, is_print_to_
         dict - dictionary with groups and names of signals
     """
     dict_names = {}
-    for i in range(1, 9):
+    for i in range(1, 19):
         if is_print_to_console:
             print(f"------------ Bus {i} ------------")
         dict_names_new = {}
@@ -129,7 +129,7 @@ def generate_discrete_signals_name(is_print_to_console: bool = False, is_print_t
     
     dict_names["Bus 0 (common signals)"] = dict_names_new
     
-    for i in range(1, 9):
+    for i in range(1, 19):
         if is_print_to_console:
             print(f"------------ bus {i} ------------")
         dict_names_new = {}
