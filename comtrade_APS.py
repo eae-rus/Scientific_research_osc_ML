@@ -2,25 +2,21 @@
 # MIT License
 
 # Copyright (c) 2024 Evdakov Aleksey Evgenievich
-# Created on the basis of the "comtrade 0.1.2" library (Copyright (c) 2018 David Rodrigues Parrini) provided by the link "https://pypi.org/project/comtrade/"
+# Создано на основе библиотеки "comtrade 0.1.2" (Copyright (c) 2018 David Rodrigues Parrini) предоставленной по ссылке "https://pypi.org/project/comtrade/"
 
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
+# Данная лицензия разрешает лицам, получившим копию данного программного обеспечения и сопутствующей документации
+# (далее – Программное обеспечение), безвозмездно использовать Программное обеспечение без ограничений, включая, но не ограничиваясь,
+# правами на использование, копирование, изменение, слияние, публикацию, распространение, сублицензирование и/или продажу
+# копий Программного обеспечения, а также лицам, которым предоставляется данное Программное обеспечение, при соблюдении следующих условий:
 
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
+# Вышеуказанное уведомление об авторском праве и данное уведомление о разрешении должны быть включены во все
+# копии или существенные части Программного обеспечения.
 
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
+# ПРОГРАММНОЕ ОБЕСПЕЧЕНИЕ ПРЕДОСТАВЛЯЕТСЯ «КАК ЕСТЬ», БЕЗ КАКИХ-ЛИБО ГАРАНТИЙ, ЯВНЫХ ИЛИ ПОДРАЗУМЕВАЕМЫХ, ВКЛЮЧАЯ, НО НЕ ОГРАНИЧИВАЯСЬ,
+# ГАРАНТИИ ТОВАРНОЙ ПРИГОДНОСТИ, СООТВЕТСТВИЯ ОПРЕДЕЛЕННОМУ НАЗНАЧЕНИЮ И ОТСУТСТВИЯ НАРУШЕНИЙ. НИ В КАКОМ СЛУЧАЕ
+# АВТОРЫ ИЛИ ПРАВООБЛАДАТЕЛИ НЕ НЕСУТ ОТВЕТСТВЕННОСТИ ПО КАКИМ-ЛИБО ИСКАМ, УБЫТКАМ ИЛИ ДРУГИМ ТРЕБОВАНИЯМ, БУДЬ ТО
+# В РЕЗУЛЬТАТЕ ДЕЙСТВИЯ ДОГОВОРА, ДЕЛИКТА ИЛИ ИНОГО, ВОЗНИКШИМ ИЗ, ВНЕ ИЛИ В СВЯЗИ С ПРОГРАММНЫМ ОБЕСПЕЧЕНИЕМ ИЛИ
+# ИСПОЛЬЗОВАНИЕМ ИЛИ ИНЫМИ ДЕЙСТВИЯМИ С ПРОГРАММНЫМ ОБЕСПЕЧЕНИЕМ.
 
 
 
@@ -43,38 +39,38 @@ except ModuleNotFoundError:
     HAS_NUMPY = False
 
 
-# COMTRADE standard revisions
+# Ревизии стандарта COMTRADE
 REV_1991 = "1991"
 REV_1999 = "1999"
 REV_2013 = "2013"
 
-# DAT file format types
+# Типы форматов файлов DAT
 TYPE_ASCII = "ASCII"
 TYPE_BINARY = "BINARY"
 TYPE_BINARY32 = "BINARY32"
 TYPE_FLOAT32 = "FLOAT32"
 
-# Special values
+# Специальные значения
 TIMESTAMP_MISSING = 0xFFFFFFFF
 
-# CFF headers
+# Заголовки CFF
 CFF_HEADER_REXP = r"(?i)--- file type: ([a-z]+)(?:\s+([a-z0-9]+)(?:\s*\:\s*([0-9]+))?)? ---$"
 
-# common separator character of data fields of CFG and ASCII DAT files
+# общий символ-разделитель полей данных файлов CFG и ASCII DAT
 SEPARATOR = ","
 
-# timestamp regular expression
+# регулярное выражение для временной метки
 re_date = re.compile(r"([0-9]{1,2})/([0-9]{1,2})/([0-9]{2,4})")
 re_time = re.compile(r"([0-9]{1,2}):([0-9]{2}):([0-9]{2})(\.([0-9]{1,12}))?")
 
 
-# Non-standard revision warning
-WARNING_UNKNOWN_REVISION = "Unknown standard revision \"{}\""
-# Date time with nanoseconds resolution warning
-WARNING_DATETIME_NANO = "Unsupported datetime objects with nanoseconds \
-resolution. Using truncated values."
-# Date time with year 0, month 0 and/or day 0.
-WARNING_MINDATE = "Missing date values. Using minimum values: {}."
+# Предупреждение о нестандартной ревизии
+WARNING_UNKNOWN_REVISION = "Неизвестная ревизия стандарта \"{}\""
+# Предупреждение о дате и времени с наносекундным разрешением
+WARNING_DATETIME_NANO = "Неподдерживаемые объекты datetime с наносекундным \
+разрешением. Используются усеченные значения."
+# Дата и время с годом 0, месяцем 0 и/или днем 0.
+WARNING_MINDATE = "Отсутствуют значения даты. Используются минимальные значения: {}."
 
 
 def _read_sep_values(line, expected: int = -1, default: str = ''):
@@ -116,7 +112,7 @@ def _get_time(time_str: str, ignore_warnings: bool = False) -> tuple:
         minute = int(m.group(2))
         second = int(m.group(3))
         fracsec_str = m.group(5)
-        # Pad fraction of seconds with 0s to the right
+        # Дополнить дробную часть секунд нулями справа
         if len(fracsec_str) <= 6:
             fracsec_str = fill_with_zeros_to_the_right(fracsec_str, 6)
         else:
@@ -127,8 +123,8 @@ def _get_time(time_str: str, ignore_warnings: bool = False) -> tuple:
         microsecond = frac_second
 
         if in_nanoseconds:
-            # Nanoseconds resolution is not supported by datetime module, so it's
-            # converted to integer below.
+            # Разрешение в наносекундах не поддерживается модулем datetime,
+            # поэтому ниже оно преобразуется в целое число.
             if not ignore_warnings:
                 warnings.warn(Warning(WARNING_DATETIME_NANO))
             microsecond = int(microsecond * 1E-3)
@@ -145,10 +141,10 @@ def fill_with_zeros_to_the_right(number_str: str, width: int):
 
 
 def _read_timestamp(timestamp_line: str, rev_year: str, ignore_warnings: bool = False) -> tuple:
-    """Process comma separated fields and returns a tuple containing the timestamp
-    and a boolean value indicating whether nanoseconds are used.
-    Can possibly return the timestamp 00/00/0000 00:00:00.000 for empty strings
-    or empty pairs."""
+    """Обрабатывает поля, разделенные запятыми, и возвращает кортеж, содержащий временную метку
+    и логическое значение, указывающее, используются ли наносекунды.
+    Может возвращать временную метку 00/00/0000 00:00:00.000 для пустых строк
+    или пустых пар."""
     day, month, year, hour, minute, second, microsecond = (0,)*7
     nanosec = False
     if len(timestamp_line.strip()) > 0:
@@ -156,10 +152,10 @@ def _read_timestamp(timestamp_line: str, rev_year: str, ignore_warnings: bool = 
         if len(values) >= 2:
             date_str, time_str = values[0:2]
             if len(date_str.strip()) > 0:
-                # 1991 Format Uses mm/dd/yyyy format
+                # Формат 1991 года использует формат мм/дд/гггг
                 if rev_year == REV_1991:
                     month, day, year = _get_date(date_str)
-                # Modern Formats Use dd/mm/yyyy format
+                # Современные форматы используют формат дд/мм/гггг
                 else:
                     day, month, year = _get_date(date_str)
             if len(time_str.strip()) > 0:
@@ -176,7 +172,7 @@ def _read_timestamp(timestamp_line: str, rev_year: str, ignore_warnings: bool = 
     if day <= 0:
         day = 1
         using_min_data = True
-    # Timezone info unsupported
+    # Информация о часовом поясе не поддерживается
     tzinfo = None
     timestamp = dt.datetime(year, month, day, hour, minute, second,
                             microsecond, tzinfo)
@@ -201,24 +197,24 @@ def _stream_is_utf8(stream):
 
 
 class Cfg:
-    """Parses and stores Comtrade's CFG data."""
-    # time base units
+    """Разбирает и хранит данные CFG из Comtrade."""
+    # единицы временной базы
     TIME_BASE_NANOSEC = 1E-9
     TIME_BASE_MICROSEC = 1E-6
 
     def __init__(self, **kwargs):
         """
-        Cfg object constructor.
+        Конструктор объекта Cfg.
 
-        Keyword arguments:
-        ignore_warnings -- whether warnings are displayed in stdout 
-            (default: False)
+        Аргументы ключевого слова:
+        ignore_warnings -- выводить ли предупреждения в stdout
+            (по умолчанию: False)
         """
         self.filename = ""
-        # implicit data
+        # неявные данные
         self._time_base = self.TIME_BASE_MICROSEC
 
-        # Default CFG data
+        # Данные CFG по умолчанию
         self._station_name = ""
         self._rec_dev_id = ""
         self._rev_year = 2013
@@ -235,8 +231,8 @@ class Cfg:
         self._trigger_timestamp = dt.datetime(1900, 1, 1)
         self._ft = TYPE_ASCII
         self._time_multiplier = 1.0
-        # 2013 standard revision information
-        # time_code,local_code = 0,0 means local time is UTC
+        # информация о ревизии стандарта 2013 года
+        # time_code,local_code = 0,0 означает, что местное время - UTC
         self._time_code = 0
         self._local_code = 0
         # tmq_code,leapsec
@@ -250,127 +246,127 @@ class Cfg:
 
     @property
     def station_name(self) -> str:
-        """Return the recording device's station name."""
+        """Возвращает имя станции записывающего устройства."""
         return self._station_name
     
     @property
     def rec_dev_id(self) -> str:
-        """Return the recording device id."""
+        """Возвращает идентификатор записывающего устройства."""
         return self._rec_dev_id
 
     @property
     def rev_year(self) -> int:
-        """Return the COMTRADE revision year."""
+        """Возвращает год ревизии COMTRADE."""
         return self._rev_year
 
     @property
     def channels_count(self) -> int:
-        """Return the number of channels, total."""
+        """Возвращает общее количество каналов."""
         return self._channels_count
     
     @channels_count.setter
     def channels_count(self, count_corrector) -> None:
-        """Set the number of channels, tota."""
+        """Устанавливает общее количество каналов."""
         self._channels_count = count_corrector
 
     @property
     def analog_channels(self) -> list:
-        """Return the analog channels list with complete channel description."""
+        """Возвращает список аналоговых каналов с полным описанием."""
         return self._analog_channels
 
     @property
     def status_channels(self) -> list:
-        """Return the status channels list with complete channel description."""
+        """Возвращает список дискретных каналов с полным описанием."""
         return self._status_channels
     
     @property
     def analog_count(self) -> int:
-        """Return the number of analog channels."""
+        """Возвращает количество аналоговых каналов."""
         return self._analog_count
     
     @analog_count.setter
     def analog_count(self, count_corrector) -> None:
-        """Set the number of analog channels."""
+        """Устанавливает количество аналоговых каналов."""
         self._analog_count = count_corrector
     
     @property
     def status_count(self) -> int:
-        """Return the number of status channels."""
+        """Возвращает количество дискретных каналов."""
         return self._status_count
     
     @status_count.setter
     def status_count(self, count_corrector) -> None:
-        """Set the number of digital channels."""
+        """Устанавливает количество дискретных каналов."""
         self._status_count = count_corrector
     
     @property
     def time_base(self) -> float:
-        """Return the time base."""
+        """Возвращает временную базу."""
         return self._time_base
 
     @property
     def frequency(self) -> float:
-        """Return the measured line frequency in Hertz."""
+        """Возвращает измеренную частоту сети в герцах."""
         return self._frequency
     
     @property
     def ft(self) -> str:
-        """Return the expected DAT file format."""
+        """Возвращает ожидаемый формат файла DAT."""
         return self._ft
     
     @property
     def timemult(self) -> float:
-        """Return the DAT time multiplier (Default = 1)."""
+        """Возвращает множитель времени DAT (по умолчанию = 1)."""
         return self._time_multiplier
 
     @property
     def timestamp_critical(self) -> bool:
-        """Returns whether the DAT file must contain non-zero
-         timestamp values."""
+        """Возвращает, должен ли файл DAT содержать ненулевые
+         значения временных меток."""
         return self._timestamp_critical
     
     @property
     def start_timestamp(self) -> dt.datetime:
-        """Return the recording start time stamp as a datetime object."""
+        """Возвращает временную метку начала записи в виде объекта datetime."""
         return self._start_timestamp
     
     @property
     def trigger_timestamp(self) -> dt.datetime:
-        """Return the trigger time stamp as a datetime object."""
+        """Возвращает временную метку триггера в виде объекта datetime."""
         return self._trigger_timestamp
     
     @property
     def nrates(self) -> int:
-        """Return the number of different sample rates within the DAT file."""
+        """Возвращает количество различных частот дискретизации в файле DAT."""
         return self._nrates
     
     @property
     def sample_rates(self) -> list:
         """
-        Return a list with pairs describing the number of samples for a given
-        sample rate.
+        Возвращает список пар, описывающих количество выборок для данной
+        частоты дискретизации.
         """ 
         return self._sample_rates
 
-    # Deprecated properties - Changed "Digital" for "Status"
+    # Устаревшие свойства - заменено "Digital" на "Status"
     @property
     def digital_channels(self) -> list:
-        """Returns the status channels bidimensional values list."""
+        """Возвращает список двумерных значений дискретных каналов."""
         if not self.ignore_warnings:
-            warnings.warn(FutureWarning("digital_channels is deprecated, "
-                                        "use status_channels instead."))
+            warnings.warn(FutureWarning("digital_channels устарело, "
+                                        "используйте вместо него status_channels."))
         return self._status_channels
 
     @property
     def digital_count(self) -> int:
-        """Returns the number of status channels."""
+        """Возвращает количество дискретных каналов."""
         if not self.ignore_warnings:
-            warnings.warn(FutureWarning("digital_count is deprecated, "
-                                        "use status_count instead."))
+            warnings.warn(FutureWarning("digital_count устарело, "
+                                        "используйте вместо него status_count."))
         return self._status_count
     
     def load(self, filepath, **user_kwargs):
-        """Load and read a CFG file contents."""
+        """Загружает и читает содержимое файла CFG."""
         self.filepath = filepath
 
         if os.path.isfile(self.filepath):
@@ -386,26 +382,26 @@ class Cfg:
                                     self.filepath)
 
     def read(self, cfg_lines):
-        """Read CFG-format data of a FileIO or StringIO object."""
+        """Читает данные в формате CFG из объекта FileIO или StringIO."""
         if type(cfg_lines) is str:
             self._read_io(io.StringIO(cfg_lines))
         else:
             self._read_io(cfg_lines)
 
     def _read_io(self, cfg):
-        """Read CFG-format lines and stores its data."""
+        """Читает строки в формате CFG и сохраняет их данные."""
         line_count = 0
         self._nrates = 1
         self._sample_rates = []
         self._analog_channels = []
         self._status_channels = []
 
-        # First line
+        # Первая строка
         line = cfg.readline()
-        # station, device, and comtrade standard revision information
+        # информация о станции, устройстве и ревизии стандарта comtrade
         packed = _read_sep_values(line)
         if 3 == len(packed):
-            # only 1999 revision and above has the standard revision year
+            # только ревизия 1999 года и выше имеет год ревизии стандарта
             self._station_name, self._rec_dev_id, self._rev_year = packed
             self._rev_year = self._rev_year.strip()
 
@@ -416,7 +412,7 @@ class Cfg:
         elif 2 == len(packed):
             self._station_name, self._rec_dev_id = packed
             self._rev_year = REV_1991
-        elif 3 < len(packed): # protection against commas in the name and incorrect splitting
+        elif 3 < len(packed): # защита от запятых в имени и некорректного разделения
             self._station_name, self._rec_dev_id, self._rev_year = packed[0], ",".join(packed[1:-1]), packed[-1]
             self._rev_year = self._rev_year.strip()
 
@@ -425,7 +421,7 @@ class Cfg:
                     msg = WARNING_UNKNOWN_REVISION.format(self._rev_year)
                     warnings.warn(Warning(msg))
                     self._rev_year = REV_1991
-        else: # protection against an empty/incorrect name
+        else: # защита от пустого/некорректного имени
             self._station_name, self._rec_dev_id = packed[0], ""
             if not self.ignore_warnings:
                 msg = WARNING_UNKNOWN_REVISION.format(self._rev_year)
@@ -434,9 +430,9 @@ class Cfg:
                     
         line_count = line_count + 1
 
-        # Second line
+        # Вторая строка
         line = cfg.readline()
-        # number of channels and its type
+        # количество каналов и их тип
         totchn, achn, schn = _read_sep_values(line, 3, '0')
         self._channels_count = int(totchn)
         self._analog_count = int(achn[:-1])
@@ -445,14 +441,14 @@ class Cfg:
         self._status_channels = [None]*self._status_count
         line_count = line_count + 1
 
-        # Analog channel description lines
+        # Строки описания аналоговых каналов
         for ichn in range(self._analog_count):
             line = cfg.readline()
             packed = _read_sep_values(line, 13, '0')
-            # unpack values
+            # распаковать значения
             n, name, ph, ccbm, uu, a, b, skew, cmin, cmax, \
                 primary, secondary, pors = packed
-            # type conversion
+            # преобразование типов
             n = int(n)
             a = float(a)
             b = _prevent_null(b, float, 0.0)
@@ -465,26 +461,26 @@ class Cfg:
                 cmin, cmax, name, uu, ph, ccbm, primary, secondary, pors)
             line_count = line_count + 1
 
-        # Status channel description lines
+        # Строки описания дискретных каналов
         for ichn in range(self._status_count):
             line = cfg.readline()
-            # unpack values
+            # распаковать значения
             packed = _read_sep_values(line, 5, '0')
             n, name, ph, ccbm, y = packed
-            # type conversion
+            # преобразование типов
             n = int(n)
-            y = _prevent_null(y, int, 0)  # TODO: actually a critical data. In the future add a warning.
+            y = _prevent_null(y, int, 0)  # TODO: на самом деле критически важные данные. В будущем добавить предупреждение.
             self.status_channels[ichn] = StatusChannel(n, name, ph, ccbm, y)
             line_count = line_count + 1
 
-        # Frequency line
+        # Строка частоты
         line = cfg.readline()
         if len(line.strip()) > 0:
             self._frequency = float(line.strip())
         line_count = line_count + 1
 
-        # Nrates line
-        # number of different sample rates
+        # Строка Nrates
+        # количество различных частот дискретизации
         line = cfg.readline()
         self._nrates = int(line.strip())
         if self._nrates == 0:
@@ -496,14 +492,14 @@ class Cfg:
 
         for inrate in range(self._nrates):
             line = cfg.readline()
-            # each sample rate
+            # каждая частота дискретизации
             samp, endsamp = _read_sep_values(line)
             samp = float(samp)
             endsamp = int(endsamp)
             self.sample_rates.append([samp, endsamp])
             line_count = line_count + 1
 
-        # First data point time and time base
+        # Время первой точки данных и временная база
         line = cfg.readline()
         ts_str = line.strip()
         self._start_timestamp, nanosec = _read_timestamp(
@@ -514,7 +510,7 @@ class Cfg:
         self._time_base = self._get_time_base(nanosec)
         line_count = line_count + 1
 
-        # Event data point and time base
+        # Точка данных о событии и временная база
         line = cfg.readline()
         ts_str = line.strip()
         self._trigger_timestamp, nanosec = _read_timestamp(
@@ -525,12 +521,12 @@ class Cfg:
         self._time_base = min([self.time_base, self._get_time_base(nanosec)])
         line_count = line_count + 1
 
-        # DAT file type
+        # Тип файла DAT
         line = cfg.readline()
         self._ft = line.strip()
         line_count = line_count + 1
 
-        # Timestamp multiplication factor
+        # Множитель временной метки
         if self._rev_year in (REV_1999, REV_2013):
             line = cfg.readline().strip()
             if len(line) > 0:
@@ -539,7 +535,7 @@ class Cfg:
                 self._time_multiplier = 1.0
             line_count = line_count + 1
 
-        # time_code and local_code
+        # time_code и local_code
         if self._rev_year == REV_2013:
             line = cfg.readline()
 
@@ -548,14 +544,14 @@ class Cfg:
                 line_count = line_count + 1
 
                 line = cfg.readline()
-                # time_code and local_code
+                # time_code и local_code
                 self._tmq_code, self._leap_second = _read_sep_values(line)
                 line_count = line_count + 1
 
     def _get_time_base(self, using_nanoseconds: bool):
         """
-        Return the time base, which is based on the fractionary part of the 
-        seconds in a timestamp (00.XXXXX).
+        Возвращает временную базу, которая основана на дробной части
+        секунд во временной метке (00.XXXXX).
         """
         if using_nanoseconds:
             return self.TIME_BASE_NANOSEC
@@ -589,46 +585,46 @@ class Cfg:
 
 
 class Comtrade:
-    """Parses and stores Comtrade data."""
-    # extensions
+    """Разбирает и хранит данные Comtrade."""
+    # расширения
     EXT_CFG = "cfg"
     EXT_DAT = "dat"
     EXT_INF = "inf"
     EXT_HDR = "hdr"
-    # format specific
+    # специфика формата
     ASCII_SEPARATOR = ","
     
     def __init__(self, **kwargs):
         """
-        Comtrade object constructor.
+        Конструктор объекта Comtrade.
 
-        Keyword arguments:
-        ignore_warnings -- whether warnings are displayed in stdout 
-            (default: False).
+        Аргументы ключевого слова:
+        ignore_warnings -- выводить ли предупреждения в stdout
+            (по умолчанию: False).
         """
         self.file_path = ""
 
         self._cfg = Cfg(**kwargs)
 
-        # Default CFG data
+        # Данные CFG по умолчанию
         self._analog_channel_ids = []
         self._analog_phases = []
         self._status_channel_ids = []
         self._status_phases = []
         self._timestamp_critical = False
 
-        # Data types
+        # Типы данных
         if "use_numpy_arrays" in kwargs:
             self._use_numpy_arrays = kwargs["use_numpy_arrays"]
         else:
             self._use_numpy_arrays = False
 
-        # DAT file data
+        # Данные файла DAT
         self._time_values = _preallocate_values("f", 0, self._use_numpy_arrays)
         self._analog_values = []
         self._status_values = []
 
-        # Additional CFF data (or additional comtrade files)
+        # Дополнительные данные CFF (или дополнительные файлы comtrade)
         self._hdr = None
         self._inf = None
 
@@ -639,117 +635,117 @@ class Comtrade:
 
     @property
     def station_name(self) -> str:
-        """Return the recording device's station name."""
+        """Возвращает имя станции записывающего устройства."""
         return self._cfg.station_name
 
     @property
     def rec_dev_id(self) -> str:
-        """Return the recording device id."""
+        """Возвращает идентификатор записывающего устройства."""
         return self._cfg.rec_dev_id
 
     @property
     def rev_year(self) -> int:
-        """Return the COMTRADE revision year."""
+        """Возвращает год ревизии COMTRADE."""
         return self._cfg.rev_year
 
     @property
     def cfg(self) -> Cfg:
-        """Return the underlying CFG class instance."""
+        """Возвращает базовый экземпляр класса CFG."""
         return self._cfg
 
     @property
     def hdr(self):
-        """Return the HDR file contents."""
+        """Возвращает содержимое файла HDR."""
         return self._hdr
     
     @property
     def inf(self):
-        """Return the INF file contents."""
+        """Возвращает содержимое файла INF."""
         return self._inf
 
     @property
     def analog_channel_ids(self) -> list:
-        """Returns the analog channels name list."""
+        """Возвращает список имен аналоговых каналов."""
         return self._analog_channel_ids
     
     @property
     def analog_phases(self) -> list:
-        """Returns the analog phase name list."""
+        """Возвращает список имен фаз аналоговых каналов."""
         return self._analog_phases
     
     @property
     def status_channel_ids(self) -> list:
-        """Returns the status channels name list."""
+        """Возвращает список имен дискретных каналов."""
         return self._status_channel_ids
     
     @property
     def status_phases(self) -> list:
-        """Returns the status phase name list."""
+        """Возвращает список имен фаз дискретных каналов."""
         return self._status_phases
 
     @property
     def time(self) -> list:
-        """Return the time values list."""
+        """Возвращает список значений времени."""
         return self._time_values
 
     @property
     def analog(self) -> list:
-        """Return the analog channel values bidimensional list."""
+        """Возвращает двумерный список значений аналоговых каналов."""
         return self._analog_values
     
     @property
     def status(self) -> list:
-        """Return the status channel values bidimensional list."""
+        """Возвращает двумерный список значений дискретных каналов."""
         return self._status_values
 
     @property
     def total_samples(self) -> int:
-        """Return the total number of samples (per channel)."""
+        """Возвращает общее количество выборок (на канал)."""
         return self._total_samples
 
     @property
     def frequency(self) -> float:
-        """Return the measured line frequency in Hertz."""
+        """Возвращает измеренную частоту сети в герцах."""
         return self._cfg.frequency
 
     @property
     def start_timestamp(self):
-        """Return the recording start time stamp as a datetime object."""
+        """Возвращает временную метку начала записи в виде объекта datetime."""
         return self._cfg.start_timestamp
 
     @property
     def trigger_timestamp(self):
-        """Return the trigger time stamp as a datetime object."""
+        """Возвращает временную метку триггера в виде объекта datetime."""
         return self._cfg.trigger_timestamp
 
     @property
     def channels_count(self) -> int:
-        """Return the number of channels, total."""
+        """Возвращает общее количество каналов."""
         return self._cfg.channels_count
     
     @channels_count.setter
     def channels_count(self, count_corrector) -> None:
-        """Set the number of channels, tota."""
+        """Устанавливает общее количество каналов."""
         self._cfg.channels_count = count_corrector
 
     @property
     def analog_count(self) -> int:
-        """Return the number of analog channels."""
+        """Возвращает количество аналоговых каналов."""
         return self._cfg.analog_count
 
     @analog_count.setter
     def analog_count(self, count_corrector) -> None:
-        """Set the number of analog channels."""
+        """Устанавливает количество аналоговых каналов."""
         self._cfg.analog_count = count_corrector
 
     @property
     def status_count(self) -> int:
-        """Return the number of status channels."""
+        """Возвращает количество дискретных каналов."""
         return self._cfg.status_count
 
     @property
     def trigger_time(self) -> float:
-        """Return relative trigger time in seconds."""
+        """Возвращает относительное время срабатывания в секундах."""
         stt = self._cfg.start_timestamp
         trg = self._cfg.trigger_timestamp
         tdiff = trg - stt
@@ -758,27 +754,27 @@ class Comtrade:
 
     @property
     def time_base(self) -> float:
-        """Return the time base."""
+        """Возвращает временную базу."""
         return self._cfg.time_base
 
     @property
     def ft(self) -> str:
-        """Return the expected DAT file format."""
+        """Возвращает ожидаемый формат файла DAT."""
         return self._cfg.ft
 
-    # Deprecated properties - Changed "Digital" for "Status"
+    # Устаревшие свойства - заменено "Digital" на "Status"
     @property
     def digital_channel_ids(self) -> list:
-        """Returns the status channels name list."""
+        """Возвращает список имен дискретных каналов."""
         if not self.ignore_warnings:
-            warnings.warn(FutureWarning("digital_channel_ids is deprecated, use status_channel_ids instead."))
+            warnings.warn(FutureWarning("digital_channel_ids устарело, используйте status_channel_ids вместо него."))
         return self._status_channel_ids
 
     @property
     def digital(self) -> list:
-        """Returns the status channels bidimensional values list."""
+        """Возвращает двумерный список значений дискретных каналов."""
         if not self.ignore_warnings:
-            warnings.warn(FutureWarning("digital is deprecated, use status instead."))
+            warnings.warn(FutureWarning("digital устарело, используйте status вместо него."))
         return self._status_values
     
     @digital.setter
@@ -787,18 +783,18 @@ class Comtrade:
 
     @property
     def digital_count(self) -> int:
-        """Returns the number of status channels."""
+        """Возвращает количество дискретных каналов."""
         if not self.ignore_warnings:
-            warnings.warn(FutureWarning("digital_count is deprecated, use status_count instead."))
+            warnings.warn(FutureWarning("digital_count устарело, используйте status_count вместо него."))
         return self._cfg.status_count
     
     @digital_count.setter
     def digital_count(self, count_corrector) -> None:
-        """Set the number of digital channels."""
+        """Устанавливает количество дискретных каналов."""
         self._cfg.status_count = count_corrector
 
     def _get_dat_reader(self):
-        # case insensitive comparison of file format
+        # сравнение формата файла без учета регистра
         dat = None
         ft_upper = self.ft.upper()
         dat_kwargs = {"use_numpy_arrays": self._use_numpy_arrays}
@@ -812,25 +808,25 @@ class Comtrade:
             dat = Float32DatReader(**dat_kwargs)
         else:
             dat = None
-            raise Exception("Not supported data file format: {}".format(self.ft))
+            raise Exception("Неподдерживаемый формат файла данных: {}".format(self.ft))
         return dat
 
     def read(self, cfg_lines, dat_lines_or_bytes) -> None:
         """
-        Read CFG and DAT files contents. Expects FileIO or StringIO objects.
+        Читает содержимое файлов CFG и DAT. Ожидает объекты FileIO или StringIO.
         """
         self._cfg.read(cfg_lines)
 
-        # channel ids
+        # идентификаторы каналов
         self._cfg_extract_channels_ids(self._cfg)
         
-        # channel phases
+        # фазы каналов
         self._cfg_extract_phases(self._cfg)
 
         dat = self._get_dat_reader()
         dat.read(dat_lines_or_bytes, self._cfg)
 
-        # copy dat object information
+        # копирование информации об объекте dat
         self._dat_extract_data(dat)
 
     def _cfg_extract_channels_ids(self, cfg) -> None:
@@ -849,16 +845,16 @@ class Comtrade:
 
     def load(self, cfg_file, dat_file = None, **kwargs) -> None:
         """
-        Load CFG, DAT, INF, and HDR files. Each must be a FileIO or StringIO
-        object. dat_file, inf_file, and hdr_file are optional (Default: None).
+        Загружает файлы CFG, DAT, INF и HDR. Каждый должен быть объектом FileIO или StringIO
+        . dat_file, inf_file и hdr_file являются необязательными (по умолчанию: None).
 
-        cfg_file is the cfg file path, including its extension.
-        dat_file is optional, and may be set if the DAT file name differs from 
-            the CFG file name.
+        cfg_file - это путь к файлу cfg, включая его расширение.
+        dat_file является необязательным и может быть установлен, если имя файла DAT отличается от
+        имени файла CFG.
 
-        Keyword arguments:
-        inf_file -- optional INF file path (Default = None)
-        hdr_file -- optional HDR file path (Default = None)
+        Аргументы ключевого слова:
+        inf_file -- необязательный путь к файлу INF (по умолчанию = None)
+        hdr_file -- необязательный путь к файлу HDR (по умолчанию = None)
         """
         if "inf_file" in kwargs:
             inf_file = kwargs["inf_file"]
@@ -870,11 +866,11 @@ class Comtrade:
         else:
             hdr_file = None
 
-        # which extension: CFG or CFF?
+        # какое расширение: CFG или CFF?
         file_ext = cfg_file[-3:].upper()
         if file_ext == "CFG":
             basename = cfg_file[:-3]
-            # if not informed, infer dat_file with cfg_file
+            # если не указано, выводим dat_file с cfg_file
             if dat_file is None:
                 dat_file = cfg_file[:-3] + self.EXT_DAT
 
@@ -884,35 +880,35 @@ class Comtrade:
             if hdr_file is None:
                 hdr_file = basename + self.EXT_HDR
 
-            # load both cfg and dat
+            # загружаем и cfg, и dat
             file_kwargs = {}
             if "encoding" in kwargs:
                 file_kwargs["encoding"] = kwargs["encoding"]
             self._load_cfg_dat(cfg_file, dat_file, **file_kwargs)
 
-            # Load additional inf and hdr files, if they exist.
+            # Загружаем дополнительные файлы inf и hdr, если они существуют.
             self._load_inf(inf_file, **file_kwargs)
             self._load_hdr(hdr_file, **file_kwargs)
 
         elif file_ext == "CFF":
-            # check if the CFF file exists
+            # проверяем, существует ли файл CFF
             self._load_cff(cfg_file)
         else:
-            raise Exception(r"Expected CFG file path, got intead \"{}\".".format(cfg_file))
+            raise Exception(r"Ожидался путь к файлу CFG, вместо этого получено \"{}\".".format(cfg_file))
 
     def _load_cfg_dat(self, cfg_filepath, dat_filepath, **kwargs):
         self._cfg.load(cfg_filepath, **kwargs)
 
-        # channel ids
+        # идентификаторы каналов
         self._cfg_extract_channels_ids(self._cfg)
         
-        # channel phases
+        # фазы каналов
         self._cfg_extract_phases(self._cfg)
 
         dat = self._get_dat_reader()
         dat.load(dat_filepath, self._cfg, **kwargs)
 
-        # copy dat object information
+        # копирование информации об объекте dat
         self._dat_extract_data(dat)
 
     def _load_inf(self, inf_file, **kwargs):
@@ -938,18 +934,18 @@ class Comtrade:
             self._hdr = None
 
     def _load_cff(self, cff_file_path: str, **kwargs):
-        # stores each file type lines
+        # хранит строки каждого типа файла
         cfg_lines = []
         dat_lines = []
         hdr_lines = []
         inf_lines = []
-        # file type: CFG, HDR, INF, DAT
+        # тип файла: CFG, HDR, INF, DAT
         ftype = None
-        # file format: ASCII, BINARY, BINARY32, FLOAT32
+        # формат файла: ASCII, BINARY, BINARY32, FLOAT32
         fformat = None
         if "encoding" not in kwargs and _file_is_utf8(cff_file_path):
             kwargs["encoding"] = "utf-8"
-        # Number of bytes for binary/float dat
+        # Количество байтов для двоичных/float-данных
         fbytes = 0
         with open(cff_file_path, "r", **kwargs) as file:
             header_re = re.compile(CFF_HEADER_REXP)
@@ -986,10 +982,10 @@ class Comtrade:
                 line = file.readline()
 
         if fformat == TYPE_ASCII:
-            # process ASCII CFF data
+            # обработка данных ASCII CFF
             self.read("\n".join(cfg_lines), "\n".join(dat_lines))
         else:
-            # read dat bytes
+            # чтение байтов dat
             total_bytes = os.path.getsize(cff_file_path)
             cff_bytes_read = total_bytes - fbytes
             with open(cff_file_path, "rb") as file:
@@ -997,7 +993,7 @@ class Comtrade:
                 dat_bytes = file.read(fbytes)
             self.read("\n".join(cfg_lines), dat_bytes)
 
-        # stores additional data
+        # хранит дополнительные данные
         self._hdr = "\n".join(hdr_lines)
         if len(self._hdr) == 0:
             self._hdr = None
@@ -1007,15 +1003,15 @@ class Comtrade:
             self._inf = None
 
     def cfg_summary(self):
-        """Returns the CFG attributes summary string."""
-        header_line = "Channels (total,A,D): {}A + {}D = {}"
-        sample_line = "Sample rate of {} Hz to the sample #{}"
-        interval_line = "From {} to {} with time mult. = {}"
-        format_line = "{} format"
+        """Возвращает строку с краткой информацией об атрибутах CFG."""
+        header_line = "Каналы (всего,А,Д): {}A + {}D = {}"
+        sample_line = "Частота дискретизации {} Гц до выборки #{}"
+        interval_line = "От {} до {} с множителем времени = {}"
+        format_line = "{} формат"
 
         lines = [header_line.format(self.analog_count, self.status_count,
                                     self.channels_count),
-                 "Line frequency: {} Hz".format(self.frequency)]
+                 "Частота сети: {} Гц".format(self.frequency)]
         for i in range(self._cfg.nrates):
             rate, points = self._cfg.sample_rates[i]
             lines.append(sample_line.format(rate, points))
@@ -1055,15 +1051,15 @@ class Comtrade:
 
     def write_cfg(self, filepath, cfg):
         with open(filepath, 'w') as file:
-            file.write(cfg.to_string())  # Assuming you have a method to generate the config file's content
+            file.write(cfg.to_string())  # Предполагается, что у вас есть метод для генерации содержимого файла конфигурации
 
     def write_to_file(self, cfg_filepath, dat_filepath):
-        # Write configuration file
+        # Запись файла конфигурации
         self.write_cfg(cfg_filepath, self._cfg)
         
         
         # FIXME: !! Запись в dat-файл не реализовано и не работает!!
-        # Prepare data for writing
+        # Подготовка данных для записи
         # data_to_write = []
         # for i in range(self.total_samples):
         #     time = self.time[i]
@@ -1071,14 +1067,14 @@ class Comtrade:
         #     analog = [self.analog[j][i] * self._cfg.analog_channels[j].multiplier for j in range(self.analog_count)]
         #     status = [int(self.status[j][i]) for j in range(self.status_count)]
         #     data_to_write.append((time, sample_number, analog, status))
-        # # Write data file in the appropriate format
+        # # Запись файла данных в соответствующем формате
         # self._dat_writer = Float32DatWriter(dat_filepath, self.analog_channel_ids, self.digital_channel_ids)
         # self._dat_writer.write_data(dat_filepath, data_to_write)
 
 class Channel:
-    """Holds common channel description data."""
+    """Хранит общие данные описания канала."""
     def __init__(self, n=1, name='', ph='', ccbm=''):
-        """Channel abstract class constructor."""
+        """Абстрактный конструктор класса Channel."""
         self.n = n
         self.name = name
         self.ph = ph
@@ -1089,9 +1085,9 @@ class Channel:
 
 
 class StatusChannel(Channel):
-    """Holds status channel description data."""
+    """Хранит данные описания дискретного канала."""
     def __init__(self, index: int, name='', phase='', circuit='', y=0):
-        """StatusChannel class constructor."""
+        """Конструктор класса StatusChannel."""
         super().__init__(index, name, phase, circuit)
         self.name = name
         self.index = index
@@ -1105,11 +1101,11 @@ class StatusChannel(Channel):
 
 
 class AnalogChannel(Channel):
-    """Holds analog channel description data."""
+    """Хранит данные описания аналогового канала."""
     def __init__(self, index: int, multiplier: float, offset=0.0, skew=0.0, min_value=-32767,
                  max_value=32767, name='', unit='', phase='', circuit='', primary=1.0,
                  secondary=1.0, ps='P'):
-        """AnalogChannel class constructor."""
+        """Конструктор класса AnalogChannel."""
         super().__init__(index, name, phase, circuit)
         self.index = index
         self.name = name
@@ -1119,7 +1115,7 @@ class AnalogChannel(Channel):
         self.skew = skew
         self.min_value = min_value
         self.max_value = max_value
-        # misc
+        # разное
         self.unit = unit
         self.phase = phase
         self.circuit = circuit
@@ -1135,11 +1131,11 @@ class AnalogChannel(Channel):
 
 
 class DatReader:
-    """Abstract DatReader class. Used to parse DAT file contents."""
+    """Абстрактный класс DatReader. Используется для разбора содержимого DAT-файла."""
     read_mode = "r"
 
     def __init__(self, **kwargs):
-        """DatReader class constructor."""
+        """Конструктор класса DatReader."""
         if "use_numpy_arrays" in kwargs:
             self._use_numpy_arrays = kwargs["use_numpy_arrays"]
         else:
@@ -1154,15 +1150,15 @@ class DatReader:
 
     @property
     def total_samples(self):
-        """Return the total samples (per channel)."""
+        """Возвращает общее количество выборок (на канал)."""
         return self._total_samples
 
     def load(self, dat_filepath, cfg, **kwargs):
-        """Load a DAT file and parse its contents."""
+        """Загружает DAT-файл и разбирает его содержимое."""
         self.file_path = dat_filepath
         self._content = None
         if os.path.isfile(self.file_path):
-            # extract CFG file information regarding data dimensions
+            # извлечение информации о размерах данных из файла CFG
             self._cfg = cfg
             self._preallocate()
             if "encoding" not in kwargs and self.read_mode != "rb" and \
@@ -1176,7 +1172,7 @@ class DatReader:
 
     def read(self, dat_lines, cfg):
         """
-        Read a DAT file contents, expecting a list of string or FileIO object.
+        Читает содержимое DAT-файла, ожидая список строк или объект FileIO.
         """
         self.file_path = None
         self._content = dat_lines
@@ -1185,19 +1181,19 @@ class DatReader:
         self.parse(dat_lines)
 
     def _preallocate(self):
-        # read from the cfg file the number of samples in the dat file
-        steps = self._cfg.sample_rates[-1][1]  # last samp field
+        # чтение из файла cfg количества выборок в файле dat
+        steps = self._cfg.sample_rates[-1][1]  # последнее поле samp
         self._total_samples = steps
 
-        # analog and status count
+        # количество аналоговых и дискретных каналов
         analog_count = self._cfg.analog_count
         status_count = self._cfg.status_count
 
-        # preallocate analog and status values
+        # предварительное выделение памяти для аналоговых и дискретных значений
         self.time = _preallocate_values("f", steps, self._use_numpy_arrays)
         self.analog = [None] * analog_count
         self.status = [None] * status_count
-        # preallocate each channel values with zeros
+        # предварительное выделение памяти для значений каждого канала нулями
         for i in range(analog_count):
             self.analog[i] = _preallocate_values("f", steps,
                 self._use_numpy_arrays)
@@ -1206,8 +1202,8 @@ class DatReader:
                 self._use_numpy_arrays)
 
     def _get_samp(self, n) -> float:
-        """Get the sampling rate for a sample n (1-based index)."""
-        # TODO: make tests.
+        """Получает частоту дискретизации для выборки n (индекс с 1)."""
+        # TODO: сделать тесты.
         last_sample_rate = 1.0
         for samp, endsamp in self._cfg.sample_rates:
             if n <= endsamp:
@@ -1216,47 +1212,47 @@ class DatReader:
 
     def _get_time(self, n: int, ts_value: float, time_base: float,
                   time_multiplier: float):
-        # TODO: add option to enforce dat file timestamp, when available.
-        # TODO: make tests.
+        # TODO: добавить опцию для принудительного использования временной метки из dat-файла, когда она доступна.
+        # TODO: сделать тесты.
         ts = 0
         sample_rate = self._get_samp(n)
         if not self._cfg.timestamp_critical or ts_value == TIMESTAMP_MISSING:
-            # if the timestamp is missing, use calculated.
+            # если временная метка отсутствует, использовать расчетную.
             if sample_rate != 0.0:
                 return (n - 1) / sample_rate
             else:
-                raise Exception("Missing timestamp and no sample rate "
+                raise Exception("Отсутствует временная метка и не указана частота дискретизации"
                                 "provided.")
         else:
-            # Use provided timestamp if its not missing
+            # Использовать предоставленную временную метку, если она не отсутствует
             return ts_value * time_base * time_multiplier
 
     def parse(self, contents):
-        """Virtual method, parse DAT file contents."""
+        """Виртуальный метод, разбирает содержимое DAT-файла."""
         pass
 
 
 class AsciiDatReader(DatReader):
-    """ASCII format DatReader subclass."""
+    """Подкласс DatReader для формата ASCII."""
     def __init__(self, **kwargs):
-        # Call the initialization for the inherited class
+        # Вызов инициализации для унаследованного класса
         super().__init__(**kwargs)
         self.ASCII_SEPARATOR = SEPARATOR
 
         self.DATA_MISSING = ""
 
     def parse(self, contents):
-        """Parse a ASCII file contents."""
+        """Разбирает содержимое файла ASCII."""
         analog_count = self._cfg.analog_count
         status_count = self._cfg.status_count
         time_mult = self._cfg.timemult
         time_base = self._cfg.time_base
 
-        # auxiliary vectors (channels gains and offsets)
+        # вспомогательные векторы (усиления и смещения каналов)
         a = [x.multiplier for x in self._cfg.analog_channels]
         b = [x.offset for x in self._cfg.analog_channels]
 
-        # extract lines
+        # извлечь строки
         if type(contents) is str:
             lines = contents.splitlines()
         else:
@@ -1270,14 +1266,14 @@ class AsciiDatReader(DatReader):
             values = line.strip().split(self.ASCII_SEPARATOR)
 
             n = int(values[0])
-            # Read time
+            # Чтение времени
             ts_val = float(values[1])
             ts = self._get_time(n, ts_val, time_base, time_mult)
 
             avalues = [float(x)*a[i] + b[i] for i, x in enumerate(values[2:analog_count+2])]
             svalues = [int(x) for x in values[len(values)-status_count:]]
 
-            # store
+            # сохранить
             self.time[line_number-1] = ts
             for i in range(analog_count):
                 self.analog[i][line_number - 1] = avalues[i]
@@ -1285,16 +1281,16 @@ class AsciiDatReader(DatReader):
                 self.status[i][line_number - 1] = svalues[i]
 
 class BinaryDatReader(DatReader):
-    """16-bit binary format DatReader subclass."""
+    """Подкласс DatReader для 16-битного двоичного формата."""
     def __init__(self, **kwargs):
-        # Call the initialization for the inherited class
+        # Вызов инициализации для унаследованного класса
         super().__init__(**kwargs)
         self.ANALOG_BYTES = 2
         self.STATUS_BYTES = 2
         self.TIME_BYTES = 4
         self.SAMPLE_NUMBER_BYTES = 4
 
-        # maximum negative value
+        # максимальное отрицательное значение
         self.DATA_MISSING = 0xFFFF
 
         self.read_mode = "rb"
@@ -1309,29 +1305,29 @@ class BinaryDatReader(DatReader):
             self.STRUCT_FORMAT_STATUS_ONLY = "II {dcount:d}H"
 
     def get_reader_format(self, analog_channels, status_bytes):
-        # Number of status fields of 2 bytes based on the total number of 
-        # bytes.
+        # Количество полей состояния размером 2 байта на основе общего количества
+        # байтов.
         dcount = math.floor(status_bytes / 2)
         
-        # Check the file configuration
+        # Проверка конфигурации файла
         if int(status_bytes) > 0 and int(analog_channels) > 0:
             return self.STRUCT_FORMAT.format(acount=analog_channels, 
                 dcount=dcount)
         elif int(analog_channels) > 0:
-            # Analog channels only.
+            # Только аналоговые каналы.
             return self.STRUCT_FORMAT_ANALOG_ONLY.format(acount=analog_channels)
         else:
-            # Status channels only.
+            # Только дискретные каналы.
             return self.STRUCT_FORMAT_STATUS_ONLY.format(acount=dcount)
 
     def parse(self, contents):
-        """Parse DAT binary file contents."""
+        """Разбирает содержимое двоичного файла DAT."""
         time_mult = self._cfg.timemult
         time_base = self._cfg.time_base
         achannels = self._cfg.analog_count
         schannel = self._cfg.status_count
 
-        # auxillary vectors (channels gains and offsets)
+        # вспомогательные векторы (усиления и смещения каналов)
         a = [x.multiplier for x in self._cfg.analog_channels]
         b = [x.offset for x in self._cfg.analog_channels]
 
@@ -1341,20 +1337,20 @@ class BinaryDatReader(DatReader):
         bytes_per_row = sample_id_bytes + abytes + dbytes
         groups_of_16bits = math.floor(dbytes / self.STATUS_BYTES)
 
-        # Struct format.
+        # Формат структуры.
         row_reader = struct.Struct(self.get_reader_format(achannels, dbytes))
 
-        # Row reading function.
+        # Функция чтения строк.
         next_row = None
         if isinstance(contents, io.TextIOBase) or \
                 isinstance(contents, io.BufferedIOBase):
-            # Read all buffer contents
+            # Чтение всего содержимого буфера
             contents = contents.read()
 
         for irow, values in enumerate(row_reader.iter_unpack(contents)):
-            # Sample number
+            # Номер выборки
             n = values[0]
-            # Time stamp
+            # Временная метка
             ts_val = values[1]
             ts = self._get_time(n, ts_val, time_base, time_mult)
 
@@ -1362,17 +1358,17 @@ class BinaryDatReader(DatReader):
                 break
             self.time[irow] = ts
 
-            # Extract analog channel values.
+            # Извлечение значений аналоговых каналов.
             for ichannel in range(achannels):
                 yint = values[ichannel + 2]
                 y = a[ichannel] * yint + b[ichannel]
                 self.analog[ichannel][irow] = y
 
-            # Extract status channel values.
+            # Извлечение значений дискретных каналов.
             for igroup in range(groups_of_16bits):
                 group = values[achannels + 2 + igroup]
 
-                # for each group of 16 bits, extract the status channels
+                # для каждой группы из 16 бит извлекаем дискретные каналы
                 maxchn = min([ (igroup+1) * 16, schannel])
                 for ichannel in range(igroup * 16, maxchn):
                     chnindex = ichannel - igroup*16
@@ -1381,14 +1377,14 @@ class BinaryDatReader(DatReader):
 
                     self.status[ichannel][irow] = extract
 
-            # Get the next row
+            # Получение следующей строки
             irow += 1
 
 
 class Binary32DatReader(BinaryDatReader):
-    """32-bit binary format DatReader subclass."""
+    """Подкласс DatReader для 32-битного двоичного формата."""
     def __init__(self, **kwargs):
-        # Call the initialization for the inherited class
+        # Вызов инициализации для унаследованного класса
         super().__init__(**kwargs)
         self.ANALOG_BYTES = 4
 
@@ -1399,14 +1395,14 @@ class Binary32DatReader(BinaryDatReader):
             self.STRUCT_FORMAT = "II {acount:d}i {dcount:d}H"
             self.STRUCT_FORMAT_ANALOG_ONLY = "II {acount:d}i"
 
-        # maximum negative value
+        # максимальное отрицательное значение
         self.DATA_MISSING = 0xFFFFFFFF
 
 
 class Float32DatReader(BinaryDatReader):
-    """Single precision (float) binary format DatReader subclass."""
+    """Подкласс DatReader для двоичного формата с плавающей запятой одинарной точности."""
     def __init__(self, **kwargs):
-        # Call the initialization for the inherited class
+        # Вызов инициализации для унаследованного класса
         super().__init__(**kwargs)
         self.ANALOG_BYTES = 4
 
@@ -1417,5 +1413,5 @@ class Float32DatReader(BinaryDatReader):
             self.STRUCT_FORMAT = "II {acount:d}f {dcount:d}H"
             self.STRUCT_FORMAT_ANALOG_ONLY = "II {acount:d}f"
 
-        # Maximum negative value
+        # Максимальное отрицательное значение
         self.DATA_MISSING = sys.float_info.min

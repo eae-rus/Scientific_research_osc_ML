@@ -3,9 +3,9 @@ import comtrade # comtrade 0.1.2
 class ReadComtrade():
     def init(self):
         """
-        Initialize the class.
+        Инициализирует класс.
         
-          Returns:
+          Возвращает:
               None
         """
         pass
@@ -13,15 +13,15 @@ class ReadComtrade():
       
     def read_comtrade(self, file_name):
         """
-        Load and read comtrade files contents.
+        Загружает и читает содержимое файлов comtrade.
 
-        Args:
-            file_name (str): The name of comtrade file.
+        Аргументы:
+            file_name (str): Имя файла comtrade.
 
-        Returns:
+        Возвращает:
             tuple:
-            - raw_date (Comtrade): The raw comtrade
-            - raw_df (pandas.DataFrame): DataFrame of raw comtrade file.
+            - raw_date (Comtrade): Необработанные данные comtrade
+            - raw_df (pandas.DataFrame): DataFrame необработанного файла comtrade.
         """
         raw_df = None
         try:
@@ -29,5 +29,5 @@ class ReadComtrade():
             raw_df = raw_date.to_dataframe()
             return raw_date, raw_df
         except Exception as ex:
-            # TODO: Add "self.unread_files.add((file_name, ex))"
+            # TODO: Добавить "self.unread_files.add((file_name, ex))"
             return None, None
