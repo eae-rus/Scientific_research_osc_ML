@@ -8,15 +8,15 @@ sys.path.append(ROOT_DIR)
 
 def generate_analog_signals_name(is_print_to_console: bool = False, is_print_to_json: bool = False, path_to_json_file: str = "") -> dict:
     """
-    The function generates groups with all the names of the signals
+    Функция генерирует группы со всеми названиями сигналов
       
-    Args:
-        is_print_to_console (bool): printing to the console
-        is_print_to_json (bool): printing to a json file
-        path_to_json_file (str): path to the json file
+    Аргументы:
+        is_print_to_console (bool): вывод в консоль
+        is_print_to_json (bool): вывод в файл json
+        path_to_json_file (str): путь к файлу json
 
-    Returns:
-        dict - dictionary with groups and names of signals
+    Возвращает:
+        dict - словарь с группами и названиями сигналов
     """
     dict_names = {}
     for i in range(1, 19):
@@ -50,7 +50,7 @@ def generate_analog_signals_name(is_print_to_console: bool = False, is_print_to_
         
         dict_names_new[f"I zero {i}"].append(f"I | Bus-{i} | phase: N")
         
-        # with other types of sensors, as long as these are Rogovsky belts and capacitive dividers
+        # с другими типами датчиков, пока это пояса Роговского и емкостные делители
         dict_names_new[f"U_raw BusBar {i}"] = []
         dict_names_new[f"U_raw CableLine {i}"] = []
         dict_names_new[f"I_raw phase {i}"] = []
@@ -106,15 +106,15 @@ def generate_analog_signals_name(is_print_to_console: bool = False, is_print_to_
 
 def generate_discrete_signals_name(is_print_to_console: bool = False, is_print_to_json: bool = False, path_to_json_file: str = "") -> dict:
     """
-    The function generates groups with all the names of the signals
+    Функция генерирует группы со всеми названиями сигналов
       
-    Args:
-        is_print_to_console (bool): printing to the console
-        is_print_to_json (bool): printing to a json file
-        path_to_json_file (str): path to the json file
+    Аргументы:
+        is_print_to_console (bool): вывод в консоль
+        is_print_to_json (bool): вывод в файл json
+        path_to_json_file (str): путь к файлу json
 
-    Returns:
-        dict - dictionary with groups and names of signals
+    Возвращает:
+        dict - словарь с группами и названиями сигналов
     """
     dict_names = {}
     
@@ -143,12 +143,12 @@ def generate_discrete_signals_name(is_print_to_console: bool = False, is_print_t
         dict_names_new[f"PDR B{i}"].append(f"PDR | Bus-{i} | phase: A")
         dict_names_new[f"PDR B{i}"].append(f"PDR | Bus-{i} | phase: B")
         dict_names_new[f"PDR B{i}"].append(f"PDR | Bus-{i} | phase: C")
-        dict_names_new[f"PDR B{i}"].append(f"PDR | Bus-{i} | phase: PS") # Direct sequence or common signal
-        # "PDR_ideal" - for scientific research
+        dict_names_new[f"PDR B{i}"].append(f"PDR | Bus-{i} | phase: PS") # Прямая последовательность или общий сигнал
+        # "PDR_ideal" - для научных исследований
         dict_names_new[f"PDR B{i}"].append(f"PDR_ideal | Bus-{i} | phase: A")
         dict_names_new[f"PDR B{i}"].append(f"PDR_ideal | Bus-{i} | phase: B")
         dict_names_new[f"PDR B{i}"].append(f"PDR_ideal | Bus-{i} | phase: C")
-        dict_names_new[f"PDR B{i}"].append(f"PDR_ideal | Bus-{i} | phase: PS") # Direct sequence or common signal
+        dict_names_new[f"PDR B{i}"].append(f"PDR_ideal | Bus-{i} | phase: PS") # Прямая последовательность или общий сигнал
         
         dict_names_new[f"IFB B{i}"].append(f"IFB | Bus-{i} | open")
         dict_names_new[f"IFB B{i}"].append(f"IFB | Bus-{i} | close")
