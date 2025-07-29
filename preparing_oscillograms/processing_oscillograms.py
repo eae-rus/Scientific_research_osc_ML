@@ -546,47 +546,6 @@ class ProcessingOscillograms():
         except:
             print("Не удалось сохранить new_hash_table в файл JSON")
 
-
-    def research_coorect_encoding_in_cfg(self, source_dir: str, act_function = None) -> None:
-        """
-        Функция ищет файлы .cfg в указанном каталоге,
-        пытается определить их кодировку (utf-8, windows-1251 или ОЕМ 866) и собирает пути к файлам.
-        Она сохраняет список защищенных файлов и любых ошибок обработки в файл 'protected_files.txt' в исходном каталоге.
-        
-        Функция, указанная во входных данных, применяется к требуемым файлам
-
-        Args:
-            source_dir (str): каталог, содержащий файлы .cfg для проверки конфиденциальной информации.
-            act_function (function): функция, которая будет применяться к файлам.
-
-        Returns:
-            None
-        """
-        protected_files = []
-        print("Подсчитываем общее количество файлов в исходном каталоге...")
-        total_files = sum([len(files) for r, d, files in os.walk(source_dir)])
-        print(f"Общее количество файлов: {total_files}, начинаем обработку...")
-        with tqdm(total=total_files, desc="Поиск правильной кодировки и определение даты") as pbar:
-            for root, dirs, files in os.walk(source_dir):
-                for file in files:
-                    pbar.update(1)
-                    if file.endswith(".cfg"):
-                        file_path = os.path.join(root, file)
-                        # TODO: для определения кодировки и пересохранения файла в utf-8 необходимо создать отдельную функцию
-                        try: 
-                            act_function(file_path, root, 'utf-8')
-                        except Exception as e:
-                            try:
-                                act_function(file_path, root, 'windows-1251')  
-                            except Exception as e:
-                                try:
-                                    act_function(file_path, root, 'ОЕМ 866') # ОЕМ - русский
-                                except Exception as e:
-                                    protected_files.append(file_path)
-                                    protected_files.append(f"Произошла ошибка при обработке файла cfg: {e}")
-        with open(os.path.join(source_dir, 'protected_files.txt'), 'w', encoding='utf-8') as file:
-            file.write('\n'.join(protected_files))
-
     def detect_date(self, file_path: str, root: str, encoding_name: str, dict_all_dates = {}) -> None:
         """
         Функция определяет дату события в файле cfg.
@@ -835,68 +794,6 @@ class ProcessingOscillograms():
         pdr_condition = r_has_pdr_bus_1 or i_has_pdr_bus_1
 
         return voltage_condition and current_condition and pdr_condition
-    
-    def _check_signals_in_one_file(self, file_path: str, signal_checker=None, encoding_name: str = 'utf-8') -> bool:
-        file_signals = self._get_signals_from_prepared_cfg(file_path, encoding_name)
-        if not file_signals:
-            return False
-        # Если функция проверки не передана, используем стандартную
-        if signal_checker is None:
-            signal_checker = self._default_signal_checker
-        return signal_checker(file_signals)
-
-    def check_signals_in_folder(self, raw_path='raw_data/', output_csv_filename='signal_check_results.csv', signal_checker=None):
-        """
-        Проверяет все файлы comtrade в папке на наличие необходимых сигналов и выводит результаты в CSV.
-
-        Args:
-            raw_path (str): путь к папке, содержащей необработанные файлы comtrade.
-            output_csv_filename (str): имя файла для выходного CSV-файла.
-            signal_checker (function): функция для проверки необходимых сигналов в одном файле. По умолчанию self._default_signal_checker.
-        """
-        output_csv_path = os.path.join(raw_path, output_csv_filename)
-        results = []
-
-        print(f"Проверка сигналов в папке: {raw_path}")
-        total_files = 0
-        for root, dirs, files in os.walk(raw_path):
-            for file in files:
-                if file.endswith(".cfg"):
-                    total_files += 1
-        print(f"Всего найдено файлов CFG: {total_files}, начинаем обработку...")
-
-        with tqdm(total=total_files, desc="Проверка сигналов") as pbar:
-            for root, dirs, files in os.walk(raw_path):
-                for file in files:
-                    if file.endswith(".cfg"):
-                        pbar.update(1)
-                        file_path = os.path.join(root, file)
-                        file_hash = file[:-4] # Предполагая, что имя файла - hash.cfg
-                        contains_required_signals = False
-                        
-                        try:
-                            contains_required_signals = self._check_signals_in_one_file(file_path, signal_checker, 'utf-8')
-                        except Exception as e:
-                            # windows-1251 и ОЕМ 866 не проверяются, так как предполагается, что уже выполнена требуемая стандартизация
-                            print(f"Ошибка обработки {file_path}: {e}")
-                            contains_required_signals = "Error"
-
-                        if contains_required_signals == True:
-                            signal_status = "Yes"
-                        elif contains_required_signals == False:
-                            signal_status = "No"
-                        else:
-                            signal_status = "Error"
-
-                        results.append({'filename': file_hash, 'contains_required_signals': signal_status})
-        
-        with open(output_csv_path, 'w', newline='', encoding='utf-8') as csvfile:
-           fieldnames = ['filename', 'contains_required_signals']
-           writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter=',', quotechar='"')
-           writer.writeheader()
-           writer.writerows(results)
-
-        print(f"Результаты проверки сигналов сохранены в {output_csv_path}")
 
     def find_oscillograms_with_spef(self, raw_path: str ='raw_data/', output_csv_path: str = "find_oscillograms_with_spef.csv",
                                     norm_coef_file_path: str = 'norm_coef.csv', filter_txt_path: str = None):
