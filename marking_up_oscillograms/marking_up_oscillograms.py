@@ -10,22 +10,10 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
 
 from raw_to_csv.raw_to_csv import RawToCSV
-from ML_model import model # FIXME: It doesn't work, I had to copy it to a folder, it's temporary
+from osc_tools.ml import models as model
 from torchinfo import summary
 from ptflops import get_model_complexity_info
-
-class FeaturesForDataset:
-    FEATURES_CURRENT = ["IA", "IB", "IC"]
-    FEATURES_VOLTAGE_BB = ['UA BB', 'UB BB', 'UC BB', 'UN BB']
-    FEATURES_VOLTAGE_CL = ['UA CL', 'UB CL', 'UC CL', 'UN CL', 'UAB CL', 'UBC CL', 'UCA CL']
-    FEATURES = FEATURES_CURRENT.copy()
-    FEATURES.extend(FEATURES_VOLTAGE_BB)
-    FEATURES.extend(FEATURES_VOLTAGE_CL)
-    FEATURES_TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt"]
-    CURRENT_FOR_PLOT = ["IA", "IB", "IC"]
-    VOLTAGE_FOR_PLOT = ['UA BB', 'UB BB', 'UC BB']
-    ANALOG_SIGNALS_FOR_PLOT = CURRENT_FOR_PLOT.copy()
-    ANALOG_SIGNALS_FOR_PLOT.extend(VOLTAGE_FOR_PLOT)
+from osc_tools.core.constants import Features
 
 class ComtradeProcessor(RawToCSV):
     """Базовый класс для обработки данных Comtrade."""
@@ -57,15 +45,15 @@ class ComtradeProcessor(RawToCSV):
         normalization_params = {
             "current": {
                 "nominal": 20 * float(norm_osc_row[f"{bus}Ip_base"]),
-                "features": FeaturesForDataset.FEATURES_CURRENT
+                "features": Features.CURRENT
             },
             "voltage_bb": {
                 "nominal": 3 * float(norm_osc_row[f"{bus}Ub_base"]),
-                "features": FeaturesForDataset.FEATURES_VOLTAGE_BB
+                "features": Features.VOLTAGE_PHAZE_BB + [Features.VOLTAGE_ZERO_SEQ[0]]
             },
             "voltage_cl": {
                 "nominal": 3 * float(norm_osc_row[f"{bus}Uc_base"]),
-                "features": FeaturesForDataset.FEATURES_VOLTAGE_CL
+                "features": Features.VOLTAGE_PHAZE_CL + [Features.VOLTAGE_ZERO_SEQ[1]] + Features.VOLTAGE_LINE_CL
             }
         }
         
@@ -94,13 +82,13 @@ class MarkingUpOscillograms(ComtradeProcessor):
         """Процесс разметки осциллограмм с использованием машинной модели."""
         self.load_model(ML_model_path)
         ml_for_answer = ["file_name", "bus"]
-        for name in FeaturesForDataset.FEATURES_TARGET:
+        for name in Features.TARGET:
             ml_for_answer.append(f"{name}_bool")
             ml_for_answer.append(f"{name}_count")
         sorted_files_df = pd.DataFrame(columns=ml_for_answer)
 
         # Установка типов данных для логических столбцов
-        for name in FeaturesForDataset.FEATURES_TARGET:
+        for name in Features.TARGET:
             sorted_files_df[f"{name}_bool"] = sorted_files_df[f"{name}_bool"].astype(bool)
 
         norm_osc_tuple = tuple(self.norm_csv["name"].values)
@@ -119,10 +107,10 @@ class MarkingUpOscillograms(ComtradeProcessor):
                     df_osc_one_bus = df[df["file_name"] == name_osc].copy()
 
                     # Инициализация DataFrame с нулевыми значениями
-                    df_osc = pd.DataFrame(0, index=np.arange(len(df_osc_one_bus)), columns=FeaturesForDataset.FEATURES)
+                    df_osc = pd.DataFrame(0, index=np.arange(len(df_osc_one_bus)), columns=Features.ALL)
 
                     # Заполнение реальными данными, если они есть
-                    for feature in FeaturesForDataset.FEATURES:
+                    for feature in Features.ALL:
                         if feature in df_osc_one_bus.columns:
                             df_osc[feature] = df_osc_one_bus[feature].copy()
 
@@ -133,7 +121,7 @@ class MarkingUpOscillograms(ComtradeProcessor):
                     df_osc.fillna(0, inplace=True)
 
                     # Инициализация предсказаний
-                    predict_labels = {name: np.zeros(len(df_osc)) for name in FeaturesForDataset.FEATURES_TARGET}
+                    predict_labels = {name: np.zeros(len(df_osc)) for name in Features.TARGET}
 
                     # Создание окон
                     windows = []
@@ -161,16 +149,16 @@ class MarkingUpOscillograms(ComtradeProcessor):
 
                         predictions = (model_prediction > self.threshold).int().cpu().numpy()
 
-                        for j, name in enumerate(FeaturesForDataset.FEATURES_TARGET):
+                        for j, name in enumerate(Features.TARGET):
                             for k, target_idx in enumerate(batch_target_indices):
                                 if target_idx is not None:
                                     predict_labels[name][target_idx] = predictions[k][j]
 
                     # Применение двойного прохода (слева и справа)
-                    left_predict_labels = {name: np.zeros(len(df_osc)) for name in FeaturesForDataset.FEATURES_TARGET}
-                    right_predict_labels = {name: np.zeros(len(df_osc)) for name in FeaturesForDataset.FEATURES_TARGET}
+                    left_predict_labels = {name: np.zeros(len(df_osc)) for name in Features.TARGET}
+                    right_predict_labels = {name: np.zeros(len(df_osc)) for name in Features.TARGET}
 
-                    for name in FeaturesForDataset.FEATURES_TARGET:
+                    for name in Features.TARGET:
                         # Слева направо
                         for i in range(len(predict_labels[name]) - 6):
                             window_sum = np.sum(predict_labels[name][i:i + 7]) > 4
@@ -187,11 +175,11 @@ class MarkingUpOscillograms(ComtradeProcessor):
                         predict_labels[name] = np.logical_and(left_predict_labels[name], right_predict_labels[name])
 
                     # Подсчет событий
-                    count_events = {name: np.sum(predict_labels[name]) for name in FeaturesForDataset.FEATURES_TARGET}
+                    count_events = {name: np.sum(predict_labels[name]) for name in Features.TARGET}
 
                     # Создание новой строки для DataFrame
                     events_predicted = {}
-                    for name in FeaturesForDataset.FEATURES_TARGET:
+                    for name in Features.TARGET:
                         events_predicted[f"{name}_bool"] = count_events[name] > 0
                         events_predicted[f"{name}_count"] = count_events[name]
 
@@ -258,16 +246,16 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
 
         df_osc_one_bus = df[df["file_name"] == name_osc].copy()
         self.len_df = len(df_osc_one_bus)
-        analog_signal = {name: np.zeros(self.len_df) for name in FeaturesForDataset.ANALOG_SIGNALS_FOR_PLOT}
+        analog_signal = {name: np.zeros(self.len_df) for name in Features.ANALOG_SIGNALS_FOR_PLOT}
 
         # Инициализация DataFrame с нулевыми значениями
-        df_osc = pd.DataFrame(0, index=np.arange(self.len_df), columns=FeaturesForDataset.FEATURES)
+        df_osc = pd.DataFrame(0, index=np.arange(self.len_df), columns=Features.ALL)
 
         # Заполнение реальными данными, если они есть
-        for feature in FeaturesForDataset.FEATURES:
+        for feature in Features.ALL:
             if feature in df_osc_one_bus.columns:
                 df_osc[feature] = df_osc_one_bus[feature].copy()
-                if feature in FeaturesForDataset.ANALOG_SIGNALS_FOR_PLOT:
+                if feature in Features.ANALOG_SIGNALS_FOR_PLOT:
                     analog_signal[feature] = df_osc_one_bus[feature].copy()
 
         # Нормализация сигналов
@@ -284,7 +272,7 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
         real_labels = self.get_real_labels(df_osc_target)
 
         # Инициализация предсказаний
-        predict_labels = {name: np.zeros(self.len_df) for name in FeaturesForDataset.FEATURES_TARGET}
+        predict_labels = {name: np.zeros(self.len_df) for name in Features.TARGET}
 
         # Создание окон
         windows = []
@@ -312,16 +300,16 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
 
             predictions = (model_prediction > self.threshold).int().cpu().numpy()
 
-            for j, name in enumerate(FeaturesForDataset.FEATURES_TARGET):
+                        for j, name in enumerate(Features.TARGET):
                 for k, target_idx in enumerate(batch_target_indices):
                     if target_idx is not None:
                         predict_labels[name][target_idx] = predictions[k][j]
 
         # Применение двойного прохода (слева и справа)
-        left_predict_labels = {name: np.zeros(self.len_df) for name in FeaturesForDataset.FEATURES_TARGET}
-        right_predict_labels = {name: np.zeros(self.len_df) for name in FeaturesForDataset.FEATURES_TARGET}
+        left_predict_labels = {name: np.zeros(self.len_df) for name in Features.TARGET}
+        right_predict_labels = {name: np.zeros(self.len_df) for name in Features.TARGET}
 
-        for name in FeaturesForDataset.FEATURES_TARGET:
+        for name in Features.TARGET:
             # Слева направо
             for i in range(self.len_df - 6):
                 window_sum = np.sum(predict_labels[name][i:i + 7])
@@ -342,7 +330,7 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
 
     def get_real_labels(self, df: pd.DataFrame):
         """Получение реальной разметки событий на основе файла."""
-        real_labels = {name: np.zeros(self.len_df) for name in FeaturesForDataset.FEATURES_TARGET}
+        real_labels = {name: np.zeros(self.len_df) for name in Features.TARGET}
         
         # opr_swch
         for name_cullum in self.ml_operational_switching:
@@ -379,7 +367,7 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
         data = pd.DataFrame({'Time': time_range})
         
         # Построение графиков токов
-        for i, current in enumerate(FeaturesForDataset.CURRENT_FOR_PLOT):
+        for i, current in enumerate(Features.CURRENT_FOR_PLOT):
             signal_data = analog_signal[current][start:end]
             axs[0].plot(time_range, signal_data, label=f'{current}', color=['yellow', 'green', 'red'][i])
             data[current] = analog_signal[current][start:end]
@@ -388,7 +376,7 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
         axs[0].axhline(0, color='black', linestyle='--', linewidth=1)
         
         # Построение графиков напряжений
-        for i, voltage in enumerate(FeaturesForDataset.VOLTAGE_FOR_PLOT):
+        for i, voltage in enumerate(Features.VOLTAGE_FOR_PLOT):
             signal_data = analog_signal[voltage][start:end]
             axs[1].plot(time_range, signal_data, label=f'{voltage}', color=['yellow', 'green', 'red'][i])
             data[voltage] = analog_signal[voltage][start:end]
@@ -397,7 +385,7 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
         axs[1].axhline(0, color='black', linestyle='--', linewidth=1)
         
         # Построение дискретных сигналов
-        label_names = FeaturesForDataset.FEATURES_TARGET
+        label_names = Features.TARGET
         amp = [1, 2, 3]
         pred_colors = ['lightblue', 'lightcoral', 'lightgreen']
         real_colors = ['blue', 'red', 'green']

@@ -19,44 +19,12 @@ from sklearn.metrics import hamming_loss, jaccard_score
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
-import model as Model
+from osc_tools.ml import models as Model
 
 # Добавлено для исключения лишних предупреждений о возможных будущих проблемах.
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
-
-class FeaturesForDataset():
-        CURRENT_1 = ["I_pos_seq_mag", "I_pos_seq_angle"]
-        CURRENT_2 = ["I_neg_seq_mag", "I_neg_seq_angle"]
-
-        VOLTAGE_1 = ["V_pos_seq_mag"] # V_pos_seq_angle - не нужно, так как от него расчёт
-        VOLTAGE_2 = ["V_neg_seq_mag", "V_neg_seq_angle"]
-        
-        POWER_1 = ["P_pos_seq", "Q_pos_seq"]
-        POWER_2 = ["P_neg_seq", "Q_neg_seq"]
-        
-        IMPEDACY = ["Z_pos_seq_mag", "Z_pos_seq_angle"]
-        
-        # Простейшая - модель 1
-        FEATURES = CURRENT_1.copy()
-        FEATURES.extend(VOLTAGE_1)
-        
-        # Простейшая с всеми сигналами - модель 2
-        # FEATURES = CURRENT_1.copy()
-        # FEATURES.extend(CURRENT_2)
-        # FEATURES.extend(VOLTAGE_1)
-        # FEATURES.extend(VOLTAGE_2)
-        # FEATURES.extend(POWER_1)
-        # FEATURES.extend(POWER_2)
-        # FEATURES.extend(IMPEDACY)
-        
-        TARGET_train = ["rPDR PS"]
-        TARGET_WITH_FILENAME_train = ["file_name"]
-        TARGET_WITH_FILENAME_train.extend(TARGET_train)
-        
-        TARGET_test = ["iPDR PS"]
-        TARGET_WITH_FILENAME_test = ["file_name"]
-        TARGET_WITH_FILENAME_test.extend(TARGET_test)
+from osc_tools.core.constants import PDRFeatures
 
 class CustomDataset(Dataset):
 
@@ -91,8 +59,8 @@ class CustomDataset(Dataset):
             # Защита от выхода за диапазон. Такого быть не должно при обрезании массива, но оставил на всякий случай.
             return (None, None)
         
-        sample = self.data.loc[start : start + self.frame_size - 1][FeaturesForDataset.FEATURES]
-        #sample = frame[FeaturesForDataset.FEATURES]
+        sample = self.data.loc[start : start + self.frame_size - 1][PDRFeatures.ALL_MODEL_1]
+        #sample = frame[PDRFeatures.ALL_MODEL_1]
         x = torch.tensor(
             sample.to_numpy(dtype=np.float32),
             dtype=torch.float32,
@@ -231,9 +199,9 @@ def save_stats_to_csv(epoch, batch_count, epoch_duration, train_loss, test_loss,
         # Записываем заголовок, если файл пустой
         if os.stat(per_class_metrics_file).st_size == 0:
             header = ["epoch", "batch_count", "epoch_duration"] + [
-                f"{feature}_f1" for feature in FeaturesForDataset.TARGET_test
+                f"{feature}_f1" for feature in PDRFeatures.TARGET_TEST
             ] + [
-                f"{feature}_ba" for feature in FeaturesForDataset.TARGET_test
+                f"{feature}_ba" for feature in PDRFeatures.TARGET_TEST
             ]
             writer.writerow(header)
 
@@ -280,8 +248,8 @@ def save_stats_to_json(filename, epoch, batch_count, epoch_duration, train_loss,
         "hamming_loss": hamming,
         "jaccard_score": jaccard,
         "learning_rate": lr,
-        "f1_scores_per_class": {feature: f1 for feature, f1 in zip(FeaturesForDataset.TARGET_test, f1_per_class)},
-        "balanced_accuracy_per_class": {feature: ba for feature, ba in zip(FeaturesForDataset.TARGET_test, ba_per_class)}
+        "f1_scores_per_class": {feature: f1 for feature, f1 in zip(PDRFeatures.TARGET_TEST, f1_per_class)},
+        "balanced_accuracy_per_class": {feature: ba for feature, ba in zip(PDRFeatures.TARGET_TEST, ba_per_class)}
     }
 
     # Записываем в файл
@@ -332,7 +300,7 @@ if __name__ == "__main__":
         
         # TODO: добиться, чтобы не было этих ошибок в датасете
         # Проверим, есть ли NaN в интересующих столбцах
-        nan_check = dt_train[FeaturesForDataset.FEATURES].isna().sum()
+        nan_check = dt_train[PDRFeatures.ALL_MODEL_1].isna().sum()
         # Выведем только те столбцы, где есть хотя бы один NaN
         print("Найдены значения NaN в:")
         print(nan_check[nan_check > 0])
@@ -384,19 +352,19 @@ if __name__ == "__main__":
     # ---> КОНЕЦ ПОДГОТОВКИ ИНДЕКСОВ ДЛЯ ТЕСТА <---
 
     # В CustomDataset передаем ПОЛНЫЙ DataFrame
-    train_dataset = CustomDataset(FeaturesForDataset.TARGET_train[0], dt_train, dt_train, FRAME_SIZE, 0)
-    test_dataset = CustomDataset(FeaturesForDataset.TARGET_test[0], dt_test, test_indexes_df, FRAME_SIZE, 0)
+    train_dataset = CustomDataset(PDRFeatures.TARGET_TRAIN[0], dt_train, dt_train, FRAME_SIZE, 0)
+    test_dataset = CustomDataset(PDRFeatures.TARGET_TEST[0], dt_test, test_indexes_df, FRAME_SIZE, 0)
 
     start_epoch = 0
     # !! создание новой !!
     name_model = "PDR_MLP_v2" # PDR_MLP_v1_2 (модель та же) 
     # model = Model.PDR_MLP_v1(
     #     FRAME_SIZE,
-    #     channel_num=len(FeaturesForDataset.FEATURES),
+    #     channel_num=len(PDRFeatures.ALL_MODEL_1),
     #     device=device,
     # )
     model = Model.PDR_MLP_v2(
-        input_features=len(FeaturesForDataset.FEATURES),
+        input_features=len(PDRFeatures.ALL_MODEL_1),
         block_neuron_config=[3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
         device=device,
     )
@@ -409,8 +377,8 @@ if __name__ == "__main__":
     # model.eval()  # Установка модели в режим оценки
 
     # Расчет pos_weight (делать один раз перед циклом обучения)
-    neg = (dt_train[FeaturesForDataset.TARGET_train[0]] == 0).sum()
-    pos = (dt_train[FeaturesForDataset.TARGET_train[0]] == 1).sum()
+    neg = (dt_train[PDRFeatures.TARGET_TRAIN[0]] == 0).sum()
+    pos = (dt_train[PDRFeatures.TARGET_TRAIN[0]] == 1).sum()
     pos_weight_value = neg / pos if pos > 0 else 1.0 # Защита от деления на ноль
     print("Отношение 0 к 1 = ", pos_weight_value)
     pos_weight_tensor = torch.tensor([pos_weight_value], device=device) # Создаем тензор
@@ -446,7 +414,7 @@ if __name__ == "__main__":
     }
 
     # Также можно создать CSV для хранения метрик каждой эпохи с разбивкой по классам
-    per_class_metrics = {feature_name: {"f1_score": [], "balanced_accuracy": []} for feature_name in FeaturesForDataset.TARGET_test}
+    per_class_metrics = {feature_name: {"f1_score": [], "balanced_accuracy": []} for feature_name in PDRFeatures.TARGET_TEST}
 
 
     current_lr = LEARNING_RATE

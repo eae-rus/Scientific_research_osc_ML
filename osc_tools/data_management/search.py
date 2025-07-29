@@ -7,27 +7,15 @@ import py7zr
 import zipfile
 import aspose.zip as az
 from tqdm import tqdm
-from enum import Enum
 import comtrade
+
+from osc_tools.core.constants import TYPE_OSC
 
 # TODO: добавить логирование в файл
 
 # Создание файла ".exe":
 # 1) в командной строке ввести "pip install auto-py-to-exe"
 # 2) далее в командной строке "python -m auto_py_to_exe"
-
-class TYPE_OSC(Enum):
-        # TODO: написать полноценные описание типов
-        COMTRADE_CFG_DAT = "Файлы типа Comtrade, состоящие из двух файлов .cfg и .dat"
-        COMTRADE_CFF = "Файлы типа Comtrade, состоящие из одного файла .cff"
-        BRESLER = "Тип файла (.brs), характерный для производителя терминалов ООО НПП 'Бреслер', официальная ссылка: https://www.bresler.ru/"
-        BLACK_BOX = "черный ящик (.bb)" #??
-        RES_3 = "Тип файла (.sg2), характерный для производителя терминалов ООО 'Прософт-Системы', официальная ссылка: https://prosoftsystems.ru/ и ссылка на устройства https://prosoftsystems.ru/catalog/show/cifrovoj--registrator-jelektricheskih-sobytij-pjes3"
-        EKRA = "Тип файла (.dfr), характерный для производителя терминалов ООО НПП 'ЭКРА', официальная ссылка: https://ekra.ru/"
-        PARMA = "Тип файла (.do), характерный для производителя терминалов ООО 'ПАРМА', официальная ссылка: https://parma.spb.ru/"
-        PARMA_TO = "Тип файла (.to), характерный для производителя терминалов ООО 'ПАРМА', этот тип предназначен для регистрации длительных процессов, официальная ссылка: https://parma.spb.ru/"
-        NEVA = "Тип файла (.os1 и аналогичные), характерный для производителя терминалов НПФ 'ЭНЕРГОСОЮЗ', официальная ссылка: https://www.energosoyuz.spb.ru/ru и ссылка на устройства https://www.energosoyuz.spb.ru/ru/content/registrator-avariynyh-sobytiy-neva-ras"
-        OSC = "Формат файла (.osc) - контактная привязка еще не до конца выяснена"
 
 class SearchOscillograms():
     """

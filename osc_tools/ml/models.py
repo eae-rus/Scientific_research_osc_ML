@@ -7,6 +7,7 @@ import torch.nn.functional as F
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
 from kan_convolutional.KANLinear import KANLinear, KANLinearComplex
+from osc_tools.core.constants import Features
 
 
 # Требуется разобраться с базовой моделью KANLinear, у меня не работала норально.
@@ -58,16 +59,6 @@ class cMaxPool1d(nn.Module):
 
         # Объединение действительной и мнимой частей обратно в комплексное число
         return torch.complex(pooled_real, pooled_imag)
-
-class Features():
-        CURRENT = {"IA": 0, "IB": 1, "IC": 2, "IN": -1} # "-1" их пока нет в базе
-        CURRENT_FOR_LINE = {"IA": 0, "IB": 1, "IC": 2}
-        
-        VOLTAGE_PHAZE_BB = {"UA BB" : 3, "UB BB" : 4, "UC BB" : 5, "UN BB" : 6}
-        VOLTAGE_PHAZE_CL = {"UA CL" : 7, "UB CL" : 8, "UC CL" : 9, "UN CL" : 10}
-
-        VOLTAGE_LINE_BB = {"UAB BB" : -1,"UBC BB" : -1,"UCA BB" : -1}
-        VOLTAGE_LINE_CL = {"UAB CL" : 11,"UBC CL": 12,"UCA CL": 13}
 
 def create_conv_block(in_channels, out_channels, maxPool_size = 2, kernel_size=3, stride=1, padding=1, padding_mode="circular", useComplex=False):
     if useComplex:
@@ -576,20 +567,20 @@ class CONV_COMPLEX_v1(nn.Module):
     def forward(self, x):
         x = x.permute(0, 2, 1)
         
-        currents = [Features.CURRENT["IA"], Features.CURRENT["IB"], Features.CURRENT["IC"], Features.CURRENT["IN"]]
-        voltages_bb = [Features.VOLTAGE_PHAZE_BB["UA BB"], Features.VOLTAGE_PHAZE_BB["UB BB"], Features.VOLTAGE_PHAZE_BB["UC BB"], Features.VOLTAGE_PHAZE_BB["UN BB"]]
-        voltages_cl = [Features.VOLTAGE_PHAZE_CL["UA CL"], Features.VOLTAGE_PHAZE_CL["UB CL"], Features.VOLTAGE_PHAZE_CL["UC CL"], Features.VOLTAGE_PHAZE_CL["UN CL"]]
+        currents = [Features.CURRENT_INDICES["IA"], Features.CURRENT_INDICES["IB"], Features.CURRENT_INDICES["IC"], Features.CURRENT_INDICES["IN"]]
+        voltages_bb = [Features.VOLTAGE_PHAZE_BB_INDICES["UA BB"], Features.VOLTAGE_PHAZE_BB_INDICES["UB BB"], Features.VOLTAGE_PHAZE_BB_INDICES["UC BB"], Features.VOLTAGE_PHAZE_BB_INDICES["UN BB"]]
+        voltages_cl = [Features.VOLTAGE_PHAZE_CL_INDICES["UA CL"], Features.VOLTAGE_PHAZE_CL_INDICES["UB CL"], Features.VOLTAGE_PHAZE_CL_INDICES["UC CL"], Features.VOLTAGE_PHAZE_CL_INDICES["UN CL"]]
         
         x_g1 = create_signal_group(x, currents, voltages_bb, device = self.device)
         x_g2 = create_signal_group(x, currents, voltages_cl, device = self.device)
         
         ic_L = [
-            [Features.CURRENT["IA"], Features.CURRENT["IB"]],
-            [Features.CURRENT["IB"], Features.CURRENT["IC"]],
-            [Features.CURRENT["IC"], Features.CURRENT["IA"]]
+            [Features.CURRENT_INDICES["IA"], Features.CURRENT_INDICES["IB"]],
+            [Features.CURRENT_INDICES["IB"], Features.CURRENT_INDICES["IC"]],
+            [Features.CURRENT_INDICES["IC"], Features.CURRENT_INDICES["IA"]]
         ]
-        voltages_line_bb = [Features.VOLTAGE_LINE_BB["UAB BB"], Features.VOLTAGE_LINE_BB["UBC BB"], Features.VOLTAGE_LINE_BB["UCA BB"]]
-        voltages_line_cl = [Features.VOLTAGE_LINE_CL["UAB CL"], Features.VOLTAGE_LINE_CL["UBC CL"], Features.VOLTAGE_LINE_CL["UCA CL"]]
+        voltages_line_bb = [Features.VOLTAGE_LINE_BB_INDICES["UAB BB"], Features.VOLTAGE_LINE_BB_INDICES["UBC BB"], Features.VOLTAGE_LINE_BB_INDICES["UCA BB"]]
+        voltages_line_cl = [Features.VOLTAGE_LINE_CL_INDICES["UAB CL"], Features.VOLTAGE_LINE_CL_INDICES["UBC CL"], Features.VOLTAGE_LINE_CL_INDICES["UCA CL"]]
 
         x_g3 = create_line_group(x, ic_L, voltages_line_bb, device=self.device)
         x_g4 = create_line_group(x, ic_L, voltages_line_cl, device=self.device)
@@ -1218,20 +1209,20 @@ class CONV_AND_FFT_COMPLEX_v2(nn.Module):
     def forward(self, x):
         x = x.reshape(x.size(0), x.size(2), x.size(1))
         
-        currents = [Features.CURRENT["IA"], Features.CURRENT["IB"], Features.CURRENT["IC"], Features.CURRENT["IN"]]
-        voltages_bb = [Features.VOLTAGE_PHAZE_BB["UA BB"], Features.VOLTAGE_PHAZE_BB["UB BB"], Features.VOLTAGE_PHAZE_BB["UC BB"], Features.VOLTAGE_PHAZE_BB["UN BB"]]
-        voltages_cl = [Features.VOLTAGE_PHAZE_CL["UA CL"], Features.VOLTAGE_PHAZE_CL["UB CL"], Features.VOLTAGE_PHAZE_CL["UC CL"], Features.VOLTAGE_PHAZE_CL["UN CL"]]
+        currents = [Features.CURRENT_INDICES["IA"], Features.CURRENT_INDICES["IB"], Features.CURRENT_INDICES["IC"], Features.CURRENT_INDICES["IN"]]
+        voltages_bb = [Features.VOLTAGE_PHAZE_BB_INDICES["UA BB"], Features.VOLTAGE_PHAZE_BB_INDICES["UB BB"], Features.VOLTAGE_PHAZE_BB_INDICES["UC BB"], Features.VOLTAGE_PHAZE_BB_INDICES["UN BB"]]
+        voltages_cl = [Features.VOLTAGE_PHAZE_CL_INDICES["UA CL"], Features.VOLTAGE_PHAZE_CL_INDICES["UB CL"], Features.VOLTAGE_PHAZE_CL_INDICES["UC CL"], Features.VOLTAGE_PHAZE_CL_INDICES["UN CL"]]
         
         x_g1 = create_signal_group(x, currents, voltages_bb, device=self.device)
         x_g2 = create_signal_group(x, currents, voltages_cl, device=self.device)
         
         ic_L = [
-            [Features.CURRENT["IA"], Features.CURRENT["IB"]],
-            [Features.CURRENT["IB"], Features.CURRENT["IC"]],
-            [Features.CURRENT["IC"], Features.CURRENT["IA"]]
+            [Features.CURRENT_INDICES["IA"], Features.CURRENT_INDICES["IB"]],
+            [Features.CURRENT_INDICES["IB"], Features.CURRENT_INDICES["IC"]],
+            [Features.CURRENT_INDICES["IC"], Features.CURRENT_INDICES["IA"]]
         ]
-        voltages_line_bb = [Features.VOLTAGE_LINE_BB["UAB BB"], Features.VOLTAGE_LINE_BB["UBC BB"], Features.VOLTAGE_LINE_BB["UCA BB"]]
-        voltages_line_cl = [Features.VOLTAGE_LINE_CL["UAB CL"], Features.VOLTAGE_LINE_CL["UBC CL"], Features.VOLTAGE_LINE_CL["UCA CL"]]
+        voltages_line_bb = [Features.VOLTAGE_LINE_BB_INDICES["UAB BB"], Features.VOLTAGE_LINE_BB_INDICES["UBC BB"], Features.VOLTAGE_LINE_BB_INDICES["UCA BB"]]
+        voltages_line_cl = [Features.VOLTAGE_LINE_CL_INDICES["UAB CL"], Features.VOLTAGE_LINE_CL_INDICES["UBC CL"], Features.VOLTAGE_LINE_CL_INDICES["UCA CL"]]
 
         x_g3 = create_line_group(x, ic_L, voltages_line_bb, device=self.device)
         x_g4 = create_line_group(x, ic_L, voltages_line_cl, device=self.device)
@@ -1347,20 +1338,20 @@ class CONV_AND_FFT_COMPLEX_v3(nn.Module):
     def forward(self, x):
         x = x.reshape(x.size(0), x.size(2), x.size(1))
         
-        currents = [Features.CURRENT["IA"], Features.CURRENT["IB"], Features.CURRENT["IC"], Features.CURRENT["IN"]]
-        voltages_bb = [Features.VOLTAGE_PHAZE_BB["UA BB"], Features.VOLTAGE_PHAZE_BB["UB BB"], Features.VOLTAGE_PHAZE_BB["UC BB"], Features.VOLTAGE_PHAZE_BB["UN BB"]]
-        voltages_cl = [Features.VOLTAGE_PHAZE_CL["UA CL"], Features.VOLTAGE_PHAZE_CL["UB CL"], Features.VOLTAGE_PHAZE_CL["UC CL"], Features.VOLTAGE_PHAZE_CL["UN CL"]]
+        currents = [Features.CURRENT_INDICES["IA"], Features.CURRENT_INDICES["IB"], Features.CURRENT_INDICES["IC"], Features.CURRENT_INDICES["IN"]]
+        voltages_bb = [Features.VOLTAGE_PHAZE_BB_INDICES["UA BB"], Features.VOLTAGE_PHAZE_BB_INDICES["UB BB"], Features.VOLTAGE_PHAZE_BB_INDICES["UC BB"], Features.VOLTAGE_PHAZE_BB_INDICES["UN BB"]]
+        voltages_cl = [Features.VOLTAGE_PHAZE_CL_INDICES["UA CL"], Features.VOLTAGE_PHAZE_CL_INDICES["UB CL"], Features.VOLTAGE_PHAZE_CL_INDICES["UC CL"], Features.VOLTAGE_PHAZE_CL_INDICES["UN CL"]]
         
         x_g1 = create_signal_group(x, currents, voltages_bb, device=self.device)
         x_g2 = create_signal_group(x, currents, voltages_cl, device=self.device)
         
         ic_L = [
-            [Features.CURRENT["IA"], Features.CURRENT["IB"]],
-            [Features.CURRENT["IB"], Features.CURRENT["IC"]],
-            [Features.CURRENT["IC"], Features.CURRENT["IA"]]
+            [Features.CURRENT_INDICES["IA"], Features.CURRENT_INDICES["IB"]],
+            [Features.CURRENT_INDICES["IB"], Features.CURRENT_INDICES["IC"]],
+            [Features.CURRENT_INDICES["IC"], Features.CURRENT_INDICES["IA"]]
         ]
-        voltages_line_bb = [Features.VOLTAGE_LINE_BB["UAB BB"], Features.VOLTAGE_LINE_BB["UBC BB"], Features.VOLTAGE_LINE_BB["UCA BB"]]
-        voltages_line_cl = [Features.VOLTAGE_LINE_CL["UAB CL"], Features.VOLTAGE_LINE_CL["UBC CL"], Features.VOLTAGE_LINE_CL["UCA CL"]]
+        voltages_line_bb = [Features.VOLTAGE_LINE_BB_INDICES["UAB BB"], Features.VOLTAGE_LINE_BB_INDICES["UBC BB"], Features.VOLTAGE_LINE_BB_INDICES["UCA BB"]]
+        voltages_line_cl = [Features.VOLTAGE_LINE_CL_INDICES["UAB CL"], Features.VOLTAGE_LINE_CL_INDICES["UBC CL"], Features.VOLTAGE_LINE_CL_INDICES["UCA CL"]]
 
         x_g3 = create_line_group(x, ic_L, voltages_line_bb, device=self.device)
         x_g4 = create_line_group(x, ic_L, voltages_line_cl, device=self.device)

@@ -1,4 +1,4 @@
-from comtrade_APS import Comtrade
+from osc_tools.core.comtrade_custom import Comtrade
 
 def remove_lines_with_disallowed_names(cfg_file_path, allowed_names):
     cff = Comtrade()

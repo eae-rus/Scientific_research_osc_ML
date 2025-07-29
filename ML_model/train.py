@@ -19,39 +19,12 @@ from sklearn.metrics import hamming_loss, jaccard_score
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
-import model as Model
+from osc_tools.ml import models as Model
+from osc_tools.core.constants import Features
 
 # Добавлено для исключения лишних предупреждений о возможных будущих проблемах.
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
-
-class FeaturesForDataset():
-        CURRENT = ["IA", "IB", "IC"]
-
-        VOLTAGE = ["UA BB", "UB BB", "UC BB", "UN BB",
-                   "UA CL", "UB CL", "UC CL", "UN CL",
-                   "UAB CL","UBC CL","UCA CL"]
-        
-
-        VOLTAGE_PHAZE = ["UA BB", "UB BB", "UC BB",
-                         "UA CL", "UB CL", "UC CL"]
-        VOLTAGE_LINE_NOMINAL = ["UN BB", "UN CL", "UAB CL", "UBC CL", "UCA CL"]
-        
-        VOLTAGE_PHAZE_BB = ["UA BB", "UB BB", "UC BB"]
-        VOLTAGE_PHAZE_CL = ["UA CL", "UB CL", "UC CL"]
-
-        VOLTAGE_LINE_CL = ["UAB CL", "UBC CL", "UCA CL"]
-        
-        ZERO_SIGNAL = ["UN BB", "UN CL"] # не хватает тока
-        
-        FEATURES = CURRENT.copy()
-        FEATURES.extend(VOLTAGE)
-        
-        # TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt", "normal"]
-        TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt"]
-        
-        TARGET_WITH_FILENAME = ["file_name"]
-        TARGET_WITH_FILENAME.extend(TARGET)
 
 # TODO: Решить проблему различия __getitem__ в первой строке с "iloc" у CustomDataset_train и CustomDataset
 class CustomDataset_train(Dataset):
@@ -127,7 +100,7 @@ class CustomDataset_train(Dataset):
             return (None, None)
         
         # Извлечение окна данных
-        sample = self.data.loc[start: start + self.frame_size - 1][FeaturesForDataset.FEATURES]
+        sample = self.data.loc[start: start + self.frame_size - 1][Features.ALL]
         x = torch.tensor(sample.to_numpy(dtype=np.float32), dtype=torch.float32)
 
         # === АУГМЕНТАЦИЯ ДАННЫХ === #
@@ -152,10 +125,10 @@ class CustomDataset_train(Dataset):
                 voltage_scale_factor = 1.0  # Без изменений
 
             # Масштабирование токов (одним коэффициентом для всех фаз)
-            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.CURRENT]] *= current_scale_factor
+            x[:, [sample.columns.get_loc(col) for col in Features.CURRENT]] *= current_scale_factor
 
             # Масштабирование напряжений (одним коэффициентом для всех фаз и линий)
-            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE]] *= voltage_scale_factor
+            x[:, [sample.columns.get_loc(col) for col in Features.VOLTAGE]] *= voltage_scale_factor
 
         # 3. Добавление шума
         if self.apply_noise and random.random() < self.augmentation_probabilities["noise"]:
@@ -163,25 +136,25 @@ class CustomDataset_train(Dataset):
             current_noise = torch.normal(
                 mean=0,
                 std=self.current_noise_level,
-                size=(x.shape[0], len(FeaturesForDataset.VOLTAGE_PHAZE))
+                size=(x.shape[0], len(Features.VOLTAGE_PHAZE_BB) + len(Features.VOLTAGE_PHAZE_CL))
             )
             # Применение шума к колонкам токов
-            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_PHAZE]] += current_noise
+            x[:, [sample.columns.get_loc(col) for col in Features.VOLTAGE_PHAZE_BB + Features.VOLTAGE_PHAZE_CL]] += current_noise
             
             # Создание шума для напряжений
             voltage_phaze_noise = torch.normal(
                 mean=0,
                 std=self.voltage_noise_level,
-                size=(x.shape[0], len(FeaturesForDataset.VOLTAGE_PHAZE))
+                size=(x.shape[0], len(Features.VOLTAGE_PHAZE_BB) + len(Features.VOLTAGE_PHAZE_CL))
             )
             voltage_line_noise = torch.normal(
                 mean=0,
                 std=self.voltage_noise_level * torch.sqrt(torch.tensor(3.)),
-                size=(x.shape[0], len(FeaturesForDataset.VOLTAGE_LINE_NOMINAL))
+                size=(x.shape[0], len(Features.VOLTAGE_ZERO_SEQ) + len(Features.VOLTAGE_LINE_CL))
             )
             # Применение шума к колонкам напряжений
-            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_PHAZE]] += voltage_phaze_noise
-            x[:, [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_LINE_NOMINAL]] += voltage_line_noise
+            x[:, [sample.columns.get_loc(col) for col in Features.VOLTAGE_PHAZE_BB + Features.VOLTAGE_PHAZE_CL]] += voltage_phaze_noise
+            x[:, [sample.columns.get_loc(col) for col in Features.VOLTAGE_ZERO_SEQ + Features.VOLTAGE_LINE_CL]] += voltage_line_noise
 
         # 4. Сдвиг значений (Offset)
         if self.apply_offset and random.random() < self.augmentation_probabilities["offset"]:
@@ -194,28 +167,28 @@ class CustomDataset_train(Dataset):
             phase_shift = np.random.randint(0, 3)
 
             # Сдвиг фазовых токов (IA, IB, IC)
-            current_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.CURRENT]
+            current_indices = [sample.columns.get_loc(col) for col in Features.CURRENT]
             x[:, current_indices] = torch.roll(x[:, current_indices], shifts=phase_shift, dims=1)
 
             # Сдвиг фазных напряжений
-            phaze_BB_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_PHAZE_BB]
+            phaze_BB_indices = [sample.columns.get_loc(col) for col in Features.VOLTAGE_PHAZE_BB]
             x[:, phaze_BB_indices] = torch.roll(x[:, phaze_BB_indices], shifts=phase_shift, dims=1)
 
-            phaze_CL_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_PHAZE_CL]
+            phaze_CL_indices = [sample.columns.get_loc(col) for col in Features.VOLTAGE_PHAZE_CL]
             x[:, phaze_CL_indices] = torch.roll(x[:, phaze_CL_indices], shifts=phase_shift, dims=1)
 
             # Сдвиг линейных напряжений (UAB CL, UBC CL, UCA CL)
-            line_CL_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.VOLTAGE_LINE_CL]
+            line_CL_indices = [sample.columns.get_loc(col) for col in Features.VOLTAGE_LINE_CL]
             x[:, line_CL_indices] = torch.roll(x[:, line_CL_indices], shifts=phase_shift, dims=1)
 
         # 6. Удаление входов нулевой последовательности
         if self.apply_delet_zero_signal and random.random() < self.augmentation_probabilities["delet_zero_singnal"]:
-            zeroSignal_indices = [sample.columns.get_loc(col) for col in FeaturesForDataset.ZERO_SIGNAL]
+            zeroSignal_indices = [sample.columns.get_loc(col) for col in Features.VOLTAGE_ZERO_SEQ]
             x[:, zeroSignal_indices] = torch.zeros_like(x[:, zeroSignal_indices])
 
         # === ИЗВЛЕЧЕНИЕ ЦЕЛЕВОГО ЗНАЧЕНИЯ === #
         target_index = start + self.target_position
-        target_sample = self.data.loc[target_index][FeaturesForDataset.TARGET]
+        target_sample = self.data.loc[target_index][Features.TARGET]
         target = torch.tensor(target_sample, dtype=torch.float32)
 
         return x, target
@@ -252,15 +225,15 @@ class CustomDataset(Dataset):
             # Защита от выхода за диапазон. Такого быть не должно при обрезании массива, но оставил на всякий случай.
             return (None, None)
         
-        sample = self.data.loc[start : start + self.frame_size - 1][FeaturesForDataset.FEATURES]
-        #sample = frame[FeaturesForDataset.FEATURES]
+        sample = self.data.loc[start : start + self.frame_size - 1][Features.ALL]
+        #sample = frame[Features.ALL]
         x = torch.tensor(
             sample.to_numpy(dtype=np.float32),
             dtype=torch.float32,
         )
 
         target_index = start + self.target_position
-        target_sample = self.data.loc[target_index][FeaturesForDataset.TARGET]
+        target_sample = self.data.loc[target_index][Features.TARGET]
         target = torch.tensor(target_sample, dtype=torch.float32) # было torch.long
         return x, target
 
@@ -353,9 +326,9 @@ def save_stats_to_csv(epoch, batch_count, epoch_duration, train_loss, test_loss,
         # Записываем заголовок, если файл пустой
         if os.stat(per_class_metrics_file).st_size == 0:
             header = ["epoch", "batch_count", "epoch_duration"] + [
-                f"{feature}_f1" for feature in FeaturesForDataset.TARGET
+                f"{feature}_f1" for feature in Features.TARGET
             ] + [
-                f"{feature}_ba" for feature in FeaturesForDataset.TARGET
+                f"{feature}_ba" for feature in Features.TARGET
             ]
             writer.writerow(header)
 
@@ -402,8 +375,8 @@ def save_stats_to_json(filename, epoch, batch_count, epoch_duration, train_loss,
         "hamming_loss": hamming,
         "jaccard_score": jaccard,
         "learning_rate": lr,
-        "f1_scores_per_class": {feature: f1 for feature, f1 in zip(FeaturesForDataset.TARGET, f1_per_class)},
-        "balanced_accuracy_per_class": {feature: ba for feature, ba in zip(FeaturesForDataset.TARGET, ba_per_class)}
+        "f1_scores_per_class": {feature: f1 for feature, f1 in zip(Features.TARGET, f1_per_class)},
+        "balanced_accuracy_per_class": {feature: ba for feature, ba in zip(Features.TARGET, ba_per_class)}
     }
 
     # Записываем в файл
@@ -451,9 +424,9 @@ if __name__ == "__main__":
         
         # TODO: Нормальизацию стоит делать отдельно. Здесь я её закладываю временно
         Inom, Unom = 5, 100
-        for name in FeaturesForDataset.CURRENT:
+        for name in Features.CURRENT:
             dt[name] = dt[name] / (Inom*20)
-        for name in FeaturesForDataset.VOLTAGE:
+        for name in Features.VOLTAGE:
             dt[name] = dt[name] / (Unom*3)
         
         with open('ML_model/test_files.json', 'r') as infile:
@@ -472,8 +445,8 @@ if __name__ == "__main__":
 
         std_scaler = StandardScaler()
         
-        df_scaled_train = dt_train[FeaturesForDataset.FEATURES]
-        df_scaled_test = dt_test[FeaturesForDataset.FEATURES]
+        df_scaled_train = dt_train[Features.ALL]
+        df_scaled_test = dt_test[Features.ALL]
         # TODO: массштабирование производится отдельно. Нормализация в адекватных данных не должна требоваться
         # так как знечения симметричны относительно 0. 
         df_scaled_train = pd.DataFrame(
@@ -488,26 +461,26 @@ if __name__ == "__main__":
         )
 
         dt_train = pd.concat(
-            (dt_train.drop(FeaturesForDataset.FEATURES, axis=1), df_scaled_train), axis=1
+            (dt_train.drop(Features.ALL, axis=1), df_scaled_train), axis=1
         )
         dt_test = pd.concat(
-            (dt_test.drop(FeaturesForDataset.FEATURES, axis=1), df_scaled_test), axis=1
+            (dt_test.drop(Features.ALL, axis=1), df_scaled_test), axis=1
         )
 
         dt_train.reset_index(drop=True, inplace=True)
         dt_test.reset_index(drop=True, inplace=True)
 
-        target_series_train = dt_train[FeaturesForDataset.TARGET]
-        target_series_test = dt_test[FeaturesForDataset.TARGET]
+        target_series_train = dt_train[Features.TARGET]
+        target_series_test = dt_test[Features.TARGET]
 
         # замена значений NaN на 0 в конце датафрейма
-        for name in FeaturesForDataset.TARGET:
+        for name in Features.TARGET:
             dt_train[name] = dt_train[name].fillna(0)  
             dt_train[name] = dt_train[name].astype(int)
             dt_test[name] = dt_test[name].fillna(0)
             dt_test[name] = dt_test[name].astype(int)
         # Замена значений NaN на 0 для пустых ячеек
-        for name in FeaturesForDataset.FEATURES:
+        for name in Features.ALL:
             dt_train[name] = dt_train[name].fillna(0)  
             dt_train[name] = dt_train[name].astype(np.float32)
             dt_test[name] = dt_test[name].fillna(0)
@@ -519,7 +492,7 @@ if __name__ == "__main__":
     
     files_train = dt_train["file_name"].unique()
     for file in files_train: # Непонятно почему не улучшает, надо отдельно проверить
-        for target in FeaturesForDataset.TARGET:
+        for target in Features.TARGET:
             # Извлекаем строки, где file_name соответствует текущему файлу
             mask = dt_train["file_name"] == file
             # Обновляем нужный столбец после применения функции expand_array
@@ -527,14 +500,14 @@ if __name__ == "__main__":
     
     files_test = dt_test["file_name"].unique()
     for file in files_test: # Непонятно почему не улучшает, надо отдельно проверить
-        for target in FeaturesForDataset.TARGET:
+        for target in Features.TARGET:
             # Извлекаем строки, где file_name соответствует текущему файлу
             mask = dt_test["file_name"] == file
             # Обновляем нужный столбец после применения функции expand_array
             dt_test.loc[mask, target] = expand_array(dt_test.loc[mask, target].values, expand_left=0, expand_right=31)
     
     # копия датафрейма для получения индексов начал фреймов для трейн
-    dt_indexes_train = dt_train[FeaturesForDataset.TARGET_WITH_FILENAME]
+    dt_indexes_train = dt_train[["file_name"] + Features.TARGET]
     files_train = dt_indexes_train["file_name"].unique()
     train_indexes = pd.DataFrame()
     for file in files_train:
@@ -560,7 +533,7 @@ if __name__ == "__main__":
     }
 
     # копия датафрейма для получения индексов начал фреймов для тест
-    dt_indexes_test = dt_test[FeaturesForDataset.TARGET_WITH_FILENAME]
+    dt_indexes_test = dt_test[["file_name"] + Features.TARGET]
     files_test = dt_indexes_test["file_name"].unique()
     test_indexes = pd.DataFrame()
     for file in files_test:
@@ -594,9 +567,9 @@ if __name__ == "__main__":
     # model = FFT_MLP_KAN_v2(
     model = Model.CONV_AND_FFT_COMPLEX_v3(
         FRAME_SIZE,
-        channel_num=len(FeaturesForDataset.FEATURES),
+        channel_num=len(Features.ALL),
         hidden_size=HIDDEN_SIZE,
-        output_size=len(FeaturesForDataset.TARGET),
+        output_size=len(Features.TARGET),
         device=device,
     )
     
