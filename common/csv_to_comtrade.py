@@ -15,7 +15,7 @@ DEFAULT_TN_PRIMARY = 110000.0
 DEFAULT_TN_SECONDARY = 100.0
 DEFAULT_FREQ = 50.0
 
-APP_TITLE = "CSV to COMTRADE Converter"
+APP_TITLE = "Конвертер CSV в COMTRADE"
 
 # --- Функции ---
 
@@ -80,13 +80,13 @@ def sanitize_filename(filename, replacement='X'):
 def process_csv_to_comtrade(csv_path, out_folder, params, status_callback):
     """Обрабатывает один CSV файл и создает CFG и DAT."""
     try:
-        status_callback(f"Processing: {csv_path.name}...")
+        status_callback(f"Обработка: {csv_path.name}...")
         original_base_name = csv_path.stem # Сохраняем оригинальное имя для сообщений
         # Очищаем имя файла от не-ASCII и недопустимых символов
         sanitized_base_name = sanitize_filename(original_base_name) # Используем нашу новую функцию
         # Уведомляем пользователя, если имя было изменено
         if original_base_name != sanitized_base_name:
-            status_callback(f"Info: Output filename for '{original_base_name}.csv' was sanitized to '{sanitized_base_name}.cfg/.dat' due to non-ASCII or invalid characters.")
+            status_callback(f"Информация: Имя выходного файла для '{original_base_name}.csv' было очищено до '{sanitized_base_name}.cfg/.dat' из-за не-ASCII или недопустимых символов.")
         
         cfg_path = out_folder / f"{sanitized_base_name}.cfg"
         dat_path = out_folder / f"{sanitized_base_name}.dat"
@@ -95,10 +95,10 @@ def process_csv_to_comtrade(csv_path, out_folder, params, status_callback):
         try:
             df = pd.read_csv(csv_path)
         except Exception as e:
-            raise ValueError(f"Error reading CSV '{csv_path.name}': {e}")
+            raise ValueError(f"Ошибка чтения CSV '{csv_path.name}': {e}")
 
         if df.empty or len(df) < 2:
-            raise ValueError(f"CSV file '{csv_path.name}' is empty or has less than 2 data rows.")
+            raise ValueError(f"CSV-файл '{csv_path.name}' пуст или содержит менее 2 строк данных.")
 
         # Проверка наличия колонки времени
         if 'TimeUTC' not in df.columns:
@@ -109,11 +109,11 @@ def process_csv_to_comtrade(csv_path, out_folder, params, status_callback):
                     time_col_found = col
                     break
             if not time_col_found:
-                 raise ValueError(f"'TimeUTC' column not found in '{csv_path.name}' and no alternative time column identified.")
+                 raise ValueError(f"Колонка 'TimeUTC' не найдена в '{csv_path.name}' и не определена альтернативная колонка времени.")
             else:
                  # Переименовываем найденную колонку для дальнейшей обработки
                  df.rename(columns={time_col_found: 'TimeUTC'}, inplace=True)
-                 status_callback(f"Info: Used column '{time_col_found}' as time source for {csv_path.name}")
+                 status_callback(f"Информация: Используется колонка '{time_col_found}' как источник времени для {csv_path.name}")
 
 
         # --- Определение параметров из данных ---
@@ -142,7 +142,7 @@ def process_csv_to_comtrade(csv_path, out_folder, params, status_callback):
              if len(df) > 2:
                  time_diff = df['TimeUTC'].iloc[2] - df['TimeUTC'].iloc[1]
              if time_diff <= 0:
-                  raise ValueError(f"Cannot determine sampling rate from 'TimeUTC' in '{csv_path.name}'. Time difference is zero or negative.")
+                  raise ValueError(f"Невозможно определить частоту дискретизации из 'TimeUTC' в '{csv_path.name}'. Разница во времени равна нулю или отрицательна.")
         sampling_rate = round(1.0 / time_diff)
         total_samples = len(df)
 
@@ -161,15 +161,15 @@ def process_csv_to_comtrade(csv_path, out_folder, params, status_callback):
 
         # --- Генерация CFG ---
         cfg_lines = []
-        # Line 1: Station name, device ID, standard revision year
+        # Строка 1: Название станции, ID устройства, год ревизии стандарта
         # Используем имя файла без расширения как ID устройства
         station_name = params.get('station_name', "CSV_Import") # Можно сделать настраиваемым
         device_id = sanitized_base_name
         cfg_lines.append(f"{station_name},{device_id},1999")
-        # Line 2: Total channels, Analog channels (A), Digital channels (D)
+        # Строка 2: Всего каналов, Аналоговые каналы (A), Цифровые каналы (D)
         cfg_lines.append(f"{total_channels},{num_analog_channels}A,{num_digital_channels}D")
 
-        # Analog Channel Definitions
+        # Определения аналоговых каналов
         for i, ch_name in enumerate(channel_names):
             ch_index = i + 1
             unit, phase = get_channel_type_phase(ch_name)
@@ -214,21 +214,21 @@ def process_csv_to_comtrade(csv_path, out_folder, params, status_callback):
             # Формат строки: n,ch_id,ph,ccbm,uu,a,b,skew,min,max,primary,secondary,ps
             cfg_lines.append(f"{ch_index},{ch_name},{phase},{circuit_component},{unit},{a},{b},{skew},{min_digital},{max_digital},{primary_factor},{secondary_factor},{ps}")
 
-        # Digital Channel Definitions (none in this case)
+        # Определения цифровых каналов (в данном случае отсутствуют)
 
-        # Network frequency
+        # Частота сети
         cfg_lines.append(f"{params['net_freq']:.1f}")
-        # Number of sampling rates (only 1)
+        # Количество частот дискретизации (только 1)
         cfg_lines.append("1")
-        # Sampling rate info: samp, endsamp
+        # Информация о частоте дискретизации: samp, endsamp
         cfg_lines.append(f"{sampling_rate},{total_samples}")
-        # Start date/time
+        # Дата/время начала
         cfg_lines.append(start_time_str)
-        # Trigger date/time
+        # Дата/время триггера
         cfg_lines.append(trigger_time_str)
-        # Data file type
+        # Тип файла данных
         cfg_lines.append("ASCII")
-        # Timestamp multiplication factor (optional, default is 1)
+        # Коэффициент умножения временной метки (опционально, по умолчанию 1)
         cfg_lines.append("1") # Добавлено для полноты
 
         # Запись CFG файла
@@ -238,9 +238,9 @@ def process_csv_to_comtrade(csv_path, out_folder, params, status_callback):
             with open(cfg_path, 'wb') as f_cfg:
                 f_cfg.write(cfg_content_bytes)
         except UnicodeEncodeError:
-            error_message = f"Error: Non-ASCII characters found in generated CFG CONTENT for {csv_path.name}. Cannot save as COMTRADE ASCII."
+            error_message = f"Ошибка: В сгенерированном содержимом CFG для {csv_path.name} обнаружены не-ASCII символы. Невозможно сохранить как COMTRADE ASCII."
             status_callback(error_message)
-            print(f"ERROR: {error_message}")
+            print(f"ОШИБКА: {error_message}")
             return False
 
         # --- Генерация DAT ---
@@ -261,21 +261,21 @@ def process_csv_to_comtrade(csv_path, out_folder, params, status_callback):
             with open(dat_path, 'wb') as f_dat:
                 f_dat.write(dat_content_bytes)
         except UnicodeEncodeError:
-            error_message = f"Error: Non-ASCII characters found in generated DAT CONTENT for {csv_path.name}. Cannot save as COMTRADE ASCII."
+            error_message = f"Ошибка: В сгенерированном содержимом DAT для {csv_path.name} обнаружены не-ASCII символы. Невозможно сохранить как COMTRADE ASCII."
             status_callback(error_message)
-            print(f"ERROR: {error_message}")
+            print(f"ОШИБКА: {error_message}")
             return False
 
         # Сообщение об успехе использует оригинальное имя CSV и очищенное имя COMTRADE
-        status_callback(f"Successfully converted: {csv_path.name} -> {sanitized_base_name}.cfg/.dat")
+        status_callback(f"Успешно конвертировано: {csv_path.name} -> {sanitized_base_name}.cfg/.dat")
         return True
 
     except Exception as e:
         # Используем оригинальное имя CSV в сообщении об ошибке
-        error_message = f"Error processing {csv_path.name}: {e}"
+        error_message = f"Ошибка обработки {csv_path.name}: {e}"
         status_callback(error_message)
         import traceback
-        print(f"ERROR processing {csv_path.name}:")
+        print(f"ОШИБКА обработки {csv_path.name}:")
         traceback.print_exc()
         return False
 
@@ -284,7 +284,7 @@ def start_conversion_thread(app_instance):
     """Запускает конвертацию в отдельном потоке, чтобы не блокировать GUI."""
     # Блокируем кнопку запуска
     app_instance.run_button.config(state=tk.DISABLED)
-    app_instance.status_label.config(text="Starting conversion...")
+    app_instance.status_label.config(text="Начинаем конвертацию...")
     app_instance.progress_bar['value'] = 0
 
     # Считываем параметры из GUI
@@ -300,9 +300,9 @@ def start_conversion_thread(app_instance):
         # Получаем список выбранных файлов из переменной экземпляра
         files_to_process_str = app_instance.selected_files_list
         if not files_to_process_str:
-            messagebox.showerror("Error", "Please select at least one CSV file using 'Browse Files...'.")
+            messagebox.showerror("Ошибка", "Пожалуйста, выберите хотя бы один CSV-файл с помощью 'Обзор файлов...'.")
             app_instance.run_button.config(state=tk.NORMAL)
-            app_instance.status_label.config(text="Ready.")
+            app_instance.status_label.config(text="Готово.")
             return
 
         # Преобразуем строки путей в объекты Path
@@ -314,17 +314,17 @@ def start_conversion_thread(app_instance):
              try:
                  Path(output_folder).mkdir(parents=True, exist_ok=True)
                  if not Path(output_folder).is_dir(): # Проверка после попытки создания
-                      raise OSError("Could not create output directory.")
+                      raise OSError("Не удалось создать выходной каталог.")
              except Exception as e:
-                messagebox.showerror("Error", f"Please select or create a valid output folder.\nError: {e}")
+                messagebox.showerror("Ошибка", f"Пожалуйста, выберите или создайте действительную выходную папку.\nОшибка: {e}")
                 app_instance.run_button.config(state=tk.NORMAL)
-                app_instance.status_label.config(text="Ready.")
+                app_instance.status_label.config(text="Готово.")
                 return
 
     except ValueError:
-        messagebox.showerror("Error", "Please enter valid numeric values for all parameters.")
+        messagebox.showerror("Ошибка", "Пожалуйста, введите действительные числовые значения для всех параметров.")
         app_instance.run_button.config(state=tk.NORMAL)
-        app_instance.status_label.config(text="Ready.")
+        app_instance.status_label.config(text="Готово.")
         return
 
     # Запуск обработки в отдельном потоке
@@ -336,7 +336,7 @@ def run_conversion(app_instance, files_to_process, output_folder, params):
     output_path = Path(output_folder)
 
     if not files_to_process: # Дополнительная проверка
-        app_instance.update_status("No files selected for processing.")
+        app_instance.update_status("Файлы для обработки не выбраны.")
         app_instance.run_button.config(state=tk.NORMAL)
         return
 
@@ -353,11 +353,11 @@ def run_conversion(app_instance, files_to_process, output_folder, params):
         # Обновляем прогресс бар в главном потоке через schedule
         app_instance.master.after(0, app_instance.update_progress, i + 1)
 
-    final_message = f"Conversion finished. Processed: {files_processed}, Succeeded: {files_succeeded}, Failed: {files_processed - files_succeeded}."
+    final_message = f"Конвертация завершена. Обработано: {files_processed}, Успешно: {files_succeeded}, Неудачно: {files_processed - files_succeeded}."
     app_instance.update_status(final_message)
     # Разблокируем кнопку по завершении
     app_instance.run_button.config(state=tk.NORMAL)
-    messagebox.showinfo("Complete", final_message)
+    messagebox.showinfo("Завершено", final_message)
 
 
 # --- Класс GUI ---
@@ -374,39 +374,39 @@ class ConverterApp:
         self.data_type_var = tk.StringVar(value="Первичные") # Значение по умолчанию
 
         # Фрейм для параметров
-        param_frame = ttk.LabelFrame(master, text="Parameters", padding=(10, 5))
+        param_frame = ttk.LabelFrame(master, text="Параметры", padding=(10, 5))
         param_frame.pack(padx=10, pady=10, fill=tk.X)
 
         # --- Параметры ТТ ---
-        ttk.Label(param_frame, text="TT Primary (A):").grid(row=0, column=0, padx=5, pady=2, sticky=tk.W)
+        ttk.Label(param_frame, text="ТТ первичный (А):").grid(row=0, column=0, padx=5, pady=2, sticky=tk.W)
         self.tt_primary_entry = ttk.Entry(param_frame, width=15)
         self.tt_primary_entry.insert(0, str(DEFAULT_TT_PRIMARY))
         self.tt_primary_entry.grid(row=0, column=1, padx=5, pady=2)
 
-        ttk.Label(param_frame, text="TT Secondary (A):").grid(row=0, column=2, padx=5, pady=2, sticky=tk.W)
+        ttk.Label(param_frame, text="ТТ вторичный (А):").grid(row=0, column=2, padx=5, pady=2, sticky=tk.W)
         self.tt_secondary_entry = ttk.Entry(param_frame, width=15)
         self.tt_secondary_entry.insert(0, str(DEFAULT_TT_SECONDARY))
         self.tt_secondary_entry.grid(row=0, column=3, padx=5, pady=2)
 
         # --- Параметры ТН ---
-        ttk.Label(param_frame, text="TN Primary (V):").grid(row=1, column=0, padx=5, pady=2, sticky=tk.W)
+        ttk.Label(param_frame, text="ТН первичный (В):").grid(row=1, column=0, padx=5, pady=2, sticky=tk.W)
         self.tn_primary_entry = ttk.Entry(param_frame, width=15)
         self.tn_primary_entry.insert(0, str(DEFAULT_TN_PRIMARY))
         self.tn_primary_entry.grid(row=1, column=1, padx=5, pady=2)
 
-        ttk.Label(param_frame, text="TN Secondary (V):").grid(row=1, column=2, padx=5, pady=2, sticky=tk.W)
+        ttk.Label(param_frame, text="ТН вторичный (В):").grid(row=1, column=2, padx=5, pady=2, sticky=tk.W)
         self.tn_secondary_entry = ttk.Entry(param_frame, width=15)
         self.tn_secondary_entry.insert(0, str(DEFAULT_TN_SECONDARY))
         self.tn_secondary_entry.grid(row=1, column=3, padx=5, pady=2)
 
         # --- Частота сети ---
-        ttk.Label(param_frame, text="Network Freq (Hz):").grid(row=2, column=0, padx=5, pady=2, sticky=tk.W)
+        ttk.Label(param_frame, text="Частота сети (Гц):").grid(row=2, column=0, padx=5, pady=2, sticky=tk.W)
         self.freq_entry = ttk.Entry(param_frame, width=15)
         self.freq_entry.insert(0, str(DEFAULT_FREQ))
         self.freq_entry.grid(row=2, column=1, padx=5, pady=2)
         
         # --- Выбор типа данных в CSV ---
-        ttk.Label(param_frame, text="Data in CSV:").grid(row=3, column=0, padx=5, pady=5, sticky=tk.W)
+        ttk.Label(param_frame, text="Данные в CSV:").grid(row=3, column=0, padx=5, pady=5, sticky=tk.W)
         data_type_options = ["Первичные", "Вторичные"]
         self.data_type_combo = ttk.Combobox(param_frame, textvariable=self.data_type_var, values=data_type_options, state="readonly", width=12)
         self.data_type_combo.grid(row=3, column=1, padx=5, pady=5, sticky=tk.W)
@@ -415,23 +415,23 @@ class ConverterApp:
         #ttk.Radiobutton(param_frame, text="Вторичные", variable=self.data_type_var, value="Вторичные").grid(row=3, column=2, sticky=tk.W)
 
         # Фрейм для выбора папок/файлов
-        folder_frame = ttk.LabelFrame(master, text="Input/Output", padding=(10, 5)) # Можно переименовать LabelFrame
+        folder_frame = ttk.LabelFrame(master, text="Ввод/Вывод", padding=(10, 5)) # Можно переименовать LabelFrame
         folder_frame.pack(padx=10, pady=5, fill=tk.X)
         folder_frame.columnconfigure(1, weight=1) # Позволим второй колонке расширяться
 
         # --- Выбор входных файлов ---
-        ttk.Label(folder_frame, text="Input CSV Files:").grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
-        self.input_button = ttk.Button(folder_frame, text="Browse Files...", command=self.select_input_files) # Изменена команда и текст
+        ttk.Label(folder_frame, text="Входные CSV-файлы:").grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
+        self.input_button = ttk.Button(folder_frame, text="Обзор файлов...", command=self.select_input_files) # Изменена команда и текст
         self.input_button.grid(row=0, column=1, columnspan=2, padx=5, pady=5, sticky=tk.EW) # Растянем кнопку на 2 колонки
         
         # Добавим переменную для хранения списка выбранных файлов
         self.selected_files_list = []
 
         # --- Выбор выходной папки ---
-        ttk.Label(folder_frame, text="Output COMTRADE Folder:").grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
+        ttk.Label(folder_frame, text="Папка для вывода COMTRADE:").grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
         self.output_entry = ttk.Entry(folder_frame, textvariable=self.output_folder_var, width=40)
         self.output_entry.grid(row=1, column=1, padx=5, pady=5)
-        self.output_button = ttk.Button(folder_frame, text="Browse...", command=self.select_output_folder)
+        self.output_button = ttk.Button(folder_frame, text="Обзор...", command=self.select_output_folder)
         self.output_button.grid(row=1, column=2, padx=5, pady=5)
 
         # Фрейм для запуска и прогресса
@@ -439,7 +439,7 @@ class ConverterApp:
         run_frame.pack(padx=10, pady=10, fill=tk.X)
 
         # --- Кнопка Запуска ---
-        self.run_button = ttk.Button(run_frame, text="Start Conversion", command=lambda: start_conversion_thread(self))
+        self.run_button = ttk.Button(run_frame, text="Начать конвертацию", command=lambda: start_conversion_thread(self))
         self.run_button.pack(pady=5)
 
         # --- Прогресс Бар ---
@@ -447,7 +447,7 @@ class ConverterApp:
         self.progress_bar.pack(pady=5)
 
         # --- Статус ---
-        self.status_label = ttk.Label(run_frame, text="Ready. Select folders and parameters.")
+        self.status_label = ttk.Label(run_frame, text="Готово. Выберите папки и параметры.")
         self.status_label.pack(pady=5)
 
         # Установка текущей директории как начальной для выходной папки (опционально)
@@ -457,18 +457,18 @@ class ConverterApp:
     def select_input_files(self):
         # Открываем диалог выбора нескольких файлов, фильтруя по CSV
         files_selected = filedialog.askopenfilenames(
-            title="Select CSV files",
-            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
+            title="Выберите CSV-файлы",
+            filetypes=[("CSV-файлы", "*.csv"), ("Все файлы", "*.*")]
         )
         if files_selected:
             # filedialog возвращает кортеж, преобразуем в список
             self.selected_files_list = list(files_selected)
             # Обновляем статус, чтобы показать количество выбранных файлов
-            self.update_status(f"Selected {len(self.selected_files_list)} CSV file(s).")
+            self.update_status(f"Выбрано {len(self.selected_files_list)} CSV-файл(ов).")
         else:
             # Если пользователь ничего не выбрал, очищаем список
             self.selected_files_list = []
-            self.update_status("No CSV files selected.")
+            self.update_status("CSV-файлы не выбраны.")
 
     def select_output_folder(self):
         folder_selected = filedialog.askdirectory()
