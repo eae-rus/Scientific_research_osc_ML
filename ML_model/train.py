@@ -63,26 +63,26 @@ class CustomDataset_train(Dataset):
                  apply_delet_zero_signal: bool = False,
                  augmentation_probabilities: dict = None):
         """
-        Initialize the dataset.
+        Инициализация набора данных.
 
         Args:
-            dt (pd.DataFrame()): The DataFrame containing the data.
-            indexes (pd.DataFrame()): DataFrame with index positions to split the data.
-            frame_size (int): The size of the selection window.
-            target_position (int, optional): The position from which the target value is selected. 0 - means that it is taken from the first point. frame_size-1 - means that it is taken from the last point.
-            apply_inversion (bool): Whether to apply signal inversion.
-            apply_noise (bool): Whether to apply Gaussian noise.
-            current_noise_level (float): Standard deviation of the Gaussian noise.
-            voltage_noise_level (float): Standard deviation of the Gaussian noise.
-            apply_amplitude_scaling (bool): Whether to apply amplitude scaling.
-            current_amplitude_range (float): Scaling range for current signals.
-            voltage_amplitude_range (float): Scaling range for voltage signals.
-            apply_offset (bool): Whether to apply offset drift.
-            offset_range (tuple): Range for the offset value.
-            apply_phase_shuffling (bool): Whether to apply phase shuffling for current and voltage channels.
-            augmentation_probabilities (dict, optional): Dictionary specifying the activation probabilities for each augmentation.
-                Example: {"inversion": 0.5, "noise": 0.3, "scaling": 0.7, "offset": 0.4, "phase_shuffling": 0.2}.
-                Default value is 0.5 for all augmentations if not provided.
+            dt (pd.DataFrame()): DataFrame, содержащий данные.
+            indexes (pd.DataFrame()): DataFrame с позициями индексов для разделения данных.
+            frame_size (int): Размер окна выбора.
+            target_position (int, optional): Позиция, из которой выбирается целевое значение. 0 - означает, что оно берется из первой точки. frame_size-1 - означает, что оно берется из последней точки.
+            apply_inversion (bool): Применять ли инверсию сигнала.
+            apply_noise (bool): Применять ли гауссовский шум.
+            current_noise_level (float): Стандартное отклонение гауссовского шума.
+            voltage_noise_level (float): Стандартное отклонение гауссовского шума.
+            apply_amplitude_scaling (bool): Применять ли масштабирование амплитуды.
+            current_amplitude_range (float): Диапазон масштабирования для сигналов тока.
+            voltage_amplitude_range (float): Диапазон масштабирования для сигналов напряжения.
+            apply_offset (bool): Применять ли дрейф смещения.
+            offset_range (tuple): Диапазон для значения смещения.
+            apply_phase_shuffling (bool): Применять ли перетасовку фаз для каналов тока и напряжения.
+            augmentation_probabilities (dict, optional): Словарь, указывающий вероятности активации для каждой аугментации.
+                Пример: {"inversion": 0.5, "noise": 0.3, "scaling": 0.7, "offset": 0.4, "phase_shuffling": 0.2}.
+                Значение по умолчанию равно 0.5 для всех аугментаций, если не указано.
         """
         self.data = dt
         self.indexes = indexes
@@ -223,13 +223,13 @@ class CustomDataset_train(Dataset):
 class CustomDataset(Dataset):
 
     def __init__(self, dt: pd.DataFrame(), indexes: pd.DataFrame(), frame_size: int, target_position: int = None):
-        """ Initialize the dataset.
+        """ Инициализация набора данных.
 
         Args:
-            dt (pd.DataFrame()): The DataFrame containing the data
-            indexes (pd.DataFrame()): _description_
-            frame_size (int): the size of the selection window
-            target_position (int, optional): The position from which the target value is selected. 0 - means that it is taken from the first point. frame_size-1 - means that it is taken from the last point.
+            dt (pd.DataFrame()): DataFrame, содержащий данные
+            indexes (pd.DataFrame()): _описание_
+            frame_size (int): размер окна выбора
+            target_position (int, optional): Позиция, из которой выбирается целевое значение. 0 - означает, что оно берется из первой точки. frame_size-1 - означает, что оно берется из последней точки.
         """
         self.data = dt
         self.indexes = indexes
@@ -310,7 +310,7 @@ class MultiLabelFocalLoss(torch.nn.Module):
 
 def seed_everything(seed: int = 42):
     """
-    This function is used to maintain repeatability
+    Эта функция используется для поддержания повторяемости
     """
     random.seed(seed)
     os.environ["PYTHONHASHSEED"] = str(seed)
@@ -431,7 +431,7 @@ if __name__ == "__main__":
     # device = "cpu"
 
     file_csv = "ML_model/datset_simpl v2.csv"
-    # Create the folder if it doesn't exist
+    # Создаем папку, если она не существует
     folder_path = "/ML_model"
     os.makedirs(folder_path, exist_ok=True)
     file_with_target_frame_train = (
@@ -460,7 +460,7 @@ if __name__ == "__main__":
             data = json.load(infile)  
         files_to_test = data["test_files"]
         
-        # Create a new list to store the full file names
+        # Создаем новый список для хранения полных имен файлов
         full_files_to_test = []
         for full_file_name in dt["file_name"].unique():
             for file_name in files_to_test:
@@ -605,7 +605,7 @@ if __name__ == "__main__":
     # filename_model = "ML_model/trained_models/model_ep2_tl0.3498_train1432.3669.pt"
     # model = torch.load(filename_model)
     # start_epoch = int(filename_model.split("ep")[1].split("_")[0])
-    # model.eval()  # Set the model to evaluation mode
+    # model.eval()  # Установка модели в режим оценки
 
     criterion = MultiLabelFocalLoss(gamma=3) # Пока это лучшая метрика. Можно будет поиграться с гамма.
     
@@ -665,9 +665,9 @@ if __name__ == "__main__":
                 loss_sum += loss.item()
                 all_losses.append(loss.item())
                 message = (
-                    f"Epoch {epoch+1}/{EPOCHS} "
+                    f"Эпоха {epoch+1}/{EPOCHS} "
                     f"LR={current_lr:.3e} "
-                    f"Train loss: {1000*(loss_sum / (i + 1)):.4f} "
+                    f"Потери при обучении: {1000*(loss_sum / (i + 1)):.4f} "
                 )
                 t.set_postfix_str(s=message)
                 optimizer.zero_grad()
@@ -695,9 +695,9 @@ if __name__ == "__main__":
             numpy_labels = np.array(predicted_labels) # промежуточные преобразования для ускорения
             predicted_labels_tensor = torch.from_numpy(numpy_labels)
             predicted_labels = torch.where(predicted_labels_tensor >= 0.5, torch.tensor(1), torch.tensor(0))
-            # Hamming Loss - чем меньше, тем лучше
+            # Потери Хэмминга - чем меньше, тем лучше
             hamming = hamming_loss(true_labels, predicted_labels)
-            # Jaccard Score - для многолейбловой задачи, 'samples' для подсчета по образцам - чем ближе к 1, тем лучше
+            # Коэффициент Жаккара - для многоклассовой задачи, 'samples' для подсчета по образцам - чем ближе к 1, тем лучше
             jaccard = jaccard_score(true_labels, predicted_labels, average='samples')
             
             # TODO: Разобраться с метриками и модернизировать их
@@ -731,13 +731,13 @@ if __name__ == "__main__":
 
 
             # Сообщение для tqdm
-            t.set_postfix_str(f"Batch: {batch_count}, Train loss: {loss_sum / (i + 1):.4f}, Test loss: {test_loss:.4f}, LR: {current_lr:.4e}")
+            t.set_postfix_str(f"Батч: {batch_count}, Потери при обучении: {loss_sum / (i + 1):.4f}, Потери при тестировании: {test_loss:.4f}, LR: {current_lr:.4e}")
             message_f1_ba = (
-                             f"Prev. test loss: {1000*test_loss:.4f} "
+                             f"Пред. потери при тестировании: {1000*test_loss:.4f} "
                              f"F1 / BA: {', '.join([f'{signal_name}: {f1_score:.4f}/{ba_score:.4f}' for signal_name, f1_score, ba_score in zip(FeaturesForDataset.TARGET, f1, ba)])} "
                              )
             print(message_f1_ba)
-            print(f"Hamming Loss: {hamming}, Jaccard Score: {jaccard}")
+            print(f"Потери Хэмминга: {hamming}, Коэффициент Жаккара: {jaccard}")
             
             torch.save(model, f"ML_model/trained_models/model_{name_model}_ep{epoch+1}_tl{test_loss:.4f}_train{loss_sum:.4f}.pt")
             model.train()
