@@ -108,7 +108,7 @@ class cDropout1d(nn.Module):
         return torch.complex(real, imag)
 
 ####################
-# Общшие функции
+# Общие функции
 ####################
 
 def cubic_interpolate(tensor, output_size=64):
@@ -116,18 +116,18 @@ def cubic_interpolate(tensor, output_size=64):
     Интерполяция данных до фиксированного числа точек с использованием кубической интерполяции.
     
     Параметры:
-    tensor: Tensor размера (Batch, Channels, Points)
+    tensor: Тензор размера (батч, каналы, точки)
     output_size: Требуемое количество точек (по умолчанию 64)
     
     Возвращает:
-    Интерполированный тензор размера (Batch, Channels, output_size)
+    Интерполированный тензор размера (батч, каналы, output_size)
     """
     #batch_size, channels, input_points = tensor.shape
     
-    # Применяем интерполяцию только по третьему измерению (Points)
+    # Применяем интерполяцию только по третьему измерению (точки)
     interpolated_tensor = F.interpolate(
         tensor, 
-        size=(output_size,),  # Интерполируем по размеру точек (Points)
+        size=(output_size,),  # Интерполируем по размеру точек
         mode='bicubic',  # Кубическая интерполяция
         align_corners=True
     )
@@ -318,7 +318,7 @@ class PDRBlock(nn.Module):
              # Можно вернуть тензор нулей нужного размера или бросить ошибку
              # Вернем тензор нулей с размером 0 в последней дименсии, чтобы cat не упал
              # Хотя лучше настроить коэффициенты так, чтобы хоть одна ветка была > 0
-             print(f"Warning: PDRBlock с input_size={x.shape[-1]} не имеет активных веток!")
+             print(f"Предупреждение: PDRBlock с input_size={x.shape[-1]} не имеет активных веток!")
              return torch.empty((*x.shape[:-1], 0), device=x.device, dtype=x.dtype)
 
         # Конкатенация выходов активных веток
@@ -356,7 +356,7 @@ class PDR_MLP_v2(nn.Module):
             # (сумма размеров всех потенциальных веток > 0)
             potential_size = base_neurons * (coeff_regular + coeff_min + coeff_compare + coeff_mul + coeff_div)
             if potential_size <= 0 and base_neurons <=0: # Добавил проверку base_neurons на всякий случай
-                print(f"Info: Пропуск создания блока {i}, т.к. base_neurons={base_neurons} или все коэффициенты <= 0.")
+                print(f"Информация: Пропуск создания блока {i}, т.к. base_neurons={base_neurons} или все коэффициенты <= 0.")
                 self.num_blocks -= 1 # Уменьшаем фактическое число блоков
                 continue # Не создаем этот блок
 
@@ -371,7 +371,7 @@ class PDR_MLP_v2(nn.Module):
 
             # Проверка, что блок реально что-то выводит
             if block.output_size <= 0:
-                 print(f"Warning: Созданный блок {i} имеет output_size=0. Проверьте коэффициенты.")
+                 print(f"Предупреждение: Созданный блок {i} имеет output_size=0. Проверьте коэффициенты.")
                  # Можно его не добавлять, но это может сломать skip connections
                  # Пока оставляем, но надо следить за конфигурацией
             
@@ -393,14 +393,14 @@ class PDR_MLP_v2(nn.Module):
                             proj = nn.Linear(skip_source_size, skip_target_size)
                         else:
                              # Это странная ситуация, пропускаем проекцию
-                             print(f"Warning: Skip target size для блока {i} равен 0. Проекция не создана.")
+                             print(f"Предупреждение: Skip target size для блока {i} равен 0. Проекция не создана.")
                              proj = None # или nn.Identity(), если source_size=0
                     elif skip_source_size == 0 and skip_target_size == 0:
                         proj = nn.Identity() # Для случая 0 -> 0
                     elif skip_source_size > 0: # Размеры равны и не нулевые
                         proj = nn.Identity()
                     else: # source=0, target>0 - нельзя сделать Identity
-                        print(f"Warning: Skip source size=0, target size>0 для блока {i}. Проекция не создана.")
+                        print(f"Предупреждение: Skip source size=0, target size>0 для блока {i}. Проекция не создана.")
                         proj = None
 
                     self.skip_projs.append(proj)
@@ -413,7 +413,7 @@ class PDR_MLP_v2(nn.Module):
              self.output_layer = nn.Linear(current_size, 1)
         else:
              # Если после всех блоков размер 0, сеть не может работать
-             print("Error: Выходной размер сети после всех блоков равен 0. Проверьте конфигурацию.")
+             print("Ошибка: Выходной размер сети после всех блоков равен 0. Проверьте конфигурацию.")
              self.output_layer = None # Или создать фиктивный слой, который не будет использоваться
 
         self.output_activation = nn.Sigmoid()
@@ -421,7 +421,7 @@ class PDR_MLP_v2(nn.Module):
     def forward(self, x):
         x = x.flatten(start_dim=1)
         if x.shape[1] != self.expected_input_features:
-             raise ValueError(f"Input dimension mismatch! Expected {self.expected_input_features}, got {x.shape[1]}")
+             raise ValueError(f"Несоответствие размерности входа! Ожидалось {self.expected_input_features}, получено {x.shape[1]}")
         if self.device:
              x = x.to(self.device)
 
@@ -452,7 +452,7 @@ class PDR_MLP_v2(nn.Module):
             output = self.output_activation(output)
         else:
             # Если финальный слой не создан, вернуть что-то осмысленное или ошибку
-            print("Error: Финальный слой не инициализирован.")
+            print("Ошибка: Финальный слой не инициализирован.")
             # Можно вернуть тензор нулей или NaN, чтобы показать проблему
             output = torch.zeros((x.shape[0], 1), device=x.device, dtype=x.dtype) * torch.nan
 
@@ -474,7 +474,7 @@ class PDR_MLP_v3(nn.Module):
 
 
 #####################
-# СТАРЫЕ
+# СТАРЫЕ МОДЕЛИ
 #####################
 
 
@@ -524,11 +524,11 @@ class CONV_MLP_v2(nn.Module):
             x1 = x1.reshape(x1.size(0), -1)
             x3 = self.conv3(x_i[:, :, 32:])
             x3 = x3.reshape(x3.size(0), -1)
-            # Concatenate tensors along axis 0
+            # Объединение тензоров по оси 0
             x_i = torch.cat((x1, x3), dim=1)
             X_sum[:,:, i] = x_i
             
-        X_sum = X_sum.reshape(X_sum.size(0), -1)  # Flatten the tensor to 2 dimensions
+        X_sum = X_sum.reshape(X_sum.size(0), -1)  # Выравнивание тензора до 2 измерений
         # FEATURES_TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt"]
         x_opr_swch = self.fc_opr_swch(X_sum)
         x_abnorm_evnt = self.fc_abnorm_evnt(X_sum)
@@ -603,11 +603,11 @@ class CONV_COMPLEX_v1(nn.Module):
             x1 = x1.reshape(x1.size(0), -1)
             x3 = self.conv3(x_i[:, :, 32:])
             x3 = x3.reshape(x3.size(0), -1)
-            # Concatenate tensors along axis 0
+            # Объединение тензоров по оси 0
             x_i = torch.cat((x1, x3), dim=1)
             X_sum[:,:, i] = x_i
             
-        X_sum = X_sum.reshape(X_sum.size(0), -1)  # Flatten the tensor to 2 dimensions
+        X_sum = X_sum.reshape(X_sum.size(0), -1)  # Выравнивание тензора до 2 измерений
         # FEATURES_TARGET = ["opr_swch", "abnorm_evnt", "emerg_evnt"]
         x_opr_swch = self.fc_opr_swch(X_sum)
         x_abnorm_evnt = self.fc_abnorm_evnt(X_sum)
@@ -656,7 +656,7 @@ class FFT_MLP(nn.Module):
         ## ТРЕБУЕТСЯ сделать независимые выходы для КАЖДОГО класса 
         x = x.reshape(x.size(0), x.size(2), x.size(1))
         x = torch.cat(fft_calc_abs_angle(x, count_harmonic = 8), dim=1)
-        # Concatenate tensors along axis 0
+        # Объединение тензоров по оси 0
         x = x.reshape(x.size(0), -1)
         x = self.fc(x)
         
@@ -738,7 +738,7 @@ class FFT_MLP_KAN_v1(nn.Module):
     def forward(self, x):
         x = x.reshape(x.size(0), x.size(2), x.size(1))
         x = torch.cat(fft_calc_abs_angle(x, count_harmonic = 8), dim=1)
-        # Concatenate tensors along axis 0
+        # Объединение тензоров по оси 0
         x = x.reshape(x.size(0), -1)
         x = self.kan1(x)
         x = self.kan2(x)
@@ -793,7 +793,7 @@ class FFT_MLP_COMPLEX_v1(nn.Module):
         ## ТРЕБУЕТСЯ сделать независимые выходы для КАЖДОГО класса 
         x = x.reshape(x.size(0), x.size(2), x.size(1))
         x = torch.cat(fft_calc(x, count_harmonic = 8), dim=-1)
-        # Concatenate tensors along axis 0
+        # Объединение тензоров по оси 0
         x = x.reshape(x.size(0), -1)
         x = self.fc(x)
         
@@ -1469,7 +1469,7 @@ class FFT_MLP_KAN_v2(nn.Module):
     def forward(self, x):
         x = x.reshape(x.size(0), x.size(2), x.size(1))
         x = torch.cat(fft_calc(x, count_harmonic = 8), dim=-1) 
-        # Concatenate tensors along axis 0
+        # Объединение тензоров по оси 0
         x = x.reshape(x.size(0), -1)
         x = self.kan1(x)
         x = self.kan2(x)
