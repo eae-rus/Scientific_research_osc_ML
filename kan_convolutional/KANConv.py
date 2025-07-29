@@ -4,7 +4,7 @@ from KANLinear import KANLinear
 import convolution
 
 
-#Script que contiene la implementación del kernel con funciones de activación.
+#Скрипт, содержащий реализацию ядра с функциями активации.
 class KAN_Convolutional_Layer(torch.nn.Module):
     def __init__(
             self,
@@ -24,23 +24,23 @@ class KAN_Convolutional_Layer(torch.nn.Module):
             device: str = "cpu"
         ):
         """
-        Kan Convolutional Layer with multiple convolutions
+        Сверточный слой Кана с несколькими свертками
         
-        Args:
-            n_convs (int): Number of convolutions to apply
-            kernel_size (tuple): Size of the kernel
-            stride (tuple): Stride of the convolution
-            padding (tuple): Padding of the convolution
-            dilation (tuple): Dilation of the convolution
-            grid_size (int): Size of the grid
-            spline_order (int): Order of the spline
-            scale_noise (float): Scale of the noise
-            scale_base (float): Scale of the base
-            scale_spline (float): Scale of the spline
-            base_activation (torch.nn.Module): Activation function
-            grid_eps (float): Epsilon of the grid
-            grid_range (tuple): Range of the grid
-            device (str): Device to use
+        Аргументы:
+            n_convs (int): количество применяемых сверток
+            kernel_size (tuple): размер ядра
+            stride (tuple): шаг свертки
+            padding (tuple): заполнение свертки
+            dilation (tuple): расширение свертки
+            grid_size (int): размер сетки
+            spline_order (int): порядок сплайна
+            scale_noise (float): масштаб шума
+            scale_base (float): масштаб базы
+            scale_spline (float): масштаб сплайна
+            base_activation (torch.nn.Module): функция активации
+            grid_eps (float): эпсилон сетки
+            grid_range (tuple): диапазон сетки
+            device (str): используемое устройство
         """
 
 
@@ -56,7 +56,7 @@ class KAN_Convolutional_Layer(torch.nn.Module):
         self.stride = stride
 
 
-        # Create n_convs KAN_Convolution objects
+        # Создаем n_convs объектов KAN_Convolution
         for _ in range(n_convs):
             self.convs.append(
                 KAN_Convolution(
@@ -72,17 +72,17 @@ class KAN_Convolutional_Layer(torch.nn.Module):
                     base_activation=base_activation,
                     grid_eps=grid_eps,
                     grid_range=grid_range,
-                    # device = device ## changed device to be allocated as per the input device for pytorch DDP
+                    # device = device ## измененное устройство, которое будет выделено в соответствии с устройством ввода для pytorch DDP
                 )
             )
 
     def forward(self, x: torch.Tensor, update_grid=False):
-        # If there are multiple convolutions, apply them all
+        # Если есть несколько сверток, примените их все
         self.device = x.device
         if self.n_convs>1:
             return convolution.multiple_convs_kan_conv2d(x, self.convs,self.kernel_size[0],self.stride,self.dilation,self.padding,self.device)
         
-        # If there is only one convolution, apply it
+        # Если есть только одна свертка, примените ее
         return self.convs[0].forward(x)
         
 

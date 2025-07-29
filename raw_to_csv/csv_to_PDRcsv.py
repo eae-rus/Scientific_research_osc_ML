@@ -827,7 +827,7 @@ def apply_normalization(
         df_normalized.to_csv(output_normalized_csv_path, index=False, float_format='%.6g')
         print(f"Нормализованный датасет сохранен в: {output_normalized_csv_path}")
     except Exception as e:
-        print(f"Критическая ошибка при сохранении нормализованного файла: {e}")
+        print(f"Критическая ошибка при сохранении итоговых результатов: {e}")
 
     print(f"--- Применение нормализации к файлу {input_csv_path} завершено ---")
 

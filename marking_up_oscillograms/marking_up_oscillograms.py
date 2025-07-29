@@ -28,7 +28,7 @@ class FeaturesForDataset:
     ANALOG_SIGNALS_FOR_PLOT.extend(VOLTAGE_FOR_PLOT)
 
 class ComtradeProcessor(RawToCSV):
-    """Base class for Comtrade data processing."""
+    """Базовый класс для обработки данных Comtrade."""
     
     def __init__(self, norm_file_path: str, device: str = 'cuda'):
         super().__init__()
@@ -37,22 +37,22 @@ class ComtradeProcessor(RawToCSV):
         self.FRAME_SIZE = 64
     
     def load_model(self, model_path: str):
-        """Loading the trained model."""
+        """Загрузка обученной модели."""
         self.model = torch.load(model_path, map_location=self.device).to(self.device)
     
     def normalize_signals(self, df_osc: pd.DataFrame, name_osc: str):
-        """Normalization of currents and voltages."""
+        """Нормализация токов и напряжений."""
         try:
             bus = int(name_osc.split("_")[1].split(" ")[1])
         except ValueError:
-            print(f"Warning: {name_osc} not found in norm_osc_tuple.")
+            print(f"Предупреждение: {name_osc} не найден в norm_osc_tuple.")
             return df_osc
         
         name_osc_i_bus = name_osc.split("_")[0]
         norm_osc_row = self.norm_csv[self.norm_csv["name"] == name_osc_i_bus]
         
         if norm_osc_row["norm"].values[0] != "ДА":
-            return df_osc  # Skipping untrained sets
+            return df_osc  # Пропускаем необученные наборы
         
         normalization_params = {
             "current": {
@@ -77,7 +77,7 @@ class ComtradeProcessor(RawToCSV):
         return df_osc
 
 class MarkingUpOscillograms(ComtradeProcessor):
-    """Class for marking oscillograms."""
+    """Класс для разметки осциллограмм."""
 
     def __init__(self, norm_file_path: str, device: str = 'cuda', batch_size: int = 10000):
         super().__init__(norm_file_path, device)
@@ -91,7 +91,7 @@ class MarkingUpOscillograms(ComtradeProcessor):
         ML_model_path: str = 'ML_model/trained_models/model_training.pt',
         norm_file_path: str = 'marking_up_oscillograms/norm_1600.csv'
     ):
-        """The process of marking oscillograms using a machine model."""
+        """Процесс разметки осциллограмм с использованием машинной модели."""
         self.load_model(ML_model_path)
         ml_for_answer = ["file_name", "bus"]
         for name in FeaturesForDataset.FEATURES_TARGET:
@@ -99,7 +99,7 @@ class MarkingUpOscillograms(ComtradeProcessor):
             ml_for_answer.append(f"{name}_count")
         sorted_files_df = pd.DataFrame(columns=ml_for_answer)
 
-        # Setting data types for Boolean columns
+        # Установка типов данных для логических столбцов
         for name in FeaturesForDataset.FEATURES_TARGET:
             sorted_files_df[f"{name}_bool"] = sorted_files_df[f"{name}_bool"].astype(bool)
 
@@ -107,7 +107,7 @@ class MarkingUpOscillograms(ComtradeProcessor):
         raw_files = sorted([file[:-4] for file in os.listdir(self.raw_path) if 'cfg' in file])
         raw_files = [file for file in raw_files if file in norm_osc_tuple]
 
-        with tqdm(total=len(raw_files), desc="Convert Comtrade to CSV") as pbar:
+        with tqdm(total=len(raw_files), desc="Преобразование Comtrade в CSV") as pbar:
             for file in raw_files:
                 df = self.create_one_df(os.path.join(self.raw_path, f"{file}.cfg"), f"{file}.cfg")
                 if df.empty:
@@ -118,44 +118,44 @@ class MarkingUpOscillograms(ComtradeProcessor):
                 for name_osc in names_osc:
                     df_osc_one_bus = df[df["file_name"] == name_osc].copy()
 
-                    # Initializing a DataFrame with zero values
+                    # Инициализация DataFrame с нулевыми значениями
                     df_osc = pd.DataFrame(0, index=np.arange(len(df_osc_one_bus)), columns=FeaturesForDataset.FEATURES)
 
-                    # Filling in with real data, if present
+                    # Заполнение реальными данными, если они есть
                     for feature in FeaturesForDataset.FEATURES:
                         if feature in df_osc_one_bus.columns:
                             df_osc[feature] = df_osc_one_bus[feature].copy()
 
-                    # Normalization of signals
+                    # Нормализация сигналов
                     df_osc = self.normalize_signals(df_osc, name_osc)
 
                     indexes = len(df_osc) - self.FRAME_SIZE + 1
                     df_osc.fillna(0, inplace=True)
 
-                    # Initialization of predictions
+                    # Инициализация предсказаний
                     predict_labels = {name: np.zeros(len(df_osc)) for name in FeaturesForDataset.FEATURES_TARGET}
 
-                    # Creating windows
+                    # Создание окон
                     windows = []
                     target_indices = []
                     for ind in range(indexes):
                         window = df_osc.iloc[ind:ind + self.FRAME_SIZE].values.astype(np.float32)
                         windows.append(window)
-                        # Defining an index for assigning a prediction
+                        # Определение индекса для присвоения предсказания
                         target_idx = self.FRAME_SIZE - 8 + ind
                         if 0 <= target_idx < len(predict_labels[list(predict_labels.keys())[0]]):
                             target_indices.append(target_idx)
                         else:
-                            target_indices.append(None)  # Index out of range
+                            target_indices.append(None)  # Индекс вне диапазона
 
-                    # Convert windows to butches and pass them through the model
+                    # Преобразование окон в пакеты и передача их через модель
                     batch_size = self.batch_size
                     for i in range(0, len(windows), batch_size):
                         batch_windows = windows[i:i + batch_size]
                         batch_target_indices = target_indices[i:i + batch_size]
 
-                        batch_tensor = torch.tensor(batch_windows).to(self.device).float()  # Shape: (batch, FRAME_SIZE, features)
-                        #batch_tensor = batch_tensor.permute(0, 2, 1)  # You may need to rearrange the axes (batch, features, FRAME_SIZE)
+                        batch_tensor = torch.tensor(batch_windows).to(self.device).float()  # Форма: (batch, FRAME_SIZE, features)
+                        #batch_tensor = batch_tensor.permute(0, 2, 1)  # Вам может потребоваться переставить оси (batch, features, FRAME_SIZE)
                         with torch.no_grad():
                             model_prediction = self.model(batch_tensor)
 
@@ -166,18 +166,18 @@ class MarkingUpOscillograms(ComtradeProcessor):
                                 if target_idx is not None:
                                     predict_labels[name][target_idx] = predictions[k][j]
 
-                    # Double pass application (left and right)
+                    # Применение двойного прохода (слева и справа)
                     left_predict_labels = {name: np.zeros(len(df_osc)) for name in FeaturesForDataset.FEATURES_TARGET}
                     right_predict_labels = {name: np.zeros(len(df_osc)) for name in FeaturesForDataset.FEATURES_TARGET}
 
                     for name in FeaturesForDataset.FEATURES_TARGET:
-                        # From left to right
+                        # Слева направо
                         for i in range(len(predict_labels[name]) - 6):
                             window_sum = np.sum(predict_labels[name][i:i + 7]) > 4
                             if predict_labels[name][i] and (window_sum > 4):
                                 left_predict_labels[name][i:i + 7] = 1
 
-                        # From right to left
+                        # Справа налево
                         for i in range(len(predict_labels[name]) - 6):
                             window_sum = np.sum(predict_labels[name][-i-8:-i-1])
                             if predict_labels[name][-i-1] and(window_sum > 4):
@@ -186,19 +186,19 @@ class MarkingUpOscillograms(ComtradeProcessor):
                         # Объединение предсказаний
                         predict_labels[name] = np.logical_and(left_predict_labels[name], right_predict_labels[name])
 
-                    # Counting events
+                    # Подсчет событий
                     count_events = {name: np.sum(predict_labels[name]) for name in FeaturesForDataset.FEATURES_TARGET}
 
-                    # Creating a new row for the DataFrame
+                    # Создание новой строки для DataFrame
                     events_predicted = {}
                     for name in FeaturesForDataset.FEATURES_TARGET:
                         events_predicted[f"{name}_bool"] = count_events[name] > 0
                         events_predicted[f"{name}_count"] = count_events[name]
 
-                    # secure attempt to define a section
+                    # безопасная попытка определить секцию
                     bus = 1
                     try:
-                        # Split the name of the waveform by the symbol "_" and extract the necessary parts
+                        # Разделяем имя осциллограммы по символу "_" и извлекаем необходимые части
                         bus = int(name_osc.split("_")[1].split(" ")[1])
                     except (ValueError, IndexError):
                         pass
@@ -215,7 +215,7 @@ class MarkingUpOscillograms(ComtradeProcessor):
                 pbar.update(1)
 
 class ComtradePredictionAndPlotting(ComtradeProcessor):
-    """A class for predicting events and plotting."""
+    """Класс для прогнозирования событий и построения графиков."""
 
     def __init__(
         self, 
@@ -244,7 +244,7 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
         self.len_df = 0
 
     def predict(self):
-        """Applying a model to predict based on input data."""
+        """Применение модели для прогнозирования на основе входных данных."""
         df = self.create_one_df(os.path.join(self.raw_path, f"{self.osc_name}.cfg"), f"{self.osc_name}.cfg")
         if df.empty:
             return np.nan, np.nan, np.nan
@@ -253,60 +253,60 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
         try:
             name_osc = names_osc[int(self.uses_bus) - 1]
         except IndexError:
-            print(f"Error: Bus {self.uses_bus} not found in file names.")
+            print(f"Ошибка: Шина {self.uses_bus} не найдена в именах файлов.")
             return np.nan, np.nan, np.nan
 
         df_osc_one_bus = df[df["file_name"] == name_osc].copy()
         self.len_df = len(df_osc_one_bus)
         analog_signal = {name: np.zeros(self.len_df) for name in FeaturesForDataset.ANALOG_SIGNALS_FOR_PLOT}
 
-        # Initializing a DataFrame with zero values
+        # Инициализация DataFrame с нулевыми значениями
         df_osc = pd.DataFrame(0, index=np.arange(self.len_df), columns=FeaturesForDataset.FEATURES)
 
-        # Filling in with real data, if present
+        # Заполнение реальными данными, если они есть
         for feature in FeaturesForDataset.FEATURES:
             if feature in df_osc_one_bus.columns:
                 df_osc[feature] = df_osc_one_bus[feature].copy()
                 if feature in FeaturesForDataset.ANALOG_SIGNALS_FOR_PLOT:
                     analog_signal[feature] = df_osc_one_bus[feature].copy()
 
-        # Normalization of signals
+        # Нормализация сигналов
         df_osc = self.normalize_signals(df_osc, name_osc)
 
         indexes = self.len_df - self.FRAME_SIZE + 1
         df_osc.fillna(0, inplace=True)
 
-        # Here is getting the real markup
+        # Здесь происходит получение реальной разметки
         df_osc_target = pd.DataFrame()
         for feature in self.ml_signals:
             if feature in df_osc_one_bus.columns:
                 df_osc_target[feature] = df_osc_one_bus[feature].copy()
         real_labels = self.get_real_labels(df_osc_target)
 
-        # Initialization of predictions
+        # Инициализация предсказаний
         predict_labels = {name: np.zeros(self.len_df) for name in FeaturesForDataset.FEATURES_TARGET}
 
-        # Creating windows
+        # Создание окон
         windows = []
         target_indices = []
         for ind in range(indexes):
             window = df_osc.iloc[ind:ind + self.FRAME_SIZE].values.astype(np.float32)
             windows.append(window)
-            # Defining an index for assigning a prediction
+            # Определение индекса для присвоения предсказания
             target_idx = self.FRAME_SIZE - 8 + ind
             if 0 <= target_idx < len(predict_labels[list(predict_labels.keys())[0]]):
                 target_indices.append(target_idx)
             else:
-                target_indices.append(None)  # Index out of range
+                target_indices.append(None)  # Индекс вне диапазона
 
-        # Convert windows to butches and pass them through the model
+        # Преобразование окон в пакеты и передача их через модель
         batch_size = self.batch_size
         for i in range(0, len(windows), batch_size):
             batch_windows = windows[i:i + batch_size]
             batch_target_indices = target_indices[i:i + batch_size]
 
-            batch_tensor = torch.tensor(batch_windows).to(self.device).float()  # Shape: (batch, FRAME_SIZE, features)
-            #batch_tensor = batch_tensor.permute(0, 2, 1)  # You may need to rearrange the axes (batch, features, FRAME_SIZE)
+            batch_tensor = torch.tensor(batch_windows).to(self.device).float()  # Форма: (batch, FRAME_SIZE, features)
+            #batch_tensor = batch_tensor.permute(0, 2, 1)  # Вам может потребоваться переставить оси (batch, features, FRAME_SIZE)
             with torch.no_grad():
                 model_prediction = self.model(batch_tensor)
 
@@ -317,31 +317,31 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
                     if target_idx is not None:
                         predict_labels[name][target_idx] = predictions[k][j]
 
-        # Double pass application (left and right)
+        # Применение двойного прохода (слева и справа)
         left_predict_labels = {name: np.zeros(self.len_df) for name in FeaturesForDataset.FEATURES_TARGET}
         right_predict_labels = {name: np.zeros(self.len_df) for name in FeaturesForDataset.FEATURES_TARGET}
 
         for name in FeaturesForDataset.FEATURES_TARGET:
-            # From left to right
+            # Слева направо
             for i in range(self.len_df - 6):
                 window_sum = np.sum(predict_labels[name][i:i + 7])
                 if predict_labels[name][i] and (window_sum > 3):
                     left_predict_labels[name][i:i + 7] = 1
 
-            # From right to left
+            # Справа налево
             for i in range(self.len_df - 6):
                 window_sum = np.sum(predict_labels[name][-i-8:-i-1])
                 if predict_labels[name][-i-1] and(window_sum > 3):
                     right_predict_labels[name][-i-8:-i-1] = 1
 
-            # Combining predictions
+            # Объединение предсказаний
             predict_labels[name] = np.logical_and(left_predict_labels[name], right_predict_labels[name])
 
-        # Return of results
+        # Возврат результатов
         return analog_signal, predict_labels, real_labels
 
     def get_real_labels(self, df: pd.DataFrame):
-        """Getting real event markup based on a file."""
+        """Получение реальной разметки событий на основе файла."""
         real_labels = {name: np.zeros(self.len_df) for name in FeaturesForDataset.FEATURES_TARGET}
         
         # opr_swch
@@ -369,34 +369,34 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
         predict_labels: dict, 
         real_labels: dict
     ):
-        """Visualization of prediction waveforms and real markup."""
-        time_range = np.arange(start, end) * 1000 / self.ADC_sampling_rate  # ms (sampling period = 1000 / ADC_sampling_rate)
+        """Визуализация осциллограмм прогнозов и реальной разметки."""
+        time_range = np.arange(start, end) * 1000 / self.ADC_sampling_rate  # мс (период дискретизации = 1000 / ADC_sampling_rate)
         
         fig, axs = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
         fig.subplots_adjust(hspace=0.4)
         
-        # Data Frame to save all data
+        # Data Frame для сохранения всех данных
         data = pd.DataFrame({'Time': time_range})
         
-        # Plot currents
+        # Построение графиков токов
         for i, current in enumerate(FeaturesForDataset.CURRENT_FOR_PLOT):
             signal_data = analog_signal[current][start:end]
             axs[0].plot(time_range, signal_data, label=f'{current}', color=['yellow', 'green', 'red'][i])
             data[current] = analog_signal[current][start:end]
         axs[0].legend()
-        axs[0].set_ylabel('Currents', rotation=90, labelpad=10, loc='center')
+        axs[0].set_ylabel('Токи', rotation=90, labelpad=10, loc='center')
         axs[0].axhline(0, color='black', linestyle='--', linewidth=1)
         
-        # Plot voltages
+        # Построение графиков напряжений
         for i, voltage in enumerate(FeaturesForDataset.VOLTAGE_FOR_PLOT):
             signal_data = analog_signal[voltage][start:end]
             axs[1].plot(time_range, signal_data, label=f'{voltage}', color=['yellow', 'green', 'red'][i])
             data[voltage] = analog_signal[voltage][start:end]
         axs[1].legend()
-        axs[1].set_ylabel('Voltages', rotation=90, labelpad=10, loc='center')
+        axs[1].set_ylabel('Напряжения', rotation=90, labelpad=10, loc='center')
         axs[1].axhline(0, color='black', linestyle='--', linewidth=1)
         
-        # Plot discrete signals
+        # Построение дискретных сигналов
         label_names = FeaturesForDataset.FEATURES_TARGET
         amp = [1, 2, 3]
         pred_colors = ['lightblue', 'lightcoral', 'lightgreen']
@@ -406,40 +406,40 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
             pred_positions = [amp[i] if lbl else np.nan for lbl in predict_labels[label_name][start:end]]
             real_positions = [-amp[i] if lbl else np.nan for lbl in real_labels[label_name][start:end]]
             
-            axs[2].scatter(time_range, pred_positions, color=pred_colors[i], marker='+', label=f'Pred {label_name}')
-            axs[2].scatter(time_range, real_positions, color=real_colors[i], marker='o', label=f'Real {label_name}')
+            axs[2].scatter(time_range, pred_positions, color=pred_colors[i], marker='+', label=f'Прогноз {label_name}')
+            axs[2].scatter(time_range, real_positions, color=real_colors[i], marker='o', label=f'Реальный {label_name}')
             axs[2].fill_between(time_range, 0, pred_positions, color=pred_colors[i], alpha=0.3, step='mid')
             axs[2].fill_between(time_range, 0, real_positions, color=real_colors[i], alpha=0.1, step='mid')
             
-            data[f'Pred {label_name}'] = pred_positions
-            data[f'Real {label_name}'] = real_positions
+            data[f'Прогноз {label_name}'] = pred_positions
+            data[f'Реальный {label_name}'] = real_positions
         
-        # Setting up the third chart
+        # Настройка третьего графика
         axs[2].set_ylim([-3.5, 3.5])
-        axs[2].text(time_range[int(len(time_range) * 0.5)], 3, 'Pred', horizontalalignment='center', fontsize=12, color='black')
-        axs[2].text(time_range[int(len(time_range) * 0.5)], -3, 'Real', horizontalalignment='center', fontsize=12, color='black')
+        axs[2].text(time_range[int(len(time_range) * 0.5)], 3, 'Прогноз', horizontalalignment='center', fontsize=12, color='black')
+        axs[2].text(time_range[int(len(time_range) * 0.5)], -3, 'Реальный', horizontalalignment='center', fontsize=12, color='black')
         axs[2].legend()
-        axs[2].set_ylabel('Discrete signals', rotation=90, labelpad=10, loc='center')
+        axs[2].set_ylabel('Дискретные сигналы', rotation=90, labelpad=10, loc='center')
         axs[2].axhline(0, color='black', linestyle='--', linewidth=1)
         
-        # Saving all data in CSV
+        # Сохранение всех данных в CSV
         data.to_csv(f'marking_up_oscillograms/{self.osc_name}_bus_{self.uses_bus}.csv', index=False)
-        plt.xlabel('Time (ms)')
+        plt.xlabel('Время (мс)')
         plt.tight_layout()
         plt.savefig(f'marking_up_oscillograms/{self.osc_name}_bus_{self.uses_bus}.png', dpi=1000)
         plt.savefig(f'marking_up_oscillograms/{self.osc_name}_bus_{self.uses_bus}.pdf', dpi=1000)
         plt.show()
 
     def process_and_plot(self):
-        """The main function for processing data from Comtrade, prediction and visualization."""
+        """Основная функция для обработки данных из Comtrade, прогнозирования и визуализации."""
         analog_signal, predict_labels, real_labels = self.predict()
         if analog_signal is np.nan:
-            print("Prediction returned NaN. Skipping plotting.")
+            print("Прогноз вернул NaN. Пропуск построения графика.")
             return
         self.plot_predictions_vs_real(self.start_point, self.end_point, analog_signal, predict_labels, real_labels)
  
 class CalcFlops():
-    """A class for calculating FLOPS."""
+    """Класс для вычисления FLOPS."""
 
     def __init__(self, device: str = 'cuda', batch_size: int = 1):
         super().__init__()
@@ -451,12 +451,12 @@ class CalcFlops():
         self,
         ML_model_path: str,
     ):
-        """The process of marking oscillograms using a machine model."""
+        """Процесс разметки осциллограмм с использованием машинной модели."""
         model = torch.load(ML_model_path, map_location=self.device).to(self.device)
         # Подсчёт FLOPS и параметров
         summary(model, input_size=(1, self.FRAME_SIZE, len(FeaturesForDataset.FEATURES)))
         
-        print("-------------------------Other parametrs-------------------------")
+        print("-------------------------Другие параметры-------------------------")
         # Получение FLOPS и параметров
         with torch.cuda.device(self.device):
             macs, params = get_model_complexity_info(
@@ -466,7 +466,7 @@ class CalcFlops():
                 print_per_layer_stat=True
             )
         
-        print("-------------------------Other parametrs-------------------------")
+        print("-------------------------Другие параметры-------------------------")
         print(f"FLOPS: {macs}")
         print(f"Параметры: {params}")
  

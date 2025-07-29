@@ -11,7 +11,7 @@ def calc_out_dims(matrix, kernel_side, stride, dilation, padding):
     b = [kernel_side // 2, kernel_side// 2]
     return h_out,w_out,batch_size,n_channels
 
-def kan_conv2d(matrix: Union[List[List[float]], np.ndarray], #but as torch tensors. Kernel side asume q el kernel es cuadrado
+def kan_conv2d(matrix: Union[List[List[float]], np.ndarray], #но как тензоры torch. Kernel side предполагает, что ядро квадратное
              kernel, 
              kernel_side,
              stride= (1, 1), 
@@ -19,17 +19,17 @@ def kan_conv2d(matrix: Union[List[List[float]], np.ndarray], #but as torch tenso
              padding= (0, 0),
              device= "cuda"
              ) -> torch.Tensor:
-    """Makes a 2D convolution with the kernel over matrix using defined stride, dilation and padding along axes.
+    """Выполняет двумерную свертку с ядром по матрице, используя заданные шаг, расширение и заполнение по осям.
 
-    Args:
-        matrix (batch_size, colors, n, m]): 2D matrix to be convolved.
-        kernel  (function]): 2D odd-shaped matrix (e.g. 3x3, 5x5, 13x9, etc.).
-        stride (Tuple[int, int], optional): Tuple of the stride along axes. With the `(r, c)` stride we move on `r` pixels along rows and on `c` pixels along columns on each iteration. Defaults to (1, 1).
-        dilation (Tuple[int, int], optional): Tuple of the dilation along axes. With the `(r, c)` dilation we distancing adjacent pixels in kernel by `r` along rows and `c` along columns. Defaults to (1, 1).
-        padding (Tuple[int, int], optional): Tuple with number of rows and columns to be padded. Defaults to (0, 0).
+    Аргументы:
+        matrix (batch_size, colors, n, m]): двумерная матрица для свертки.
+        kernel (function]): двумерная матрица нечетной формы (например, 3x3, 5x5, 13x9 и т. д.).
+        stride (Tuple[int, int], optional): кортеж шага по осям. С шагом `(r, c)` мы перемещаемся на `r` пикселей по строкам и на `c` пикселей по столбцам на каждой итерации. По умолчанию (1, 1).
+        dilation (Tuple[int, int], optional): кортеж расширения по осям. С расширением `(r, c)` мы удаляем соседние пиксели в ядре на `r` по строкам и `c` по столбцам. По умолчанию (1, 1).
+        padding (Tuple[int, int], optional): кортеж с количеством строк и столбцов для заполнения. По умолчанию (0, 0).
 
-    Returns:
-        np.ndarray: 2D Feature map, i.e. matrix after convolution.
+    Возвращает:
+        np.ndarray: двумерная карта признаков, т. е. матрица после свертки.
     """
     h_out, w_out,batch_size,n_channels = calc_out_dims(matrix, kernel_side, stride, dilation, padding)
     
@@ -45,7 +45,7 @@ def kan_conv2d(matrix: Union[List[List[float]], np.ndarray], #but as torch tenso
             matrix_out[k,channel,:,:] = kernel.forward(conv_groups[k,:,:]).reshape((h_out,w_out))
     return matrix_out
 
-def multiple_convs_kan_conv2d(matrix, #but as torch tensors. Kernel side asume q el kernel es cuadrado
+def multiple_convs_kan_conv2d(matrix, #но как тензоры torch. Kernel side предполагает, что ядро квадратное
              kernels, 
              kernel_side,
              stride= (1, 1), 
@@ -53,17 +53,17 @@ def multiple_convs_kan_conv2d(matrix, #but as torch tensors. Kernel side asume q
              padding= (0, 0),
              device= "cuda"
              ) -> torch.Tensor:
-    """Makes a 2D convolution with the kernel over matrix using defined stride, dilation and padding along axes.
+    """Выполняет двумерную свертку с ядром по матрице, используя заданные шаг, расширение и заполнение по осям.
 
-    Args:
-        matrix (batch_size, colors, n, m]): 2D matrix to be convolved.
-        kernel  (function]): 2D odd-shaped matrix (e.g. 3x3, 5x5, 13x9, etc.).
-        stride (Tuple[int, int], optional): Tuple of the stride along axes. With the `(r, c)` stride we move on `r` pixels along rows and on `c` pixels along columns on each iteration. Defaults to (1, 1).
-        dilation (Tuple[int, int], optional): Tuple of the dilation along axes. With the `(r, c)` dilation we distancing adjacent pixels in kernel by `r` along rows and `c` along columns. Defaults to (1, 1).
-        padding (Tuple[int, int], optional): Tuple with number of rows and columns to be padded. Defaults to (0, 0).
+    Аргументы:
+        matrix (batch_size, colors, n, m]): двумерная матрица для свертки.
+        kernel (function]): двумерная матрица нечетной формы (например, 3x3, 5x5, 13x9 и т. д.).
+        stride (Tuple[int, int], optional): кортеж шага по осям. С шагом `(r, c)` мы перемещаемся на `r` пикселей по строкам и на `c` пикселей по столбцам на каждой итерации. По умолчанию (1, 1).
+        dilation (Tuple[int, int], optional): кортеж расширения по осям. С расширением `(r, c)` мы удаляем соседние пиксели в ядре на `r` по строкам и `c` по столбцам. По умолчанию (1, 1).
+        padding (Tuple[int, int], optional): кортеж с количеством строк и столбцов для заполнения. По умолчанию (0, 0).
 
-    Returns:
-        np.ndarray: 2D Feature map, i.e. matrix after convolution.
+    Возвращает:
+        np.ndarray: двумерная карта признаков, т. е. матрица после свертки.
     """
     h_out, w_out,batch_size,n_channels = calc_out_dims(matrix, kernel_side, stride, dilation, padding)
     n_convs = len(kernels)
@@ -78,14 +78,14 @@ def multiple_convs_kan_conv2d(matrix, #but as torch tensors. Kernel side asume q
 
 def add_padding(matrix: np.ndarray, 
                 padding: Tuple[int, int]) -> np.ndarray:
-    """Adds padding to the matrix. 
+    """Добавляет заполнение в матрицу.
 
-    Args:
-        matrix (np.ndarray): Matrix that needs to be padded. Type is List[List[float]] casted to np.ndarray.
-        padding (Tuple[int, int]): Tuple with number of rows and columns to be padded. With the `(r, c)` padding we addding `r` rows to the top and bottom and `c` columns to the left and to the right of the matrix
+    Аргументы:
+        matrix (np.ndarray): матрица, которую необходимо дополнить. Тип — List[List[float]], приведенный к np.ndarray.
+        padding (Tuple[int, int]): кортеж с количеством строк и столбцов для заполнения. С заполнением `(r, c)` мы добавляем `r` строк сверху и снизу и `c` столбцов слева и справа от матрицы.
 
-    Returns:
-        np.ndarray: Padded matrix with shape `n + 2 * r, m + 2 * c`.
+    Возвращает:
+        np.ndarray: дополненная матрица с формой `n + 2 * r, m + 2 * c`.
     """
     n, m = matrix.shape
     r, c = padding

@@ -77,13 +77,13 @@ class KANLinear(torch.nn.Module):
 
     def b_splines(self, x: torch.Tensor):
         """
-        Compute the B-spline bases for the given input tensor.
+        Вычисление базисов B-сплайнов для заданного входного тензора.
 
-        Args:
-            x (torch.Tensor): Input tensor of shape (batch_size, in_features).
+        Аргументы:
+            x (torch.Tensor): входной тензор формы (batch_size, in_features).
 
-        Returns:
-            torch.Tensor: B-spline bases tensor of shape (batch_size, in_features, grid_size + spline_order).
+        Возвращает:
+            torch.Tensor: тензор базисов B-сплайнов формы (batch_size, in_features, grid_size + spline_order).
         """
         assert x.dim() == 2 and x.size(1) == self.in_features
 
@@ -112,14 +112,14 @@ class KANLinear(torch.nn.Module):
 
     def curve2coeff(self, x: torch.Tensor, y: torch.Tensor):
         """
-        Compute the coefficients of the curve that interpolates the given points.
+        Вычисление коэффициентов кривой, интерполирующей заданные точки.
 
-        Args:
-            x (torch.Tensor): Input tensor of shape (batch_size, in_features).
-            y (torch.Tensor): Output tensor of shape (batch_size, in_features, out_features).
+        Аргументы:
+            x (torch.Tensor): входной тензор формы (batch_size, in_features).
+            y (torch.Tensor): выходной тензор формы (batch_size, in_features, out_features).
 
-        Returns:
-            torch.Tensor: Coefficients tensor of shape (out_features, in_features, grid_size + spline_order).
+        Возвращает:
+            torch.Tensor: тензор коэффициентов формы (out_features, in_features, grid_size + spline_order).
         """
         assert x.dim() == 2 and x.size(1) == self.in_features
         assert y.size() == (x.size(0), self.in_features, self.out_features)
@@ -211,16 +211,16 @@ class KANLinear(torch.nn.Module):
 
     def regularization_loss(self, regularize_activation=1.0, regularize_entropy=1.0):
         """
-        Compute the regularization loss.
+        Вычисление потерь регуляризации.
 
-        This is a dumb simulation of the original L1 regularization as stated in the
-        paper, since the original one requires computing absolutes and entropy from the
-        expanded (batch, in_features, out_features) intermediate tensor, which is hidden
-        behind the F.linear function if we want an memory efficient implementation.
+        Это упрощенная симуляция исходной L1-регуляризации, как указано в
+        статье, поскольку исходная требует вычисления абсолютных значений и энтропии из
+        расширенного (batch, in_features, out_features) промежуточного тензора, который скрыт
+        за функцией F.linear, если мы хотим эффективную по памяти реализацию.
 
-        The L1 regularization is now computed as mean absolute value of the spline
-        weights. The authors implementation also includes this term in addition to the
-        sample-based regularization.
+        L1-регуляризация теперь вычисляется как среднее абсолютное значение весов сплайна.
+        Реализация авторов также включает этот член в дополнение к
+        регуляризации на основе выборки.
         """
         l1_fake = self.spline_weight.abs().mean(-1)
         regularization_loss_activation = l1_fake.sum()
@@ -303,13 +303,13 @@ class KANLinearComplex(torch.nn.Module):
 
     def b_splines(self, x: torch.Tensor):
         """
-        Compute the B-spline bases for the given complex input tensor.
+        Вычисление базисов B-сплайнов для заданного комплексного входного тензора.
 
-        Args:
-            x (torch.Tensor): Input tensor of shape (batch_size, in_features).
+        Аргументы:
+            x (torch.Tensor): входной тензор формы (batch_size, in_features).
 
-        Returns:
-            torch.Tensor: B-spline bases tensor of shape (batch_size, in_features, grid_size + spline_order).
+        Возвращает:
+            torch.Tensor: тензор базисов B-сплайнов формы (batch_size, in_features, grid_size + spline_order).
         """
         assert x.dim() == 2 and x.size(1) == self.in_features
 
@@ -356,19 +356,19 @@ class KANLinearComplex(torch.nn.Module):
 
     def curve2coeff(self, x: torch.Tensor, y: torch.Tensor):
         """
-        Compute the coefficients of the curve that interpolates the given points.
+        Вычисление коэффициентов кривой, интерполирующей заданные точки.
 
-        Args:
-            x (torch.Tensor): Input tensor of shape (batch_size, in_features).
-            y (torch.Tensor): Output tensor of shape (batch_size, in_features, out_features).
+        Аргументы:
+            x (torch.Tensor): входной тензор формы (batch_size, in_features).
+            y (torch.Tensor): выходной тензор формы (batch_size, in_features, out_features).
 
-        Returns:
-            torch.Tensor: Coefficients tensor of shape (out_features, in_features, grid_size + spline_order).
+        Возвращает:
+            torch.Tensor: тензор коэффициентов формы (out_features, in_features, grid_size + spline_order).
         """
         assert x.dim() == 2 and x.size(1) == self.in_features
         assert y.size() == (x.size(0), self.in_features, self.out_features)
 
-        # Ensure both A and B are of the same dtype (ComplexFloat)
+        # Убедимся, что A и B имеют одинаковый тип данных (ComplexFloat)
         A = self.b_splines(x).transpose(
             0, 1
         ).to(torch.cfloat)  # (in_features, batch_size, grid_size + spline_order)
@@ -457,16 +457,16 @@ class KANLinearComplex(torch.nn.Module):
 
     def regularization_loss(self, regularize_activation=1.0, regularize_entropy=1.0):
         """
-        Compute the regularization loss.
+        Вычисление потерь регуляризации.
 
-        This is a dumb simulation of the original L1 regularization as stated in the
-        paper, since the original one requires computing absolutes and entropy from the
-        expanded (batch, in_features, out_features) intermediate tensor, which is hidden
-        behind the F.linear function if we want an memory efficient implementation.
+        Это упрощенная симуляция исходной L1-регуляризации, как указано в
+        статье, поскольку исходная требует вычисления абсолютных значений и энтропии из
+        расширенного (batch, in_features, out_features) промежуточного тензора, который скрыт
+        за функцией F.linear, если мы хотим эффективную по памяти реализацию.
 
-        The L1 regularization is now computed as mean absolute value of the spline
-        weights. The authors implementation also includes this term in addition to the
-        sample-based regularization.
+        L1-регуляризация теперь вычисляется как среднее абсолютное значение весов сплайна.
+        Реализация авторов также включает этот член в дополнение к
+        регуляризации на основе выборки.
         """
         l1_fake = self.spline_weight.abs().mean(-1)
         regularization_loss_activation = l1_fake.sum()

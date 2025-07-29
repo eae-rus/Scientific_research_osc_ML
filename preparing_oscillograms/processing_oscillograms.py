@@ -43,9 +43,9 @@ class ProcessingOscillograms():
             None
         """
         protected_files = []
-        print("We count the total number of files in the source directory...")
+        print("Подсчитываем общее количество файлов в исходном каталоге...")
         total_files = sum([len(files) for r, d, files in os.walk(source_dir)])
-        print(f"Total number of files: {total_files}, starting processing...")
+        print(f"Общее количество файлов: {total_files}, начинаем обработку...")
         with tqdm(total=total_files, desc="Удаление конфиденциальной информации") as pbar:
             for root, dirs, files in os.walk(source_dir):
                 for file in files:
