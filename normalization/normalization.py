@@ -3,7 +3,7 @@ import sys
 import pandas as pd
 import numpy as np
 from tqdm.auto import tqdm
-import comtrade
+from osc_tools.core.comtrade_custom import Comtrade
 from typing import Dict, Any, Tuple, List
 import re # Для регулярных выражений
 from typing import List, Set, Union
@@ -78,7 +78,7 @@ class CreateNormOsc:
         c = 0
         for file in tqdm(self.osc_files):
             try:
-                osc_df = comtrade.load_as_dataframe(self.osc_path + file)
+                osc_df = Comtrade.load_as_dataframe(self.osc_path + file)
             except Exception as ex:
                 unread.append((file, ex))
                 continue
