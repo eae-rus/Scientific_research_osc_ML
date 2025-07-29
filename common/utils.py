@@ -21,9 +21,9 @@ class Utils():
         
         :param input_files: список путей к CSV-файлам
         :param output_file: путь к выходному CSV-файлу
-        :param chunksize: количество строк для чтения за раз (по умолчанию: 100000)
+        :param chunksize: количество строк для чтения за один раз (по умолчанию: 100000)
         """
-        Path(output_file).parent.mkdir(parents=True, exist_ok=True)  # Создать каталог, если необходимо
+        Path(output_file).parent.mkdir(parents=True, exist_ok=True)  # Создаем директорию при необходимости
         
         with open(output_file, 'w', newline='') as outfile:
             header_written = False
@@ -31,7 +31,7 @@ class Utils():
                 try:
                     for chunk in pd.read_csv(file, chunksize=chunksize):
                         chunk.to_csv(outfile, index=False, header=not header_written, mode='a')
-                        header_written = True  # Убедиться, что заголовок записывается только один раз
+                        header_written = True  # Убедимся, что заголовок записывается только один раз
                 except Exception as e:
                     print(f"Ошибка при чтении {file}: {e}")
         
@@ -40,18 +40,18 @@ class Utils():
     def process_cfg_files(self, input_folder, output_folder, mapping_file_path, file_list_path="processed_files.txt"):
         """
         Обрабатывает файлы с расширением .cfg:
-        - Загружает маппинг замен из файла mapping_file_path. Каждая строка должна иметь формат:
-            <искомая подстрока> -> <заменяемая подстрока>
-        - Для каждого файла из input_folder проверяет каждую строку и, если находится одна из подстрок для замены, 
-        выполняет замену (может быть более одной замены на файл).
-        - Если в файле произведены изменения, сохраняет его в output_folder под тем же именем и добавляет имя файла
+        - Загружает карту замен из файла mapping_file_path. Каждая строка должна иметь формат:
+            <подстрока для поиска> -> <подстрока для замены>
+        - Для каждого файла из input_folder он проверяет каждую строку, и если найдена одна из подстрок для замены,
+        он выполняет замену (в файле может быть более одной замены).
+        - Если в файл были внесены изменения, он сохраняет его в output_folder под тем же именем и добавляет имя файла
         в список processed_files.
-        - Записывает список имён обработанных файлов в file_list_path.
+        - Записывает список обработанных имен файлов в file_list_path.
         """
-        # Создаём выходную папку, если её нет
+        # Создаем выходную папку, если она не существует
         os.makedirs(output_folder, exist_ok=True)
 
-        # Загружаем маппинг замен из файла
+        # Загружаем карту замен из файла
         mapping = {}
         with open(mapping_file_path, 'r', encoding='utf-8') as mf:
             for line in mf:
@@ -76,23 +76,23 @@ class Utils():
             file_modified = False
             # Проходим по всем строкам файла
             for i, line in enumerate(lines):
-                # Для каждой подстроки из маппинга выполняем проверку и замену
+                # Для каждой подстроки из карты выполняем проверку и замену
                 for old_substr, new_substr in mapping.items():
                     if old_substr in line:
                         # Если нужно заменить только первое вхождение, можно использовать параметр count=1
                         lines[i] = line.replace(old_substr, new_substr, 1)
                         file_modified = True
-                        # Если требуется делать только одну замену в строке, можно добавить break здесь:
+                        # Если нужно сделать только одну замену в строке, можно добавить break здесь:
                         # break
 
-            # Если в файле были изменения, сохраняем его и фиксируем имя файла
+            # Если в файл были внесены изменения, сохраняем его и записываем имя файла
             if file_modified:
                 processed_files.append(file_name)
                 output_file_path = os.path.join(output_folder, file_name)
                 with open(output_file_path, 'w', encoding='utf-8') as f:
                     f.writelines(lines)
 
-        # Записываем список имён обработанных файлов в указанный файл
+        # Записываем список обработанных имен файлов в указанный файл
         with open(file_list_path, 'w', encoding='utf-8') as f:
             f.write('\n'.join(processed_files))
             
@@ -102,15 +102,15 @@ class Utils():
         
         Аргументы:
         df_path: путь к файлу с исходным DataFrame (например, CSV)
-        processed_files_path: путь к файлу, содержащему список имён файлов (по одному в строке)
-        output_df_path: путь для сохранения обновлённого DataFrame
+        processed_files_path: путь к файлу, содержащему список имен файлов (по одному на строку)
+        output_df_path: путь для сохранения обновленного DataFrame
         
         Функция:
         - Загружает DataFrame
-        - Загружает список имён файлов
-        - Находит строки, где столбец "name" совпадает с одним из имён из списка
+        - Загружает список имен файлов
+        - Находит строки, где столбец "name" совпадает с одним из имен из списка
         - Обновляет значения столбцов "2Ip_PS", "2Ip_base", "2Ip_h1" и "2Ip_hx"
-        - Сохраняет изменённый DataFrame по указанному пути
+        - Сохраняет измененный DataFrame по указанному пути
         """
         # Загружаем DataFrame
         df = pd.read_csv(df_path)
@@ -119,7 +119,7 @@ class Utils():
         with open(processed_files_path, 'r', encoding='utf-8') as f:
             processed_files = [line.strip()[:-4] for line in f if line.strip()[:-4]]
         
-        # Определяем маску для строк, где столбец "name" содержится в списке processed_files
+        # Определяем маску для строк, где столбец "name" находится в списке processed_files
         mask = df['name'].isin(processed_files)
         
         # Выполняем замену значений для найденных строк
@@ -128,7 +128,7 @@ class Utils():
         df.loc[mask, '2Ip_h1'] = "5"
         df.loc[mask, '2Ip_hx'] = "1"
         
-        # Сохраняем обновлённый DataFrame по указанному пути
+        # Сохраняем обновленный DataFrame по указанному пути
         df.to_csv(output_df_path, index=False)
 
     def correct_df(self, input_path: str, output_path: str):
@@ -137,12 +137,12 @@ class Utils():
         # Фильтруем строки, где norm равно 'NO' или 'hz'
         mask = df['norm'].isin(['NO', 'hz'])
         
-        # Функция для корректировки значений в столбцах
+        # Функция для исправления значений в столбцах
         def correct_values(row, prefix, target_value, default_ps, default_base):
             candidates = [f"{i}{prefix}_base" for i in range(1, 7)]
             values = [row[col] for col in candidates if str(row[col]) in target_value]
             
-            # Определяем заменяемое значение
+            # Определяем значение для замены
             if '100' in values:
                 replacement = '100'
             elif '400' in values:
@@ -171,25 +171,25 @@ class Utils():
         
     def merge_normalization_csvs(self, file_paths: List[str], output_path: str = "new_norm_coef.csv"):
         """
-        Объединяет CSV файлы с коэффициентами нормализации, добавляя только строки с новыми 'name'.
+        Объединяет CSV-файлы с коэффициентами нормализации, добавляя только строки с новыми 'name'.
 
         Функция читает первый файл из списка, сохраняет его данные и уникальные значения
-        из столбца 'name'. Затем итерирует по остальным файлам, читает их,
+        из столбца 'name'. Затем она итерирует по оставшимся файлам, читает их
         и добавляет только те строки, чьи значения 'name' еще не встречались.
         Столбец 'Column1', если он присутствует, игнорируется и удаляется.
 
-        Args:
-            file_paths (List[str]): Список путей к CSV файлам для объединения.
+        Аргументы:
+            file_paths (List[str]): список путей к CSV-файлам для объединения.
                                     Порядок файлов в списке важен: первый файл
-                                    считается основным, из последующих добавляются
+                                    считается основным, и из последующих добавляются
                                     только новые записи.
 
-        Returns:
-            Сохраняет файл по пути output_path
+        Возвращает:
+            Сохраняет файл в output_path
         """
-        #TODO: На подумать. Вероятно её стоит пернести в класс производящий нормализацию, так как напрямую работает с тоблицами создаваемыми там 
+        #TODO: Для будущего рассмотрения. Вероятно, это следует перенести в класс, который производит нормализацию, так как он работает непосредственно с создаваемыми там таблицами.
         if not file_paths:
-            print("Ошибка: Список путей к файлам пуст.")
+            print("Ошибка: список путей к файлам пуст.")
             return None
 
         master_df = None
@@ -206,7 +206,7 @@ class Utils():
             if 'name' not in df.columns:
                 df = pd.read_csv(file_path, delimiter=';')
                 if 'name' not in df.columns:
-                    print(f"Ошибка: Ключевой столбец 'name' не найден в файле {first_file_path}. Невозможно продолжить.")
+                    print(f"Ошибка: ключевой столбец 'name' не найден в файле {first_file_path}. Невозможно продолжить.")
                     return None
 
             # Удаляем 'Column1', если он существует
@@ -214,20 +214,20 @@ class Utils():
                 print(f"  Найден и будет удален столбец 'Column1' в {first_file_path}")
                 df = df.drop('Column1', axis=1)
             
-            # Проверяем наличие дубликатов 'name' в первом файле (опционально, но полезно)
+            # Проверяем дубликаты 'name' в первом файле (необязательно, но полезно)
             if df['name'].duplicated().any():
-                print(f"Предупреждение: Найдены дублирующиеся значения 'name' в основном файле {first_file_path}. Будут сохранены все строки.")
-                # Можно добавить логику обработки дубликатов, если нужно (например, брать первую встреченную)
+                print(f"Предупреждение: найдены дублирующиеся значения 'name' в основном файле {first_file_path}. Все строки будут сохранены.")
+                # Вы можете добавить логику для обработки дубликатов, если это необходимо (например, взять первое встреченное)
                 # df = df.drop_duplicates(subset=['name'], keep='first')
 
             master_df = df
-            known_names = set(master_df['name'].astype(str).unique()) # Приводим к строке на всякий случай и берем уникальные
+            known_names = set(master_df['name'].astype(str).unique()) # Преобразуем в строку на всякий случай и берем уникальные значения
             expected_columns = list(master_df.columns)
             print(f"  Загружено {len(master_df)} строк. Уникальных имен: {len(known_names)}.")
             print(f"  Ожидаемые столбцы: {expected_columns}")
 
         except FileNotFoundError:
-            print(f"Ошибка: Файл не найден: {first_file_path}. Невозможно инициализировать процесс.")
+            print(f"Ошибка: файл не найден: {first_file_path}. Невозможно инициализировать процесс.")
             return None
         except Exception as e:
             print(f"Ошибка при чтении или обработке основного файла {first_file_path}: {e}")
@@ -246,41 +246,41 @@ class Utils():
                         print(f"  Предупреждение: столбец 'name' отсутствует в файле {file_path}. Файл пропущен.")
                         continue
 
-                # Запоминаем оригинальные колонки для проверки перед удалением 'Column1'
+                # Запоминаем исходные столбцы для проверки перед удалением 'Column1'
                 original_cols = list(current_df.columns)
                 cols_to_check = original_cols
 
-                # Удаляем 'Column1', если он есть
+                # Удаляем 'Column1', если он существует
                 column1_present = 'Column1' in current_df.columns
                 if column1_present:
                     print(f"  Найден и будет удален столбец 'Column1' в {file_path}")
                     current_df = current_df.drop('Column1', axis=1)
                     cols_to_check = list(current_df.columns)
 
-                # Сравниваем столбцы текущего файла со столбцами мастер-файла НА ДАННЫЙ МОМЕНТ
+                # Сравниваем столбцы текущего файла со столбцами основного файла НА ДАННЫЙ МОМЕНТ
                 master_cols = set(master_df.columns)
                 current_cols = set(current_df.columns)
 
-                # Столбцы, которые есть в текущем, но нет в мастере
+                # Столбцы, которые есть в текущем файле, но не в основном
                 new_cols_in_current = list(current_cols - master_cols)
-                # Столбцы, которые есть в мастере, но нет в текущем
+                # Столбцы, которые есть в основном файле, но не в текущем
                 missing_cols_in_current = list(master_cols - current_cols)
 
                 # Добавляем НОВЫЕ столбцы (из текущего файла) в master_df, заполняя NA
                 if new_cols_in_current:
-                    print(f"  Обнаружены новые столбцы в {file_path}: {new_cols_in_current}. Добавляю их в основную таблицу.")
+                    print(f"  Найдены новые столбцы в {file_path}: {new_cols_in_current}. Добавляем их в основную таблицу.")
                     for col in new_cols_in_current:
                         # Добавляем столбец в master_df, заполняя его pd.NA или np.nan
-                        # pd.NA - новый рекомендуемый способ для обозначения пропусков,
+                        # pd.NA - новый рекомендуемый способ для обозначения пропущенных значений,
                         # который лучше работает с разными типами данных (int, bool)
                         master_df[col] = pd.NA
                     # Обновляем master_cols для следующего шага
                     master_cols.update(new_cols_in_current)
 
 
-                # Добавляем НЕДОСТАЮЩИЕ столбцы (из мастера) в current_df, заполняя NA
+                # Добавляем ПРОПУЩЕННЫЕ столбцы (из основного) в current_df, заполняя NA
                 if missing_cols_in_current:
-                    print(f"  В файле {file_path} отсутствуют столбцы: {missing_cols_in_current}. Добавляю их.")
+                    print(f"  В файле {file_path} отсутствуют столбцы: {missing_cols_in_current}. Добавляем их.")
                     for col in missing_cols_in_current:
                         current_df[col] = pd.NA
 
@@ -290,53 +290,53 @@ class Utils():
                 all_columns = list(master_df.columns) # Теперь это полный набор столбцов
                 current_df = current_df[all_columns]
 
-                # Отбираем строки с НОВЫМИ именами
-                # Приводим 'name' к строке перед сравнением для надежности
+                # Выбираем строки с НОВЫМИ именами
+                # Преобразуем 'name' в строку перед сравнением для надежности
                 new_rows = current_df[~current_df['name'].astype(str).isin(known_names)]
 
                 if not new_rows.empty:
                     print(f"  Найдено {len(new_rows)} строк с новыми именами.")
                     # Добавляем новые строки в основной DataFrame
                     master_df = pd.concat([master_df, new_rows], ignore_index=True)
-                    # Обновляем множество известных имен
+                    # Обновляем набор известных имен
                     new_names_found = set(new_rows['name'].astype(str).unique())
                     known_names.update(new_names_found)
-                    print(f"  Добавлены новые имена")
+                    print(f"  Новые имена были добавлены")
                     print(f"  Общее количество строк теперь: {len(master_df)}. Уникальных имен: {len(known_names)}")
                 else:
-                    print(f"  Новых имен в файле {file_path} не найдено.")
+                    print(f"  В файле {file_path} не найдено новых имен.")
 
             except FileNotFoundError:
-                print(f"  Предупреждение: Файл не найден {file_path}. Файл пропущен.")
+                print(f"  Предупреждение: файл не найден {file_path}. Файл пропущен.")
                 continue
             except Exception as e:
-                print(f"  Предупреждение: Ошибка при чтении или обработке файла {file_path}: {e}. Файл пропущен.")
+                print(f"  Предупреждение: ошибка при чтении или обработке файла {file_path}: {e}. Файл пропущен.")
                 continue
 
         print("\nОбъединение завершено.")
         master_df.to_csv(output_path, index=False)
-        print(f"\nСохранение завершено, файл имеет имя: {output_path}.")
+        print(f"\nСохранение завершено, имя файла: {output_path}.")
 
     def filter_noise(self, csv_source: str, threshold: int, resave: bool = False, output_dir: str = "output"):
         """
-        Фильтрует шумные группы в CSV-файле и сохраняет результаты.
+        Фильтрует зашумленные группы в CSV-файле и сохраняет результаты.
 
         :param csv_source: путь или URL к исходному CSV-файлу
-        :param threshold: максимальное число непустых change_event до того, как группа считается шумной
-        :param resave: флаг, сохранять ли очищенный CSV с удалёнными записями
-        :param output_dir: директория для сохранения выходных файлов
-        :return: список префиксов, отмеченных для удаления
+        :param threshold: максимальное количество непустых change_events, прежде чем группа будет считаться зашумленной
+        :param resave: флаг, нужно ли сохранять очищенный CSV с удаленными записями
+        :param output_dir: каталог для сохранения выходных файлов
+        :return: список префиксов, помеченных для удаления
         """
-        # Создаём папку для вывода, если её нет
+        # Создаем папку для вывода, если она не существует
         os.makedirs(output_dir, exist_ok=True)
 
         # Загружаем данные
         df = pd.read_csv(csv_source)
 
-        # Выделяем префикс (часть до первого пробела)
+        # Извлекаем префикс (часть до первого пробела)
         df['prefix'] = df['file_name'].astype(str).map(lambda x: x.split(' ')[0])
 
-        # Группируем и считаем непустые значения change_event
+        # Группируем и подсчитываем непустые значения change_event
         counts = (
             df.groupby('prefix')['change_event']
             .apply(lambda s: s.fillna('')
@@ -346,7 +346,7 @@ class Utils():
                             .sum())
         )
 
-        # Определяем шумные префиксы
+        # Определяем зашумленные префиксы
         noisy_prefixes = counts[counts > threshold].index.tolist()
 
         # Сохраняем текстовый файл со списком префиксов для удаления

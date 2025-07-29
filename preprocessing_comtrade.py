@@ -22,7 +22,7 @@ def remove_lines_with_disallowed_names(cfg_file_path, allowed_names):
     new_dat_file_path = cfg_file_path[:-4] + '_filtered.dat'
     cff.write_to_file(new_cfg_file_path, new_dat_file_path)
 
-# Пример использования функции
+# Example of using the function
 allowed_names = ["U | BusBar-1 | phase: A", "U | BusBar-1 | phase: B", "U | BusBar-1 | phase: C"]
 cfg_file_path = 'D:/DataSet/Новая папка/0147acceb145f2b6183e3e4c3d5a8a9a.cfg'
 

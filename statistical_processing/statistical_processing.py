@@ -9,111 +9,111 @@ from preparing_oscillograms.processing_oscillograms import ProcessingOscillogram
 
 class StatisticalProces():
     """
-    This class is for statistical data processing.
+    Этот класс предназначен для статистической обработки данных.
     """
     def __init__(self):
-        pass # do nothing
+        pass # ничего не делаем
     
     def date_validation_two(self, start_date: dict, end_date: dict) -> (datetime.datetime, bool, str):
         """
-        This function checks the validity of the date format, when we have start_date and end_date.
+        Эта функция проверяет правильность формата даты, когда у нас есть start_date и end_date.
         
-        args:
-            start_date (dict): The event data from the JSON file.
-            end_date (dict): The event data from the JSON file.
+        Аргументы:
+            start_date (dict): Данные о событии из файла JSON.
+            end_date (dict): Данные о событии из файла JSON.
         
-        Returns:
+        Возвращает:
             tuple:
-             - datetime.datetime: date and time if valid, else None
-             - bool: True if valid, False otherwise
-             - str: message for the user
+             - datetime.datetime: дата и время, если они действительны, в противном случае None
+             - bool: True, если действительны, False в противном случае
+             - str: сообщение для пользователя
         """
         current_date = datetime.datetime.now()
         answer = {"result": True, "message": ""}
         new_date = {"year": "", "month": "", "day": "", "hour": "", "minute": "", "second": ""}
-        # Checking the seconds
+        # Проверка секунд
         if not (0 <= int(start_date['second'].split('.')[0].strip()) <= 59):
             if (0 <= int(end_date['second'].split('.')[0].strip())   <= 59):
                 new_date = end_date
-                answer['message'] += "Invalid date format: second should be between 0 and 59. Change the all date on end_date. "
+                answer['message'] += "Неверный формат даты: секунда должна быть от 0 до 59. Измените всю дату на end_date. "
             else:
-                return (None, False, "Invalid date format: second should be between 0 and 59")
-        else: # That's right
+                return (None, False, "Неверный формат даты: секунда должна быть от 0 до 59")
+        else: # Все верно
             new_date['second'] = start_date['second'].strip()
         
-        # Bringing to a common standard
+        # Приведение к общему стандарту
         if '.' not in new_date['second']:
             new_date['second'] += '.0'
         
-        # Checking the minutes
+        # Проверка минут
         if not (0 <= int(start_date['minute']) <= 59):
             if (0 <= int(end_date['minute'])   <= 59):
                 new_date = end_date
-                answer['message'] += "Invalid date format: minute should be between 0 and 59. Change the all date on end_date. "
+                answer['message'] += "Неверный формат даты: минута должна быть от 0 до 59. Измените всю дату на end_date. "
             else:
-                return (None, False, "Invalid date format: minute should be between 0 and 59")
-        else: # That's right
+                return (None, False, "Неверный формат даты: минута должна быть от 0 до 59")
+        else: # Все верно
             new_date['minute'] = start_date['minute']
         
-        # Checking the clock
+        # Проверка часов
         if not (0 <= int(start_date['hour']) <= 23):
             if (0 <= int(end_date['hour']) <= 23):
                 new_date = end_date
-                answer['message'] += "Invalid date format: hour should be between 0 and 23. Change the all date on end_date. "
+                answer['message'] += "Неверный формат даты: час должен быть от 0 до 23. Измените всю дату на end_date. "
             else:
-                return (None, False, "Invalid date format: hour should be between 0 and 23")
-        else: # That's right
+                return (None, False, "Неверный формат даты: час должен быть от 0 до 23")
+        else: # Все верно
             new_date['hour'] = start_date['hour']
         
-        # Checking the day and month at the same time (may be mixed up in places)
-        # Checking for zeroing first, has this happened in the data
+        # Проверка дня и месяца одновременно (могут быть перепутаны местами)
+        # Сначала проверяем на обнуление, было ли такое в данных
         if (int(start_date['month']) == 0 or int(start_date['day']) == 0):
             if ((1 <= int(end_date['month']) <= 12) and 1 <= int(end_date['day']) <= 31):
                 new_date = end_date
-                answer['message'] += "Invalid date format: day and month should not be zero. Change the all date on end_date. "
+                answer['message'] += "Неверный формат даты: день и месяц не должны быть нулевыми. Измените всю дату на end_date. "
             else:
-                return (None, False, "Invalid date format: day should be between 1 and 31. Change the all date on end_date.")
-        # then we check that the day does not exceed the limits of the acceptable range 
-        # (and we also check the month, since they may be mixed up in places)
+                return (None, False, "Неверный формат даты: день должен быть от 1 до 31. Измените всю дату на end_date.")
+        # затем проверяем, чтобы день не выходил за пределы допустимого диапазона
+        # (и также проверяем месяц, так как они могут быть перепутаны местами)
         elif not ((1 <= int(start_date['day']) <= 31) and (1 <= int(start_date['month']) <= 31)):
-            return (None, False, "Invalid date format: day should be between 1 and 31. Change the all date on end_date.")        
+            return (None, False, "Неверный формат даты: день должен быть от 1 до 31. Измените всю дату на end_date.")
         elif not (1 <= int(start_date['month']) <= 12):
-            # confused with each other (we count for a good month)
+            # перепутаны друг с другом (считаем за хороший месяц)
             if ((1 <= int(start_date['day']) <= 12) and (1 <= int(start_date['month']) <= 31)):
                 new_date["month"] = start_date['day']
                 new_date["day"] = start_date['month']
-            # incorrect date, replace with end_date
+            # неверная дата, заменяем на end_date
             elif ((1 <= int(end_date['month']) <= 12) and 1 <= int(end_date['day']) <= 31):
                 new_date["month"] = end_date['month']
                 new_date["day"] = end_date['day']
-                answer['message'] += "Invalid date format: month should be between 1 and 12. Change the all date on end_date. "
+                answer['message'] += "Неверный формат даты: месяц должен быть от 1 до 12. Измените всю дату на end_date. "
             elif not ((1 <= int(end_date['day']) <= 12) and 1 <= int(end_date['month']) <= 31):
-                return (None, False, "Invalid date format: hour should be between 0 and 23")
-        else: # That's right
+                return (None, False, "Неверный формат даты: час должен быть от 0 до 23")
+        else: # Все верно
             new_date["month"] = start_date['month']
             new_date["day"] = start_date['day']        
         
-        # Checking the year we consider valid since 2001, others require clarification
+        # Проверяем год, который мы считаем действительным с 2001 года, другие требуют уточнения
         if not (1970 <= int(start_date['year']) <= current_date.year):
             if (1970 <= int(end_date['year']) <= current_date.year):
-                # most likely, the date is incorrect and we are changing it all
+                # скорее всего, дата неверна, и мы ее всю меняем
                 new_date = end_date
-                answer['message'] += "Invalid date format: year should be between 1970 and current year. Change the all date on end_date. "
+                answer['message'] += "Неверный формат даты: год должен быть между 1970 и текущим годом. Измените всю дату на end_date. "
             elif (1 <= int(start_date['year']) <= (current_date.year - 2000)):
-                new_date["year"] = str(int(start_date['year']) + 2000) # we consider the year to be correct, simple in a different format
+                new_date["year"] = str(int(start_date['year']) + 2000) # считаем год правильным, просто в другом формате
             elif (70 <= int(end_date['year']) <= 99):
-                new_date["year"] = str(int(end_date['year']) + 1900) # correcting the year from the last century
+                new_date["year"] = str(int(end_date['year']) + 1900) # исправляем год с прошлого века
             elif (1 <= int(end_date['year']) <= (current_date.year - 2000)):
-                end_date['year'] = str(int(end_date['year']) + 2000) # adjusting the year
+                end_date['year'] = str(int(end_date['year']) + 2000) # корректируем год
                 new_date = end_date
-                answer['message'] += "Invalid date format: year should be between 1970 and current year. Change the all date on end_date. "
+                answer['message'] += "Неверный формат даты: год должен быть между 1970 и текущим годом. Измените всю дату на end_date. "
             elif (70 <= int(end_date['year']) <= 99):
-                end_date['year'] = str(int(end_date['year']) + 1900) # adjusting the year
+                end_date['year'] = str(int(end_date['year']) + 1900) # корректируем год
                 new_date = end_date
-                answer['message'] += "Invalid date format: year should be between 1970 and current year. Change the all date on end_date. "
+                answer['message'] += "Неверный формат даты: год должен быть между 1970 и текущим годом. Измените всю дату на end_date. "
             else:
-                return (None, False, "Invalid date format: year should be between 1970 and current year")
-        else: # That's right
+                return (None, False, "Неверный формат даты: год должен быть между 1970 и текущим годом")
+        else: # Все верно
             new_date["year"] = start_date['year']
             
         
@@ -132,71 +132,71 @@ class StatisticalProces():
     
     def date_validation_one(self, end_date: dict) -> (datetime.datetime, bool, str):
         """
-        This function checks the validity of the date format, when we have one date (end_date).
+        Эта функция проверяет правильность формата даты, когда у нас есть одна дата (end_date).
         
-        args:
-            end_date (dict): The event data from the JSON file.
+        Аргументы:
+            end_date (dict): Данные о событии из файла JSON.
         
-        Returns:
+        Возвращает:
             tuple:
-             - datetime.datetime: date and time if valid, else None
-             - bool: True if valid, False otherwise
-             - str: message for the user
+             - datetime.datetime: дата и время, если они действительны, в противном случае None
+             - bool: True, если действительны, False в противном случае
+             - str: сообщение для пользователя
         """
         current_date = datetime.datetime.now()
-        answer = {"result": True, "message": "Valid date format"}
+        answer = {"result": True, "message": "Неверный формат даты"}
         new_date = {"year": "", "month": "", "day": "", "hour": "", "minute": "", "second": ""}
-        # Checking the seconds
+        # Проверка секунд
         if not (0 <= int(end_date['second'].split('.')[0].strip()) <= 59):
-            return (None, False, "Invalid date format: second should be between 0 and 59")
-        else: # That's right
+            return (None, False, "Неверный формат даты: секунда должна быть от 0 до 59")
+        else: # Все верно
             new_date['second'] = end_date['second'].strip()
         
-        # Bringing to a common standard 
+        # Приведение к общему стандарту
         if '.' not in new_date['second']:
             new_date['second'] += '.0'
         
-        # Checking the minutes
+        # Проверка минут
         if not (0 <= int(end_date['minute']) <= 59):
-            return (None, False, "Invalid date format: minute should be between 0 and 59")
-        else: # That's right
+            return (None, False, "Неверный формат даты: минута должна быть от 0 до 59")
+        else: # Все верно
             new_date['minute'] = end_date['minute']
         
-        # Checking the clock
+        # Проверка часов
         if not (0 <= int(end_date['hour']) <= 23):
-            return (None, False, "Invalid date format: hour should be between 0 and 23")
-        else: # That's right
+            return (None, False, "Неверный формат даты: час должен быть от 0 до 23")
+        else: # Все верно
             new_date['hour'] = end_date['hour']
         
-        # Checking the day and month at the same time (may be mixed up in places)
-        # Checking for zeroing first, has this happened in the data
+        # Проверка дня и месяца одновременно (могут быть перепутаны местами)
+        # Сначала проверяем на обнуление, было ли такое в данных
         if (int(end_date['month']) == 0 or int(end_date['day']) == 0):
-            return (None, False, "Invalid date format: day should be between 1 and 31. Change the all date on end_date.")
-        # then we check that the day does not exceed the limits of the acceptable range 
-        # (and we also check the month, since they may be mixed up in places)
+            return (None, False, "Неверный формат даты: день должен быть от 1 до 31. Измените всю дату на end_date.")
+        # затем проверяем, чтобы день не выходил за пределы допустимого диапазона
+        # (и также проверяем месяц, так как они могут быть перепутаны местами)
         elif not ((1 <= int(end_date['day']) <= 31) and (1 <= int(end_date['month']) <= 31)):
-            return (None, False, "Invalid date format: day should be between 1 and 31. Change the all date on end_date.")        
+            return (None, False, "Неверный формат даты: день должен быть от 1 до 31. Измените всю дату на end_date.")
         elif not (1 <= int(end_date['month']) <= 12):
-           # confused with each other (we count for a good month)
+           # перепутаны друг с другом (считаем за хороший месяц)
             if ((1 <= int(end_date['day']) <= 12) and (1 <= int(end_date['month']) <= 31)):
                 new_date["month"] = end_date['day']
                 new_date["day"] = end_date['month']
-            # incorrect date, replace with end_date
+            # неверная дата, заменяем на end_date
             elif not ((1 <= int(end_date['day']) <= 12) and 1 <= int(end_date['month']) <= 31):
-                return (None, False, "Invalid date format: hour should be between 0 and 23")
-        else: # That's right
+                return (None, False, "Неверный формат даты: час должен быть от 0 до 23")
+        else: # Все верно
             new_date["month"] = end_date['month']
             new_date["day"] = end_date['day']        
         
-        # Checking the year we consider valid since 2001, others require clarification
+        # Проверяем год, который мы считаем действительным с 2001 года, другие требуют уточнения
         if not (1970 <= int(end_date['year']) <= current_date.year):
             if (1 <= int(end_date['year']) <= (current_date.year - 2000)):
-                new_date["year"] = str(int(end_date['year']) + 2000) # we consider the year to be correct, simple in a different format
+                new_date["year"] = str(int(end_date['year']) + 2000) # считаем год правильным, просто в другом формате
             elif (70 <= int(end_date['year']) <= 99):
-                new_date["year"] = str(int(end_date['year']) + 1900) # correcting the year from the last century
+                new_date["year"] = str(int(end_date['year']) + 1900) # исправляем год с прошлого века
             else:
-                return (None, False, "Invalid date format: year should be between 1970 and current year")
-        else: # That's right
+                return (None, False, "Неверный формат даты: год должен быть между 1970 и текущим годом")
+        else: # Все верно
             new_date["year"] = end_date['year']
             
         
@@ -215,25 +215,25 @@ class StatisticalProces():
 
     def frequency_statistics(self, source_dir: str, threshold: float = 0.1, isPrintMessege: bool = False) -> dict:
         """
-        The function groups files by sampling rate and network frequency.
+        Функция группирует файлы по частоте дискретизации и частоте сети.
 
-        Args:
-            source_dir (str): The directory containing the files to update.
-            threshold (float): The threshold for considering frequency deviation from an integer as a measurement error.
-            isPrintMessege (bool): A flag indicating whether to print a message if the frequencies are not found.
+        Аргументы:
+            source_dir (str): Каталог, содержащий файлы для обновления.
+            threshold (float): Порог для рассмотрения отклонения частоты от целого числа как ошибки измерения.
+            isPrintMessege (bool): Флаг, указывающий, нужно ли печатать сообщение, если частоты не найдены.
 
-        Returns:
-            frequency_statistics_dict dict: A dictionary containing the frequencies grouped by sampling rate and network.
+        Возвращает:
+            frequency_statistics_dict dict: Словарь, содержащий частоты, сгруппированные по частоте дискретизации и сети.
         """
-        # TODO: think about optimizing the code, the function is close to "grouping_by_sampling_rate_and_network".
-        # also, the "extract_frequencies" function is taken from that library and an extra link appears.
+        # TODO: подумать об оптимизации кода, функция близка к "grouping_by_sampling_rate_and_network".
+        # также функция "extract_frequencies" взята из этой библиотеки и появляется лишняя ссылка.
         process_osc = ProcessingOscillograms()
         frequency_statistics_dict = {}
         
-        print("We count the total number of files in the source directory...")
+        print("Подсчитываем общее количество файлов в исходном каталоге...")
         total_files = sum([len(files) for r, d, files in os.walk(source_dir)])
-        print(f"Total number of files: {total_files}, starting processing...")
-        with tqdm(total=total_files, desc="Grouping by sampling rate and network") as pbar:
+        print(f"Общее количество файлов: {total_files}, начинаем обработку...")
+        with tqdm(total=total_files, desc="Группировка по частоте дискретизации и сети") as pbar:
             for root, dirs, files in os.walk(source_dir):
                 for file in files:
                     pbar.update(1)
@@ -251,21 +251,21 @@ class StatisticalProces():
                                      frequency_statistics_dict[f_network][f_rate] = 0
                                 frequency_statistics_dict[f_network][f_rate] += 1
                             elif f_network:
-                                if isPrintMessege: print(f"No network frequency found in the file: {file_path}")
+                                if isPrintMessege: print(f"В файле не найдена частота сети: {file_path}")
                             elif f_rate:
-                                if isPrintMessege: print(f"No sampling rate found in the file: {file_path}")
+                                if isPrintMessege: print(f"В файле не найдена частота дискретизации: {file_path}")
                             else:
-                                if isPrintMessege: print(f"No frequencies found in the file: {file_path}")
+                                if isPrintMessege: print(f"В файле не найдены частоты: {file_path}")
         
-        # sort by network and then by count
+        # сортировка по сети, а затем по количеству
         sorted_dict = sorted(frequency_statistics_dict.items(), key=lambda x: (x[0], -sum(x[1].values()), -max(x[1].values())))
 
         all_count = 0
         for network, rate_dict in sorted_dict:
-            print(f"Network: {network}")
+            print(f"Сеть: {network}")
             sorted_rate_dict = sorted(rate_dict.items(), key=lambda x: x[1], reverse=True)
             for rate, count in sorted_rate_dict:
-                print(f"\tRate: {rate}, Count: {count}")
+                print(f"\tЧастота: {rate}, Количество: {count}")
                 all_count += count
-        print(f"Total count: {all_count}")
+        print(f"Общее количество: {all_count}")
         return frequency_statistics_dict

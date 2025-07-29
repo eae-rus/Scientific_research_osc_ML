@@ -16,43 +16,43 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
 
 from normalization.normalization import NormOsc
-from raw_to_csv.raw_to_csv import RawToCSV  # Import RawToCSV for RawToCSV function
+from raw_to_csv.raw_to_csv import RawToCSV  # Импортируем RawToCSV для функции RawToCSV
 
 class ProcessingOscillograms():
     """
-    A class for processing COMTRADE waveforms for further public use.
+    Класс для обработки осциллограмм COMTRADE для дальнейшего публичного использования.
     """
     def __init__(self):
         pass
-        # There is nothing yet. In the future, it will be necessary to rework the approach of passed variables.
+        # Пока ничего нет. В будущем необходимо будет переработать подход к передаваемым переменным.
     
 
     def deleting_confidential_information_in_all_files(self, source_dir: str) -> None:
         """
-        Identifies and processes confidential information in files ".cfg" in the specified source directory, 
-        and also renames files with the extension.cfg in .data.
+        Выявляет и обрабатывает конфиденциальную информацию в файлах ".cfg" в указанном исходном каталоге,
+        а также переименовывает файлы с расширением .cfg в .data.
 
-        The function searches for ".cfg" files in a given directory, tries to determine their encoding (utf-8, windows-1251 or ОЕМ 866)
-        and collects file paths with potential confidential information. 
-        It saves a list of protected files and any processing errors to a 'protected_files.txt file in the source directory.
+        Функция ищет файлы ".cfg" в заданном каталоге, пытается определить их кодировку (utf-8, windows-1251 или ОЕМ 866)
+        и собирает пути к файлам с потенциальной конфиденциальной информацией.
+        Она сохраняет список защищенных файлов и любых ошибок обработки в файл 'protected_files.txt' в исходном каталоге.
 
         Args:
-            source_dir (str): A directory containing .cfg files for verifying confidential information.
+            source_dir (str): каталог, содержащий файлы .cfg для проверки конфиденциальной информации.
 
         Returns:
             None
         """
         protected_files = []
-        print("We count the total number of files in the source directory...")
+        print("Подсчитываем общее количество файлов в исходном каталоге...")
         total_files = sum([len(files) for r, d, files in os.walk(source_dir)])
-        print(f"Total number of files: {total_files}, starting processing...")
-        with tqdm(total=total_files, desc="Deleting confidential information") as pbar:
+        print(f"Общее количество файлов: {total_files}, начинаем обработку...")
+        with tqdm(total=total_files, desc="Удаление конфиденциальной информации") as pbar:
             for root, dirs, files in os.walk(source_dir):
                 for file in files:
                     pbar.update(1)
                     if file.endswith(".cfg"):
                         file_path = os.path.join(root, file)
-                        # TODO: to determine the encoding and resave the file in utf-8, you need to create a separate function
+                        # TODO: для определения кодировки и пересохранения файла в utf-8 нужно создать отдельную функцию
                         try: 
                             self._deleting_confidential_information_in_one_file(file_path, root, 'utf-8')
                         except Exception as e:
@@ -60,38 +60,38 @@ class ProcessingOscillograms():
                                 self._deleting_confidential_information_in_one_file(file_path, root, 'windows-1251')  
                             except Exception as e:
                                 try:
-                                    self._deleting_confidential_information_in_one_file(file_path, root, 'ОЕМ 866') # ОЕМ - Russian
+                                    self._deleting_confidential_information_in_one_file(file_path, root, 'ОЕМ 866') # ОЕМ - русский
                                 except Exception as e:
                                     protected_files.append(file_path)
-                                    protected_files.append(f"An error occurred while processing the cfg file: {e}")
+                                    protected_files.append(f"Произошла ошибка при обработке файла cfg: {e}")
         with open(os.path.join(source_dir, 'protected_files.txt'), 'w') as file:
             file.write('\n'.join(protected_files))
 
     def _deleting_confidential_information_in_one_file(self, file_path: str, root: str, encoding_name: str) -> None:
         """
-        The function reads the contents of the file. cfg performs encoding correction, 
-        deletes local information, updates certain strings, calculates the hash of the data and
-        renames the .cfg files and the corresponding files.dat based on the calculated hash.
+        Функция считывает содержимое файла. cfg выполняет коррекцию кодировки,
+        удаляет локальную информацию, обновляет определенные строки, вычисляет хеш данных и
+        переименовывает файлы .cfg и соответствующие файлы .dat на основе вычисленного хеша.
         
         Args:
-            file_path (str): The path to the .cfg file.
-            root (str): the path to the root directory.
-            encoding_name (str): The encoding format used to read the file.
+            file_path (str): путь к файлу .cfg.
+            root (str): путь к корневому каталогу.
+            encoding_name (str): формат кодировки, используемый для чтения файла.
 
         Returns:
             None
         """
         with open(file_path, 'r', encoding=encoding_name) as file:
             lines = file.readlines()
-            # Deleting information about local information in the cfg file
+            # Удаление информации о локальной информации в файле cfg
             parts = lines[0].split(',')
             if len(parts) >= 2:
                 lines[0] = ",," + parts[-1].strip() + "\n"
-            # reading the number of signals
+            # чтение количества сигналов
             signals, analog_signals, digital_signals = lines[1].split(',')
             signals = int(signals)
             new_date = '01/01/0001, 01:01:01.000000\n'
-            # FIXME: The point is incorrectly determined when there are several sampling frequencies.
+            # FIXME: Неправильно определяется точка при наличии нескольких частот дискретизации.
             lines[signals + 5] = new_date
             lines[signals + 6] = new_date
 
@@ -107,20 +107,20 @@ class ProcessingOscillograms():
 
     def date_of_change_replacement(self, source_dir: str) -> None:
         """
-        The function goes through all the files in this directory and sets the modification time of each file to the current date and time.
+        Функция проходит по всем файлам в этом каталоге и устанавливает время модификации каждого файла на текущую дату и время.
 
         Args:
-            source_dir (str): The directory containing the files to update.
+            source_dir (str): каталог, содержащий файлы для обновления.
 
         Returns:
             None
         """
         current_date = datetime.datetime.now()
 
-        print("We count the total number of files in the source directory...")
+        print("Подсчитываем общее количество файлов в исходном каталоге...")
         total_files = sum([len(files) for r, d, files in os.walk(source_dir)])
-        print(f"Total number of files: {total_files}, starting processing...")
-        with tqdm(total=total_files, desc="Deleting confidential information") as pbar:
+        print(f"Общее количество файлов: {total_files}, начинаем обработку...")
+        with tqdm(total=total_files, desc="Удаление конфиденциальной информации") as pbar:
             for root, dirs, files in os.walk(source_dir):
                 for filename in files:
                     pbar.update(1)
@@ -131,20 +131,20 @@ class ProcessingOscillograms():
             
     def grouping_by_sampling_rate_and_network(self, source_dir: str, threshold: float = 0.1, isPrintMessege: bool = False) -> None:
         """
-        The function groups files by sampling rate and network frequency.
+        Функция группирует файлы по частоте дискретизации и частоте сети.
 
         Args:
-            source_dir (str): The directory containing the files to update.
-            threshold (float): The threshold for considering frequency deviation from an integer as a measurement error.
-            isPrintMessege (bool): A flag indicating whether to print a message if the frequencies are not found.
+            source_dir (str): каталог, содержащий файлы для обновления.
+            threshold (float): порог для рассмотрения отклонения частоты от целого числа как ошибки измерения.
+            isPrintMessege (bool): флаг, указывающий, нужно ли выводить сообщение, если частоты не найдены.
 
         Returns:
             None
         """
-        print("We count the total number of files in the source directory...")
+        print("Подсчитываем общее количество файлов в исходном каталоге...")
         total_files = sum([len(files) for r, d, files in os.walk(source_dir)])
-        print(f"Total number of files: {total_files}, starting processing...")
-        with tqdm(total=total_files, desc="Grouping by sampling rate and network") as pbar:
+        print(f"Общее количество файлов: {total_files}, начинаем обработку...")
+        with tqdm(total=total_files, desc="Группировка по частоте дискретизации и сети") as pbar:
             for root, dirs, files in os.walk(source_dir):
                 for file in files:
                     pbar.update(1)
@@ -172,21 +172,21 @@ class ProcessingOscillograms():
 
     def extract_frequencies(self, file_path: str, threshold: float = 0.1, isPrintMessege: bool = False) -> tuple:
         """
-        Extracts the network frequency (f_network) and sampling rate (f_rate) from the specified ".cfg" file.
+        Извлекает частоту сети (f_network) и частоту дискретизации (f_rate) из указанного файла ".cfg".
 
         Args:
-            source_dir (str): The path to the ".cfg" file.
-            threshold (float): The threshold for considering frequency deviation from an integer as a measurement error.
-            isPrintMessege (bool): A flag indicating whether to print a message if the frequencies are not found.
+            source_dir (str): путь к файлу ".cfg".
+            threshold (float): порог для рассмотрения отклонения частоты от целого числа как ошибки измерения.
+            isPrintMessege (bool): флаг, указывающий, нужно ли выводить сообщение, если частоты не найдены.
 
         Returns:
-            tuple: A tuple containing the extracted network frequency and sampling rate.
+            tuple: кортеж, содержащий извлеченную частоту сети и частоту дискретизации.
         """
         f_network, f_rate = 0, 0
         
         try:
             with open(file_path, 'r', encoding='utf-8') as file:
-                # FIXME: No protection against protected and/or erroneous files
+                # FIXME: Нет защиты от защищенных и/или ошибочных файлов
                 lines = file.readlines()
                 if len(lines) >= 2:
                     count_all_signals_str, count_analog_signals_str, count_digital_signals_str = lines[1].split(',')
@@ -204,28 +204,28 @@ class ProcessingOscillograms():
                 if abs(f_network - round(f_network)) < threshold and abs(f_rate - round(f_rate)) < threshold:
                     f_network, f_rate = round(f_network), round(f_rate)
                 else:
-                    f_network, f_rate = -1, -1 # TODO: In future versions, the invalid frequency may need to be adjusted
+                    f_network, f_rate = -1, -1 # TODO: В будущих версиях может потребоваться скорректировать неверную частоту
             except Exception as e:
-                f_network, f_rate = -1, -1 # TODO: In future versions, the invalid frequency may need to be adjusted
+                f_network, f_rate = -1, -1 # TODO: В будущих версиях может потребоваться скорректировать неверную частоту
                 if isPrintMessege: print(e)
 
         return f_network, f_rate
 
     def find_all_name_analog_signals(self, source_dir: str) -> None:
         """
-        The function searches for all the names of analog signals in the comtrade file and sorts them by frequency of use.
+        Функция ищет все имена аналоговых сигналов в файле comtrade и сортирует их по частоте использования.
 
         Args:
-            source_dir (str): The directory containing the files to update.
+            source_dir (str): каталог, содержащий файлы для обновления.
 
         Returns:
             None
         """
         analog_signals_name = {}
-        print("We count the total number of files in the source directory...")
+        print("Подсчитываем общее количество файлов в исходном каталоге...")
         total_files = sum([len(files) for r, d, files in os.walk(source_dir)])
-        print(f"Total number of files: {total_files}, starting processing...")
-        with tqdm(total=total_files, desc="Find all name analog signals") as pbar:
+        print(f"Общее количество файлов: {total_files}, начинаем обработку...")
+        with tqdm(total=total_files, desc="Поиск всех имен аналоговых сигналов") as pbar:
             for root, dirs, files in os.walk(source_dir):
                 for file in files:
                     pbar.update(1)
@@ -233,48 +233,48 @@ class ProcessingOscillograms():
                         if file.lower().endswith(".cfg"):
                             file_path = os.path.join(root, file)
                             with open(file_path, 'r', encoding='utf-8') as file:
-                                # FIXME: No protection against protected and/or erroneous files
+                                # FIXME: Нет защиты от защищенных и/или ошибочных файлов
                                 lines = file.readlines()
                                 if len(lines) >= 2:
                                     count_all_signals_str, count_analog_signals_str, count_digital_signals_str = lines[1].split(',')
                                     count_analog_signals = int(count_analog_signals_str[:-1])
                                     for i in range(count_analog_signals):
-                                        analog_signal = lines[2 + i].split(',') # getting an analog signal
-                                        # TODO: add a single function for generating a combined signal name
-                                        name, phase = analog_signal[1], analog_signal[2] # we get the name, phase and unit of measurement
+                                        analog_signal = lines[2 + i].split(',') # получение аналогового сигнала
+                                        # TODO: добавить единую функцию для генерации комбинированного имени сигнала
+                                        name, phase = analog_signal[1], analog_signal[2] # получаем имя, фазу и единицу измерения
                                         name, phase = name.replace(' ', ''), phase.replace(' ', '')
-                                        signal_name = name + ' | phase:' + phase # creating a combined signal name
+                                        signal_name = name + ' | phase:' + phase # создание комбинированного имени сигнала
                                         if signal_name not in analog_signals_name:
                                             analog_signals_name[signal_name] = 1
                                         else:
                                             analog_signals_name[signal_name] += 1
                     except Exception as e:
                         print(e)
-                        print("Error occurred while processing file: ", file_path)
+                        print("Произошла ошибка при обработке файла: ", file_path)
         
         sorted_analog_signals_name = {k: v for k, v in sorted(analog_signals_name.items(), key=lambda item: item[1], reverse=True)}      
         csv_file = os.path.join(source_dir, 'sorted_analog_signals_name.csv')
         with open(csv_file, 'w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
-            writer.writerow(['Key', "universal_code", 'Value'])  # Write header
+            writer.writerow(['Key', "universal_code", 'Value'])  # Запись заголовка
             for key, value in sorted_analog_signals_name.items():
                 writer.writerow([key, "-", value])
 
     def find_all_name_digital_signals(self, source_dir: str) -> None:
         """
-        The function searches for all the names of discrete signals in the comtrade file and sorts them by frequency of use.
+        Функция ищет все имена дискретных сигналов в файле comtrade и сортирует их по частоте использования.
 
         Args:
-            source_dir (str): The directory containing the files to update.
+            source_dir (str): каталог, содержащий файлы для обновления.
 
         Returns:
             None
         """
         digital_signals_name = {}
-        print("We count the total number of files in the source directory...")
+        print("Подсчитываем общее количество файлов в исходном каталоге...")
         total_files = sum([len(files) for r, d, files in os.walk(source_dir)])
-        print(f"Total number of files: {total_files}, starting processing...")
-        with tqdm(total=total_files, desc="Find all name digital signals") as pbar:
+        print(f"Общее количество файлов: {total_files}, начинаем обработку...")
+        with tqdm(total=total_files, desc="Поиск всех имен цифровых сигналов") as pbar:
             for root, dirs, files in os.walk(source_dir):
                 for file in files:
                     pbar.update(1)
@@ -282,43 +282,43 @@ class ProcessingOscillograms():
                         if file.lower().endswith(".cfg"):
                             file_path = os.path.join(root, file)
                             with open(file_path, 'r', encoding='utf-8') as file:
-                                # FIXME: No protection against protected and/or erroneous files
+                                # FIXME: Нет защиты от защищенных и/или ошибочных файлов
                                 lines = file.readlines()
                                 if len(lines) >= 2:
                                     count_all_signals_str, count_analog_signals_str, count_digital_signals_str = lines[1].split(',')
                                     count_analog_signals = int(count_analog_signals_str[:-1])
                                     count_digital_signals = int(count_digital_signals_str[:-2])
                                     for i in range(count_digital_signals):
-                                        digital_signal = lines[2 + count_analog_signals + i].split(',') # getting an analog signal
-                                        if len(digital_signal) == 1:# protection against incorrect number of signals
+                                        digital_signal = lines[2 + count_analog_signals + i].split(',') # получение аналогового сигнала
+                                        if len(digital_signal) == 1:# защита от неверного количества сигналов
                                             break
-                                        signal_name = digital_signal[1] # getting the name
+                                        signal_name = digital_signal[1] # получение имени
                                         if signal_name not in digital_signals_name:
                                             digital_signals_name[signal_name] = 1
                                         else:
                                             digital_signals_name[signal_name] += 1
                     except Exception as e:
                         print(e)
-                        print("Error occurred while processing file: ", file_path)
+                        print("Произошла ошибка при обработке файла: ", file_path)
         
         sorted_digital_signals_name = {k: v for k, v in sorted(digital_signals_name.items(), key=lambda item: item[1], reverse=True)}      
         csv_file = os.path.join(source_dir, 'sorted_digital_signals_name.csv')
         with open(csv_file, 'w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
-            writer.writerow(['Key', "universal_code", 'Value'])  # Write header
+            writer.writerow(['Key', "universal_code", 'Value'])  # Запись заголовка
             for key, value in sorted_digital_signals_name.items():
                 writer.writerow([key, "-", value])
 
 
     def rename_analog_signals(self, source_dir: str, csv_dir: str, encoding: str = 'utf8', delimiter: str = ',') -> None:
         """
-        The function searches for all the name analog signals that are present in the database and renames them to the standard codes.
+        Функция ищет все имена аналоговых сигналов, которые присутствуют в базе данных, и переименовывает их в стандартные коды.
         
         Args:
-            source_dir (str): The directory containing the files to update.
-            csv_dir (str): The address of the csv file.
-            encoding (str, optional): encoding of the csv file. Defaults to 'utf8'.
-            delimiter (str, optional): delimiter in the csv file. Defaults to ','.
+            source_dir (str): каталог, содержащий файлы для обновления.
+            csv_dir (str): адрес CSV-файла.
+            encoding (str, optional): кодировка CSV-файла. По умолчанию 'utf8'.
+            delimiter (str, optional): разделитель в CSV-файле. По умолчанию ','.
 
         Returns:
             None
@@ -333,27 +333,27 @@ class ProcessingOscillograms():
                 if is_name_determined:
                     code_map[key] = universal_code
         
-        print("We count the total number of files in the source directory...")
+        print("Подсчитываем общее количество файлов в исходном каталоге...")
         total_files = sum([len(files) for r, d, files in os.walk(source_dir)])
-        print(f"Total number of files: {total_files}, starting processing...")
-        with tqdm(total=total_files, desc="Rename analog signals") as pbar:
+        print(f"Общее количество файлов: {total_files}, начинаем обработку...")
+        with tqdm(total=total_files, desc="Переименование аналоговых сигналов") as pbar:
             for root, dirs, files in os.walk(source_dir):
                 for file in files:
                     pbar.update(1)
                     if file.lower().endswith(".cfg"):
                         file_path = os.path.join(root, file)
                         with open(file_path, 'r', encoding='utf-8') as file:
-                            # FIXME: No protection against protected and/or erroneous files
+                            # FIXME: Нет защиты от защищенных и/или ошибочных файлов
                             lines = file.readlines()
                             if len(lines) >= 2:
                                 count_all_signals_str, count_analog_signals_str, count_digital_signals_str = lines[1].split(',')
                                 count_analog_signals = int(count_analog_signals_str[:-1])
                                 for i in range(count_analog_signals):
-                                    analog_signal = lines[2 + i].split(',') # getting an analog signal
-                                    # TODO: add a single function for generating a combined signal name
-                                    name, phase = analog_signal[1], analog_signal[2] # we get the name, phase and unit of measurement
+                                    analog_signal = lines[2 + i].split(',') # получение аналогового сигнала
+                                    # TODO: добавить единую функцию для генерации комбинированного имени сигнала
+                                    name, phase = analog_signal[1], analog_signal[2] # получаем имя, фазу и единицу измерения
                                     name, phase = name.replace(' ', ''), phase.replace(' ', ''),
-                                    signal_name = name + ' | phase:' + phase # creating a combined signal name
+                                    signal_name = name + ' | phase:' + phase # создание комбинированного имени сигнала
                                     if signal_name in code_map:
                                         analog_signal[1] = code_map[signal_name]
                                         lines[2 + i] = ','.join(analog_signal)
@@ -363,13 +363,13 @@ class ProcessingOscillograms():
 
     def rename_digital_signals(self, source_dir: str, csv_dir: str, encoding: str = 'utf8', delimiter: str = ',') -> None:
         """
-        The function searches for all the name discrete signals that are present in the database and renames them to the standard codes.
+        Функция ищет все имена дискретных сигналов, которые присутствуют в базе данных, и переименовывает их в стандартные коды.
         
         Args:
-            source_dir (str): The directory containing the files to update.
-            csv_dir (str): The address of the csv file.
-            encoding (str, optional): encoding of the csv file. Defaults to 'utf8'.
-            delimiter (str, optional): delimiter in the csv file. Defaults to ','.
+            source_dir (str): каталог, содержащий файлы для обновления.
+            csv_dir (str): адрес CSV-файла.
+            encoding (str, optional): кодировка CSV-файла. По умолчанию 'utf8'.
+            delimiter (str, optional): разделитель в CSV-файле. По умолчанию ','.
 
         Returns:
             None
@@ -384,27 +384,27 @@ class ProcessingOscillograms():
                 if is_name_determined:
                     code_map[key] = universal_code
         
-        print("We count the total number of files in the source directory...")
+        print("Подсчитываем общее количество файлов в исходном каталоге...")
         total_files = sum([len(files) for r, d, files in os.walk(source_dir)])
-        print(f"Total number of files: {total_files}, starting processing...")
-        with tqdm(total=total_files, desc="Rename digital signals") as pbar:
+        print(f"Общее количество файлов: {total_files}, начинаем обработку...")
+        with tqdm(total=total_files, desc="Переименование цифровых сигналов") as pbar:
             for root, dirs, files in os.walk(source_dir):
                 for file in files:
                     pbar.update(1)
                     if file.lower().endswith(".cfg"):
                         file_path = os.path.join(root, file)
                         with open(file_path, 'r', encoding='utf-8') as file:
-                            # FIXME: No protection against protected and/or erroneous files
+                            # FIXME: Нет защиты от защищенных и/или ошибочных файлов
                             lines = file.readlines()
                             if len(lines) >= 2:
                                 count_all_signals_str, count_analog_signals_str, count_digital_signals_str = lines[1].split(',')
                                 count_analog_signals = int(count_analog_signals_str[:-1])
                                 count_digital_signals = int(count_digital_signals_str[:-2])
                                 for i in range(count_digital_signals):
-                                    digital_signal = lines[2 + count_analog_signals + i].split(',') # getting an analog signal
-                                    if len(digital_signal) == 1: # protection against incorrect number of signals
+                                    digital_signal = lines[2 + count_analog_signals + i].split(',') # получение аналогового сигнала
+                                    if len(digital_signal) == 1: # защита от неверного количества сигналов
                                         break
-                                    signal_name = digital_signal[1] # getting the name
+                                    signal_name = digital_signal[1] # получение имени
                                     if signal_name in code_map:
                                         digital_signal[1] = code_map[signal_name]
                                         lines[2 + count_analog_signals + i] = ','.join(digital_signal)
@@ -414,27 +414,27 @@ class ProcessingOscillograms():
                         
     def rename_one_signals(self, source_dir: str, old_name: str, new_name: str) -> None:
         """
-        The function searches for the entire signal name with one name and changes it to a new one.
+        Функция ищет все сигналы с одним именем и заменяет его на новое.
         
         Args:
-            source_dir (str): The directory containing the files to update.
-            old_name (str): the old name of the signal.
-            new_name (str): the new name of the signal.
+            source_dir (str): каталог, содержащий файлы для обновления.
+            old_name (str): старое имя сигнала.
+            new_name (str): новое имя сигнала.
 
         Returns:
             None
         """
-        print("We count the total number of files in the source directory...")
+        print("Подсчитываем общее количество файлов в исходном каталоге...")
         total_files = sum([len(files) for r, d, files in os.walk(source_dir)])
-        print(f"Total number of files: {total_files}, starting processing...")
-        with tqdm(total=total_files, desc="Rename signal") as pbar:
+        print(f"Общее количество файлов: {total_files}, начинаем обработку...")
+        with tqdm(total=total_files, desc="Переименование сигнала") as pbar:
             for root, dirs, files in os.walk(source_dir):
                 for file in files:
                     pbar.update(1)
                     if file.lower().endswith(".cfg"):
                         file_path = os.path.join(root, file)
                         with open(file_path, 'r', encoding='utf-8') as file:
-                            # FIXME: No protection against protected and/or erroneous files
+                            # FIXME: Нет защиты от защищенных и/или ошибочных файлов
                             lines = file.readlines()
                             if len(lines) >= 2:
                                 for i in range(len(lines)):
@@ -448,15 +448,15 @@ class ProcessingOscillograms():
                                             encoding_old_csv: str = 'utf-8', encoding_new_csv: str = 'utf-8',
                                             deelimed_old_csv_file: str = ',', deelimed_new_csv_file: str = ',', is_merge_files: bool = True) -> None:
         """
-        The function combines csv files with unique signal codes
+        Функция объединяет csv-файлы с уникальными кодами сигналов
         
         Args:
-            old_csv_file_path (str): The address of the csv file with unique signal codes.
-            new_csv_file_path (str): The address of the csv file with unique signal codes.
-            encoding_old_csv (str): encoding of the old csv file.
-            encoding_new_csv (str): encoding of the new csv file.
-            deelimed_old_csv_file (str): separator of the old csv file.
-            deelimed_new_csv_file (str): delimiter of the new csv file.
+            old_csv_file_path (str): адрес csv-файла с уникальными кодами сигналов.
+            new_csv_file_path (str): адрес csv-файла с уникальными кодами сигналов.
+            encoding_old_csv (str): кодировка старого csv-файла.
+            encoding_new_csv (str): кодировка нового csv-файла.
+            deelimed_old_csv_file (str): разделитель старого csv-файла.
+            deelimed_new_csv_file (str): разделитель нового csv-файла.
 
         Returns:
             None
@@ -482,7 +482,7 @@ class ProcessingOscillograms():
                 new_code_map[key] = (universal_code, value)
                 
 
-        # If is_merge_files is set to True, combine the array with the summed values in the value field
+        # Если is_merge_files имеет значение True, объединить массив с суммированными значениями в поле value
         merged_code_map = dict()
         if is_merge_files:
             merged_code_map = old_code_map.copy()
@@ -511,20 +511,20 @@ class ProcessingOscillograms():
 
     def combining_json_hash_table(self, source_dir: str, encoding: str = 'utf-8') -> None:
         """
-        !!ATTENTION!!
-        It is worth using "hash_table" only for combining files. The function combines json files with unique names of waveforms
+        !!ВНИМАНИЕ!!
+        Стоит использовать "hash_table" только для объединения файлов. Функция объединяет json-файлы с уникальными именами осциллограмм
         
         Args:
-            source_dir (str): The directory containing the files to update.
+            source_dir (str): каталог, содержащий файлы для обновления.
 
         Returns:
             None
         """
         combine_hash_table = {}
-        print("We count the total number of files in the source directory...")
+        print("Подсчитываем общее количество файлов в исходном каталоге...")
         total_files = sum([len(files) for r, d, files in os.walk(source_dir)])
-        print(f"Total number of files: {total_files}, starting processing...")
-        with tqdm(total=total_files, desc="Combining json hash table") as pbar:
+        print(f"Общее количество файлов: {total_files}, начинаем обработку...")
+        with tqdm(total=total_files, desc="Объединение хеш-таблицы json") as pbar:
             for root, dirs, files in os.walk(source_dir):
                 for file in files:
                     pbar.update(1)
@@ -537,42 +537,42 @@ class ProcessingOscillograms():
                                     if key not in combine_hash_table:
                                         combine_hash_table[key] = value
                         except:
-                            print("Failed to read hash_table from JSON file")
+                            print("Не удалось прочитать hash_table из файла JSON")
                             
         try:
             combine_hash_table_file_path = os.path.join(source_dir, 'combine_hash_table.json')
             with open(combine_hash_table_file_path, 'w') as file:
                 json.dump(combine_hash_table, file)
         except:
-            print("Failed to save new_hash_table to a JSON file")
+            print("Не удалось сохранить new_hash_table в файл JSON")
 
 
     def research_coorect_encoding_in_cfg(self, source_dir: str, act_function = None) -> None:
         """
-        The function searches for .cfg files in the specified directory, 
-        tries to determine their encoding (utf-8, windows-1251 or ОЕМ 866) and collects file paths. 
-        It saves a list of protected files and any processing errors to a 'protected_files.txt file in the source directory.
+        Функция ищет файлы .cfg в указанном каталоге,
+        пытается определить их кодировку (utf-8, windows-1251 или ОЕМ 866) и собирает пути к файлам.
+        Она сохраняет список защищенных файлов и любых ошибок обработки в файл 'protected_files.txt' в исходном каталоге.
         
-        The function specified in the input data is applied to the required files
+        Функция, указанная во входных данных, применяется к требуемым файлам
 
         Args:
-            source_dir (str): A directory containing .cfg files for verifying confidential information.
-            act_function (function): The function that will be applied to the files.
+            source_dir (str): каталог, содержащий файлы .cfg для проверки конфиденциальной информации.
+            act_function (function): функция, которая будет применяться к файлам.
 
         Returns:
             None
         """
         protected_files = []
-        print("We count the total number of files in the source directory...")
+        print("Подсчитываем общее количество файлов в исходном каталоге...")
         total_files = sum([len(files) for r, d, files in os.walk(source_dir)])
-        print(f"Total number of files: {total_files}, starting processing...")
-        with tqdm(total=total_files, desc="Finding the correct encoding and determining the date") as pbar:
+        print(f"Общее количество файлов: {total_files}, начинаем обработку...")
+        with tqdm(total=total_files, desc="Поиск правильной кодировки и определение даты") as pbar:
             for root, dirs, files in os.walk(source_dir):
                 for file in files:
                     pbar.update(1)
                     if file.endswith(".cfg"):
                         file_path = os.path.join(root, file)
-                        # TODO: to determine the encoding and resave a file in utf-8, you need to create a separate function
+                        # TODO: для определения кодировки и пересохранения файла в utf-8 необходимо создать отдельную функцию
                         try: 
                             act_function(file_path, root, 'utf-8')
                         except Exception as e:
@@ -580,21 +580,21 @@ class ProcessingOscillograms():
                                 act_function(file_path, root, 'windows-1251')  
                             except Exception as e:
                                 try:
-                                    act_function(file_path, root, 'ОЕМ 866') # ОЕМ - Russian
+                                    act_function(file_path, root, 'ОЕМ 866') # ОЕМ - русский
                                 except Exception as e:
                                     protected_files.append(file_path)
-                                    protected_files.append(f"An error occurred while processing the cfg file: {e}")
+                                    protected_files.append(f"Произошла ошибка при обработке файла cfg: {e}")
         with open(os.path.join(source_dir, 'protected_files.txt'), 'w', encoding='utf-8') as file:
             file.write('\n'.join(protected_files))
 
     def detect_date(self, file_path: str, root: str, encoding_name: str, dict_all_dates = {}) -> None:
         """
-        The function determines the date of the event in the cfg file.
+        Функция определяет дату события в файле cfg.
         
         Args:
-            file_path (str): The path to the .cfg file.
-            root (str): the path to the root directory.
-            encoding_name (str): The encoding format used to read the file.
+            file_path (str): путь к файлу .cfg.
+            root (str): путь к корневому каталогу.
+            encoding_name (str): формат кодировки, используемый для чтения файла.
 
         Returns:
             None
@@ -604,7 +604,7 @@ class ProcessingOscillograms():
             count_all_signals_str, count_analog_signals_str, count_digital_signals_str = lines[1].split(',')
             count_all_signals = int(count_all_signals_str)
             
-            # We only change the year in the event date
+            # Мы меняем только год в дате события
             start_date = lines[count_all_signals + 5].split(',')
             start_date_parts = start_date[0].split('/')
             start_time_parts = start_date[1].split(':')
@@ -689,14 +689,14 @@ class ProcessingOscillograms():
 
     def _get_signals_from_prepared_cfg(self, file_path: str, encoding_name: str) -> list:
         """
-        Parses a .cfg file file prepared for standard names and returns a list of full signal names (both analog and digital).
+        Разбирает файл .cfg, подготовленный для стандартных имен, и возвращает список полных имен сигналов (как аналоговых, так и цифровых).
 
         Args:
-            file_path (str): The path to the .cfg file.
-            encoding_name (str): Encoding of the cfg file
+            file_path (str): путь к файлу .cfg.
+            encoding_name (str): кодировка файла cfg
 
         Returns:
-            list: List of full signal names in the cfg file.
+            list: список полных имен сигналов в файле cfg.
         """
         signal_names = []
         try:
@@ -706,7 +706,7 @@ class ProcessingOscillograms():
                 count_analog_signals = int(count_analog_signals_str[:-1])
                 count_digital_signals = int(count_digital_signals_str[:-2])
 
-                # Analog signals processing
+                # Обработка аналоговых сигналов
                 for i in range(count_analog_signals):
                     signal_name = lines[2 + i].split(',')
                     name = signal_name[1].split('|')
@@ -730,7 +730,7 @@ class ProcessingOscillograms():
                         'phase': phase
                     })
 
-                # Digital signals processing
+                # Обработка цифровых сигналов
                 for i in range(count_digital_signals):
                     signal_name = lines[2 + count_analog_signals + i].split(',')
                     if len(signal_name) < 2: # защита от некорректных строк
@@ -764,18 +764,18 @@ class ProcessingOscillograms():
                     })
 
         except Exception as e:
-            print(f"Error reading cfg file {file_path}: {e}")
+            print(f"Ошибка чтения файла cfg {file_path}: {e}")
         return signal_names
     
     def _default_signal_checker(self, file_signals: list) -> bool:
         """
-        Checks if a single comtrade file contains the required signals (considering PDR as digital).
+        Проверяет, содержит ли один файл comtrade необходимые сигналы (считая PDR цифровым).
 
         Args:
-            file_signals (list): list of signal names.
+            file_signals (list): список имен сигналов.
 
         Returns:
-            bool: True if all required signals are present, False otherwise.
+            bool: True, если все необходимые сигналы присутствуют, иначе False.
         """
         has_voltage_busbar_1 = False
         has_voltage_cableline_1 = False
@@ -847,38 +847,38 @@ class ProcessingOscillograms():
 
     def check_signals_in_folder(self, raw_path='raw_data/', output_csv_filename='signal_check_results.csv', signal_checker=None):
         """
-        Checks all comtrade files in a folder for required signals and outputs results to a CSV.
+        Проверяет все файлы comtrade в папке на наличие необходимых сигналов и выводит результаты в CSV.
 
         Args:
-            raw_path (str): Path to the folder containing raw comtrade files.
-            output_csv_filename (str): Filename for the output CSV file.
-            signal_checker (function): Function to check the required signals in a single file. Defaults to self._default_signal_checker.
+            raw_path (str): путь к папке, содержащей необработанные файлы comtrade.
+            output_csv_filename (str): имя файла для выходного CSV-файла.
+            signal_checker (function): функция для проверки необходимых сигналов в одном файле. По умолчанию self._default_signal_checker.
         """
         output_csv_path = os.path.join(raw_path, output_csv_filename)
         results = []
 
-        print(f"Checking signals in folder: {raw_path}")
+        print(f"Проверка сигналов в папке: {raw_path}")
         total_files = 0
         for root, dirs, files in os.walk(raw_path):
             for file in files:
                 if file.endswith(".cfg"):
                     total_files += 1
-        print(f"Total CFG files found: {total_files}, starting processing...")
+        print(f"Всего найдено файлов CFG: {total_files}, начинаем обработку...")
 
-        with tqdm(total=total_files, desc="Checking signals") as pbar:
+        with tqdm(total=total_files, desc="Проверка сигналов") as pbar:
             for root, dirs, files in os.walk(raw_path):
                 for file in files:
                     if file.endswith(".cfg"):
                         pbar.update(1)
                         file_path = os.path.join(root, file)
-                        file_hash = file[:-4] # Assuming filename is hash.cfg
+                        file_hash = file[:-4] # Предполагая, что имя файла - hash.cfg
                         contains_required_signals = False
                         
                         try:
                             contains_required_signals = self._check_signals_in_one_file(file_path, signal_checker, 'utf-8')
                         except Exception as e:
                             # windows-1251 и ОЕМ 866 не проверяются, так как предполагается, что уже выполнена требуемая стандартизация
-                            print(f"Error processing {file_path}: {e}")
+                            print(f"Ошибка обработки {file_path}: {e}")
                             contains_required_signals = "Error"
 
                         if contains_required_signals == True:
@@ -896,17 +896,17 @@ class ProcessingOscillograms():
            writer.writeheader()
            writer.writerows(results)
 
-        print(f"Signal check results saved to {output_csv_path}")
+        print(f"Результаты проверки сигналов сохранены в {output_csv_path}")
 
     def find_oscillograms_with_spef(self, raw_path: str ='raw_data/', output_csv_path: str = "find_oscillograms_with_spef.csv",
                                     norm_coef_file_path: str = 'norm_coef.csv', filter_txt_path: str = None):
         """
-        Finds oscillograms with single-phase earth faults (SPEF) based on defined conditions using sliding window and harmonic analysis.
+        Находит осциллограммы с однофазными замыканиями на землю (ОЗЗ) на основе определенных условий с использованием скользящего окна и гармонического анализа.
 
         Args:
-            raw_path (str): Path to the directory containing COMTRADE files.
-            output_csv_path (str): Path to save the CSV file with SPEF filenames.
-            norm_coef_file_path (str): Path to the normalization coefficients CSV file.
+            raw_path (str): путь к каталогу, содержащему файлы COMTRADE.
+            output_csv_path (str): путь для сохранения CSV-файла с именами файлов ОЗЗ.
+            norm_coef_file_path (str): путь к CSV-файлу с коэффициентами нормализации.
         """
         # Чтение фильтра (если указан)
         filter_set = None
@@ -924,7 +924,7 @@ class ProcessingOscillograms():
         number_ocs_found = 0
         rawToCSV = RawToCSV()
 
-        with tqdm(total=len(raw_files), desc="Searching for SPEF") as pbar:
+        with tqdm(total=len(raw_files), desc="Поиск ОЗЗ") as pbar:
             for file in raw_files:
                 file_path = os.path.join(raw_path, file)
                 filename_without_ext = file[:-4]
@@ -956,119 +956,119 @@ class ProcessingOscillograms():
                         is_spef = False
                         group_df = group_df.copy()
 
-                        # Condition 1 & 2: 3U0 BB and 3U0 CL (combined for efficiency)
+                        # Условие 1 и 2: 3U0 BB и 3U0 CL (объединены для эффективности)
                         u0_signals_bb_cl = {}
-                        signal_names_3u0 = {"UN BB": "UN BB", "UN CL": "UN CL"} # Mapping for signal names
+                        signal_names_3u0 = {"UN BB": "UN BB", "UN CL": "UN CL"} # Сопоставление имен сигналов
 
                         for signal_3u0_name, col_name in signal_names_3u0.items():
                             if not group_df.empty and col_name in group_df.columns:
                                 u0_signal = group_df[col_name].fillna(0).values
-                                u0_harmonics = np.zeros_like(u0_signal, dtype=float) # Array to store first harmonic values
+                                u0_harmonics = np.zeros_like(u0_signal, dtype=float) # Массив для хранения значений первой гармоники
 
-                                # Sliding window for harmonic calculation and check
-                                for i in range(len(u0_signal) - samples_per_period): # Slide through the entire signal
+                                # Скользящее окно для расчета и проверки гармоник
+                                for i in range(len(u0_signal) - samples_per_period): # Скольжение по всему сигналу
                                     window = u0_signal[i:i+samples_per_period]
                                     window_fft = np.abs(fft(window)) / samples_per_period
                                     u0_harmonics[i] = max(window_fft[1:samples_per_period//2])
 
-                                # Sliding window check on harmonics
+                                # Проверка скользящим окном по гармоникам
                                 for i in range(len(u0_harmonics) - samples_duration):
                                     window_harmonics = u0_harmonics[i:i+samples_duration]
-                                    if np.all(window_harmonics >= threshold): # Check harmonic level in sliding window
+                                    if np.all(window_harmonics >= threshold): # Проверка уровня гармоник в скользящем окне
                                         is_spef = True
                                         number_ocs_found += 1
                                         spef_files.append([filename_without_ext, file_name])
-                                        break # Condition met, no need to check further conditions for this file
+                                        break # Условие выполнено, нет необходимости проверять дальнейшие условия для этого файла
                                 if is_spef:
-                                    break # Break outer loop if SPEF is found
+                                    break # Прервать внешний цикл, если ОЗЗ найдено
 
                             if is_spef:
-                                break # Break if SPEF is found
+                                break # Прервать, если ОЗЗ найдено
 
                         if is_spef:
-                            continue # Go to next file if SPEF is found
+                            continue # Переход к следующему файлу, если ОЗЗ найдено
 
-                        # Condition 3 & 4: Zero sequence + Phase voltages BB and CL (combined)
+                        # Условие 3 и 4: Нулевая последовательность + фазные напряжения BB и CL (объединены)
                         phase_voltage_conditions = {
-                            "BB": {"phases": ["UA BB", "UB BB", "UC BB"], "threshold_u0": threshold, "threshold_phase": threshold/np.sqrt(3)}, # Using threshold_phase if needed for phase voltages
-                            "CL": {"phases": ["UA CL", "UB CL", "UC CL"], "threshold_u0": threshold, "threshold_phase": threshold/np.sqrt(3)}  # Using threshold_phase if needed for phase voltages
+                            "BB": {"phases": ["UA BB", "UB BB", "UC BB"], "threshold_u0": threshold, "threshold_phase": threshold/np.sqrt(3)}, # Использование threshold_phase при необходимости для фазных напряжений
+                            "CL": {"phases": ["UA CL", "UB CL", "UC CL"], "threshold_u0": threshold, "threshold_phase": threshold/np.sqrt(3)}  # Использование threshold_phase при необходимости для фазных напряжений
                         }
 
                         for location, condition_params in phase_voltage_conditions.items():
                             phase_names = condition_params["phases"]
                             threshold_u0 = condition_params["threshold_u0"]
-                            threshold_phase = condition_params["threshold_phase"] # Unused currently, can be used for phase voltage level checks
+                            threshold_phase = condition_params["threshold_phase"] # В настоящее время не используется, может использоваться для проверок уровня фазного напряжения
 
                             if not group_df.empty and all(col in group_df.columns for col in phase_names):
                                 ua_signal = group_df[phase_names[0]].fillna(0).values
                                 ub_signal = group_df[phase_names[1]].fillna(0).values
                                 uc_signal = group_df[phase_names[2]].fillna(0).values
 
-                                u0_3_signal = (ua_signal + ub_signal + uc_signal) / np.sqrt(3) # 3U0 calculation
-                                # /np.sqrt(3) - because we used phase signal
+                                u0_3_signal = (ua_signal + ub_signal + uc_signal) / np.sqrt(3) # Расчет 3U0
+                                # /np.sqrt(3) - потому что мы использовали фазный сигнал
 
-                                u0_3_harmonics = np.zeros_like(u0_3_signal, dtype=float) # Array for harmonics
+                                u0_3_harmonics = np.zeros_like(u0_3_signal, dtype=float) # Массив для гармоник
                                 for i in range(len(u0_3_signal) - samples_per_period):
                                     window = u0_3_signal[i:i+samples_per_period]
                                     window_fft = np.abs(fft(window)) / samples_per_period
                                     u0_3_harmonics[i] = max(window_fft[1:samples_per_period//2])
 
                                 phase_voltages = [ua_signal, ub_signal, uc_signal]
-                                voltages_above_threshold = 0 # Count how many phase voltages meet the condition (if needed)
+                                voltages_above_threshold = 0 # Подсчет, сколько фазных напряжений удовлетворяют условию (при необходимости)
 
-                                # Sliding window check for 3U0 harmonics
+                                # Проверка скользящим окном для гармоник 3U0
                                 for i in range(len(u0_3_harmonics) - samples_duration):
                                     window_harmonics_u0 = u0_3_harmonics[i:i+samples_duration]
-                                    if np.all(window_harmonics_u0 >= threshold_u0): # Check 3U0 harmonic level in sliding window
-                                        voltages_above_threshold = 0 # Reset counter for phase voltages for this window
+                                    if np.all(window_harmonics_u0 >= threshold_u0): # Проверка уровня гармоник 3U0 в скользящем окне
+                                        voltages_above_threshold = 0 # Сброс счетчика для фазных напряжений для этого окна
                                         for v in phase_voltages:
-                                            # Phase voltage check can be added here if needed, e.g., using harmonics or time-domain values in a window
-                                            # For now, just checking if any two voltages exist (as per original condition)
-                                            voltages_above_threshold += 1 # Increment if voltage signal exists (for simplicity, can be enhanced)
+                                            # Здесь можно добавить проверку фазного напряжения, если это необходимо, например, с использованием гармоник или значений во временной области в окне
+                                            # Пока просто проверяем, существуют ли какие-либо два напряжения (согласно исходному условию)
+                                            voltages_above_threshold += 1 # Увеличение, если сигнал напряжения существует (для простоты, можно улучшить)
 
-                                        if voltages_above_threshold >= 2: # Check if at least two phase voltages are present (condition from original task)
+                                        if voltages_above_threshold >= 2: # Проверка наличия как минимум двух фазных напряжений (условие из исходной задачи)
                                             is_spef = True
                                             number_ocs_found += 1
                                             spef_files.append([filename_without_ext, file_name])
-                                            break # Condition met, no need to check further conditions for this file
+                                            break # Условие выполнено, нет необходимости проверять дальнейшие условия для этого файла
                                 if is_spef:
-                                    break # Break location loop if SPEF is found
+                                    break # Прервать цикл по местоположению, если ОЗЗ найдено
 
                             if is_spef:
-                                break # Break outer loop if SPEF is found
+                                break # Прервать внешний цикл, если ОЗЗ найдено
 
                 except Exception as e:
-                    print(f"Error processing file {file}: {e}")
+                    print(f"Ошибка обработки файла {file}: {e}")
 
                 pbar.update(1)
 
-        print(f"Number of samples found = {number_ocs_found}")
+        print(f"Количество найденных образцов = {number_ocs_found}")
         df_spef = pd.DataFrame(spef_files, columns=['filename', 'file_name_bus'])
         df_spef.to_csv(output_csv_path, index=False)
-        print(f"SPEF files saved to: {output_csv_path}")
+        print(f"Файлы ОЗЗ сохранены в: {output_csv_path}")
 
     def _extract_signal_names_from_cfg_lines(self, lines: list[str], file_path_for_error_msg: str, include_digital_signals: bool = True) -> tuple[list[str], str | None]:
         """
-        Extracts all signal names from the lines of a CFG file.
+        Извлекает все имена сигналов из строк файла CFG.
 
         Args:
-            lines (list[str]): Content of the CFG file as a list of strings.
-            file_path_for_error_msg (str): Path to the file, used for error messages.
+            lines (list[str]): содержимое файла CFG в виде списка строк.
+            file_path_for_error_msg (str): путь к файлу, используемый для сообщений об ошибках.
 
         Returns:
-            tuple[list[str], str | None]: A tuple containing a list of signal names
-                                           and an error message string if any error occurred, otherwise None.
+            tuple[list[str], str | None]: кортеж, содержащий список имен сигналов
+                                           и строку с сообщением об ошибке, если произошла ошибка, в противном случае None.
         """
         signal_names = []
         
         if len(lines) < 2:
-            return [], f"File {file_path_for_error_msg} has less than 2 lines."
+            return [], f"Файл {file_path_for_error_msg} имеет менее 2 строк."
 
-        # Parse second line for signal counts
+        # Разбор второй строки для подсчета сигналов
         try:
             parts = lines[1].split(',')
             if len(parts) < 3:
-                return [], f"Second line in {file_path_for_error_msg} has incorrect format: {lines[1].strip()}"
+                return [], f"Вторая строка в {file_path_for_error_msg} имеет неверный формат: {lines[1].strip()}"
             
             # total_signals_str = parts[0].strip() # Не используется напрямую для извлечения имен
             
@@ -1080,34 +1080,34 @@ class ProcessingOscillograms():
             count_digital_signals = int(re.sub(r'\D', '', digital_signals_str))
 
         except ValueError:
-            return [], f"Could not parse signal counts from second line in {file_path_for_error_msg}: {lines[1].strip()}"
+            return [], f"Не удалось разобрать количество сигналов из второй строки в {file_path_for_error_msg}: {lines[1].strip()}"
         except Exception as e:
-            return [], f"Unexpected error parsing signal counts in {file_path_for_error_msg}: {e}"
+            return [], f"Неожиданная ошибка при разборе количества сигналов в {file_path_for_error_msg}: {e}"
 
-        # Check if we have enough lines for analog signals
+        # Проверяем, достаточно ли у нас строк для аналоговых сигналов
         if len(lines) < 2 + count_analog_signals:
-            return [], f"File {file_path_for_error_msg} does not have enough lines for declared analog signals ({count_analog_signals}). Has {len(lines)} lines."
+            return [], f"Файл {file_path_for_error_msg} не содержит достаточного количества строк для заявленных аналоговых сигналов ({count_analog_signals}). Содержит {len(lines)} строк."
 
-        # Extract analog signal names
+        # Извлечение имен аналоговых сигналов
         for i in range(count_analog_signals):
             line_index = 2 + i
             signal_line_parts = lines[line_index].split(',')
             if len(signal_line_parts) > 1:
                 signal_names.append(signal_line_parts[1].strip())
             else:
-                return [], f"Malformed analog signal line {line_index+1} in {file_path_for_error_msg}: {lines[line_index].strip()}"
+                return [], f"Неверно сформированная строка аналогового сигнала {line_index+1} в {file_path_for_error_msg}: {lines[line_index].strip()}"
         
-        # Check if we have enough lines for digital signals
+        # Проверяем, достаточно ли у нас строк для цифровых сигналов
         if len(lines) < 2 + count_analog_signals + count_digital_signals:
-            return [], f"File {file_path_for_error_msg} does not have enough lines for declared digital signals ({count_digital_signals})."
+            return [], f"Файл {file_path_for_error_msg} не содержит достаточного количества строк для заявленных цифровых сигналов ({count_digital_signals})."
 
-        # Extract digital signal names
+        # Извлечение имен цифровых сигналов
         if include_digital_signals:
-            # Check if we have enough lines for digital signals
+            # Проверяем, достаточно ли у нас строк для цифровых сигналов
             if len(lines) < 2 + count_analog_signals + count_digital_signals:
                 # Если include_digital_signals=True, но строк не хватает, это ошибка.
                 # Если include_digital_signals=False, эта проверка и извлечение не нужны.
-                return [], f"File {file_path_for_error_msg} does not have enough lines for declared digital signals ({count_digital_signals})."
+                return [], f"Файл {file_path_for_error_msg} не содержит достаточного количества строк для заявленных цифровых сигналов ({count_digital_signals})."
 
             for i in range(count_digital_signals):
                 line_index = 2 + count_analog_signals + i
@@ -1115,19 +1115,19 @@ class ProcessingOscillograms():
                 if len(signal_line_parts) > 1:
                     signal_names.append(signal_line_parts[1].strip())
                 else:
-                    return [], f"Malformed digital signal line {line_index+1} in {file_path_for_error_msg}: {lines[line_index].strip()}"
+                    return [], f"Неверно сформированная строка цифрового сигнала {line_index+1} в {file_path_for_error_msg}: {lines[line_index].strip()}"
                     
         return signal_names, None
     
     def _parse_analog_signal_name_for_section(self, signal_name: str) -> dict | None:
             """
-            Parses an analog signal name to extract its components, focusing on the section number.
-            Example: "U | BusBar-1 | phase: A" -> {'prefix': "U | BusBar-", 'section': "1", 'suffix': " | phase: A"}
-            Example: "I | Bus-12" -> {'prefix': "I | Bus-", 'section': "12", 'suffix': ""}
+            Разбирает имя аналогового сигнала для извлечения его компонентов, уделяя особое внимание номеру секции.
+            Пример: "U | BusBar-1 | phase: A" -> {'prefix': "U | BusBar-", 'section': "1", 'suffix': " | phase: A"}
+            Пример: "I | Bus-12" -> {'prefix': "I | Bus-", 'section': "12", 'suffix': ""}
             Args:
-                signal_name (str): The full name of the analog signal.
+                signal_name (str): полное имя аналогового сигнала.
             Returns:
-                dict | None: A dictionary with 'prefix', 'section', 'suffix' if parsable, else None.
+                dict | None: словарь с 'prefix', 'section', 'suffix', если его можно разобрать, иначе None.
             """
             parts = signal_name.split('|')
             if len(parts) < 2:
@@ -1136,12 +1136,12 @@ class ProcessingOscillograms():
             signal_type_part = parts[0].strip()
             location_section_part = parts[1].strip()
 
-            # Regex to find 'LocationType-Number' at the end of the location_section_part
-            # It captures (anything before)-(digits)
+            # Регулярное выражение для поиска 'LocationType-Number' в конце location_section_part
+            # Оно захватывает (все, что до)-(цифры)
             match = re.search(r"^(.*?)-(\d+)$", location_section_part)
             if not match:
-                # Try another pattern if location type itself has hyphens, e.g. "Some-Location-Type-1"
-                # This pattern looks for the last hyphen followed by digits.
+                # Попробуйте другой шаблон, если сам тип местоположения содержит дефисы, например, "Some-Location-Type-1"
+                # Этот шаблон ищет последний дефис, за которым следуют цифры.
                 match_alternative = re.match(r"^(.*[A-Za-z_])-(\d+)$", location_section_part)
                 if not match_alternative:
                     return None
@@ -1167,19 +1167,19 @@ class ProcessingOscillograms():
 
     def _rename_duplicate_analog_signals_in_lines(self, cfg_lines: list[str], file_path_for_log: str) -> tuple[list[str], bool, list[dict]]:
         """
-        Identifies duplicate analog signal names in the provided CFG lines and renames them
-        by assigning new, unused section numbers.
-        Operates only on analog signals.
+        Определяет дубликаты имен аналоговых сигналов в предоставленных строках CFG и переименовывает их
+        путем присвоения новых, неиспользуемых номеров секций.
+        Работает только с аналоговыми сигналами.
 
         Args:
-            cfg_lines (list[str]): The content of the CFG file as a list of strings.
-            file_path_for_log (str): The path of the file, for logging purposes.
+            cfg_lines (list[str]): содержимое файла CFG в виде списка строк.
+            file_path_for_log (str): путь к файлу для целей ведения журнала.
 
         Returns:
             tuple:
-                - list[str]: Modified list of CFG lines.
-                - bool: True if any changes were made, False otherwise.
-                - list[dict]: A log of renamed signals [{'file_path', 'line_index', 'old_name', 'new_name'}].
+                - list[str]: измененный список строк CFG.
+                - bool: True, если были внесены какие-либо изменения, иначе False.
+                - list[dict]: журнал переименованных сигналов [{'file_path', 'line_index', 'old_name', 'new_name'}].
         """
         modified_lines = list(cfg_lines)
         made_changes = False
@@ -1325,14 +1325,14 @@ class ProcessingOscillograms():
                                            output_csv_rename_log_path: str = "rename_log.csv"
                                            ) -> None:
         """
-        Scans .cfg files for duplicate signal names. Optionally, renames duplicate *analog* signals.
+        Сканирует файлы .cfg на наличие дублирующихся имен сигналов. При необходимости переименовывает дубликаты *аналоговых* сигналов.
 
         Args:
-            source_dir (str): Directory containing .cfg files.
-            output_csv_duplicates_path (str): Path to save CSV of files with duplicates.
-            include_digital_signals (bool): Whether to include digital signals in the duplicate search.
-            auto_rename_analog_duplicates (bool): If True, automatically renames duplicate analog signals.
-            output_csv_rename_log_path (str): Path to save CSV log of renaming actions.
+            source_dir (str): каталог, содержащий файлы .cfg.
+            output_csv_duplicates_path (str): путь для сохранения CSV-файла со списком файлов с дубликатами.
+            include_digital_signals (bool): включать ли цифровые сигналы в поиск дубликатов.
+            auto_rename_analog_duplicates (bool): если True, автоматически переименовывает дубликаты аналоговых сигналов.
+            output_csv_rename_log_path (str): путь для сохранения CSV-журнала действий по переименованию.
         """
         files_with_duplicates_overall = [] # Для CSV со списком файлов с дубликатами
         error_log_scan = [] 
@@ -1344,10 +1344,10 @@ class ProcessingOscillograms():
                 if file_name.lower().endswith(".cfg"):
                     total_cfg_files += 1
         
-        print(f"Total .cfg files to scan: {total_cfg_files}")
+        print(f"Всего файлов .cfg для сканирования: {total_cfg_files}")
         encodings_to_try = ['utf-8', 'windows-1251', 'cp866']
 
-        with tqdm(total=total_cfg_files, desc="Scanning CFG for duplicates") as pbar:
+        with tqdm(total=total_cfg_files, desc="Сканирование CFG на наличие дубликатов") as pbar:
             for root, _, files_in_dir in os.walk(source_dir):
                 for file_name in files_in_dir:
                     if not file_name.lower().endswith(".cfg"):
@@ -1369,7 +1369,7 @@ class ProcessingOscillograms():
                             continue
                     
                     if file_content_lines is None:
-                        error_log_scan.append(f"Could not read file {file_path} with any attempted encodings.")
+                        error_log_scan.append(f"Не удалось прочитать файл {file_path} ни с одной из предпринятых кодировок.")
                         continue
 
                     # 1. Анализ на дубликаты (как и раньше)
@@ -1411,9 +1411,9 @@ class ProcessingOscillograms():
                                     f_write.writelines(modified_lines)
                                 all_renaming_actions_log.extend(current_file_rename_log)
                             except IOError as e:
-                                error_log_scan.append(f"Error writing changes to {file_path}: {e}")
+                                error_log_scan.append(f"Ошибка записи изменений в {file_path}: {e}")
                         elif current_file_rename_log: # Если были ошибки внутри переименования, но флаг false
-                             error_log_scan.append(f"Rename function reported issues for {file_path} but no changes made. Log: {current_file_rename_log}")
+                             error_log_scan.append(f"Функция переименования сообщила о проблемах для {file_path}, но никаких изменений не было внесено. Журнал: {current_file_rename_log}")
 
 
         # Сохранение CSV со списком файлов, где найдены дубликаты
@@ -1425,9 +1425,9 @@ class ProcessingOscillograms():
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 writer.writeheader()
                 writer.writerows(files_with_duplicates_overall)
-            print(f"Successfully saved list of files with duplicate signal names to: {output_csv_duplicates_path}")
+            print(f"Список файлов с дублирующимися именами сигналов успешно сохранен в: {output_csv_duplicates_path}")
         except IOError as e:
-            error_log_scan.append(f"Error writing duplicates CSV to {output_csv_duplicates_path}: {e}")
+            error_log_scan.append(f"Ошибка записи CSV-файла с дубликатами в {output_csv_duplicates_path}: {e}")
 
         # Сохранение CSV с логом переименований (если были)
         if auto_rename_analog_duplicates and all_renaming_actions_log:
@@ -1448,11 +1448,11 @@ class ProcessingOscillograms():
                     writer_rename = csv.DictWriter(csvfile_rename, fieldnames=fieldnames_rename)
                     writer_rename.writeheader()
                     writer_rename.writerows(all_renaming_actions_log)
-                print(f"Successfully saved renaming log to: {rename_log_full_path}")
+                print(f"Журнал переименований успешно сохранен в: {rename_log_full_path}")
             except IOError as e:
-                error_log_scan.append(f"Error writing rename log CSV to {rename_log_full_path}: {e}")
+                error_log_scan.append(f"Ошибка записи CSV-файла журнала переименований в {rename_log_full_path}: {e}")
         elif auto_rename_analog_duplicates:
-             print("Auto-renaming was enabled, but no signals were renamed.")
+             print("Автоматическое переименование было включено, но ни один сигнал не был переименован.")
 
 
         if error_log_scan:
@@ -1461,6 +1461,6 @@ class ProcessingOscillograms():
                 with open(error_log_path, 'w', encoding='utf-8') as err_file:
                     for err in error_log_scan:
                         err_file.write(f"{err}\n")
-                print(f"Scan/rename errors logged to: {error_log_path}")
+                print(f"Ошибки сканирования/переименования записаны в: {error_log_path}")
             except IOError as e:
-                 print(f"Could not write error log to {error_log_path}: {e}")
+                 print(f"Не удалось записать журнал ошибок в {error_log_path}: {e}")

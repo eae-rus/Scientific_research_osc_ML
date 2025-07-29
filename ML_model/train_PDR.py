@@ -61,13 +61,13 @@ class FeaturesForDataset():
 class CustomDataset(Dataset):
 
     def __init__(self, name_target: str, dt: pd.DataFrame(), indexes: pd.DataFrame(), frame_size: int, target_position: int = None):
-        """ Initialize the dataset.
+        """ Инициализация набора данных.
 
         Args:
-            dt (pd.DataFrame()): The DataFrame containing the data
-            indexes (pd.DataFrame()): _description_
-            frame_size (int): the size of the selection window
-            target_position (int, optional): The position from which the target value is selected. 0 - means that it is taken from the first point. frame_size-1 - means that it is taken from the last point.
+            dt (pd.DataFrame()): DataFrame, содержащий данные
+            indexes (pd.DataFrame()): _описание_
+            frame_size (int): размер окна выбора
+            target_position (int, optional): Позиция, из которой выбирается целевое значение. 0 - означает, что оно берется из первой точки. frame_size-1 - означает, что оно берется из последней точки.
         """
         self.data = dt
         self.name_target = name_target
@@ -126,9 +126,9 @@ class MultiFileRandomPointSampler(torch.utils.data.Sampler):
         self.num_samples_per_file = num_samples_per_file
 
         if not self.all_files:
-            raise ValueError("List of files cannot be empty.")
+            raise ValueError("Список файлов не может быть пустым.")
         if self.num_files_per_batch <= 0 or self.num_samples_per_file <= 0:
-            raise ValueError("num_files_per_batch and num_samples_per_file must be positive.")
+            raise ValueError("num_files_per_batch и num_samples_per_file должны быть положительными.")
 
     def __len__(self):
         # Длина сэмплера - это количество батчей за эпоху
@@ -166,7 +166,7 @@ class MultiFileRandomPointSampler(torch.utils.data.Sampler):
             if not batch_indices:
                 # Если по какой-то причине батч пустой, пропускаем
                 # (например, если все выбранные файлы оказались пустыми, что маловероятно)
-                print("Warning: Generated an empty batch. Skipping.")
+                print("Предупреждение: Сгенерирован пустой батч. Пропускаем.")
                 continue
 
             # Перемешиваем индексы внутри итогового батча (опционально, но может быть полезно)
@@ -188,7 +188,7 @@ class MultiLabelFocalLoss(torch.nn.Module):
 
 def seed_everything(seed: int = 42):
     """
-    This function is used to maintain repeatability
+    Эта функция используется для поддержания повторяемости
     """
     random.seed(seed)
     os.environ["PYTHONHASHSEED"] = str(seed)
@@ -289,12 +289,12 @@ def save_stats_to_json(filename, epoch, batch_count, epoch_duration, train_loss,
         json.dump(data, file, indent=4)
 
 def compute_loss(criterion, outputs, targets):
-    # Подгружаем таргеты и предсказания в одинаковой форме:
+    # Загружаем цели и прогнозы в одинаковой форме:
     if outputs.dim() == targets.dim() + 1:
-        # output [B,1], targets [B] → подтягиваем targets
+        # выход [B,1], цели [B] -> подтягиваем цели
         targets = targets.unsqueeze(1)
     elif targets.dim() == outputs.dim() + 1:
-        # редкий случай, наоборот — подтягиваем output
+        # редкий случай, наоборот — подтягиваем выход
         outputs = outputs.unsqueeze(1)
 
     return criterion(outputs, targets)
@@ -318,7 +318,7 @@ if __name__ == "__main__":
     # device = "cpu"
 
     # file_csv = "ML_model/dataset_cut_out_PDR_norm_v2.csv"
-    # Create the folder if it doesn't exist
+    # Создаем папку, если она не существует
     folder_path = "/ML_model"
     os.makedirs(folder_path, exist_ok=True)
     #file_with_target_frame_train = "ML_model/dataset_cut_out_PDR_norm_v2.csv"
@@ -334,7 +334,7 @@ if __name__ == "__main__":
         # Проверим, есть ли NaN в интересующих столбцах
         nan_check = dt_train[FeaturesForDataset.FEATURES].isna().sum()
         # Выведем только те столбцы, где есть хотя бы один NaN
-        print("NaN values found in:")
+        print("Найдены значения NaN в:")
         print(nan_check[nan_check > 0])
         
         
@@ -346,7 +346,7 @@ if __name__ == "__main__":
         # TODO: Написать если нужно будет.
 
     # --- Обновленная ЛОГИКА ПОДГОТОВКИ ИНДЕКСОВ ДЛЯ ОБУЧЕНИЯ ---
-    print("Preparing train indices grouped by file (valid start points only)...")
+    print("Подготовка индексов для обучения, сгруппированных по файлам (только допустимые начальные точки)...")
     file_to_valid_start_indices_map_train = {}
     grouped_train = dt_train.groupby('file_name')
     for file_name, group in grouped_train:
@@ -361,13 +361,13 @@ if __name__ == "__main__":
     # Удаляем файлы, у которых не оказалось валидных стартовых точек
     all_train_files = [f for f in all_train_files if file_to_valid_start_indices_map_train[f]] 
 
-    print(f"Total train files with valid start points: {len(all_train_files)}")
+    print(f"Всего файлов для обучения с допустимыми начальными точками: {len(all_train_files)}")
     if not all_train_files:
-        raise ValueError("No training files have enough data points for the given FRAME_SIZE.")
+        raise ValueError("Ни в одном из обучающих файлов недостаточно точек данных для заданного FRAME_SIZE.")
     # --- КОНЕЦ ЛОГИКИ ПОДГОТОВКИ ИНДЕКСОВ ДЛЯ ОБУЧЕНИЯ ---
     
     # ---> ПОДГОТОВКА ИНДЕКСОВ ДЛЯ ТЕСТА <---
-    print("Preparing test indices (valid start points only)...")
+    print("Подготовка индексов для теста (только допустимые начальные точки)...")
     # Находим последний возможный стартовый индекс для всего тестового датафрейма
     last_possible_start_test = dt_test.index[-1] - FRAME_SIZE + 1
     # Отбираем только те индексы dt_test, которые могут быть началом окна
@@ -378,9 +378,9 @@ if __name__ == "__main__":
     test_indexes_df = pd.DataFrame(index=valid_start_indices_test) # Индексы этого DF - это то, что нам нужно
 
     if valid_start_indices_test.empty:
-        raise ValueError("Test dataset has no valid start points for the given FRAME_SIZE.")
+        raise ValueError("В тестовом наборе данных нет допустимых начальных точек для заданного FRAME_SIZE.")
         
-    print(f"Total valid start points in test data: {len(test_indexes_df)}")
+    print(f"Всего допустимых начальных точек в тестовых данных: {len(test_indexes_df)}")
     # ---> КОНЕЦ ПОДГОТОВКИ ИНДЕКСОВ ДЛЯ ТЕСТА <---
 
     # В CustomDataset передаем ПОЛНЫЙ DataFrame
@@ -406,13 +406,13 @@ if __name__ == "__main__":
     # filename_model = "ML_model/trained_models/model_PDR_MLP_v2_ep6_vbl0.0072_train12.9364.pt"
     # model = torch.load(filename_model)
     # start_epoch = int(filename_model.split("ep")[1].split("_")[0])
-    # model.eval()  # Set the model to evaluation mode
+    # model.eval()  # Установка модели в режим оценки
 
     # Расчет pos_weight (делать один раз перед циклом обучения)
     neg = (dt_train[FeaturesForDataset.TARGET_train[0]] == 0).sum()
     pos = (dt_train[FeaturesForDataset.TARGET_train[0]] == 1).sum()
     pos_weight_value = neg / pos if pos > 0 else 1.0 # Защита от деления на ноль
-    print("Отношнеие 0 к 1 = ", pos_weight_value)
+    print("Отношение 0 к 1 = ", pos_weight_value)
     pos_weight_tensor = torch.tensor([pos_weight_value], device=device) # Создаем тензор
     
     criterion = MultiLabelFocalLoss(gamma=3) # Пока это лучшая метрика. Можно будет поиграться с гамма.
@@ -480,9 +480,9 @@ if __name__ == "__main__":
                 loss_sum += loss.item()
                 all_losses.append(loss.item())
                 message = (
-                    f"Epoch {epoch+1}/{EPOCHS} "
+                    f"Эпоха {epoch+1}/{EPOCHS} "
                     f"LR={current_lr:.3e} "
-                    f"Train loss: {1000*(loss_sum / (i + 1)):.4f} "
+                    f"Потери при обучении: {1000*(loss_sum / (i + 1)):.4f} "
                 )
                 t.set_postfix_str(s=message)
                 optimizer.zero_grad()
@@ -531,7 +531,7 @@ if __name__ == "__main__":
                 f1.append(f1_score(true_binary, pred_binary, average='binary', zero_division=0))
 
             except StopIteration:
-                print("Warning: Test dataloader is empty or smaller than batch size. Skipping validation.")
+                print("Предупреждение: Тестовый загрузчик данных пуст или меньше размера батча. Пропускаем валидацию.")
                 test_loss = -1.0 # Индикация ошибки
 
             # Рассчитываем средние метрики (по одному батчу)
@@ -555,10 +555,10 @@ if __name__ == "__main__":
             scheduler.step(test_loss if test_loss >= 0 else float('inf')) # Используем test_loss батча
 
             # Сообщение для tqdm (оставляем старое, т.к. train_loss считается по эпохе)
-            t.set_postfix_str(f"Batch: {batch_count}, Train loss: {loss_sum / len(train_dataloader):.4f}, Val Batch loss: {test_loss:.4f}, LR: {current_lr:.4e}")
+            t.set_postfix_str(f"Батч: {batch_count}, Потери при обучении: {loss_sum / len(train_dataloader):.4f}, Потери на валидационном батче: {test_loss:.4f}, LR: {current_lr:.4e}")
             # Вывод метрик, рассчитанных по батчу
             message_f1_ba = (
-                            f"Val Batch loss: {1000*test_loss:.4f} "
+                            f"Потери на валидационном батче: {1000*test_loss:.4f} "
                             f"Val F1/BA: {', '.join([f'{signal_name}: {f1_score:.4f}/{ba_score:.4f}' for signal_name, f1_score, ba_score in zip(FeaturesForDataset.TARGET_test, f1, ba)])} "
                             )
             print(message_f1_ba)
