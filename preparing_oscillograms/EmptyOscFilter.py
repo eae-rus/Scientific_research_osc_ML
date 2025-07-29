@@ -3,7 +3,6 @@ import sys
 import pandas as pd
 import numpy as np
 from tqdm.auto import tqdm
-import comtrade # Предполагается, что эта библиотека установлена и работает
 from typing import Dict, Any, List, Optional, Tuple
 from enum import Enum
 

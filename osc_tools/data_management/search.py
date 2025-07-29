@@ -7,7 +7,6 @@ import py7zr
 import zipfile
 import aspose.zip as az
 from tqdm import tqdm
-import comtrade
 
 from osc_tools.core.constants import TYPE_OSC
 

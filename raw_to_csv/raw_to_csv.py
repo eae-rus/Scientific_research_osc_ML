@@ -3,7 +3,6 @@ import numpy as np
 import os
 import sys
 import json
-import comtrade # comtrade 0.1.2
 from tqdm import tqdm
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))

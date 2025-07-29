@@ -78,7 +78,9 @@ class CreateNormOsc:
         c = 0
         for file in tqdm(self.osc_files):
             try:
-                osc_df = Comtrade.load_as_dataframe(self.osc_path + file)
+                rec = Comtrade()
+                rec.load(self.osc_path + file)
+                osc_df = rec.to_dataframe()
             except Exception as ex:
                 unread.append((file, ex))
                 continue

@@ -17,8 +17,6 @@ class TYPE_OSC(Enum):
 
 
 class Features:
-    # TODO: подумать о том, чтобы сделать отдельными параметрами для более удобного отслеживания, так как некоторые параметры были временны. 
-    
     # Индексные сопоставления из model.py
     CURRENT_INDICES = {"IA": 0, "IB": 1, "IC": 2, "IN": -1}
     VOLTAGE_PHAZE_BB_INDICES = {"UA BB" : 3, "UB BB" : 4, "UC BB" : 5, "UN BB" : 6}
@@ -27,16 +25,13 @@ class Features:
     VOLTAGE_LINE_CL_INDICES = {"UAB CL" : 11,"UBC CL": 12,"UCA CL": 13}
 
     # Списки имен из train.py и marking_up_oscillograms.py
-    # TODO: Подумать на будущее, надо будет как-то аккуратнее это использовать. Данное иземенение вроде и хорошее, но
-    # могут быть несостыковки по требуемому перечню
     CURRENT = ["IA", "IB", "IC"]
     VOLTAGE_PHAZE_BB = ["UA BB", "UB BB", "UC BB"]
     VOLTAGE_PHAZE_CL = ["UA CL", "UB CL", "UC CL"]
     VOLTAGE_ZERO_SEQ = ["UN BB", "UN CL"]
-    VOLTAGE_LINE_BB = ["UAB BB", "UBC BB", "UCA BB"] # пока не используется
     VOLTAGE_LINE_CL = ["UAB CL", "UBC CL", "UCA CL"]
 
-    VOLTAGE = VOLTAGE_PHAZE_BB + VOLTAGE_PHAZE_CL + VOLTAGE_ZERO_SEQ + VOLTAGE_LINE_CL # пока без VOLTAGE_LINE_BB, так как не использовался.
+    VOLTAGE = VOLTAGE_PHAZE_BB + VOLTAGE_PHAZE_CL + VOLTAGE_ZERO_SEQ + VOLTAGE_LINE_CL
 
     ALL = CURRENT + VOLTAGE
 
