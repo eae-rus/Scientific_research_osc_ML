@@ -574,8 +574,11 @@ class SearchOscillograms():
                         if not is_hashes:
                             dat_file = file[:-4] + self.DAT_EXTENSION
                             dat_path = os.path.join(root, dat_file)
-                            with open(dat_path, 'rb') as f:
-                                file_name = hashlib.md5(f.read()).hexdigest()
+                            try:
+                                with open(dat_path, 'rb') as f:
+                                    file_name = hashlib.md5(f.read()).hexdigest()
+                            except FileNotFoundError:
+                                continue  # пропустить, если .dat файл не найден
 
                         if file_name in osc_terminal_dict:
                             cfg_file_name = file
@@ -606,4 +609,4 @@ if __name__ == '__main__':
     output_json_path = "Путь к итоговому файлу"
     # список искомых терминалов
     terminals_to_search = [1, 2, 3] # список искомых терминалов
-    f.find_terminal_hashes_from_json(input_json_path, terminals_to_search, output_json_path)
+    # f.find_terminal_hashes_from_json(input_json_path, terminals_to_search, output_json_path)
