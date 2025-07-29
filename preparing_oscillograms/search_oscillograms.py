@@ -564,7 +564,8 @@ class SearchOscillograms():
             source_dir (str): исходный каталог.
             dest_dir (str): каталог для сохранения скопированных файлов.
             terminal_list (list): список имен терминалов.
-            osc_name_dict (dict): словарь для хранения терминалов и хеш-имен осциллограмм.
+            terminal_oscillogram_names (dict): словарь для хранения терминалов и хеш-имен осциллограмм.
+            is_hashes (bool): использовать ли хеш-имена.
         Returns:
             None
         """
@@ -619,4 +620,3 @@ if __name__ == '__main__':
     # список искомых терминалов
     terminals_to_search = [1, 2, 3] # список искомых терминалов
     f.find_terminal_hashes_from_json(input_json_path, terminals_to_search, output_json_path)
-
