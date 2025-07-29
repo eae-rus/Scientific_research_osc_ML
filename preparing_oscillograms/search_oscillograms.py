@@ -10,29 +10,29 @@ from tqdm import tqdm
 from enum import Enum
 import comtrade
 
-# TODO: add file logging
+# TODO: добавить логирование в файл
 
-# Create an ".exe" file: 
-# 1) on the command line, I enter "pip install auto-py-to-exe"
-# 2) then on the command line "python -m auto_py_to_exe"
+# Создание файла ".exe":
+# 1) в командной строке ввести "pip install auto-py-to-exe"
+# 2) далее в командной строке "python -m auto_py_to_exe"
 
 class TYPE_OSC(Enum):
         # TODO: написать полноценные описание типов
-        COMTRADE_CFG_DAT = "Comtrade type files consisting of two files .cfg and .dat"
-        COMTRADE_CFF = "Comtrade type files consisting of a single .cff file"
-        BRESLER = "File type (.brs) typical for the terminal manufacturer NPP Bresler LLC, official link: https://www.bresler.ru /"
-        BLACK_BOX = "black_box (.bb)" #??
-        RES_3 = "File type (.sg2) typical for the terminal manufacturer Prosoft-Systems LLC, official link : https://prosoftsystems.ru / and a link to the devices https://prosoftsystems.ru/catalog/show/cifrovoj--registrator-jelektricheskih-sobytij-pjes3 "
-        EKRA = "File type (.dfr) typical for the terminal manufacturer NPP EKRA LLC, official link: https://ekra.ru /"
-        PARMA = "File type (.do) typical for the terminal manufacturer PARMA LLC, official link: https://parma.spb.ru /"
-        PARMA_TO = "File type (.to) typical for the manufacturer of terminals LLC PARMA, this type is intended for registration of long-term processes, official link: https://parma.spb.ru /"
-        NEVA = "File type (.os1 and similar) typical for the terminal manufacturer NPF ENERGOSOYUZ, official link: https://www.energosoyuz.spb.ru/ru and a link to the devices https://www.energosoyuz.spb.ru/ru/content/registrator-avariynyh-sobytiy-neva-ras "
-        OSC = "File format (.osc) - the contact binding has not yet been fully clarified"
+        COMTRADE_CFG_DAT = "Файлы типа Comtrade, состоящие из двух файлов .cfg и .dat"
+        COMTRADE_CFF = "Файлы типа Comtrade, состоящие из одного файла .cff"
+        BRESLER = "Тип файла (.brs), характерный для производителя терминалов ООО НПП 'Бреслер', официальная ссылка: https://www.bresler.ru/"
+        BLACK_BOX = "черный ящик (.bb)" #??
+        RES_3 = "Тип файла (.sg2), характерный для производителя терминалов ООО 'Прософт-Системы', официальная ссылка: https://prosoftsystems.ru/ и ссылка на устройства https://prosoftsystems.ru/catalog/show/cifrovoj--registrator-jelektricheskih-sobytij-pjes3"
+        EKRA = "Тип файла (.dfr), характерный для производителя терминалов ООО НПП 'ЭКРА', официальная ссылка: https://ekra.ru/"
+        PARMA = "Тип файла (.do), характерный для производителя терминалов ООО 'ПАРМА', официальная ссылка: https://parma.spb.ru/"
+        PARMA_TO = "Тип файла (.to), характерный для производителя терминалов ООО 'ПАРМА', этот тип предназначен для регистрации длительных процессов, официальная ссылка: https://parma.spb.ru/"
+        NEVA = "Тип файла (.os1 и аналогичные), характерный для производителя терминалов НПФ 'ЭНЕРГОСОЮЗ', официальная ссылка: https://www.energosoyuz.spb.ru/ru и ссылка на устройства https://www.energosoyuz.spb.ru/ru/content/registrator-avariynyh-sobytiy-neva-ras"
+        OSC = "Формат файла (.osc) - контактная привязка еще не до конца выяснена"
 
 class SearchOscillograms():
     """
-    Library for primary search of waveforms in folders and primary processing.
-    Supports file formats: 'cfg'+'dat', 'cff', 'brs', 'dfr', 'osc', 'os2' and analogues, 'bb', 'sg2', 'do' and analogues, 'to'.
+    Библиотека для первичного поиска осциллограмм в папках и первичной обработки.
+    Поддерживает форматы файлов: 'cfg'+'dat', 'cff', 'brs', 'dfr', 'osc', 'os2' и аналоги, 'bb', 'sg2', 'do' и аналоги, 'to'.
     """
 
     def __init__(self):
@@ -44,8 +44,8 @@ class SearchOscillograms():
         self.NEVA_EXTENSION = '.os'
         self.BLACK_BOX_EXTENSION = '.bb'
         self.RES_3_EXTENSION = '.sg2'
-        self.PARMA_O_EXTENSION, self.PARMA_ZERO_EXTENSION = '.do', '.d0' # in reality, they are DO, D01 and D02...
-        self.PARMA_TO_EXTENSION, self.PARMA_T_ZERO_EXTENSION = '.to', '.t0' # it opens with the TO viewer, probably the T01 files are superfluous...
+        self.PARMA_O_EXTENSION, self.PARMA_ZERO_EXTENSION = '.do', '.d0' # в реальности это DO, D01 и D02...
+        self.PARMA_TO_EXTENSION, self.PARMA_T_ZERO_EXTENSION = '.to', '.t0' # открывается просмотрщиком ТО, вероятно, файлы T01 лишние...
         self.ARCHIVE_7Z_EXTENSION, self.ARCHIVE_ZIP_EXTENSION, self.ARCHIVE_RAR_EXTENSION = '.7z', '.zip', '.rar'
         self.WORD_1_EXTENSION, self.WORD_2_EXTENSION, self.WORD_3_EXTENSION, self.PDF_EXTENSION = '.doc', '.docx', '.dot', '.pdf'
 
@@ -56,59 +56,59 @@ class SearchOscillograms():
                             _new_copied_hashes: dict = {}, _first_run: bool = True, _path_temp = None, 
                             progress_callback = None, stop_processing_fn = None, is_write_names = None, **kwargs) -> int:
         """
-        Copies oscillogram files from the source directory to the target directory, keeping track of the copied files.
+        Копирует файлы осциллограмм из исходного каталога в целевой, отслеживая скопированные файлы.
     
         Args:
-            source_dir (str): the path to the source directory.
-            dest_dir (str): the path to the target directory.
-            copied_hashes (dict): A hash table for tracking copied files (by default, an empty dictionary).
-            preserve_dir_structure (bool): do I save the directory structure in the target directory?
-            use_hashes (bool): do I use hash sums to verify the uniqueness of files?
-            types_to_copy (list[TYPE_OSC], optional): A list of oscillogram types (enum TYPE_OSC) to copy.
-                                                     If None or empty, all types will be copied. Defaults to None.
+            source_dir (str): путь к исходному каталогу.
+            dest_dir (str): путь к целевому каталогу.
+            copied_hashes (dict): хеш-таблица для отслеживания скопированных файлов (по умолчанию пустой словарь).
+            preserve_dir_structure (bool): сохранять ли структуру каталогов в целевом каталоге?
+            use_hashes (bool): использовать ли хеш-суммы для проверки уникальности файлов?
+            types_to_copy (list[TYPE_OSC], optional): список типов осциллограмм (enum TYPE_OSC) для копирования.
+                                                     Если None или пуст, будут скопированы все типы. По умолчанию None.
             
-            local variables
-            _new_copied_hashes (dict): Dictionary of hashes of newly copied files.
-            _first_run (bool): Flag indicating the first launch.
-            _path_temp (str): Temporary path.
+            локальные переменные
+            _new_copied_hashes (dict): словарь хешей вновь скопированных файлов.
+            _first_run (bool): флаг, указывающий на первый запуск.
+            _path_temp (str): временный путь.
             
-            External variables
-            progress_callback (callback): Called when the progress callback (For external reading by the program)
-            stop_processing_fn (callback): Called when the program stops processing 
-            is_write_names_fn (bool): Flag indicating whether to write names of processed files.
+            Внешние переменные
+            progress_callback (callback): вызывается при обратном вызове прогресса (для внешнего чтения программой)
+            stop_processing_fn (callback): вызывается, когда программа прекращает обработку
+            is_write_names_fn (bool): флаг, указывающий, нужно ли записывать имена обработанных файлов.
         Returns:
-            Returns the number of saved oscillograms.
-            At the same time, new files are created in the target directory:
-            - the "_hash_table" file is updated - a hash table for tracking copied files
-            - a new file "_new_hash_table" is being created
+            Возвращает количество сохраненных осциллограмм.
+            При этом в целевом каталоге создаются новые файлы:
+            - обновляется файл "_hash_table" - хеш-таблица для отслеживания скопированных файлов
+            - создается новый файл "_new_hash_table"
         """
         count_new_files = 0
         actual_types_to_copy = list(TYPE_OSC) if not types_to_copy else types_to_copy
          
         if _first_run:
-            # TODO: rewrite the functions into one so as not to repeat
+            # TODO: переписать функции в одну, чтобы не повторяться
             if progress_callback:
-                progress_callback("Starting the process of counting total files in the source directory...")
-            print("We count the total number of files in the source directory...")
+                progress_callback("Начинается процесс подсчета общего количества файлов в исходном каталоге...")
+            print("Подсчитываем общее количество файлов в исходном каталоге...")
             total_files = sum([len(files) for r, d, files in os.walk(source_dir)])
-            print(f"Total number of files: {total_files}, starting processing...")
+            print(f"Общее количество файлов: {total_files}, начинаем обработку...")
             if progress_callback:
-                progress_callback(f"Total number of files: {total_files}, starting processing...")
-            with tqdm(total=total_files, desc="Copying files") as pbar:
+                progress_callback(f"Общее количество файлов: {total_files}, начинаем обработку...")
+            with tqdm(total=total_files, desc="Копирование файлов") as pbar:
                 for root, dirs, files in os.walk(source_dir):
                     if stop_processing_fn and stop_processing_fn():
-                        progress_callback("The process was interrupted by the user.")
+                        progress_callback("Процесс был прерван пользователем.")
                         break
                     for file in files:
                         if stop_processing_fn and stop_processing_fn():
-                            progress_callback("The process was interrupted by the user.")
+                            progress_callback("Процесс был прерван пользователем.")
                             break
                         
                         pbar.update(1)
                         file_lower = file.lower()
                         if progress_callback and is_write_names:
                             if is_write_names:
-                                progress_callback(f"Processing file: {root} / {file}")
+                                progress_callback(f"Обработка файла: {root} / {file}")
                             else:
                                 progress_callback()
                         if TYPE_OSC.COMTRADE_CFG_DAT in actual_types_to_copy and file_lower.endswith(self.CFG_EXTENSION):
@@ -136,14 +136,14 @@ class SearchOscillograms():
                                                                   preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                                   type_osc=TYPE_OSC.RES_3)
     
-                        elif TYPE_OSC.OSC in actual_types_to_copy and file_lower.endswith(self.OSC_EXTENSION):  # I have not yet found out who the osc format is typical for
+                        elif TYPE_OSC.OSC in actual_types_to_copy and file_lower.endswith(self.OSC_EXTENSION):  # Я пока не выяснил, для кого типичен формат osc
                             count_new_files +=self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                                  preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                                  type_osc=TYPE_OSC.OSC)
     
                         elif TYPE_OSC.NEVA in actual_types_to_copy and self.NEVA_EXTENSION in file_lower and not file_lower.endswith('.xml'):
-                            # TODO: The search needs to be finalized. files do not always have the number 1 at the end (.os1). 
-                            # It may be necessary to adjust the search, as it is not optimal right now.
+                            # TODO: Поиск нужно доработать. файлы не всегда имеют цифру 1 в конце (.os1).
+                            # Возможно, потребуется скорректировать поиск, так как сейчас он не оптимален.
                             count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                                   preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                                   type_osc=TYPE_OSC.NEVA)
@@ -162,7 +162,7 @@ class SearchOscillograms():
                               not (file_lower.endswith(self.WORD_1_EXTENSION) or file_lower.endswith(self.WORD_2_EXTENSION) or file_lower.endswith(self.WORD_3_EXTENSION) or 
                                    file_lower.endswith(self.PDF_EXTENSION) or ".doc" in file_lower) and
                               (self.PARMA_O_EXTENSION in file_lower or self.PARMA_ZERO_EXTENSION in file_lower)):  # Если файл имеет расширение .do, d0, ?d1? (характерно для специальных от ПАРМЫ)
-                            # TODO: The search needs to be finalized. It may be necessary to adjust the search, as it is not optimal right now.
+                            # TODO: Поиск нужно доработать. Возможно, потребуется скорректировать поиск, так как сейчас он не оптимален.
                             count_new_files += self._process_file(file=file, root=root, source_dir=source_dir, dest_dir=dest_dir, copied_hashes=copied_hashes, 
                                                                   preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes,
                                                                   type_osc=TYPE_OSC.PARMA)
@@ -176,21 +176,21 @@ class SearchOscillograms():
                                                                           progress_callback=progress_callback, stop_processing_fn=stop_processing_fn, is_write_names=is_write_names)
     
             
-            print(f"The number of newly copied files: {count_new_files}") 
+            print(f"Количество вновь скопированных файлов: {count_new_files}")
             if progress_callback:
-                progress_callback(f"The number of newly copied files: {count_new_files}")
-            # Saving hash_table and new_hash_table JSON files                      
+                progress_callback(f"Количество вновь скопированных файлов: {count_new_files}")
+            # Сохранение JSON-файлов hash_table и new_hash_table
             hash_table_file_path = os.path.join(dest_dir, '_hash_table.json')
             if use_hashes: 
                 try:
                     with open(hash_table_file_path, 'w') as file:
-                        json.dump(copied_hashes, file) # Saving the file
+                        json.dump(copied_hashes, file) # Сохранение файла
                     if progress_callback:
-                        progress_callback("Successfully saved _hash_table.json")
+                        progress_callback("Успешно сохранено _hash_table.json")
                 except:
                     print("Failed to save hash_table to JSON file")
                     if progress_callback:
-                        progress_callback("Failed to save _hash_table.json")
+                        progress_callback("Не удалось сохранить _hash_table.json")
     
                 data_now = datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S")
                 new_copied_hashes_file_path = os.path.join(dest_dir, f'new_hash_table_{data_now}.json')
@@ -198,22 +198,22 @@ class SearchOscillograms():
                     with open(new_copied_hashes_file_path, 'w') as file:
                         json.dump(_new_copied_hashes, file)
                         if progress_callback:
-                            progress_callback(f"Successfully saved new hash table as {new_copied_hashes_file_path}")
+                            progress_callback(f"Успешно сохранена новая хеш-таблица как {new_copied_hashes_file_path}")
                 except:
-                    print("Failed to save new_hash_table to JSON file")
+                    print("Не удалось сохранить new_hash_table в JSON-файл")
                     if progress_callback:
-                        progress_callback("Failed to save new_hash_table JSON file")
+                        progress_callback("Не удалось сохранить JSON-файл new_hash_table")
             return count_new_files
         else:
-            # A copy of the work inside the archives
-            # TODO: rewrite the functions into one so as not to repeat
+            # Копия работы внутри архивов
+            # TODO: переписать функции в одну, чтобы не повторяться
             for root, dirs, files in os.walk(source_dir):
                 if stop_processing_fn and stop_processing_fn():
-                    progress_callback("The process was interrupted by the user.")
+                    progress_callback("Процесс был прерван пользователем.")
                     break
                 for file in files:
                     if stop_processing_fn and stop_processing_fn():
-                        progress_callback("The process was interrupted by the user.")
+                        progress_callback("Процесс был прерван пользователем.")
                         break
                     file_lower = file.lower()
                     if TYPE_OSC.COMTRADE_CFG_DAT in actual_types_to_copy and file_lower.endswith(self.CFG_EXTENSION):
@@ -281,24 +281,24 @@ class SearchOscillograms():
 
     def _process_file(self, file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
                      preserve_dir_structure: bool = True, use_hashes: bool = True, _new_copied_hashes: dict = {},
-                     new_folder: str = "New folder", type_osc: TYPE_OSC = TYPE_OSC.BRESLER) -> int:
+                     new_folder: str = "Новая папка", type_osc: TYPE_OSC = TYPE_OSC.BRESLER) -> int:
         """
-        Processes a single file, copying it to the destination directory and updating the copied_hashes dictionary.
+        Обрабатывает один файл, копируя его в каталог назначения и обновляя словарь copied_hashes.
 
         Args:
-            file (str): The name of the file to process.
-            root (str): The root directory of the file.
-            dest_dir (str): The destination directory for the copied files.
-            copied_hashes (dict): The dictionary of copied file hashes.
-            preserve_dir_structure (bool): Whether to preserve the directory structure.
-            use_hashes (bool): Whether to use file hashes for comparison.
-            new_folder (str): the name of the new folder where the file will be saved
-            type_osc (TYPE_OSC): The type of osc to process.
+            file (str): имя обрабатываемого файла.
+            root (str): корневой каталог файла.
+            dest_dir (str): каталог назначения для скопированных файлов.
+            copied_hashes (dict): словарь хешей скопированных файлов.
+            preserve_dir_structure (bool): сохранять ли структуру каталогов.
+            use_hashes (bool): использовать ли хеши файлов для сравнения.
+            new_folder (str): имя новой папки, в которую будет сохранен файл
+            type_osc (TYPE_OSC): тип обрабатываемой осциллограммы.
 
-            local variables
-            _new_copied_hashes (dict): The dictionary of new copied file hashes.
+            локальные переменные
+            _new_copied_hashes (dict): словарь хешей новых скопированных файлов.
         Returns:
-            int: The number of new files copied.
+            int: количество скопированных новых файлов.
         """
         match type_osc:
             case TYPE_OSC.COMTRADE_CFG_DAT:
@@ -306,47 +306,47 @@ class SearchOscillograms():
                                                    preserve_dir_structure=preserve_dir_structure, use_hashes=use_hashes, _new_copied_hashes=_new_copied_hashes)
             case TYPE_OSC.COMTRADE_CFF:
                 file = file[:-4] + self.CFF_EXTENSION
-                if new_folder == "New folder": new_folder = "COMTRADE_CFF"
+                if new_folder == "Новая папка": new_folder = "COMTRADE_CFF"
             case TYPE_OSC.BRESLER:
                 file = file[:-4] + self.BRS_EXTENSION
-                if new_folder == "New folder": new_folder = "BRESLER"
+                if new_folder == "Новая папка": new_folder = "BRESLER"
             case TYPE_OSC.EKRA:
                 file = file[:-4] + self.EKRA_EXTENSION
-                if new_folder == "New folder": new_folder = "EKRA"
+                if new_folder == "Новая папка": new_folder = "EKRA"
             case TYPE_OSC.BLACK_BOX:
                 file = file[:-3] + self.BLACK_BOX_EXTENSION
-                if new_folder == "New folder": new_folder = "BLACK_BOX"
+                if new_folder == "Новая папка": new_folder = "BLACK_BOX"
             case TYPE_OSC.RES_3:
                 file = file[:-4] + self.RES_3_EXTENSION
-                if new_folder == "New folder": new_folder = "RES_3"
+                if new_folder == "Новая папка": new_folder = "RES_3"
             case TYPE_OSC.OSC:
                 file = file[:-4] + self.OSC_EXTENSION
-                if new_folder == "New folder": new_folder = "OSC"
+                if new_folder == "Новая папка": new_folder = "OSC"
             case TYPE_OSC.PARMA:
-                # The file type does not change, because it has different variants
-                if new_folder == "New folder": new_folder = "PARMA"
+                # Тип файла не меняется, так как у него есть разные варианты
+                if new_folder == "Новая папка": new_folder = "PARMA"
             case TYPE_OSC.PARMA_TO:
-                # The file type does not change, because it has different variants
-                if new_folder == "New folder": new_folder = "PARMA_TO"
+                # Тип файла не меняется, так как у него есть разные варианты
+                if new_folder == "Новая папка": new_folder = "PARMA_TO"
             case TYPE_OSC.NEVA:
-                # The file type does not change, because it has different variants
-                if new_folder == "New folder": new_folder = "NEVA"
+                # Тип файла не меняется, так как у него есть разные варианты
+                if new_folder == "Новая папка": new_folder = "NEVA"
 
-        file_path = os.path.join(root, file) # Getting the full path to the file
+        file_path = os.path.join(root, file) # Получение полного пути к файлу
         with open(file_path, 'rb') as f:
-            file_hash = hashlib.md5(f.read()).hexdigest()  # Calculate the hash sum of the dat file
+            file_hash = hashlib.md5(f.read()).hexdigest()  # Вычисление хеш-суммы файла dat
             if file_hash not in copied_hashes or not use_hashes:
-                dest_subdir = os.path.relpath(root, source_dir)  # Getting a relative path
+                dest_subdir = os.path.relpath(root, source_dir)  # Получение относительного пути
                 if preserve_dir_structure:
                     dest_path = os.path.join(dest_dir, new_folder, dest_subdir, file)
                 else:
                     dest_path = os.path.join(dest_dir, new_folder, file)
                 if not os.path.exists(dest_path):
-                    os.makedirs(os.path.dirname(dest_path), exist_ok=True)  # Creating all non-existent directories for the target file
+                    os.makedirs(os.path.dirname(dest_path), exist_ok=True)  # Создание всех несуществующих каталогов для целевого файла
                     shutil.copy2(file_path, dest_path)
 
                 if use_hashes:  
-                    copied_hashes[file_hash] = (file, file_path)  # Adding the hash sum of the file to the hash table
+                    copied_hashes[file_hash] = (file, file_path)  # Добавление хеш-суммы файла в хеш-таблицу
                     _new_copied_hashes[file_hash] = (file, file_path)
                     return 1
         return 0
@@ -354,22 +354,22 @@ class SearchOscillograms():
     def _process_comtrade_file(self, file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
                               preserve_dir_structure: bool = True, use_hashes: bool = True, _new_copied_hashes: dict = {}) -> int:
         """
-        Processes a single file, copying it to the destination directory and updating the copied_hashes dictionary.
+        Обрабатывает один файл, копируя его в каталог назначения и обновляя словарь copied_hashes.
 
         Args:
-            file (str): The name of the file to process.
-            root (str): The root directory of the file.
-            dest_dir (str): The destination directory for the copied files.
-            copied_hashes (dict): The dictionary of copied file hashes.
-            preserve_dir_structure (bool): Whether to preserve the directory structure.
-            use_hashes (bool): Whether to use file hashes for comparison.
+            file (str): имя обрабатываемого файла.
+            root (str): корневой каталог файла.
+            dest_dir (str): каталог назначения для скопированных файлов.
+            copied_hashes (dict): словарь хешей скопированных файлов.
+            preserve_dir_structure (bool): сохранять ли структуру каталогов.
+            use_hashes (bool): использовать ли хеши файлов для сравнения.
 
-            local variables
-            _new_copied_hashes (dict): The dictionary of new copied file hashes.
+            локальные переменные
+            _new_copied_hashes (dict): словарь хешей новых скопированных файлов.
         Returns:
-            int: The number of new files copied.
+            int: количество скопированных новых файлов.
         """
-        # The work is similar with "_process_file"
+        # Работа аналогична "_process_file"
         cfg_file = file[:-4] + self.CFG_EXTENSION
         cfg_file_path = os.path.join(root, cfg_file)
         dat_file = cfg_file[:-4] + self.DAT_EXTENSION
@@ -407,26 +407,26 @@ class SearchOscillograms():
                              types_to_copy: list[TYPE_OSC] = None,
                              progress_callback = None, stop_processing_fn = None, is_write_names = None, **kwargs) -> int:
         """
-        Processes a single archive file, extracting it and then processing its contents.
+        Обрабатывает один архивный файл, извлекая его, а затем обрабатывая его содержимое.
 
         Args:
-            file (str): The name of the archive file to process.
-            root (str): The root directory of the archive file.
-            dest_dir (str): The destination directory for the copied files.
-            copied_hashes (dict): The dictionary of copied file hashes.
-            preserve_dir_structure (bool): Whether to preserve the directory structure.
-            use_hashes (bool): Whether to use file hashes for comparison.
-            types_to_copy (list[TYPE_OSC]): A list of oscillogram types to copy from the archive.
+            file (str): имя обрабатываемого архивного файла.
+            root (str): корневой каталог архивного файла.
+            dest_dir (str): каталог назначения для скопированных файлов.
+            copied_hashes (dict): словарь хешей скопированных файлов.
+            preserve_dir_structure (bool): сохранять ли структуру каталогов.
+            use_hashes (bool): использовать ли хеши файлов для сравнения.
+            types_to_copy (list[TYPE_OSC]): список типов осциллограмм для копирования из архива.
 
-            local variables
-            _new_copied_hashes (dict): The dictionary of new copied file hashes.
+            локальные переменные
+            _new_copied_hashes (dict): словарь хешей новых скопированных файлов.
         Returns:
-            int: The number of new files copied.
+            int: количество скопированных новых файлов.
         """
         count_new_files = 0
-        file_path = os.path.join(root, file) # Getting the full path to the file
+        file_path = os.path.join(root, file) # Получение полного пути к файлу
         if _path_temp is None:
-            _path_temp = os.path.join(dest_dir,'temp')  # Forming a path for copying
+            _path_temp = os.path.join(dest_dir,'temp')  # Формирование пути для копирования
             source_dir_temp = _path_temp
             if preserve_dir_structure:
                 dest_subdir = os.path.relpath(root, source_dir)
@@ -435,10 +435,10 @@ class SearchOscillograms():
             _path_temp = os.path.join(_path_temp, 'temp')
             source_dir_temp = _path_temp
 
-        # # Creating a directory if it does not exist
+        # # Создание каталога, если он не существует
         os.makedirs(_path_temp, exist_ok=True)
 
-        try: # Attempt to identify the type and unarchive
+        try: # Попытка определить тип и разархивировать
             if file.lower().endswith(self.ARCHIVE_7Z_EXTENSION):
                 with py7zr.SevenZipFile(file_path, mode='r') as archive:
                     archive.extractall(_path_temp)
@@ -452,24 +452,24 @@ class SearchOscillograms():
                     archive.extract_to_directory(_path_temp)
                 dest_dir = os.path.join(dest_dir, "archive_rar")
         except Exception as e:
-            # FIXME: Think about the design of a normal log.
-            print(f"An error occurred while unzipping the file {_path_temp}: {e}")
+            # FIXME: Подумайте о дизайне нормального лога.
+            print(f"Произошла ошибка при распаковке файла {_path_temp}: {e}")
 
-        # FIXME: Think about saving the path inside the archives - this feature does not work fully yet.
+        # FIXME: Подумайте о сохранении пути внутри архивов - эта функция пока работает не полностью.
         count_new_files += self.copy_new_oscillograms(source_dir=_path_temp, dest_dir=dest_dir, copied_hashes=copied_hashes, preserve_dir_structure=preserve_dir_structure,
                                                       use_hashes=use_hashes, types_to_copy=types_to_copy,
                                                       _new_copied_hashes=_new_copied_hashes, _first_run = False, _path_temp=_path_temp,
                                                       progress_callback=progress_callback, stop_processing_fn=stop_processing_fn, is_write_names=is_write_names)
         try:
-            shutil.rmtree(source_dir_temp) # Deleting the temporary directory
+            shutil.rmtree(source_dir_temp) # Удаление временного каталога
         except Exception as e:
-            # FIXME: Think about the design of a normal log.
+            # FIXME: Подумайте о дизайне нормального лога.
             print(f"Ошибка удаления файлов файла {_path_temp}: {e}")
 
         if _first_run:
             _path_temp = None
         else:
-            _path_temp = _path_temp[:-5] # subtracts "/temp"
+            _path_temp = _path_temp[:-5] # вычитает "/temp"
 
         return count_new_files
             
@@ -558,26 +558,26 @@ class SearchOscillograms():
 
     def organize_oscillograms_by_terminal(self, source_dir: str, dest_dir: str, terminal_list: list, terminal_oscillogram_names: dict, is_hashes: bool = True) -> None:
         """
-        Copies the waveforms structuring them by terminal numbers.
+        Копирует осциллограммы, структурируя их по номерам терминалов.
           
         Args:
-            source_dir (str): the source directory.
-            dest_dir (str): The directory to save the copied files.
-            terminal_list (list): a list of terminal names.
-            osc_name_dict (dict): a dictionary for storing terminals and hash names of waveforms.
+            source_dir (str): исходный каталог.
+            dest_dir (str): каталог для сохранения скопированных файлов.
+            terminal_list (list): список имен терминалов.
+            osc_name_dict (dict): словарь для хранения терминалов и хеш-имен осциллограмм.
         Returns:
             None
         """
-        osc_terminal_dict = {}  # dictionary for storing waveform names and their terminal accessories
-        # A function that forms a reverse list to the osc_name_dict dictionary (from "terminal -> osc name" to "osc name -> terminal")
+        osc_terminal_dict = {}  # словарь для хранения имен осциллограмм и их принадлежности к терминалам
+        # Функция, которая формирует обратный список к словарю osc_name_dict (из "терминал -> имя осциллограммы" в "имя осциллограммы -> терминал")
         for terminal_name in terminal_list:
             for osc_name in terminal_oscillogram_names[terminal_name]:
                 osc_terminal_dict[osc_name] = terminal_name
         
-        print("We count the total number of files in the source directory...")
+        print("Подсчитываем общее количество файлов в исходном каталоге...")
         total_files = sum([len(files) for r, d, files in os.walk(source_dir)])
-        print(f"Total number of files: {total_files}, starting processing...")
-        with tqdm(total=total_files, desc="Organize oscillograms") as pbar:
+        print(f"Общее количество файлов: {total_files}, начинаем обработку...")
+        with tqdm(total=total_files, desc="Организация осциллограмм") as pbar:
             for root, dirs, files in os.walk(source_dir):
                 for file in files:
                     pbar.update(1)
@@ -617,6 +617,6 @@ if __name__ == '__main__':
     input_json_path = "Путь к файлу с исходным JSON файлом содержащем информацию о всех осциллограммах"
     output_json_path = "Путь к итоговому файлу"
     # список искомых терминалов
-    terminals_to_search = [1, 2, 3]
+    terminals_to_search = [1, 2, 3] # список искомых терминалов
     f.find_terminal_hashes_from_json(input_json_path, terminals_to_search, output_json_path)
 
