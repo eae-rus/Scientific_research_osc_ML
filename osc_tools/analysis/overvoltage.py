@@ -8,9 +8,9 @@ import re
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
-from normalization.normalization import NormOsc, CreateNormOsc
+from osc_tools.features.normalization import NormOsc, CreateNormOsc
 from dataflow.comtrade_processing import ReadComtrade
-from raw_to_csv.raw_to_csv import RawToCSV 
+from osc_tools.io.comtrade_parser import ComtradeParser
 
 class OvervoltageAnalyzer:
     """
@@ -28,7 +28,7 @@ class OvervoltageAnalyzer:
         
         # Загружаем инструменты
         self.readComtrade = ReadComtrade()
-        self.rawToCSV = RawToCSV()
+        self.rawToCSV = ComtradeParser()
         self.normalizer = NormOsc(norm_coef_file_path=self.norm_coef_path)
         
         # Конфигурация

@@ -9,13 +9,13 @@ import matplotlib.pyplot as plt
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
 
-from raw_to_csv.raw_to_csv import RawToCSV
+from osc_tools.io.comtrade_parser import ComtradeParser
 from osc_tools.ml import models as model
 from torchinfo import summary
 from ptflops import get_model_complexity_info
 from osc_tools.core.constants import Features
 
-class ComtradeProcessor(RawToCSV):
+class ComtradeProcessor(ComtradeParser):
     """Базовый класс для обработки данных Comtrade."""
     
     def __init__(self, norm_file_path: str, device: str = 'cuda'):

@@ -8,7 +8,7 @@ from enum import Enum
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
-from normalization.normalization import NormOsc
+from osc_tools.features.normalization import NormOsc
 from dataflow.comtrade_processing import ReadComtrade
 
 class ChannelType(Enum):

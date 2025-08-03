@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
-from kan_convolutional.KANLinear import KANLinear, KANLinearComplex
+from osc_tools.ml.kan_conv.KANLinear import KANLinear, KANLinearComplex
 from osc_tools.core.constants import Features
 
 

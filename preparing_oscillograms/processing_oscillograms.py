@@ -15,8 +15,8 @@ from collections import Counter
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
 
-from normalization.normalization import NormOsc
-from raw_to_csv.raw_to_csv import RawToCSV  # Импортируем RawToCSV для функции RawToCSV
+from osc_tools.features.normalization import NormOsc
+from osc_tools.io.comtrade_parser import ComtradeParser
 
 class ProcessingOscillograms():
     """
@@ -819,7 +819,7 @@ class ProcessingOscillograms():
         period_count = 3
 
         number_ocs_found = 0
-        rawToCSV = RawToCSV()
+        rawToCSV = ComtradeParser()
 
         with tqdm(total=len(raw_files), desc="Поиск ОЗЗ") as pbar:
             for file in raw_files:
@@ -839,7 +839,7 @@ class ProcessingOscillograms():
                         pbar.update(1)
                         continue
 
-                    buses_df = RawToCSV.split_buses(RawToCSV(), raw_df.reset_index(), file)
+                    buses_df = ComtradeParser.split_buses(ComtradeParser(), raw_df.reset_index(), file)
                     if buses_df.empty:
                         pbar.update(1)
                         continue
