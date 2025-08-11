@@ -139,6 +139,7 @@ class EmptyOscFilter:
 
         processed_df = osc_df.copy()
         use_normalized_thresholds_for_this_file = False
+        norm_applied_flag = False
 
         if self.config.get('use_norm_osc', False) and self.normalizer:
             if self.verbose:

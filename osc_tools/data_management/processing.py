@@ -75,8 +75,10 @@ def _deleting_confidential_information_in_one_file(file_path: str, root: str, en
         signals = int(signals)
         new_date = '01/01/0001, 01:01:01.000000\n'
         # FIXME: Неправильно определяется точка при наличии нескольких частот дискретизации.
-        lines[signals + 5] = new_date
-        lines[signals + 6] = new_date
+        if len(lines) > signals + 5:
+            lines[signals + 5] = new_date
+        if len(lines) > signals + 6:
+            lines[signals + 6] = new_date
 
     with open(file_path, 'w', encoding='utf-8') as file:
         for line in lines:
