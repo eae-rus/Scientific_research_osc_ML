@@ -1,0 +1,8 @@
+{
+    "Bus-1": {
+        "PDR_A": ["PDR | Bus-1 | phase: A"]
+    },
+    "Bus-2": {
+        "PDR_A": ["PDR | Bus-2 | phase: A"]
+    }
+}

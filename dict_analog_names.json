@@ -1,0 +1,10 @@
+{
+    "Bus-1": {
+        "U_A": ["U | BusBar-1 | phase: A"],
+        "I_A": ["I | Bus-1 | phase: A"]
+    },
+    "Bus-2": {
+        "U_A": ["U | BusBar-2 | phase: A"],
+        "I_A": ["I | Bus-2 | phase: A"]
+    }
+}
