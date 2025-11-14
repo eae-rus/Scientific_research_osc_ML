@@ -362,30 +362,49 @@ class SearchOscillograms():
         dat_file = cfg_file[:-4] + self.DAT_EXTENSION
         dat_file_path = os.path.join(root, dat_file)
         is_exist = os.path.exists(dat_file_path)  
+        import logging
         if is_exist:
-            with open(dat_file_path, 'rb') as f:
-                file_hash = hashlib.md5(f.read()).hexdigest()
-                if file_hash not in copied_hashes or not use_hashes:
-                    dest_subdir = os.path.relpath(root, source_dir)
+            try:
+                with open(dat_file_path, 'rb') as f:
+                    file_hash = hashlib.md5(f.read()).hexdigest()
+            except Exception as e:
+                logging.error(f"[copy_new_oscillograms] Ошибка чтения dat-файла: {e} ({dat_file_path})")
+                return 0
+            if file_hash not in copied_hashes or not use_hashes:
+                dest_subdir = os.path.relpath(root, source_dir)
 
-                    if preserve_dir_structure:
-                        dest_path = os.path.join(dest_dir, "COMTRADE_CFG_DAT", dest_subdir, cfg_file)
-                        dat_dest_path = os.path.join(dest_dir, "COMTRADE_CFG_DAT", dest_subdir, dat_file)
-                    else:
-                        dest_path = os.path.join(dest_dir, "COMTRADE_CFG_DAT", cfg_file)
-                        dat_dest_path = os.path.join(dest_dir, "COMTRADE_CFG_DAT", dat_file)
+                if preserve_dir_structure:
+                    dest_path = os.path.join(dest_dir, "COMTRADE_CFG_DAT", dest_subdir, cfg_file)
+                    dat_dest_path = os.path.join(dest_dir, "COMTRADE_CFG_DAT", dest_subdir, dat_file)
+                else:
+                    dest_path = os.path.join(dest_dir, "COMTRADE_CFG_DAT", cfg_file)
+                    dat_dest_path = os.path.join(dest_dir, "COMTRADE_CFG_DAT", dat_file)
 
+                try:
                     if not os.path.exists(dest_path):
                         os.makedirs(os.path.dirname(dest_path), exist_ok=True)
                         shutil.copy2(cfg_file_path, dest_path)
+                except FileNotFoundError as e:
+                    logging.error(f"[copy_new_oscillograms] FileNotFoundError: {e} (cfg: {cfg_file_path} → {dest_path})")
+                    return 0
+                except Exception as e:
+                    logging.error(f"[copy_new_oscillograms] Unexpected error: {e} (cfg: {cfg_file_path} → {dest_path})")
+                    return 0
 
+                try:
                     if not os.path.exists(dat_dest_path):
                         os.makedirs(os.path.dirname(dat_dest_path), exist_ok=True)
                         shutil.copy2(dat_file_path, dat_dest_path)
+                except FileNotFoundError as e:
+                    logging.error(f"[copy_new_oscillograms] FileNotFoundError: {e} (dat: {dat_file_path} → {dat_dest_path})")
+                    return 0
+                except Exception as e:
+                    logging.error(f"[copy_new_oscillograms] Unexpected error: {e} (dat: {dat_file_path} → {dat_dest_path})")
+                    return 0
 
-                    copied_hashes[file_hash] = (cfg_file, cfg_file_path)
-                    _new_copied_hashes[file_hash] = (cfg_file, cfg_file_path)
-                    return 1
+                copied_hashes[file_hash] = (cfg_file, cfg_file_path)
+                _new_copied_hashes[file_hash] = (cfg_file, cfg_file_path)
+                return 1
         return 0
 
     def _process_archive_file(self, file: str, root: str, source_dir: str, dest_dir: str, copied_hashes: dict = {}, 
