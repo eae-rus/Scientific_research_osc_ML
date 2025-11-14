@@ -723,3 +723,384 @@ def find_duplicate_signal_names_in_cfg(
             print(f"Ошибки сканирования/переименования записаны в: {error_log_path}")
         except IOError as e:
              print(f"Не удалось записать журнал ошибок в {error_log_path}: {e}")
+
+# === Вспомогательная функция для замены фаз ===
+
+def _replace_russian_phases(cfg_lines: list[str], file_path_for_log: str, used_encoding: str) -> tuple[list[str], bool, list[dict]]:
+    """
+    Ищет и заменяет русские символы А, В, С (и их строчные эквиваленты) по всей строке CFG
+    на латинские A, B, C.
+    
+    Args:
+        cfg_lines (list[str]): содержимое файла CFG в виде списка строк.
+        file_path_for_log (str): путь к файлу для ведения журнала.
+        used_encoding (str): кодировка, под которой файл был прочитан.
+
+    Returns:
+        tuple: (измененные_строки, были_ли_изменения, журнал_замен)
+    """
+    modified_lines = list(cfg_lines)
+    made_changes = False
+    rename_log = []
+    
+    # Сопоставление: Кириллица -> Латиница
+    phase_map = {
+        'А': 'A', 'а': 'A',
+        'В': 'B', 'в': 'B',
+        'С': 'C', 'с': 'C'
+    }
+    
+    if len(modified_lines) < 2:
+        return modified_lines, False, rename_log
+
+    try:
+        # Разбираем вторую строку для определения границ
+        parts = modified_lines[1].split(',')
+        count_analog_signals = int(re.sub(r'\D', '', parts[1].strip().upper()))
+        count_digital_signals = int(re.sub(r'\D', '', parts[2].strip().upper()))
+        start_digital_idx = 2 + count_analog_signals
+        
+    except (ValueError, IndexError):
+        start_digital_idx = len(modified_lines) 
+        count_analog_signals = len(modified_lines) - 2
+        count_digital_signals = 0
+        
+    
+    # Проходим по всем строкам, начиная со строки 2 (индекс 2)
+    for line_idx in range(2, len(modified_lines)):
+        
+        line_content = modified_lines[line_idx]
+        new_line_content = line_content
+        
+        # Выполняем замены по всем парам в текущей строке
+        for k_in, k_out in phase_map.items():
+            if k_in in new_line_content:
+                new_line_content = new_line_content.replace(k_in, k_out)
+        
+        if line_content != new_line_content:
+            modified_lines[line_idx] = new_line_content
+            made_changes = True
+            
+            # Определяем, была ли это строка сигнала (или просто строка, которую стоит логировать)
+            is_signal_line = (line_idx < 2 + count_analog_signals) or \
+                             (line_idx >= 2 + count_analog_signals and line_idx < start_digital_idx + count_digital_signals)
+            
+            if is_signal_line or (count_analog_signals <= 0 and count_digital_signals <= 0 and len(modified_lines) > 2):
+                 rename_log.append({
+                    'file_path': file_path_for_log,
+                    'signal_line_index_in_file': line_idx,
+                    # ИСПРАВЛЕНО: Ключи синхронизированы с fieldnames в основной функции
+                    'old_phase_part': line_content.strip(), 
+                    'new_phase_part': new_line_content.strip(), 
+                    'signal_type': 'unknown/full_line_replacement'
+                })
+
+    # ВАЖНО: Если что-то изменилось, сохраняем файл
+    if made_changes:
+        try:
+            with open(file_path_for_log, 'w', encoding=used_encoding) as f_write:
+                f_write.writelines(modified_lines)
+        except IOError as e:
+            rename_log.append({'CRITICAL_WRITE_ERROR': f"Failed to write back changes to {file_path_for_log}: {e}"})
+            made_changes = False
+            
+    return modified_lines, made_changes, rename_log
+
+
+# === Обновленная основная функция ===
+
+def find_cfg_files_with_russian_chars(source_dir: str, output_list_path: str) -> None:
+    """
+    Ищет текстовые файлы с разрешением .cfg, содержащие русские буквы (кириллицу),
+    и выводит список имен этих файлов в отдельный текстовый документ.
+    Предварительно пытается заменить русские фазы (А, В, С) на латинские.
+
+    Args:
+        source_dir (str): Каталог для поиска файлов.
+        output_list_path (str): Путь для сохранения текстового файла со списком найденных файлов.
+    """
+    russian_char_pattern = re.compile(r'[А-Яа-яЁё]')
+    files_with_remaining_russian_chars = []
+    error_log = []
+    phase_rename_log = []
+    
+    encodings_to_try = ['utf-8', 'windows-1251', 'cp866']
+
+    print("Подсчитываем общее количество файлов .cfg в исходном каталоге...")
+    total_cfg_files = 0
+    for root, _, files in os.walk(source_dir):
+        for file in files:
+            if file.lower().endswith(".cfg"):
+                total_cfg_files += 1
+    
+    print(f"Общее количество файлов .cfg: {total_cfg_files}, начинаем обработку...")
+
+    with tqdm(total=total_cfg_files, desc="Обработка CFG на наличие русских букв") as pbar:
+        for root, _, files in os.walk(source_dir):
+            for file in files:
+                pbar.update(1)
+                if not file.lower().endswith(".cfg"):
+                    continue
+                
+                file_path = os.path.join(root, file)
+                used_encoding = None
+                
+                # 1. Попытка открыть файл, чтобы определить кодировку
+                current_lines = None
+                for encoding in encodings_to_try:
+                    try:
+                        with open(file_path, 'r', encoding=encoding) as f:
+                            current_lines = f.readlines()
+                        used_encoding = encoding
+                        break
+                    except UnicodeDecodeError:
+                        continue
+                    except Exception as e:
+                        error_log.append(f"Ошибка открытия файла {file_path} (для определения кодировки): {e}")
+                        break
+                
+                if current_lines is None:
+                    error_log.append(f"Не удалось прочитать файл {file_path} ни с одной из предпринятых кодировок.")
+                    continue
+                
+                # 2. Предварительная очистка: Замена русских фаз (А, В, С)
+                modified_lines, made_changes, log_entry = _replace_russian_phases(
+                    current_lines, file_path, used_encoding
+                )
+                
+                if made_changes:
+                    phase_rename_log.extend(log_entry)
+                
+                # 3. Повторная проверка на оставшиеся русские символы в модифицированном файле
+                
+                # Объединяем строки обратно для проверки, если они были изменены,
+                # или используем оригинальные строки, если замена фаз не проводилась/не удалась (хотя, 
+                # если made_changes=False, modified_lines == current_lines).
+                content_to_check = "".join(modified_lines)
+
+                if russian_char_pattern.search(content_to_check):
+                    # Кириллица осталась (не 'А', 'В', 'С' или в других полях)
+                    files_with_remaining_russian_chars.append(file)
+                
+    # 4. Вывод результатов
+    output_dir = os.path.dirname(output_list_path) or '.'
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # --- Исправление для Итогового Списка ---
+    try:
+        with open(output_list_path, 'w', encoding='utf-8') as out_file:
+            out_file.write("Список имен файлов .cfg, содержащих русские буквы (после очистки А, В, С):\n\n")
+            if not files_with_remaining_russian_chars:
+                out_file.write("Русские буквы (кроме замененных А/В/С) не найдены ни в одном файле.")
+            else:
+                for file_name in files_with_remaining_russian_chars:
+                    out_file.write(f"{file_name}\n")
+        
+        print(f"\nСканирование завершено. Список сохранен в: {output_list_path}")
+
+    except IOError as e:
+        # Фиксируем ошибку, если путь output_list_path оказался директорией или недоступен
+        error_log.append(f"Критическая ошибка записи ИТОГОВОГО СПИСКА в {output_list_path}: {e}")
+        print(f"\nКритическая ошибка: Не удалось записать итоговый файл {output_list_path}: {e}")
+
+    # Логирование замен фаз (аналогично предыдущему требованию)
+    if phase_rename_log:
+        rename_log_path = os.path.join(os.path.dirname(output_list_path) or '.', "phase_replacement_log.csv")
+        try:
+            with open(rename_log_path, 'w', newline='', encoding='utf-8') as csvfile_rename:
+                fieldnames_rename = ['file_path', 'signal_line_index_in_file', 'old_phase_part', 'new_phase_part', 'signal_type']
+                writer_rename = csv.DictWriter(csvfile_rename, fieldnames=fieldnames_rename)
+                writer_rename.writeheader()
+                writer_rename.writerows(phase_rename_log)
+            print(f"Журнал замены фаз успешно сохранен в: {rename_log_path}")
+        except IOError as e:
+            error_log.append(f"Ошибка записи CSV-файла журнала замены фаз в {rename_log_path}: {e}")
+
+
+    if error_log:
+        error_log_path = os.path.join(os.path.dirname(output_list_path) or '.', "russian_char_scan_errors.txt")
+        try:
+            with open(error_log_path, 'w', encoding='utf-8') as err_file:
+                err_file.write("Ошибки при сканировании/замене CFG-файлов:\n\n")
+                for err in error_log:
+                    err_file.write(f"{err}\n")
+            print(f"Журнал ошибок сохранен в: {error_log_path}")
+        except IOError:
+             print(f"Не удалось записать журнал ошибок в {error_log_path}.")
+
+
+def find_and_fix_russian_chars_in_cfg(
+    source_dir: str,
+    output_report_path: str = None,
+    replacement_rules: list = None,
+    is_print_all_changes: bool = False
+) -> dict:
+    """
+    Ищет все .cfg файлы с русскими буквами в имена сигналов.
+    Опционально применяет пользовательские правила замены в приоритетном порядке.
+    
+    Args:
+        source_dir (str): Путь к папке с осциллограммами (COMTRADE).
+        output_report_path (str): Путь для сохранения отчёта. Если None, не сохраняется.
+        replacement_rules (list): Список кортежей (старое, новое) для замены.
+                                 Порядок важен — ищутся в приоритетном порядке.
+                                 Пример: [('А', 'A'), (', А,', ', A,'), ...]
+                                 Если None или пуст, то только поиск (без замены).
+    
+    Returns:
+        dict: Словарь с результатами:
+              {
+                'files_with_russian': [list of files],
+                'total_files_scanned': int,
+                'replacements_made': {filename: count},
+                'errors': [list of errors]
+              }
+    """
+    # Регулярное выражение для поиска кириллицы (русские буквы)
+    russian_pattern = re.compile(r'[а-яА-ЯёЁ]')
+    
+    files_with_russian = []
+    replacements_made = {}
+    error_log = []
+    total_files = 0
+    
+    # Нормализуем replacement_rules
+    if replacement_rules is None:
+        replacement_rules = []
+    
+    print("Подсчитываем общее количество файлов в исходном каталоге...")
+    total_files_count = sum([len(files) for r, d, files in os.walk(source_dir)])
+    print(f"Всего файлов: {total_files_count}, начинаем сканирование...")
+    
+    with tqdm(total=total_files_count, desc="Поиск русских букв в .cfg") as pbar:
+        for root, dirs, files in os.walk(source_dir):
+            for file in files:
+                pbar.update(1)
+                
+                if not file.lower().endswith('.cfg'):
+                    continue
+                
+                total_files += 1
+                file_path = os.path.join(root, file)
+                
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    
+                    # Проверяем наличие русских букв
+                    if russian_pattern.search(content):
+                        files_with_russian.append(file_path)
+                        
+                        # Если есть правила замены и в файле найдены русские буквы, применяем их
+                        if replacement_rules:
+                            modified_content = content
+                            replacement_count = 0
+                            
+                            # Применяем правила в приоритетном порядке
+                            for old_text, new_text in replacement_rules:
+                                old_count = modified_content.count(old_text)
+                                if old_count > 0:
+                                    modified_content = modified_content.replace(old_text, new_text)
+                                    replacement_count += old_count
+                            
+                            # Если были сделаны замены, сохраняем файл
+                            if replacement_count > 0:
+                                try:
+                                    with open(file_path, 'w', encoding='utf-8') as f:
+                                        f.write(modified_content)
+                                    replacements_made[file_path] = replacement_count
+                                    if is_print_all_changes:
+                                        print(f"✓ Обновлен: {file} ({replacement_count} замен)")
+                                except Exception as e:
+                                    error_msg = f"Ошибка записи в файл {file_path}: {e}"
+                                    error_log.append(error_msg)
+                                    if is_print_all_changes:
+                                        print(f"✗ {error_msg}")
+                
+                except Exception as e:
+                    error_msg = f"Ошибка чтения файла {file_path}: {e}"
+                    error_log.append(error_msg)
+    
+    # Подготавливаем результаты
+    result = {
+        'files_with_russian': files_with_russian,
+        'total_files_scanned': total_files,
+        'replacements_made': replacements_made,
+        'errors': error_log
+    }
+    
+    # Сохраняем отчёт, если путь указан
+    if output_report_path:
+        try:
+            os.makedirs(os.path.dirname(output_report_path) or '.', exist_ok=True)
+            
+            with open(output_report_path, 'w', encoding='utf-8') as report_file:
+                report_file.write("=" * 80 + "\n")
+                report_file.write("ОТЧЁТ: Поиск и замена русских букв в .cfg файлах\n")
+                report_file.write("=" * 80 + "\n\n")
+                
+                report_file.write(f"Всего .cfg файлов сканировано: {total_files}\n")
+                report_file.write(f"Файлов с русскими буквами: {len(files_with_russian)}\n")
+                report_file.write(f"Применено замен: {len(replacements_made)}\n")
+                report_file.write(f"Ошибок: {len(error_log)}\n\n")
+                
+                # Список файлов с русскими буквами
+                report_file.write("-" * 80 + "\n")
+                report_file.write("ФАЙЛЫ С РУССКИМИ БУКВАМИ:\n")
+                report_file.write("-" * 80 + "\n")
+                if files_with_russian:
+                    for i, fpath in enumerate(files_with_russian, 1):
+                        report_file.write(f"{i}. {fpath}\n")
+                else:
+                    report_file.write("Русские буквы не обнаружены.\n")
+                
+                report_file.write("\n")
+                
+                # Список выполненных замен
+                if replacement_rules and replacements_made:
+                    report_file.write("-" * 80 + "\n")
+                    report_file.write("ВЫПОЛНЕННЫЕ ЗАМЕНЫ:\n")
+                    report_file.write("-" * 80 + "\n")
+                    for fpath, count in replacements_made.items():
+                        report_file.write(f"{fpath}: {count} замен\n")
+                    report_file.write("\n")
+                
+                # Применённые правила замены
+                if replacement_rules:
+                    report_file.write("-" * 80 + "\n")
+                    report_file.write("ПРИМЕНЁННЫЕ ПРАВИЛА ЗАМЕНЫ (приоритет):\n")
+                    report_file.write("-" * 80 + "\n")
+                    for i, (old, new) in enumerate(replacement_rules, 1):
+                        report_file.write(f"{i}. '{old}' → '{new}'\n")
+                    report_file.write("\n")
+                else:
+                    report_file.write("Правила замены не применены (режим только поиска).\n\n")
+                
+                # Ошибки
+                if error_log:
+                    report_file.write("-" * 80 + "\n")
+                    report_file.write("ОШИБКИ:\n")
+                    report_file.write("-" * 80 + "\n")
+                    for err in error_log:
+                        report_file.write(f"• {err}\n")
+                    report_file.write("\n")
+                
+                report_file.write("=" * 80 + "\n")
+                report_file.write("Конец отчёта\n")
+                report_file.write("=" * 80 + "\n")
+            
+            print(f"\n✓ Отчёт сохранён: {output_report_path}")
+        except Exception as e:
+            print(f"✗ Ошибка при сохранении отчёта: {e}")
+    
+    # Вывод результатов в консоль
+    print(f"\n{'='*80}")
+    print(f"Сканирование завершено!")
+    print(f"Всего .cfg файлов: {total_files}")
+    print(f"Файлов с русскими буквами: {len(files_with_russian)}")
+    if replacement_rules:
+        print(f"Успешно обновлено файлов: {len(replacements_made)}")
+    print(f"Ошибок: {len(error_log)}")
+    print(f"{'='*80}\n")
+    
+    return result
