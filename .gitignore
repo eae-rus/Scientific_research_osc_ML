@@ -8,3 +8,24 @@ __pycache__/
 
 # Ignore trained_models folder
 ML_model/trained_models
+
+# Test reports and logs
+reports/
+pytest_report.json
+pytest_log_*.txt
+
+# Jupyter notebook artifacts
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# pytest cache
+.pytest_cache/
+
+# IDE and environment files
+.vscode/
+.idea/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
