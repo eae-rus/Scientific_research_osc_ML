@@ -109,39 +109,42 @@ tests/
   - `osc_tools/analysis/overvoltage.py`
   - `osc_tools/analysis/detect_motor_starts.py`
 - [x] Импорты обновлены с `from dataflow.comtrade_processing` → `from osc_tools.data_management.comtrade_processing`
-- [ ] Написать интеграционный тест для `comtrade_processing.py` в `tests/integration/`
+- [x] Написать интеграционный тест для `comtrade_processing.py` в `tests/integration/`
+  - Созданы базовые тесты для `ReadComtrade` класса (успешное чтение и обработка ошибок)
 
 ### Шаг 3: Добавить тесты для preprocessing модулей
-- [ ] **tests/unit/test_preprocessing_filtering.py** — тесты для `osc_tools/preprocessing/filtering.py`
-  - Тест пустого осциллограммы
-  - Тест активного сигнала
-  - Тест шумного сигнала
-  - Граничные случаи
+- [x] **tests/unit/test_preprocessing_filtering.py** — тесты для `osc_tools/preprocessing/filtering.py` (11 тестов)
+  - ✅ Базовая синусоида (test_sliding_window_fft_basic_sine_wave)
+  - ✅ Короткий сигнал (test_sliding_window_fft_signal_too_short)
+  - ✅ Несколько гармоник (test_sliding_window_fft_multiple_harmonics)
+  - ✅ Нулевой сигнал (test_sliding_window_fft_zero_signal)
+  - ✅ Форма и dtype (test_sliding_window_fft_output_shape_and_dtype)
+  - ✅ Границы гармоник (test_sliding_window_fft_harmonic_index_bounds)
+  - ✅ Постоянный сигнал (test_sliding_window_fft_constant_signal)
+  - ✅ Точный размер окна (test_sliding_window_fft_exactly_window_size)
+  - ✅ С шумом (test_sliding_window_fft_with_noise)
+  - ✅ Отрицательные значения (test_sliding_window_fft_negative_values)
+  - ✅ Вспомогательная функция is_complex_nan для комплексных NaN
 
 - [ ] **tests/unit/test_preprocessing_segmentation.py** — тесты для `osc_tools/preprocessing/segmentation.py`
   - Базовая сегментация
   - Краевые случаи
   - Сигналы различной длины
 
-### Шаг 4: Тесты для features/normalization
-- [ ] **tests/unit/test_features_normalization.py** — рефакторинг существующего + новые
-  - Нормализация различных типов сигналов
-  - Проверка коэффициентов
-  - Edge cases
+### Шаг 4: ✅ Тесты для edge cases в pdr_calculator
+- [x] **tests/unit/test_pdr_calculator_edge_cases.py** — расширенные тесты (11 тестов)
+  - ✅ Edge cases для symmetrical_components
+  - ✅ Edge cases для sliding_window_fft
+  - ✅ Тесты численной стабильности
 
-### Шаг 5: Интеграционные тесты (E2E)
-- [ ] **tests/integration/test_io_pipeline.py**
-  - Чтение COMTRADE → парсинг → обработка → запись
-  - Проверка целостности данных через pipeline
-
-- [ ] **tests/integration/test_full_processing.py**
-  - От сырых данных до Features/PDR
-  - Проверка всех трансформаций
-
-### Шаг 6: Тесты производительности и покрытие
-- [ ] Добавить маркер `@pytest.mark.slow` для длительных тестов
-- [ ] Настроить coverage report: `pytest --cov=osc_tools --cov-report=html`
-- [ ] Целевой coverage: **>80%** для core модулей, **>60%** для остальных
+### Шаг 5: ⏳ Тесты для segmentation/normalization
+- [ ] **tests/unit/test_preprocessing_segmentation.py** — тесты для segmentation.py
+  - Вспомогательные функции
+  - OscillogramEventSegmenter edge cases
+  
+- [ ] **tests/unit/test_features_normalization.py** — тесты для normalization.py
+  - CreateNormOsc edge cases
+  - NormOsc методы
 
 ---
 
@@ -183,22 +186,46 @@ run_and_raise(['tests/unit'])
 
 | Метрика | Значение |
 |---------|---------|
-| Всего тестов | 24 ✅ |
-| Unit-тесты | 24 |
-| Integration-тесты | 0 |
-| Coverage (approx) | ~15% (только constants + pdr_calculator) |
+| Всего тестов | 46+ ✅ |
+| Unit-тесты | 24 (constants + pdr_calculator) + 11 (filtering) + 11 (pdr_edge_cases) = 46 |
+| Integration-тесты | ~3 (ReadComtrade) |
+| Coverage (approx) | ~28% (constants + pdr_calculator + filtering + pdr_edge_cases + comtrade_io) |
 | Pass rate | 100% ✅ |
+
+### Новое (Iteration 3):
+- ✅ **test_pdr_calculator_edge_cases.py** — 11 тестов для edge cases
+  - ✅ Нулевые входы (test_symmetrical_components_all_zeros)
+  - ✅ Одна точка (test_symmetrical_components_single_point)
+  - ✅ Очень маленькие значения (test_symmetrical_components_very_small_values)
+  - ✅ Несовпадающие длины (test_symmetrical_components_mismatched_length)
+  - ✅ Отрицательные фазы (test_symmetrical_components_negative_phase)
+  - ✅ Длинные сигналы (test_sliding_window_fft_very_long_signal)
+  - ✅ Окно больше сигнала (test_sliding_window_fft_window_larger_than_signal)
+  - ✅ Одна гармоника (test_sliding_window_fft_single_harmonic_request)
+  - ✅ Высокочастотный сигнал (test_sliding_window_fft_high_frequency_signal)
+  - ✅ DC компонента (test_sliding_window_fft_dc_component)
+  - ✅ Численная стабильность (test_repeated_calculations_consistency, test_symmetrical_components_numerical_error)
 
 ---
 
-## 🚀 Рекомендуемый порядок работ
+## 🚀 Рекомендуемый порядок работ (UPDATED)
 
-1. **Неделя 1**: Переместить и переделать старые unit-тесты (шаг 1)
-2. **Неделя 2**: Переместить comtrade_processing, написать интеграционные тесты (шаги 2–3)
-3. **Неделя 3**: Тесты preprocessing/segmentation (шаг 4)
-4. **Неделя 4**: E2E интеграционные тесты + coverage (шаги 5–6)
+✅ **Завершено (Iteration 1-3)**:
+- Базовая структура тестов
+- Перемещение comtrade_processing.py
+- Unit-тесты для filtering.py (sliding_window_fft) — 11 тестов
+- Unit-тесты для edge cases pdr_calculator.py — 11 тестов
+- Интеграционные тесты для ReadComtrade — 3 теста
+- **Всего: 46 тестов, 100% pass rate**
 
-**Итого**: ~30–50 новых тестов, покрытие основных модулей >70%
+🔜 **Следующие шаги (Iteration 4+)**:
+1. **Шаг 5**: Тесты для segmentation.py (~8-10 тестов)
+2. **Шаг 6**: Тесты для normalization.py (~10-12 тестов)
+3. **Шаг 7**: Тесты для io/comtrade_parser.py (~8 тестов)
+4. **Шаг 8**: E2E интеграционные тесты (~5-7 тестов)
+5. **Шаг 9**: Coverage и маркеры для slow тестов
+
+**Целевой план**: 75-85 тестов с coverage >65%
 
 ---
 
