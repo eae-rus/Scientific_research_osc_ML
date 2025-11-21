@@ -11,6 +11,7 @@ import os
 import tempfile
 import pandas as pd
 import numpy as np
+from unittest.mock import Mock, patch, MagicMock
 
 # Добавляем путь к проекту
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
@@ -202,3 +203,161 @@ class TestReadComtradeExceptionHandling:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+@pytest.mark.integration
+class TestReadComtradeWithMocks:
+    """Тесты ReadComtrade с использованием mock-объектов Comtrade."""
+    
+    def test_read_comtrade_success_with_mock(self):
+        """Тест успешного чтения с mock-объектом."""
+        reader = ReadComtrade()
+        
+        with patch('osc_tools.data_management.comtrade_processing.Comtrade') as mock_comtrade_class:
+            # Создаём mock объект Comtrade
+            mock_comtrade_instance = MagicMock()
+            mock_comtrade_class.return_value = mock_comtrade_instance
+            
+            # Mock для to_dataframe()
+            mock_df = pd.DataFrame({
+                'time': [0.0, 0.01, 0.02],
+                'IA': [1.0, 1.5, 2.0],
+                'IB': [1.0, 1.5, 2.0],
+                'IC': [1.0, 1.5, 2.0]
+            })
+            mock_comtrade_instance.to_dataframe.return_value = mock_df
+            
+            result = reader.read_comtrade('dummy_file.cfg')
+            
+            # Проверяем структуру возврата
+            assert isinstance(result, tuple), "read_comtrade должен вернуть кортеж"
+            assert len(result) == 2, "Кортеж должен содержать 2 элемента"
+            
+            rec, df = result
+            assert rec is mock_comtrade_instance, "Первый элемент должен быть объектом Comtrade"
+            assert isinstance(df, pd.DataFrame), "Второй элемент должен быть DataFrame"
+            assert not df.empty, "DataFrame не должен быть пустым"
+    
+    def test_read_comtrade_calls_load_method(self):
+        """Тест что метод load() вызывается с правильным аргументом."""
+        reader = ReadComtrade()
+        filename = 'test_oscillogram.cfg'
+        
+        with patch('osc_tools.data_management.comtrade_processing.Comtrade') as mock_comtrade_class:
+            mock_comtrade_instance = MagicMock()
+            mock_comtrade_class.return_value = mock_comtrade_instance
+            mock_comtrade_instance.to_dataframe.return_value = pd.DataFrame()
+            
+            reader.read_comtrade(filename)
+            
+            # Проверяем, что load был вызван с правильным аргументом
+            mock_comtrade_instance.load.assert_called_once_with(filename)
+    
+    def test_read_comtrade_realistic_data_with_mock(self):
+        """Тест с реалистичным DataFrame (симуляция осциллограммы)."""
+        reader = ReadComtrade()
+        
+        with patch('osc_tools.data_management.comtrade_processing.Comtrade') as mock_comtrade_class:
+            mock_comtrade_instance = MagicMock()
+            mock_comtrade_class.return_value = mock_comtrade_instance
+            
+            # Создаём реалистичный DataFrame
+            mock_df = pd.DataFrame({
+                'time': [0.0, 0.01, 0.02, 0.03, 0.04],
+                'IA': [10.5, 11.2, 10.8, 10.1, 10.9],
+                'IB': [10.3, 11.0, 10.9, 10.2, 10.8],
+                'IC': [10.4, 11.1, 10.7, 10.0, 10.7],
+                'UA': [220.0, 221.5, 219.8, 220.3, 220.1],
+                'UB': [220.1, 220.9, 220.2, 220.4, 220.0],
+                'UC': [219.9, 221.0, 220.1, 220.2, 220.2]
+            })
+            mock_comtrade_instance.to_dataframe.return_value = mock_df
+            
+            rec, df = reader.read_comtrade('test.cfg')
+            
+            # Проверяем содержимое DataFrame
+            assert df.shape == (5, 7), "DataFrame должен иметь 5 строк и 7 столбцов"
+            assert list(df.columns) == ['time', 'IA', 'IB', 'IC', 'UA', 'UB', 'UC']
+            assert df['IA'].min() > 10.0, "Значения тока должны быть логичными"
+            assert df['UA'].mean() > 219.0, "Напряжение должно быть логичным"
+
+
+@pytest.mark.integration
+class TestReadComtradeErrorHandlingWithMocks:
+    """Тесты обработки ошибок с mock-объектами."""
+    
+    def test_read_comtrade_file_not_found_error(self, capsys):
+        """Тест обработки FileNotFoundError."""
+        reader = ReadComtrade()
+        
+        with patch('osc_tools.data_management.comtrade_processing.Comtrade') as mock_comtrade_class:
+            mock_comtrade_instance = MagicMock()
+            mock_comtrade_class.return_value = mock_comtrade_instance
+            mock_comtrade_instance.load.side_effect = FileNotFoundError("File not found")
+            
+            result = reader.read_comtrade('nonexistent.cfg')
+            
+            # Проверяем возврат (None, None)
+            assert result == (None, None), "При ошибке должен вернуться (None, None)"
+            
+            # Проверяем, что была выведена диагностика
+            captured = capsys.readouterr()
+            assert "[ERROR]" in captured.out, "Должно быть сообщение об ошибке"
+            assert "FileNotFoundError" in captured.out, "Должен быть тип ошибки"
+    
+    def test_read_comtrade_value_error(self, capsys):
+        """Тест обработки ValueError (неправильный формат файла)."""
+        reader = ReadComtrade()
+        
+        with patch('osc_tools.data_management.comtrade_processing.Comtrade') as mock_comtrade_class:
+            mock_comtrade_instance = MagicMock()
+            mock_comtrade_class.return_value = mock_comtrade_instance
+            mock_comtrade_instance.load.side_effect = ValueError("Invalid format")
+            
+            result = reader.read_comtrade('bad_file.cfg')
+            
+            assert result == (None, None), "При ошибке должен вернуться (None, None)"
+            
+            captured = capsys.readouterr()
+            assert "[ERROR]" in captured.out
+            assert "ValueError" in captured.out
+    
+    def test_read_comtrade_generic_exception(self, capsys):
+        """Тест обработки любых исключений."""
+        reader = ReadComtrade()
+        
+        with patch('osc_tools.data_management.comtrade_processing.Comtrade') as mock_comtrade_class:
+            mock_comtrade_instance = MagicMock()
+            mock_comtrade_class.return_value = mock_comtrade_instance
+            mock_comtrade_instance.load.side_effect = RuntimeError("Unexpected error")
+            
+            result = reader.read_comtrade('corrupted.cfg')
+            
+            assert result == (None, None), "При ошибке должен вернуться (None, None)"
+            
+            captured = capsys.readouterr()
+            assert "[ERROR]" in captured.out
+            assert "RuntimeError" in captured.out
+    
+    def test_read_comtrade_error_diagnostic_output(self, capsys):
+        """Тест полноты диагностической информации при ошибке."""
+        reader = ReadComtrade()
+        test_filename = "oscillogram_2025_11_21.cfg"
+        
+        with patch('osc_tools.data_management.comtrade_processing.Comtrade') as mock_comtrade_class:
+            mock_comtrade_instance = MagicMock()
+            mock_comtrade_class.return_value = mock_comtrade_instance
+            mock_comtrade_instance.load.side_effect = RuntimeError("Corrupted file")
+            
+            reader.read_comtrade(test_filename)
+            
+            captured = capsys.readouterr()
+            output = captured.out
+            
+            # Проверяем наличие основных элементов диагностики
+            assert "Произошла критическая ошибка" in output
+            assert test_filename in output or "oscillogram_2025_11_21.cfg" in output
+            assert "RuntimeError" in output
+            assert "Corrupted file" in output
+            assert "Полная трассировка" in output
+

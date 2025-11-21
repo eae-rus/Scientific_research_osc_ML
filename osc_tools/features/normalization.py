@@ -13,7 +13,7 @@ from tqdm import tqdm # Для визуализации прогресса
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
 
-from dataflow.comtrade_processing import ReadComtrade
+from osc_tools.data_management.comtrade_processing import ReadComtrade
 
 VOLTAGE_T1_S = 20 * np.sqrt(2)
 VOLTAGE_T1_P = 500 * np.sqrt(2)
