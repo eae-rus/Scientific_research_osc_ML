@@ -9,7 +9,7 @@ import re
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(ROOT_DIR)
 from osc_tools.features.normalization import NormOsc, CreateNormOsc
-from dataflow.comtrade_processing import ReadComtrade
+from osc_tools.data_management.comtrade_processing import ReadComtrade
 from osc_tools.io.comtrade_parser import ComtradeParser
 
 class OvervoltageAnalyzer:

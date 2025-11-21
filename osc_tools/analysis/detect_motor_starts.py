@@ -11,7 +11,7 @@ from tqdm import tqdm
 import re
 
 
-from dataflow.comtrade_processing import ReadComtrade
+from osc_tools.data_management.comtrade_processing import ReadComtrade
 
 class MotorStartDetector:
     """

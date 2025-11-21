@@ -31,6 +31,7 @@ import struct
 import sys
 import warnings
 import numpy as np
+import pandas as pd
 
 try:
     import numpy
@@ -1020,7 +1021,42 @@ class Comtrade:
                                           self._cfg.timemult))
         lines.append(format_line.format(self.ft))
         return "\n".join(lines)
-    
+
+    def to_dataframe(self):
+        """
+        Преобразует загруженные данные осциллограммы в pandas DataFrame.
+        
+        Возвращает:
+            pandas.DataFrame: DataFrame с временной колонкой и колонками для каждого
+                              аналогового и дискретного канала.
+        """
+        if self.total_samples == 0:
+            return pd.DataFrame() # Возвращаем пустой DataFrame, если нет данных
+
+        # Создаем словарь для будущего DataFrame
+        data = {'Time': self.time}
+
+        # Добавляем аналоговые каналы
+        for i, channel_name in enumerate(self.analog_channel_ids):
+            # Проверяем, чтобы не было дубликатов имен столбцов
+            if channel_name in data:
+                # Если имя уже есть, добавляем суффикс
+                unique_name = f"{channel_name}_{i}"
+                data[unique_name] = self.analog[i]
+            else:
+                data[channel_name] = self.analog[i]
+
+        # Добавляем дискретные каналы
+        for i, channel_name in enumerate(self.status_channel_ids):
+             # Проверяем, чтобы не было дубликатов имен столбцов
+            if channel_name in data:
+                unique_name = f"{channel_name}_status_{i}"
+                data[unique_name] = self.status[i]
+            else:
+                data[channel_name] = self.status[i]
+
+        return pd.DataFrame(data)
+
     def remove_disallowed_analog_names(self, allowed_names: dict) -> 'Comtrade':
         k = 0
         # TODO: Проверить корректность работы
