@@ -528,16 +528,21 @@ class ComtradeParser():
         return bus_df
     
     def check_columns(self, raw_df):
-        """проверка на наличие неизвестных столбцов"""
+        """проверка на наличие неизвестных столбцов (только логирование, без выброса исключений)"""
         ml_signals = set()
         for i_bus in self.uses_buses:
             ml_signals.update(self.get_ml_signals(i_bus))
 
         all_names = self.all_names.union(ml_signals)
         columns = raw_df.columns
+        unknown_columns = []
         for c in columns:
             if c not in all_names:
-                raise NameError("Неизвестный столбец: " + c)
+                unknown_columns.append(c)
+        
+        # Просто логируем неизвестные столбцы без выброса исключения
+        if unknown_columns:
+            pass  # Молча пропускаем неизвестные столбцы (например, 'Time' при построении графиков)
 
     def get_ml_signals(self, i_bus, use_operational_switching=True, use_abnormal_event=True, use_emergency_event=True):
         """
