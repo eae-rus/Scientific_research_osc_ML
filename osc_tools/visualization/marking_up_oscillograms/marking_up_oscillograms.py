@@ -217,6 +217,41 @@ class MarkingUpOscillograms(ComtradeProcessor):
                 sorted_files_df.to_csv(csv_name, index=False)
                 pbar.update(1)
 
+
+def add_zoom_effect(ax_main, ax_zoom, x_min, x_max, y_min, y_max, **line_props):
+    """Добавить эффект зумирования между двумя осями.
+    
+    Args:
+        ax_main: основная ось
+        ax_zoom: увеличенная ось
+        x_min, x_max: границы по X для зумирования
+        y_min, y_max: границы по Y для зумирования
+        **line_props: параметры линий (color, linewidth и т.д.)
+    """
+    from matplotlib.patches import Rectangle, FancyBboxPatch
+    from matplotlib.lines import Line2D
+    
+    # Параметры по умолчанию
+    color = line_props.get('color', 'red')
+    linewidth = line_props.get('linewidth', 1.5)
+    alpha = line_props.get('alpha', 0.7)
+    
+    # Рисуем прямоугольник на основной оси
+    rect = Rectangle((x_min, y_min), x_max - x_min, y_max - y_min, 
+                     fill=False, edgecolor=color, linewidth=linewidth, alpha=alpha)
+    ax_main.add_patch(rect)
+    
+    # Рисуем линии связи от углов прямоугольника к увеличенной оси
+    # Получаем трансформации для преобразования координат
+    trans_main = ax_main.transData
+    trans_zoom = ax_zoom.transData
+    
+    # Верхний левый угол
+    ax_main.plot([x_min, x_min], [y_min, y_max], color=color, linewidth=linewidth * 0.5, alpha=alpha * 0.5)
+    # Верхний правый угол
+    ax_main.plot([x_max, x_max], [y_min, y_max], color=color, linewidth=linewidth * 0.5, alpha=alpha * 0.5)
+
+
 class ComtradePredictionAndPlotting(ComtradeProcessor):
     """Класс для прогнозирования событий и построения графиков."""
 
@@ -597,6 +632,128 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
             print("Прогноз вернул NaN. Пропуск построения графика.")
             return
         self.plot_predictions_vs_real(self.start_point, self.end_point, analog_signal, predict_labels, real_labels)
+
+    def plot_with_zoom(self, 
+                       zoom_start: int, 
+                       zoom_end: int,
+                       analog_signal: dict, 
+                       predict_labels: dict, 
+                       real_labels: dict):
+        """Построить график с увеличенной областью (зумирование).
+        
+        Args:
+            zoom_start: начало области для увеличения (в индексах)
+            zoom_end: конец области для увеличения (в индексах)
+            analog_signal: словарь с аналоговыми сигналами
+            predict_labels: словарь с предсказаниями модели
+            real_labels: словарь с реальной разметкой
+            
+        Примечание: основной график показывает весь диапазон,
+        дополнительный график показывает увеличенную область.
+        """
+        # Установка стиля шрифта
+        plt.rcParams['font.size'] = self.font_size
+        plt.rcParams['font.family'] = self.font_family
+        
+        time_range_full = np.arange(self.start_point, self.end_point) * 1000 / self.ADC_sampling_rate
+        time_range_zoom = np.arange(zoom_start, zoom_end) * 1000 / self.ADC_sampling_rate
+        
+        # Создание фигуры с подграфиками (основной + зум)
+        fig = plt.figure(figsize=(self.figsize[0], self.figsize[1] + 3))
+        
+        # Основной график (полный диапазон)
+        ax_main_currents = plt.subplot(4, 1, 1)
+        ax_main_voltages = plt.subplot(4, 1, 2)
+        ax_main_discrete = plt.subplot(4, 1, 3)
+        
+        # Увеличенный график
+        ax_zoom = plt.subplot(4, 1, 4)
+        
+        # === ОСНОВНОЙ ГРАФИК ===
+        # Токи
+        current_signals = [sig for sig in Features.CURRENT_FOR_PLOT if sig in analog_signal]
+        for i, current in enumerate(current_signals):
+            signal_data = analog_signal[current][self.start_point:self.end_point]
+            color = ['#FFD700', '#00AA00', '#FF0000'][i % 3]
+            ax_main_currents.plot(time_range_full, signal_data, label=f'{current}', color=color, linewidth=1.5)
+        
+        ax_main_currents.legend(loc='upper right', fontsize=self.font_size - 1)
+        ax_main_currents.set_ylabel(self.labels['currents_label'], rotation=90, labelpad=10, 
+                                   fontsize=self.font_size, fontweight='bold')
+        ax_main_currents.grid(True, alpha=0.3, linestyle=':', linewidth=0.5)
+        ax_main_currents.set_facecolor('#f9f9f9')
+        
+        # Напряжения
+        voltage_signals = [sig for sig in Features.VOLTAGE_FOR_PLOT + ['UA CL', 'UB CL', 'UC CL'] if sig in analog_signal]
+        for i, voltage in enumerate(voltage_signals):
+            signal_data = analog_signal[voltage][self.start_point:self.end_point]
+            color = ['#FFD700', '#00AA00', '#FF0000'][i % 3]
+            ax_main_voltages.plot(time_range_full, signal_data, label=f'{voltage}', color=color, linewidth=1.5)
+        
+        ax_main_voltages.legend(loc='upper right', fontsize=self.font_size - 1)
+        ax_main_voltages.set_ylabel(self.labels['voltages_label'], rotation=90, labelpad=10, 
+                                   fontsize=self.font_size, fontweight='bold')
+        ax_main_voltages.grid(True, alpha=0.3, linestyle=':', linewidth=0.5)
+        ax_main_voltages.set_facecolor('#f9f9f9')
+        
+        # Дискретные сигналы
+        label_names = Features.TARGET
+        amp = [1, 2, 3]
+        
+        if self.use_model:
+            pred_colors = ['#ADD8E6', '#F08080', '#90EE90']
+            real_colors = ['#0000FF', '#FF0000', '#008000']
+            
+            for i, label_name in enumerate(label_names):
+                pred_positions = [amp[i] if lbl else np.nan for lbl in predict_labels[label_name][self.start_point:self.end_point]]
+                real_positions = [-amp[i] if lbl else np.nan for lbl in real_labels[label_name][self.start_point:self.end_point]]
+                
+                label_text = self.labels.get(label_name, label_name)
+                ax_main_discrete.scatter(time_range_full, pred_positions, color=pred_colors[i], marker='s', s=15, alpha=0.6)
+                ax_main_discrete.scatter(time_range_full, real_positions, color=real_colors[i], marker='o', s=20, alpha=0.8)
+            
+            ax_main_discrete.set_ylim([-3.8, 3.8])
+        else:
+            real_colors = ['#0000FF', '#FF0000', '#008000']
+            
+            for i, label_name in enumerate(label_names):
+                real_positions = [amp[i] if lbl else np.nan for lbl in real_labels[label_name][self.start_point:self.end_point]]
+                ax_main_discrete.scatter(time_range_full, real_positions, color=real_colors[i], marker='o', s=20, alpha=0.8)
+            
+            ax_main_discrete.set_ylim([0, 3.8])
+        
+        ax_main_discrete.set_ylabel(self.labels['discrete_label'], rotation=90, labelpad=10, 
+                                   fontsize=self.font_size, fontweight='bold')
+        ax_main_discrete.axhline(0, color='black', linestyle='-', linewidth=1)
+        ax_main_discrete.grid(True, alpha=0.3, linestyle=':', linewidth=0.5)
+        ax_main_discrete.set_facecolor('#f9f9f9')
+        
+        # === УВЕЛИЧЕННЫЙ ГРАФИК ===
+        for i, current in enumerate(current_signals):
+            signal_data = analog_signal[current][zoom_start:zoom_end]
+            color = ['#FFD700', '#00AA00', '#FF0000'][i % 3]
+            ax_zoom.plot(time_range_zoom, signal_data, label=f'{current}', color=color, linewidth=2)
+        
+        ax_zoom.legend(loc='upper right', fontsize=self.font_size - 1)
+        ax_zoom.set_ylabel(self.labels['currents_label'] + ' (zoom)', rotation=90, labelpad=10, 
+                          fontsize=self.font_size, fontweight='bold')
+        ax_zoom.set_xlabel(self.labels['time_label'], fontsize=self.font_size, fontweight='bold', labelpad=10)
+        ax_zoom.grid(True, alpha=0.3, linestyle=':', linewidth=0.5)
+        ax_zoom.set_facecolor('#f9f9f9')
+        
+        # Добавить прямоугольник на основном графике, указывающий зум область
+        add_zoom_effect(ax_main_currents, ax_zoom, 
+                       time_range_full[max(0, zoom_start - self.start_point)], 
+                       time_range_full[min(len(time_range_full) - 1, zoom_end - self.start_point)],
+                       ax_main_currents.get_ylim()[0], ax_main_currents.get_ylim()[1],
+                       color='red', linewidth=2, alpha=0.7)
+        
+        fig.suptitle(f'{self.labels["title_prefix"]} {self.osc_name}, Bus: {self.uses_bus} (with zoom)',
+                     fontsize=self.font_size + 2, fontweight='bold')
+        fig.subplots_adjust(hspace=0.4)
+        
+        plt.tight_layout()
+        plt.show()
  
 class CalcFlops():
     """Класс для вычисления FLOPS."""
@@ -666,6 +823,16 @@ if __name__ == "__main__":
         figsize=(14, 11)  # размер графика (ширина, высота)
     )
     comtrade_predictor.process_and_plot()
+    
+    # Для использования зума (опционально):
+    # analog_signal, predict_labels, real_labels = comtrade_predictor.predict()
+    # comtrade_predictor.plot_with_zoom(
+    #     zoom_start=1200,      # начало зум области
+    #     zoom_end=1400,        # конец зум области
+    #     analog_signal=analog_signal,
+    #     predict_labels=predict_labels,
+    #     real_labels=real_labels
+    # )
     
     # ===================== ПРИМЕР 3: Расчёт FLOPS (опционально) =====================
     # Раскомментируйте для использования:
