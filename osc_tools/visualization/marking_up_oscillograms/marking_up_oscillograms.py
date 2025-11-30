@@ -235,7 +235,8 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
         batch_size: int = 10000,
         font_size: int = 11,
         font_family: str = 'DejaVu Sans',
-        language: str = 'ru'  # 'ru' или 'en'
+        language: str = 'ru',  # 'ru' или 'en'
+        figsize: tuple = (14, 9)  # размер графика (ширина, высота)
     ):
         super().__init__(norm_file_path, device)
         
@@ -258,6 +259,7 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
         self.font_size = font_size
         self.font_family = font_family
         self.language = language  # 'ru' или 'en'
+        self.figsize = figsize  # размер графика
         
         self.ml_signals, self.ml_operational_switching, self.ml_abnormal_event, self.ml_emergency_event = self.get_short_names_ml_signals()
 
@@ -473,7 +475,7 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
         
         time_range = np.arange(start, end) * 1000 / self.ADC_sampling_rate  # мс (период дискретизации = 1000 / ADC_sampling_rate)
         
-        fig, axs = plt.subplots(3, 1, figsize=(14, 9), sharex=True)
+        fig, axs = plt.subplots(3, 1, figsize=self.figsize, sharex=True)
         fig.suptitle(f'{self.labels["title_prefix"]} {self.osc_name}, Bus: {self.uses_bus}', 
                      fontsize=self.font_size + 2, fontweight='bold', fontfamily=self.font_family)
         fig.subplots_adjust(hspace=0.35)
@@ -559,7 +561,7 @@ class ComtradePredictionAndPlotting(ComtradeProcessor):
                 data[label_text] = real_positions
             
             # Настройка третьего графика
-            axs[2].set_ylim([-3.8, 3.8])
+            axs[2].set_ylim([0, 3.8])
         
         axs[2].legend(loc='upper right', fontsize=self.font_size - 1, framealpha=0.9)
         axs[2].set_ylabel(self.labels['discrete_label'], rotation=90, labelpad=12, fontsize=self.font_size, fontweight='bold')
@@ -658,9 +660,10 @@ if __name__ == "__main__":
         norm_file_path='raw_data/norm_coef_all_v1.4.csv',
         model_path=None,  # Не требуется при use_model=False
         use_model=False,  # Отключаем использование модели
-        font_size=11,
+        font_size=14,
         font_family='DejaVu Sans',
-        language='en'  # 'ru' для русского, 'en' для английского
+        language='en',  # 'ru' для русского, 'en' для английского
+        figsize=(14, 11)  # размер графика (ширина, высота)
     )
     comtrade_predictor.process_and_plot()
     
