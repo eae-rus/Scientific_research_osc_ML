@@ -221,11 +221,11 @@ def sample_normalized_dataframe():
 ```python
 from unittest.mock import patch, MagicMock
 
-@patch('osc_tools.io.comtrade_parser.open')
-def test_parse_comtrade(mock_open):
-    mock_open.return_value.__enter__ = lambda s: s
-    mock_open.return_value.read.return_value = b'...'
-    # тест
+@patch('osc_tools.core.comtrade_custom.Comtrade._load_inf')
+@patch('osc_tools.core.comtrade_custom.Comtrade._load_hdr')
+@patch('os.path.exists', return_value=True)
+def test_comtrade_load(mock_exists, mock_hdr, mock_inf):
+    # тест без обращения к реальной ФС
 ```
 
 ## Типовые задачи
