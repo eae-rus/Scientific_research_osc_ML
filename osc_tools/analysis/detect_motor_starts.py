@@ -18,7 +18,9 @@ class MotorStartDetector:
     Класс для анализа осциллограмм и выявления пусков двигателей
     по заданным критериям (факторам).
     """
-    def __init__(self, osc_folder_path: str, norm_coef_path: str, output_path: str, log_path: str):
+    def __init__(self, osc_folder_path: str, norm_coef_path: str, output_path: str, log_path: str,
+                 enable_factor_1: bool = True, enable_factor_2: bool = True,
+                 enable_factor_3: bool = True, enable_factor_4: bool = True):
         """
         Инициализация детектора.
 
@@ -27,11 +29,21 @@ class MotorStartDetector:
             norm_coef_path (str): Путь к CSV файлу с коэффициентами нормализации (для Iном).
             output_path (str): Путь к папке, куда будут сохраняться отсортированные осциллограммы.
             log_path (str): Путь к файлу для логирования ошибок.
+            enable_factor_1 (bool): Включить поиск по Фактору 1. По умолчанию True.
+            enable_factor_2 (bool): Включить поиск по Фактору 2. По умолчанию True.
+            enable_factor_3 (bool): Включить поиск по Фактору 3. По умолчанию True.
+            enable_factor_4 (bool): Включить поиск по Фактору 4. По умолчанию True.
         """
         self.osc_folder_path = osc_folder_path
         self.norm_coef_path = norm_coef_path
         self.output_path = output_path
         self.log_path = log_path
+        
+        # --- Флаги для включения/отключения факторов ---
+        self.enable_factor_1 = enable_factor_1
+        self.enable_factor_2 = enable_factor_2
+        self.enable_factor_3 = enable_factor_3
+        self.enable_factor_4 = enable_factor_4
 
         # --- Гиперпараметры для алгоритмов детекции ---
         # Фактор 1 и 4: Порог "отсутствия" тока (шум)
@@ -339,8 +351,10 @@ class MotorStartDetector:
             return False
             
         # 4. Ток никогда не опускается до нуля
-        if np.min(i1_rms_pu) < self.NOISE_THRESHOLD_PU:
-            return False
+        # Скорее всего не верный фактор, поэтому пока что закоментировать
+        # TODO: Определить полезность алгоритма.
+        # if np.min(i1_rms_pu) < self.NOISE_THRESHOLD_PU:
+        #     return False
 
         return True
 
@@ -390,25 +404,25 @@ class MotorStartDetector:
             # осциллограмма классифицируется, копируется и мы переходим к следующему файлу.
             
             # Проверка Фактора 1
-            if self._check_factor_1(i1_rms_pu, plateau_len_samples):
+            if self.enable_factor_1 and self._check_factor_1(i1_rms_pu, plateau_len_samples):
                 self._copy_file_to_factor_folder(filename_without_ext, 1, channel_name)
                 self.processed_files.add(filename_without_ext)
                 return # Выходим из функции, т.к. файл классифицирован и скопирован
             
             # Проверка Фактора 2
-            if self._check_factor_2(i1_rms_pu, plateau_len_samples):
+            if self.enable_factor_2 and self._check_factor_2(i1_rms_pu, plateau_len_samples):
                 self._copy_file_to_factor_folder(filename_without_ext, 2, channel_name)
                 self.processed_files.add(filename_without_ext)
                 return
             
             # Проверка Фактора 3
-            if self._check_factor_3(i1_rms_pu, plateau_len_samples):
+            if self.enable_factor_3 and self._check_factor_3(i1_rms_pu, plateau_len_samples):
                 self._copy_file_to_factor_folder(filename_without_ext, 3, channel_name)
                 self.processed_files.add(filename_without_ext)
                 return
             
             # Проверка Фактора 4
-            if self._check_factor_4(i1_rms_pu, plateau_len_samples):
+            if self.enable_factor_4 and self._check_factor_4(i1_rms_pu, plateau_len_samples):
                 self._copy_file_to_factor_folder(filename_without_ext, 4, channel_name)
                 self.processed_files.add(filename_without_ext)
                 return
