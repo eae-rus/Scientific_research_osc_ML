@@ -14,6 +14,8 @@ import pytest
 from pathlib import Path
 import sys
 import pandas as pd
+from unittest.mock import patch, MagicMock
+import os
 
 # Setup sys.path for imports
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -78,61 +80,59 @@ class TestNormalizationStructure:
 class TestGenerateColumnMethods:
     """Test column generation methods work on real instances."""
     
-    def test_generate_vt_cols_returns_tuple(self):
+    @patch('os.listdir', return_value=[])
+    @patch('os.path.exists', return_value=False)
+    def test_generate_vt_cols_returns_tuple(self, mock_exists, mock_listdir):
         """Test generate_VT_cols returns tuple structure."""
         from osc_tools.features.normalization import CreateNormOsc
         
-        try:
-            # Create a real instance
-            instance = CreateNormOsc(bus_count=2)
-            result = instance.generate_VT_cols(bus=2)
-            assert isinstance(result, tuple)
-        except (TypeError, AttributeError):
-            pytest.skip("generate_VT_cols method structure differs")
+        # Create a real instance with a dummy path
+        instance = CreateNormOsc(osc_path='dummy_path')
+        result = instance.generate_VT_cols(bus=2)
+        assert isinstance(result, tuple)
+        assert len(result) == 2
     
-    def test_generate_ct_cols_returns_tuple(self):
+    @patch('os.listdir', return_value=[])
+    @patch('os.path.exists', return_value=False)
+    def test_generate_ct_cols_returns_tuple(self, mock_exists, mock_listdir):
         """Test generate_CT_cols returns tuple structure."""
         from osc_tools.features.normalization import CreateNormOsc
         
-        try:
-            instance = CreateNormOsc(bus_count=2)
-            result = instance.generate_CT_cols(bus=2)
-            assert isinstance(result, tuple)
-        except (TypeError, AttributeError):
-            pytest.skip("generate_CT_cols signature differs")
+        instance = CreateNormOsc(osc_path='dummy_path')
+        result = instance.generate_CT_cols(bus=2)
+        assert isinstance(result, tuple)
+        assert len(result) == 2
     
-    def test_generate_raw_cols_returns_list(self):
-        """Test generate_raw_cols returns list."""
+    @patch('os.listdir', return_value=[])
+    @patch('os.path.exists', return_value=False)
+    def test_generate_raw_cols_returns_list(self, mock_exists, mock_listdir):
+        """Test generate_raw_cols returns set."""
         from osc_tools.features.normalization import CreateNormOsc
         
-        try:
-            instance = CreateNormOsc(bus_count=2)
-            result = instance.generate_raw_cols(bus=2)
-            assert isinstance(result, list)
-        except (TypeError, AttributeError):
-            pytest.skip("generate_raw_cols signature differs")
+        instance = CreateNormOsc(osc_path='dummy_path')
+        result = instance.generate_raw_cols(bus=2)
+        # generate_raw_cols returns a set in the code
+        assert isinstance(result, set)
     
-    def test_generate_result_cols_returns_list(self):
-        """Test generate_result_cols returns list."""
+    @patch('os.listdir', return_value=[])
+    @patch('os.path.exists', return_value=False)
+    def test_generate_result_cols_returns_list(self, mock_exists, mock_listdir):
+        """Test generate_result_cols returns dict."""
         from osc_tools.features.normalization import CreateNormOsc
         
-        try:
-            instance = CreateNormOsc(bus_count=2)
-            result = instance.generate_result_cols(bus=2)
-            assert isinstance(result, list)
-        except (TypeError, AttributeError):
-            pytest.skip("generate_result_cols signature differs")
+        instance = CreateNormOsc(osc_path='dummy_path')
+        result = instance.generate_result_cols(bus=2)
+        assert isinstance(result, dict)
     
-    def test_generate_all_features_returns_list(self):
-        """Test generate_all_features returns list."""
+    @patch('os.listdir', return_value=[])
+    @patch('os.path.exists', return_value=False)
+    def test_generate_all_features_returns_list(self, mock_exists, mock_listdir):
+        """Test generate_all_features returns set."""
         from osc_tools.features.normalization import CreateNormOsc
         
-        try:
-            instance = CreateNormOsc(bus_count=2)
-            result = instance.generate_all_features(bus=2)
-            assert isinstance(result, list)
-        except (TypeError, AttributeError):
-            pytest.skip("generate_all_features signature differs")
+        instance = CreateNormOsc(osc_path='dummy_path')
+        result = instance.generate_all_features(bus=2)
+        assert isinstance(result, set)
 
 
 class TestNormalizationEdgeCases:

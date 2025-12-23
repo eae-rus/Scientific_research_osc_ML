@@ -25,7 +25,6 @@ class TestComtradeParserInitialization:
     """Тесты инициализации ComtradeParser"""
     
     @pytest.mark.unit
-    @pytest.mark.skip(reason="Requires real file system setup")
     def test_comtrade_parser_nonexistent_path(self):
         """
         Тест: инициализация с несуществующим path
@@ -35,7 +34,6 @@ class TestComtradeParserInitialization:
             ComtradeParser(raw_path='/nonexistent/path/')
     
     @pytest.mark.unit
-    @pytest.mark.skip(reason="Requires json.load mocking")
     def test_comtrade_parser_default_buses(self):
         """
         Тест: проверка значений по умолчанию для buses
@@ -55,7 +53,6 @@ class TestGetBusNames:
     """Тесты для метода get_bus_names"""
     
     @pytest.mark.unit
-    @pytest.mark.skip(reason="Requires json.load mocking")
     def test_get_bus_names_structure(self):
         """
         Тест: структура возвращаемого словаря для аналоговых сигналов
@@ -86,7 +83,6 @@ class TestGetBusNames:
                     assert len(parser.analog_names_dict) > 0
     
     @pytest.mark.unit
-    @pytest.mark.skip(reason="Requires json.load mocking")
     def test_get_all_names_combines_analog_discrete(self):
         """
         Тест: метод get_all_names объединяет аналоговые и дискретные имена
@@ -116,7 +112,6 @@ class TestRenameRawColumns:
     """Тесты для метода rename_raw_columns"""
     
     @pytest.mark.unit
-    @pytest.mark.skip(reason="Requires DataFrame mocking")
     def test_rename_raw_columns_basic(self):
         """
         Тест: переименование колонок сырого DataFrame
@@ -152,7 +147,6 @@ class TestRenameRawColumns:
                     assert len(result_df.columns) > 0
     
     @pytest.mark.unit
-    @pytest.mark.skip(reason="Requires DataFrame mocking")
     def test_rename_raw_columns_empty_dataframe(self):
         """
         Тест: переименование пустого DataFrame
@@ -237,7 +231,6 @@ class TestGetMLSignals:
     """Тесты для метода get_ml_signals"""
     
     @pytest.mark.unit
-    @pytest.mark.skip(reason="Requires json.load mocking")
     def test_get_ml_signals_returns_list(self):
         """
         Тест: метод возвращает список ML сигналов

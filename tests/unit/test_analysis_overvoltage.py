@@ -220,10 +220,12 @@ class TestLoadNormCoefficients:
         assert analyzer.norm_coef_df is not None
         assert len(analyzer.norm_coef_df) == 3
     
+    @patch('osc_tools.analysis.overvoltage.ComtradeParser')
     @patch('osc_tools.features.normalization.os.path.exists', return_value=False)
     @patch('builtins.print')
-    def test_load_norm_coefficients_file_not_found(self, mock_print, mock_exists):
+    def test_load_norm_coefficients_file_not_found(self, mock_print, mock_exists, mock_comtrade):
         """Файл коэффициентов не найден."""
+        mock_comtrade.return_value = MagicMock()
         analyzer = OvervoltageAnalyzer(
             osc_folder_path='/data',
             norm_coef_path='/nonexistent/norm.csv',

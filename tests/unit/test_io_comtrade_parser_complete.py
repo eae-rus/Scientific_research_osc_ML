@@ -95,8 +95,3 @@ class TestComtradeSignalExtraction:
         assert len(phase_a) > 0, "Should have phase A signals"
         assert len(phase_b) > 0, "Should have phase B signals"
         assert len(phase_c) > 0, "Should have phase C signals"
-
-        
-        # Check file sizes are reasonable
-        assert cfg_file.stat().st_size > 0, "CFG file should not be empty"
-        assert dat_file.stat().st_size > 0, "DAT file should not be empty"

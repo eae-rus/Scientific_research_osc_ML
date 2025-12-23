@@ -42,24 +42,13 @@ class TestComtradeProcessing:
         assert hasattr(comtrade_processing, '__file__')
         assert comtrade_processing is not None
     
-    def test_process_with_sample_data(self, sample_normalized_dataframe):
-        """Test processing with sample DataFrame."""
-        try:
-            from osc_tools.data_management.comtrade_processing import (
-                normalize_signal,
-            )
-            
-            # Pick a voltage signal
-            signal = sample_normalized_dataframe['1Ua'].values
-            
-            # Process it (if normalize_signal exists)
-            try:
-                result = normalize_signal(signal)
-                assert result is not None
-            except TypeError:
-                pytest.skip("Function signature differs")
-        except ImportError:
-            pytest.skip("normalize_signal not available")
+    def test_process_with_sample_data(self):
+        """Test ReadComtrade class exists and can be instantiated."""
+        from osc_tools.data_management.comtrade_processing import ReadComtrade
+        
+        reader = ReadComtrade()
+        assert reader is not None
+        assert hasattr(reader, 'read_comtrade')
 
 
 class TestDataSearch:
