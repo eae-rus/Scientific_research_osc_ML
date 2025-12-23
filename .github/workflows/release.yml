@@ -1,0 +1,119 @@
+name: Release project
+
+on:
+  push:
+    tags:
+    - '*'
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  IS_PRERELEASE: 'false'
+
+jobs:
+  build:
+    name: Building project
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+
+  create_release:
+    name: Uploading files
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      rel_content: ${{ steps.rel_content_step.outputs.REL_CONTENT }}
+      ref_name: ${{ steps.ref_name_step.outputs.MODIFIED_REF_NAME }}
+    steps:
+      - uses: actions/checkout@v4
+
+
+      - name: Change prerelease status
+        if: contains(github.ref_name, '-rc')
+        run: echo "IS_PRERELEASE=true" >> $GITHUB_ENV
+
+
+      - name: Read changelog for pre release build
+        id: changelog_release
+        uses: aps-m/read_changelog_action@v3
+        with:
+          changelogfile: 'CHANGELOG.md'
+          tag: ${{ github.ref_name }}
+
+
+      - name: Remove v from ref name
+        id: ref_name_step
+        run: echo "MODIFIED_REF_NAME=$(sed 's/v//' <<< "${{ github.ref_name }}")" >> $GITHUB_OUTPUT
+
+
+      - name: Prepare release notes
+        run: |
+          echo "## [${{ env.MODIFIED_REF_NAME }}] - $(date +'%Y-%m-%d')" >> Release_Notes.md 
+          echo "" >> Release_Notes.md
+          echo "${{ steps.changelog_release.outputs.content }}" >> Release_Notes.md
+
+
+      - name: Prepare notification text about release
+        id: rel_content_step
+        run: echo 'REL_CONTENT<<EOF' >> $GITHUB_OUTPUT && echo "$(cat Release_Notes.md)" >> $GITHUB_OUTPUT && echo 'EOF' >> $GITHUB_OUTPUT
+
+
+      - uses: ncipollo/release-action@v1
+        with:
+          bodyFile: "Release_Notes.md"
+          allowUpdates: 'true'
+          prerelease: ${{ env.IS_PRERELEASE }}
+
+
+      - name: Notify
+        uses: aps-m/telegram-notify-action@v1
+        with:
+          token: ${{ secrets.TELEGRAM_TOKEN  }}
+          to: ${{ secrets.TELEGRAM_RELEASE_BUILD_TO }}
+          message: |
+            APScilloscope обновлен до версии ${{ env.MODIFIED_REF_NAME }}
+
+            ${{ env.REL_CONTENT }}
+
+
+  upload_files:
+    needs: create_release
+    strategy:
+      matrix:
+        configuration: ['ReleaseLite', 'ReleasePro', 'ReleaseML']
+        include:
+          - configuration: ReleaseLite
+            setup_name: 'APScilloscopeLite'
+          - configuration: ReleasePro
+            setup_name: 'APScilloscopePro'
+          - configuration: ReleaseML
+            setup_name: 'APScilloscopeML'
+
+    runs-on: self-hosted
+    steps:
+#      - name: Download build artifatcs
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: Build_Output_${{ matrix.configuration }}
+
+#      - name: List of files
+#        run: ls
+
+#      - name: Remove v from ref name
+#        run: echo "MODIFIED_REF_NAME=$(sed 's/v//' <<< "${{ github.ref_name }}")" >> $GITHUB_ENV
+
+
+      - name: Upload file to release
+        uses: svenstaro/upload-release-action@v2
+        env:
+          MODIFIED_REF_NAME: ${{needs.create_release.outputs.ref_name}}
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: '\\qnap.aps-m.com\документы\РАЗРАБОТКА\SOFT\APSCILLOSCOPE\${{ matrix.setup_name }}_v${{ env.MODIFIED_REF_NAME }}.exe'
+          asset_name: ${{ matrix.setup_name }}_v${{ env.MODIFIED_REF_NAME }}.exe
+
+
+      - name: Send file
+        uses: aps-m/telegram-notify-action@v1
+        with:
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          to: ${{ secrets.TELEGRAM_RELEASE_BUILD_TO }}
+          document: '\\qnap.aps-m.com\документы\РАЗРАБОТКА\SOFT\APSCILLOSCOPE\${{ matrix.setup_name }}_v${{ env.MODIFIED_REF_NAME }}.exe'

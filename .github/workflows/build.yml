@@ -1,0 +1,232 @@
+name: Build project
+
+# Controls when the workflow will run
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches:
+      - '*'
+  workflow_call:
+    inputs:
+      external_call:
+        description: 'To distinguish workflow_call from regular push'
+        type: boolean
+        required: false
+        default: true
+
+env:
+  AUTHOR: ${{ github.event.pusher.name }}
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+
+  version_extract:
+    name: Extracting version info
+    runs-on: ubuntu-latest
+    outputs:
+      app_version: ${{ steps.version_step.outputs.result_version }}
+      rev_changed: ${{ steps.store_revision.outputs.rev_is_changed }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get defined app version
+        id: version_step
+        uses: aps-m/read_app_version_action@v3
+        with:
+          ver_file: 'Gui/Gui.csproj'
+          defined_version_var: 'Version'
+
+
+      - name: Check app version
+        run: echo "${{ steps.version_step.outputs.result_version }}"
+
+
+
+      - name: Get revision changed state
+        id: store_revision
+        if: ${{ (!inputs.external_call) }}
+        uses: aps-m/betabuild-log-action@v4
+        with:
+          repo_token: ${{ secrets.REPO_TOKEN }}
+          var_name: 'REV'
+          tag_name: ${{ steps.version_step.outputs.result_version }}
+          size: 350
+          tag_filter: '-b'
+      
+      - name: Rev state
+        run: echo ${{ steps.store_revision.outputs.rev_is_changed }}
+
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    name: Build project
+    runs-on: self-hosted
+    needs: version_extract
+    if: ${{ (inputs.external_call) || (needs.version_extract.outputs.rev_changed == 'true' ) }}
+    strategy:
+      matrix:
+        configuration: ['ReleaseLite', 'ReleasePro', 'ReleaseML']
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      #- uses: pwall2222/inno-setup-download@v0.0.4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Create an empty resources file
+        run: |
+          New-Item -ItemType File -Path Helpers\Languages\Resources.Designer.cs
+
+      - name: Restore dependencies
+        id: restore_step
+        run: dotnet restore APScilloscope.slnx
+
+
+      - name: Build
+        id: build_step
+        run: dotnet publish APScilloscope.slnx -c ${{ matrix.configuration }}
+
+
+      - name: Notify about build failed
+        env:
+          REVISION_VALUE: ${{needs.version_extract.outputs.app_version}}
+        if: failure() && ((steps.build_step.outcome == 'failure') || (steps.restore_step.outcome == 'failure'))
+        uses: aps-m/telegram-notify-action@v1
+        with:
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          to: ${{ secrets.TELEGRAM_DEV_TO }}
+          message: |
+            ❗APScilloscope_v${{ env.REVISION_VALUE }}
+            Сборка проекта при выпуске ревизии завершилась с ошибкой.
+            Выпуск ревизии будет отменен.
+            Автор последнего коммита: ${{ env.AUTHOR }}
+            Последняя конфигурация сборки: ${{ matrix.configuration }}
+
+
+      - name: Check build output
+        run: powershell -Command "ls Output"
+
+
+      - name: Copy beta build to QNAP
+        env:
+          IS_VERSION_CHANGED: ${{needs.version_extract.outputs.rev_changed}}
+          REVISION_VALUE: ${{needs.version_extract.outputs.app_version}}
+        if: ${{ (env.IS_VERSION_CHANGED == 'true') && (!inputs.external_call) && contains(env.REVISION_VALUE, '-b') }}
+        uses: aps-m/copy-action@v4
+        with:
+           src_path: 'Output/*.exe'
+           dst_dir: '\\qnap.aps-m.com\документы\РАЗРАБОТКА\SOFT\APSCILLOSCOPE\тестовые версии'
+
+
+      - name: Copy release build to QNAP
+        if: ${{ inputs.external_call }}
+        uses: aps-m/copy-action@v4
+        with:
+           src_path: 'Output/*.exe'
+           dst_dir: '\\qnap.aps-m.com\документы\РАЗРАБОТКА\SOFT\APSCILLOSCOPE'
+
+
+#      - name: Archive production artifacts
+#        env:
+#          REVISION_VALUE: ${{needs.version_extract.outputs.app_version}}
+#        if: ${{ inputs.external_call }}
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: Build_Output_${{ matrix.configuration }}
+#          path: |
+#            Output/*.exe
+
+
+  notify:
+    name: Test build notification
+    needs: [version_extract, build]
+    runs-on: ubuntu-latest
+    if: ${{ (!inputs.external_call) && (needs.version_extract.outputs.rev_changed == 'true' ) }}
+    steps:
+
+      - uses: actions/checkout@v4
+
+
+      - name: Read changelog for pre release build
+        env:
+          IS_VERSION_CHANGED: ${{needs.version_extract.outputs.rev_changed}}
+          REVISION_VALUE: ${{needs.version_extract.outputs.app_version}}
+        id: changelog_action
+        if: ${{ (env.IS_VERSION_CHANGED == 'true') }}
+        uses: aps-m/read_changelog_action@v3
+        with:
+          changelogfile: 'pre_release_changelog.md'
+          tag: ${{ env.REVISION_VALUE }}
+
+
+      - name: Check release content
+        run: echo '${{ steps.changelog_action.outputs.content }}'
+
+
+      - name: Fail if changelog is void
+        id: changelog_check_step
+        if: ${{ !steps.changelog_action.outputs.content}}
+        run: exit 1
+
+
+      - name: Notify about void changelog
+        env:
+          REVISION_VALUE: ${{needs.version_extract.outputs.app_version}}
+        if: failure() && (steps.changelog_check_step.outcome == 'failure')
+        uses: aps-m/telegram-notify-action@v1
+        with:
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          to: ${{ secrets.TELEGRAM_DEV_TO }}
+          message: |
+            ❗APScilloscope_v${{ env.REVISION_VALUE }}
+            Не указано описание к тестовому релизу.
+            Выпуск ревизии будет отменен.
+            Автор последнего коммита: ${{ env.AUTHOR }}
+
+
+      - name: Notify about test build
+        env:
+          IS_VERSION_CHANGED: ${{needs.version_extract.outputs.rev_changed}}
+          REVISION_VALUE: ${{needs.version_extract.outputs.app_version}}
+        if: ${{ (env.IS_VERSION_CHANGED == 'true') && contains(env.REVISION_VALUE, '-b') }}
+        uses: aps-m/telegram-notify-action@v1
+        with:
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          to: ${{ secrets.TELEGRAM_TEST_BUILD_TO }}
+          message: |
+            APScilloscope_v${{ env.REVISION_VALUE }}
+            ${{ steps.changelog_action.outputs.content }}
+
+
+
+  build_failure_handler:
+    # The type of runner that the job will run on
+    name: Build failure handler
+    runs-on: ubuntu-latest
+    needs: [version_extract, build, notify]
+    if: ${{ (needs.version_extract.outputs.rev_changed == 'true') && failure()}}
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+
+      - name: Remove new beta build from log
+        env:
+          REVISION_VALUE: ${{needs.version_extract.outputs.app_version}}
+        if: ${{ (!inputs.external_call) }}
+        uses: aps-m/betabuild-log-action@v4
+        with:
+          repo_token: ${{ secrets.REPO_TOKEN }}
+          var_name: 'REV'
+          tag_name: ${{ env.REVISION_VALUE }}
+          remove_request: true
+          size: 350
+
+
+
+
