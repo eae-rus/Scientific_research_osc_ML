@@ -225,24 +225,6 @@ class TestSomething:
 
 ---
 
-## 📝 Команды готовые к запуску завтра
-
-```bash
-# Проверить все тесты
-python -m pytest tests/unit/ -v
-
-# Запустить только новые тесты (после создания)
-python -m pytest tests/unit/test_preprocessing_segmentation.py -v
-
-# Запустить конкретный тест
-python -m pytest tests/unit/test_preprocessing_segmentation.py::TestOscillogramEventSegmenterInit::test_init_valid_params -v
-
-# Запустить с логированием в файл
-python -m pytest tests/unit/ -v > reports/pytest_log_$(date +%Y%m%d_%H%M%S).txt 2>&1
-```
-
----
-
 ## 🔧 Iteration 5: Bag Fixes (23 декабря - Part 2)
 
 ### ✅ Найденные и исправленные ошибки:
