@@ -19,13 +19,14 @@ import sys
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from osc_tools.ml.layers.complex_ops import (
+from osc_tools.ml.models import (
     cLeakyReLU,
     cSigmoid,
     cMaxPool1d,
+    create_conv_block,
+    Conv_3,
     cDropout1d
 )
-from osc_tools.ml.models.cnn import create_conv_block, Conv_3
 
 
 class TestCLeakyReLU:
