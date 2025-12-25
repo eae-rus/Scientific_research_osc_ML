@@ -470,7 +470,9 @@ class Cfg:
             n, name, ph, ccbm, y = packed
             # преобразование типов
             n = int(n)
-            y = _prevent_null(y, int, 0)  # TODO: на самом деле критически важные данные. В будущем добавить предупреждение.
+            if len(y.strip()) == 0:
+                warnings.warn(f"Отсутствует начальное состояние для дискретного канала {name} (индекс {n}). Используется 0.")
+            y = _prevent_null(y, int, 0)
             self.status_channels[ichn] = StatusChannel(n, name, ph, ccbm, y)
             line_count = line_count + 1
 
@@ -1058,8 +1060,16 @@ class Comtrade:
         return pd.DataFrame(data)
 
     def remove_disallowed_analog_names(self, allowed_names: dict) -> 'Comtrade':
+        """
+        Удаляет аналоговые каналы, имена которых отсутствуют в списке разрешенных.
+        
+        Args:
+            allowed_names: Словарь или набор разрешенных имен каналов.
+            
+        Returns:
+            Self для цепочки вызовов.
+        """
         k = 0
-        # TODO: Проверить корректность работы
         for i in range(len(self.analog)):
             if not (self.analog_channel_ids[i-k] in allowed_names):
                 self.analog.pop(i-k)
@@ -1072,8 +1082,16 @@ class Comtrade:
         return self
     
     def remove_disallowed_digital_names(self, allowed_names: dict) -> 'Comtrade':
+        """
+        Удаляет дискретные каналы, имена которых отсутствуют в списке разрешенных.
+        
+        Args:
+            allowed_names: Словарь или набор разрешенных имен каналов.
+            
+        Returns:
+            Self для цепочки вызовов.
+        """
         k = 0
-        # TODO: Проверить корректность работы
         for i in range(len(self.digital)):
             if not (self.digital_channel_ids[i-k] in allowed_names):
                 self.digital.pop(i-k)
@@ -1086,26 +1104,33 @@ class Comtrade:
         return self
 
     def write_cfg(self, filepath, cfg):
-        with open(filepath, 'w') as file:
-            file.write(cfg.to_string())  # Предполагается, что у вас есть метод для генерации содержимого файла конфигурации
+        """Записывает конфигурацию в CFG файл."""
+        with open(filepath, 'w', encoding='utf-8') as file:
+            file.write(cfg.to_string())
 
-    def write_to_file(self, cfg_filepath, dat_filepath):
-        # Запись файла конфигурации
+    def save(self, cfg_filepath, dat_filepath=None):
+        """
+        Сохраняет данные Comtrade в файлы CFG и DAT.
+        
+        Args:
+            cfg_filepath: Путь к файлу конфигурации (.cfg).
+            dat_filepath: Путь к файлу данных (.dat). Если None, используется имя cfg_filepath с расширением .dat.
+        """
+        if dat_filepath is None:
+            base, ext = os.path.splitext(cfg_filepath)
+            dat_filepath = base + ".dat"
+            
+        # Сохраняем CFG
         self.write_cfg(cfg_filepath, self._cfg)
         
-        
-        # FIXME: !! Запись в dat-файл не реализовано и не работает!!
-        # Подготовка данных для записи
-        # data_to_write = []
-        # for i in range(self.total_samples):
-        #     time = self.time[i]
-        #     sample_number = i
-        #     analog = [self.analog[j][i] * self._cfg.analog_channels[j].multiplier for j in range(self.analog_count)]
-        #     status = [int(self.status[j][i]) for j in range(self.status_count)]
-        #     data_to_write.append((time, sample_number, analog, status))
-        # # Запись файла данных в соответствующем формате
-        # self._dat_writer = Float32DatWriter(dat_filepath, self.analog_channel_ids, self.digital_channel_ids)
-        # self._dat_writer.write_data(dat_filepath, data_to_write)
+        # Сохраняем DAT
+        dat_reader = self._get_dat_reader()
+        dat_reader._cfg = self._cfg # Устанавливаем конфиг для ридера/врайтера
+        dat_reader.write(dat_filepath, self.time, self.analog, self.status)
+
+    def write_to_file(self, cfg_filepath, dat_filepath):
+        """Устаревший метод, используйте save()."""
+        self.save(cfg_filepath, dat_filepath)
 
 class Channel:
     """Хранит общие данные описания канала."""
@@ -1239,7 +1264,6 @@ class DatReader:
 
     def _get_samp(self, n) -> float:
         """Получает частоту дискретизации для выборки n (индекс с 1)."""
-        # TODO: сделать тесты.
         last_sample_rate = 1.0
         for samp, endsamp in self._cfg.sample_rates:
             if n <= endsamp:
@@ -1248,8 +1272,16 @@ class DatReader:
 
     def _get_time(self, n: int, ts_value: float, time_base: float,
                   time_multiplier: float):
+        """
+        Вычисляет время для выборки n.
+        
+        Args:
+            n: Номер выборки (1-indexed).
+            ts_value: Значение временной метки из DAT файла.
+            time_base: Базовое время из CFG.
+            time_multiplier: Множитель времени из CFG.
+        """
         # TODO: добавить опцию для принудительного использования временной метки из dat-файла, когда она доступна.
-        # TODO: сделать тесты.
         ts = 0
         sample_rate = self._get_samp(n)
         if not self._cfg.timestamp_critical or ts_value == TIMESTAMP_MISSING:
@@ -1265,6 +1297,18 @@ class DatReader:
 
     def parse(self, contents):
         """Виртуальный метод, разбирает содержимое DAT-файла."""
+        pass
+
+    def write(self, dat_filepath, time, analog, status):
+        """
+        Виртуальный метод для записи DAT-файла.
+        
+        Args:
+            dat_filepath: Путь к файлу для записи.
+            time: Список или массив временных меток.
+            analog: Список списков/массивов аналоговых значений.
+            status: Список списков/массивов дискретных значений.
+        """
         pass
 
 
@@ -1315,6 +1359,28 @@ class AsciiDatReader(DatReader):
                 self.analog[i][line_number - 1] = avalues[i]
             for i in range(status_count):
                 self.status[i][line_number - 1] = svalues[i]
+
+    def write(self, dat_filepath, time, analog, status):
+        """Записывает данные в формате ASCII DAT."""
+        analog_count = self._cfg.analog_count
+        status_count = self._cfg.status_count
+        
+        with open(dat_filepath, 'w', encoding='utf-8') as f:
+            for i in range(len(time)):
+                n = i + 1
+                ts = time[i]
+                
+                avalues = []
+                for j in range(analog_count):
+                    ch = self._cfg.analog_channels[j]
+                    # Обратное преобразование: yint = (y - b) / a
+                    yint = int(round((analog[j][i] - ch.offset) / ch.multiplier))
+                    avalues.append(str(yint))
+                
+                svalues = [str(int(status[j][i])) for j in range(status_count)]
+                
+                line = self.ASCII_SEPARATOR.join([str(n), f"{ts:.6f}"] + avalues + svalues)
+                f.write(line + "\n")
 
 class BinaryDatReader(DatReader):
     """Подкласс DatReader для 16-битного двоичного формата."""
@@ -1415,6 +1481,41 @@ class BinaryDatReader(DatReader):
 
             # Получение следующей строки
             irow += 1
+
+    def write(self, dat_filepath, time, analog, status):
+        """Записывает данные в двоичном формате (16-бит)."""
+        achannels = self._cfg.analog_count
+        schannels = self._cfg.status_count
+        
+        # Количество байтов для дискретных каналов (16 каналов на 2 байта)
+        dbytes = self.STATUS_BYTES * math.ceil(schannels / 16.0)
+        groups_of_16bits = math.floor(dbytes / self.STATUS_BYTES)
+        
+        row_writer = struct.Struct(self.get_reader_format(achannels, dbytes))
+        
+        with open(dat_filepath, 'wb') as f:
+            for i in range(len(time)):
+                n = i + 1
+                # Обратное преобразование времени
+                ts_val = int(round(time[i] / (self._cfg.time_base * self._cfg.timemult)))
+                
+                avalues = []
+                for j in range(achannels):
+                    ch = self._cfg.analog_channels[j]
+                    yint = int(round((analog[j][i] - ch.offset) / ch.multiplier))
+                    avalues.append(yint)
+                
+                sgroups = []
+                for igroup in range(groups_of_16bits):
+                    group = 0
+                    maxchn = min([(igroup + 1) * 16, schannels])
+                    for ichannel in range(igroup * 16, maxchn):
+                        chnindex = ichannel - igroup * 16
+                        if status[ichannel][i]:
+                            group |= (1 << chnindex)
+                    sgroups.append(group)
+                
+                f.write(row_writer.pack(n, ts_val, *avalues, *sgroups))
 
 
 class Binary32DatReader(BinaryDatReader):
