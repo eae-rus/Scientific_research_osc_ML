@@ -318,6 +318,16 @@ def get_dominant_frequency(signal: np.ndarray) -> Optional[float]:
     return float(np.argmax(np.abs(fft)))
 ```
 
+❌ **ПЛОХО:**
+```python
+# Check if model saved
+```
+
+✅ **ХОРОШО:**
+```python
+# Проверьте, сохранена ли модель
+```
+
 ## Полезные инструменты
 
 - `pandas.DataFrame.describe()` - Статистика данных
@@ -333,3 +343,4 @@ def get_dominant_frequency(signal: np.ndarray) -> Optional[float]:
 2. Читай docstrings и type hints
 3. Используй `grep_search` для нахождения примеров
 4. Фокусируйся на стабильном ядре (Layer 1), будь готов к изменениям в ML (Layer 3)
+5. Пиши комментарии на русском для сложной логики.
