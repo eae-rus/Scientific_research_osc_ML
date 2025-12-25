@@ -23,6 +23,8 @@ from osc_tools.core.comtrade_custom import (
     Comtrade,
     AsciiDatReader,
     BinaryDatReader,
+    Binary32DatReader,
+    Float32DatReader,
     REV_1991,
     REV_1999,
     REV_2013,
@@ -251,4 +253,129 @@ BINARY
         assert reader.analog[1][0] == 200.0
         assert reader.status[0][0] == 1
         assert reader.time[0] == 0.0
+
+    def test_binary32_dat_reader(self):
+        """Тест Binary32DatReader."""
+        cfg = Cfg()
+        cfg_content = """Station A, Device 1, 2013
+3, 2A, 1D
+1, IA, , , A, 1.0, 0.0, 0.0, -1000, 1000, 1.0, 1.0, P
+2, IB, , , A, 1.0, 0.0, 0.0, -1000, 1000, 1.0, 1.0, P
+1, DI1, , , 0
+50.0
+1
+1600, 1
+24/12/2025, 12:00:00.000000
+24/12/2025, 12:00:00.100000
+BINARY32
+1.0
+"""
+        cfg.read(cfg_content)
+        
+        import struct
+        # 1 sample: n=1, ts=0, IA=100000, IB=200000, DI1=1
+        # Format: II ii H (assuming 2 analogs, 1 status)
+        # Binary32 uses 'l' or 'i' for analog
+        fmt = "IIiiH" if struct.calcsize("L") == 4 else "IIiiH"
+        # Wait, Binary32DatReader uses "LL {acount:d}l {dcount:d}H" or "II {acount:d}i {dcount:d}H"
+        # Let's check the code again.
+        # if struct.calcsize("L") == 4: self.STRUCT_FORMAT = "LL {acount:d}l {dcount:d}H"
+        # else: self.STRUCT_FORMAT = "II {acount:d}i {dcount:d}H"
+        
+        if struct.calcsize("L") == 4:
+            dat_content = struct.pack("<LLllH", 1, 0, 100000, 200000, 1)
+        else:
+            dat_content = struct.pack("<IIiiH", 1, 0, 100000, 200000, 1)
+        
+        reader = Binary32DatReader()
+        reader._cfg = cfg
+        reader._total_samples = 1
+        reader._preallocate()
+        reader.parse(dat_content)
+        
+        assert reader.analog[0][0] == 100000.0
+        assert reader.analog[1][0] == 200000.0
+        assert reader.status[0][0] == 1
+        assert reader.time[0] == 0.0
+
+    def test_float32_dat_reader(self):
+        """Тест Float32DatReader."""
+        cfg = Cfg()
+        cfg_content = """Station A, Device 1, 2013
+3, 2A, 1D
+1, IA, , , A, 1.0, 0.0, 0.0, -1000, 1000, 1.0, 1.0, P
+2, IB, , , A, 1.0, 0.0, 0.0, -1000, 1000, 1.0, 1.0, P
+1, DI1, , , 0
+50.0
+1
+1600, 1
+24/12/2025, 12:00:00.000000
+24/12/2025, 12:00:00.100000
+FLOAT32
+1.0
+"""
+        cfg.read(cfg_content)
+        
+        import struct
+        # 1 sample: n=1, ts=0, IA=123.45, IB=678.90, DI1=1
+        if struct.calcsize("L") == 4:
+            dat_content = struct.pack("<LLffH", 1, 0, 123.45, 678.90, 1)
+        else:
+            dat_content = struct.pack("<IIffH", 1, 0, 123.45, 678.90, 1)
+        
+        reader = Float32DatReader()
+        reader._cfg = cfg
+        reader._total_samples = 1
+        reader._preallocate()
+        reader.parse(dat_content)
+        
+        assert reader.analog[0][0] == pytest.approx(123.45, rel=1e-5)
+        assert reader.analog[1][0] == pytest.approx(678.90, rel=1e-5)
+        assert reader.status[0][0] == 1
+        assert reader.time[0] == 0.0
+
+    def test_comtrade_save_ascii(self):
+        """Тест сохранения Comtrade в формате ASCII."""
+        obj = Comtrade()
+        obj.cfg._station_name = "Test Station"
+        obj.cfg._ft = "ASCII"
+        obj._time_values = [0.0, 0.001]
+        obj._analog_values = [[10.0, 20.0]]
+        obj._status_values = [[1, 0]]
+        obj._total_samples = 2
+        
+        # Настройка аналогового канала
+        from osc_tools.core.comtrade_custom import AnalogChannel
+        obj.cfg._analog_channels = [AnalogChannel(1, 1.0, 0.0, name='IA')]
+        obj.cfg._analog_count = 1
+        obj.cfg._status_channels = [MagicMock(index=1, name='DI1', y=0)]
+        obj.cfg._status_count = 1
+        
+        # Мокаем open
+        mock_file = MagicMock()
+        with patch('builtins.open', return_value=mock_file) as mock_open:
+            obj.save('test.cfg')
+            
+        # Проверяем, что open вызывался
+        assert mock_open.called
+
+    def test_comtrade_save_binary(self):
+        """Тест сохранения Comtrade в формате BINARY."""
+        obj = Comtrade()
+        obj.cfg._ft = "BINARY"
+        obj._time_values = [0.0]
+        obj._analog_values = [[100.0]]
+        obj._status_values = [[1]]
+        obj._total_samples = 1
+        
+        from osc_tools.core.comtrade_custom import AnalogChannel
+        obj.cfg._analog_channels = [AnalogChannel(1, 1.0, 0.0, name='IA')]
+        obj.cfg._analog_count = 1
+        obj.cfg._status_count = 1
+        
+        mock_file = MagicMock()
+        with patch('builtins.open', return_value=mock_file) as mock_open:
+            obj.save('test.cfg')
+            
+        assert mock_open.called
 

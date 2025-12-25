@@ -48,7 +48,7 @@
 
 ---
 
-## 📊 Текущее состояние (259 тестов)
+## 📊 Текущее состояние (276 тестов)
 
 ### Структура тестов
 ```
@@ -59,31 +59,32 @@ tests/
 │   ├── __init__.py
 │   └── fixtures.py                      # ✅ Factory-функции
 ├── unit/
-│   ├── test_core_comtrade_custom.py     # 🆕 11 тестов (Layer 1: Core)
+│   ├── test_core_comtrade_custom.py     # ✅ 18 тестов (Layer 1: Core)
 │   ├── test_constants.py                # ✅ 18 тестов
 │   ├── test_pdr_calculator.py           # ✅ 6 тестов  
 │   ├── test_pdr_calculator_edge_cases.py# ✅ 11 тестов
-│   ├── test_features_pdr_calculator.py  # 🆕 7 тестов (Layer 2: Math helpers)
+│   ├── test_features_pdr_calculator.py  # ✅ 7 тестов (Layer 2: Math helpers)
 │   ├── test_preprocessing_filtering.py  # ✅ 11 тестов
-│   ├── test_preprocessing_segmentation.py # ✅ 30 тестов
+│   ├── test_preprocessing_segmentation.py # ✅ 23 теста
 │   ├── test_comtrade_parser.py          # ✅ 11 тестов
 │   ├── test_analysis_overvoltage.py     # ✅ 16 тестов
 │   ├── test_analysis_motor_and_spef.py  # ✅ 16 тестов
-│   ├── test_features_normalization.py   # ✅ 15 тестов
+│   ├── test_features_normalization.py   # ✅ 18 тестов
 │   ├── test_data_management_renaming.py # ✅ 16 тестов
 │   ├── test_data_management_complete.py # ✅ 15 тестов
-│   └── test_ml_models.py                # 🆕 2 теста (Layer 3: Smoke tests)
+│   ├── test_ml_infrastructure.py        # ✅ 4 теста (Dataset, Samplers)
+│   └── test_ml_models.py                # ✅ 2 теста (Layer 3: Smoke tests)
 └── integration/
-    └── test_comtrade_io.py              # ✅ 17 тестов
+    └── test_comtrade_io.py              # ✅ 24 теста
 ```
 
 ### Метрики
 
 | Метрика | Значение |
 |---------|----------|
-| Всего тестов | **259** (было 210, добавлено 49+) |
+| Всего тестов | **276** (было 259, добавлено 17+) |
 | Pass rate | **100%** ✅ |
-| Покрытие (approx) | ~55% |
+| Покрытие (approx) | ~65% |
 | Время выполнения | ~22 сек |
 
 **Примечание:** Все 22 ранее падавших теста исправлены. Добавлено глубокое тестирование парсинга COMTRADE.
@@ -99,14 +100,14 @@ tests/
 osc_tools/
 ├── core/                           ← ПРИОРИТЕТ 1 (стабильное)
 │   ├── constants.py                   ✅ 18 тестов (DONE)
-│   └── comtrade_custom.py             ✅ 11 тестов (DONE)
+│   └── comtrade_custom.py             ✅ 18 тестов (DONE: Read/Write/Save)
 │
 ├── io/                             ← ПРИОРИТЕТ 1
 │   └── comtrade_parser.py             ✅ 11 тестов (DONE)
 │
 ├── preprocessing/                  ← ПРИОРИТЕТ 1
 │   ├── filtering.py                   ✅ 11 тестов (DONE)
-│   └── segmentation.py                ✅ 30 тестов (DONE)
+│   └── segmentation.py                ✅ 23 теста (DONE)
 │
 ├── analysis/                       ← ПРИОРИТЕТ 1
 │   ├── overvoltage.py                 ✅ 16 тестов (DONE)
@@ -115,10 +116,10 @@ osc_tools/
 │
 ├── features/                       ← ПРИОРИТЕТ 2 (адаптивный слой)
 │   ├── pdr_calculator.py              ✅ 24 теста (DONE)
-│   └── normalization.py               ✅ 15 тестов (DONE)
+│   └── normalization.py               ✅ 18 тестов (DONE)
 │
 ├── data_management/                ← ПРИОРИТЕТ 2
-│   ├── comtrade_processing.py         ✅ ~3 integration теста
+│   ├── comtrade_processing.py         ✅ ~24 integration теста
 │   ├── processing.py                  📅 Нужны тесты
 │   └── search.py, renaming.py         📅 Низкий приоритет
 │
@@ -127,8 +128,8 @@ osc_tools/
     └── kan_conv/                      ⚠️ После стабилизации
 
 ML_model/                           ← ПРИОРИТЕТ 3
-├── train_PDR.py                       ⚠️ Тесты CustomDataset, Sampler
-└── train.py                           ⚠️ После стабилизации
+├── train_PDR.py                       ✅ Тесты CustomDataset, Sampler
+└── train.py                           ✅ Тесты CustomDataset
 ```
 
 ---

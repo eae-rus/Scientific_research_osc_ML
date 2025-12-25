@@ -163,3 +163,127 @@ class TestNormalizationEdgeCases:
         assert callable(getattr(CreateNormOsc, 'update_normalization_coefficients', None)), \
             "update_normalization_coefficients should be callable"
 
+
+class TestNormalizationLogic:
+    """Detailed tests for normalization logic in CreateNormOsc."""
+
+    @pytest.fixture
+    def norm_instance(self):
+        with patch('os.listdir', return_value=[]), \
+             patch('os.path.exists', return_value=False):
+            from osc_tools.features.normalization import CreateNormOsc
+            return CreateNormOsc(osc_path='dummy_path')
+
+    def test_determine_voltage_status_noise(self, norm_instance):
+        """Test voltage status for noise level."""
+        # m1 <= VOLTAGE_T1_S (20*sqrt(2) approx 28.28)
+        # m1 <= NOISE_FACTOR * mx (1.5 * mx)
+        m1 = 10.0
+        mx = 8.0
+        h1_df = pd.DataFrame({'U1': [10.0]})
+        coef_p_s = {'U1': 1.0}
+        
+        ps, base = norm_instance._determine_voltage_status(m1, mx, h1_df, ['U1'], coef_p_s)
+        assert ps == 's'
+        assert base == 'Noise'
+
+    def test_determine_voltage_status_primary(self, norm_instance):
+        """Test voltage status for primary values (?1)."""
+        # m1 <= VOLTAGE_T1_S
+        # m1 > NOISE_FACTOR * mx
+        # max_primary > VOLTAGE_T1_P (500*sqrt(2) approx 707)
+        m1 = 10.0
+        mx = 2.0
+        h1_df = pd.DataFrame({'U1': [10.0]})
+        coef_p_s = {'U1': 100.0} # primary = 1000 > 707
+        
+        ps, base = norm_instance._determine_voltage_status(m1, mx, h1_df, ['U1'], coef_p_s)
+        assert ps == 'p'
+        assert base == '?1'
+
+    def test_determine_current_status_nominal_5(self, norm_instance):
+        """Test current status for 5A nominal."""
+        # CURRENT_T1_S < m1 <= CURRENT_T2_S (0.03*sqrt(2) < m1 <= 30*sqrt(2))
+        # m1 > NOISE_FACTOR * mx
+        m1 = 5.0
+        mx = 1.0
+        h1_df = pd.DataFrame({'I1': [5.0]})
+        coef_p_s = {'I1': 1.0}
+        
+        ps, base = norm_instance._determine_current_status(m1, mx, h1_df, ['I1'], coef_p_s)
+        assert ps == 's'
+        assert base == 5
+
+    def test_determine_residual_current_noise(self, norm_instance):
+        """Test residual current status for noise."""
+        # m1 <= RESIDUAL_CURRENT_T1_S and mx <= RESIDUAL_CURRENT_T1_S
+        m1 = 0.01
+        mx = 0.01
+        ps, base = norm_instance._determine_residual_current_status(m1, mx)
+        assert ps == 's'
+        assert base == 'Noise'
+
+    def test_analyze_basic(self, norm_instance):
+        """Test analyze method with synthetic data."""
+        h1_df = pd.DataFrame({
+            'U | BusBar-1 | phase: A': [100.0],
+            'I | Bus-1 | phase: A': [5.0],
+            'I | Bus-1 | phase: N': [0.1]
+        })
+        hx_df = pd.DataFrame({
+            'U | BusBar-1 | phase: A': [1.0],
+            'I | Bus-1 | phase: A': [0.1],
+            'I | Bus-1 | phase: N': [0.01]
+        })
+        coef_p_s = {
+            'U | BusBar-1 | phase: A': 1.0,
+            'I | Bus-1 | phase: A': 1.0,
+            'I | Bus-1 | phase: N': 1.0
+        }
+        
+        result = norm_instance.analyze('test_file.cfg', h1_df, hx_df, coef_p_s)
+        
+        assert isinstance(result, pd.DataFrame)
+        assert result.at[0, 'name'] == 'test_file'
+        assert '1Ub_PS' in result.columns
+        assert '1Ip_PS' in result.columns
+        assert '1Iz_PS' in result.columns
+
+    def test_merge_normalization_files_basic(self):
+        """Test merge_normalization_files utility."""
+        from osc_tools.features.normalization import CreateNormOsc
+        import shutil
+        
+        # Use a local temp dir to avoid PermissionError on Windows
+        local_tmp = PROJECT_ROOT / "tests" / "unit" / "tmp_merge_test"
+        if local_tmp.exists():
+            shutil.rmtree(local_tmp)
+        local_tmp.mkdir(parents=True)
+        
+        try:
+            # Create dummy CSV files
+            df1 = pd.DataFrame({'name': ['file1'], 'norm': ['YES'], '1Ub_PS': ['s']})
+            df2 = pd.DataFrame({'name': ['file2'], 'norm': ['NO'], '1Ub_PS': ['p']})
+            
+            csv1 = local_tmp / "norm_1.csv"
+            csv2 = local_tmp / "norm_2.csv"
+            df1.to_csv(csv1, index=False)
+            df2.to_csv(csv2, index=False)
+            
+            output_csv = local_tmp / "merged.csv"
+            
+            CreateNormOsc.merge_normalization_files(
+                input_paths_or_folder=str(local_tmp),
+                output_csv_path=str(output_csv),
+                file_pattern=r"norm_.*\.csv"
+            )
+            
+            assert os.path.exists(output_csv)
+            merged_df = pd.read_csv(output_csv)
+            assert len(merged_df) == 2
+            assert 'file1' in merged_df['name'].values
+            assert 'file2' in merged_df['name'].values
+        finally:
+            if local_tmp.exists():
+                shutil.rmtree(local_tmp)
+
