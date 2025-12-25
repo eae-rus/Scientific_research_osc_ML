@@ -140,7 +140,9 @@ def fft_calc_abs_angle(input, count_harmonic=1):
         
         return (torch.abs(prev_signals), torch.abs(current_signals), torch.angle(current_signals), torch.angle(current_signals))
 
-def create_signal_group(x, currents, voltages, device = "cpu"):
+def create_signal_group(x, currents, voltages, device = None):
+    if device is None:
+        device = x.device
     group = torch.zeros(x.size(0), len(currents), x.size(2), device=device, dtype=torch.cfloat)
     for i, (ic, iv) in enumerate(zip(currents, voltages)):
         if ic != -1 and iv != -1:
@@ -151,7 +153,9 @@ def create_signal_group(x, currents, voltages, device = "cpu"):
             group[:, i, :] = x[:, ic, :]
     return group
 
-def create_line_group(x, ic_L, voltages, device="cpu"):
+def create_line_group(x, ic_L, voltages, device=None):
+        if device is None:
+            device = x.device
         group = torch.zeros(x.size(0), len(ic_L), x.size(2), device=device, dtype=torch.cfloat)
         for i, (ic_pair, iv) in enumerate(zip(ic_L, voltages)):
             group[:, i, :] = x[:, ic_pair[0], :] - x[:, ic_pair[1], :] + 1j * x[:, iv, :]
@@ -508,7 +512,7 @@ class CONV_MLP_v2(nn.Module):
 
     def forward(self, x):
         x = x.permute(0, 2, 1)
-        X_sum = torch.zeros(x.size(0), 24+32, self.channel_num, device=self.device)
+        X_sum = torch.zeros(x.size(0), 24+32, self.channel_num, device=x.device)
         for i in range(self.channel_num):
             x_i = x[:, i:i+1, :]
             x1 = self.conv32(x_i)
@@ -571,8 +575,8 @@ class CONV_COMPLEX_v1(nn.Module):
         voltages_bb = [Features.VOLTAGE_PHAZE_BB_INDICES["UA BB"], Features.VOLTAGE_PHAZE_BB_INDICES["UB BB"], Features.VOLTAGE_PHAZE_BB_INDICES["UC BB"], Features.VOLTAGE_PHAZE_BB_INDICES["UN BB"]]
         voltages_cl = [Features.VOLTAGE_PHAZE_CL_INDICES["UA CL"], Features.VOLTAGE_PHAZE_CL_INDICES["UB CL"], Features.VOLTAGE_PHAZE_CL_INDICES["UC CL"], Features.VOLTAGE_PHAZE_CL_INDICES["UN CL"]]
         
-        x_g1 = create_signal_group(x, currents, voltages_bb, device = self.device)
-        x_g2 = create_signal_group(x, currents, voltages_cl, device = self.device)
+        x_g1 = create_signal_group(x, currents, voltages_bb, device = x.device)
+        x_g2 = create_signal_group(x, currents, voltages_cl, device = x.device)
         
         ic_L = [
             [Features.CURRENT_INDICES["IA"], Features.CURRENT_INDICES["IB"]],
@@ -582,12 +586,12 @@ class CONV_COMPLEX_v1(nn.Module):
         voltages_line_bb = [Features.VOLTAGE_LINE_BB_INDICES["UAB BB"], Features.VOLTAGE_LINE_BB_INDICES["UBC BB"], Features.VOLTAGE_LINE_BB_INDICES["UCA BB"]]
         voltages_line_cl = [Features.VOLTAGE_LINE_CL_INDICES["UAB CL"], Features.VOLTAGE_LINE_CL_INDICES["UBC CL"], Features.VOLTAGE_LINE_CL_INDICES["UCA CL"]]
 
-        x_g3 = create_line_group(x, ic_L, voltages_line_bb, device=self.device)
-        x_g4 = create_line_group(x, ic_L, voltages_line_cl, device=self.device)
+        x_g3 = create_line_group(x, ic_L, voltages_line_bb, device=x.device)
+        x_g4 = create_line_group(x, ic_L, voltages_line_cl, device=x.device)
 
         x_new = torch.cat((x_g1, x_g2, x_g3, x_g4), dim=1)
         
-        X_sum = torch.zeros(x.size(0), 24+32, self.channel_num, device=self.device, dtype=torch.cfloat)
+        X_sum = torch.zeros(x.size(0), 24+32, self.channel_num, device=x.device, dtype=torch.cfloat)
         for i in range(4+4+3+3): # По количествам сигналов в группах
             x_i = x_new[:, i:i+1, :]
             x1 = self.conv32(x_i)
@@ -1131,7 +1135,7 @@ class CONV_AND_FFT_COMPLEX_v1(nn.Module):
         # Для примера, допустим, что будет еще один слой, который объединяет результаты
         x_level_1 = x_level_1.reshape(x_level_1.size(0), -1)  # Выравнивание
         
-        x_conv = torch.zeros(x.size(0), 32, self.channel_num, device=self.device)
+        x_conv = torch.zeros(x.size(0), 32, self.channel_num, device=x.device)
         for i in range(self.channel_num):
             x_i = x[:, i:i+1, :]
             x3 = self.conv3(x_i[:, :, 32:])
@@ -1213,8 +1217,8 @@ class CONV_AND_FFT_COMPLEX_v2(nn.Module):
         voltages_bb = [Features.VOLTAGE_PHAZE_BB_INDICES["UA BB"], Features.VOLTAGE_PHAZE_BB_INDICES["UB BB"], Features.VOLTAGE_PHAZE_BB_INDICES["UC BB"], Features.VOLTAGE_PHAZE_BB_INDICES["UN BB"]]
         voltages_cl = [Features.VOLTAGE_PHAZE_CL_INDICES["UA CL"], Features.VOLTAGE_PHAZE_CL_INDICES["UB CL"], Features.VOLTAGE_PHAZE_CL_INDICES["UC CL"], Features.VOLTAGE_PHAZE_CL_INDICES["UN CL"]]
         
-        x_g1 = create_signal_group(x, currents, voltages_bb, device=self.device)
-        x_g2 = create_signal_group(x, currents, voltages_cl, device=self.device)
+        x_g1 = create_signal_group(x, currents, voltages_bb, device=x.device)
+        x_g2 = create_signal_group(x, currents, voltages_cl, device=x.device)
         
         ic_L = [
             [Features.CURRENT_INDICES["IA"], Features.CURRENT_INDICES["IB"]],
@@ -1224,8 +1228,8 @@ class CONV_AND_FFT_COMPLEX_v2(nn.Module):
         voltages_line_bb = [Features.VOLTAGE_LINE_BB_INDICES["UAB BB"], Features.VOLTAGE_LINE_BB_INDICES["UBC BB"], Features.VOLTAGE_LINE_BB_INDICES["UCA BB"]]
         voltages_line_cl = [Features.VOLTAGE_LINE_CL_INDICES["UAB CL"], Features.VOLTAGE_LINE_CL_INDICES["UBC CL"], Features.VOLTAGE_LINE_CL_INDICES["UCA CL"]]
 
-        x_g3 = create_line_group(x, ic_L, voltages_line_bb, device=self.device)
-        x_g4 = create_line_group(x, ic_L, voltages_line_cl, device=self.device)
+        x_g3 = create_line_group(x, ic_L, voltages_line_bb, device=x.device)
+        x_g4 = create_line_group(x, ic_L, voltages_line_cl, device=x.device)
 
         x_new = torch.cat((x_g1, x_g2, x_g3, x_g4), dim=1)
 
@@ -1342,8 +1346,8 @@ class CONV_AND_FFT_COMPLEX_v3(nn.Module):
         voltages_bb = [Features.VOLTAGE_PHAZE_BB_INDICES["UA BB"], Features.VOLTAGE_PHAZE_BB_INDICES["UB BB"], Features.VOLTAGE_PHAZE_BB_INDICES["UC BB"], Features.VOLTAGE_PHAZE_BB_INDICES["UN BB"]]
         voltages_cl = [Features.VOLTAGE_PHAZE_CL_INDICES["UA CL"], Features.VOLTAGE_PHAZE_CL_INDICES["UB CL"], Features.VOLTAGE_PHAZE_CL_INDICES["UC CL"], Features.VOLTAGE_PHAZE_CL_INDICES["UN CL"]]
         
-        x_g1 = create_signal_group(x, currents, voltages_bb, device=self.device)
-        x_g2 = create_signal_group(x, currents, voltages_cl, device=self.device)
+        x_g1 = create_signal_group(x, currents, voltages_bb, device=x.device)
+        x_g2 = create_signal_group(x, currents, voltages_cl, device=x.device)
         
         ic_L = [
             [Features.CURRENT_INDICES["IA"], Features.CURRENT_INDICES["IB"]],
@@ -1353,8 +1357,8 @@ class CONV_AND_FFT_COMPLEX_v3(nn.Module):
         voltages_line_bb = [Features.VOLTAGE_LINE_BB_INDICES["UAB BB"], Features.VOLTAGE_LINE_BB_INDICES["UBC BB"], Features.VOLTAGE_LINE_BB_INDICES["UCA BB"]]
         voltages_line_cl = [Features.VOLTAGE_LINE_CL_INDICES["UAB CL"], Features.VOLTAGE_LINE_CL_INDICES["UBC CL"], Features.VOLTAGE_LINE_CL_INDICES["UCA CL"]]
 
-        x_g3 = create_line_group(x, ic_L, voltages_line_bb, device=self.device)
-        x_g4 = create_line_group(x, ic_L, voltages_line_cl, device=self.device)
+        x_g3 = create_line_group(x, ic_L, voltages_line_bb, device=x.device)
+        x_g4 = create_line_group(x, ic_L, voltages_line_cl, device=x.device)
 
         x_new = torch.cat((x_g1, x_g2, x_g3, x_g4), dim=1)
 
