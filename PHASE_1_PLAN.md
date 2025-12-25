@@ -47,7 +47,7 @@ osc_tools/ml/
 
 ### 2.2. 1D CNN (Convolutional Neural Network)
 - **`SimpleCNN`**: 2-3 сверточных слоя + MaxPool + FC слои. ✅ Выполнено
-- **`ResNet1D`**: Более глубокая сеть с residual connections (стандарт для временных рядов).
+- **`ResNet1D`**: Более глубокая сеть с residual connections (стандарт для временных рядов). ✅ Выполнено
 - **Вход**: Сырые данные (raw waveform) или спектрограммы.
 
 ---
@@ -63,9 +63,9 @@ osc_tools/ml/
 
 ### 3.2. Расширение `OscillogramDataset`
 Добавить поддержку режимов:
-- **`mode='classification'`**: Возвращает `(data, label)`. Label — тип аварии (int).
-- **`mode='segmentation'`**: Возвращает `(data, mask)`. Mask — размерности `Time`, содержит класс для каждого отсчета.
-- **`mode='reconstruction'`**: Возвращает `(data, data)`. Для автоэнкодеров.
+- **`mode='classification'`**: Возвращает `(data, label)`. Label — тип аварии (int). ✅ Выполнено
+- **`mode='segmentation'`**: Возвращает `(data, mask)`. Mask — размерности `Time`, содержит класс для каждого отсчета. ✅ Выполнено
+- **`mode='reconstruction'`**: Возвращает `(data, data)`. Для автоэнкодеров. ✅ Выполнено
 
 ---
 
@@ -84,6 +84,7 @@ class ExperimentConfig:
     model_params: dict
     training_params: dict
 ```
+✅ Выполнено (реализовано через dataclasses в `osc_tools/ml/config.py`)
 
 ### 4.2. Runner экспериментов
 Скрипт `run_experiment.py`, который:
@@ -92,17 +93,28 @@ class ExperimentConfig:
 3. Запускает обучение.
 4. Логирует метрики (TensorBoard/WandB/CSV).
 5. Сохраняет лучшие веса и отчет.
+✅ Выполнено (реализован `ExperimentRunner` в `osc_tools/ml/runner.py`)
 
 ---
 
 ## 5. Интеграция KAN библиотек
 
 ### 5.1. Выбор бэкенда
-- Исследовать `efficient-kan` (быстрее) и `pykan` (оригинал).
-- Создать обертку `KANLayer`, которая позволяет переключать реализацию через конфиг.
+- Исследовать `efficient-kan` (быстрее) и `pykan` (оригинал). ✅ Выполнено (использована реализация `efficient-kan` из `osc_tools/ml/kan_conv`)
+- Создать обертку `KANLayer`, которая позволяет переключать реализацию через конфиг. ✅ Выполнено (`KANLinear` и `KANConv1d` в `osc_tools/ml/layers/kan_layers.py`)
 
 ### 5.2. Тестирование
-- Написать простой unit-тест: `KANLayer` должен обучаться на функции $y = sin(x) + x^2$.
+- Написать простой unit-тест: `KANLayer` должен обучаться на функции $y = sin(x) + x^2$. ✅ Выполнено (тесты в `tests/unit/test_ml_kan.py`)
+
+---
+
+## Итог Фазы 1
+Все задачи выполнены. Инфраструктура готова к проведению экспериментов.
+- Рефакторинг ML модуля завершен.
+- Базовые модели (MLP, CNN, ResNet) реализованы.
+- Датасеты унифицированы.
+- KAN слои интегрированы.
+- Runner экспериментов создан.
 
 ---
 

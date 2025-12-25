@@ -1,10 +1,11 @@
 import pytest
 import torch
 from osc_tools.ml.models.baseline import SimpleMLP, SimpleCNN
+from osc_tools.ml.models.cnn import ResNet1D
 
 class TestBaselineModels:
     """
-    Тесты для базовых моделей (SimpleMLP, SimpleCNN).
+    Тесты для базовых моделей (SimpleMLP, SimpleCNN, ResNet1D).
     Проверяем инициализацию и проход данных (forward pass).
     """
 
@@ -37,6 +38,24 @@ class TestBaselineModels:
         model = SimpleCNN(in_channels=in_channels, num_classes=num_classes)
         
         # Input shape for 1D CNN: (Batch, Channels, Length)
+        x = torch.randn(batch_size, in_channels, seq_len)
+        y = model(x)
+        
+        assert y.shape == (batch_size, num_classes)
+        assert not torch.isnan(y).any()
+
+    def test_resnet1d_init(self):
+        model = ResNet1D(in_channels=3, num_classes=2)
+        assert isinstance(model, ResNet1D)
+
+    def test_resnet1d_forward(self):
+        batch_size = 2
+        in_channels = 3
+        seq_len = 200 # ResNet needs enough length for pooling
+        num_classes = 2
+        
+        model = ResNet1D(in_channels=in_channels, num_classes=num_classes, layers=[1, 1, 1, 1]) # Small ResNet for test
+        
         x = torch.randn(batch_size, in_channels, seq_len)
         y = model(x)
         

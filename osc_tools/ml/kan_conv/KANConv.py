@@ -1,7 +1,7 @@
 import torch
 import math
-from KANLinear import KANLinear
-import convolution
+from .KANLinear import KANLinear
+from . import convolution
 
 
 #Скрипт, содержащий реализацию ядра с функциями активации.
