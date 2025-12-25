@@ -16,23 +16,24 @@ osc_tools/ml/
 ├── __init__.py              # Экспорт основных классов
 ├── models/                  # Архитектуры моделей
 │   ├── __init__.py
-│   ├── base.py              # Абстрактный базовый класс (BaseModel)
-│   ├── mlp.py               # Реализации MLP (PDR_MLP, SimpleMLP)
-│   ├── cnn.py               # Реализации 1D CNN (ResNet1D, SimpleCNN)
+│   ├── base.py              # Абстрактный базовый класс (BaseModel) ✅ Выполнено
+│   ├── mlp.py               # Реализации MLP (PDR_MLP, SimpleMLP) ✅ Выполнено
+│   ├── cnn.py               # Реализации 1D CNN (ResNet1D, SimpleCNN) ✅ Выполнено (частично)
+│   ├── experimental.py      # Старые/экспериментальные модели ✅ Выполнено
 │   ├── kan.py               # Реализации KAN (SimpleKAN, ConvKAN)
 │   ├── autoencoders.py      # AE, VAE, KAN-AE
 │   └── unet.py              # U-Net для сегментации
 ├── layers/                  # Строительные блоки
 │   ├── __init__.py
 │   ├── kan_layers.py        # Обертки над pykan/efficient-kan
-│   ├── complex_ops.py       # Комплексные операции (существующие)
-│   └── blocks.py            # ResBlock, PDRBlock
-└── utils.py                 # Утилиты (подсчет параметров, инициализация)
+│   ├── complex_ops.py       # Комплексные операции (существующие) ✅ Выполнено
+│   └── blocks.py            # ResBlock, PDRBlock ✅ Выполнено
+└── utils.py                 # Утилиты (подсчет параметров, инициализация) ✅ Выполнено
 ```
 
 ### 1.2. Реализация базовых классов
-- **`BaseModel`**: Должен иметь методы `forward`, `predict`, `save`, `load`.
-- **`PDRBlock`**: Вынести существующий блок из `models.py` в `layers/blocks.py`.
+- **`BaseModel`**: Должен иметь методы `forward`, `predict`, `save`, `load`. ✅ Выполнено
+- **`PDRBlock`**: Вынести существующий блок из `models.py` в `layers/blocks.py`. ✅ Выполнено
 
 ---
 
