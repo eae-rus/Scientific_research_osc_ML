@@ -216,7 +216,8 @@ def sample_normalized_dataframe():
     })
 ```
 
-Для файловых операций используй **mocks**:
+Для файловых операций используй **mocks**. 
+**Важно:** При тестировании `Comtrade.load` необходимо мокать не только `open`, но и `os.path.exists`, а также внутренние методы `_load_inf` и `_load_hdr`, чтобы избежать попыток чтения несуществующих файлов метаданных.
 
 ```python
 from unittest.mock import patch, MagicMock
