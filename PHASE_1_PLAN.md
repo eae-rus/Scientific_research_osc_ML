@@ -18,14 +18,14 @@ osc_tools/ml/
 │   ├── __init__.py          # ✅ Выполнено
 │   ├── base.py              # Абстрактный базовый класс (BaseModel) ✅ Выполнено
 │   ├── mlp.py               # Реализации MLP (PDR_MLP, SimpleMLP) ✅ Выполнено
-│   ├── cnn.py               # Реализации 1D CNN (ResNet1D, SimpleCNN) ✅ Выполнено (частично)
+│   ├── cnn.py               # Реализации 1D CNN (ResNet1D, SimpleCNN) ✅ Выполнено
 │   ├── experimental.py      # Старые/экспериментальные модели ✅ Выполнено
-│   ├── kan.py               # Реализации KAN (SimpleKAN, ConvKAN)
-│   ├── autoencoders.py      # AE, VAE, KAN-AE
-│   └── unet.py              # U-Net для сегментации
+│   ├── kan.py               # Реализации KAN (SimpleKAN, ConvKAN) ✅ Выполнено
+│   ├── autoencoders.py      # AE, VAE, KAN-AE ✅ Выполнено (Placeholder)
+│   └── unet.py              # U-Net для сегментации ✅ Выполнено (Placeholder)
 ├── layers/                  # Строительные блоки
 │   ├── __init__.py          # ✅ Выполнено
-│   ├── kan_layers.py        # Обертки над pykan/efficient-kan
+│   ├── kan_layers.py        # Обертки над pykan/efficient-kan ✅ Выполнено
 │   ├── complex_ops.py       # Комплексные операции (существующие) ✅ Выполнено
 │   └── blocks.py            # ResBlock, PDRBlock ✅ Выполнено
 └── utils.py                 # Утилиты (подсчет параметров, инициализация) ✅ Выполнено
@@ -57,9 +57,9 @@ osc_tools/ml/
 Нужно научить наши `Dataset` и `DataLoader` работать с новыми задачами.
 
 ### 3.1. Унификация входов
-- **Raw**: `(Batch, Channels, Time)` — для CNN/U-Net.
-- **Features**: `(Batch, Features)` — для MLP/KAN (PDR, классификация по признакам).
-- **Phasors**: `(Batch, Channels)` complex — для CVKAN.
+- **Raw**: `(Batch, Channels, Time)` — для CNN/U-Net. ✅ Выполнено (поддерживается в Dataset)
+- **Features**: `(Batch, Features)` — для MLP/KAN (PDR, классификация по признакам). ✅ Выполнено (поддерживается в Dataset)
+- **Phasors**: `(Batch, Channels)` complex — для CVKAN. ✅ Выполнено (поддерживается в Dataset)
 
 ### 3.2. Расширение `OscillogramDataset`
 Добавить поддержку режимов:

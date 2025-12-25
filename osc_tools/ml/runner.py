@@ -11,7 +11,8 @@ from osc_tools.ml.config import ExperimentConfig
 from osc_tools.ml.dataset import OscillogramDataset
 from osc_tools.ml.models import (
     SimpleMLP, SimpleCNN, ResNet1D, 
-    PDR_MLP_v2, FFT_MLP_COMPLEX_v1
+    PDR_MLP_v2, FFT_MLP_COMPLEX_v1,
+    SimpleKAN, ConvKAN, AutoEncoder
 )
 
 class ExperimentRunner:
@@ -42,6 +43,12 @@ class ExperimentRunner:
             model = PDR_MLP_v2(**params)
         elif name == 'FFT_MLP_COMPLEX_v1':
             model = FFT_MLP_COMPLEX_v1(**params)
+        elif name == 'SimpleKAN':
+            model = SimpleKAN(**params)
+        elif name == 'ConvKAN':
+            model = ConvKAN(**params)
+        elif name == 'AutoEncoder':
+            model = AutoEncoder(**params)
         else:
             raise ValueError(f"Unknown model: {name}")
             
