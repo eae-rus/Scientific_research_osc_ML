@@ -63,7 +63,7 @@ def calculate_impedance(voltage: np.ndarray, current: np.ndarray, min_current_th
     current_safe = current.copy()
     zero_current_mask = np.abs(current_safe) < min_current_threshold
     current_safe[zero_current_mask] = np.nan # Замена на NaN для избежания деления на 0
-    impedance = voltage / current_safe
+    impedance = (voltage / current_safe).astype(complex)
     # Защита от слишком малых токов
     impedance[zero_current_mask] = 1/min_current_threshold + (1/min_current_threshold)*1j # Задаём максимальный порог, чтобы исключить nan
     return impedance
