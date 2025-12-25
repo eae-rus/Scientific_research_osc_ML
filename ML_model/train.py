@@ -189,7 +189,7 @@ class CustomDataset_train(Dataset):
         # === ИЗВЛЕЧЕНИЕ ЦЕЛЕВОГО ЗНАЧЕНИЯ === #
         target_index = start + self.target_position
         target_sample = self.data.loc[target_index][Features.TARGET]
-        target = torch.tensor(target_sample, dtype=torch.float32)
+        target = torch.tensor(target_sample.to_numpy(dtype=np.float32), dtype=torch.float32)
 
         return x, target
 
@@ -234,7 +234,7 @@ class CustomDataset(Dataset):
 
         target_index = start + self.target_position
         target_sample = self.data.loc[target_index][Features.TARGET]
-        target = torch.tensor(target_sample, dtype=torch.float32) # было torch.long
+        target = torch.tensor(target_sample.to_numpy(dtype=np.float32), dtype=torch.float32) # было torch.long
         return x, target
 
 
@@ -571,7 +571,8 @@ def main(epochs=100, num_batches=1000, batch_size_per_class=32):
     # model = FFT_MLP(
     # model = FFT_MLP_KAN_v1(
     # model = FFT_MLP_KAN_v2(
-    model = Model.CONV_AND_FFT_COMPLEX_v3(
+    # model = Model.CONV_AND_FFT_COMPLEX_v3(
+    model = Model.FFT_MLP_COMPLEX_v1(
         FRAME_SIZE,
         channel_num=len(Features.ALL),
         hidden_size=HIDDEN_SIZE,

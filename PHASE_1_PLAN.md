@@ -13,9 +13,9 @@
 Создать следующую структуру:
 ```
 osc_tools/ml/
-├── __init__.py              # Экспорт основных классов
+├── __init__.py              # Экспорт основных классов ✅ Выполнено
 ├── models/                  # Архитектуры моделей
-│   ├── __init__.py
+│   ├── __init__.py          # ✅ Выполнено
 │   ├── base.py              # Абстрактный базовый класс (BaseModel) ✅ Выполнено
 │   ├── mlp.py               # Реализации MLP (PDR_MLP, SimpleMLP) ✅ Выполнено
 │   ├── cnn.py               # Реализации 1D CNN (ResNet1D, SimpleCNN) ✅ Выполнено (частично)
@@ -24,7 +24,7 @@ osc_tools/ml/
 │   ├── autoencoders.py      # AE, VAE, KAN-AE
 │   └── unet.py              # U-Net для сегментации
 ├── layers/                  # Строительные блоки
-│   ├── __init__.py
+│   ├── __init__.py          # ✅ Выполнено
 │   ├── kan_layers.py        # Обертки над pykan/efficient-kan
 │   ├── complex_ops.py       # Комплексные операции (существующие) ✅ Выполнено
 │   └── blocks.py            # ResBlock, PDRBlock ✅ Выполнено
@@ -42,11 +42,11 @@ osc_tools/ml/
 Для того чтобы показать эффективность KAN, нам нужны сильные, но понятные противники.
 
 ### 2.1. MLP (Multi-Layer Perceptron)
-- **`SimpleMLP`**: Классическая полносвязная сеть с BatchNormalization и Dropout.
+- **`SimpleMLP`**: Классическая полносвязная сеть с BatchNormalization и Dropout. ✅ Выполнено
 - **Параметры**: Настраиваемое количество слоев и нейронов.
 
 ### 2.2. 1D CNN (Convolutional Neural Network)
-- **`SimpleCNN`**: 2-3 сверточных слоя + MaxPool + FC слои.
+- **`SimpleCNN`**: 2-3 сверточных слоя + MaxPool + FC слои. ✅ Выполнено
 - **`ResNet1D`**: Более глубокая сеть с residual connections (стандарт для временных рядов).
 - **Вход**: Сырые данные (raw waveform) или спектрограммы.
 
