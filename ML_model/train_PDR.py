@@ -214,7 +214,7 @@ def save_stats_to_csv(epoch, batch_count, epoch_duration, train_loss, test_loss,
         "ML_model/trained_models/epoch_statistics.json", epoch, batch_count, epoch_duration,
         train_loss, test_loss,
         mean_f1, mean_ba, hamming, jaccard, lr,
-        f1_per_class=f1, ba_per_class=ba
+        f1_per_class=f1_per_class, ba_per_class=ba_per_class
     )
 
 def expand_array(arr, expand_left, expand_right):
@@ -267,14 +267,14 @@ def compute_loss(criterion, outputs, targets):
 
     return criterion(outputs, targets)
 
-if __name__ == "__main__":
+def main(epochs=100, num_train_batches_per_epoch=1000, num_files_per_batch=100, samples_per_file=10):
     FRAME_SIZE = 1 # 64
     # BATCH_SIZE_TRAIN = NUM_FILES_PER_BATCH * SAMPLES_PER_FILE
-    NUM_FILES_PER_BATCH = 100 # N: Сколько файлов брать для одного батча
-    SAMPLES_PER_FILE = 10  # K: Сколько точек брать из каждого файла
-    NUM_TRAIN_BATCHES_PER_EPOCH = 1000 # Сколько таких N*K батчей делать за эпоху
+    NUM_FILES_PER_BATCH = num_files_per_batch # N: Сколько файлов брать для одного батча
+    SAMPLES_PER_FILE = samples_per_file  # K: Сколько точек брать из каждого файла
+    NUM_TRAIN_BATCHES_PER_EPOCH = num_train_batches_per_epoch # Сколько таких N*K батчей делать за эпоху
     BATCH_SIZE_TEST = 8192
-    EPOCHS = 100
+    EPOCHS = epochs
     LEARNING_RATE = 1e-2
     L2_REGULARIZATION_COEFFICIENT = 0.001
     MAX_GRAD_NORM = 10
@@ -287,7 +287,7 @@ if __name__ == "__main__":
 
     # file_csv = "ML_model/dataset_cut_out_PDR_norm_v2.csv"
     # Создаем папку, если она не существует
-    folder_path = "/ML_model"
+    folder_path = "ML_model/trained_models"
     os.makedirs(folder_path, exist_ok=True)
     #file_with_target_frame_train = "ML_model/dataset_cut_out_PDR_norm_v2.csv"
     file_with_target_frame_train = "ML_model/train_dataset_rPDR_norm_v1.csv"
@@ -310,8 +310,8 @@ if __name__ == "__main__":
         dt_test.replace({'True': 1.0, '1': 1.0, '1.0': 1.0, 
                          'False': 0.0, '0': 1.0, '0.0': 0.0,}, inplace=True)
     else:
-        pass
-        # TODO: Написать если нужно будет.
+        print(f"Dataset files not found. Skipping training.")
+        return
 
     # --- Обновленная ЛОГИКА ПОДГОТОВКИ ИНДЕКСОВ ДЛЯ ОБУЧЕНИЯ ---
     print("Подготовка индексов для обучения, сгруппированных по файлам (только допустимые начальные точки)...")
@@ -331,7 +331,8 @@ if __name__ == "__main__":
 
     print(f"Всего файлов для обучения с допустимыми начальными точками: {len(all_train_files)}")
     if not all_train_files:
-        raise ValueError("Ни в одном из обучающих файлов недостаточно точек данных для заданного FRAME_SIZE.")
+        print("Ни в одном из обучающих файлов недостаточно точек данных для заданного FRAME_SIZE. Skipping.")
+        return
     # --- КОНЕЦ ЛОГИКИ ПОДГОТОВКИ ИНДЕКСОВ ДЛЯ ОБУЧЕНИЯ ---
     
     # ---> ПОДГОТОВКА ИНДЕКСОВ ДЛЯ ТЕСТА <---
@@ -346,7 +347,8 @@ if __name__ == "__main__":
     test_indexes_df = pd.DataFrame(index=valid_start_indices_test) # Индексы этого DF - это то, что нам нужно
 
     if valid_start_indices_test.empty:
-        raise ValueError("В тестовом наборе данных нет допустимых начальных точек для заданного FRAME_SIZE.")
+        print("В тестовом наборе данных нет допустимых начальных точек для заданного FRAME_SIZE. Skipping.")
+        return
         
     print(f"Всего допустимых начальных точек в тестовых данных: {len(test_indexes_df)}")
     # ---> КОНЕЦ ПОДГОТОВКИ ИНДЕКСОВ ДЛЯ ТЕСТА <---
@@ -463,8 +465,8 @@ if __name__ == "__main__":
             model.eval()
             test_loss = 0.0
             true_labels, predicted_labels = [], []
-            f1 = [0.0] * len(FeaturesForDataset.TARGET_test) # Инициализация нулями
-            ba = [0.0] * len(FeaturesForDataset.TARGET_test) # Инициализация нулями
+            f1 = [0.0] * len(PDRFeatures.TARGET_TEST) # Инициализация нулями
+            ba = [0.0] * len(PDRFeatures.TARGET_TEST) # Инициализация нулями
             hamming = 1.0 # Худшее значение
             jaccard = 0.0 # Худшее значение
 
@@ -527,7 +529,7 @@ if __name__ == "__main__":
             # Вывод метрик, рассчитанных по батчу
             message_f1_ba = (
                             f"Потери на валидационном батче: {1000*test_loss:.4f} "
-                            f"Val F1/BA: {', '.join([f'{signal_name}: {f1_score:.4f}/{ba_score:.4f}' for signal_name, f1_score, ba_score in zip(FeaturesForDataset.TARGET_test, f1, ba)])} "
+                            f"Val F1/BA: {', '.join([f'{signal_name}: {f1_score:.4f}/{ba_score:.4f}' for signal_name, f1_score, ba_score in zip(PDRFeatures.TARGET_TEST, f1, ba)])} "
                             )
             print(message_f1_ba)
             print(f"Val Hamming: {hamming:.4f}, Val Jaccard: {jaccard:.4f}")
@@ -535,4 +537,7 @@ if __name__ == "__main__":
             torch.save(model, f"ML_model/trained_models/model_{name_model}_ep{epoch+1}_vbl{test_loss:.4f}_train{loss_sum:.4f}.pt") # vbl = validation batch loss
             model.train() # Возвращаем модель в режим обучения
     pass
+
+if __name__ == "__main__":
+    main()
 pass

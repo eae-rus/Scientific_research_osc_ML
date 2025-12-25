@@ -341,7 +341,7 @@ def save_stats_to_csv(epoch, batch_count, epoch_duration, train_loss, test_loss,
         "ML_model/trained_models/epoch_statistics.json", epoch, batch_count, epoch_duration,
         train_loss, test_loss,
         mean_f1, mean_ba, hamming, jaccard, lr,
-        f1_per_class=f1, ba_per_class=ba
+        f1_per_class=f1_per_class, ba_per_class=ba_per_class
     )
 
 def expand_array(arr, expand_left, expand_right):
@@ -383,15 +383,15 @@ def save_stats_to_json(filename, epoch, batch_count, epoch_duration, train_loss,
     with open(filename, "a") as file:
         json.dump(data, file, indent=4)
 
-if __name__ == "__main__":
+def main(epochs=100, num_batches=1000, batch_size_per_class=32):
     FRAME_SIZE = 64 # 64
     POINT_TARGET_SHIFT = 0
-    BATCH_SIZE_PER_CLASS = 32  # Например, 128/4=32
+    BATCH_SIZE_PER_CLASS = batch_size_per_class  # Например, 128/4=32
     BATCH_SIZE_TRAIN = 4 * BATCH_SIZE_PER_CLASS # 4 - количество фич, сделать через Гипер Параметр
-    NUM_BATCHES = 1000 # Количество генерируемых батчей
+    NUM_BATCHES = num_batches # Количество генерируемых батчей
     BATCH_SIZE_TEST = 1024
     HIDDEN_SIZE = 40
-    EPOCHS = 100
+    EPOCHS = epochs
     LEARNING_RATE = 1e-3
     L2_REGULARIZATION_COEFFICIENT = 0.001
     MAX_GRAD_NORM = 10
@@ -405,7 +405,7 @@ if __name__ == "__main__":
 
     file_csv = "ML_model/datset_simpl v2.csv"
     # Создаем папку, если она не существует
-    folder_path = "/ML_model"
+    folder_path = "ML_model/trained_models"
     os.makedirs(folder_path, exist_ok=True)
     file_with_target_frame_train = (
         f"ML_model/small_pqd_target_frame_{FRAME_SIZE}_train.csv"
@@ -420,6 +420,9 @@ if __name__ == "__main__":
         dt_train = pd.read_csv(file_with_target_frame_train)
         dt_test = pd.read_csv(file_with_target_frame_test)
     else:
+        if not os.path.exists(file_csv):
+            print(f"Dataset file {file_csv} not found. Skipping training.")
+            return
         dt = pd.read_csv(file_csv)
         
         # TODO: Нормальизацию стоит делать отдельно. Здесь я её закладываю временно
@@ -429,9 +432,12 @@ if __name__ == "__main__":
         for name in Features.VOLTAGE:
             dt[name] = dt[name] / (Unom*3)
         
-        with open('ML_model/test_files.json', 'r') as infile:
-            data = json.load(infile)  
-        files_to_test = data["test_files"]
+        if os.path.exists('ML_model/test_files.json'):
+            with open('ML_model/test_files.json', 'r') as infile:
+                data = json.load(infile)  
+            files_to_test = data["test_files"]
+        else:
+            files_to_test = []
         
         # Создаем новый список для хранения полных имен файлов
         full_files_to_test = []
@@ -443,22 +449,22 @@ if __name__ == "__main__":
         dt_test = dt[dt["file_name"].str.strip().isin(full_files_to_test)]
         dt_train = dt[~dt["file_name"].str.strip().isin(full_files_to_test)]
 
-        std_scaler = StandardScaler()
-        
         df_scaled_train = dt_train[Features.ALL]
         df_scaled_test = dt_test[Features.ALL]
         # TODO: массштабирование производится отдельно. Нормализация в адекватных данных не должна требоваться
+
+    # ... (rest of the logic)
         # так как знечения симметричны относительно 0. 
-        df_scaled_train = pd.DataFrame(
-            df_scaled_train,
-            columns=df_scaled_train.columns,
-            index=df_scaled_train.index,
-        )
-        df_scaled_test = pd.DataFrame(
-            df_scaled_test,
-            columns=df_scaled_test.columns,
-            index=df_scaled_test.index,
-        )
+        # df_scaled_train = pd.DataFrame(
+        #     df_scaled_train,
+        #     columns=df_scaled_train.columns,
+        #     index=df_scaled_train.index,
+        # )
+        # df_scaled_test = pd.DataFrame(
+        #     df_scaled_test,
+        #     columns=df_scaled_test.columns,
+        #     index=df_scaled_test.index,
+        # )
 
         dt_train = pd.concat(
             (dt_train.drop(Features.ALL, axis=1), df_scaled_train), axis=1
@@ -604,7 +610,7 @@ if __name__ == "__main__":
     }
 
     # Также можно создать CSV для хранения метрик каждой эпохи с разбивкой по классам
-    per_class_metrics = {feature_name: {"f1_score": [], "balanced_accuracy": []} for feature_name in FeaturesForDataset.TARGET}
+    per_class_metrics = {feature_name: {"f1_score": [], "balanced_accuracy": []} for feature_name in Features.TARGET}
 
 
     current_lr = LEARNING_RATE
@@ -677,7 +683,7 @@ if __name__ == "__main__":
             numpy_true_labels = np.array(true_labels) # промежуточные преобразования для ускорения
             true_labels_tensor = torch.from_numpy(numpy_true_labels)
             ba, f1 = [], []
-            for k in range(len(FeaturesForDataset.TARGET)): # 'binary' для бинарной классификации на каждом классе
+            for k in range(len(Features.TARGET)): # 'binary' для бинарной классификации на каждом классе
                 true_binary = true_labels_tensor[:, k].flatten()
                 pred_binary = predicted_labels[:, k].flatten()
                 
@@ -707,7 +713,7 @@ if __name__ == "__main__":
             t.set_postfix_str(f"Батч: {batch_count}, Потери при обучении: {loss_sum / (i + 1):.4f}, Потери при тестировании: {test_loss:.4f}, LR: {current_lr:.4e}")
             message_f1_ba = (
                              f"Пред. потери при тестировании: {1000*test_loss:.4f} "
-                             f"F1 / BA: {', '.join([f'{signal_name}: {f1_score:.4f}/{ba_score:.4f}' for signal_name, f1_score, ba_score in zip(FeaturesForDataset.TARGET, f1, ba)])} "
+                             f"F1 / BA: {', '.join([f'{signal_name}: {f1_score:.4f}/{ba_score:.4f}' for signal_name, f1_score, ba_score in zip(Features.TARGET, f1, ba)])} "
                              )
             print(message_f1_ba)
             print(f"Потери Хэмминга: {hamming}, Коэффициент Жаккара: {jaccard}")
@@ -715,4 +721,6 @@ if __name__ == "__main__":
             torch.save(model, f"ML_model/trained_models/model_{name_model}_ep{epoch+1}_tl{test_loss:.4f}_train{loss_sum:.4f}.pt")
             model.train()
     pass
-pass
+
+if __name__ == "__main__":
+    main()
