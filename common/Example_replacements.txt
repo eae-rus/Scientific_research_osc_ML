@@ -1,5 +1,6 @@
 I | Bus-1 | phase: B, C, , V -> U | BusBar-1 | phase: C, C, , V
+I | Bus-2 | phase: A, A, , V -> U | BusBar-1 | phase: A, A, , V
 PDR B1, B -> PDR_ideal | Bus-1 | phase: PS, A
 PDR B2, B -> PDR_ideal | Bus-2 | phase: PS, A
-# Comments can be added via #
-# Any line without "->" or starting with # will be ignored
+# Комментарии можно добавлять с помощью #
+# Любая строка без "->" или начинающаяся с # будет проигнорирована
