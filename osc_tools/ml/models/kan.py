@@ -39,6 +39,8 @@ class SimpleKAN(BaseModel):
         self.net = nn.Sequential(*layers)
 
     def forward(self, x):
+        if x.dim() > 2:
+            x = x.flatten(start_dim=1)
         return self.net(x)
 
 class ConvKAN(BaseModel):

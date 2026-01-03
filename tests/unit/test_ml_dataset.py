@@ -51,12 +51,13 @@ class TestOscillogramDataset:
         )
         
         x, y = ds[0] # Индекс 0 -> окно 0..9
-        assert x.shape == (window_size, 1)
+        # Shape should be (Channels, Time) -> (1, 10)
+        assert x.shape == (1, window_size)
         assert y.shape == () or y.shape == (1,)
         
         # Проверка значений
-        # x должен быть 0..9
-        expected_x = np.arange(10, dtype=np.float32).reshape(-1, 1)
+        # x должен быть 0..9. Transposed: [[0, 1, ... 9]]
+        expected_x = np.arange(10, dtype=np.float32).reshape(1, -1)
         assert np.allclose(x.numpy(), expected_x)
         
         # y должен быть target[9] = 0
@@ -74,7 +75,8 @@ class TestOscillogramDataset:
         )
         
         x, y = ds[0]
-        assert x.shape == (window_size, 1)
+        # Shape: (Channels, Time) -> (1, 10)
+        assert x.shape == (1, window_size)
         assert y.shape == (window_size,) # Маска той же длины
         
     def test_reconstruction_mode(self, sample_data, sample_indices):
@@ -88,10 +90,86 @@ class TestOscillogramDataset:
         )
         
         x, y = ds[0]
-        assert x.shape == (window_size, 2)
-        assert y.shape == (window_size, 2)
+        # Shape: (Channels, Time) -> (2, 10)
+        assert x.shape == (2, window_size)
+        # Target for reconstruction is same as input
+        assert y.shape == (2, window_size)
         assert torch.allclose(x, y)
 
     def test_invalid_mode(self, sample_data, sample_indices):
         with pytest.raises(ValueError):
             OscillogramDataset(sample_data, sample_indices, 10, mode='invalid')
+
+class TestOscillogramDatasetFeatures:
+    
+    @pytest.fixture
+    def physics_data(self):
+        length = 200
+        t = np.linspace(0, 0.1, length)
+        f = 50
+        # Генерируем трёхфазные сигналы токов и напряжений
+        data = {
+            'IA': np.sin(2*np.pi*f*t),
+            'IB': np.sin(2*np.pi*f*t - 2*np.pi/3),
+            'IC': np.sin(2*np.pi*f*t + 2*np.pi/3),
+            'UA': 100 * np.sin(2*np.pi*f*t),
+            'UB': 100 * np.sin(2*np.pi*f*t - 2*np.pi/3),
+            'UC': 100 * np.sin(2*np.pi*f*t + 2*np.pi/3),
+            'target': np.zeros(length)
+        }
+        return pl.DataFrame(data)
+
+    @pytest.fixture
+    def indices(self):
+        return [0, 50]
+
+    def test_power_feature_mode(self, physics_data, indices):
+        ds = OscillogramDataset(
+            dataframe=physics_data,
+            indices=indices,
+            window_size=32,
+            mode='classification',
+            feature_mode='power',
+            sampling_rate=1600
+        )
+        
+        x, y = ds[0]
+        # Режим "power": 3 фазы * 2 (P, Q) = 6 каналов
+        # Shape: (Channels, Time) -> (6, 32)
+        assert x.shape == (6, 32)
+
+    def test_combined_feature_mode(self, physics_data, indices):
+        ds = OscillogramDataset(
+            dataframe=physics_data,
+            indices=indices,
+            window_size=32,
+            mode='classification',
+            feature_mode=['raw', 'power'],
+            feature_columns=['IA', 'UA'], # For raw part
+            sampling_rate=1600
+        )
+        
+        x, y = ds[0]
+        # Raw: 2 канала (IA, UA)
+        # Power: 6 каналов (3 фазы * 2)
+        # Всего: 8 каналов
+        # Shape: (Channels, Time) -> (8, 32)
+        assert x.shape == (8, 32)
+
+    def test_symmetric_feature_mode(self, physics_data, indices):
+        ds = OscillogramDataset(
+            dataframe=physics_data,
+            indices=indices,
+            window_size=32,
+            mode='classification',
+            feature_mode='symmetric',
+            sampling_rate=1600
+        )
+        
+        x, y = ds[0]
+        # Режим "symmetric":
+        # Для токов (I): I1, I2, I0 (действительная и мнимая части) -> 6 каналов
+        # Для напряжений (U): U1, U2, U0 (действительная и мнимая части) -> 6 каналов
+        # Всего: 12 каналов
+        # Shape: (Channels, Time) -> (12, 32)
+        assert x.shape == (12, 32)
