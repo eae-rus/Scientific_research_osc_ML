@@ -6,7 +6,7 @@
 
 import pytest
 import numpy as np
-import pandas as pd
+import polars as pl
 import sys
 from pathlib import Path
 from unittest.mock import patch, MagicMock, Mock
@@ -24,9 +24,9 @@ from osc_tools.analysis.overvoltage import OvervoltageAnalyzer
 # ============================================================================
 
 @pytest.fixture
-def sample_norm_coef_df() -> pd.DataFrame:
+def sample_norm_coef_df() -> pl.DataFrame:
     """DataFrame с коэффициентами нормализации."""
-    return pd.DataFrame({
+    return pl.DataFrame({
         'name': ['file_1', 'file_2', 'file_3'],
         '1Ub_base': [400.0, 10000.0, 400.0],
         '1Uc_base': [400.0, 10000.0, 400.0],
@@ -36,7 +36,7 @@ def sample_norm_coef_df() -> pd.DataFrame:
 
 
 @pytest.fixture
-def sample_normalized_dataframe() -> pd.DataFrame:
+def sample_normalized_dataframe() -> pl.DataFrame:
     """Синтезированный нормализованный DataFrame с фазными напряжениями."""
     fs = 1600
     f = 50
@@ -57,7 +57,7 @@ def sample_normalized_dataframe() -> pd.DataFrame:
     ub_cl = 0.5 * np.sin(2 * np.pi * f * t - 2*np.pi/3)
     uc_cl = 0.5 * np.sin(2 * np.pi * f * t + 2*np.pi/3)
     
-    return pd.DataFrame({
+    return pl.DataFrame({
         'UA BB': ua_bb,
         'UB BB': ub_bb,
         'UC BB': uc_bb,
@@ -69,7 +69,7 @@ def sample_normalized_dataframe() -> pd.DataFrame:
 
 
 @pytest.fixture
-def sample_spef_dataframe() -> pd.DataFrame:
+def sample_spef_dataframe() -> pl.DataFrame:
     """DataFrame с ОЗЗ (земляным коротким замыканием) - повышенные напряжения."""
     fs = 1600
     f = 50
@@ -91,7 +91,7 @@ def sample_spef_dataframe() -> pd.DataFrame:
     ub_cl = 0.5 * np.sin(2 * np.pi * f * t - 2*np.pi/3)
     uc_cl = 0.5 * np.sin(2 * np.pi * f * t + 2*np.pi/3)
     
-    return pd.DataFrame({
+    return pl.DataFrame({
         'UA BB': ua_bb,
         'UB BB': ub_bb,
         'UC BB': uc_bb,
@@ -108,7 +108,7 @@ def mock_overvoltage_init(monkeypatch):
     with patch('osc_tools.analysis.overvoltage.ComtradeParser') as mock_comtrade, \
          patch('builtins.open') as mock_open, \
          patch('osc_tools.features.normalization.os.path.exists', return_value=True) as mock_exists, \
-         patch('pandas.read_csv') as mock_read_csv:
+         patch('polars.read_csv') as mock_read_csv:
         
         mock_comtrade.return_value = MagicMock()
         mock_open.return_value.__enter__ = lambda s: s
@@ -130,7 +130,7 @@ def mock_overvoltage_init(monkeypatch):
 @patch('osc_tools.analysis.overvoltage.ComtradeParser')
 @patch('builtins.open')
 @patch('osc_tools.features.normalization.os.path.exists', return_value=True)
-@patch('pandas.read_csv')
+@patch('polars.read_csv')
 class TestOvervoltageAnalyzerInit:
     """Тесты инициализации OvervoltageAnalyzer."""
     
@@ -200,7 +200,7 @@ class TestLoadNormCoefficients:
     @patch('osc_tools.analysis.overvoltage.ComtradeParser')
     @patch('builtins.open')
     @patch('osc_tools.features.normalization.os.path.exists', return_value=True)
-    @patch('pandas.read_csv')
+    @patch('polars.read_csv')
     def test_load_norm_coefficients_success(self, mock_read_csv, mock_exists, mock_open, mock_comtrade, sample_norm_coef_df):
         """Успешная загрузка коэффициентов."""
         mock_read_csv.return_value = sample_norm_coef_df
@@ -280,7 +280,7 @@ class TestFindSpefZones:
             log_path='/output/error.log'
         )
         
-        empty_df = pd.DataFrame()
+        empty_df = pl.DataFrame()
         zones = analyzer._find_spef_zones(empty_df, 'BB', samples_per_period=32)
         
         assert zones == []
@@ -294,7 +294,7 @@ class TestFindSpefZones:
             log_path='/output/error.log'
         )
         
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'other_col1': [1, 2, 3],
             'other_col2': [4, 5, 6],
         })
@@ -446,7 +446,7 @@ class TestRunAnalysisIntegration:
         )
         
         # Не должно быть исключения
-        analyzer.norm_coef_df = pd.DataFrame()  # Имитируем загруженные коэффициенты
+        analyzer.norm_coef_df = pl.DataFrame()  # Имитируем загруженные коэффициенты
         
         # Из-за отсутствия файлов, analyze не сделает ничего
         assert analyzer.results == []

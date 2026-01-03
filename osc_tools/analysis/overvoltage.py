@@ -1,4 +1,4 @@
-import pandas as pd
+import polars as pl
 import numpy as np
 import os
 import sys
@@ -47,45 +47,43 @@ class OvervoltageAnalyzer:
     def _load_norm_coefficients(self):
         """Загружает единый файл с коэффициентами нормализации."""
         try:
-            self.norm_coef_df = pd.read_csv(self.norm_coef_path)
+            self.norm_coef_df = pl.read_csv(self.norm_coef_path)
             print(f"Файл коэффициентов нормализации '{self.norm_coef_path}' успешно загружен.")
         except FileNotFoundError:
             print(f"Ошибка: Файл коэффициентов нормализации не найден: {self.norm_coef_path}")
             self.norm_coef_df = None
 
-    def _find_spef_zones(self, df: pd.DataFrame, group_prefix: str, samples_per_period: int) -> list:
+    def _find_spef_zones(self, df: pl.DataFrame, group_prefix: str, samples_per_period: int) -> list:
         """
         Находит зоны ОЗЗ для группы сигналов (СШ или КЛ), отфильтровывая зоны
         со слишком похожими амплитудами фазных напряжений, если соответствующий фильтр включен.
         Возвращает список кортежей (start_index, end_index).
         """
-        u0_calculated = None
-        un_measured = None
-
         # 1. Получаем сигналы U0
-        # Пытаемся рассчитать из фазных
         phase_cols_candidate = [f'U{ph} {group_prefix}' for ph in ['A', 'B', 'C']]
-        # Проверяем, что все три фазы действительно присутствуют в DataFrame
-        # Это важно для фильтра схожести амплитуд
         available_phase_cols = [col for col in phase_cols_candidate if col in df.columns]
         
+        u0_expr = None
         if len(available_phase_cols) == 3:
-            u0_calculated = (df[available_phase_cols[0]] + df[available_phase_cols[1]] + df[available_phase_cols[2]]) / 3
+            u0_expr = (pl.col(available_phase_cols[0]) + pl.col(available_phase_cols[1]) + pl.col(available_phase_cols[2])) / 3
         
-        # Пытаемся взять измеренный
         un_col = f'UN {group_prefix}'
+        un_expr = None
         if un_col in df.columns:
-            un_measured = df[un_col]
+            un_expr = pl.col(un_col)
 
-        if u0_calculated is None and un_measured is None:
+        if u0_expr is None and un_expr is None:
             return []
 
         # 2. Создаем общую маску превышения порога по U0/Un
-        combined_mask = pd.Series(False, index=df.index)
-        if u0_calculated is not None:
-            combined_mask |= (u0_calculated.abs() > self.SPEF_THRESHOLD_U0)
-        if un_measured is not None:
-            combined_mask |= (un_measured.abs() > self.SPEF_THRESHOLD_Un)
+        mask_expr = pl.lit(False)
+        if u0_expr is not None:
+            mask_expr = mask_expr | (u0_expr.abs() > self.SPEF_THRESHOLD_U0)
+        if un_expr is not None:
+            mask_expr = mask_expr | (un_expr.abs() > self.SPEF_THRESHOLD_Un)
+            
+        df_with_mask = df.with_columns(mask_expr.alias('combined_mask'))
+        combined_mask = df_with_mask['combined_mask']
 
         if not combined_mask.any():
             return []
@@ -93,19 +91,27 @@ class OvervoltageAnalyzer:
         # 3. Эффективный поиск непрерывных блоков нужной длины (кандидатные зоны)
         min_len = self.SPEF_MIN_DURATION_PERIODS * samples_per_period
         
-        blocks = combined_mask.ne(combined_mask.shift()).cumsum()
-        block_lengths = blocks.map(blocks.value_counts())
+        df_with_blocks = df_with_mask.with_columns([
+            (pl.col('combined_mask') != pl.col('combined_mask').shift()).fill_null(False).cast(pl.Int32).cum_sum().alias('block_id')
+        ])
         
-        # Кандидатные зоны, прошедшие проверку по U0/Un и длительности
-        candidate_zones_mask = combined_mask & (block_lengths >= min_len)
+        block_lengths = df_with_blocks.group_by('block_id').len().rename({'len': 'block_len'})
+        df_with_blocks = df_with_blocks.join(block_lengths, on='block_id')
         
-        if not candidate_zones_mask.any():
+        candidate_zones_mask = (pl.col('combined_mask')) & (pl.col('block_len') >= min_len)
+        
+        df_with_blocks = df_with_blocks.with_row_index('row_idx')
+        df_candidates = df_with_blocks.filter(candidate_zones_mask)
+        
+        if df_candidates.is_empty():
             return []
             
-        zone_starts_indices = df.index[candidate_zones_mask.ne(candidate_zones_mask.shift()) & candidate_zones_mask]
-        zone_ends_indices = df.index[candidate_zones_mask.ne(candidate_zones_mask.shift(-1)) & candidate_zones_mask]
+        zones = df_candidates.group_by('block_id').agg([
+            pl.col('row_idx').min().alias('start_idx'),
+            pl.col('row_idx').max().alias('end_idx')
+        ]).sort('start_idx')
         
-        candidate_spef_tuples = list(zip(zone_starts_indices, zone_ends_indices))
+        candidate_spef_tuples = list(zip(zones['start_idx'], zones['end_idx']))
         
         actual_spef_zones = []
 
@@ -113,13 +119,13 @@ class OvervoltageAnalyzer:
         for start_idx, end_idx in candidate_spef_tuples:
             apply_similarity_filter = self.SIMILAR_AMPLITUDES_FILTER_ENABLED and (len(available_phase_cols) == 3)
             
-            is_zone_valid = True # По умолчанию зона валидна
+            is_zone_valid = True 
 
             if apply_similarity_filter:
-                zone_df_segment = df.loc[start_idx:end_idx, available_phase_cols]
-                if zone_df_segment.empty:
-                    # Если сегмент пуст, считаем его валидным (пропускаем фильтр, т.к. нет данных для анализа)
-                    # или можно отбросить, но пропуск безопаснее.
+                length = end_idx - start_idx + 1
+                zone_df_segment = df.slice(start_idx, length).select(available_phase_cols)
+                
+                if zone_df_segment.is_empty():
                     actual_spef_zones.append((start_idx, end_idx))
                     continue
 
@@ -127,26 +133,22 @@ class OvervoltageAnalyzer:
                 all_amplitudes_valid_for_segment = True
                 for phase_col in available_phase_cols:
                     max_abs_val_in_phase_zone = zone_df_segment[phase_col].abs().max()
-                    if pd.isna(max_abs_val_in_phase_zone):
+                    if max_abs_val_in_phase_zone is None:
                         all_amplitudes_valid_for_segment = False
                         break
                     amplitudes.append(max_abs_val_in_phase_zone)
                 
                 if not all_amplitudes_valid_for_segment or len(amplitudes) != 3:
-                    # Если не удалось получить 3 валидные амплитуды для этой зоны,
-                    # считаем, что фильтр на схожесть не может быть применен,
-                    # и зона проходит (т.е., is_zone_valid остается True).
-                    pass # is_zone_valid остается True
+                    pass 
                 else:
                     mean_amp = np.mean(amplitudes)
-                    if mean_amp < 1e-9: # Избегаем деления на ноль или очень малое число
-                        # Если все амплитуды ~0, то max_amp - min_amp тоже ~0. Разница будет 0.
+                    if mean_amp < 1e-9: 
                         relative_difference = 0.0 if (np.max(amplitudes) - np.min(amplitudes)) < 1e-9 else float('inf')
                     else:
                         relative_difference = (np.max(amplitudes) - np.min(amplitudes)) / mean_amp
                     
                     if relative_difference < self.SIMILAR_AMPLITUDES_MAX_RELATIVE_DIFFERENCE:
-                        is_zone_valid = False # Амплитуды слишком похожи, зона не валидна
+                        is_zone_valid = False 
 
             if is_zone_valid:
                 actual_spef_zones.append((start_idx, end_idx))
@@ -159,13 +161,13 @@ class OvervoltageAnalyzer:
         
         # 1. Чтение и базовая подготовка
         raw_date, osc_df_raw = self.readComtrade.read_comtrade(cfg_file_path)
-        if osc_df_raw is None or osc_df_raw.empty:
+        if osc_df_raw is None or osc_df_raw.is_empty():
             return
 
         samples_per_period = int(raw_date.cfg.sample_rates[0][0] / raw_date.cfg.frequency)
         
         # Создаем копию для нормализации, чтобы не портить оригинал
-        df_to_norm = osc_df_raw.copy()
+        df_to_norm = osc_df_raw.clone()
 
         # 2. Нормализация (используем существующую функцию)
         # Важно: normalize_bus_signals модифицирует DataFrame на месте
@@ -176,21 +178,25 @@ class OvervoltageAnalyzer:
         # 3. Разделение на шины и переименование столбцов
         # Теперь на вход подается уже нормализованный DataFrame.
         # Эта функция вернет DataFrame в "длинном" формате с короткими именами столбцов (UA BB и т.д.)
-        buses_df = self.rawToCSV.split_buses(normalized_df.reset_index(), os.path.basename(cfg_file_path))
-        if buses_df.empty:
+        buses_df = self.rawToCSV.split_buses(normalized_df, os.path.basename(cfg_file_path))
+        if buses_df.is_empty():
             return
 
         max_overvoltage_for_file = -1.0
         best_result_for_file = {}
         
         # Получаем строку с коэффициентами для этой осциллограммы один раз
-        norm_row_series = self.norm_coef_df[self.norm_coef_df['name'] == filename_without_ext]
-        if norm_row_series.empty:
+        norm_row_series = self.norm_coef_df.filter(pl.col('name') == filename_without_ext)
+        if norm_row_series.is_empty():
             return # Нет коэффициентов для этого файла
-        norm_row = norm_row_series.iloc[0]
+        norm_row = norm_row_series.row(0, named=True)
 
         # 4. Перебор групп сигналов, созданных функцией split_buses
-        for group_full_name, group_df in buses_df.groupby('file_name'):
+        unique_groups = buses_df['file_name'].unique().to_list()
+        
+        for group_full_name in unique_groups:
+            group_df = buses_df.filter(pl.col('file_name') == group_full_name)
+            
             # Извлекаем номер секции и тип группы (bb/cl) из имени группы
             match = re.search(r'_bus (\d+)$', group_full_name.lower())
             if not match:
@@ -207,7 +213,7 @@ class OvervoltageAnalyzer:
                 # norm_base_col будет f"1Ub_base" или f"1Uc_base", что соответствует norm_coef.csv
                 norm_base_col = f"{bus_idx}U{'b' if group_name == 'СШ' else 'c'}_base"
 
-                if norm_base_col not in norm_row or pd.isna(norm_row[norm_base_col]):
+                if norm_base_col not in norm_row or norm_row[norm_base_col] is None:
                     continue
                 
                 try:
@@ -230,9 +236,10 @@ class OvervoltageAnalyzer:
                 
                 max_inst_val_in_zones = 0
                 for start, end in spef_zones:
-                    zone_df = group_df.loc[start:end, phase_cols]
-                    max_in_zone = zone_df.abs().max().max()
-                    if max_in_zone > max_inst_val_in_zones:
+                    length = end - start + 1
+                    zone_df = group_df.slice(start, length).select(phase_cols)
+                    max_in_zone = zone_df.select(pl.all().abs().max()).max_horizontal().max()
+                    if max_in_zone is not None and max_in_zone > max_inst_val_in_zones:
                         max_inst_val_in_zones = max_in_zone
 
                 current_overvoltage = max_inst_val_in_zones / np.sqrt(2) / (1/(3*np.sqrt(3))) # Исходно при нормализации номинал завышается в 3 раза + мы обрабатываем фазные значения
@@ -255,23 +262,28 @@ class OvervoltageAnalyzer:
             print("\nОсциллограммы с ОЗЗ и перенапряжениями не найдены.")
             return
 
-        df = pd.DataFrame(self.results)
+        df = pl.DataFrame(self.results)
         
-        bins = [0, 1.2, 1.71, 1.75, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, np.inf]
+        bins = [0.0, 1.2, 1.71, 1.75, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, float('inf')]
         labels = [
             "< 1.2", "1.2 - 1.71", "1.71 - 1.75", "1.75 - 2.0", "2.0 - 2.5", "2.5 - 3.0", "3.0 - 3.5",
             "3.5 - 4.0", "4.0 - 4.5", "4.5 - 5.0", "> 5.0"
         ]
         
-        df["overvoltage_group"] = pd.cut(df["overvoltage"], bins=bins, labels=labels, right=False)
+        def assign_group(val):
+            for i in range(len(bins) - 1):
+                if bins[i] <= val < bins[i+1]:
+                    return labels[i]
+            return labels[-1]
+
+        df = df.with_columns(pl.col('overvoltage').map_elements(assign_group, return_dtype=pl.Utf8).alias('overvoltage_group'))
         
         # Сортировка для красивого вывода
-        df['overvoltage_group'] = pd.Categorical(df['overvoltage_group'], categories=labels, ordered=True)
-        df.sort_values("overvoltage_group", inplace=True)
+        df = df.sort("overvoltage")
         
         # Форматируем итоговый CSV
-        output_df = df[["overvoltage_group", "filename", "overvoltage", "bus", "group"]]
-        output_df.to_csv(self.output_path, index=False, float_format='%.3f')
+        output_df = df.select(["overvoltage_group", "filename", "overvoltage", "bus", "group"])
+        output_df.write_csv(self.output_path, float_precision=3)
         
         # Сохраняем лог ошибок
         if self.error_files:
@@ -285,7 +297,7 @@ class OvervoltageAnalyzer:
         print(f"Всего осциллограмм обработано (попыток): {self.total_files_processed}")
         print(f"Найдено осциллограмм с ОЗЗ: {len(df)}")
         print("\nРаспределение по группам перенапряжений:")
-        print(df["overvoltage_group"].value_counts().sort_index())
+        print(df["overvoltage_group"].value_counts().sort("overvoltage_group"))
         print(f"\nРезультаты сохранены в: {self.output_path}")
 
     def run_analysis(self):
@@ -331,7 +343,7 @@ class OvervoltageAnalyzer:
         print("--- Начало операции копирования осциллограмм ОЗЗ ---")
         # 1. Чтение CSV-файла с отчетом
         try:
-            report_df = pd.read_csv(report_csv_path)
+            report_df = pl.read_csv(report_csv_path)
             print(f"Файл отчета '{report_csv_path}' успешно загружен.")
         except FileNotFoundError:
             print(f"Ошибка: Файл отчета '{report_csv_path}' не найден. Операция прервана.")

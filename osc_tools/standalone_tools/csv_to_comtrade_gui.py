@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-import pandas as pd
+import polars as pl
 from pathlib import Path
 import datetime
 import threading
@@ -93,11 +93,11 @@ def process_csv_to_comtrade(csv_path, out_folder, params, status_callback):
 
         # --- Чтение CSV ---
         try:
-            df = pd.read_csv(csv_path)
+            df = pl.read_csv(csv_path)
         except Exception as e:
             raise ValueError(f"Ошибка чтения CSV '{csv_path.name}': {e}")
 
-        if df.empty or len(df) < 2:
+        if df.is_empty() or len(df) < 2:
             raise ValueError(f"CSV-файл '{csv_path.name}' пуст или содержит менее 2 строк данных.")
 
         # Проверка наличия колонки времени
@@ -112,7 +112,7 @@ def process_csv_to_comtrade(csv_path, out_folder, params, status_callback):
                  raise ValueError(f"Колонка 'TimeUTC' не найдена в '{csv_path.name}' и не определена альтернативная колонка времени.")
             else:
                  # Переименовываем найденную колонку для дальнейшей обработки
-                 df.rename(columns={time_col_found: 'TimeUTC'}, inplace=True)
+                 df = df.rename({time_col_found: 'TimeUTC'})
                  status_callback(f"Информация: Используется колонка '{time_col_found}' как источник времени для {csv_path.name}")
 
 
@@ -127,20 +127,20 @@ def process_csv_to_comtrade(csv_path, out_folder, params, status_callback):
         for ch_name in channel_names:
              # Проверяем тип данных колонки, преобразуем в числовой, если нужно
              # errors='coerce' заменит нечисловые значения на NaN
-             numeric_channel_data = pd.to_numeric(df[ch_name], errors='coerce')
+             numeric_channel_data = df[ch_name].cast(pl.Float64, strict=False)
              # Удаляем NaN перед поиском максимума
-             numeric_channel_data = numeric_channel_data.dropna()
-             if numeric_channel_data.empty:
+             numeric_channel_data = numeric_channel_data.drop_nulls()
+             if numeric_channel_data.is_empty():
                  max_abs_values[ch_name] = 0.0 # Если все значения нечисловые или пустые
              else:
                 max_abs_values[ch_name] = numeric_channel_data.abs().max()
 
         # Частота дискретизации
-        time_diff = df['TimeUTC'].iloc[1] - df['TimeUTC'].iloc[0]
+        time_diff = df['TimeUTC'][1] - df['TimeUTC'][0]
         if time_diff <= 0:
              # Попробуем следующие точки, если первая разница некорректна
              if len(df) > 2:
-                 time_diff = df['TimeUTC'].iloc[2] - df['TimeUTC'].iloc[1]
+                 time_diff = df['TimeUTC'][2] - df['TimeUTC'][1]
              if time_diff <= 0:
                   raise ValueError(f"Невозможно определить частоту дискретизации из 'TimeUTC' в '{csv_path.name}'. Разница во времени равна нулю или отрицательна.")
         sampling_rate = round(1.0 / time_diff)
@@ -245,7 +245,7 @@ def process_csv_to_comtrade(csv_path, out_folder, params, status_callback):
 
         # --- Генерация DAT ---
         dat_lines = []
-        for i, row in df.iterrows():
+        for i, row in enumerate(df.iter_rows(named=True)):
             sample_num = i + 1
             # Время в микросекундах от начала записи
             timestamp_us = int(row['TimeUTC'] * 1_000_000)

@@ -5,8 +5,9 @@ from osc_tools.ml.layers.complex_ops import cLeakyReLU, cSigmoid
 from osc_tools.ml.models.cnn import Conv_3
 from osc_tools.ml.utils import fft_calc, fft_calc_abs_angle, create_signal_group, create_line_group
 from osc_tools.core.constants import Features
+from osc_tools.ml.models.base import BaseModel
 
-class CONV_MLP_v2(nn.Module):
+class CONV_MLP_v2(BaseModel):
     class Head_fc(nn.Module):
         def __init__(self, hidden_size):
             super().__init__()
@@ -64,7 +65,7 @@ class CONV_MLP_v2(nn.Module):
         x = torch.cat((x_opr_swch, x_abnorm_evnt, x_emerg_evnt), dim=1)
         return x
 
-class CONV_COMPLEX_v1(nn.Module):
+class CONV_COMPLEX_v1(BaseModel):
     class Head_fc(nn.Module):
         def __init__(self, hidden_size):
             super().__init__()
@@ -144,7 +145,7 @@ class CONV_COMPLEX_v1(nn.Module):
         return x
 
 
-class FFT_MLP(nn.Module):
+class FFT_MLP(BaseModel):
     class Head_fc(nn.Module):
         def __init__(self, hidden_size):
             super().__init__()
@@ -195,7 +196,7 @@ class FFT_MLP(nn.Module):
         x = torch.cat((x_opr_swch, x_abnorm_evnt, x_emerg_evnt), dim=1)
         return x
 
-class FFT_MLP_KAN_v1(nn.Module):
+class FFT_MLP_KAN_v1(BaseModel):
     class Head_fc(nn.Module):
         def __init__(self, hidden_size):
             super().__init__()
@@ -280,7 +281,7 @@ class FFT_MLP_KAN_v1(nn.Module):
         x = torch.cat((x_opr_swch, x_abnorm_evnt, x_emerg_evnt), dim=1)
         return x
 
-class FFT_MLP_COMPLEX_v1(nn.Module):
+class FFT_MLP_COMPLEX_v1(BaseModel):
     class Head_fc(nn.Module):
         def __init__(self, hidden_size):
             super().__init__()

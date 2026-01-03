@@ -6,7 +6,7 @@
 
 import pytest
 import numpy as np
-import pandas as pd
+import polars as pl
 import sys
 from pathlib import Path
 from unittest.mock import patch, MagicMock
@@ -24,9 +24,9 @@ from osc_tools.analysis.detect_motor_starts import MotorStartDetector
 # ============================================================================
 
 @pytest.fixture
-def sample_norm_coef_for_motor() -> pd.DataFrame:
+def sample_norm_coef_for_motor() -> pl.DataFrame:
     """DataFrame с коэффициентами нормализации для MotorStartDetector."""
-    return pd.DataFrame({
+    return pl.DataFrame({
         'name': ['motor_file_1', 'motor_file_2'],
         '1I_base': [100.0, 50.0],
         '2I_base': [100.0, 50.0],
@@ -112,7 +112,7 @@ class TestMotorStartDetectorInit:
 class TestMotorStartDetectorMethods:
     """Тесты методов MotorStartDetector."""
     
-    @patch('pandas.read_csv')
+    @patch('polars.read_csv')
     def test_load_norm_coefficients_success(self, mock_read_csv, sample_norm_coef_for_motor):
         """Успешная загрузка коэффициентов."""
         mock_read_csv.return_value = sample_norm_coef_for_motor

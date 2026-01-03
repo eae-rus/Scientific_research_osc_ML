@@ -1,6 +1,6 @@
 import os
 import sys
-import pandas as pd
+import polars as pl
 import numpy as np
 from tqdm.auto import tqdm
 from typing import Dict, Any, List, Optional, Tuple
@@ -107,7 +107,7 @@ class EmptyOscFilter:
                     cfg_files.append(os.path.join(root, file))
         return sorted(cfg_files)
 
-    def _get_h1_amplitude_series(self, signal_values: np.ndarray) -> Optional[pd.Series]:
+    def _get_h1_amplitude_series(self, signal_values: np.ndarray) -> Optional[pl.Series]:
         """Рассчитывает временной ряд амплитуд первой гармоники."""
         if len(signal_values) < self.fft_window_size:
             if self.verbose:
@@ -131,13 +131,13 @@ class EmptyOscFilter:
                 print(f"    Не удалось рассчитать амплитуды H1 (все значения NaN).")
              return None
         
-        return pd.Series(valid_h1_amplitudes)
+        return pl.Series(valid_h1_amplitudes)
 
-    def is_oscillogram_not_empty(self, osc_df: pd.DataFrame, file_name_for_norm: str) -> bool:
-        if osc_df is None or osc_df.empty:
+    def is_oscillogram_not_empty(self, osc_df: pl.DataFrame, file_name_for_norm: str) -> bool:
+        if osc_df is None or osc_df.is_empty():
             return False
 
-        processed_df = osc_df.copy()
+        processed_df = osc_df.clone()
         use_normalized_thresholds_for_this_file = False
         norm_applied_flag = False
 
@@ -145,7 +145,7 @@ class EmptyOscFilter:
             if self.verbose:
                 print(f"  Попытка применения нормализации NormOsc для {file_name_for_norm}...")
             
-            original_df_for_raw_analysis = processed_df.copy() 
+            original_df_for_raw_analysis = processed_df.clone() 
             normalized_df_ext = self.normalizer.normalize_bus_signals(processed_df, file_name_for_norm, is_print_error=self.verbose)
             
             # Проверяем, была ли нормализация успешно применена (например, файл был в таблице norm_coef и norm='YES')
@@ -159,8 +159,8 @@ class EmptyOscFilter:
             # Пока что используем флаг, как в исходном коде, на основе norm_row:
             norm_applied_flag = False
             if self.normalizer.norm_coef is not None: # norm_coef это атрибут NormOsc, который должен быть DataFrame
-                norm_row = self.normalizer.norm_coef[self.normalizer.norm_coef["name"] == file_name_for_norm]
-                if not norm_row.empty and norm_row["norm"].values[0] == "YES":
+                norm_row = self.normalizer.norm_coef.filter(pl.col("name") == file_name_for_norm)
+                if not norm_row.is_empty() and norm_row["norm"][0] == "YES":
                     norm_applied_flag = True
             
             if norm_applied_flag and normalized_df_ext is not None: # и сам DataFrame был возвращен
@@ -190,8 +190,8 @@ class EmptyOscFilter:
                 continue
             
             try:
-                signal_values_full_series = processed_df[col_name].astype(float).values
-            except ValueError:
+                signal_values_full_series = processed_df[col_name].cast(pl.Float64).to_numpy()
+            except Exception:
                 if self.verbose: print(f"    Не удалось преобразовать канал {col_name} в числовой формат. Пропуск.")
                 continue
 
@@ -226,11 +226,11 @@ class EmptyOscFilter:
 
             h1_amplitudes_full_series = self._get_h1_amplitude_series(signal_values_full_series)
 
-            if h1_amplitudes_full_series is None or h1_amplitudes_full_series.empty or h1_amplitudes_full_series.isna().all():
+            if h1_amplitudes_full_series is None or h1_amplitudes_full_series.len() == 0 or h1_amplitudes_full_series.is_nan().all():
                 if self.verbose: print(f"    Нет валидных данных первой гармоники для канала {col_name}.")
                 continue
             
-            h1_series_to_analyze = h1_amplitudes_full_series.copy()
+            h1_series_to_analyze = h1_amplitudes_full_series.clone()
             if (not use_normalized_thresholds_for_this_file or ("_dup" in str(col_name))) and h1_for_relative_norm is not None:
                 # h1_for_relative_norm здесь не может быть 0 или слишком мал, т.к. отсеяли ранее
                 h1_series_to_analyze = h1_series_to_analyze / h1_for_relative_norm
@@ -299,7 +299,7 @@ class EmptyOscFilter:
                 frequency = raw_date.cfg.frequency
                 samples_rate = raw_date.cfg.sample_rates[0][0]
                 self.fft_window_size = int(samples_rate / frequency)
-                if raw_date is None or osc_df_raw is None or osc_df_raw.empty:
+                if raw_date is None or osc_df_raw is None or osc_df_raw.is_empty():
                      if self.verbose: print(f"  Файл {cfg_file_path} не содержит данных или ошибка чтения comtrade. Пропуск.")
                      continue
 
@@ -314,7 +314,7 @@ class EmptyOscFilter:
                 first_analog_col_idx_in_raw_df = 0
                 if has_time_column_in_raw:
                     # Найдем позицию столбца 'time'. Следующий за ним - первый аналоговый.
-                    time_col_position = osc_df_raw.columns.get_loc(time_col_name)
+                    time_col_position = osc_df_raw.columns.index(time_col_name)
                     first_analog_col_idx_in_raw_df = time_col_position + 1
                 
                 # Проверка, достаточно ли столбцов в osc_df_raw для всех ожидаемых аналоговых каналов
@@ -334,7 +334,7 @@ class EmptyOscFilter:
                 
                 # Копируем столбец времени, если он есть
                 if has_time_column_in_raw:
-                    data_for_final_osc_df[time_col_name] = osc_df_raw[time_col_name].copy()
+                    data_for_final_osc_df[time_col_name] = osc_df_raw[time_col_name].clone()
 
                 # Копируем данные аналоговых каналов, присваивая им новые уникальные имена
                 for i, unique_name in enumerate(target_unique_analog_names):
@@ -342,19 +342,12 @@ class EmptyOscFilter:
                     # (pandas мог уже переименовать дубликаты, например в 'Канал' и 'Канал.1')
                     # Мы берем столбцы по их *порядковому номеру* в osc_df_raw, который должен соответствовать порядку в rec.analog_channel_ids
                     original_df_column_for_this_analog_channel = osc_df_raw.columns[first_analog_col_idx_in_raw_df + i]
-                    data_for_final_osc_df[unique_name] = osc_df_raw[original_df_column_for_this_analog_channel].copy()
+                    data_for_final_osc_df[unique_name] = osc_df_raw[original_df_column_for_this_analog_channel].clone()
                 
-                osc_df = pd.DataFrame(data_for_final_osc_df)
+                osc_df = pl.DataFrame(data_for_final_osc_df)
 
                 # Устанавливаем индекс времени, если столбец времени был
-                if has_time_column_in_raw and time_col_name in osc_df.columns:
-                    osc_df = osc_df.set_index(time_col_name)
-                elif not has_time_column_in_raw and osc_df_raw.index.name is not None:
-                    # Если в исходном osc_df_raw время было индексом, восстанавливаем его
-                    osc_df.index = osc_df_raw.index.copy() 
-                    if osc_df.index.name is None and isinstance(osc_df_raw.index, pd.RangeIndex) == False : # Если имя индекса не было установлено, но это не RangeIndex
-                        # Пытаемся дать имя 'time' по соглашению, если это не простой RangeIndex
-                         osc_df.index.name = time_col_name
+                # Polars не использует индекс, поэтому пропускаем этот шаг
                 
             except Exception as e:
                 if self.verbose:
@@ -362,12 +355,12 @@ class EmptyOscFilter:
                 unread_files_exceptions.append((cfg_file_path, f"DataFrame preparation error: {str(e)}"))
                 continue # Переходим к следующему файлу
             
-            if osc_df.empty and num_expected_analog_channels > 0: # Если ожидали каналы, но df пуст
+            if osc_df.is_empty() and num_expected_analog_channels > 0: # Если ожидали каналы, но df пуст
                 if self.verbose:
                      print(f"  DataFrame osc_df для {cfg_file_path} пуст после обработки, хотя ожидались каналы. Пропуск.")
                 # Можно добавить в unread_files_exceptions, если это считать ошибкой
                 continue
-            elif osc_df.empty and num_expected_analog_channels == 0: # Пустой, т.к. не было аналоговых каналов
+            elif osc_df.is_empty() and num_expected_analog_channels == 0: # Пустой, т.к. не было аналоговых каналов
                  if self.verbose:
                      print(f"  В файле {cfg_file_path} нет аналоговых каналов для анализа. Пропуск.")
                  continue
@@ -377,9 +370,9 @@ class EmptyOscFilter:
                 non_empty_file_names.append(file_basename) 
 
         if non_empty_file_names:
-            result_df = pd.DataFrame({'non_empty_files': non_empty_file_names})
+            result_df = pl.DataFrame({'non_empty_files': non_empty_file_names})
             try:
-                result_df.to_csv(self.output_csv_path, index=False)
+                result_df.write_csv(self.output_csv_path)
                 print(f"\nСписок непустых осциллограмм сохранен в: {self.output_csv_path}")
                 print(f"Найдено непустых осциллограмм: {len(non_empty_file_names)}")
             except Exception as e:

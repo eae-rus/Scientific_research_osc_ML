@@ -1,5 +1,5 @@
 import os
-import pandas as pd
+import polars as pl
 import numpy as np
 from tqdm.auto import tqdm
 from typing import Dict, Any, List, Optional, Tuple
@@ -54,7 +54,7 @@ class OscillogramEventSegmenter:
             self.thresholds_current = self.raw_analysis_config['thresholds_raw_current_relative']
             self.thresholds_voltage = self.raw_analysis_config['thresholds_raw_voltage_relative']
 
-    def _get_target_columns(self, df: pd.DataFrame) -> Dict[str, List[str]]:
+    def _get_target_columns(self, df: pl.DataFrame) -> Dict[str, List[str]]:
         """Находит столбцы для анализа в DataFrame по заданным паттернам."""
         target_cols = {'current': [], 'voltage': []}
         df_cols_lower = {col.lower(): col for col in df.columns}
@@ -174,12 +174,12 @@ class OscillogramEventSegmenter:
         
         return [tuple(zone) for zone in merged]
 
-    def process_single_dataframe(self, df: pd.DataFrame) -> List[pd.DataFrame]:
+    def process_single_dataframe(self, df: pl.DataFrame) -> List[pl.DataFrame]:
         """Обрабатывает один DataFrame, находя и вырезая события."""
-        if df.empty:
+        if df.is_empty():
             return []
 
-        file_name = df['file_name'].iloc[0]
+        file_name = df['file_name'][0]
         target_cols = self._get_target_columns(df)
         if not target_cols['current'] and not target_cols['voltage']:
             return []
@@ -189,7 +189,7 @@ class OscillogramEventSegmenter:
         for channel_type, columns in target_cols.items():
             thresholds = self.thresholds_current if channel_type == 'current' else self.thresholds_voltage
             for col in columns:
-                signal = df[col].values.astype(float)
+                signal = df[col].to_numpy().astype(float)
                 h1_series = self._calculate_h1_amplitude_series(signal)
                 if len(h1_series) == 0:
                     continue
@@ -213,8 +213,8 @@ class OscillogramEventSegmenter:
 
         result_dfs = []
         for i, (start, end) in enumerate(event_zones):
-            event_df = df.iloc[start:end].copy()
-            event_df['file_name'] = f"{file_name}_event_{i+1}"
+            event_df = df.slice(start, end - start)
+            event_df = event_df.with_columns(pl.lit(f"{file_name}_event_{i+1}").alias('file_name'))
             result_dfs.append(event_df)
 
         return result_dfs
@@ -228,7 +228,7 @@ class OscillogramEventSegmenter:
             return
         
         try:
-            df_full = pd.read_csv(input_csv_path, index_col=False)
+            df_full = pl.read_csv(input_csv_path)
         except Exception as e:
             print(f"Ошибка чтения CSV файла: {e}")
             return
@@ -237,13 +237,13 @@ class OscillogramEventSegmenter:
         processed_file_names = []
         event_found_file_names = []
 
-        grouped = df_full.groupby('file_name')
+        unique_files = df_full['file_name'].unique().to_list()
         
-        for file_name, group_df in tqdm(grouped, desc="Обработка файлов в CSV"):
+        for file_name in tqdm(unique_files, desc="Обработка файлов в CSV"):
             # Логируем, что этот файл был взят в обработку
             processed_file_names.append(file_name)
             
-            group_df = group_df.sort_index() 
+            group_df = df_full.filter(pl.col('file_name') == file_name)
             event_dfs_for_file = self.process_single_dataframe(group_df)
             
             if event_dfs_for_file:
@@ -255,11 +255,11 @@ class OscillogramEventSegmenter:
         if not all_event_dfs:
             print("\nИтоговых событий для сохранения не найдено.")
             # Создаем пустой файл с заголовками, чтобы было понятно, что обработка завершилась
-            pd.DataFrame(columns=df_full.columns).to_csv(output_csv_path, index=False)
+            pl.DataFrame(schema=df_full.schema).write_csv(output_csv_path)
         else:
-            final_df = pd.concat(all_event_dfs, ignore_index=True)
+            final_df = pl.concat(all_event_dfs, how='vertical')
             try:
-                final_df.to_csv(output_csv_path, index=False)
+                final_df.write_csv(output_csv_path)
                 print(f"\nНайдено и сохранено событий: {len(all_event_dfs)}")
                 print(f"Результат сохранен в: {output_csv_path}")
             except Exception as e:
@@ -272,7 +272,7 @@ class OscillogramEventSegmenter:
         # 1. Лог всех обработанных файлов
         processed_log_path = os.path.join(output_dir, f"{base_name}_processed_log.csv")
         try:
-            pd.DataFrame({'processed_files': processed_file_names}).to_csv(processed_log_path, index=False)
+            pl.DataFrame({'processed_files': processed_file_names}).write_csv(processed_log_path)
             print(f"Список всех обработанных файлов ({len(processed_file_names)}) сохранен в: {processed_log_path}")
         except Exception as e:
             print(f"Ошибка сохранения лога обработанных файлов: {e}")
@@ -280,7 +280,7 @@ class OscillogramEventSegmenter:
         # 2. Лог файлов с найденными событиями
         events_found_log_path = os.path.join(output_dir, f"{base_name}_events_found_log.csv")
         try:
-            pd.DataFrame({'event_files': event_found_file_names}).to_csv(events_found_log_path, index=False)
+            pl.DataFrame({'event_files': event_found_file_names}).write_csv(events_found_log_path)
             print(f"Список файлов с событиями ({len(event_found_file_names)}) сохранен в: {events_found_log_path}")
         except Exception as e:
             print(f"Ошибка сохранения лога файлов с событиями: {e}")

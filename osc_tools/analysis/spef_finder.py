@@ -1,6 +1,6 @@
 import os
 import numpy as np
-import pandas as pd
+import polars as pl
 from tqdm import tqdm
 from scipy.fft import fft
 
@@ -199,12 +199,12 @@ def find_oscillograms_with_spef(raw_path: str ='raw_data/', output_csv_path: str
                 # Так как сейчас приходится искусственно вытягивать нужные коэффициент
                 samples_per_period = int(raw_date._cfg.sample_rates[0][0] / raw_date.frequency)
                 samples_duration = period_count * samples_per_period
-                if raw_df is None or raw_df.empty:
+                if raw_df is None or raw_df.is_empty():
                     pbar.update(1)
                     continue
 
-                buses_df = ComtradeParser.split_buses(ComtradeParser(), raw_df.reset_index(), file)
-                if buses_df.empty:
+                buses_df = rawToCSV.split_buses(raw_df, file)
+                if buses_df.is_empty():
                     pbar.update(1)
                     continue
 
@@ -213,17 +213,18 @@ def find_oscillograms_with_spef(raw_path: str ='raw_data/', output_csv_path: str
                     pbar.update(1)
                     continue
 
-                for file_name, group_df in buses_df.groupby("file_name"):
+                unique_files = buses_df['file_name'].unique().to_list()
+                for file_name in unique_files:
+                    group_df = buses_df.filter(pl.col('file_name') == file_name)
                     is_spef = False
-                    group_df = group_df.copy()
-
+                    
                     # Условие 1 и 2: 3U0 BB и 3U0 CL (объединены для эффективности)
                     u0_signals_bb_cl = {}
                     signal_names_3u0 = {"UN BB": "UN BB", "UN CL": "UN CL"} # Сопоставление имен сигналов
 
                     for signal_3u0_name, col_name in signal_names_3u0.items():
-                        if not group_df.empty and col_name in group_df.columns:
-                            u0_signal = group_df[col_name].fillna(0).values
+                        if not group_df.is_empty() and col_name in group_df.columns:
+                            u0_signal = group_df[col_name].fill_null(0).to_numpy()
                             u0_harmonics = np.zeros_like(u0_signal, dtype=float) # Массив для хранения значений первой гармоники
 
                             # Скользящее окно для расчета и проверки гармоник
@@ -260,10 +261,10 @@ def find_oscillograms_with_spef(raw_path: str ='raw_data/', output_csv_path: str
                         threshold_u0 = condition_params["threshold_u0"]
                         threshold_phase = condition_params["threshold_phase"] # В настоящее время не используется, может использоваться для проверок уровня фазного напряжения
 
-                        if not group_df.empty and all(col in group_df.columns for col in phase_names):
-                            ua_signal = group_df[phase_names[0]].fillna(0).values
-                            ub_signal = group_df[phase_names[1]].fillna(0).values
-                            uc_signal = group_df[phase_names[2]].fillna(0).values
+                        if not group_df.is_empty() and all(col in group_df.columns for col in phase_names):
+                            ua_signal = group_df[phase_names[0]].fill_null(0).to_numpy()
+                            ub_signal = group_df[phase_names[1]].fill_null(0).to_numpy()
+                            uc_signal = group_df[phase_names[2]].fill_null(0).to_numpy()
 
                             u0_3_signal = (ua_signal + ub_signal + uc_signal) / np.sqrt(3) # Расчет 3U0
                             # /np.sqrt(3) - потому что мы использовали фазный сигнал
@@ -304,6 +305,6 @@ def find_oscillograms_with_spef(raw_path: str ='raw_data/', output_csv_path: str
             pbar.update(1)
 
     print(f"Количество найденных образцов = {number_ocs_found}")
-    df_spef = pd.DataFrame(spef_files, columns=['filename', 'file_name_bus'])
-    df_spef.to_csv(output_csv_path, index=False)
+    df_spef = pl.DataFrame(spef_files, schema=['filename', 'file_name_bus'], orient='row')
+    df_spef.write_csv(output_csv_path)
     print(f"Файлы ОЗЗ сохранены в: {output_csv_path}")

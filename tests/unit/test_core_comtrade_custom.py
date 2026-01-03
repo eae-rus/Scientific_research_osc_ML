@@ -1,7 +1,7 @@
 import pytest
 import datetime as dt
 import numpy as np
-import pandas as pd
+import polars as pl
 from pathlib import Path
 import sys
 from unittest.mock import patch, MagicMock
@@ -211,14 +211,14 @@ ASCII
         
         df = obj.to_dataframe()
         
-        assert isinstance(df, pd.DataFrame)
+        assert isinstance(df, pl.DataFrame)
         assert len(df) == 2
         assert 'Time' in df.columns
         assert 'IA' in df.columns
         assert 'IB' in df.columns
         assert 'DI1' in df.columns
-        assert df.iloc[0]['IA'] == 100.0
-        assert df.iloc[1]['DI1'] == 0
+        assert df[0, 'IA'] == 100.0
+        assert df[1, 'DI1'] == 0
 
     def test_binary_dat_reader(self):
         """Тест BinaryDatReader."""

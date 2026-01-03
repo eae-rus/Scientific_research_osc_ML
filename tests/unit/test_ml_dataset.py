@@ -1,5 +1,6 @@
 import pytest
 import pandas as pd
+import polars as pl
 import numpy as np
 import torch
 from osc_tools.ml.dataset import OscillogramDataset
@@ -10,20 +11,22 @@ class TestOscillogramDataset:
     def sample_data(self):
         # Создаем тестовый DataFrame: 100 точек, 3 канала + таргет
         length = 100
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'feat1': np.arange(length, dtype=float),
             'feat2': np.random.randn(length),
             'target': np.zeros(length)
         })
         # Таргет: 1 в середине
-        df.loc[40:60, 'target'] = 1
+        df = df.with_columns(
+            target = pl.when(pl.arange(0, length).is_between(40, 60)).then(1.0).otherwise(0.0)
+        )
         return df
 
     @pytest.fixture
     def sample_indices(self, sample_data):
         # Индексы начал окон. Окно 10.
         # Допустимые индексы: 0 .. 90
-        return pd.DataFrame(index=np.arange(0, 90, 5))
+        return pl.DataFrame({'index': np.arange(0, 90, 5)})
 
     def test_init(self, sample_data, sample_indices):
         ds = OscillogramDataset(

@@ -6,7 +6,7 @@
 
 import pytest
 import numpy as np
-import pandas as pd
+import polars as pl
 import sys
 from pathlib import Path
 from unittest.mock import patch, MagicMock, Mock
@@ -24,19 +24,19 @@ from osc_tools.analysis.overvoltage import OvervoltageAnalyzer
 # ============================================================================
 
 @pytest.fixture
-def sample_norm_coef_df() -> pd.DataFrame:
+def sample_norm_coef_df() -> pl.DataFrame:
     """DataFrame с коэффициентами нормализации."""
-    return pd.DataFrame({
+    return pl.DataFrame({
         'name': ['file_1', 'file_2', 'file_3'],
         '1Ub_base': [400.0, 10000.0, 400.0],
         '1Uc_base': [400.0, 10000.0, 400.0],
-        '2Ub_base': [400.0, np.nan, np.nan],
-        '2Uc_base': [400.0, np.nan, np.nan],
+        '2Ub_base': [400.0, None, None],
+        '2Uc_base': [400.0, None, None],
     })
 
 
 @pytest.fixture
-def sample_normalized_dataframe() -> pd.DataFrame:
+def sample_normalized_dataframe() -> pl.DataFrame:
     """Синтезированный нормализованный DataFrame с фазными напряжениями."""
     fs = 1600
     f = 50
@@ -53,7 +53,7 @@ def sample_normalized_dataframe() -> pd.DataFrame:
     ub_cl = 0.5 * np.sin(2 * np.pi * f * t - 2*np.pi/3)
     uc_cl = 0.5 * np.sin(2 * np.pi * f * t + 2*np.pi/3)
     
-    return pd.DataFrame({
+    return pl.DataFrame({
         'UA BB': ua_bb,
         'UB BB': ub_bb,
         'UC BB': uc_bb,
@@ -65,7 +65,7 @@ def sample_normalized_dataframe() -> pd.DataFrame:
 
 
 @pytest.fixture
-def sample_spef_dataframe() -> pd.DataFrame:
+def sample_spef_dataframe() -> pl.DataFrame:
     """DataFrame с ОЗЗ событием (повышенные нулевое напряжение)."""
     fs = 1600
     f = 50
@@ -87,7 +87,7 @@ def sample_spef_dataframe() -> pd.DataFrame:
     ub_cl = 0.5 * np.sin(2 * np.pi * f * t - 2*np.pi/3)
     uc_cl = 0.5 * np.sin(2 * np.pi * f * t + 2*np.pi/3)
     
-    return pd.DataFrame({
+    return pl.DataFrame({
         'UA BB': ua_bb,
         'UB BB': ub_bb,
         'UC BB': uc_bb,
@@ -166,7 +166,7 @@ class TestFindSpefZones:
             log_path='/output/error.log'
         )
         
-        empty_df = pd.DataFrame()
+        empty_df = pl.DataFrame()
         zones = analyzer._find_spef_zones(empty_df, 'BB', samples_per_period=32)
         
         assert zones == []
@@ -180,7 +180,7 @@ class TestFindSpefZones:
             log_path='/output/error.log'
         )
         
-        df = pd.DataFrame({'other': [1, 2, 3]})
+        df = pl.DataFrame({'other': [1, 2, 3]})
         zones = analyzer._find_spef_zones(df, 'BB', samples_per_period=32)
         
         assert zones == []

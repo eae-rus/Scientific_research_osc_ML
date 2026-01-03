@@ -13,7 +13,7 @@ Does NOT use mocks for imports. Uses real fixture files instead.
 import pytest
 from pathlib import Path
 import sys
-import pandas as pd
+import polars as pl
 from unittest.mock import patch, MagicMock
 import os
 
@@ -180,7 +180,7 @@ class TestNormalizationLogic:
         # m1 <= NOISE_FACTOR * mx (1.5 * mx)
         m1 = 10.0
         mx = 8.0
-        h1_df = pd.DataFrame({'U1': [10.0]})
+        h1_df = pl.DataFrame({'U1': [10.0]})
         coef_p_s = {'U1': 1.0}
         
         ps, base = norm_instance._determine_voltage_status(m1, mx, h1_df, ['U1'], coef_p_s)
@@ -194,7 +194,7 @@ class TestNormalizationLogic:
         # max_primary > VOLTAGE_T1_P (500*sqrt(2) approx 707)
         m1 = 10.0
         mx = 2.0
-        h1_df = pd.DataFrame({'U1': [10.0]})
+        h1_df = pl.DataFrame({'U1': [10.0]})
         coef_p_s = {'U1': 100.0} # primary = 1000 > 707
         
         ps, base = norm_instance._determine_voltage_status(m1, mx, h1_df, ['U1'], coef_p_s)
@@ -207,7 +207,7 @@ class TestNormalizationLogic:
         # m1 > NOISE_FACTOR * mx
         m1 = 5.0
         mx = 1.0
-        h1_df = pd.DataFrame({'I1': [5.0]})
+        h1_df = pl.DataFrame({'I1': [5.0]})
         coef_p_s = {'I1': 1.0}
         
         ps, base = norm_instance._determine_current_status(m1, mx, h1_df, ['I1'], coef_p_s)
@@ -225,12 +225,12 @@ class TestNormalizationLogic:
 
     def test_analyze_basic(self, norm_instance):
         """Test analyze method with synthetic data."""
-        h1_df = pd.DataFrame({
+        h1_df = pl.DataFrame({
             'U | BusBar-1 | phase: A': [100.0],
             'I | Bus-1 | phase: A': [5.0],
             'I | Bus-1 | phase: N': [0.1]
         })
-        hx_df = pd.DataFrame({
+        hx_df = pl.DataFrame({
             'U | BusBar-1 | phase: A': [1.0],
             'I | Bus-1 | phase: A': [0.1],
             'I | Bus-1 | phase: N': [0.01]
@@ -243,8 +243,8 @@ class TestNormalizationLogic:
         
         result = norm_instance.analyze('test_file.cfg', h1_df, hx_df, coef_p_s)
         
-        assert isinstance(result, pd.DataFrame)
-        assert result.at[0, 'name'] == 'test_file'
+        assert isinstance(result, pl.DataFrame)
+        assert result['name'][0] == 'test_file'
         assert '1Ub_PS' in result.columns
         assert '1Ip_PS' in result.columns
         assert '1Iz_PS' in result.columns
@@ -262,13 +262,13 @@ class TestNormalizationLogic:
         
         try:
             # Create dummy CSV files
-            df1 = pd.DataFrame({'name': ['file1'], 'norm': ['YES'], '1Ub_PS': ['s']})
-            df2 = pd.DataFrame({'name': ['file2'], 'norm': ['NO'], '1Ub_PS': ['p']})
+            df1 = pl.DataFrame({'name': ['file1'], 'norm': ['YES'], '1Ub_PS': ['s']})
+            df2 = pl.DataFrame({'name': ['file2'], 'norm': ['NO'], '1Ub_PS': ['p']})
             
             csv1 = local_tmp / "norm_1.csv"
             csv2 = local_tmp / "norm_2.csv"
-            df1.to_csv(csv1, index=False)
-            df2.to_csv(csv2, index=False)
+            df1.write_csv(csv1)
+            df2.write_csv(csv2)
             
             output_csv = local_tmp / "merged.csv"
             
@@ -279,10 +279,10 @@ class TestNormalizationLogic:
             )
             
             assert os.path.exists(output_csv)
-            merged_df = pd.read_csv(output_csv)
+            merged_df = pl.read_csv(output_csv, infer_schema_length=0)
             assert len(merged_df) == 2
-            assert 'file1' in merged_df['name'].values
-            assert 'file2' in merged_df['name'].values
+            assert 'file1' in merged_df['name'].to_list()
+            assert 'file2' in merged_df['name'].to_list()
         finally:
             if local_tmp.exists():
                 shutil.rmtree(local_tmp)

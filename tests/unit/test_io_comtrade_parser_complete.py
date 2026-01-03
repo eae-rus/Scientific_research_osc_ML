@@ -66,7 +66,7 @@ class TestComtradeSignalExtraction:
         assert len(voltage_cols) > 0, "Should have voltage signals"
         
         for col in voltage_cols:
-            signal = sample_normalized_dataframe[col].values
+            signal = sample_normalized_dataframe[col].to_numpy()
             assert isinstance(signal, np.ndarray)
             assert len(signal) > 0
     
@@ -78,7 +78,7 @@ class TestComtradeSignalExtraction:
         assert len(current_cols) > 0, "Should have current signals"
         
         for col in current_cols:
-            signal = sample_normalized_dataframe[col].values
+            signal = sample_normalized_dataframe[col].to_numpy()
             assert isinstance(signal, np.ndarray)
             assert len(signal) > 0
     

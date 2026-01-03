@@ -7,7 +7,7 @@
 
 import pytest
 import numpy as np
-import pandas as pd
+import polars as pl
 import sys
 from pathlib import Path
 from unittest.mock import patch, MagicMock
@@ -71,7 +71,7 @@ def fft_window_size() -> int:
 
 
 @pytest.fixture
-def sample_normalized_dataframe(fft_window_size) -> pd.DataFrame:
+def sample_normalized_dataframe(fft_window_size) -> pl.DataFrame:
     """Синтезированный нормализованный DataFrame с событиями."""
     fs = 1600  # Частота дискретизации
     f = 50     # Основная частота
@@ -95,7 +95,7 @@ def sample_normalized_dataframe(fft_window_size) -> pd.DataFrame:
     ub = 0.05 * np.sin(2 * np.pi * f * t - 2*np.pi/3)
     uc = 0.05 * np.sin(2 * np.pi * f * t + 2*np.pi/3)
     
-    df = pd.DataFrame({
+    df = pl.DataFrame({
         'file_name': ['test_file_1'] * len(t),
         'ia': ia,
         'ib': ib,
@@ -109,7 +109,7 @@ def sample_normalized_dataframe(fft_window_size) -> pd.DataFrame:
 
 
 @pytest.fixture
-def sample_raw_dataframe(fft_window_size) -> pd.DataFrame:
+def sample_raw_dataframe(fft_window_size) -> pl.DataFrame:
     """Синтезированный сырой DataFrame."""
     fs = 1600
     f = 50
@@ -126,7 +126,7 @@ def sample_raw_dataframe(fft_window_size) -> pd.DataFrame:
     ub = 230 * np.sin(2 * np.pi * f * t - 2*np.pi/3)
     uc = 230 * np.sin(2 * np.pi * f * t + 2*np.pi/3)
     
-    df = pd.DataFrame({
+    df = pl.DataFrame({
         'file_name': ['raw_file_1'] * len(t),
         'ia': ia,
         'ib': ib,
@@ -240,7 +240,7 @@ class TestGetTargetColumns:
             signals_are_normalized=True
         )
         
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'ia': [1, 2, 3],
             'ib': [1, 2, 3],
             'ua': [1, 2, 3],
@@ -263,7 +263,7 @@ class TestGetTargetColumns:
             signals_are_normalized=True
         )
         
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'IA': [1, 2, 3],  # Прописные буквы
             'Ub': [1, 2, 3],  # Смешанный регистр
         })
@@ -281,7 +281,7 @@ class TestGetTargetColumns:
             signals_are_normalized=True
         )
         
-        df = pd.DataFrame()
+        df = pl.DataFrame()
         result = segmenter._get_target_columns(df)
         
         assert result['current'] == []
@@ -295,7 +295,7 @@ class TestGetTargetColumns:
             signals_are_normalized=True
         )
         
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'foo': [1, 2, 3],
             'bar': [1, 2, 3],
         })
@@ -370,7 +370,7 @@ class TestProcessSingleDataframe:
             signals_are_normalized=True
         )
         
-        df = pd.DataFrame()
+        df = pl.DataFrame()
         result = segmenter.process_single_dataframe(df)
         
         assert result == []
@@ -383,7 +383,7 @@ class TestProcessSingleDataframe:
             signals_are_normalized=True
         )
         
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'file_name': ['test'],
             'foo': [1.0],
             'bar': [2.0],
@@ -408,7 +408,7 @@ class TestProcessSingleDataframe:
         assert isinstance(result, list)
         # Каждый результат - DataFrame
         for event_df in result:
-            assert isinstance(event_df, pd.DataFrame)
+            assert isinstance(event_df, pl.DataFrame)
             assert 'file_name' in event_df.columns
     
     def test_process_single_dataframe_adds_event_names(self, sample_normalized_dataframe,
@@ -420,12 +420,12 @@ class TestProcessSingleDataframe:
             signals_are_normalized=True
         )
         
-        original_name = sample_normalized_dataframe['file_name'].iloc[0]
+        original_name = sample_normalized_dataframe['file_name'][0]
         result = segmenter.process_single_dataframe(sample_normalized_dataframe)
         
         if result:  # Если были найдены события
             for i, event_df in enumerate(result):
-                assert f'event_{i+1}' in event_df['file_name'].iloc[0]
+                assert f'event_{i+1}' in event_df['file_name'][0]
 
 
 # ============================================================================
@@ -445,7 +445,7 @@ class TestSegmentationEdgeCases:
         )
         
         # Гарантируем что у всех столбцов одинаковая длина
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'file_name': ['short'] * 3,
             'ia': [0.1, 0.2, 0.15],
             'ua': [0.01, 0.02, 0.015],
@@ -467,7 +467,7 @@ class TestSegmentationEdgeCases:
         )
         
         size = 100  # Одинаковый размер для всех столбцов
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'file_name': ['const'] * size,
             'ia': np.ones(size) * 0.05,
             'ib': np.ones(size) * 0.05,
@@ -496,7 +496,7 @@ class TestSegmentationEdgeCases:
         
         # Гарантируем одинаковую длину для всех столбцов
         size = len(signal)
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'file_name': ['with_nan'] * size,
             'ia': signal_with_nan,
             'ua': np.ones(size) * 0.01,
@@ -516,7 +516,7 @@ class TestSegmentationEdgeCases:
         )
         
         size = 100  # Одинаковый размер для всех столбцов
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'file_name': ['zeros'] * size,
             'ia': np.zeros(size),
             'ua': np.zeros(size),
@@ -536,14 +536,14 @@ class TestProcessCSVFile:
     """Тесты для метода process_csv_file."""
     
     @patch('builtins.open', create=True)
-    @patch('pandas.read_csv')
-    @patch('pandas.DataFrame.to_csv')
+    @patch('polars.read_csv')
+    @patch('polars.DataFrame.write_csv')
     @patch('os.path.exists', return_value=True)
     @patch('os.path.dirname')
     @patch('os.path.splitext')
     @patch('os.path.basename')
     def test_process_csv_file_basic(self, mock_basename, mock_splitext, mock_dirname,
-                                     mock_exists, mock_to_csv, mock_read_csv, mock_open,
+                                     mock_exists, mock_write_csv, mock_read_csv, mock_open,
                                      normalized_config, fft_window_size):
         """Базовая обработка CSV файла."""
         # Подготовка моков
@@ -551,7 +551,7 @@ class TestProcessCSVFile:
         mock_basename.return_value = 'test.csv'
         mock_splitext.return_value = ('test', '.csv')
         
-        sample_df = pd.DataFrame({
+        sample_df = pl.DataFrame({
             'file_name': ['file1', 'file1', 'file2', 'file2'],
             'ia': [0.1, 0.15, 0.1, 0.12],
             'ua': [0.01, 0.01, 0.01, 0.01],
@@ -567,7 +567,7 @@ class TestProcessCSVFile:
         # Вызов
         segmenter.process_csv_file('input.csv', 'output.csv')
         
-        # Проверка что к_csv был вызван (хотя бы один раз)
+        # Проверка что write_csv был вызван (хотя бы один раз)
         assert mock_read_csv.called
     
     @patch('os.path.exists', return_value=False)

@@ -1,10 +1,10 @@
 import os
 import sys
-import pandas as pd
+import polars as pl
 import numpy as np
 from tqdm.auto import tqdm
 from osc_tools.core.comtrade_custom import Comtrade
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple, List, Optional
 import re # Для регулярных выражений
 from typing import List, Set, Union
 import json
@@ -44,10 +44,10 @@ class CreateNormOsc:
                  ):
         self.osc_path = osc_path
         self.readComtrade = ReadComtrade()
-        self.existing_norm_df = pd.DataFrame() # Инициализация пустым DataFrame
+        self.existing_norm_df = pl.DataFrame() # Инициализация пустым DataFrame
         if prev_norm_csv_path and os.path.exists(prev_norm_csv_path):
             try:
-                self.existing_norm_df = pd.read_csv(prev_norm_csv_path, dtype=str) # Читаем все как строки для начала
+                self.existing_norm_df = pl.read_csv(prev_norm_csv_path, infer_schema_length=0) # Читаем все как строки для начала
                 print(f"Загружены существующие коэффициенты из: {prev_norm_csv_path}")
             except Exception as e:
                 print(f"Ошибка при загрузке существующих коэффициентов из '{prev_norm_csv_path}': {e}")
@@ -68,7 +68,7 @@ class CreateNormOsc:
         
         self.all_features = self.generate_all_features(bus=bus)
 
-        self.df = pd.DataFrame(data=self.result_cols)
+        self.df = pl.DataFrame(self.result_cols)
 
         self.osc_files = sorted([file for file in os.listdir(self.osc_path)
                             if "cfg" in file], reverse=False)
@@ -191,15 +191,15 @@ class CreateNormOsc:
         return all_features
     
     def _get_max_primary_value(self,
-                               h1_df: pd.DataFrame,
+                               h1_df: pl.DataFrame,
                                columns: List[str],
                                coef_p_s: Dict[str, float]) -> float:
         """Вычисляет максимальное первичное значение для заданных столбцов."""
         max_primary = 0.0
-        # Используем .at[0, col] для доступа к значению в однострочном DataFrame
+        # Используем [0, name] для доступа к значению в однострочном DataFrame
         for name in columns:
             if name in h1_df.columns and name in coef_p_s:
-                primary_value = h1_df.at[0, name] * coef_p_s[name]
+                primary_value = h1_df[0, name] * coef_p_s[name]
                 if not np.isnan(primary_value):
                     max_primary = max(max_primary, primary_value)
         return max_primary
@@ -207,7 +207,7 @@ class CreateNormOsc:
     def _determine_voltage_status(self,
                                   m1: float,
                                   mx: float,
-                                  h1_df: pd.DataFrame,
+                                  h1_df: pl.DataFrame,
                                   columns: List[str],
                                   coef_p_s: Dict[str, float]) -> Tuple[str, Any]:
         """Определяет статус (_PS, _base) для измерений напряжения."""
@@ -232,7 +232,7 @@ class CreateNormOsc:
     def _determine_current_status(self,
                                 m1: float,
                                 mx: float,
-                                h1_df: pd.DataFrame,
+                                h1_df: pl.DataFrame,
                                 columns: List[str],
                                 coef_p_s: Dict[str, float]) -> Tuple[str, Any]:
         """Определяет статус (_PS, _base) для измерений тока."""
@@ -318,17 +318,17 @@ class CreateNormOsc:
             col_name = group_prefix + suffix
             value = results.get(col_name)
             # Проверка на None, пустую строку, или pandas/numpy NaN
-            if value is None or str(value).strip() == '' or pd.isna(value):
+            if value is None or str(value).strip() == '' or (isinstance(value, float) and np.isnan(value)):
                 return False # Нашли отсутствующее или пустое значение, расчет нужен
         return True # Все значения на месте и не пусты, можно пропустить расчет
     
     def analyze(self,
                 file: str,
-                h1_df: pd.DataFrame,
-                hx_df: pd.DataFrame,
+                h1_df: pl.DataFrame,
+                hx_df: pl.DataFrame,
                 coef_p_s: Dict[str, float],
-                existing_row: pd.DataFrame = pd.DataFrame()
-                ) -> pd.DataFrame:
+                existing_row: pl.DataFrame = pl.DataFrame()
+                ) -> pl.DataFrame:
         """
         Анализирует данные одной осциллограммы (гармоники h1 и hx)
         и определяет базовые значения и тип подключения (первичка/вторичка).
@@ -343,10 +343,11 @@ class CreateNormOsc:
             Однострочный DataFrame с результатами анализа.
         """
         features = set(h1_df.columns) # Используем set для быстрого пересечения
-        if not existing_row.empty:
+        if not existing_row.is_empty():
             # Преобразуем строку DataFrame в словарь, обрабатывая возможные NaN/None
             # fillna('') - чтобы не было проблем с типами при последующем сравнении или записи
-            results = existing_row.iloc[0].fillna('').to_dict()
+            results = existing_row.fill_null('').row(0, named=True)
+            results = dict(results)
             results['name'] = file[:-4] # Убедимся, что имя файла корректное
             # Статус 'norm' может быть переопределен позже, так что начальное значение из existing_row нормально
         else:
@@ -365,10 +366,10 @@ class CreateNormOsc:
             if not relevant_cols: # Пропускаем, если нет данных для этой группы
                 continue
 
-            m1 = h1_df[relevant_cols].max(axis=1).iloc[0]
-            mx = hx_df[relevant_cols].max(axis=1).iloc[0]
+            m1 = h1_df.select(relevant_cols).max_horizontal().item(0)
+            mx = hx_df.select(relevant_cols).max_horizontal().item(0)
 
-            if np.isnan(m1): # Пропускаем, если основные данные некорректны
+            if m1 is None or np.isnan(m1): # Пропускаем, если основные данные некорректны
                  continue
 
             results[r_prefix + '_h1'] = m1
@@ -388,10 +389,10 @@ class CreateNormOsc:
             if not relevant_cols:
                 continue
 
-            m1 = h1_df[relevant_cols].max(axis=1).iloc[0]
-            mx = hx_df[relevant_cols].max(axis=1).iloc[0]
+            m1 = h1_df.select(relevant_cols).max_horizontal().item(0)
+            mx = hx_df.select(relevant_cols).max_horizontal().item(0)
 
-            if np.isnan(m1):
+            if m1 is None or np.isnan(m1):
                 continue
 
             results[r_prefix + '_h1'] = m1
@@ -413,11 +414,11 @@ class CreateNormOsc:
                 continue
 
             col_name = relevant_cols[0]
-            m1 = h1_df.at[0, col_name]
-            mx = hx_df.at[0, col_name]
+            m1 = h1_df[0, col_name]
+            mx = hx_df[0, col_name]
 
 
-            if np.isnan(m1):
+            if m1 is None or np.isnan(m1):
                  continue
 
             results[r_prefix + '_h1'] = m1
@@ -443,9 +444,9 @@ class CreateNormOsc:
             if not relevant_cols:
                 continue
 
-            m1 = h1_df[relevant_cols].max(axis=1).iloc[0]
+            m1 = h1_df.select(relevant_cols).max_horizontal().item(0)
 
-            if np.isnan(m1):
+            if m1 is None or np.isnan(m1):
                 continue
 
             results['dId_h1'] = m1
@@ -467,23 +468,23 @@ class CreateNormOsc:
              # TODO: "почему-то он формируется излишне - требуется перепроверить"
              results['norm'] = 'hz' # Шум
 
-        return pd.DataFrame([results], columns=self.result_cols.keys())
+        return pl.DataFrame([results])
 
     def normalization(self, bus = 6):     
         unread = []
-        result_df = pd.DataFrame(data=self.result_cols)
+        result_df = pl.DataFrame(self.result_cols)
         for file in tqdm(self.osc_files):
             name_osc = file[:-4]
-            existing_row_for_osc = pd.DataFrame() # Пустой DataFrame по умолчанию
-            if not self.existing_norm_df.empty and 'name' in self.existing_norm_df.columns:
+            existing_row_for_osc = pl.DataFrame() # Пустой DataFrame по умолчанию
+            if not self.existing_norm_df.is_empty() and 'name' in self.existing_norm_df.columns:
                 # Убедимся, что сравниваем строки, если name_osc - хеш, который может быть числом
-                match = self.existing_norm_df[self.existing_norm_df['name'].astype(str) == str(name_osc)]
-                if not match.empty:
-                    existing_row_for_osc = match.iloc[[0]] # Берем первую строку, если вдруг дубликаты имен
+                match = self.existing_norm_df.filter(pl.col('name').cast(pl.Utf8) == str(name_osc))
+                if not match.is_empty():
+                    existing_row_for_osc = match.head(1) # Берем первую строку, если вдруг дубликаты имен
             
             try:
                 raw_date, osc_df = self.readComtrade.read_comtrade(self.osc_path + file)
-                if raw_date == None or raw_date == None:
+                if raw_date is None or osc_df is None:
                     unread.append(file)
                     continue
                 frequency = raw_date.cfg.frequency
@@ -503,10 +504,13 @@ class CreateNormOsc:
                         osc_features.append(column)
                     else:
                         to_drop.append(column)
-                osc_df.drop(columns=to_drop, inplace=True)
-                osc_fft = np.abs(np.fft.fft(osc_df.iloc[:self.window_size],axis=0))
-                for i in range(self.window_size, osc_df.shape[0], self.step_size):
-                    window_fft = np.abs(np.fft.fft(osc_df.iloc[i - self.window_size: i],axis=0))
+                
+                osc_df = osc_df.drop(to_drop)
+                osc_numpy = osc_df.to_numpy()
+
+                osc_fft = np.abs(np.fft.fft(osc_numpy[:self.window_size],axis=0))
+                for i in range(self.window_size, osc_numpy.shape[0], self.step_size):
+                    window_fft = np.abs(np.fft.fft(osc_numpy[i - self.window_size: i],axis=0))
                     osc_fft = np.maximum(osc_fft, window_fft)
                 h1 = 2 * osc_fft[1] / self.window_size
                 harmonic_count = self.window_size // 2
@@ -514,17 +518,20 @@ class CreateNormOsc:
                     hx = 2 * np.max(osc_fft[2:harmonic_count+1], axis=0) / self.window_size
                 else:
                     hx = 0
-                h1_df = pd.DataFrame([dict(zip(osc_features, h1))])
-                hx_df = pd.DataFrame([dict(zip(osc_features, hx))])
+                
+                current_features = osc_df.columns
+                h1_df = pl.DataFrame([dict(zip(current_features, h1))])
+                hx_df = pl.DataFrame([dict(zip(current_features, hx))])
+                
                 result = self.analyze(file, h1_df, hx_df, coef_p_s, existing_row=existing_row_for_osc)
-                result_df = pd.concat([result_df, result])
+                result_df = pl.concat([result_df, result], how='vertical')
             except:
                 # TODO: написать разбор более обширный, ибо ошибки могут быть разные.
                 unread.append(file)
                 continue
 
 
-        result_df.to_csv('normalization/norm.csv', index=False)
+        result_df.write_csv('normalization/norm.csv')
     
     def merge_normalization_files(
         input_paths_or_folder: Union[str, List[str]],
@@ -578,7 +585,7 @@ class CreateNormOsc:
         for file_path in input_csv_paths:
             try:
                 if os.path.getsize(file_path) > 0:
-                    df = pd.read_csv(file_path, dtype=str)
+                    df = pl.read_csv(file_path, infer_schema_length=0)
                     dataframes_list.append(df)
                     all_columns_ever_seen.update(df.columns)
             except Exception as e:
@@ -586,31 +593,28 @@ class CreateNormOsc:
 
         if not dataframes_list:
             print("Не найдено DataFrame'ов для объединения (после фильтрации пустых/ошибочных файлов).")
-            merged_df = pd.DataFrame(columns=list(all_columns_ever_seen))
+            merged_df = pl.DataFrame()
         else:
             # Сначала объединяем все DataFrame'ы в один DataFrame.
-            # ignore_index=True важен для корректной обработки индексов.
-            # sort=False сохраняет порядок файлов, что важно для правила "берется из первого" при combine_duplicates_by_name=True.
-            merged_df = pd.concat(dataframes_list, ignore_index=True, sort=False)
+            merged_df = pl.concat(dataframes_list, how="diagonal")
             print(f"\nПредварительно объединены {len(dataframes_list)} DataFrame'ов в "
-                f"{merged_df.shape[0]} строк и {merged_df.shape[1]} столбцов.")
+                f"{merged_df.height} строк и {merged_df.width} столбцов.")
 
             if combine_duplicates_by_name:
                 print("Активирован режим объединения дубликатов по столбцу 'name'.")
-                if 'name' in merged_df.columns and not merged_df.empty:
+                if 'name' in merged_df.columns and not merged_df.is_empty():
                     # Убедимся, что столбец 'name' имеет строковый тип для надежной группировки.
-                    merged_df['name'] = merged_df['name'].astype(str)
+                    merged_df = merged_df.with_columns(pl.col('name').cast(pl.Utf8))
 
-                    # Вспомогательная функция для агрегации:
-                    def first_valid_value_in_group(series):
-                        for value in series:
-                            if value is not None and pd.notna(value) and str(value).strip() != '':
-                                return value
-                        return pd.NA 
-
-                    print("Группировка по столбцу 'name' и агрегация значений...")
-                    # Группируем по 'name'. Для всех остальных столбцов применяем 'first_valid_value_in_group'.
-                    merged_df = merged_df.groupby('name', as_index=False).agg(first_valid_value_in_group)
+                    # Заменяем пустые строки на null для корректной работы drop_nulls
+                    merged_df = merged_df.with_columns([
+                        pl.col(c).cast(pl.Utf8).str.strip_chars().replace("", None) 
+                        for c in merged_df.columns
+                    ])
+                    
+                    # Агрегируем: берем первое не-null значение
+                    exprs = [pl.col(c).drop_nulls().first().alias(c) for c in merged_df.columns if c != 'name']
+                    merged_df = merged_df.group_by('name').agg(exprs)
                     
                     print(f"DataFrame после группировки и слияния дубликатов: {merged_df.shape[0]} строк (уникальные 'name') "
                         f"и {merged_df.shape[1]} столбцов.")
@@ -665,10 +669,12 @@ class CreateNormOsc:
         final_ordered_columns.extend(remaining_cols)
         
         # Применяем новый порядок столбцов.
-        # reindex гарантирует, что все столбцы из final_ordered_columns будут присутствовать.
-        # Если какой-то столбец был в all_columns_ever_seen, но не попал в merged_df из-за пустых файлов,
-        # он будет добавлен с NaN, обеспечивая "максимальный набор столбцов".
-        merged_df = merged_df.reindex(columns=final_ordered_columns)
+        # В Polars для "reindex" мы добавляем недостающие столбцы как null и выбираем нужный порядок.
+        missing_cols = [pl.lit(None).alias(c) for c in final_ordered_columns if c not in merged_df.columns]
+        if missing_cols:
+            merged_df = merged_df.with_columns(missing_cols)
+        
+        merged_df = merged_df.select(final_ordered_columns)
 
         print(f"Порядок столбцов определен. Итоговое количество столбцов: {len(final_ordered_columns)}.")
 
@@ -676,8 +682,8 @@ class CreateNormOsc:
         if 'name' in merged_df.columns:
             print("Сортировка данных по столбцу 'name'...")
             # Перед сортировкой убедимся, что 'name' имеет строковый тип для консистентности
-            merged_df['name'] = merged_df['name'].astype(str)
-            merged_df.sort_values(by='name', ascending=True, inplace=True)
+            merged_df = merged_df.with_columns(pl.col('name').cast(pl.String))
+            merged_df = merged_df.sort('name')
         else:
             # Эта ситуация маловероятна, если файлы создаются CreateNormOsc, но для полноты
             print("Предупреждение: Столбец 'name' отсутствует в объединенных данных. Сортировка данных не выполнена.")
@@ -694,7 +700,7 @@ class CreateNormOsc:
 
         # Сохранение результата
         try:
-            merged_df.to_csv(output_csv_path, index=False, encoding='utf-8')
+            merged_df.write_csv(output_csv_path)
             print(f"Объединенный файл успешно сохранен: '{output_csv_path}'")
         except Exception as e:
             print(f"Ошибка при сохранении объединенного файла '{output_csv_path}': {e}")
@@ -721,7 +727,7 @@ class CreateNormOsc:
                                                 Если None, будет определен автоматически.
         """
         try:
-            norm_df = pd.read_csv(norm_coef_path, dtype=str) # Читаем все как строки во избежание проблем с типами
+            norm_df = pl.read_csv(norm_coef_path, infer_schema_length=0) # Читаем все как строки во избежание проблем с типами
             # Позже нужные значения (base_value) будут преобразованы при записи
         except FileNotFoundError:
             print(f"Ошибка: Файл коэффициентов нормализации не найден: {norm_coef_path}")
@@ -763,7 +769,7 @@ class CreateNormOsc:
             print("Предупреждение: В JSON-файле с хешами терминалов не найдено хешей для сопоставления.")
             # Решаем, что делать: выйти или сохранить копию исходного файла
             try:
-                norm_df.to_csv(output_path, index=False, encoding='utf-8')
+                norm_df.write_csv(output_path)
                 print(f"Файл '{output_path}' сохранен без изменений, так как не было хешей для обработки.")
             except Exception as e:
                 print(f"Ошибка при сохранении файла '{output_path}': {e}")
@@ -779,76 +785,72 @@ class CreateNormOsc:
 
         updated_rows_count = 0
 
-        # Итерация по строкам DataFrame
-        for index, row in tqdm(norm_df.iterrows(), total=norm_df.shape[0], desc="Обновление коэффициентов"):
-            file_hash_name = row.get('name') # Столбец 'name' содержит хеши
-
-            if file_hash_name and file_hash_name in hash_to_terminal_map:
-                terminal_number_str = hash_to_terminal_map[file_hash_name]
-                # Если хеш может принадлежать списку терминалов:
-                # terminal_numbers = hash_to_terminal_map[file_hash_name]
-                # terminal_number_str = terminal_numbers[0] if isinstance(terminal_numbers, list) else terminal_numbers
-
-                updated_rows_count += 1
-
-                # 1. Обновление графы "norm"
-                norm_base_prefix = config.get("norm_base_prefix", "YES_MODIFIED") # Значение по умолчанию
-                norm_df.at[index, 'norm'] = f"{norm_base_prefix}_{terminal_number_str}"
-
-                # Обновление для каждой секции от 1 до max_bus
-                for bus_idx in range(1, max_bus + 1):
-                    # 2. Исправление токов (Ip)
-                    current_config = config.get("currents", {})
-                    if current_config.get("apply", False):
-                        ps_val = current_config.get("ps_value")
-                        base_val = current_config.get("base_value") # Может быть числом или строкой
-                        
-                        col_ps = f"{bus_idx}Ip_PS"
-                        col_base = f"{bus_idx}Ip_base"
-                        if col_ps in norm_df.columns:
-                            norm_df.at[index, col_ps] = str(ps_val) # Приводим к строке для единообразия
-                        if col_base in norm_df.columns:
-                            norm_df.at[index, col_base] = str(base_val)
-
-                    # 3. Исправление напряжений СШ (Ub)
-                    vb_config = config.get("voltage_busbar", {})
-                    if vb_config.get("apply", False):
-                        ps_val = vb_config.get("ps_value")
-                        base_val = vb_config.get("base_value")
-                        
-                        col_ps = f"{bus_idx}Ub_PS"
-                        col_base = f"{bus_idx}Ub_base"
-                        if col_ps in norm_df.columns:
-                            norm_df.at[index, col_ps] = str(ps_val)
-                        if col_base in norm_df.columns:
-                            norm_df.at[index, col_base] = str(base_val)
-
-                    # 4. Исправление напряжений КЛ (Uc)
-                    vc_config = config.get("voltage_cableline", {})
-                    if vc_config.get("apply", False):
-                        ps_val = vc_config.get("ps_value")
-                        base_val = vc_config.get("base_value")
-
-                        col_ps = f"{bus_idx}Uc_PS"
-                        col_base = f"{bus_idx}Uc_base"
-                        if col_ps in norm_df.columns:
-                            norm_df.at[index, col_ps] = str(ps_val)
-                        if col_base in norm_df.columns:
-                            norm_df.at[index, col_base] = str(base_val)
-                    
-                    # 5. Исправление токов нулевой последовательности (Iz)
-                    rc_config = config.get("residual_currents", {})
-                    if rc_config.get("apply", False):
-                        ps_val = rc_config.get("ps_value")
-                        base_val = rc_config.get("base_value")
-
-                        col_ps = f"{bus_idx}Iz_PS"
-                        col_base = f"{bus_idx}Iz_base"
-                        if col_ps in norm_df.columns:
-                            norm_df.at[index, col_ps] = str(ps_val)
-                        if col_base in norm_df.columns:
-                            norm_df.at[index, col_base] = str(base_val)
+        # Создаем DataFrame для обновления
+        updates_data = []
+        for h, t in hash_to_terminal_map.items():
+             t_str = str(t) # Handle list or string
+             updates_data.append({'name': h, 'terminal_number': t_str})
         
+        updates_df = pl.DataFrame(updates_data)
+        
+        # Присоединяем информацию о терминалах
+        if 'name' in norm_df.columns:
+            norm_df = norm_df.join(updates_df, on='name', how='left')
+        else:
+            print("Ошибка: столбец 'name' не найден в файле коэффициентов.")
+            return
+
+        # Маска для строк, которые нужно обновить (где есть terminal_number)
+        has_terminal = pl.col('terminal_number').is_not_null()
+        
+        # Подсчет обновленных строк
+        updated_rows_count = norm_df.filter(has_terminal).height
+
+        # 1. Обновление графы "norm"
+        norm_base_prefix = config.get("norm_base_prefix", "YES_MODIFIED")
+        if 'norm' in norm_df.columns:
+            norm_df = norm_df.with_columns(
+                pl.when(has_terminal)
+                .then(pl.format("{}_{}", pl.lit(norm_base_prefix), pl.col('terminal_number')))
+                .otherwise(pl.col('norm'))
+                .alias('norm')
+            )
+
+        # Обновление для каждой секции
+        for bus_idx in range(1, max_bus + 1):
+            # Helper function to apply updates
+            def apply_update(conf_key, suffix_ps, suffix_base):
+                nonlocal norm_df
+                conf = config.get(conf_key, {})
+                if conf.get("apply", False):
+                    ps_val = str(conf.get("ps_value"))
+                    base_val = str(conf.get("base_value"))
+                    
+                    col_ps = f"{bus_idx}{suffix_ps}"
+                    col_base = f"{bus_idx}{suffix_base}"
+                    
+                    if col_ps in norm_df.columns:
+                        norm_df = norm_df.with_columns(
+                            pl.when(has_terminal).then(pl.lit(ps_val)).otherwise(pl.col(col_ps)).alias(col_ps)
+                        )
+                    if col_base in norm_df.columns:
+                        norm_df = norm_df.with_columns(
+                            pl.when(has_terminal).then(pl.lit(base_val)).otherwise(pl.col(col_base)).alias(col_base)
+                        )
+                return norm_df
+
+            # 2. Исправление токов (Ip)
+            norm_df = apply_update("currents", "Ip_PS", "Ip_base")
+            # 3. Исправление напряжений СШ (Ub)
+            norm_df = apply_update("voltage_busbar", "Ub_PS", "Ub_base")
+            # 4. Исправление напряжений КЛ (Uc)
+            norm_df = apply_update("voltage_cableline", "Uc_PS", "Uc_base")
+            # 5. Исправление токов нулевой последовательности (Iz)
+            norm_df = apply_update("residual_currents", "Iz_PS", "Iz_base")
+
+        # Удаляем вспомогательный столбец
+        norm_df = norm_df.drop('terminal_number')
+
         if updated_rows_count == 0:
             print("Предупреждение: Ни одна строка в файле коэффициентов не соответствовала хешам из JSON. Файл не изменен.")
         else:
@@ -865,7 +867,7 @@ class CreateNormOsc:
                 return
 
         try:
-            norm_df.to_csv(output_path, index=False, encoding='utf-8')
+            norm_df.write_csv(output_path)
             print(f"Обновленный файл коэффициентов нормализации сохранен: {output_path}")
         except Exception as e:
             print(f"Ошибка при сохранении обновленного файла '{output_path}': {e}")
@@ -896,7 +898,7 @@ class CreateNormOsc:
         mistakes_found = 0
 
         try:
-            df = pd.read_csv(input_csv_path, dtype=str) # Читаем все как строки
+            df = pl.read_csv(input_csv_path, infer_schema_length=0) # Читаем все как строки
         except FileNotFoundError:
             print(f"Ошибка: CSV-файл не найден: {input_csv_path}")
             return 0
@@ -911,7 +913,7 @@ class CreateNormOsc:
         target_mistake_column = "1Iz_PS" # Целевой столбец для записи "MISTAKE"
         if target_mistake_column not in df.columns:
             print(f"Предупреждение: В CSV-файле '{input_csv_path}' отсутствует целевой столбец '{target_mistake_column}'. Он будет создан.")
-            df[target_mistake_column] = pd.NA # или np.nan, или '' в зависимости от предпочтений для пустых ячеек
+            df = df.with_columns(pl.lit(None).cast(pl.Utf8).alias(target_mistake_column))
 
         try:
             with open(neutral_current_hashes_txt_path, 'r', encoding='utf-8') as f:
@@ -925,7 +927,7 @@ class CreateNormOsc:
             print(f"Предупреждение: TXT-файл '{neutral_current_hashes_txt_path}' пуст. Ошибки не будут помечены.")
             # Сохраняем копию исходного файла или ничего не делаем
             try:
-                df.to_csv(output_csv_path, index=False, encoding='utf-8')
+                df.write_csv(output_csv_path)
                 print(f"Файл '{output_csv_path}' сохранен без изменений.")
             except Exception as e:
                 print(f"Ошибка при сохранении файла '{output_csv_path}': {e}")
@@ -954,7 +956,7 @@ class CreateNormOsc:
             print(f"Предупреждение: В CSV-файле не найдено столбцов для проверки нормализации тока нулевой последовательности (вида XIz_*).")
             # Сохраняем и выходим
             try:
-                df.to_csv(output_csv_path, index=False, encoding='utf-8')
+                df.write_csv(output_csv_path)
                 print(f"Файл '{output_csv_path}' сохранен без изменений.")
             except Exception as e:
                 print(f"Ошибка при сохранении файла '{output_csv_path}': {e}")
@@ -962,24 +964,38 @@ class CreateNormOsc:
         else:
              print(f"Столбцы для проверки Iz: {iz_columns_to_check}")
 
-
-        # Итерация по строкам DataFrame
-        for index, row in tqdm(df.iterrows(), total=df.shape[0], desc="Проверка нормализации Iz"):
-            file_hash_name = row['name']
-
-            if file_hash_name in hashes_with_neutral_current:
-                all_iz_fields_empty = True
-                for iz_col in iz_columns_to_check:
-                    value = row.get(iz_col) # Используем .get для безопасности, хотя столбцы должны быть
-                    # Проверка на NaN (для численных NaN), None, и пустую строку
-                    if not (pd.isna(value) or value is None or str(value).strip() == ''):
-                        all_iz_fields_empty = False
-                        break
-                
-                if all_iz_fields_empty:
-                    df.loc[index, target_mistake_column] = "MISTAKE"
-                    mistakes_found += 1
+        # Создаем выражение для проверки пустоты всех столбцов Iz
+        # Столбец считается пустым, если он null или пустая строка (после strip)
+        # В Polars read_csv(infer_schema_length=0) пустые поля могут быть null или ""
         
+        # Выражение: (col is null) OR (col.str.strip_chars() == "")
+        # Мы хотим проверить, что ВСЕ столбцы пустые.
+        # all_empty = (col1_empty) & (col2_empty) & ...
+        
+        all_iz_empty_expr = pl.lit(True)
+        for col_name in iz_columns_to_check:
+            is_empty = pl.col(col_name).is_null() | (pl.col(col_name).str.strip_chars() == "")
+            all_iz_empty_expr = all_iz_empty_expr & is_empty
+
+        # Фильтр по хешам
+        # Создаем DataFrame с хешами для join или используем is_in
+        # is_in работает хорошо для списков
+        is_target_hash = pl.col('name').is_in(hashes_with_neutral_current)
+
+        # Условие ошибки: хеш в списке И все поля Iz пустые
+        is_mistake = is_target_hash & all_iz_empty_expr
+
+        # Подсчет ошибок
+        mistakes_found = df.filter(is_mistake).height
+        
+        if mistakes_found > 0:
+            df = df.with_columns(
+                pl.when(is_mistake)
+                .then(pl.lit("MISTAKE"))
+                .otherwise(pl.col(target_mistake_column))
+                .alias(target_mistake_column)
+            )
+
         print(f"Найдено и помечено ошибок (отсутствие данных в XIz_* при наличии сигнала N): {mistakes_found}")
 
         # Сохранение результата
@@ -987,7 +1003,7 @@ class CreateNormOsc:
             output_dir = os.path.dirname(output_csv_path)
             if output_dir and not os.path.exists(output_dir):
                 os.makedirs(output_dir)
-            df.to_csv(output_csv_path, index=False, encoding='utf-8')
+            df.write_csv(output_csv_path)
             print(f"Обновленный CSV-файл сохранен: {output_csv_path}")
         except Exception as e:
             print(f"Ошибка при сохранении обновленного CSV-файла '{output_csv_path}': {e}")
@@ -1049,7 +1065,7 @@ class CreateNormOsc:
         # 3. Чтение и фильтрация CSV
         try:
             # Читаем столбец 'name' как строку, чтобы избежать проблем с типами, если хеши похожи на числа
-            df = pd.read_csv(input_csv_path, dtype={name_column: str})
+            df = pl.read_csv(input_csv_path, schema_overrides={name_column: pl.String})
         except FileNotFoundError: # Дополнительная проверка, хотя первая уже есть
             print(f"Ошибка: Входной CSV-файл не найден (повторно): '{input_csv_path}'")
             return
@@ -1059,7 +1075,7 @@ class CreateNormOsc:
 
         if name_column not in df.columns:
             print(f"Ошибка: Столбец '{name_column}' не найден в CSV-файле '{input_csv_path}'.")
-            print(f"Доступные столбцы: {df.columns.tolist()}")
+            print(f"Доступные столбцы: {df.columns}")
             return
 
         original_row_count = len(df)
@@ -1067,8 +1083,7 @@ class CreateNormOsc:
 
         # Фильтрация DataFrame
         # Убедимся, что сравнение происходит со строками, на случай если dtype не сработал идеально
-        mask = df[name_column].astype(str).isin(existing_files_basenames)
-        filtered_df = df[mask]
+        filtered_df = df.filter(pl.col(name_column).cast(pl.String).is_in(existing_files_basenames))
         
         filtered_row_count = len(filtered_df)
         removed_row_count = original_row_count - filtered_row_count
@@ -1082,7 +1097,7 @@ class CreateNormOsc:
                 os.makedirs(output_dir)
                 print(f"Создана директория для выходного файла: '{output_dir}'")
             
-            filtered_df.to_csv(output_csv_path, index=False, encoding='utf-8')
+            filtered_df.write_csv(output_csv_path)
             print(f"Отфильтрованный CSV-файл успешно сохранен: '{output_csv_path}'")
         except Exception as e:
             print(f"Ошибка при сохранении отфильтрованного CSV-файла '{output_csv_path}': {e}")
@@ -1091,57 +1106,80 @@ class NormOsc:
     # TODO: Подумать о том, что получается несколько "__init__"
     def __init__(self, norm_coef_file_path='norm_coef.csv'):
         if os.path.exists(norm_coef_file_path):
-            with open(norm_coef_file_path, "r") as file:
-                self.norm_coef = pd.read_csv(file, encoding='utf-8')
+            self.norm_coef = pl.read_csv(norm_coef_file_path)
+        else:
+            self.norm_coef = None
                 
     # TODO: подумать об унификации данной вещи, пока это локальная реализация
     # Пока прост скопировал из raw_to_csv
-    def normalize_bus_signals(self, raw_df, file_name, yes_prase = "YES", is_print_error = False):
+    def normalize_bus_signals(self, raw_df: pl.DataFrame, file_name: str, yes_prase: str = "YES", is_print_error: bool = False) -> Optional[pl.DataFrame]:
         """Нормализация аналоговых сигналов для каждой секции."""
-        norm_row = self.norm_coef[self.norm_coef["name"] == file_name] # Поиск строки нормализации по имени файла
-        if norm_row.empty or yes_prase not in str(norm_row["norm"].values[0]): # Проверка наличия строки и разрешения на нормализацию
+        if self.norm_coef is None:
+            return None
+
+        norm_row = self.norm_coef.filter(pl.col("name") == file_name) # Поиск строки нормализации по имени файла
+        if norm_row.is_empty() or yes_prase not in str(norm_row.get_column("norm")[0]): # Проверка наличия строки и разрешения на нормализацию
             if is_print_error:
                 print(f"Предупреждение: {file_name} не найден в файле norm.csv или нормализация не разрешена.")
             return None
 
+        new_cols = {}
         for bus in range(1, 9):
-            nominal_current_series = norm_row.get(f"{bus}Ip_base")
-            if nominal_current_series is not None and not pd.isna(nominal_current_series.values[0]):
-                nominal_current = 20 * float(nominal_current_series.values[0])
-                for phase in ['A', 'B', 'C']: # Нормализация токов
-                    current_col_name = f'I | Bus-{bus} | phase: {phase}'
-                    if current_col_name in raw_df.columns:
-                        raw_df[current_col_name] = raw_df[current_col_name] / nominal_current
+            # Номинальный ток
+            col_name_ip = f"{bus}Ip_base"
+            if col_name_ip in norm_row.columns:
+                val = norm_row.get_column(col_name_ip)[0]
+                if val is not None and not (isinstance(val, float) and np.isnan(val)):
+                    nominal_current = 20 * float(val)
+                    for phase in ['A', 'B', 'C']: # Нормализация токов
+                        current_col_name = f'I | Bus-{bus} | phase: {phase}'
+                        if current_col_name in raw_df.columns:
+                            new_cols[current_col_name] = pl.col(current_col_name) / nominal_current
 
-            nominal_current_I0_series = norm_row.get(f"{bus}Iz_base")
-            if nominal_current_I0_series is not None and not pd.isna(nominal_current_I0_series.values[0]):
-                nominal_current_I0 = 5 * float(nominal_current_I0_series.values[0])
-                for phase in ['N']: # Нормализация тока нулевой последовательности
-                    current_I0_col_name = f'I | Bus-{bus} | phase: {phase}'
-                    if current_I0_col_name in raw_df.columns:
-                        raw_df[current_I0_col_name] = raw_df[current_I0_col_name] / nominal_current_I0
+            # Номинальный ток I0
+            col_name_iz = f"{bus}Iz_base"
+            if col_name_iz in norm_row.columns:
+                val = norm_row.get_column(col_name_iz)[0]
+                if val is not None and not (isinstance(val, float) and np.isnan(val)):
+                    nominal_current_I0 = 5 * float(val)
+                    for phase in ['N']: # Нормализация тока нулевой последовательности
+                        current_I0_col_name = f'I | Bus-{bus} | phase: {phase}'
+                        if current_I0_col_name in raw_df.columns:
+                            new_cols[current_I0_col_name] = pl.col(current_I0_col_name) / nominal_current_I0
 
-            nominal_voltage_bb_series = norm_row.get(f"{bus}Ub_base")
-            if nominal_voltage_bb_series is not None and not pd.isna(nominal_voltage_bb_series.values[0]):
-                nominal_voltage_bb = 3 * float(nominal_voltage_bb_series.values[0])
-                for phase in ['A', 'B', 'C', 'AB', 'BC', 'CA', 'N']: # Нормализация напряжений BusBar
-                    voltage_bb_col_name = f'U | BusBar-{bus} | phase: {phase}'
-                    if voltage_bb_col_name in raw_df.columns:
-                        raw_df[voltage_bb_col_name] = raw_df[voltage_bb_col_name] / nominal_voltage_bb
-                    voltage_cl_col_name = f'U{phase} BB'
-                    if voltage_cl_col_name in raw_df.columns:
-                        raw_df[voltage_cl_col_name] = raw_df[voltage_cl_col_name] / nominal_voltage_bb
+            # Номинальное напряжение BB
+            col_name_ub = f"{bus}Ub_base"
+            if col_name_ub in norm_row.columns:
+                val = norm_row.get_column(col_name_ub)[0]
+                if val is not None and not (isinstance(val, float) and np.isnan(val)):
+                    nominal_voltage_bb = 3 * float(val)
+                    for phase in ['A', 'B', 'C', 'AB', 'BC', 'CA', 'N']: # Нормализация напряжений BusBar
+                        voltage_bb_col_name = f'U | BusBar-{bus} | phase: {phase}'
+                        if voltage_bb_col_name in raw_df.columns:
+                            new_cols[voltage_bb_col_name] = pl.col(voltage_bb_col_name) / nominal_voltage_bb
+                        
+                        voltage_short_name = f'U{phase} BB'
+                        if voltage_short_name in raw_df.columns:
+                            new_cols[voltage_short_name] = pl.col(voltage_short_name) / nominal_voltage_bb
 
-            nominal_voltage_cl_series = norm_row.get(f"{bus}Uc_base")
-            if nominal_voltage_cl_series is not None and not pd.isna(nominal_voltage_cl_series.values[0]):
-                nominal_voltage_cl = 3 * float(nominal_voltage_cl_series.values[0])
-                for phase in ['A', 'B', 'C', 'AB', 'BC', 'CA', 'N']: # Нормализация напряжений CableLine
-                    voltage_cl_col_name = f'U | CableLine-{bus} | phase: {phase}'
-                    if voltage_cl_col_name in raw_df.columns:
-                        raw_df[voltage_cl_col_name] = raw_df[voltage_cl_col_name] / nominal_voltage_cl
-                    voltage_cl_col_name = f'U{phase} CL'
-                    if voltage_cl_col_name in raw_df.columns:
-                        raw_df[voltage_cl_col_name] = raw_df[voltage_cl_col_name] / nominal_voltage_cl
+            # Номинальное напряжение CL
+            col_name_uc = f"{bus}Uc_base"
+            if col_name_uc in norm_row.columns:
+                val = norm_row.get_column(col_name_uc)[0]
+                if val is not None and not (isinstance(val, float) and np.isnan(val)):
+                    nominal_voltage_cl = 3 * float(val)
+                    for phase in ['A', 'B', 'C', 'AB', 'BC', 'CA', 'N']: # Нормализация напряжений CableLine
+                        voltage_cl_col_name = f'U | CableLine-{bus} | phase: {phase}'
+                        if voltage_cl_col_name in raw_df.columns:
+                            new_cols[voltage_cl_col_name] = pl.col(voltage_cl_col_name) / nominal_voltage_cl
+                        
+                        voltage_short_name = f'U{phase} CL'
+                        if voltage_short_name in raw_df.columns:
+                            new_cols[voltage_short_name] = pl.col(voltage_short_name) / nominal_voltage_cl
+
+        if new_cols:
+            return raw_df.with_columns(**new_cols)
+        return raw_df
 
             # TODO: Добавить дифференциальный ток
             
