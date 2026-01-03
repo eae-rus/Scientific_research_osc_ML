@@ -5,7 +5,6 @@ Tests data management functionality: file search, processing, and organization.
 """
 
 import pytest
-import pandas as pd
 import polars as pl
 from pathlib import Path
 import sys
