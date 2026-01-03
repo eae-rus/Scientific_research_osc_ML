@@ -3,11 +3,13 @@ from torch.utils.data import Dataset
 import pandas as pd
 import numpy as np
 from typing import List, Union, Optional
+from osc_tools.features.pdr_calculator import sliding_window_fft, calculate_symmetrical_components
 
 class OscillogramDataset(Dataset):
     """
     Универсальный Dataset для осциллограмм.
     Поддерживает режимы классификации, сегментации и реконструкции.
+    Поддерживает различные режимы формирования признаков (feature_mode).
     """
     def __init__(
         self, 
@@ -15,6 +17,8 @@ class OscillogramDataset(Dataset):
         indices: pd.DataFrame, 
         window_size: int, 
         mode: str = 'classification',
+        feature_mode: str = 'raw',
+        sampling_rate: int = 1600,
         feature_columns: Optional[List[str]] = None,
         target_columns: Optional[Union[str, List[str]]] = None,
         target_position: Optional[int] = None
@@ -25,6 +29,8 @@ class OscillogramDataset(Dataset):
             indices: DataFrame или список индексов начал окон.
             window_size: Размер окна (количество отсчетов).
             mode: Режим работы ('classification', 'segmentation', 'reconstruction').
+            feature_mode: Режим признаков ('raw', 'symmetric', 'complex_channels').
+            sampling_rate: Частота дискретизации (нужна для feature_mode != 'raw').
             feature_columns: Список колонок для входа (X). Если None, берутся все.
             target_columns: Колонка(и) для выхода (Y).
             target_position: Позиция целевого значения внутри окна (для classification). 
@@ -34,6 +40,8 @@ class OscillogramDataset(Dataset):
         self.indices = indices
         self.window_size = window_size
         self.mode = mode
+        self.feature_mode = feature_mode
+        self.sampling_rate = sampling_rate
         self.feature_columns = feature_columns if feature_columns is not None else dataframe.columns.tolist()
         self.target_columns = target_columns
         
@@ -46,9 +54,49 @@ class OscillogramDataset(Dataset):
         valid_modes = ['classification', 'segmentation', 'reconstruction']
         if mode not in valid_modes:
             raise ValueError(f"Unknown mode: {mode}. Valid modes: {valid_modes}")
+            
+        valid_feature_modes = ['raw', 'symmetric', 'complex_channels']
+        if feature_mode not in valid_feature_modes:
+            raise ValueError(f"Unknown feature_mode: {feature_mode}. Valid modes: {valid_feature_modes}")
 
     def __len__(self):
         return len(self.indices)
+
+    def _get_phase_data(self, df: pd.DataFrame, prefix: str) -> List[np.ndarray]:
+        """Helper to extract phase data (A, B, C) based on column names."""
+        # Simple heuristic: look for columns containing prefix and 'A', 'B', 'C'
+        # This assumes standard naming like 'IA', 'IB', 'IC' or 'UA BB', 'UB BB', 'UC BB'
+        # We prioritize exact matches from constants if possible, but here we search dynamically
+        
+        cols = df.columns
+        # Try to find columns that start with prefix (e.g. 'I') and contain 'A', 'B', 'C'
+        # Or contain 'A', 'B', 'C' and the prefix is part of it.
+        
+        # Specific logic for this project's naming convention
+        if prefix == 'I':
+            candidates = ['IA', 'IB', 'IC']
+        elif prefix == 'U':
+            # Prefer BB (Bus Bar) voltages if available, else CL (Cable Line)
+            candidates_bb = ['UA BB', 'UB BB', 'UC BB']
+            if all(c in cols for c in candidates_bb):
+                candidates = candidates_bb
+            else:
+                candidates = ['UA CL', 'UB CL', 'UC CL']
+        else:
+            return []
+
+        found = []
+        for c in candidates:
+            if c in cols:
+                found.append(df[c].to_numpy())
+            else:
+                # Fallback: search for any column containing prefix and phase
+                # This is risky
+                return []
+        
+        if len(found) == 3:
+            return found
+        return []
 
     def __getitem__(self, idx):
         # Получаем стартовый индекс из переданных indices
@@ -58,45 +106,94 @@ class OscillogramDataset(Dataset):
         else:
             start_idx = self.indices[idx]
 
-        # Проверка границ
-        # Note: self.data.loc slicing is inclusive for labels, but we need fixed size
-        # Assuming integer index in self.data
-        
-        # Используем iloc для надежности, если индекс не числовой, но здесь ожидается числовой
-        # Для скорости лучше использовать numpy array, но пока оставим pandas interface как в оригинале
-        
-        # Вариант с loc (как в оригинале):
-        # sample = self.data.loc[start_idx : start_idx + self.window_size - 1]
-        
-        # Вариант с iloc (более надежный для окон):
-        # Нам нужно найти позицию start_idx в self.data
-        # Если self.data имеет непрерывный RangeIndex, то loc и iloc совпадают.
-        # В оригинале используется loc.
-        
-        end_idx = start_idx + self.window_size
-        
-        # Проверка на выход за границы (хотя indices должны быть корректными)
+        # Проверка на выход за границы
         if start_idx + self.window_size > len(self.data):
-             # Вернуть нули или ошибку? В оригинале None
              return None, None
 
-        # Извлечение X
+        # Извлечение окна данных
         # Используем loc, так как indices привязаны к индексам DataFrame
-        # Важно: loc включает конец, поэтому -1
         sample_df = self.data.loc[start_idx : start_idx + self.window_size - 1]
         
-        x_data = sample_df[self.feature_columns].to_numpy(dtype=np.float32)
+        # Формирование признаков (X)
+        if self.feature_mode == 'raw':
+            x_data = sample_df[self.feature_columns].to_numpy(dtype=np.float32)
+            
+        elif self.feature_mode == 'symmetric':
+            # Расчет симметричных составляющих (I1, I2, I0, U1, U2, U0)
+            fft_window = int(self.sampling_rate / 50) # 1 период пром. частоты
+            features = []
+            
+            # Токи
+            i_phases = self._get_phase_data(sample_df, 'I')
+            if i_phases:
+                phasors = [sliding_window_fft(p, fft_window, 1)[:, 0] for p in i_phases]
+                i1, i2, i0 = calculate_symmetrical_components(*phasors)
+                # Добавляем Real и Imag части
+                features.append(np.stack([i1.real, i1.imag, i2.real, i2.imag, i0.real, i0.imag], axis=1))
+                
+            # Напряжения
+            u_phases = self._get_phase_data(sample_df, 'U')
+            if u_phases:
+                phasors = [sliding_window_fft(p, fft_window, 1)[:, 0] for p in u_phases]
+                u1, u2, u0 = calculate_symmetrical_components(*phasors)
+                features.append(np.stack([u1.real, u1.imag, u2.real, u2.imag, u0.real, u0.imag], axis=1))
+            
+            if features:
+                x_data = np.concatenate(features, axis=1)
+                # Заполняем NaN (возникают в начале окна из-за FFT) нулями или ближайшими значениями
+                x_data = np.nan_to_num(x_data)
+            else:
+                # Fallback
+                x_data = sample_df[self.feature_columns].to_numpy(dtype=np.float32)
+
+        elif self.feature_mode == 'complex_channels':
+            # Комплексные фазоры (Re, Im) для каждой фазы
+            fft_window = int(self.sampling_rate / 50)
+            features = []
+            
+            for prefix in ['I', 'U']:
+                phases = self._get_phase_data(sample_df, prefix)
+                if phases:
+                    for p in phases:
+                        phasor = sliding_window_fft(p, fft_window, 1)[:, 0]
+                        features.append(np.stack([phasor.real, phasor.imag], axis=1))
+            
+            if features:
+                x_data = np.concatenate(features, axis=1)
+                x_data = np.nan_to_num(x_data)
+            else:
+                x_data = sample_df[self.feature_columns].to_numpy(dtype=np.float32)
         
-        # Транспонирование для CNN: (Time, Channels) -> (Channels, Time)
-        # Для MLP обычно (Features), но если это временной ряд, то (Time*Features) или (Time, Features)
-        # PyTorch Conv1d ожидает (Batch, Channels, Time)
-        # Пока оставим (Time, Channels), модель сама может транспонировать или Dataset может иметь параметр transform
-        
-        # В оригинале: x = torch.tensor(sample.to_numpy(), dtype=torch.float32) -> (Time, Features)
-        # PDR_MLP ожидает (Batch, Time, Features) или Flatten?
-        # В train.py: x shape (Batch, Window, Features)
-        
+        else:
+            x_data = sample_df[self.feature_columns].to_numpy(dtype=np.float32)
+
         x = torch.tensor(x_data, dtype=torch.float32)
+        
+        # Извлечение целевой переменной (Y)
+        y = None
+        if self.mode == 'classification':
+            if self.target_columns:
+                # Берем значение в target_position (обычно конец окна)
+                # Нужно найти индекс в sample_df, соответствующий target_position
+                target_idx = start_idx + self.target_position
+                
+                if isinstance(self.target_columns, list):
+                    y_val = self.data.loc[target_idx, self.target_columns].values
+                    y = torch.tensor(y_val.astype(np.float32), dtype=torch.float32)
+                else:
+                    y_val = self.data.loc[target_idx, self.target_columns]
+                    y = torch.tensor(y_val, dtype=torch.long) # Обычно классы - int
+                    
+        elif self.mode == 'segmentation':
+            if self.target_columns:
+                # Берем все значения окна
+                y_data = sample_df[self.target_columns].to_numpy()
+                y = torch.tensor(y_data, dtype=torch.long) # (Time, Classes) or (Time)
+                
+        elif self.mode == 'reconstruction':
+            y = x.clone()
+
+        return x, y
 
         # Извлечение Y
         if self.mode == 'reconstruction':
