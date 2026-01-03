@@ -12,6 +12,7 @@ sys.path.append(str(ROOT_DIR))
 
 from osc_tools.ml.config import ExperimentConfig, ModelConfig, DataConfig, TrainingConfig
 from osc_tools.ml.runner import ExperimentRunner
+from osc_tools.ml.dataset import OscillogramDataset
 
 def main():
     # 1. Setup Paths
@@ -107,7 +108,7 @@ def main():
     
     # Конфигурация обучения
     train_config = TrainingConfig(
-        epochs=10,
+        epochs=30,
         learning_rate=0.001,
         device='cuda',
         save_dir=str(EXPERIMENTS_DIR),

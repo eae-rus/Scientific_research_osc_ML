@@ -93,7 +93,7 @@ def main():
     )
     
     train_config = TrainingConfig(
-        epochs=10,
+        epochs=30,
         learning_rate=0.001,
         device='cuda',
         save_dir=str(EXPERIMENTS_DIR),

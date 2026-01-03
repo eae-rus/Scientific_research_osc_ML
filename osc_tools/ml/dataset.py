@@ -203,6 +203,13 @@ class OscillogramDataset(Dataset):
         else:
              x_data = np.concatenate(collected_features, axis=1)
 
+        # Ensure x_data is float32 (handle object type if any)
+        if x_data.dtype == object:
+            x_data = x_data.astype(np.float32)
+            
+        # Handle NaNs and Infs
+        x_data = np.nan_to_num(x_data, nan=0.0, posinf=0.0, neginf=0.0)
+
         # Convert to tensor and transpose to (Channels, Time)
         x = torch.tensor(x_data, dtype=torch.float32).transpose(0, 1)
 
