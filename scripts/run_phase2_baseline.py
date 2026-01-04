@@ -6,7 +6,7 @@ from sklearn.preprocessing import LabelEncoder
 import sys
 import os
 
-# Add project root to path
+# Добавляем корень проекта в путь импорта
 ROOT_DIR = Path(__file__).parent.parent
 sys.path.append(str(ROOT_DIR))
 

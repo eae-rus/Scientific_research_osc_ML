@@ -61,7 +61,7 @@ class OscillogramDataset(Dataset):
         if mode not in valid_modes:
             raise ValueError(f"Unknown mode: {mode}. Valid modes: {valid_modes}")
             
-        valid_feature_modes = ['raw', 'symmetric', 'complex_channels', 'power']
+        valid_feature_modes = ['raw', 'symmetric', 'complex_channels', 'power', 'instantaneous_power', 'alpha_beta']
         for fm in self.feature_mode:
             if fm not in valid_feature_modes:
                 raise ValueError(f"Unknown feature_mode: {fm}. Valid modes: {valid_feature_modes}")
@@ -70,7 +70,7 @@ class OscillogramDataset(Dataset):
         return len(self.indices)
 
     def _get_phase_data(self, df: pl.DataFrame, prefix: str) -> List[np.ndarray]:
-        """Helper to extract phase data (A, B, C) based on column names."""
+        """Вспомогательная функция: извлечение данных по фазам (A, B, C) по именам колонок."""
         cols = df.columns
         
         if prefix == 'I':
@@ -87,7 +87,7 @@ class OscillogramDataset(Dataset):
             elif all(c in cols for c in candidates_simple):
                 candidates = candidates_simple
             else:
-                candidates = ['UA CL', 'UB CL', 'UC CL'] # Default fallback, though likely to fail if not present
+                candidates = ['UA CL', 'UB CL', 'UC CL'] # Запасной вариант по умолчанию (в редких структурах имён)
         else:
             return []
 
@@ -105,15 +105,14 @@ class OscillogramDataset(Dataset):
     def __getitem__(self, idx):
         # Получаем стартовый индекс
         if isinstance(self.indices, pl.DataFrame):
-             # Assuming indices is a DataFrame with one column or specific structure
-             # If it's just a list of indices wrapped in DF
-             start_idx = self.indices.row(idx)[0]
+            # Если `indices` передан как DataFrame — ожидаем одну колонку со стартовыми индексами окон
+            start_idx = self.indices.row(idx)[0]
         else:
             start_idx = self.indices[idx]
 
         # Проверка на выход за границы
         if start_idx + self.window_size > len(self.data):
-             return None, None
+            return None, None
 
         # Извлечение окна данных
         # Polars slicing (эффективно)
@@ -146,7 +145,7 @@ class OscillogramDataset(Dataset):
                     data = np.concatenate(features, axis=1)
                     collected_features.append(np.nan_to_num(data))
                 else:
-                    # Fallback if phases not found
+                    # Если фазы не найдены — используем исходные признаки как запасной вариант
                     collected_features.append(sample_df.select(self.feature_columns).to_numpy())
 
             elif fm == 'complex_channels':
@@ -184,22 +183,47 @@ class OscillogramDataset(Dataset):
                     data = np.concatenate(features, axis=1)
                     collected_features.append(np.nan_to_num(data))
                 else:
-                    # Fallback or empty? If power requested but no U/I, maybe return zeros or raw?
-                    # For consistency with other modes, we might fallback to raw or zeros.
-                    # But mixing raw with others might be bad.
-                    # Let's return zeros of same length if possible, or just skip.
-                    # If we skip, the dimension might be wrong.
-                    # Let's assume if 'power' is requested, U and I are expected.
-                    # If not found, we append nothing? No, that breaks batching.
-                    # Let's append zeros if we can't calculate.
-                    # But we don't know the shape easily.
-                    # Let's fallback to raw if nothing else works, but that's also dangerous.
-                    # I'll stick to the pattern: if features found, use them. If not, fallback to raw (as in other modes).
+                    # Если мощности не вычислились (отсутствуют U/I), используем исходные признаки
+                    collected_features.append(sample_df.select(self.feature_columns).to_numpy())
+
+            elif fm == 'instantaneous_power':
+                features = []
+                i_phases = self._get_phase_data(sample_df, 'I')
+                u_phases = self._get_phase_data(sample_df, 'U')
+                
+                if i_phases and u_phases:
+                    for i_p, u_p in zip(i_phases, u_phases):
+                        # p(t) = u(t) * i(t)
+                        p_inst = u_p * i_p
+                        features.append(p_inst[:, None]) # (T, 1)
+                
+                if features:
+                    data = np.concatenate(features, axis=1)
+                    collected_features.append(np.nan_to_num(data))
+                else:
+                    collected_features.append(sample_df.select(self.feature_columns).to_numpy())
+
+            elif fm == 'alpha_beta':
+                features = []
+                for prefix in ['I', 'U']:
+                    phases = self._get_phase_data(sample_df, prefix)
+                    if len(phases) == 3:
+                        a, b, c = phases
+                        # Преобразование Кларка. Здесь используется множитель 2/3 для сохранения амплитудной меры
+                        alpha = (2/3) * (a - 0.5*b - 0.5*c)
+                        beta = (2/3) * (np.sqrt(3)/2 * (b - c))
+                        zero = (1/3) * (a + b + c)
+                        features.append(np.stack([alpha, beta, zero], axis=1))
+                
+                if features:
+                    data = np.concatenate(features, axis=1)
+                    collected_features.append(np.nan_to_num(data))
+                else:
                     collected_features.append(sample_df.select(self.feature_columns).to_numpy())
 
         if not collected_features:
-             # Should not happen due to init checks, but safe fallback
-             x_data = sample_df.select(self.feature_columns).to_numpy()
+            # Должно быть недостижимо из-за проверок в __init__, но на всякий случай — fallback
+            x_data = sample_df.select(self.feature_columns).to_numpy()
         else:
              x_data = np.concatenate(collected_features, axis=1)
 

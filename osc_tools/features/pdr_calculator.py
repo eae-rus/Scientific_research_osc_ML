@@ -18,34 +18,52 @@ warnings.filterwarnings('ignore', category=RuntimeWarning)
 
 def sliding_window_fft(signal: np.ndarray, window_size: int, num_harmonics: int, verbose: bool = False) -> np.ndarray:
     """
-    Выполняет БПФ в скользящем окне.
+    Выполняет БПФ в скользящем окне (векторизированная версия).
     Возвращает комплексные значения для указанного числа гармоник для каждого окна.
-    Результат относится к центру окна, поэтому первые window_size // 2 точек будут NaN.
+    Результат относится к концу окна (смещен на window_size).
     """
     n_points = len(signal)
     if n_points < window_size:
         if verbose:
             print(f"    Предупреждение: Длина сигнала ({n_points}) меньше окна FFT ({window_size}). Пропуск FFT.")
-        # Возвращаем массив NaN нужной формы
         return np.full((n_points, num_harmonics), np.nan + 1j*np.nan, dtype=complex)
 
-    fft_results = np.full((n_points, num_harmonics), np.nan + 1j*np.nan, dtype=complex)
+    # Vectorized sliding window view (requires numpy >= 1.20)
+    # shape: (n_windows, window_size)
+    windows = np.lib.stride_tricks.sliding_window_view(signal, window_size)
+    
+    # Apply Hanning window
     hanning_window = np.hanning(window_size)
-    fft_start_offset = window_size # Смещение для записи результата в центр окна
+    windows_windowed = windows * hanning_window
+    
+    # FFT along the last axis
+    # shape: (n_windows, window_size)
+    fft_coeffs = np.fft.fft(windows_windowed, axis=-1) / window_size
+    
+    # Extract harmonics (indices 1..num_harmonics) and multiply by 2
+    # shape: (n_windows, num_harmonics)
+    harmonics = fft_coeffs[:, 1 : num_harmonics + 1] * 2
+    
+    # Prepare result array
+    fft_results = np.full((n_points, num_harmonics), np.nan + 1j*np.nan, dtype=complex)
+    
+    # Fill results
+    # Original logic: center_index = i + window_size
+    # i goes from 0 to n_windows-1
+    # So indices are [window_size, window_size+1, ..., window_size+n_windows-1]
+    
+    n_windows = harmonics.shape[0]
+    start_idx = window_size
+    end_idx = start_idx + n_windows
+    
+    # Clip to n_points to avoid IndexError if logic slightly differs
+    limit = min(end_idx, n_points)
+    count = limit - start_idx
+    
+    if count > 0:
+        fft_results[start_idx : start_idx + count] = harmonics[:count]
 
-    for i in range(n_points - window_size + 1):
-        window_data = signal[i : i + window_size] * hanning_window
-        fft_coeffs = np.fft.fft(window_data) / window_size
-
-        # Берем нужные гармоники (индексы 1..num_harmonics) и умножаем на 2
-        harmonics = fft_coeffs[1 : num_harmonics + 1] * 2
-        
-        center_index = i + fft_start_offset
-        if center_index < n_points:
-             num_calculated = len(harmonics)
-             fft_results[center_index, :num_calculated] = harmonics[:num_harmonics]
-
-    return fft_results # Форма (n_points, num_harmonics)
+    return fft_results
 
 def calculate_symmetrical_components(phasor_a: np.ndarray, phasor_b: np.ndarray, phasor_c: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Расчет симметричных составляющих (прямая, обратная, нулевая)."""
