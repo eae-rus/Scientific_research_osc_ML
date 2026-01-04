@@ -2,12 +2,15 @@ _ALL_OSC/
 
 # Ignore raw_data folder
 raw_data/
+data/
 
 # Ignore __pycache__ folder in all subdirectories
 __pycache__/
 
 # Ignore trained_models folder
 ML_model/trained_models
+*.pt
+*.pth
 
 # Test reports and logs
 reports/

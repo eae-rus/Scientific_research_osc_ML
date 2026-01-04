@@ -6,7 +6,7 @@ from sklearn.preprocessing import LabelEncoder
 import sys
 
 # Добавляем корень проекта в путь импорта
-ROOT_DIR = Path(__file__).parent.parent
+ROOT_DIR = Path(__file__).parent.parent.parent
 sys.path.append(str(ROOT_DIR))
 
 from osc_tools.ml.config import ExperimentConfig, ModelConfig, DataConfig, TrainingConfig
@@ -15,7 +15,7 @@ from osc_tools.ml.dataset import OscillogramDataset
 
 def main():
     # 1. Setup Paths
-    METADATA_FILE = ROOT_DIR / 'ML_model' / 'MLOps dataset' / 'labeled_2025_12_03.csv'
+    METADATA_FILE = ROOT_DIR / 'data' / 'ml_datasets' / 'labeled_2025_12_03.csv'
     EXPERIMENTS_DIR = ROOT_DIR / 'experiments' / 'kan_grid_search'
     EXPERIMENTS_DIR.mkdir(parents=True, exist_ok=True)
 

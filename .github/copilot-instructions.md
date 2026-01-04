@@ -17,9 +17,22 @@
 
 ## Структура проекта
 
-### Основные модули
+### Основные директории
 
 ```
+data/                          # Данные
+├── ml_datasets/              # Датасеты для ML (CSV, Parquet)
+└── raw_data/                 # Сырые данные (не в git)
+
+scripts/                       # Скрипты запуска
+├── phase2_experiments/       # Эксперименты фазы 2 (KAN vs Baseline)
+├── evaluation/               # Скрипты оценки моделей
+└── ...
+
+reports/                       # Отчеты и логи (не в git)
+├── pytest_log_*.txt          # Логи тестов
+└── *_log.txt                 # Логи экспериментов
+
 osc_tools/                     # Основной пакет для обработки осциллограмм
 ├── core/                      # Ядро функционала
 │   ├── comtrade_custom.py    # Парсинг COMTRADE файлов
@@ -53,9 +66,10 @@ osc_tools/                     # Основной пакет для обрабо
 
 ### ML компоненты
 
-- **ML_model/train.py** - Обучение моделей классификации
-- **ML_model/train_PDR.py** - Обучение моделей для PDR
-- **trained_models/** - Сохранённые веса моделей
+- **scripts/phase2_experiments/** - Скрипты обучения и экспериментов
+- **ML_model/train.py** - (Legacy) Обучение моделей классификации
+- **ML_model/train_PDR.py** - (Legacy) Обучение моделей для PDR
+- **ML_model/trained_models/** - Сохранённые веса моделей
 
 ### Тесты
 

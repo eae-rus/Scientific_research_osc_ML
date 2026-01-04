@@ -124,6 +124,14 @@ class ExperimentRunner:
                 
             # Logging
             epoch_time = time.time() - start_time
+            metrics = {
+                "epoch": epoch + 1,
+                "train_loss": avg_train_loss,
+                "val_loss": avg_val_loss,
+                "time": epoch_time
+            }
+            self._save_metrics(metrics)
+            
             print(f"Epoch {epoch+1}/{self.config.training.epochs} | "
                   f"Train Loss: {avg_train_loss:.4f} | "
                   f"Val Loss: {avg_val_loss:.4f} | "
@@ -136,6 +144,11 @@ class ExperimentRunner:
                 
         self.save_checkpoint('final_model.pt')
         print("Training completed.")
+
+    def _save_metrics(self, metrics):
+        metrics_file = self.save_dir / "metrics.jsonl"
+        with open(metrics_file, "a") as f:
+            f.write(json.dumps(metrics) + "\n")
 
     def save_checkpoint(self, filename):
         path = self.save_dir / filename

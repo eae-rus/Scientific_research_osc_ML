@@ -10,7 +10,7 @@ import time
 import pandas as pd
 
 # Добавляем корень проекта в путь импорта
-ROOT_DIR = Path(__file__).parent.parent
+ROOT_DIR = Path(__file__).parent.parent.parent
 sys.path.append(str(ROOT_DIR))
 
 from osc_tools.ml.dataset import OscillogramDataset
@@ -61,7 +61,7 @@ def evaluate_model(model, dataloader, device='cpu'):
 
 def main():
     # 1. Настройка путей
-    METADATA_FILE = ROOT_DIR / 'ML_model' / 'MLOps dataset' / 'labeled_2025_12_03.csv'
+    METADATA_FILE = ROOT_DIR / 'data' / 'ml_datasets' / 'labeled_2025_12_03.csv'
     BASELINE_DIR = ROOT_DIR / 'experiments' / 'baseline'
     KAN_DIR = ROOT_DIR / 'experiments' / 'kan'
     
