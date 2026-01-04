@@ -36,7 +36,7 @@ class TestKANLayers:
         x = torch.randn(batch_size, in_channels, length)
         y = layer(x)
         
-        # Output length for stride 1, padding 0: L - K + 1
+        # Длина выхода для шага 1 и паддинга 0: L - K + 1
         expected_length = length - kernel_size + 1
         
         assert y.shape == (batch_size, out_channels, expected_length)
@@ -51,9 +51,23 @@ class TestKANLayers:
         padding = 1
         
         layer = KANConv1d(in_channels, out_channels, kernel_size, padding=padding)
-        
         x = torch.randn(batch_size, in_channels, length)
         y = layer(x)
         
-        # Output length: L + 2P - K + 1 = 10 + 2 - 3 + 1 = 10
         assert y.shape == (batch_size, out_channels, length)
+
+    def test_kan_linear_masking(self):
+        in_features = 4
+        out_features = 2
+        layer = KANLinear(in_features, out_features)
+        
+        # Устанавливаем маску в ноль для первого выходного нейрона
+        layer.mask[0, :] = 0
+        
+        x = torch.randn(2, in_features)
+        y = layer(x)
+        
+        # Выход для первого нейрона должен быть равен нулю
+        assert torch.allclose(y[:, 0], torch.zeros_like(y[:, 0]))
+        # Выход для второго нейрона должен быть ненулевым (вероятно)
+        assert not torch.allclose(y[:, 1], torch.zeros_like(y[:, 1]))

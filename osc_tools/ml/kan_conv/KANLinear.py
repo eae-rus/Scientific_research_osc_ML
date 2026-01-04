@@ -51,6 +51,8 @@ class KANLinear(torch.nn.Module):
         self.base_activation = base_activation()
         self.grid_eps = grid_eps
 
+        self.register_buffer("mask", torch.ones(out_features, in_features))
+
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -153,10 +155,13 @@ class KANLinear(torch.nn.Module):
     def forward(self, x: torch.Tensor):
         assert x.dim() == 2 and x.size(1) == self.in_features
 
-        base_output = F.linear(self.base_activation(x), self.base_weight)
+        base_weight = self.base_weight * self.mask
+        spline_weight = self.scaled_spline_weight * self.mask.unsqueeze(-1)
+
+        base_output = F.linear(self.base_activation(x), base_weight)
         spline_output = F.linear(
             self.b_splines(x).view(x.size(0), -1),
-            self.scaled_spline_weight.view(self.out_features, -1),
+            spline_weight.view(self.out_features, -1),
         )
         return base_output + spline_output
 
