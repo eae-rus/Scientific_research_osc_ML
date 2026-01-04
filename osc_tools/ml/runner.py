@@ -75,6 +75,7 @@ class ExperimentRunner:
     def train(self, train_loader: DataLoader, val_loader: Optional[DataLoader] = None):
         print(f"Starting training on {self.device}")
         best_val_loss = float('inf')
+        history = {'train_loss': [], 'val_loss': [], 'val_acc': []}
         
         for epoch in range(self.config.training.epochs):
             start_time = time.time()
@@ -101,9 +102,13 @@ class ExperimentRunner:
                 train_loss += loss.item()
             
             avg_train_loss = train_loss / len(train_loader)
+            history['train_loss'].append(avg_train_loss)
             
             # Validation
             val_loss = 0.0
+            val_correct = 0
+            val_total = 0
+            
             if val_loader:
                 self.model.eval()
                 with torch.no_grad():
@@ -115,12 +120,21 @@ class ExperimentRunner:
                             y = y.long()
                             if y.dim() > 1 and y.shape[1] == 1:
                                 y = y.squeeze(1)
+                            
+                            _, predicted = torch.max(outputs.data, 1)
+                            val_total += y.size(0)
+                            val_correct += (predicted == y).sum().item()
                                 
                         loss = self.criterion(outputs, y)
                         val_loss += loss.item()
                 avg_val_loss = val_loss / len(val_loader)
+                val_acc = val_correct / val_total if val_total > 0 else 0.0
             else:
                 avg_val_loss = 0.0
+                val_acc = 0.0
+            
+            history['val_loss'].append(avg_val_loss)
+            history['val_acc'].append(val_acc)
                 
             # Logging
             epoch_time = time.time() - start_time
@@ -128,6 +142,7 @@ class ExperimentRunner:
                 "epoch": epoch + 1,
                 "train_loss": avg_train_loss,
                 "val_loss": avg_val_loss,
+                "val_acc": val_acc,
                 "time": epoch_time
             }
             self._save_metrics(metrics)
@@ -135,6 +150,7 @@ class ExperimentRunner:
             print(f"Epoch {epoch+1}/{self.config.training.epochs} | "
                   f"Train Loss: {avg_train_loss:.4f} | "
                   f"Val Loss: {avg_val_loss:.4f} | "
+                  f"Val Acc: {val_acc:.4f} | "
                   f"Time: {epoch_time:.2f}s")
             
             # Save best model
@@ -144,6 +160,7 @@ class ExperimentRunner:
                 
         self.save_checkpoint('final_model.pt')
         print("Training completed.")
+        return history
 
     def _save_metrics(self, metrics):
         metrics_file = self.save_dir / "metrics.jsonl"

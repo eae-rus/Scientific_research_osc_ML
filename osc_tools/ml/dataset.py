@@ -112,7 +112,7 @@ class OscillogramDataset(Dataset):
 
         # Проверка на выход за границы
         if start_idx + self.window_size > len(self.data):
-            return None, None
+            raise IndexError(f"Index {idx} (start_idx={start_idx}) + window_size {self.window_size} > len(data) {len(self.data)}")
 
         # Извлечение окна данных
         # Polars slicing (эффективно)
