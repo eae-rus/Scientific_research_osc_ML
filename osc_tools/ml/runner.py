@@ -76,7 +76,7 @@ class ExperimentRunner:
             use_pw = getattr(self.config.training, 'use_pos_weight', False) if hasattr(self.config, 'training') else False
             if use_pw:
                 if train_loader is None:
-                    raise ValueError('train_loader must be provided to compute pos_weight')
+                    raise ValueError('train_loader должен быть предоставлен для вычисления pos_weight.')
                 pw = compute_pos_weight_from_loader(train_loader, device=self.device)
                 return nn.BCEWithLogitsLoss(pos_weight=pw)
             else:

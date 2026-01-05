@@ -42,12 +42,16 @@ def compute_pos_weight_from_loader(loader: DataLoader, device: Optional[torch.de
         raise ValueError("No labels found in loader to compute pos_weight")
 
     n_classes = pos_counts.shape[0]
+    
+    # Вычисляем отрицательные примеры
+    neg_counts = total - pos_counts
+    
     # Защита от деления на ноль
     pos_counts_safe = pos_counts.clone()
     pos_counts_safe[pos_counts_safe == 0.0] = 1.0
 
-    total_f = float(total)
-    weights = (total_f / (float(n_classes) * pos_counts_safe.double())).astype(float)
+    # Формула для pos_weight в BCEWithLogitsLoss: количество отрицательных / количество положительных
+    weights = neg_counts / pos_counts_safe
 
     tensor = torch.tensor(weights, dtype=torch.float32, device=device)
     return tensor

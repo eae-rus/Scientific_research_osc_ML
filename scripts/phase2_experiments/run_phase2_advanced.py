@@ -71,7 +71,12 @@ def main():
     }
     
     data_config = DataConfig(path=str(METADATA_FILE), window_size=WINDOW_SIZE, batch_size=32, mode='multilabel')
-    train_config = TrainingConfig(epochs=10, learning_rate=0.001, device='cuda' if torch.cuda.is_available() else 'cpu')
+    train_config = TrainingConfig(
+        epochs=10, 
+        learning_rate=0.001, 
+        device='cuda' if torch.cuda.is_available() else 'cpu',
+        use_pos_weight=True
+    )
     
     config_mlp = ExperimentConfig(
         model=ModelConfig(name="SimpleMLP", params=mlp_params),

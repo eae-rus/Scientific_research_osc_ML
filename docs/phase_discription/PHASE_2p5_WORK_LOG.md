@@ -2,6 +2,22 @@
 
 Этот файл содержит хронологию изменений и технических решений, принятых в ходе выполнения Фазы 2.5. Ведется в обратном хронологическом порядке.
 
+## 2026-01-05 (Part 5): Class Balancing & Arithmetic Layers
+
+### Основные изменения
+1.  **Class Balancing (`osc_tools/ml/class_weights.py`)**:
+    -   Исправлена логика расчета весов классов для `BCEWithLogitsLoss`.
+    -   Новая формула: `pos_weight = (N_neg) / N_pos`. Это обеспечивает баланс вклада положительных и отрицательных примеров для каждого класса.
+    -   Добавлены unit-тесты `tests/unit/test_class_weights.py`.
+    -   В `ExperimentRunner` и `TrainingConfig` добавлена поддержка флага `use_pos_weight`.
+
+2.  **KAN Arithmetic Layers (`osc_tools/ml/kan_conv/arithmetic.py`)**:
+    -   Реализованы слои для физически интерпретируемых операций:
+        -   `MultiplicationLayer`: Поэлементное умножение (для моделирования мощности $S=UI$).
+        -   `DivisionLayer`: Поэлементное деление с защитой от нуля (для моделирования импеданса $Z=U/I$).
+    -   Слои принимают тензор, делят его каналы пополам и выполняют операцию.
+    -   Добавлены unit-тесты `tests/unit/test_kan_arithmetic.py`.
+
 ## 2026-01-05 (Part 4): Input Strategies & Multi-Label
 
 ### Основные изменения

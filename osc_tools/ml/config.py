@@ -25,6 +25,7 @@ class TrainingConfig:
     save_dir: str = 'experiments'
     experiment_name: str = 'default'
     seed: int = 42
+    use_pos_weight: bool = False
 
 @dataclass
 class ExperimentConfig:

@@ -19,8 +19,11 @@ def test_compute_pos_weight_basic():
     loader = DataLoader(ds, batch_size=2)
 
     pw = compute_pos_weight_from_loader(loader)
-    # Ожидаем: total=6, n_classes=3 -> [6/(3*1)=2.0, 6/(3*2)=1.0, 6/(3*3)=0.666...]
-    expected = torch.tensor([2.0, 1.0, 6.0/(3*3)], dtype=torch.float32)
+    # Ожидаем: 
+    # Class 0: 1 pos, 5 neg -> 5/1 = 5.0
+    # Class 1: 2 pos, 4 neg -> 4/2 = 2.0
+    # Class 2: 3 pos, 3 neg -> 3/3 = 1.0
+    expected = torch.tensor([5.0, 2.0, 1.0], dtype=torch.float32)
 
     assert torch.allclose(pw, expected, atol=1e-6)
 
@@ -37,7 +40,8 @@ def test_compute_pos_weight_with_zero_counts():
     loader = DataLoader(ds, batch_size=2)
 
     pw = compute_pos_weight_from_loader(loader)
-    # total=3, n_classes=2, counts=[0,3] -> safe counts=[1,3]
-    expected = torch.tensor([3.0/(2*1), 3.0/(2*3)], dtype=torch.float32)
+    # Class 0: 0 pos, 3 neg -> safe_pos=1 -> 3/1 = 3.0
+    # Class 1: 3 pos, 0 neg -> 0/3 = 0.0
+    expected = torch.tensor([3.0, 0.0], dtype=torch.float32)
 
     assert torch.allclose(pw, expected, atol=1e-6)
