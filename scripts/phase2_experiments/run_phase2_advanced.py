@@ -13,6 +13,7 @@ from osc_tools.ml.config import ExperimentConfig, ModelConfig, DataConfig, Train
 from osc_tools.ml.runner import ExperimentRunner
 from osc_tools.ml.dataset import OscillogramDataset
 from osc_tools.ml.models import SimpleMLP, ConvKAN
+from osc_tools.ml.labels import clean_labels, add_base_labels, get_target_columns
 
 def main():
     # 1. Setup Paths
@@ -23,29 +24,14 @@ def main():
     print(f"Загрузка данных из {METADATA_FILE}")
     df = pl.read_csv(METADATA_FILE, infer_schema_length=10000, null_values=["NA", "nan", "null", ""])
     
-    # 2. Обработка целевых меток
-    ml_cols = [c for c in df.columns if c.startswith('ML_')]
-    df = df.with_columns([
-        pl.col(c).cast(pl.Float64, strict=False).fill_null(0).cast(pl.Int8).alias(c) 
-        for c in ml_cols
-    ])
+    # 2. Обработка целевых меток (Multi-Label)
+    df = clean_labels(df)
+    df = add_base_labels(df)
     
-    ml_data = df.select(ml_cols).to_numpy()
-    combos = []
-    for row in ml_data:
-        active = [ml_cols[i] for i, val in enumerate(row) if val == 1]
-        if not active:
-            combos.append("Normal")
-        else:
-            combos.append(",".join(sorted(active)))
-            
-    df = df.with_columns(pl.Series("target_class", combos))
-    
-    le = LabelEncoder()
-    y_enc = le.fit_transform(combos)
-    df = df.with_columns(pl.Series("target_enc", y_enc))
-    num_classes = len(le.classes_)
-    print(f"Classes: {num_classes}")
+    target_cols = get_target_columns('base')
+    num_classes = len(target_cols)
+    print(f"Target Columns: {target_cols}")
+    print(f"Num Classes: {num_classes}")
     
     feature_cols = [c for c in df.columns if c.startswith('I') or c.startswith('U')]
     
@@ -84,7 +70,7 @@ def main():
         "dropout": 0.2
     }
     
-    data_config = DataConfig(path=str(METADATA_FILE), window_size=WINDOW_SIZE, batch_size=32)
+    data_config = DataConfig(path=str(METADATA_FILE), window_size=WINDOW_SIZE, batch_size=32, mode='multilabel')
     train_config = TrainingConfig(epochs=10, learning_rate=0.001, device='cuda' if torch.cuda.is_available() else 'cpu')
     
     config_mlp = ExperimentConfig(
@@ -99,13 +85,13 @@ def main():
     train_ds_sym = OscillogramDataset(
         dataframe=df, indices=train_indices, window_size=WINDOW_SIZE,
         mode='classification', feature_mode='symmetric',
-        feature_columns=feature_cols, target_columns="target_enc",
+        feature_columns=feature_cols, target_columns=target_cols,
         physical_normalization=True, norm_coef_path=str(norm_coef_path)
     )
     val_ds_sym = OscillogramDataset(
         dataframe=df, indices=val_indices, window_size=WINDOW_SIZE,
         mode='classification', feature_mode='symmetric',
-        feature_columns=feature_cols, target_columns="target_enc",
+        feature_columns=feature_cols, target_columns=target_cols,
         physical_normalization=True, norm_coef_path=str(norm_coef_path)
     )
     
@@ -147,13 +133,13 @@ def main():
     train_ds_complex = OscillogramDataset(
         dataframe=df, indices=train_indices, window_size=WINDOW_SIZE,
         mode='classification', feature_mode='complex_channels',
-        feature_columns=feature_cols, target_columns="target_enc",
+        feature_columns=feature_cols, target_columns=target_cols,
         physical_normalization=True, norm_coef_path=str(norm_coef_path)
     )
     val_ds_complex = OscillogramDataset(
         dataframe=df, indices=val_indices, window_size=WINDOW_SIZE,
         mode='classification', feature_mode='complex_channels',
-        feature_columns=feature_cols, target_columns="target_enc",
+        feature_columns=feature_cols, target_columns=target_cols,
         physical_normalization=True, norm_coef_path=str(norm_coef_path)
     )
     

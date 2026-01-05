@@ -9,8 +9,8 @@ class TestTimeSeriesAugmenter:
     
     @pytest.fixture
     def sample_data(self):
-        # (Batch, Time, Channels)
-        # 8 channels: IA, IB, IC, In, UA, UB, UC, Un
+        # (Батч, Время, Каналы)
+        # 8 каналов: IA, IB, IC, In, UA, UB, UC, Un
         batch = 2
         time = 100
         channels = 8
@@ -31,9 +31,9 @@ class TestTimeSeriesAugmenter:
         augmenter = TimeSeriesAugmenter(config)
         output = augmenter(sample_data)
         
-        # Currents (0, 1, 2, 3) should be doubled
+        # Токи (0,1,2,3) должны быть удвоены
         assert torch.allclose(output[:, :, :4], sample_data[:, :, :4] * 2.0)
-        # Voltages (4, 5, 6, 7) should be halved
+        # Напряжения (4,5,6,7) должны быть уменьшены вдвое
         assert torch.allclose(output[:, :, 4:], sample_data[:, :, 4:] * 0.5)
 
     def test_noise(self, sample_data):
@@ -46,7 +46,7 @@ class TestTimeSeriesAugmenter:
         output = augmenter(sample_data)
         
         assert not torch.allclose(output, sample_data)
-        # Check that mean is roughly same (noise is zero mean)
+        # Проверяем, что среднее примерно то же (шум со средним 0)
         assert torch.abs(output.mean() - sample_data.mean()) < 0.1
 
     def test_offset(self, sample_data):
@@ -59,7 +59,7 @@ class TestTimeSeriesAugmenter:
         assert torch.allclose(output, sample_data + 1.0)
 
     def test_phase_shuffling(self):
-        # Create distinct phases
+        # Создаём отличимые фазы
         # IA=1, IB=2, IC=3
         # UA=10, UB=20, UC=30
         data = torch.zeros(1, 10, 8)
@@ -73,16 +73,17 @@ class TestTimeSeriesAugmenter:
         config = {"p_phase_shuffling": 1.0}
         augmenter = TimeSeriesAugmenter(config)
         
-        # Run multiple times to catch randomness (shift 1 or 2)
-        # Since we can't control random seed easily inside, we check if it's EITHER shift 1 or 2
+        # Запускаем один раз — случайность внутри может дать сдвиг 1 или 2.
+        # Поскольку мы не контролируем генератор внутри, проверяем, что результат
+        # соответствует либо сдвигу 1, либо сдвигу 2.
         output = augmenter(data)
         
-        # Shift 1: A->B, B->C, C->A
+        # Сдвиг 1: A->B, B->C, C->A
         # IA=3, IB=1, IC=2
         shift1_currents = torch.tensor([3., 1., 2.])
         shift1_voltages = torch.tensor([30., 10., 20.])
         
-        # Shift 2: A->C, B->A, C->B
+        # Сдвиг 2: A->C, B->A, C->B
         # IA=2, IB=3, IC=1
         shift2_currents = torch.tensor([2., 3., 1.])
         shift2_voltages = torch.tensor([20., 30., 10.])
@@ -100,10 +101,10 @@ class TestTimeSeriesAugmenter:
         augmenter = TimeSeriesAugmenter(config)
         output = augmenter(sample_data)
         
-        # Check that at least one channel is zero
-        # Sum over time for each channel
+        # Проверяем, что хотя бы один канал обнулён
+        # Суммируем по времени для каждого канала
         channel_sums = output.sum(dim=1) # (Batch, Channels)
-        # Check if any channel is 0
+        # Проверяем, есть ли канал с суммой 0
         has_zero_channel = (channel_sums == 0).any()
         assert has_zero_channel
 
@@ -111,12 +112,12 @@ class TestDatasetAugmentation:
     
     @pytest.fixture
     def sample_df(self):
-        # Create a dummy dataframe with 8 channels
+        # Создаём фикстурную DataFrame с 8 каналами
         length = 100
         t = np.arange(length) / 1600.0
         f = 50.0
         
-        # Balanced 3-phase system
+        # Сбалансированная трёхфазная система
         ia = np.sin(2 * np.pi * f * t)
         ib = np.sin(2 * np.pi * f * t - 2*np.pi/3)
         ic = np.sin(2 * np.pi * f * t + 2*np.pi/3)
@@ -125,8 +126,8 @@ class TestDatasetAugmentation:
             'IA': ia,
             'IB': ib,
             'IC': ic,
-            'IN': np.zeros(length), # Zero sequence is 0
-            'UA': ia, # Just reuse currents for voltages
+            'IN': np.zeros(length), # Нулевая последовательность = 0
+            'UA': ia, # Повторно используем токи как напряжения для теста
             'UB': ib,
             'UC': ic,
             'UN': np.zeros(length),
@@ -138,7 +139,7 @@ class TestDatasetAugmentation:
         indices = [0]
         window_size = 50
         
-        # Config that inverts signal
+        # Конфигурация, инвертирующая сигнал
         aug_config = {"p_inversion": 1.0}
         
         ds = OscillogramDataset(
@@ -151,22 +152,22 @@ class TestDatasetAugmentation:
         )
         
         x, y = ds[0]
-        # x shape: (Channels, Time)
-        # Original data is sine. Inverted should be -sine.
+        # x форма: (Каналы, Время)
+        # Оригинальные данные — синус. После инверсии должно быть -sin.
         
-        # Reconstruct original expected data (first 50 points)
+        # Воссоздаём ожидаемый сигнал (первые 50 точек)
         t = np.arange(window_size) / 1600.0
         f = 50.0
         expected_ia = -np.sin(2 * np.pi * f * t)
         
-        # Check IA (channel 0)
+        # Проверяем IA (канал 0)
         assert torch.allclose(x[0, :], torch.tensor(expected_ia, dtype=torch.float32), atol=1e-5)
         
     def test_dataset_augmentation_symmetric(self, sample_df):
         indices = [0]
         window_size = 50
         
-        # Config that scales signal by 2
+        # Конфигурация, масштабирующая сигнал в 2 раза
         aug_config = {
             "p_scaling": 1.0, 
             "scaling_range_current": (2.0, 2.0),
@@ -183,70 +184,39 @@ class TestDatasetAugmentation:
         )
         
         x, y = ds[0]
-        # Output format: [I1_re, I1_im, I2_re, I2_im, I0_re, I0_im, U1..., U2..., U0...]
+        # Формат выхода: [I1_re, I1_im, I2_re, I2_im, I0_re, I0_im, U1..., U2..., U0...]
         
-        # Check Positive Sequence Current I1 (indices 0, 1)
-        # Magnitude should be 2.0 (Amplitude)
+        # Проверяем положительную последовательность тока I1 (индексы 0,1)
+        # Амплитуда до масштабирования была 1.0, после масштабирования — 2.0
         i1_re = x[0, -1]
         i1_im = x[1, -1]
         i1_mag = torch.sqrt(i1_re**2 + i1_im**2)
         
-        # sliding_window_fft applies Hanning window which attenuates amplitude by 0.5
-        # So for input amplitude 2.0, output should be ~1.0
-        # Let's verify this by calculating expected value directly
+        # sliding_window_fft использует окно Ханна, которое ослабляет амплитуду примерно в 2 раза.
+        # Для входной амплитуды 2.0 ожидаемую величину примерно 1.0.
+        # Проверим это, посчитав ожидаемое значение явно.
         from osc_tools.features.pdr_calculator import sliding_window_fft
         
         t = np.arange(window_size) / 1600.0
         f = 50.0
-        # Expected signal is scaled by 2.0
+        # Ожидаемый сигнал масштабирован в 2.0
         expected_signal = 2.0 * np.sin(2 * np.pi * f * t)
         
-        # Calculate FFT of expected signal
-        # We need a longer signal to get valid output at the end
-        # sliding_window_fft returns valid at index >= window_size
-        # So let's create a signal of length window_size + 1
-        signal_long = np.concatenate([expected_signal, [0]]) # Just one more point
-        # Actually sliding_window_fft needs input > window_size to return anything useful?
-        # No, if input == window_size, it returns 1 window.
-        # But the result array has size of input.
-        # Valid result is at index `window_size`.
-        # Wait, sliding_window_fft returns array of same length as input.
-        # Values [0 : window_size] are NaN.
-        # Value at [window_size] corresponds to window [0 : window_size].
-        
-        # So we need input of length window_size + 1 to get value at index window_size?
-        # Let's check implementation:
-        # start_idx = window_size
-        # fft_results[start_idx : start_idx + count] = harmonics[:count]
-        
-        # So if len(signal) == window_size, count = 0. No result.
-        # We need len(signal) >= window_size + 1 to get at least 1 result at index window_size.
-        
-        # But ds[0] returns `x` of shape (Channels, window_size).
-        # And `OscillogramDataset` calls `sliding_window_fft` on `raw_data` which has length `window_size`.
-        # Wait, if `raw_data` has length `window_size`, `sliding_window_fft` returns ALL NaNs?
-        
-        # Let's check `OscillogramDataset` again.
-        # `sample_df = self.data.slice(start_idx, self.window_size)`
-        # `raw_data` has length `window_size`.
-        # `sliding_window_fft(raw_data[:, i], fft_window, 1)`
-        # `fft_window` is 32. `window_size` is 50.
-        # So `raw_data` (50) > `fft_window` (32).
-        # So it works.
-        
-        # So I should calculate expected value using `sliding_window_fft` with same parameters.
+        # Вычислим FFT ожидаемого сигнала.
+        # sliding_window_fft возвращает валидные значения, начиная с индекса окна.
+        # В нашем случае длина входа (50) > окно FFT (32), поэтому есть валидные результаты.
         fft_window = int(1600 / 50) # 32
         expected_phasor = sliding_window_fft(expected_signal, fft_window, 1)
-        # The valid values start at index 32.
-        # We want the value at index 49 (last point).
+        # Валидные значения начинаются с индекса 32.
+        # Нам нужен результат в конце массива (индекс 49).
         expected_mag = np.abs(expected_phasor[-1, 0])
         
         print(f"DEBUG: Expected magnitude = {expected_mag}")
-        
+
         assert torch.isclose(i1_mag, torch.tensor(expected_mag, dtype=torch.float32), atol=0.1)
         
-        # Check Zero Sequence Current I0 (indices 4, 5)
-        # Should be 0
+        # Проверяем нулевую последовательность тока I0 (индексы 4,5)
+        # Должна быть 0
         i0_re = x[4, -1]
         i0_im = x[5, -1]
         i0_mag = torch.sqrt(i0_re**2 + i0_im**2)

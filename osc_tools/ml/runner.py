@@ -65,6 +65,8 @@ class ExperimentRunner:
         mode = self.config.data.mode
         if mode == 'classification':
             return nn.CrossEntropyLoss()
+        elif mode == 'multilabel':
+            return nn.BCEWithLogitsLoss()
         elif mode == 'reconstruction':
             return nn.MSELoss()
         elif mode == 'segmentation':
@@ -94,6 +96,8 @@ class ExperimentRunner:
                     y = y.long()
                     if y.dim() > 1 and y.shape[1] == 1:
                         y = y.squeeze(1)
+                elif self.config.data.mode == 'multilabel':
+                    y = y.float()
                 
                 loss = self.criterion(outputs, y)
                 loss.backward()

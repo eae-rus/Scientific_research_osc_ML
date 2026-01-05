@@ -9,6 +9,7 @@ from osc_tools.features.phasor import (
     calculate_power, 
     calculate_symmetrical_components_from_line
 )
+from osc_tools.features.polar import calculate_polar_features
 from osc_tools.ml.augmentation import TimeSeriesAugmenter
 
 class OscillogramDataset(Dataset):
@@ -31,7 +32,9 @@ class OscillogramDataset(Dataset):
         target_position: Optional[int] = None,
         physical_normalization: bool = False,
         norm_coef_path: Optional[str] = None,
-        augmentation_config: Optional[dict] = None
+        augmentation_config: Optional[dict] = None,
+        downsampling_mode: str = 'none',
+        downsampling_stride: int = 16
     ):
         """
         Args:
@@ -49,6 +52,8 @@ class OscillogramDataset(Dataset):
             physical_normalization: Применять ли физическую нормализацию по коэффициентам.
             norm_coef_path: Путь к CSV файлу с коэффициентами нормализации.
             augmentation_config: Конфигурация аугментации (только для mode='classification'/'segmentation' в train).
+            downsampling_mode: Режим прореживания ('none', 'stride', 'snapshot').
+            downsampling_stride: Шаг прореживания (для mode='stride').
         """
         if isinstance(dataframe, pl.LazyFrame):
             self.data = dataframe.collect()
@@ -63,6 +68,8 @@ class OscillogramDataset(Dataset):
         self.feature_columns = feature_columns
         self.target_columns = target_columns
         self.physical_normalization = physical_normalization
+        self.downsampling_mode = downsampling_mode
+        self.downsampling_stride = downsampling_stride
         
         self.augmenter = None
         if augmentation_config:
@@ -87,7 +94,7 @@ class OscillogramDataset(Dataset):
         if mode not in valid_modes:
             raise ValueError(f"Unknown mode: {mode}. Valid modes: {valid_modes}")
             
-        valid_feature_modes = ['raw', 'symmetric', 'complex_channels', 'power', 'instantaneous_power', 'alpha_beta']
+        valid_feature_modes = ['raw', 'symmetric', 'complex_channels', 'power', 'instantaneous_power', 'alpha_beta', 'polar']
         for fm in self.feature_mode:
             if fm not in valid_feature_modes:
                 raise ValueError(f"Unknown feature_mode: {fm}. Valid modes: {valid_feature_modes}")
@@ -269,23 +276,32 @@ class OscillogramDataset(Dataset):
                 return False
             return True
 
+        # Вспомогательная функция для получения Un
+        def get_un(name: str) -> np.ndarray:
+            if is_valid_channel(name):
+                return df[name].cast(pl.Float32).to_numpy()
+            return np.zeros(len(df), dtype=np.float32)
+
         # 1. Фазные напряжения (Шины - Bus Bar) + Un
         candidates = ['UA BB', 'UB BB', 'UC BB']
         un_candidates = ['UN BB']
-        if all(is_valid_channel(c) for c in candidates) and is_valid_channel(un_candidates[0]):
-            return [df[c].cast(pl.Float32).to_numpy() for c in candidates + un_candidates], 'phase'
+        if all(is_valid_channel(c) for c in candidates):
+            voltages = [df[c].cast(pl.Float32).to_numpy() for c in candidates]
+            return voltages + [get_un(un_candidates[0])], 'phase'
             
         # 2. Фазные напряжения (Линия - Cable Line) + Un
         candidates = ['UA CL', 'UB CL', 'UC CL']
         un_candidates = ['UN CL']
-        if all(is_valid_channel(c) for c in candidates) and is_valid_channel(un_candidates[0]):
-            return [df[c].cast(pl.Float32).to_numpy() for c in candidates + un_candidates], 'phase'
+        if all(is_valid_channel(c) for c in candidates):
+            voltages = [df[c].cast(pl.Float32).to_numpy() for c in candidates]
+            return voltages + [get_un(un_candidates[0])], 'phase'
             
         # 3. Фазные напряжения (Простые) + Un
         candidates = ['UA', 'UB', 'UC']
         un_candidates = ['UN']
-        if all(is_valid_channel(c) for c in candidates) and is_valid_channel(un_candidates[0]):
-            return [df[c].cast(pl.Float32).to_numpy() for c in candidates + un_candidates], 'phase'
+        if all(is_valid_channel(c) for c in candidates):
+            voltages = [df[c].cast(pl.Float32).to_numpy() for c in candidates]
+            return voltages + [get_un(un_candidates[0])], 'phase'
             
         # 4. Линейные напряжения (Шины - Bus Bar) + Un
         candidates = ['UAB BB', 'UBC BB', 'UCA BB']
@@ -507,14 +523,14 @@ class OscillogramDataset(Dataset):
             elif fm == 'alpha_beta':
                 features = []
                 
-                # Currents (0, 1, 2)
+                # Токи (0, 1, 2)
                 a, b, c = raw_data[:, 0], raw_data[:, 1], raw_data[:, 2]
                 alpha = (2/3) * (a - 0.5*b - 0.5*c)
                 beta = (2/3) * (np.sqrt(3)/2 * (b - c))
                 zero = (1/3) * (a + b + c)
                 features.append(np.stack([alpha, beta, zero], axis=1))
                     
-                # Voltages (4, 5, 6)
+                # Напряжение (4, 5, 6)
                 a, b, c = raw_data[:, 4], raw_data[:, 5], raw_data[:, 6]
                 alpha = (2/3) * (a - 0.5*b - 0.5*c)
                 beta = (2/3) * (np.sqrt(3)/2 * (b - c))
@@ -523,6 +539,42 @@ class OscillogramDataset(Dataset):
                 
                 data = np.concatenate(features, axis=1)
                 collected_features.append(np.nan_to_num(data))
+
+            elif fm == 'polar':
+                fft_window = int(self.sampling_rate / 50)
+                
+                # 1. Вычисляем фазоры для всех 8 каналов
+                # [IA, IB, IC, In, UA, UB, UC, Un]
+                phasors = []
+                for i in range(8):
+                    p = sliding_window_fft(raw_data[:, i], fft_window, 1)[:, 0]
+                    phasors.append(p)
+                
+                phasors = np.stack(phasors, axis=1) # (Time, 8)
+                
+                # 2. Определяем опорный фазор (Reference Phasor)
+                # Приоритет: UA (idx 4) -> UAB (если бы были линейные, но тут у нас уже фазные восстановленные) -> IA (idx 0)
+                # В raw_data у нас всегда [IA, IB, IC, In, UA, UB, UC, Un]
+                # Если UA валидный (не нули), берем его. Иначе IA.
+                
+                # Проверка на "валидность" UA (амплитуда > порога)
+                # Берем среднюю амплитуду по окну (игнорируя NaN)
+                ua_mag = np.nanmean(np.abs(phasors[:, 4]))
+                
+                if ua_mag > 1e-4: # т.к. напряжение в о.е.
+                    ref_phasor = phasors[:, 4]
+                else:
+                    # Если напряжения нет, пробуем ток фазы А
+                    ia_mag = np.nanmean(np.abs(phasors[:, 0]))
+                    if ia_mag > 1e-4: # ток в о.е.
+                        ref_phasor = phasors[:, 0]
+                    else:
+                        # Если и тока нет, то фаза 0 (абсолютная)
+                        ref_phasor = None
+                
+                # 3. Расчет Magnitude/Angle
+                polar_feats = calculate_polar_features(phasors, ref_phasor)
+                collected_features.append(np.nan_to_num(polar_feats))
 
         if not collected_features:
             # Fallback
@@ -543,6 +595,17 @@ class OscillogramDataset(Dataset):
 
         # Convert to tensor and transpose to (Channels, Time)
         x = torch.tensor(x_data, dtype=torch.float32).transpose(0, 1)
+        
+        # Прореживание (downsampling)
+        if self.downsampling_mode == 'stride':
+             x = x[:, ::self.downsampling_stride]
+        elif self.downsampling_mode == 'snapshot':
+             # Выбираем только первый и последний срез
+             if x.shape[1] >= 2:
+                 x = x[:, [0, -1]]
+             else:
+                 # Если окно слишком маленькое, просто дублируем первый срез
+                 x = x.repeat(1, 2)[:, :2]
 
         # Извлечение целевой переменной (Y)
         y = None
