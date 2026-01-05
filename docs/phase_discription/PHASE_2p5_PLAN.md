@@ -180,7 +180,7 @@
 - [x] **Code:** Реализовать взвешивание классов:
     - [x] Интеграция `pos_weight` в `BCEWithLogitsLoss`. (см. `osc_tools/ml/class_weights.py`, интеграция в `osc_tools/ml/runner.py`)
     - [ ] Опционально: Реализовать `WeightedRandomSampler` для DataLoader.
-- [ ] **Code:** Реализовать иерархический маппинг меток `map_to_parent_class` в `osc_tools/core/label_utils.py`.
+- [x] **Code:** Реализовать иерархический маппинг меток `map_to_parent_class` в `osc_tools/core/label_utils.py`.
 
 ### Модели (Models)
 - [x] **Code:** Обновить модели:
@@ -191,17 +191,17 @@
 - [x] **Code:** Создать новую модель `PhysicsKAN` с встроенными арифметическими слоями.
 
 ### Обучение (Training)
-- [ ] **Config:** Создать конфиги для новых экспериментов (`configs/phase2_5/exp_strided.yaml`, etc.). При этом не забыть скорректировать структуру, чтобы не путаться в файлах (может касаться и других задач).
+- [ ] **Config:** Создать конфиги для новых экспериментов (`configs/phase2_5/exp_strided.yaml`, etc.).
 - [x] **Code:** Внедрить расширенную систему логирования:
     - [x] Автоматическое сохранение метрик в `metrics.jsonl`.
-    - [ ] Логирование по эпохам: Train/Val Loss, Accuracy, F1-macro, Balanced Accuracy, per-class metrics.
-    - [ ] Сохранение конфигурации эксперимента (гиперпараметры, архитектура) в `config_snapshot.yaml`.
-    - [ ] Периодическое сохранение чекпоинтов модели (каждые N эпох).
+    - [x] Логирование по эпохам: Train/Val Loss, Accuracy, F1-macro, Balanced Accuracy, per-class metrics.
+    - [x] Сохранение конфигурации эксперимента в `config.json`.
+    - [x] Периодическое сохранение чекпоинтов модели (каждые 10 эпох).
 - [x] **Script:** Создать `scripts/evaluation/aggregate_reports.py` для постобработки:
     - [x] Сбор всех метрик из `metrics.jsonl`.
     - [x] Генерация сводных таблиц (CSV/Markdown).
-    - [x] Интеграция `pos_weight` в `BCEWithLogitsLoss`. (см. `osc_tools/ml/class_weights.py`, интеграция в `osc_tools/ml/runner.py`)
-    - [ ] Автоматическая генерация графиков (Learning Curves, Confusion Matrices).
+    - [x] Автоматическая генерация графиков (Learning Curves).
+- [ ] **Script:** Добавить генерацию Confusion Matrices в `aggregate_reports.py`.
 
 ---
 

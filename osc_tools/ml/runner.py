@@ -16,7 +16,7 @@ from osc_tools.ml.models import (
     SimpleKAN, ConvKAN, PhysicsKAN, AutoEncoder
 )
 from osc_tools.ml.class_weights import compute_pos_weight_from_loader
-from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
+from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, balanced_accuracy_score
 import numpy as np
 
 class ExperimentRunner:
@@ -181,16 +181,22 @@ class ExperimentRunner:
                 if self.config.data.mode == 'classification':
                     val_acc = accuracy_score(all_targets, all_preds)
                     val_f1 = f1_score(all_targets, all_preds, average='macro')
+                    val_balanced_acc = balanced_accuracy_score(all_targets, all_preds)
+                    per_class_f1 = f1_score(all_targets, all_preds, average=None).tolist()
                 elif self.config.data.mode == 'multilabel':
                     # Для multilabel, accuracy - это точное совпадение (строгое)
                     # Используйте F1-macro или F1-weighted
                     val_acc = accuracy_score(all_targets, all_preds) # Exact match
                     val_f1 = f1_score(all_targets, all_preds, average='macro')
+                    val_balanced_acc = 0.0 # Balanced accuracy is tricky for multilabel
+                    per_class_f1 = f1_score(all_targets, all_preds, average=None).tolist()
                     
             else:
                 avg_val_loss = 0.0
                 val_acc = 0.0
                 val_f1 = 0.0
+                val_balanced_acc = 0.0
+                per_class_f1 = []
             
             history['val_loss'].append(avg_val_loss)
             history['val_acc'].append(val_acc)
@@ -204,6 +210,8 @@ class ExperimentRunner:
                 "val_loss": avg_val_loss,
                 "val_acc": val_acc,
                 "val_f1": val_f1,
+                "val_balanced_acc": val_balanced_acc,
+                "per_class_f1": per_class_f1,
                 "time": epoch_time
             }
             self._save_metrics(metrics)
@@ -215,12 +223,14 @@ class ExperimentRunner:
                   f"Val F1: {val_f1:.4f} | "
                   f"Time: {epoch_time:.2f}s")
             
-            # Сохраняем лучшую модель (на основе Loss или F1?)
-            # Обычно Loss безопаснее, но F1 лучше для несбалансированных данных.
-            # Пока остановимся на Loss, или может быть F1, если Loss шумный.
+            # Сохраняем лучшую модель
             if val_loader and avg_val_loss < best_val_loss:
                 best_val_loss = avg_val_loss
                 self.save_checkpoint('best_model.pt')
+            
+            # Периодический чекпоинт (каждые 10 эпох)
+            if (epoch + 1) % 10 == 0:
+                self.save_checkpoint(f'checkpoint_epoch_{epoch+1}.pt')
                 
         self.save_checkpoint('final_model.pt')
         print("Training completed.")

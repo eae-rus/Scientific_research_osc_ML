@@ -4,6 +4,8 @@ from pathlib import Path
 import argparse
 from typing import List, Dict, Any
 import sys
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 def load_metrics(metrics_path: Path) -> List[Dict[str, Any]]:
     """Загрузка метрик из файла jsonl."""
@@ -25,13 +27,49 @@ def load_config(config_path: Path) -> Dict[str, Any]:
         print(f"Ошибка чтения {config_path}: {e}", file=sys.stderr)
         return {}
 
-def aggregate_reports(root_dir: str, output_file: str = None):
+def plot_learning_curves(metrics: List[Dict[str, Any]], save_path: Path):
+    """Генерация графиков обучения."""
+    df = pd.DataFrame(metrics)
+    if df.empty:
+        return
+        
+    plt.figure(figsize=(12, 5))
+    
+    # Loss
+    plt.subplot(1, 2, 1)
+    plt.plot(df['epoch'], df['train_loss'], label='Train Loss')
+    if 'val_loss' in df.columns:
+        plt.plot(df['epoch'], df['val_loss'], label='Val Loss')
+    plt.title('Learning Curves (Loss)')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid(True)
+    
+    # Accuracy/F1
+    plt.subplot(1, 2, 2)
+    if 'val_acc' in df.columns:
+        plt.plot(df['epoch'], df['val_acc'], label='Val Acc')
+    if 'val_f1' in df.columns:
+        plt.plot(df['epoch'], df['val_f1'], label='Val F1')
+    plt.title('Validation Metrics')
+    plt.xlabel('Epoch')
+    plt.ylabel('Score')
+    plt.legend()
+    plt.grid(True)
+    
+    plt.tight_layout()
+    plt.savefig(save_path)
+    plt.close()
+
+def aggregate_reports(root_dir: str, output_file: str = None, plot: bool = False):
     """
     Агрегирует отчеты обучения из всех поддиректорий.
     
     Args:
         root_dir: Корневая директория, содержащая папки экспериментов.
         output_file: Опциональный путь для сохранения агрегированного отчета (CSV).
+        plot: Генерировать ли графики обучения для каждого эксперимента.
     """
     root_path = Path(root_dir)
     experiments = []
@@ -49,6 +87,11 @@ def aggregate_reports(root_dir: str, output_file: str = None):
         
         if not metrics:
             continue
+
+        # Генерация графиков
+        if plot:
+            plot_path = exp_dir / "learning_curves.png"
+            plot_learning_curves(metrics, plot_path)
 
         # Найти лучшую эпоху (на основе min val_loss)
         # Если val_loss недоступна (например, только train), взять последнюю эпоху
@@ -68,6 +111,7 @@ def aggregate_reports(root_dir: str, output_file: str = None):
             "Val Loss": best_epoch.get('val_loss'),
             "Val Acc": best_epoch.get('val_acc'),
             "Val F1": best_epoch.get('val_f1'),
+            "Val B.Acc": best_epoch.get('val_balanced_acc', 0.0),
             "Time (s)": best_epoch.get('time'),
             "Path": str(exp_dir)
         }
@@ -103,7 +147,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Агрегация отчетов экспериментов.")
     parser.add_argument("root_dir", type=str, help="Корневая директория, содержащая эксперименты (например, experiments/)")
     parser.add_argument("--output", type=str, default=None, help="Путь к выходному файлу CSV")
+    parser.add_argument("--plot", action="store_true", help="Генерировать графики обучения")
     
     args = parser.parse_args()
     
-    aggregate_reports(args.root_dir, args.output)
+    aggregate_reports(args.root_dir, args.output, args.plot)
