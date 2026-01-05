@@ -9,6 +9,7 @@ from osc_tools.features.phasor import (
     calculate_power, 
     calculate_symmetrical_components_from_line
 )
+from osc_tools.ml.augmentation import TimeSeriesAugmenter
 
 class OscillogramDataset(Dataset):
     """
@@ -29,7 +30,8 @@ class OscillogramDataset(Dataset):
         target_columns: Optional[Union[str, List[str]]] = None,
         target_position: Optional[int] = None,
         physical_normalization: bool = False,
-        norm_coef_path: Optional[str] = None
+        norm_coef_path: Optional[str] = None,
+        augmentation_config: Optional[dict] = None
     ):
         """
         Args:
@@ -46,6 +48,7 @@ class OscillogramDataset(Dataset):
                              По умолчанию - последнее значение (window_size - 1).
             physical_normalization: Применять ли физическую нормализацию по коэффициентам.
             norm_coef_path: Путь к CSV файлу с коэффициентами нормализации.
+            augmentation_config: Конфигурация аугментации (только для mode='classification'/'segmentation' в train).
         """
         if isinstance(dataframe, pl.LazyFrame):
             self.data = dataframe.collect()
@@ -60,6 +63,10 @@ class OscillogramDataset(Dataset):
         self.feature_columns = feature_columns
         self.target_columns = target_columns
         self.physical_normalization = physical_normalization
+        
+        self.augmenter = None
+        if augmentation_config:
+            self.augmenter = TimeSeriesAugmenter(augmentation_config)
         
         self.norm_coef_df = None
         if self.physical_normalization:
@@ -405,206 +412,117 @@ class OscillogramDataset(Dataset):
         
         # Физическая нормализация (если включена)
         if self.physical_normalization and 'file_name' in sample_df.columns:
-            # Берем имя файла из первой строки окна (предполагаем, что окно внутри одного файла)
-            # Если окно пересекает границу файлов (чего быть не должно при правильных индексах),
-            # то нормализация по первому файлу может быть не совсем корректной, но это edge case.
             try:
                 file_name = sample_df['file_name'][0]
                 sample_df = self._apply_physical_normalization(sample_df, file_name)
             except Exception:
                 pass # Fallback to raw data if something goes wrong
         
+        # 1. Получение стандартизированных сырых данных (8 каналов)
+        # [IA, IB, IC, In, UA, UB, UC, Un]
+        # Это база для всех остальных признаков и аугментации
+        raw_data = self._get_standardized_raw_data(sample_df)
+        
+        # 2. Аугментация (если включена)
+        if self.augmenter:
+            print("DEBUG: Applying augmentation")
+            raw_data = self.augmenter(raw_data)
+            if isinstance(raw_data, torch.Tensor):
+                raw_data = raw_data.numpy()
+
         collected_features = []
         
         for fm in self.feature_mode:
             if fm == 'raw':
                 if self.feature_columns is not None:
+                    # Если заданы конкретные колонки, берем их из DataFrame (без аугментации пока что)
                     collected_features.append(sample_df.select(self.feature_columns).to_numpy())
                 else:
-                    # Умный выбор / Стандартизация
-                    collected_features.append(self._get_standardized_raw_data(sample_df))
+                    collected_features.append(raw_data)
                 
             elif fm == 'symmetric':
-                # Расчет симметричных составляющих
+                # Расчет симметричных составляющих из raw_data
                 fft_window = int(self.sampling_rate / 50)
-                features = []
                 
-                i_phases = self._get_best_current_channels(sample_df)
-                if len(i_phases) >= 3:  # IA, IB, IC минимум
-                    phasors = [sliding_window_fft(p, fft_window, 1)[:, 0] for p in i_phases[:3]]  # IA, IB, IC
-                    i1, i2, i0 = calculate_symmetrical_components(*phasors)
-                    if len(i_phases) >= 4 and i_phases[3] is not None:  # In присутствует
-                        in_phasor = sliding_window_fft(i_phases[3], fft_window, 1)[:, 0]
-                        i0 = in_phasor / 3  # I0 = In / 3
-                    features.append(np.stack([i1.real, i1.imag, i2.real, i2.imag, i0.real, i0.imag], axis=1))
-                else:
-                    # Нули, если нет токов
-                    features.append(np.zeros((self.window_size, 6), dtype=np.float32))
+                # Токи (каналы 0, 1, 2, 3)
+                phasors_i = [sliding_window_fft(raw_data[:, i], fft_window, 1)[:, 0] for i in range(3)]
+                i1, i2, i0 = calculate_symmetrical_components(*phasors_i)
+                
+                # Если In (канал 3) не пустой, используем его для I0
+                if not np.allclose(raw_data[:, 3], 0):
+                    in_phasor = sliding_window_fft(raw_data[:, 3], fft_window, 1)[:, 0]
+                    i0 = in_phasor / 3
+                
+                features_i = np.stack([i1.real, i1.imag, i2.real, i2.imag, i0.real, i0.imag], axis=1)
+                
+                # Напряжения (каналы 4, 5, 6, 7)
+                phasors_u = [sliding_window_fft(raw_data[:, i], fft_window, 1)[:, 0] for i in range(4, 7)]
+                u1, u2, u0 = calculate_symmetrical_components(*phasors_u)
+                
+                # Если Un (канал 7) не пустой, используем его для U0
+                if not np.allclose(raw_data[:, 7], 0):
+                    un_phasor = sliding_window_fft(raw_data[:, 7], fft_window, 1)[:, 0]
+                    u0 = un_phasor / 3
                     
-                u_phases, u_type = self._get_best_voltage_channels(sample_df)
+                features_u = np.stack([u1.real, u1.imag, u2.real, u2.imag, u0.real, u0.imag], axis=1)
                 
-                if u_type == 'phase' and len(u_phases) >= 3:
-                    phasors = [sliding_window_fft(p, fft_window, 1)[:, 0] for p in u_phases[:3]]  # UA, UB, UC
-                    u1, u2, u0 = calculate_symmetrical_components(*phasors)
-                    if len(u_phases) >= 4 and u_phases[3] is not None:  # Un присутствует
-                        un_phasor = sliding_window_fft(u_phases[3], fft_window, 1)[:, 0]
-                        u0 = un_phasor / 3  # U0 = Un / 3
-                    features.append(np.stack([u1.real, u1.imag, u2.real, u2.imag, u0.real, u0.imag], axis=1))
-                elif u_type == 'line' and len(u_phases) >= 3:
-                    phasors = [sliding_window_fft(p, fft_window, 1)[:, 0] for p in u_phases[:3]]  # UAB, UBC, UCA
-                    u1, u2 = calculate_symmetrical_components_from_line(*phasors)
-                    u0 = np.zeros_like(u1)
-                    if len(u_phases) >= 4 and u_phases[3] is not None:  # Un присутствует
-                        un_phasor = sliding_window_fft(u_phases[3], fft_window, 1)[:, 0]
-                        u0 = un_phasor / 3
-                    features.append(np.stack([u1.real, u1.imag, u2.real, u2.imag, u0.real, u0.imag], axis=1))
-                else:
-                    # Нули, если нет напряжений
-                    features.append(np.zeros((self.window_size, 6), dtype=np.float32))
-                
-                if features:
-                    data = np.concatenate(features, axis=1)
-                    collected_features.append(np.nan_to_num(data))
+                collected_features.append(np.concatenate([features_i, features_u], axis=1))
 
             elif fm == 'complex_channels':
                 fft_window = int(self.sampling_rate / 50)
                 features = []
+                # Проходим по всем 8 каналам
+                for i in range(8):
+                    phasor = sliding_window_fft(raw_data[:, i], fft_window, 1)[:, 0]
+                    features.append(np.stack([phasor.real, phasor.imag], axis=1))
                 
-                # Токи
-                i_phases = self._get_best_current_channels(sample_df)
-                if i_phases:
-                    for p in i_phases:
-                        phasor = sliding_window_fft(p, fft_window, 1)[:, 0]
-                        features.append(np.stack([phasor.real, phasor.imag], axis=1))
+                data = np.concatenate(features, axis=1)
+                collected_features.append(np.nan_to_num(data))
                 
-                # Напряжения
-                u_phases, u_type = self._get_best_voltage_channels(sample_df)
-                if u_type == 'line':
-                     # Восстановление фазных напряжений из линейных
-                     uab, ubc, uca, un = u_phases[:4] if len(u_phases) >= 4 else u_phases + [None]
-                     ua = (2 * uab + ubc) / 3 if uab is not None and ubc is not None else None
-                     ub = (2 * ubc + uca) / 3 if ubc is not None and uca is not None else None
-                     uc = (2 * uca + uab) / 3 if uca is not None and uab is not None else None
-                     u_phases = [ua, ub, uc, un]
-                
-                if u_phases:
-                    for p in u_phases:
-                        # Расчет Фурье-фазора для каждого канала
-                        if p is not None:
-                            phasor = sliding_window_fft(p, fft_window, 1)[:, 0]
-                            features.append(np.stack([phasor.real, phasor.imag], axis=1))
-                        else:
-                            features.append(np.zeros((self.window_size, 2), dtype=np.float32))
-                
-                if features:
-                    data = np.concatenate(features, axis=1)
-                    collected_features.append(np.nan_to_num(data))
-                else:
-                    if self.feature_columns:
-                        collected_features.append(sample_df.select(self.feature_columns).to_numpy())
-                    else:
-                        # 8 каналов * 2 (re/im)
-                        collected_features.append(np.zeros((self.window_size, 16), dtype=np.float32))
             elif fm == 'power':
                 fft_window = int(self.sampling_rate / 50)
                 features = []
                 
-                i_phases = self._get_best_current_channels(sample_df)
-                u_phases, u_type = self._get_best_voltage_channels(sample_df)
+                # Пары (IA, UA), (IB, UB), (IC, UC), (In, Un)
+                # Indices: (0, 4), (1, 5), (2, 6), (3, 7)
+                for i_idx, u_idx in zip(range(4), range(4, 8)):
+                    i_phasor = sliding_window_fft(raw_data[:, i_idx], fft_window, 1)[:, 0]
+                    u_phasor = sliding_window_fft(raw_data[:, u_idx], fft_window, 1)[:, 0]
+                    _, p_act, q_react = calculate_power(u_phasor, i_phasor)
+                    features.append(np.stack([p_act, q_react], axis=1))
                 
-                if u_type == 'line':
-                     uab, ubc, uca, un = u_phases[:4] if len(u_phases) >= 4 else u_phases + [None]
-                     ua = (2 * uab + ubc) / 3 if uab is not None and ubc is not None else None
-                     ub = (2 * ubc + uca) / 3 if ubc is not None and uca is not None else None
-                     uc = (2 * uca + uab) / 3 if uca is not None and uab is not None else None
-                     u_phases = [ua, ub, uc, un]
-                
-                if i_phases and u_phases:
-                    for i_p, u_p in zip(i_phases, u_phases):
-                        if i_p is not None and u_p is not None:
-                            i_phasor = sliding_window_fft(i_p, fft_window, 1)[:, 0]
-                            u_phasor = sliding_window_fft(u_p, fft_window, 1)[:, 0]
-                            _, p_act, q_react = calculate_power(u_phasor, i_phasor)
-                            features.append(np.stack([p_act, q_react], axis=1))
-                        else:
-                            features.append(np.zeros((self.window_size, 2), dtype=np.float32))
-                
-                if features:
-                    data = np.concatenate(features, axis=1)
-                    collected_features.append(np.nan_to_num(data))
-                else:
-                    # Fallback
-                    if self.feature_columns:
-                        collected_features.append(sample_df.select(self.feature_columns).to_numpy())
-                    else:
-                        # 4 фазы * 2 (P, Q)
-                        collected_features.append(np.zeros((self.window_size, 8), dtype=np.float32))
+                data = np.concatenate(features, axis=1)
+                collected_features.append(np.nan_to_num(data))
 
             elif fm == 'instantaneous_power':
                 features = []
-                i_phases = self._get_best_current_channels(sample_df)
-                u_phases, u_type = self._get_best_voltage_channels(sample_df)
+                # Пары (IA, UA), (IB, UB), (IC, UC), (In, Un)
+                for i_idx, u_idx in zip(range(4), range(4, 8)):
+                    p_inst = raw_data[:, u_idx] * raw_data[:, i_idx]
+                    features.append(p_inst[:, None])
                 
-                if u_type == 'line':
-                     uab, ubc, uca, un = u_phases[:4] if len(u_phases) >= 4 else u_phases + [None]
-                     ua = (2 * uab + ubc) / 3 if uab is not None and ubc is not None else None
-                     ub = (2 * ubc + uca) / 3 if ubc is not None and uca is not None else None
-                     uc = (2 * uca + uab) / 3 if uca is not None and uab is not None else None
-                     u_phases = [ua, ub, uc, un]
-                
-                if i_phases and u_phases:
-                    for i_p, u_p in zip(i_phases, u_phases):
-                        if i_p is not None and u_p is not None:
-                            # p(t) = u(t) * i(t)
-                            p_inst = u_p * i_p
-                            features.append(p_inst[:, None]) # (T, 1)
-                        else:
-                            features.append(np.zeros((self.window_size, 1), dtype=np.float32))
-                
-                if features:
-                    data = np.concatenate(features, axis=1)
-                    collected_features.append(np.nan_to_num(data))
-                else:
-                    if self.feature_columns:
-                        collected_features.append(sample_df.select(self.feature_columns).to_numpy())
-                    else:
-                        collected_features.append(np.zeros((self.window_size, 4), dtype=np.float32))
+                data = np.concatenate(features, axis=1)
+                collected_features.append(np.nan_to_num(data))
 
             elif fm == 'alpha_beta':
                 features = []
                 
-                # Currents
-                i_phases = self._get_best_current_channels(sample_df)
-                if len(i_phases) == 3:
-                    a, b, c = i_phases
-                    alpha = (2/3) * (a - 0.5*b - 0.5*c)
-                    beta = (2/3) * (np.sqrt(3)/2 * (b - c))
-                    zero = (1/3) * (a + b + c)
-                    features.append(np.stack([alpha, beta, zero], axis=1))
-                else:
-                    features.append(np.zeros((self.window_size, 3), dtype=np.float32))
+                # Currents (0, 1, 2)
+                a, b, c = raw_data[:, 0], raw_data[:, 1], raw_data[:, 2]
+                alpha = (2/3) * (a - 0.5*b - 0.5*c)
+                beta = (2/3) * (np.sqrt(3)/2 * (b - c))
+                zero = (1/3) * (a + b + c)
+                features.append(np.stack([alpha, beta, zero], axis=1))
                     
-                # Voltages
-                u_phases, u_type = self._get_best_voltage_channels(sample_df)
-                if u_type == 'line':
-                     uab, ubc, uca = u_phases
-                     ua = (2 * uab + ubc) / 3
-                     ub = (2 * ubc + uca) / 3
-                     uc = (2 * uca + uab) / 3
-                     u_phases = [ua, ub, uc]
+                # Voltages (4, 5, 6)
+                a, b, c = raw_data[:, 4], raw_data[:, 5], raw_data[:, 6]
+                alpha = (2/3) * (a - 0.5*b - 0.5*c)
+                beta = (2/3) * (np.sqrt(3)/2 * (b - c))
+                zero = (1/3) * (a + b + c)
+                features.append(np.stack([alpha, beta, zero], axis=1))
                 
-                if len(u_phases) == 3:
-                    a, b, c = u_phases
-                    alpha = (2/3) * (a - 0.5*b - 0.5*c)
-                    beta = (2/3) * (np.sqrt(3)/2 * (b - c))
-                    zero = (1/3) * (a + b + c)
-                    features.append(np.stack([alpha, beta, zero], axis=1))
-                else:
-                    features.append(np.zeros((self.window_size, 3), dtype=np.float32))
-                
-                if features:
-                    data = np.concatenate(features, axis=1)
-                    collected_features.append(np.nan_to_num(data))
+                data = np.concatenate(features, axis=1)
+                collected_features.append(np.nan_to_num(data))
 
         if not collected_features:
             # Fallback
