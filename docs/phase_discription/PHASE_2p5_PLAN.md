@@ -139,9 +139,9 @@
 ### Этап 5: Эксперименты (Experiments)
 
 **Архитектуры для тестирования:**
-Все эксперименты проводятся на том же наборе моделей, что и в Фазе 2:
+Все эксперименты проводятся на полном наборе моделей для обеспечения честного сравнения:
 - **Baseline:** `SimpleMLP`, `SimpleCNN`, `ResNet1D`
-- **KAN-модели:** `ConvKAN_Matched`, `ConvKAN_Complex`, `SmallMLP_Matched` (с KAN слоями)
+- **KAN-модели:** `SimpleKAN`, `ConvKAN`, `PhysicsKAN` (с арифметическими слоями)
 
 *Стратегия:* Начинаем со всех моделей. Если вычислительные затраты станут критичными (время обучения >24ч на эксперимент), оставляем только 2-3 лучшие архитектуры для финальных экспериментов. Решение принимается на основе метрик первых экспериментов.
 
@@ -168,46 +168,40 @@
 ## 🛠 Технические задачи (To-Do List)
 
 ### Данные (Data)
-- [ ] **Script:** `scripts/data/audit_signals.py` — Проанализировать, какие колонки реально есть во всех файлах. Составить карту доступности.
-- [ ] **Script:** `scripts/data/calc_stats.py` — Расчет Mean/Std для нормализации.
-- [ ] **Code:** Обновить `OscillogramDataset`:
-    - [ ] Добавить `select_channels` логику (приоритет BB -> CL).
-    - [ ] Добавить `relative_angle` (угол относительно фазы А).
-    - [ ] Добавить `sampling_strategy` ('dense', 'strided', 'snapshot').
-    - [ ] Добавить `target_level` ('base', 'full').
-- [ ] **Code:** Реализовать модуль аугментации `osc_tools/preprocessing/augmentation.py`:
-    - [ ] Функции: `add_gaussian_noise`, `amplitude_scaling`, и т.д..
-    - [ ] Интеграция в `OscillogramDataset` через параметр `augment=True` (только для train).
-    - [ ] Поиск старого кода аугментации в других участках кода в истории коммитов или комментариях (она точно была, если не получится - найду сам по истории).
-- [ ] **Code:** Реализовать взвешивание классов:
-    - [ ] Функция `calculate_class_weights` для расчёта весов из датасета.
+- [x] **Script:** `scripts/calculate_dataset_stats.py` — Расчет Mean/Std для нормализации.
+- [x] **Code:** Обновить `OscillogramDataset`:
+    - [x] Добавить `select_channels` логику (приоритет BB -> CL).
+    - [x] Добавить `relative_angle` (угол относительно фазы А).
+    - [x] Добавить `sampling_strategy` ('dense', 'strided', 'snapshot').
+    - [x] Добавить `target_level` ('base', 'full').
+- [x] **Code:** Реализовать модуль аугментации `osc_tools/ml/augmentation.py`:
+    - [x] Функции: `add_gaussian_noise`, `amplitude_scaling`, и т.д..
+    - [x] Интеграция в `OscillogramDataset` через параметр `augment=True` (только для train).
+- [x] **Code:** Реализовать взвешивание классов:
     - [x] Интеграция `pos_weight` в `BCEWithLogitsLoss`. (см. `osc_tools/ml/class_weights.py`, интеграция в `osc_tools/ml/runner.py`)
     - [ ] Опционально: Реализовать `WeightedRandomSampler` для DataLoader.
 - [ ] **Code:** Реализовать иерархический маппинг меток `map_to_parent_class` в `osc_tools/core/label_utils.py`.
 
 ### Модели (Models)
-- [ ] **Code:** Обновить модели:
-    - [ ] Поддержка `BCEWithLogitsLoss` (изменить активацию выхода на Sigmoid или убрать её, если она в Loss).
-    - [ ] Динамический расчет `in_features` для полносвязных слоев после сверток (так как размер по времени будет меняться: 320 -> 20 -> 2).
-- [ ] **Code:** Реализовать арифметические слои для KAN в `osc_tools/ml/kan_conv/arithmetic_layers.py`:
-    - [ ] `MultiplicationLayer`: Поэлементное умножение двух входов.
-    - [ ] `DivisionLayer`: Деление с защитой от нуля (clipping, epsilon, маскирование).
-    - [ ] Подумать о других вариантах (обсудить со мной).
-    - [ ] Интеграция в архитектуру `ConvKAN` как опциональные промежуточные слои.
-- [ ] **Code:** Создать новую модель `ConvKAN_Arithmetic` с встроенными арифметическими слоями.
+- [x] **Code:** Обновить модели:
+    - [x] Поддержка `BCEWithLogitsLoss` (изменить активацию выхода на Sigmoid или убрать её, если она в Loss).
+- [x] **Code:** Реализовать арифметические слои для KAN в `osc_tools/ml/kan_conv/arithmetic.py`:
+    - [x] `MultiplicationLayer`: Поэлементное умножение двух входов.
+    - [x] `DivisionLayer`: Деление с защитой от нуля (clipping, epsilon, маскирование).
+- [x] **Code:** Создать новую модель `PhysicsKAN` с встроенными арифметическими слоями.
 
 ### Обучение (Training)
 - [ ] **Config:** Создать конфиги для новых экспериментов (`configs/phase2_5/exp_strided.yaml`, etc.). При этом не забыть скорректировать структуру, чтобы не путаться в файлах (может касаться и других задач).
-- [ ] **Code:** Внедрить расширенную систему логирования:
-    - [ ] Автоматическое сохранение метрик в `reports/phase2_5/experiment_name/metrics.jsonl`.
+- [x] **Code:** Внедрить расширенную систему логирования:
+    - [x] Автоматическое сохранение метрик в `metrics.jsonl`.
     - [ ] Логирование по эпохам: Train/Val Loss, Accuracy, F1-macro, Balanced Accuracy, per-class metrics.
     - [ ] Сохранение конфигурации эксперимента (гиперпараметры, архитектура) в `config_snapshot.yaml`.
     - [ ] Периодическое сохранение чекпоинтов модели (каждые N эпох).
-- [ ] **Script:** Создать `scripts/analysis/aggregate_reports.py` для постобработки:
-    - [ ] Сбор всех метрик из `reports/phase2_5/*/metrics.jsonl`.
-    - [ ] Генерация сводных таблиц (CSV/Excel) для сравнения экспериментов.
+- [x] **Script:** Создать `scripts/evaluation/aggregate_reports.py` для постобработки:
+    - [x] Сбор всех метрик из `metrics.jsonl`.
+    - [x] Генерация сводных таблиц (CSV/Markdown).
+    - [x] Интеграция `pos_weight` в `BCEWithLogitsLoss`. (см. `osc_tools/ml/class_weights.py`, интеграция в `osc_tools/ml/runner.py`)
     - [ ] Автоматическая генерация графиков (Learning Curves, Confusion Matrices).
-    - [ ] Формирование текстового отчёта в формате для научной статьи (шаблон Markdown).
 
 ---
 

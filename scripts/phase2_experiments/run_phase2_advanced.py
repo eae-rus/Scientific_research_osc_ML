@@ -110,8 +110,8 @@ def main():
     # Список экспериментов
     experiments = []
     
-    # 1. Baseline MLP
-    # Input: 12 channels * 640 points = 7680 features
+    # 1 Базовый MLP (Symmetric Features)
+    # Input: 12 channels flattened
     experiments.append({
         "name": "Baseline_MLP_Sym",
         "model": "SimpleMLP",

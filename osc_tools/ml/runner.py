@@ -6,6 +6,7 @@ from pathlib import Path
 import json
 import time
 from typing import Optional
+from dataclasses import asdict
 
 from osc_tools.ml.config import ExperimentConfig
 from osc_tools.ml.dataset import OscillogramDataset
@@ -27,6 +28,8 @@ class ExperimentRunner:
         
         # Set seed
         torch.manual_seed(config.training.seed)
+        
+        self._save_config()
         
         self.model = self._init_model()
         self.optimizer = self._init_optimizer()
@@ -159,7 +162,7 @@ class ExperimentRunner:
                             
                         elif self.config.data.mode == 'multilabel':
                             y = y.float()
-                            # Sigmoid for multilabel
+                            # сигмоид и порог 0.5
                             probs = torch.sigmoid(outputs)
                             predicted = (probs > 0.5).float()
                             
@@ -171,7 +174,7 @@ class ExperimentRunner:
                 
                 avg_val_loss = val_loss / len(val_loader)
                 
-                # Calculate metrics
+                # рассчет метрик
                 all_preds = np.array(all_preds)
                 all_targets = np.array(all_targets)
                 
@@ -179,8 +182,8 @@ class ExperimentRunner:
                     val_acc = accuracy_score(all_targets, all_preds)
                     val_f1 = f1_score(all_targets, all_preds, average='macro')
                 elif self.config.data.mode == 'multilabel':
-                    # For multilabel, accuracy is exact match ratio (harsh)
-                    # Use F1-macro or F1-weighted
+                    # Для multilabel, accuracy - это точное совпадение (строгое)
+                    # Используйте F1-macro или F1-weighted
                     val_acc = accuracy_score(all_targets, all_preds) # Exact match
                     val_f1 = f1_score(all_targets, all_preds, average='macro')
                     
@@ -212,9 +215,9 @@ class ExperimentRunner:
                   f"Val F1: {val_f1:.4f} | "
                   f"Time: {epoch_time:.2f}s")
             
-            # Save best model (based on Loss or F1?)
-            # Usually Loss is safer, but F1 is better for imbalanced.
-            # Let's stick to Loss for now, or maybe F1 if loss is noisy.
+            # Сохраняем лучшую модель (на основе Loss или F1?)
+            # Обычно Loss безопаснее, но F1 лучше для несбалансированных данных.
+            # Пока остановимся на Loss, или может быть F1, если Loss шумный.
             if val_loader and avg_val_loss < best_val_loss:
                 best_val_loss = avg_val_loss
                 self.save_checkpoint('best_model.pt')
@@ -227,6 +230,11 @@ class ExperimentRunner:
         metrics_file = self.save_dir / "metrics.jsonl"
         with open(metrics_file, "a") as f:
             f.write(json.dumps(metrics) + "\n")
+
+    def _save_config(self):
+        config_file = self.save_dir / "config.json"
+        with open(config_file, "w") as f:
+            json.dump(asdict(self.config), f, indent=4)
 
     def save_checkpoint(self, filename):
         path = self.save_dir / filename
