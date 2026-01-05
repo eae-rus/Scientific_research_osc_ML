@@ -14,6 +14,7 @@ from osc_tools.ml.models import (
     PDR_MLP_v2, FFT_MLP_COMPLEX_v1,
     SimpleKAN, ConvKAN, AutoEncoder
 )
+from osc_tools.ml.class_weights import compute_pos_weight_from_loader
 
 class ExperimentRunner:
     def __init__(self, config: ExperimentConfig):
@@ -27,7 +28,8 @@ class ExperimentRunner:
         
         self.model = self._init_model()
         self.optimizer = self._init_optimizer()
-        self.criterion = self._init_criterion()
+        # Критерий отложим до наличия train_loader (нужны статистики меток для pos_weight)
+        self.criterion = None
         
     def _init_model(self):
         name = self.config.model.name
@@ -61,12 +63,24 @@ class ExperimentRunner:
             weight_decay=self.config.training.weight_decay
         )
     
-    def _init_criterion(self):
+    def _init_criterion(self, train_loader: Optional[DataLoader] = None):
+        """
+        Инициализация критерия. Для режима `multilabel` при наличии флага
+        `config.training.use_pos_weight=True` вычисляем `pos_weight` из `train_loader`.
+        """
         mode = self.config.data.mode
         if mode == 'classification':
             return nn.CrossEntropyLoss()
         elif mode == 'multilabel':
-            return nn.BCEWithLogitsLoss()
+            # Поддержка pos_weight
+            use_pw = getattr(self.config.training, 'use_pos_weight', False) if hasattr(self.config, 'training') else False
+            if use_pw:
+                if train_loader is None:
+                    raise ValueError('train_loader must be provided to compute pos_weight')
+                pw = compute_pos_weight_from_loader(train_loader, device=self.device)
+                return nn.BCEWithLogitsLoss(pos_weight=pw)
+            else:
+                return nn.BCEWithLogitsLoss()
         elif mode == 'reconstruction':
             return nn.MSELoss()
         elif mode == 'segmentation':
@@ -75,6 +89,10 @@ class ExperimentRunner:
             raise ValueError(f"Unknown mode: {mode}")
 
     def train(self, train_loader: DataLoader, val_loader: Optional[DataLoader] = None):
+        # Инициализируем критерий здесь, т.к. для pos_weight нужен train_loader
+        if self.criterion is None:
+            self.criterion = self._init_criterion(train_loader)
+
         print(f"Starting training on {self.device}")
         best_val_loss = float('inf')
         history = {'train_loss': [], 'val_loss': [], 'val_acc': []}
