@@ -14,6 +14,14 @@ sys.path.append(ROOT_DIR)
 # т.к. мы будем обрабатывать их явно позже
 warnings.filterwarnings('ignore', category=RuntimeWarning)
 
+from osc_tools.features.phasor import (
+    calculate_symmetrical_components,
+    calculate_symmetrical_components_from_line,
+    calculate_impedance,
+    calculate_power,
+    calculate_linear_voltages
+)
+
 # --- Вспомогательные функции ---
 
 def sliding_window_fft(signal: np.ndarray, window_size: int, num_harmonics: int, verbose: bool = False) -> np.ndarray:
@@ -65,39 +73,9 @@ def sliding_window_fft(signal: np.ndarray, window_size: int, num_harmonics: int,
 
     return fft_results
 
-def calculate_symmetrical_components(phasor_a: np.ndarray, phasor_b: np.ndarray, phasor_c: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Расчет симметричных составляющих (прямая, обратная, нулевая)."""
-    a = np.exp(1j * 2 * np.pi / 3)
-    a2 = a * a
-    
-    phasor_0 = (phasor_a + phasor_b + phasor_c) / 3.0
-    phasor_1 = (phasor_a + a * phasor_b + a2 * phasor_c) / 3.0
-    phasor_2 = (phasor_a + a2 * phasor_b + a * phasor_c) / 3.0
-    
-    return phasor_1, phasor_2, phasor_0
+# Функции расчета перенесены в osc_tools.features.phasor
+# Импортированы выше для обратной совместимости
 
-def calculate_impedance(voltage: np.ndarray, current: np.ndarray, min_current_threshold: float = 1e-6) -> np.ndarray:
-    """Расчет комплексного сопротивления Z = V / I."""
-    current_safe = current.copy()
-    zero_current_mask = np.abs(current_safe) < min_current_threshold
-    current_safe[zero_current_mask] = np.nan # Замена на NaN для избежания деления на 0
-    impedance = (voltage / current_safe).astype(complex)
-    # Защита от слишком малых токов
-    impedance[zero_current_mask] = 1/min_current_threshold + (1/min_current_threshold)*1j # Задаём максимальный порог, чтобы исключить nan
-    return impedance
-
-def calculate_power(voltage: np.ndarray, current: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Расчет комплексной (S), активной (P) и реактивной (Q) мощности."""
-    s_complex = voltage * np.conj(current)
-    p_active = s_complex.real
-    q_reactive = s_complex.imag
-    # s_apparent = np.abs(s_complex) # Модуль можно получить позже из s_complex
-    return s_complex, p_active, q_reactive
-
-def calculate_linear_voltages(ua: np.ndarray, ub: np.ndarray, uc: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Расчет линейных напряжений."""
-    uab = ua - ub
-    ubc = ub - uc
     uca = uc - ua
     return uab, ubc, uca
 

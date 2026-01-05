@@ -112,9 +112,11 @@ class TestOscillogramDatasetFeatures:
             'IA': np.sin(2*np.pi*f*t),
             'IB': np.sin(2*np.pi*f*t - 2*np.pi/3),
             'IC': np.sin(2*np.pi*f*t + 2*np.pi/3),
+            'IN': 0.1 * np.sin(2*np.pi*f*t),  # Нулевой ток
             'UA': 100 * np.sin(2*np.pi*f*t),
             'UB': 100 * np.sin(2*np.pi*f*t - 2*np.pi/3),
             'UC': 100 * np.sin(2*np.pi*f*t + 2*np.pi/3),
+            'UN': 0.01 * np.ones(length),  # Малое нулевое напряжение для валидации
             'target': np.zeros(length)
         }
         return pl.DataFrame(data)
@@ -134,9 +136,9 @@ class TestOscillogramDatasetFeatures:
         )
         
         x, y = ds[0]
-        # Режим "power": 3 фазы * 2 (P, Q) = 6 каналов
-        # Shape: (Channels, Time) -> (6, 32)
-        assert x.shape == (6, 32)
+        # Режим "power": 4 фазы * 2 (P, Q) = 8 каналов
+        # Shape: (Channels, Time) -> (8, 32)
+        assert x.shape == (8, 32)
 
     def test_combined_feature_mode(self, physics_data, indices):
         ds = OscillogramDataset(
@@ -151,10 +153,10 @@ class TestOscillogramDatasetFeatures:
         
         x, y = ds[0]
         # Raw: 2 канала (IA, UA)
-        # Power: 6 каналов (3 фазы * 2)
-        # Всего: 8 каналов
-        # Shape: (Channels, Time) -> (8, 32)
-        assert x.shape == (8, 32)
+        # Power: 8 каналов (4 фазы * 2)
+        # Всего: 10 каналов
+        # Shape: (Channels, Time) -> (10, 32)
+        assert x.shape == (10, 32)
 
     def test_symmetric_feature_mode(self, physics_data, indices):
         ds = OscillogramDataset(
