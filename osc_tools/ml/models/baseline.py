@@ -7,7 +7,7 @@ class SimpleMLP(BaseModel):
     Простой многослойный перцептрон (MLP) для базовых экспериментов.
     Поддерживает настраиваемое количество слоев, нейронов, Dropout и BatchNormalization.
     """
-    def __init__(self, input_size, hidden_sizes=[128, 64], output_size=1, dropout=0.2, use_bn=True):
+    def __init__(self, input_size: int, hidden_sizes: list = [128, 64], output_size: int = 1, dropout: float = 0.2, use_bn: bool = True):
         super().__init__()
         
         layers = []
@@ -33,39 +33,46 @@ class SimpleMLP(BaseModel):
 
 class SimpleCNN(BaseModel):
     """
-    Простая 1D сверточная сеть (CNN) для базовых экспериментов.
+    Сверточная сеть (CNN) с гибкой архитектурой.
+    Поддерживает произвольное количество слоев через список channels.
     """
-    def __init__(self, in_channels, num_classes, base_filters=16, kernel_size=3):
+    def __init__(self, in_channels: int, num_classes: int, channels: list = [16, 32, 64], 
+                 kernel_size: int = 3, dropout: float = 0.2, use_bn: bool = True,
+                 pool_every: int = 1):
         super().__init__()
         
-        self.features = nn.Sequential(
-            # Block 1
-            nn.Conv1d(in_channels, base_filters, kernel_size, padding=kernel_size//2),
-            nn.BatchNorm1d(base_filters),
-            nn.ReLU(),
-            nn.MaxPool1d(2),
-            
-            # Block 2
-            nn.Conv1d(base_filters, base_filters*2, kernel_size, padding=kernel_size//2),
-            nn.BatchNorm1d(base_filters*2),
-            nn.ReLU(),
-            nn.MaxPool1d(2),
-            
-            # Block 3
-            nn.Conv1d(base_filters*2, base_filters*4, kernel_size, padding=kernel_size//2),
-            nn.BatchNorm1d(base_filters*4),
-            nn.ReLU(),
-            nn.AdaptiveAvgPool1d(1) # Global Average Pooling
-        )
+        layers = []
+        curr_channels = in_channels
         
+        for i, out_channels in enumerate(channels):
+            # Convolutional block
+            layers.append(nn.Conv1d(curr_channels, out_channels, kernel_size, padding=kernel_size//2))
+            if use_bn:
+                layers.append(nn.BatchNorm1d(out_channels))
+            layers.append(nn.ReLU())
+            
+            # Pooling
+            if (i + 1) % pool_every == 0:
+                layers.append(nn.MaxPool1d(2))
+            
+            if dropout > 0:
+                layers.append(nn.Dropout(dropout))
+                
+            curr_channels = out_channels
+            
+        self.features = nn.Sequential(*layers)
+        self.pool = nn.AdaptiveAvgPool1d(1)
+        
+        # Classifier
         self.classifier = nn.Sequential(
-            nn.Linear(base_filters*4, base_filters*2),
+            nn.Linear(curr_channels, curr_channels // 2),
             nn.ReLU(),
-            nn.Linear(base_filters*2, num_classes)
+            nn.Linear(curr_channels // 2, num_classes)
         )
 
     def forward(self, x):
         x = self.features(x)
+        x = self.pool(x)
         x = x.flatten(1)
         x = self.classifier(x)
         return x

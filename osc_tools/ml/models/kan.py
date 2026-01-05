@@ -9,7 +9,7 @@ class SimpleKAN(BaseModel):
     Простая полносвязная сеть на основе KAN (Kolmogorov-Arnold Network).
     Аналог SimpleMLP, но с использованием KANLinear слоев.
     """
-    def __init__(self, input_size, hidden_sizes=[64, 32], output_size=1, grid_size=5, spline_order=3, base_activation=torch.nn.SiLU):
+    def __init__(self, input_size, hidden_sizes=[64, 32], output_size=1, grid_size=5, spline_order=3, dropout=0.0, base_activation=torch.nn.SiLU):
         super().__init__()
         
         layers = []
@@ -25,7 +25,8 @@ class SimpleKAN(BaseModel):
                     base_activation=base_activation
                 )
             )
-            # KANLinear уже содержит функцию активации (SiLU по умолчанию)
+            if dropout > 0:
+                layers.append(nn.Dropout(dropout))
             prev_size = size
             
         # Выходной слой
@@ -48,33 +49,55 @@ class SimpleKAN(BaseModel):
 
 class ConvKAN(BaseModel):
     """
-    Сверточная сеть на основе KAN (Convolutional KAN).
-    Использует KANConv1d для извлечения признаков.
+    Сверточная сеть на основе KAN (Convolutional KAN) с гибкой архитектурой.
+    Поддерживает произвольное количество слоев через список channels.
     """
-    def __init__(self, in_channels, num_classes, base_filters=8, kernel_size=3, grid_size=5, base_activation=torch.nn.SiLU):
+    def __init__(self, in_channels: int, num_classes: int, channels: list = [8, 16, 32], 
+                 kernel_size: int = 3, grid_size: int = 5, spline_order: int = 3,
+                 dropout: float = 0.2, pool_every: int = 1, base_activation=torch.nn.SiLU):
         super().__init__()
         
-        self.features = nn.Sequential(
-            # Block 1
-            KANConv1d(in_channels, base_filters, kernel_size=kernel_size, padding=kernel_size//2, grid_size=grid_size, base_activation=base_activation),
-            nn.MaxPool1d(2),
-            
-            # Block 2
-            KANConv1d(base_filters, base_filters*2, kernel_size=kernel_size, padding=kernel_size//2, grid_size=grid_size, base_activation=base_activation),
-            nn.MaxPool1d(2),
-            
-            # Block 3
-            KANConv1d(base_filters*2, base_filters*4, kernel_size=kernel_size, padding=kernel_size//2, grid_size=grid_size, base_activation=base_activation),
-            nn.AdaptiveAvgPool1d(1) # Global Average Pooling
-        )
+        layers = []
+        curr_channels = in_channels
         
+        for i, out_channels in enumerate(channels):
+            # KAN Convolutional block
+            # grid_size может быть списком или числом. Если список - берем по индексу.
+            curr_grid = grid_size[i] if isinstance(grid_size, list) else grid_size
+            
+            layers.append(
+                KANConv1d(
+                    curr_channels, 
+                    out_channels, 
+                    kernel_size=kernel_size, 
+                    padding=kernel_size//2, 
+                    grid_size=curr_grid, 
+                    spline_order=spline_order,
+                    base_activation=base_activation
+                )
+            )
+            
+            # Pooling
+            if (i + 1) % pool_every == 0:
+                layers.append(nn.MaxPool1d(2))
+            
+            if dropout > 0:
+                layers.append(nn.Dropout(dropout))
+                
+            curr_channels = out_channels
+            
+        self.features = nn.Sequential(*layers)
+        self.pool = nn.AdaptiveAvgPool1d(1)
+        
+        # Classifier
         self.classifier = nn.Sequential(
-            KANLinear(base_filters*4, base_filters*2, grid_size=grid_size, base_activation=base_activation),
-            KANLinear(base_filters*2, num_classes, grid_size=grid_size, base_activation=base_activation)
+            KANLinear(curr_channels, curr_channels // 2, grid_size=grid_size[0] if isinstance(grid_size, list) else grid_size, base_activation=base_activation),
+            KANLinear(curr_channels // 2, num_classes, grid_size=grid_size[0] if isinstance(grid_size, list) else grid_size, base_activation=base_activation)
         )
 
     def forward(self, x):
         x = self.features(x)
+        x = self.pool(x)
         x = x.flatten(1)
         x = self.classifier(x)
         return x
@@ -86,7 +109,9 @@ class PhysicsKAN(BaseModel):
     Вычисляет Power (I*U) и Admittance (I/U), объединяет с исходными сигналами
     и подает в ConvKAN.
     """
-    def __init__(self, in_channels, num_classes, base_filters=8, kernel_size=3, grid_size=5, base_activation=torch.nn.SiLU):
+    def __init__(self, in_channels: int, num_classes: int, channels: list = [8, 16, 32], 
+                 kernel_size: int = 3, grid_size: int = 5, spline_order: int = 3,
+                 dropout: float = 0.2, pool_every: int = 1, base_activation=torch.nn.SiLU):
         super().__init__()
         
         if in_channels % 2 != 0:
@@ -101,9 +126,12 @@ class PhysicsKAN(BaseModel):
         self.conv_kan = ConvKAN(
             in_channels=conv_in_channels,
             num_classes=num_classes,
-            base_filters=base_filters,
+            channels=channels,
             kernel_size=kernel_size,
             grid_size=grid_size,
+            spline_order=spline_order,
+            dropout=dropout,
+            pool_every=pool_every,
             base_activation=base_activation
         )
 
