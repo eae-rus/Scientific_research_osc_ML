@@ -12,9 +12,11 @@ from osc_tools.ml.dataset import OscillogramDataset
 from osc_tools.ml.models import (
     SimpleMLP, SimpleCNN, ResNet1D, 
     PDR_MLP_v2, FFT_MLP_COMPLEX_v1,
-    SimpleKAN, ConvKAN, AutoEncoder
+    SimpleKAN, ConvKAN, PhysicsKAN, AutoEncoder
 )
 from osc_tools.ml.class_weights import compute_pos_weight_from_loader
+from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
+import numpy as np
 
 class ExperimentRunner:
     def __init__(self, config: ExperimentConfig):
@@ -49,6 +51,8 @@ class ExperimentRunner:
             model = SimpleKAN(**params)
         elif name == 'ConvKAN':
             model = ConvKAN(**params)
+        elif name == 'PhysicsKAN':
+            model = PhysicsKAN(**params)
         elif name == 'AutoEncoder':
             model = AutoEncoder(**params)
         else:
@@ -95,7 +99,7 @@ class ExperimentRunner:
 
         print(f"Starting training on {self.device}")
         best_val_loss = float('inf')
-        history = {'train_loss': [], 'val_loss': [], 'val_acc': []}
+        history = {'train_loss': [], 'val_loss': [], 'val_acc': [], 'val_f1': []}
         
         for epoch in range(self.config.training.epochs):
             start_time = time.time()
@@ -131,6 +135,9 @@ class ExperimentRunner:
             val_correct = 0
             val_total = 0
             
+            all_preds = []
+            all_targets = []
+            
             if val_loader:
                 self.model.eval()
                 with torch.no_grad():
@@ -146,17 +153,45 @@ class ExperimentRunner:
                             _, predicted = torch.max(outputs.data, 1)
                             val_total += y.size(0)
                             val_correct += (predicted == y).sum().item()
+                            
+                            all_preds.extend(predicted.cpu().numpy())
+                            all_targets.extend(y.cpu().numpy())
+                            
+                        elif self.config.data.mode == 'multilabel':
+                            y = y.float()
+                            # Sigmoid for multilabel
+                            probs = torch.sigmoid(outputs)
+                            predicted = (probs > 0.5).float()
+                            
+                            all_preds.extend(predicted.cpu().numpy())
+                            all_targets.extend(y.cpu().numpy())
                                 
                         loss = self.criterion(outputs, y)
                         val_loss += loss.item()
+                
                 avg_val_loss = val_loss / len(val_loader)
-                val_acc = val_correct / val_total if val_total > 0 else 0.0
+                
+                # Calculate metrics
+                all_preds = np.array(all_preds)
+                all_targets = np.array(all_targets)
+                
+                if self.config.data.mode == 'classification':
+                    val_acc = accuracy_score(all_targets, all_preds)
+                    val_f1 = f1_score(all_targets, all_preds, average='macro')
+                elif self.config.data.mode == 'multilabel':
+                    # For multilabel, accuracy is exact match ratio (harsh)
+                    # Use F1-macro or F1-weighted
+                    val_acc = accuracy_score(all_targets, all_preds) # Exact match
+                    val_f1 = f1_score(all_targets, all_preds, average='macro')
+                    
             else:
                 avg_val_loss = 0.0
                 val_acc = 0.0
+                val_f1 = 0.0
             
             history['val_loss'].append(avg_val_loss)
             history['val_acc'].append(val_acc)
+            history['val_f1'].append(val_f1)
                 
             # Logging
             epoch_time = time.time() - start_time
@@ -165,6 +200,7 @@ class ExperimentRunner:
                 "train_loss": avg_train_loss,
                 "val_loss": avg_val_loss,
                 "val_acc": val_acc,
+                "val_f1": val_f1,
                 "time": epoch_time
             }
             self._save_metrics(metrics)
@@ -173,9 +209,12 @@ class ExperimentRunner:
                   f"Train Loss: {avg_train_loss:.4f} | "
                   f"Val Loss: {avg_val_loss:.4f} | "
                   f"Val Acc: {val_acc:.4f} | "
+                  f"Val F1: {val_f1:.4f} | "
                   f"Time: {epoch_time:.2f}s")
             
-            # Save best model
+            # Save best model (based on Loss or F1?)
+            # Usually Loss is safer, but F1 is better for imbalanced.
+            # Let's stick to Loss for now, or maybe F1 if loss is noisy.
             if val_loader and avg_val_loss < best_val_loss:
                 best_val_loss = avg_val_loss
                 self.save_checkpoint('best_model.pt')

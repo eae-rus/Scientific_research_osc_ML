@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from osc_tools.ml.models.base import BaseModel
 from osc_tools.ml.layers.kan_layers import KANLinear, KANConv1d
+from osc_tools.ml.kan_conv.arithmetic import MultiplicationLayer, DivisionLayer
 
 class SimpleKAN(BaseModel):
     """
@@ -77,3 +78,44 @@ class ConvKAN(BaseModel):
         x = x.flatten(1)
         x = self.classifier(x)
         return x
+
+class PhysicsKAN(BaseModel):
+    """
+    KAN модель с физически интерпретируемыми слоями (умножение/деление).
+    Принимает на вход [Currents, Voltages].
+    Вычисляет Power (I*U) и Admittance (I/U), объединяет с исходными сигналами
+    и подает в ConvKAN.
+    """
+    def __init__(self, in_channels, num_classes, base_filters=8, kernel_size=3, grid_size=5, base_activation=torch.nn.SiLU):
+        super().__init__()
+        
+        if in_channels % 2 != 0:
+            raise ValueError(f"PhysicsKAN requires even number of input channels (I, U pairs), got {in_channels}")
+            
+        self.mult = MultiplicationLayer()
+        self.div = DivisionLayer()
+        
+        # Input to ConvKAN: Original (C) + Mult (C/2) + Div (C/2) = 2 * C
+        conv_in_channels = in_channels + (in_channels // 2) * 2
+        
+        self.conv_kan = ConvKAN(
+            in_channels=conv_in_channels,
+            num_classes=num_classes,
+            base_filters=base_filters,
+            kernel_size=kernel_size,
+            grid_size=grid_size,
+            base_activation=base_activation
+        )
+
+    def forward(self, x):
+        # x: [Batch, Channels, Length]
+        # Предполагается, что каналы упорядочены так, что первая половина - это I, вторая - U (или наоборот).
+        # MultiplicationLayer делает x[:half] * x[half:]
+        
+        s = self.mult(x) # Power-like features
+        z = self.div(x)  # Impedance-like features
+        
+        # Concatenate along channel dimension
+        x_combined = torch.cat([x, s, z], dim=1)
+        
+        return self.conv_kan(x_combined)
