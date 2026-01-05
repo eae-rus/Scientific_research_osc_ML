@@ -17,6 +17,7 @@ from osc_tools.ml.dataset import OscillogramDataset
 def main():
     # 1. Setup Paths
     METADATA_FILE = ROOT_DIR / 'data' / 'ml_datasets' / 'labeled_2025_12_03.csv'
+    norm_coef_path = METADATA_FILE.parent / 'norm_coef_all_v1.4.csv'
     EXPERIMENTS_DIR = ROOT_DIR / 'experiments' / 'features'
     EXPERIMENTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -144,7 +145,7 @@ def main():
                 feature_mode=fm,
                 feature_columns=feature_cols,
                 target_columns="target_enc"
-            )
+            , physical_normalization=True, norm_coef_path=str(norm_coef_path))
             
             val_ds = OscillogramDataset(
                 dataframe=df,
@@ -154,7 +155,7 @@ def main():
                 feature_mode=fm,
                 feature_columns=feature_cols,
                 target_columns="target_enc"
-            )
+            , physical_normalization=True, norm_coef_path=str(norm_coef_path))
             
             train_loader = torch.utils.data.DataLoader(train_ds, batch_size=32, shuffle=True)
             val_loader = torch.utils.data.DataLoader(val_ds, batch_size=32, shuffle=False)

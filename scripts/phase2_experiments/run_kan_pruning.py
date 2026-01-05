@@ -60,6 +60,9 @@ def load_data(batch_size=64):
     valid_files = file_stats.filter(pl.col("length") >= WINDOW_SIZE)
     indices = valid_files["start_idx"].to_list()
     
+    # Путь к файлу коэффициентов нормализации по сенсорам
+    norm_coef_path = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
+    
     # Разбиение выборки
     generator = torch.Generator().manual_seed(42)
     # Здесь мы разбиваем датасет случайным образом (фиксированный seed для воспроизводимости).
@@ -69,7 +72,8 @@ def load_data(batch_size=64):
         indices=indices,
         window_size=WINDOW_SIZE,
         feature_mode='symmetric',
-        target_columns="target_enc"
+        target_columns="target_enc",
+        physical_normalization=True, norm_coef_path=str(norm_coef_path)
     )
     
     train_size = int(0.8 * len(dataset))

@@ -109,6 +109,8 @@ def main():
             data=data_config,
             training=train_config
         )
+        # Путь к файлу коэффициентов нормализации по сенсорам
+        norm_coef_path = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
         
         # Датасет с симметричными признаками
         # Примечание: необходимо убедиться, что `OscillogramDataset` действительно выдаёт 12 каналов для 'symmetric'.
@@ -116,13 +118,15 @@ def main():
         train_ds = OscillogramDataset(
             dataframe=df, indices=train_indices, window_size=WINDOW_SIZE,
             mode='classification', feature_mode='symmetric',
-            target_columns="target_enc"
+            target_columns="target_enc",
+            physical_normalization=True, norm_coef_path=str(norm_coef_path)
         )
         
         val_ds = OscillogramDataset(
             dataframe=df, indices=val_indices, window_size=WINDOW_SIZE,
             mode='classification', feature_mode='symmetric',
-            target_columns="target_enc"
+            target_columns="target_enc",
+            physical_normalization=True, norm_coef_path=str(norm_coef_path)
         )
         
         # Проверяем фактическое число входных каналов в выборке

@@ -65,6 +65,9 @@ def main():
     train_indices = indices[:split_idx]
     val_indices = indices[split_idx:]
     
+    # Путь к файлу коэффициентов нормализации по сенсорам
+    norm_coef_path = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
+    
     # 5. Grid Search
     grid_sizes = [3, 5, 10, 15]
     
@@ -113,7 +116,8 @@ def main():
             mode='classification',
             feature_mode='symmetric',
             feature_columns=feature_cols,
-            target_columns="target_enc"
+            target_columns="target_enc",
+            physical_normalization=True, norm_coef_path=str(norm_coef_path)
         )
         
         val_ds = OscillogramDataset(
@@ -123,7 +127,8 @@ def main():
             mode='classification',
             feature_mode='symmetric',
             feature_columns=feature_cols,
-            target_columns="target_enc"
+            target_columns="target_enc",
+            physical_normalization=True, norm_coef_path=str(norm_coef_path)
         )
         
         train_loader = torch.utils.data.DataLoader(train_ds, batch_size=32, shuffle=True)

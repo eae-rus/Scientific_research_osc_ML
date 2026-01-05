@@ -27,7 +27,9 @@ class OscillogramDataset(Dataset):
         sampling_rate: int = 1600,
         feature_columns: Optional[List[str]] = None,
         target_columns: Optional[Union[str, List[str]]] = None,
-        target_position: Optional[int] = None
+        target_position: Optional[int] = None,
+        physical_normalization: bool = False,
+        norm_coef_path: Optional[str] = None
     ):
         """
         Args:
@@ -42,6 +44,8 @@ class OscillogramDataset(Dataset):
             target_columns: Колонка(и) для выхода (Y).
             target_position: Позиция целевого значения внутри окна (для classification). 
                              По умолчанию - последнее значение (window_size - 1).
+            physical_normalization: Применять ли физическую нормализацию по коэффициентам.
+            norm_coef_path: Путь к CSV файлу с коэффициентами нормализации.
         """
         if isinstance(dataframe, pl.LazyFrame):
             self.data = dataframe.collect()
@@ -55,6 +59,16 @@ class OscillogramDataset(Dataset):
         self.sampling_rate = sampling_rate
         self.feature_columns = feature_columns
         self.target_columns = target_columns
+        self.physical_normalization = physical_normalization
+        
+        self.norm_coef_df = None
+        if self.physical_normalization:
+            if norm_coef_path is None:
+                raise ValueError("norm_coef_path must be provided if physical_normalization is True")
+            try:
+                self.norm_coef_df = pl.read_csv(norm_coef_path, infer_schema_length=100000)
+            except Exception as e:
+                print(f"Предупреждение: не удалось загрузить коэффициенты нормализации из {norm_coef_path}: {e}")
         
         if target_position is not None:
             self.target_position = target_position
@@ -71,8 +85,159 @@ class OscillogramDataset(Dataset):
             if fm not in valid_feature_modes:
                 raise ValueError(f"Unknown feature_mode: {fm}. Valid modes: {valid_feature_modes}")
 
+    @staticmethod
+    def create_indices(
+        df: pl.DataFrame, 
+        window_size: int, 
+        mode: str = 'train', 
+        stride: Optional[int] = None,
+        min_length: Optional[int] = None
+    ) -> List[Union[int, Tuple[int, int]]]:
+        """
+        Создает индексы для Dataset.
+        
+        Args:
+            df: DataFrame с данными. Должен содержать колонку 'file_name'.
+            window_size: Размер окна.
+            mode: 'train' (random sampling) или 'val'/'test' (sliding window).
+            stride: Шаг для sliding window (только для val/test). По умолчанию window_size // 2.
+            min_length: Минимальная длина файла для включения. По умолчанию window_size.
+            
+        Returns:
+            Список индексов (int для val, tuple для train).
+        """
+        if 'file_name' not in df.columns:
+            raise ValueError("DataFrame must contain 'file_name' column to generate indices.")
+            
+        if min_length is None:
+            min_length = window_size
+            
+        if stride is None:
+            stride = window_size // 2
+
+        # Добавляем номера строк, если их нет
+        if 'row_nr' not in df.columns:
+            df = df.with_row_index("row_nr")
+            
+        # Группируем по файлам
+        file_stats = df.group_by("file_name").agg([
+            pl.col("row_nr").min().alias("start_idx"),
+            pl.len().alias("length")
+        ]).sort("start_idx")
+        
+        # Фильтруем короткие файлы
+        valid_files = file_stats.filter(pl.col("length") >= min_length)
+        
+        indices = []
+        
+        if mode == 'train':
+            # Для обучения возвращаем кортежи (start, length)
+            # Dataset сам выберет случайное окно внутри
+            for row in valid_files.iter_rows(named=True):
+                indices.append((row['start_idx'], row['length']))
+                
+        else: # val, test
+            # Для валидации генерируем фиксированные окна с шагом
+            for row in valid_files.iter_rows(named=True):
+                start = row['start_idx']
+                length = row['length']
+                
+                # Генерируем окна: start, start+stride, ..., пока end <= start+length
+                curr = 0
+                while curr + window_size <= length:
+                    indices.append(start + curr)
+                    curr += stride
+                    
+                # Опционально: добавить последнее окно, если оно не покрыто?
+                # Пока оставим только полные окна
+                
+        return indices
+
     def __len__(self):
         return len(self.indices)
+
+    def _apply_physical_normalization(self, df: pl.DataFrame, file_name: str) -> pl.DataFrame:
+        """
+        Применяет физическую нормализацию к DataFrame на основе коэффициентов.
+        """
+        if self.norm_coef_df is None:
+            return df
+            
+        # Парсинг имени файла: hash_Bus X -> hash, X
+        # Пример: 00d4242f4fa66c50a89a7fc565f8ea58_Bus 1
+        try:
+            parts = file_name[0].split('_Bus ')
+            if len(parts) != 2:
+                return df
+            file_hash = parts[0]
+            bus_num = int(parts[1].split('_')[0]) # На случай если там еще что-то есть
+        except Exception:
+            return df
+            
+        # Поиск строки в коэффициентах
+        norm_row = self.norm_coef_df.filter(pl.col("name") == file_hash)
+        if norm_row.is_empty():
+            return df
+            
+        # Проверка флага norm (YES...)
+        norm_val = str(norm_row.get_column("norm")[0])
+        if "YES" not in norm_val:
+            return df
+            
+        new_cols = {}
+        
+        # Предварительно соберем списки колонок для ускорения
+        ip_cols = ['IA', 'IB', 'IC']
+        iz_cols = ['IN']
+        ub_cols = [c for c in df.columns if 'BB' in c]
+        uc_cols = [c for c in df.columns if 'CL' in c]
+        
+        # 1. Фазные токи (Ip)
+        col_ip = f"{bus_num}Ip_base"
+        if col_ip in norm_row.columns:
+            val = norm_row.get_column(col_ip)[0]
+            if val is not None:
+                nominal = 20 * float(val)
+                if nominal > 0:
+                    for c in ip_cols:
+                        if c in df.columns:
+                            new_cols[c] = pl.col(c).cast(pl.Float32) / nominal
+
+        # 2. Ток нулевой последовательности (Iz)
+        col_iz = f"{bus_num}Iz_base"
+        if col_iz in norm_row.columns:
+            val = norm_row.get_column(col_iz)[0]
+            if val is not None:
+                nominal = 5 * float(val)
+                if nominal > 0:
+                    for c in iz_cols:
+                        if c in df.columns:
+                            new_cols[c] = pl.col(c).cast(pl.Float32) / nominal
+
+        # 3. Напряжения СШ (Ub) -> * BB
+        col_ub = f"{bus_num}Ub_base"
+        if col_ub in norm_row.columns:
+            val = norm_row.get_column(col_ub)[0]
+            if val is not None:
+                nominal = 3 * float(val)
+                if nominal > 0:
+                    for c in ub_cols:
+                        new_cols[c] = pl.col(c).cast(pl.Float32) / nominal
+
+        # 4. Напряжения КЛ (Uc) -> * CL
+        col_uc = f"{bus_num}Uc_base"
+        if col_uc in norm_row.columns:
+            val = norm_row.get_column(col_uc)[0]
+            if val is not None:
+                nominal = 3 * float(val)
+                if nominal > 0:
+                    for c in uc_cols:
+                        new_cols[c] = pl.col(c).cast(pl.Float32) / nominal
+
+        if new_cols:
+            return df.with_columns(**new_cols)
+            
+        return df
 
     def _get_best_voltage_channels(self, df: pl.DataFrame) -> Tuple[List[np.ndarray], str]:
         """
@@ -87,8 +252,12 @@ class OscillogramDataset(Dataset):
                 return False
             # Проверка: есть ли в канале значения, отличные от 0 (с учетом шума)
             # Берем numpy array для скорости
-            data = df[name].to_numpy()
-            # Простая проверка: если max(abs) < epsilon, считаем канал пустым
+            try:
+                data = df[name].cast(pl.Float32).to_numpy()
+            except Exception:
+                return False
+            
+            # Простая проверка: если max(abs) < epsilon=1e-4, считаем канал пустым
             if np.max(np.abs(np.nan_to_num(data))) < 1e-4:
                 return False
             return True
@@ -97,42 +266,42 @@ class OscillogramDataset(Dataset):
         candidates = ['UA BB', 'UB BB', 'UC BB']
         un_candidates = ['UN BB']
         if all(is_valid_channel(c) for c in candidates) and is_valid_channel(un_candidates[0]):
-            return [df[c].to_numpy() for c in candidates + un_candidates], 'phase'
+            return [df[c].cast(pl.Float32).to_numpy() for c in candidates + un_candidates], 'phase'
             
         # 2. Фазные напряжения (Линия - Cable Line) + Un
         candidates = ['UA CL', 'UB CL', 'UC CL']
         un_candidates = ['UN CL']
         if all(is_valid_channel(c) for c in candidates) and is_valid_channel(un_candidates[0]):
-            return [df[c].to_numpy() for c in candidates + un_candidates], 'phase'
+            return [df[c].cast(pl.Float32).to_numpy() for c in candidates + un_candidates], 'phase'
             
         # 3. Фазные напряжения (Простые) + Un
         candidates = ['UA', 'UB', 'UC']
         un_candidates = ['UN']
         if all(is_valid_channel(c) for c in candidates) and is_valid_channel(un_candidates[0]):
-            return [df[c].to_numpy() for c in candidates + un_candidates], 'phase'
+            return [df[c].cast(pl.Float32).to_numpy() for c in candidates + un_candidates], 'phase'
             
         # 4. Линейные напряжения (Шины - Bus Bar) + Un
         candidates = ['UAB BB', 'UBC BB', 'UCA BB']
         un_candidates = ['UN BB']
         if all(is_valid_channel(c) for c in candidates):
-            voltages = [df[c].to_numpy() for c in candidates]
-            un_data = df[un_candidates[0]].to_numpy() if is_valid_channel(un_candidates[0]) else np.zeros(len(df), dtype=np.float32)
+            voltages = [df[c].cast(pl.Float32).to_numpy() for c in candidates]
+            un_data = df[un_candidates[0]].cast(pl.Float32).to_numpy() if is_valid_channel(un_candidates[0]) else np.zeros(len(df), dtype=np.float32)
             return voltages + [un_data], 'line'
         
         # 5. Линейные напряжения (Линия - Cable Line) + Un
         candidates = ['UAB CL', 'UBC CL', 'UCA CL']
         un_candidates = ['UN CL']
         if all(is_valid_channel(c) for c in candidates):
-            voltages = [df[c].to_numpy() for c in candidates]
-            un_data = df[un_candidates[0]].to_numpy() if is_valid_channel(un_candidates[0]) else np.zeros(len(df), dtype=np.float32)
+            voltages = [df[c].cast(pl.Float32).to_numpy() for c in candidates]
+            un_data = df[un_candidates[0]].cast(pl.Float32).to_numpy() if is_valid_channel(un_candidates[0]) else np.zeros(len(df), dtype=np.float32)
             return voltages + [un_data], 'line'
         
         # 6. Линейные напряжения + Un
         candidates = ['UAB', 'UBC', 'UCA']
         un_candidates = ['UN']
         if all(is_valid_channel(c) for c in candidates):
-            voltages = [df[c].to_numpy() for c in candidates]
-            un_data = df[un_candidates[0]].to_numpy() if is_valid_channel(un_candidates[0]) else np.zeros(len(df), dtype=np.float32)
+            voltages = [df[c].cast(pl.Float32).to_numpy() for c in candidates]
+            un_data = df[un_candidates[0]].cast(pl.Float32).to_numpy() if is_valid_channel(un_candidates[0]) else np.zeros(len(df), dtype=np.float32)
             return voltages + [un_data], 'line'
              
         return [], 'none'
@@ -148,7 +317,10 @@ class OscillogramDataset(Dataset):
         def get_data_if_valid(name: str) -> Optional[np.ndarray]:
             if name not in cols:
                 return None
-            data = df[name].to_numpy()
+            try:
+                data = df[name].cast(pl.Float32).to_numpy()
+            except Exception:
+                return None
             if np.max(np.abs(np.nan_to_num(data))) < 1e-6:
                 return None
             return data
@@ -204,7 +376,24 @@ class OscillogramDataset(Dataset):
             # Если `indices` передан как DataFrame — ожидаем одну колонку со стартовыми индексами окон
             start_idx = self.indices.row(idx)[0]
         else:
-            start_idx = self.indices[idx]
+            index_item = self.indices[idx]
+            
+            if isinstance(index_item, (tuple, list)) and len(index_item) == 2:
+                # Random Sampling Mode: (file_start_idx, file_length)
+                # Используется для обучения: выбираем случайное окно внутри файла
+                file_start, file_len = index_item
+                
+                if file_len <= self.window_size:
+                    start_idx = file_start
+                else:
+                    # Random offset
+                    max_offset = file_len - self.window_size
+                    offset = np.random.randint(0, max_offset + 1)
+                    start_idx = file_start + offset
+            else:
+                # Fixed Window Mode: index_item is start_idx
+                # Используется для валидации/теста: фиксированное окно
+                start_idx = index_item
 
         # Проверка на выход за границы
         if start_idx + self.window_size > len(self.data):
@@ -213,6 +402,17 @@ class OscillogramDataset(Dataset):
         # Извлечение окна данных
         # Polars slicing (эффективно)
         sample_df = self.data.slice(start_idx, self.window_size)
+        
+        # Физическая нормализация (если включена)
+        if self.physical_normalization and 'file_name' in sample_df.columns:
+            # Берем имя файла из первой строки окна (предполагаем, что окно внутри одного файла)
+            # Если окно пересекает границу файлов (чего быть не должно при правильных индексах),
+            # то нормализация по первому файлу может быть не совсем корректной, но это edge case.
+            try:
+                file_name = sample_df['file_name'][0]
+                sample_df = self._apply_physical_normalization(sample_df, file_name)
+            except Exception:
+                pass # Fallback to raw data if something goes wrong
         
         collected_features = []
         

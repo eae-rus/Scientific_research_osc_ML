@@ -68,7 +68,8 @@ def main():
     
     print(f"Train samples: {len(train_indices)}, Val samples: {len(val_indices)}")
 
-    # === Experiment 1: Parameter Matched (SmallMLP vs ConvKAN) ===
+    # Путь к файлу коэффициентов нормализации по сенсорам
+    norm_coef_path = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
     print("\n=== Эксперимент 1: Сравнение при равном числе параметров ===")
     
     # 1.1 SmallMLP (симметричные признаки)
@@ -98,12 +99,14 @@ def main():
     train_ds_sym = OscillogramDataset(
         dataframe=df, indices=train_indices, window_size=WINDOW_SIZE,
         mode='classification', feature_mode='symmetric',
-        feature_columns=feature_cols, target_columns="target_enc"
+        feature_columns=feature_cols, target_columns="target_enc",
+        physical_normalization=True, norm_coef_path=str(norm_coef_path)
     )
     val_ds_sym = OscillogramDataset(
         dataframe=df, indices=val_indices, window_size=WINDOW_SIZE,
         mode='classification', feature_mode='symmetric',
-        feature_columns=feature_cols, target_columns="target_enc"
+        feature_columns=feature_cols, target_columns="target_enc",
+        physical_normalization=True, norm_coef_path=str(norm_coef_path)
     )
     
     train_loader_sym = torch.utils.data.DataLoader(train_ds_sym, batch_size=32, shuffle=True)
@@ -144,12 +147,14 @@ def main():
     train_ds_complex = OscillogramDataset(
         dataframe=df, indices=train_indices, window_size=WINDOW_SIZE,
         mode='classification', feature_mode='complex_channels',
-        feature_columns=feature_cols, target_columns="target_enc"
+        feature_columns=feature_cols, target_columns="target_enc",
+        physical_normalization=True, norm_coef_path=str(norm_coef_path)
     )
     val_ds_complex = OscillogramDataset(
         dataframe=df, indices=val_indices, window_size=WINDOW_SIZE,
         mode='classification', feature_mode='complex_channels',
-        feature_columns=feature_cols, target_columns="target_enc"
+        feature_columns=feature_cols, target_columns="target_enc",
+        physical_normalization=True, norm_coef_path=str(norm_coef_path)
     )
     
     train_loader_complex = torch.utils.data.DataLoader(train_ds_complex, batch_size=32, shuffle=True)

@@ -111,6 +111,9 @@ def main():
     
     print(f"Val samples: {len(val_indices)}")
     
+    # Путь к файлу коэффициентов нормализации по сенсорам
+    norm_coef_path = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
+    
     # 3. Подготовка DataLoader (валидационный датасет)
     val_ds = OscillogramDataset(
         dataframe=df,
@@ -119,7 +122,8 @@ def main():
         mode='classification',
         feature_mode='raw',
         feature_columns=feature_cols,
-        target_columns="target_enc"
+        target_columns="target_enc",
+        physical_normalization=True, norm_coef_path=str(norm_coef_path)
     )
     val_loader = torch.utils.data.DataLoader(val_ds, batch_size=32, shuffle=False)
     
