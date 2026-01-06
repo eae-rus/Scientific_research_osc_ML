@@ -31,6 +31,19 @@ class SimpleMLP(BaseModel):
             x = x.flatten(start_dim=1)
         return self.net(x)
 
+class SafeMaxPool1d(nn.Module):
+    """Pooling layer that handles small input sizes gracefully."""
+    def __init__(self, kernel_size):
+        super().__init__()
+        self.pool = nn.MaxPool1d(kernel_size)
+
+    def forward(self, x):
+        # Если размер меньше кернела, пулинг вернет 0 размера (ошибку) или пустоту
+        # Поэтому пропускаем пулинг для экстремально малых размерностей
+        if x.shape[-1] <= 1:
+            return x
+        return self.pool(x)
+
 class SimpleCNN(BaseModel):
     """
     Сверточная сеть (CNN) с гибкой архитектурой.
@@ -53,7 +66,7 @@ class SimpleCNN(BaseModel):
             
             # Pooling
             if (i + 1) % pool_every == 0:
-                layers.append(nn.MaxPool1d(2))
+                layers.append(SafeMaxPool1d(2))
             
             if dropout > 0:
                 layers.append(nn.Dropout(dropout))
