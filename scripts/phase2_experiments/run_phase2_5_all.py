@@ -176,12 +176,30 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
     history = runner.train(train_loader, val_loader)
     return history
 
-def main():
-    parser = argparse.ArgumentParser(description="Запуск экспериментов Фазы 2.5")
-    parser.add_argument("--exp", type=str, default="2.5.1.0", help="ID эксперимента (например 2.5.1.0)")
-    parser.add_argument("--model", type=str, choices=['SimpleMLP', 'SimpleCNN', 'ConvKAN', 'SimpleKAN', 'PhysicsKAN', 'ResNet1D', 'all'], default='all')
-    parser.add_argument("--complexity", type=str, choices=['light', 'medium', 'heavy', 'all'], default='light')
-    args = parser.parse_args()
+def main(exp: str = None, model: str = None, complexity: str = None):
+    """
+    Главная точка входа для запуска экспериментов.
+    
+    Args:
+        exp: ID эксперимента (напр. '2.5.1.0'). Если None, берется из sys.argv.
+        model: Имя модели или 'all'.
+        complexity: Уровень сложности или 'all'.
+    """
+    if exp is not None:
+        # Ручной режим (параметры переданы напрямую в функцию)
+        class Args:
+            pass
+        args = Args()
+        args.exp = exp
+        args.model = model or 'all'
+        args.complexity = complexity or 'light'
+    else:
+        # Стандартный запуск через командную строку
+        parser = argparse.ArgumentParser(description="Запуск экспериментов Фазы 2.5")
+        parser.add_argument("--exp", type=str, default="2.5.1.0", help="ID эксперимента (например 2.5.1.0)")
+        parser.add_argument("--model", type=str, choices=['SimpleMLP', 'SimpleCNN', 'ConvKAN', 'SimpleKAN', 'PhysicsKAN', 'ResNet1D', 'all'], default='all')
+        parser.add_argument("--complexity", type=str, choices=['light', 'medium', 'heavy', 'all'], default='light')
+        args = parser.parse_args()
 
     # 1. Setup Paths
     METADATA_FILE = ROOT_DIR / 'data' / 'ml_datasets' / 'labeled_2025_12_03.csv'
@@ -202,10 +220,12 @@ def main():
     val_files = unique_files[split_idx:]
     
     # Создаем индексы начал окон
-    # Для train используем кортежи (start_idx, length) для Random Sliding Window
-    # Для val используем фиксированные индексы
+    # Фильтрация индексов строк для обучения и валидации
+    train_indices = np.where(df["file_name"].is_in(train_files))[0].tolist()
+    val_indices = np.where(df["file_name"].is_in(val_files))[0].tolist()
     
     window_size = 320
+    default_stride = 16 # Базовый страйд по умолчанию
     
     # target_cols = get_target_columns('base') # Moved to loop
     feature_cols = None # Использовать Smart Selector
@@ -254,7 +274,7 @@ def main():
             # Но если пользователь явно указал --complexity, используем её.
             
             actual_comp = comp
-            current_stride = stride # По умолчанию из цикла/функции
+            current_stride = default_stride 
             current_harmonics = 1 # по умолчанию
             
             # Логика маппинга параметров сложности
@@ -303,22 +323,31 @@ def main():
             )
 
 if __name__ == "__main__":
-    # --- Инструкция по запуску и параметры (для GitHub Copilot и пользователей) ---
-    # Основной скрипт для запуска экспериментов этапа 2.5 "Углубленная оптимизация (Data-Centric)"
-    #
-    # Аргументы командной строки:
-    # --exp: ID эксперимента (например, "2.5.1.0"). Определяет конфигурацию данных из словаря exp_params.
-    # --model: Имя модели или 'all' для запуска всех. Доступны:
-    #          SimpleMLP, SimpleCNN, ConvKAN, SimpleKAN, PhysicsKAN, ResNet1D.
-    # --complexity: Уровень сложности модели или 'all'. Влияет на размеры слоев (hidden_sizes, channels).
-    #          'light', 'medium', 'heavy'.
-    #          Примечание: Для экспериментов "2.5.2.*" и далее сложность часто привязана к стратегии сэмплирования
-    #          (Dense, Stride, Snapshot), поэтому 'all' автоматически выберет наиболее подходящий вариант.
-    #
-    # Пример запуска (тестовый прогон проверки пайплайна):
-    # python scripts/phase2_experiments/run_phase2_5_all.py --exp 2.5.1.0 --model SimpleMLP --complexity light
-    #
-    # Пример запуска основного сравнения стратегий:
-    # python scripts/phase2_experiments/run_phase2_5_all.py --exp 2.5.2.1 --complexity all
+    # === ВЕРСИЯ 1: РУЧНОЙ ЗАПУСК ЧЕРЕЗ КОНСТАНТЫ (Рекомендуется для IDE/Notebooks) ===
+    # Отредактируйте параметры ниже и раскомментируйте вызов main(), чтобы запустить одну модель.
+
+    # 1. EXP_ID: Строковый ключ эксперимента (из словаря 'exp_params').
+    # ПОЧЕМУ: Определяет физический смысл данных (признаки, гармоники, нормировку).
+    # ЗАЧЕМ: Например, '2.5.3.1_phase_polar' активирует 8-канальные полярные признаки.
+    EXP_ID = "2.5.3.1_phase_polar"
+
+    # 2. MODEL_TYPE: Название архитектуры нейросети.
+    # ПОЧЕМУ: Выбирает, какой именно класс модели будет инстанцирован и обучен.
+    # ДОСТУПНО: 'SimpleMLP', 'SimpleCNN', 'ConvKAN', 'SimpleKAN', 'PhysicsKAN', 'ResNet1D'.
+    MODEL_TYPE = "ConvKAN"
+
+    # 3. MODEL_COMPLEXITY: Уровень сложности модели.
+    # ПОЧЕМУ: Мальтипликатор для количества каналов/нейронов.
+    # ЗАЧЕМ: 'light' - быстро, 'medium' - сбалансировано, 'heavy' - максимально мощно.
+    # ПРИМЕЧАНИЕ: Для некоторых экспериментов также переключает частоту выборки.
+    MODEL_COMPLEXITY = "medium"
+
+    # Раскомментируйте строку ниже для запуска с этими параметрами:
+    # main(exp=EXP_ID, model=MODEL_TYPE, complexity=MODEL_COMPLEXITY)
+
+    # === ВЕРСИЯ 2: ЗАПУСК ПО УМОЛЧАНИЮ (CLI / Аргументы командной строки) ===
+    # Если вызов main() выше закомментирован, скрипт будет ждать аргументы из терминала.
+    # Пример: python run_phase2_5_all.py --exp 2.5.1.0 --model SimpleMLP --complexity light
     
     main()
+
