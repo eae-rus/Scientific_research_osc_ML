@@ -23,7 +23,7 @@ MODEL_COMPLEXITY = {
         'ConvKAN':   {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
         'SimpleKAN': {'hidden_sizes': [64, 32], 'grid_size': 3, 'dropout': 0.1},
         'PhysicsKAN': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
-        'ResNet1D':  {'layers': [1, 1, 1], 'base_filters': 16}
+        'ResNet1D':  {'layers': [1, 1, 1, 1], 'base_filters': 16}
     },
     'medium': {
         'SimpleMLP': {'hidden_sizes': [256, 128, 64], 'dropout': 0.3},
@@ -359,7 +359,7 @@ if __name__ == "__main__":
     # ПОЧЕМУ: Выбирает, какой именно класс модели будет инстанцирован и обучен.
     # ДОСТУПНО: 'SimpleMLP', 'SimpleCNN', 'ConvKAN', 'SimpleKAN', 'PhysicsKAN', 'ResNet1D'.
     # ЗАЧЕМ: 'all' запускает цикл по всем доступным моделям для сравнения.
-    MODEL_TYPE = "SimpleMLP"
+    MODEL_TYPE = "all"
 
     # 3. SELECTED_COMPLEXITY: Уровень сложности модели.
     # ПОЧЕМУ: Мальтипликатор для количества каналов/нейронов.
