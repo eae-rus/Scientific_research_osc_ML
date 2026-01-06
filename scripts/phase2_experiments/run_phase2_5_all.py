@@ -265,18 +265,20 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         "2.5.2.1": {"feature_mode": "raw", "sampling": "snapshot", "stride": 32, "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
         "2.5.2.2": {"feature_mode": "raw", "sampling": "stride", "stride": 16, "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
         "2.5.2.3": {"feature_mode": "raw", "sampling": "snapshot", "stride": 32, "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.2.4": {"feature_mode": "raw", "sampling": "stride", "stride": 16, "complexity": "heavy", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.2.5": {"feature_mode": "raw", "sampling": "snapshot", "stride": 32, "complexity": "heavy", "use_pw": True, "aug": True, "target_level": "base"},
         
         # Исследование признаков (Feature Type Optimization)
         "2.5.3.0": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.3.1_rect":  {"feature_mode": "symmetric", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.3.1_polar": {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.3.1_rect":  {"feature_mode": "symmetric", "sampling": "snapshot", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.3.1_polar": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "use_pw": True, "aug": True, "target_level": "base"},
         
         # Сравнение Фазных признаков (8 каналов)
-        "2.5.3.1_phase_rect":  {"feature_mode": "phase_complex", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.3.1_phase_polar": {"feature_mode": "phase_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.3.1_phase_rect":  {"feature_mode": "phase_complex", "sampling": "snapshot", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.3.1_phase_polar": {"feature_mode": "phase_polar", "sampling": "snapshot", "use_pw": True, "aug": True, "target_level": "base"},
 
-        "2.5.3.2_power": {"feature_mode": "power", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.3.2_ab":    {"feature_mode": "alpha_beta", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.3.2_power": {"feature_mode": "power", "sampling": "snapshot", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.3.2_ab":    {"feature_mode": "alpha_beta", "sampling": "snapshot", "use_pw": True, "aug": True, "target_level": "base"},
         
         "2.5.4.1":       {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
         "2.5.4.2":       {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "full"},
@@ -367,6 +369,7 @@ if __name__ == "__main__":
     # ЗАЧЕМ: Например, '2.5.3.1_phase_polar' активирует 8-канальные полярные признаки.
     # EXPS = ["2.5.2.0", "2.5.2.1", "2.5.2.2", "2.5.2.3"]  # Для запуска нескольких экспериментов сразу
     EXPS = ["2.5.2.0", "2.5.2.1", "2.5.2.2", "2.5.2.3"]  # Запуск экспериментов 2.5.2.0-2.5.2.3
+    EXPS = ["2.5.2.4", "2.5.2.5", "2.5.3.0", "2.5.3.1_rect", "2.5.3.1_polar", "2.5.3.1_phase_rect", "2.5.3.1_phase_polar", "2.5.3.2_power", "2.5.3.2_ab"]
 
     # 2. MODEL_TYPE: Название архитектуры нейросети.
     # ПОЧЕМУ: Выбирает, какой именно класс модели будет инстанцирован и обучен.

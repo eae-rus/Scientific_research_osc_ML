@@ -289,30 +289,57 @@
 *   **Модели:** Все (Medium).
 *   **Вход:** `raw`, `sampling_strategy = 'snapshot'`, `stride = 32`.
 
+**[] Exp 2.5.2.4: Raw Strided (Heavy, Stride 16)**
+*   **Цель:** Оценка работы тяжелых (Heavy) моделей на прореженном сигнале.
+*   **Модели:** Все (Heavy).
+*   **Вход:** `raw`, `stride = 16`.
+
+**[] Exp 2.5.2.5: Raw Snapshot (Heavy, Stride 32)**
+*   **Цель:** Максимальная экономия ресурсов при snapshot с тяжелой сложности моделей.
+*   **Модели:** Все (Heavy).
+*   **Вход:** `raw`, `sampling_strategy = 'snapshot'`, `stride = 32`.
+
 ---
 
 #### [] 5.3. Оптимизация признакового пространства (Feature Type Optimization)
 
-**Цель:** Сравнить различные типы физически обоснованных признаков на оптимальной стратегии прореживания.
+**Цель:** Сравнить различные типы физически обоснованных признаков на максимально прореженных данных (snapshot) для оценки эффективности на минимальном объеме данных.
 
-**[] Exp 2.5.3.0: Стратегия C ("Snapshot")**
-*   **Цель:** Проверить, достаточно ли всего 2-х "снимков" состояния (начало и конец окна) для классификации аварии через симметричные составляющие.
+**[] Exp 2.5.3.0: Symmetric Polar (Snapshot)**
+*   **Цель:** Базовое сравнение симметричных составляющих в полярной форме на snapshot.
 *   **Модели:** Все.
 *   **Вход:** `feature_mode = 'symmetric_polar'`, `sampling_strategy = 'snapshot'`.
-*   **Ожидание:** Экстремально высокая скорость инференса.
+*   **Ожидание:** Высокая скорость инференса при сохранении качества.
 
-**[] Exp 2.5.3.1: Сравнение Mag/Angle vs Re/Im**
-*   **Цель:** Установить, какая форма представления комплексных чисел лучше воспринимается моделями.
+**[] Exp 2.5.3.1_rect: Symmetric Rectangular (Snapshot)**
+*   **Цель:** Сравнение симметричных составляющих в прямоугольной форме (Re/Im).
 *   **Модели:** Все.
-*   **Вход:** `feature_mode = 'symmetric'`.
-*   **Переменная:** `polar_features = True` vs `polar_features = False`.
-*   **Доп. условия:** `stride = 16` (или лучший из 5.2).
+*   **Вход:** `feature_mode = 'symmetric'`, `sampling_strategy = 'snapshot'`.
 
-**[] Exp 2.5.3.2: Сравнение типов признаков (Symmetric vs Power vs Alpha-Beta)**
-*   **Цель:** Определить наиболее информативный набор физических признаков.
+**[] Exp 2.5.3.1_polar: Symmetric Polar (Snapshot)**
+*   **Цель:** Сравнение симметричных составляющих в полярной форме (Mag/Angle).
 *   **Модели:** Все.
-*   **Переменная:** `feature_mode` (`'symmetric_polar'`, `'power'`, `'alpha_beta'`).
-*   **Ожидание:** Подтверждение превосходства симметричных составляющих.
+*   **Вход:** `feature_mode = 'symmetric_polar'`, `sampling_strategy = 'snapshot'`.
+
+**[] Exp 2.5.3.1_phase_rect: Phase Complex (Snapshot)**
+*   **Цель:** Оценка фазных признаков в комплексной форме.
+*   **Модели:** Все.
+*   **Вход:** `feature_mode = 'phase_complex'`, `sampling_strategy = 'snapshot'`.
+
+**[] Exp 2.5.3.1_phase_polar: Phase Polar (Snapshot)**
+*   **Цель:** Оценка фазных признаков в полярной форме.
+*   **Модели:** Все.
+*   **Вход:** `feature_mode = 'phase_polar'`, `sampling_strategy = 'snapshot'`.
+
+**[] Exp 2.5.3.2_power: Power Features (Snapshot)**
+*   **Цель:** Оценка признаков мощности.
+*   **Модели:** Все.
+*   **Вход:** `feature_mode = 'power'`, `sampling_strategy = 'snapshot'`.
+
+**[] Exp 2.5.3.2_ab: Alpha-Beta Features (Snapshot)**
+*   **Цель:** Оценка признаков alpha-beta.
+*   **Модели:** Все.
+*   **Вход:** `feature_mode = 'alpha_beta'`, `sampling_strategy = 'snapshot'`.
 
 ---
 
