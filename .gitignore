@@ -32,3 +32,6 @@ pytest_log_*.txt
 *.egg-info/
 dist/
 build/
+
+# Experiments folder
+experiments/
