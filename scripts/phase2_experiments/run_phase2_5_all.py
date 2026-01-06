@@ -365,7 +365,8 @@ if __name__ == "__main__":
     # 1. EXP_ID: Строковый ключ эксперимента (из словаря 'exp_params').
     # ПОЧЕМУ: Определяет физический смысл данных (признаки, гармоники, нормировку).
     # ЗАЧЕМ: Например, '2.5.3.1_phase_polar' активирует 8-канальные полярные признаки.
-    EXP_ID = "2.5.1.2"
+    # EXPS = ["2.5.2.0", "2.5.2.1", "2.5.2.2", "2.5.2.3"]  # Для запуска нескольких экспериментов сразу
+    EXPS = ["2.5.2.0", "2.5.2.1", "2.5.2.2", "2.5.2.3"]  # Запуск экспериментов 2.5.2.0-2.5.2.3
 
     # 2. MODEL_TYPE: Название архитектуры нейросети.
     # ПОЧЕМУ: Выбирает, какой именно класс модели будет инстанцирован и обучен.
@@ -377,7 +378,7 @@ if __name__ == "__main__":
     # ПОЧЕМУ: Мальтипликатор для количества каналов/нейронов.
     # ЗАЧЕМ: 'light' - быстро, 'medium' - сбалансировано, 'heavy' - максимально мощно.
     # ПРИМЕЧАНИЕ: Для некоторых экспериментов также переключает частоту выборки.
-    SELECTED_COMPLEXITY = "light"
+    SELECTED_COMPLEXITY = "all"  # Использовать сложности из exp_params для каждого эксперимента
 
     # 4. SAMPLES_PER_FILE: Количество случайных окон из одного файла за одну эпоху.
     # ПОЧЕМУ: Увеличивает объем обучающей выборки без добавления новых файлов.
@@ -394,11 +395,12 @@ if __name__ == "__main__":
     CHECKPOINT_FREQUENCY = EPOCHS+1  # Сохранять только в конце
 
     # Раскомментируйте строку ниже для запуска с этими параметрами:
-    if MODEL_TYPE == 'all':
-        for m in ['SimpleMLP', 'SimpleCNN', 'ConvKAN', 'SimpleKAN', 'PhysicsKAN', 'ResNet1D']:
-            main(exp=EXP_ID, model=m, complexity=SELECTED_COMPLEXITY, samples_per_file=SAMPLES_PER_FILE, epochs=EPOCHS, checkpoint_frequency=CHECKPOINT_FREQUENCY)
-    else:
-        main(exp=EXP_ID, model=MODEL_TYPE, complexity=SELECTED_COMPLEXITY, samples_per_file=SAMPLES_PER_FILE, epochs=EPOCHS, checkpoint_frequency=CHECKPOINT_FREQUENCY)
+    for exp_id in EXPS:
+        if MODEL_TYPE == 'all':
+            for m in ['SimpleMLP', 'SimpleCNN', 'ConvKAN', 'SimpleKAN', 'PhysicsKAN', 'ResNet1D']:
+                main(exp=exp_id, model=m, complexity=SELECTED_COMPLEXITY, samples_per_file=SAMPLES_PER_FILE, epochs=EPOCHS, checkpoint_frequency=CHECKPOINT_FREQUENCY)
+        else:
+            main(exp=exp_id, model=MODEL_TYPE, complexity=SELECTED_COMPLEXITY, samples_per_file=SAMPLES_PER_FILE, epochs=EPOCHS, checkpoint_frequency=CHECKPOINT_FREQUENCY)
 
     # === ВЕРСИЯ 2: ЗАПУСК ПО УМОЛЧАНИЮ (CLI / Аргументы командной строки) ===
     # Если вызов main() выше закомментирован, скрипт будет ждать аргументы из терминала.
