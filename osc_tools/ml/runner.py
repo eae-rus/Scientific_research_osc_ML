@@ -6,6 +6,7 @@ from pathlib import Path
 import json
 import time
 from typing import Optional
+from tqdm import tqdm
 from dataclasses import asdict
 
 from osc_tools.ml.config import ExperimentConfig
@@ -100,7 +101,7 @@ class ExperimentRunner:
         if self.criterion is None:
             self.criterion = self._init_criterion(train_loader)
 
-        print(f"Starting training on {self.device}")
+        print(f"Запуск обучения на {self.device}")
         best_val_loss = float('inf')
         history = {'train_loss': [], 'val_loss': [], 'val_acc': [], 'val_f1': []}
         
@@ -110,7 +111,8 @@ class ExperimentRunner:
             # Training
             self.model.train()
             train_loss = 0.0
-            for x, y in train_loader:
+            pbar = tqdm(train_loader, desc=f"Эпоха {epoch+1}/{self.config.training.epochs} [Train]")
+            for x, y in pbar:
                 x, y = x.to(self.device), y.to(self.device)
                 
                 self.optimizer.zero_grad()
@@ -129,6 +131,7 @@ class ExperimentRunner:
                 self.optimizer.step()
                 
                 train_loss += loss.item()
+                pbar.set_postfix({'loss': loss.item()})
             
             avg_train_loss = train_loss / len(train_loader)
             history['train_loss'].append(avg_train_loss)
@@ -144,7 +147,8 @@ class ExperimentRunner:
             if val_loader:
                 self.model.eval()
                 with torch.no_grad():
-                    for x, y in val_loader:
+                    val_pbar = tqdm(val_loader, desc=f"Эпоха {epoch+1}/{self.config.training.epochs} [Val]", leave=False)
+                    for x, y in val_pbar:
                         x, y = x.to(self.device), y.to(self.device)
                         outputs = self.model(x)
                         
@@ -171,6 +175,7 @@ class ExperimentRunner:
                                 
                         loss = self.criterion(outputs, y)
                         val_loss += loss.item()
+                        val_pbar.set_postfix({'loss': loss.item()})
                 
                 avg_val_loss = val_loss / len(val_loader)
                 
@@ -216,7 +221,7 @@ class ExperimentRunner:
             }
             self._save_metrics(metrics)
             
-            print(f"Epoch {epoch+1}/{self.config.training.epochs} | "
+            print(f"Эпоха {epoch+1}/{self.config.training.epochs} | "
                   f"Train Loss: {avg_train_loss:.4f} | "
                   f"Val Loss: {avg_val_loss:.4f} | "
                   f"Val Acc: {val_acc:.4f} | "
@@ -228,12 +233,12 @@ class ExperimentRunner:
                 best_val_loss = avg_val_loss
                 self.save_checkpoint('best_model.pt')
             
-            # Периодический чекпоинт (каждые 10 эпох)
-            if (epoch + 1) % 10 == 0:
+            # Периодический чекпоинт (каждые N эпох)
+            if (epoch + 1) % self.config.training.checkpoint_frequency == 0:
                 self.save_checkpoint(f'checkpoint_epoch_{epoch+1}.pt')
                 
         self.save_checkpoint('final_model.pt')
-        print("Training completed.")
+        print("Обучение завершено.")
         return history
 
     def _save_metrics(self, metrics):

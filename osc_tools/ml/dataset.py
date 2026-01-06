@@ -109,7 +109,8 @@ class OscillogramDataset(Dataset):
         window_size: int, 
         mode: str = 'train', 
         stride: Optional[int] = None,
-        min_length: Optional[int] = None
+        min_length: Optional[int] = None,
+        samples_per_file: int = 1
     ) -> List[Union[int, Tuple[int, int]]]:
         """
         Создает индексы для Dataset.
@@ -120,6 +121,7 @@ class OscillogramDataset(Dataset):
             mode: 'train' (random sampling) или 'val'/'test' (sliding window).
             stride: Шаг для sliding window (только для val/test). По умолчанию window_size // 2.
             min_length: Минимальная длина файла для включения. По умолчанию window_size.
+            samples_per_file: Количество случайных окон из каждого файла за одну эпоху (только для train).
             
         Returns:
             Список индексов (int для val, tuple для train).
@@ -152,7 +154,9 @@ class OscillogramDataset(Dataset):
             # Для обучения возвращаем кортежи (start, length)
             # Dataset сам выберет случайное окно внутри
             for row in valid_files.iter_rows(named=True):
-                indices.append((row['start_idx'], row['length']))
+                # Клонируем записи о файле n раз, чтобы DataLoader прошелся по нему n раз за эпоху
+                for _ in range(samples_per_file):
+                    indices.append((row['start_idx'], row['length']))
                 
         else: # val, test
             # Для валидации генерируем фиксированные окна с шагом
@@ -445,7 +449,7 @@ class OscillogramDataset(Dataset):
         
         # 2. Аугментация (если включена)
         if self.augmenter:
-            print("DEBUG: Applying augmentation")
+            # print("DEBUG: Applying augmentation") # Закомментировано для чистоты вывода с tqdm
             raw_data = self.augmenter(raw_data)
             if isinstance(raw_data, torch.Tensor):
                 raw_data = raw_data.numpy()

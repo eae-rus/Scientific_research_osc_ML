@@ -63,7 +63,7 @@ def get_model_params(model_name, complexity, input_size=None, num_classes=None, 
 
 def run_experiment(experiment_id, model_name, complexity, df, train_indices, val_indices, feature_cols, target_level, 
                    norm_coef_path, feature_mode='raw', sampling_strategy='none', stride=16, 
-                   use_pos_weight=True, augment=False, num_harmonics=1):
+                   use_pos_weight=True, augment=False, num_harmonics=1, epochs=30, checkpoint_frequency=1):
     
     # Расчет входных параметров
     window_size = 320 # Базовый для Фазы 2.5
@@ -109,12 +109,13 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
     experiment_name = f"Exp_{experiment_id}_{model_name}_{complexity}_{feature_mode}_{sampling_strategy}_{target_level}"
     
     train_config = TrainingConfig(
-        epochs=30,
+        epochs=epochs,
         learning_rate=0.001,
         weight_decay=1e-4,
         use_pos_weight=use_pos_weight,
         experiment_name=experiment_name,
-        save_dir=str(ROOT_DIR / 'experiments' / 'phase2_5')
+        save_dir=str(ROOT_DIR / 'experiments' / 'phase2_5'),
+        checkpoint_frequency=checkpoint_frequency
     )
     
     data_config = DataConfig(
@@ -172,11 +173,11 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
     train_loader = torch.utils.data.DataLoader(train_ds, batch_size=data_config.batch_size, shuffle=True)
     val_loader = torch.utils.data.DataLoader(val_ds, batch_size=data_config.batch_size, shuffle=False)
     
-    print(f"\n>>> Starting {experiment_name}")
+    print(f"\n>>> Запуск {experiment_name}")
     history = runner.train(train_loader, val_loader)
     return history
 
-def main(exp: str = None, model: str = None, complexity: str = None):
+def main(exp: str = None, model: str = None, complexity: str = None, samples_per_file: int = 1, epochs: int = 30, checkpoint_frequency: int = 1):
     """
     Главная точка входа для запуска экспериментов.
     
@@ -184,6 +185,8 @@ def main(exp: str = None, model: str = None, complexity: str = None):
         exp: ID эксперимента (напр. '2.5.1.0'). Если None, берется из sys.argv.
         model: Имя модели или 'all'.
         complexity: Уровень сложности или 'all'.
+        samples_per_file: Количество случайных окон из каждого файла за одну эпоху.
+        epochs: Количество эпох обучения.
     """
     if exp is not None:
         # Ручной режим (параметры переданы напрямую в функцию)
@@ -193,13 +196,21 @@ def main(exp: str = None, model: str = None, complexity: str = None):
         args.exp = exp
         args.model = model or 'all'
         args.complexity = complexity or 'light'
+        args.samples_per_file = samples_per_file
+        args.epochs = epochs
+        args.checkpoint_frequency = checkpoint_frequency
     else:
         # Стандартный запуск через командную строку
         parser = argparse.ArgumentParser(description="Запуск экспериментов Фазы 2.5")
         parser.add_argument("--exp", type=str, default="2.5.1.0", help="ID эксперимента (например 2.5.1.0)")
         parser.add_argument("--model", type=str, choices=['SimpleMLP', 'SimpleCNN', 'ConvKAN', 'SimpleKAN', 'PhysicsKAN', 'ResNet1D', 'all'], default='all')
         parser.add_argument("--complexity", type=str, choices=['light', 'medium', 'heavy', 'all'], default='light')
+        parser.add_argument("--samples", type=int, default=1, help="Количество случайных окон из каждого файла за эпоху")
+        parser.add_argument("--epochs", type=int, default=30, help="Количество эпох обучения")
+        parser.add_argument("--checkpoint_freq", type=int, default=1, help="Частота сохранения чекпоинтов (каждые N эпох)")
         args = parser.parse_args()
+        args.samples_per_file = args.samples
+        args.checkpoint_frequency = args.checkpoint_freq
 
     # 1. Setup Paths
     METADATA_FILE = ROOT_DIR / 'data' / 'ml_datasets' / 'labeled_2025_12_03.csv'
@@ -209,6 +220,7 @@ def main(exp: str = None, model: str = None, complexity: str = None):
     df = pl.read_csv(METADATA_FILE, infer_schema_length=10000)
     df = clean_labels(df)
     df = add_base_labels(df)
+    df = df.with_row_index("row_nr")
     
     # Сплит данных (на уровне файлов для корректности)
     unique_files = df["file_name"].unique().to_list()
@@ -220,11 +232,21 @@ def main(exp: str = None, model: str = None, complexity: str = None):
     val_files = unique_files[split_idx:]
     
     # Создаем индексы начал окон
-    # Фильтрация индексов строк для обучения и валидации
-    train_indices = np.where(df["file_name"].is_in(train_files))[0].tolist()
-    val_indices = np.where(df["file_name"].is_in(val_files))[0].tolist()
-    
+    # Используем встроенный метод Dataset для корректной обработки границ окон и случайного сэмплирования
     window_size = 320
+    
+    train_indices = OscillogramDataset.create_indices(
+        df.filter(pl.col("file_name").is_in(train_files)), 
+        window_size=window_size, 
+        mode='train',
+        samples_per_file=args.samples_per_file
+    )
+    val_indices = OscillogramDataset.create_indices(
+        df.filter(pl.col("file_name").is_in(val_files)), 
+        window_size=window_size, 
+        mode='val'
+    )
+    
     default_stride = 16 # Базовый страйд по умолчанию
     
     # target_cols = get_target_columns('base') # Moved to loop
@@ -260,7 +282,7 @@ def main(exp: str = None, model: str = None, complexity: str = None):
     }
     
     if args.exp not in exp_params:
-        print(f"Unknown experiment ID: {args.exp}")
+        print(f"Неизвестный ID эксперимента: {args.exp}")
         return
 
     p = exp_params[args.exp]
@@ -319,7 +341,9 @@ def main(exp: str = None, model: str = None, complexity: str = None):
                 stride=current_stride,
                 use_pos_weight=p['use_pw'],
                 augment=p['aug'],
-                num_harmonics=current_harmonics
+                num_harmonics=current_harmonics,
+                epochs=args.epochs,
+                checkpoint_frequency=args.checkpoint_frequency
             )
 
 if __name__ == "__main__":
@@ -329,25 +353,44 @@ if __name__ == "__main__":
     # 1. EXP_ID: Строковый ключ эксперимента (из словаря 'exp_params').
     # ПОЧЕМУ: Определяет физический смысл данных (признаки, гармоники, нормировку).
     # ЗАЧЕМ: Например, '2.5.3.1_phase_polar' активирует 8-канальные полярные признаки.
-    EXP_ID = "2.5.3.1_phase_polar"
+    EXP_ID = "2.5.1.0"
 
     # 2. MODEL_TYPE: Название архитектуры нейросети.
     # ПОЧЕМУ: Выбирает, какой именно класс модели будет инстанцирован и обучен.
     # ДОСТУПНО: 'SimpleMLP', 'SimpleCNN', 'ConvKAN', 'SimpleKAN', 'PhysicsKAN', 'ResNet1D'.
-    MODEL_TYPE = "ConvKAN"
+    # ЗАЧЕМ: 'all' запускает цикл по всем доступным моделям для сравнения.
+    MODEL_TYPE = "SimpleMLP"
 
-    # 3. MODEL_COMPLEXITY: Уровень сложности модели.
+    # 3. SELECTED_COMPLEXITY: Уровень сложности модели.
     # ПОЧЕМУ: Мальтипликатор для количества каналов/нейронов.
     # ЗАЧЕМ: 'light' - быстро, 'medium' - сбалансировано, 'heavy' - максимально мощно.
     # ПРИМЕЧАНИЕ: Для некоторых экспериментов также переключает частоту выборки.
-    MODEL_COMPLEXITY = "medium"
+    SELECTED_COMPLEXITY = "light"
+
+    # 4. SAMPLES_PER_FILE: Количество случайных окон из одного файла за одну эпоху.
+    # ПОЧЕМУ: Увеличивает объем обучающей выборки без добавления новых файлов.
+    # ЗАЧЕМ: Если у нас 800 файлов, значение 12 даст ~10 000 обучающих примеров за эпоху.
+    SAMPLES_PER_FILE = 12
+
+    # 5. EPOCHS: Количество полных проходов по обучающей выборке.
+    # ЗАЧЕМ: Регулирует длительность обучения. Часто достаточно 20-30 или 50 для стабильности.
+    EPOCHS = 30
+
+    # 6. CHECKPOINT_FREQUENCY: Частота сохранения чекпоинтов.
+    # ПОЧЕМУ: Позволяет восстанавливать обучение с любой эпохи.
+    # ЗАЧЕМ: 1 - каждую эпоху (для отладки), 5 - каждые 5 эпох (для долгого обучения).
+    CHECKPOINT_FREQUENCY = 1
 
     # Раскомментируйте строку ниже для запуска с этими параметрами:
-    # main(exp=EXP_ID, model=MODEL_TYPE, complexity=MODEL_COMPLEXITY)
+    if MODEL_TYPE == 'all':
+        for m in ['SimpleMLP', 'SimpleCNN', 'ConvKAN', 'SimpleKAN', 'PhysicsKAN', 'ResNet1D']:
+            main(exp=EXP_ID, model=m, complexity=SELECTED_COMPLEXITY, samples_per_file=SAMPLES_PER_FILE, epochs=EPOCHS, checkpoint_frequency=CHECKPOINT_FREQUENCY)
+    else:
+        main(exp=EXP_ID, model=MODEL_TYPE, complexity=SELECTED_COMPLEXITY, samples_per_file=SAMPLES_PER_FILE, epochs=EPOCHS, checkpoint_frequency=CHECKPOINT_FREQUENCY)
 
     # === ВЕРСИЯ 2: ЗАПУСК ПО УМОЛЧАНИЮ (CLI / Аргументы командной строки) ===
     # Если вызов main() выше закомментирован, скрипт будет ждать аргументы из терминала.
-    # Пример: python run_phase2_5_all.py --exp 2.5.1.0 --model SimpleMLP --complexity light
+    # Пример: python run_phase2_5_all.py --exp 2.5.1.0 --model SimpleMLP --complexity light --samples 12 --epochs 30
     
-    main()
+    # main()
 

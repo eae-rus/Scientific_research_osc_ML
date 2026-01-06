@@ -26,6 +26,7 @@ class TrainingConfig:
     experiment_name: str = 'default'
     seed: int = 42
     use_pos_weight: bool = False
+    checkpoint_frequency: int = 2
 
 @dataclass
 class ExperimentConfig:
