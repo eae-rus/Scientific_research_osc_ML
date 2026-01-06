@@ -61,23 +61,35 @@ def get_model_params(model_name, complexity, input_size=None, num_classes=None, 
     
     return params
 
-def run_experiment(experiment_id, model_name, complexity, df, train_indices, val_indices, feature_cols, target_cols, 
+def run_experiment(experiment_id, model_name, complexity, df, train_indices, val_indices, feature_cols, target_level, 
                    norm_coef_path, feature_mode='raw', sampling_strategy='none', stride=16, 
-                   use_pos_weight=True, augment=False):
+                   use_pos_weight=True, augment=False, num_harmonics=1):
     
     # Расчет входных параметров
     window_size = 320 # Базовый для Фазы 2.5
     
     # Определяем in_channels в зависимости от feature_mode
-    # 'raw' -> все feature_cols
-    # 'symmetric' -> 12 (6 I + 6 U)
-    # 'polar' -> 12
+    # 'raw' -> все feature_cols (обычно 8)
+    # 'symmetric', 'symmetric_polar' -> 12 (6 comps * 2 values) * num_harmonics
+    # 'phase_polar', 'phase_complex' -> 16 (8 channels * 2 values) * num_harmonics
+    # 'power' -> 8 (4 pairs * 2 val)
+    # 'alpha_beta' -> 6 (2 sets * 3 val)
+    
     if feature_mode == 'raw':
         in_channels = len(feature_cols) if feature_cols else 8 # fallback
-    elif feature_mode in ['symmetric', 'polar']:
-        in_channels = 12
+    elif feature_mode in ['symmetric', 'symmetric_polar']:
+        in_channels = 12 * num_harmonics
+    elif feature_mode in ['phase_polar', 'phase_complex', 'complex_channels']:
+        in_channels = 16 * num_harmonics
+    elif feature_mode == 'power':
+        in_channels = 8
+    elif feature_mode == 'alpha_beta':
+        in_channels = 6
     else:
-        in_channels = 6 # fallback for power etc.
+        in_channels = 8 # fallback
+
+    # Определяем target columns
+    target_cols = get_target_columns(target_level)
 
     # Определяем input_size для MLP
     if sampling_strategy == 'none':
@@ -94,7 +106,7 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
     
     model_params = get_model_params(model_name, complexity, input_size, num_classes, in_channels)
     
-    experiment_name = f"Exp_{experiment_id}_{model_name}_{complexity}_{feature_mode}_{sampling_strategy}"
+    experiment_name = f"Exp_{experiment_id}_{model_name}_{complexity}_{feature_mode}_{sampling_strategy}_{target_level}"
     
     train_config = TrainingConfig(
         epochs=30,
@@ -106,7 +118,7 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
     )
     
     data_config = DataConfig(
-        path="", # Not used by runner directly if we provide loaders
+        path="", # Не используется напрямую runner, если мы предоставляем загрузчики
         window_size=window_size,
         batch_size=64,
         mode='multilabel',
@@ -124,9 +136,19 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
     # Аугментация
     aug_config = None
     if augment:
+        # Полная конфигурация аугментации по запросу пользователя (все доступные методы)
         aug_config = {
-            'methods': ['gaussian_noise', 'amplitude_scaling', 'phase_shuffling'],
-            'probs': [0.3, 0.3, 0.2]
+            'p_inversion': 0.2,
+            'p_noise': 0.3,
+            'noise_std_current': 0.02,
+            'noise_std_voltage': 0.01,
+            'p_scaling': 0.5,
+            'scaling_range_current': (0.8, 1.2),
+            'scaling_range_voltage': (0.9, 1.1),
+            'p_offset': 0.2,
+            'offset_range': (-0.02, 0.02),
+            'p_phase_shuffling': 0.2,
+            # 'p_drop_channel': 0.1 # Опционально, может быть рискованно для некоторых моделей
         }
 
     # Datasets
@@ -136,7 +158,7 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
         feature_columns=feature_cols, target_columns=target_cols,
         physical_normalization=True, norm_coef_path=str(norm_coef_path),
         downsampling_mode=sampling_strategy, downsampling_stride=stride,
-        augmentation_config=aug_config
+        augmentation_config=aug_config, num_harmonics=num_harmonics
     )
     
     val_ds = OscillogramDataset(
@@ -144,7 +166,7 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
         mode='classification', feature_mode=feature_mode,
         feature_columns=feature_cols, target_columns=target_cols,
         physical_normalization=True, norm_coef_path=str(norm_coef_path),
-        downsampling_mode=sampling_strategy, downsampling_stride=stride
+        downsampling_mode=sampling_strategy, downsampling_stride=stride, num_harmonics=num_harmonics
     )
     
     train_loader = torch.utils.data.DataLoader(train_ds, batch_size=data_config.batch_size, shuffle=True)
@@ -185,17 +207,7 @@ def main():
     
     window_size = 320
     
-    # Вспомогательная функция для получения индексов по списку файлов
-    def get_indices_for_files(df, file_list, mode='val'):
-        file_df = df.filter(pl.col("file_name").is_in(file_list))
-        return OscillogramDataset.create_indices(file_df, window_size, mode=mode)
-
-    print("Подготовка индексов...")
-    train_indices = get_indices_for_files(df, train_files, mode='train')
-    val_indices = get_indices_for_files(df, val_files, mode='val')
-    print(f"Train files: {len(train_files)}, Val files: {len(val_files)}")
-    
-    target_cols = get_target_columns('base')
+    # target_cols = get_target_columns('base') # Moved to loop
     feature_cols = None # Использовать Smart Selector
     
     models = ['SimpleMLP', 'SimpleCNN', 'ConvKAN', 'SimpleKAN', 'PhysicsKAN', 'ResNet1D'] if args.model == 'all' else [args.model]
@@ -203,11 +215,28 @@ def main():
     
     # Настройка параметров в зависимости от эксперимента
     exp_params = {
-        "2.5.1.0": {"feature_mode": "raw", "sampling": "none", "use_pw": False, "aug": False},
-        "2.5.1.1": {"feature_mode": "raw", "sampling": "none", "use_pw": True, "aug": False},
-        "2.5.1.2": {"feature_mode": "raw", "sampling": "none", "use_pw": True, "aug": True},
-        "2.5.2.1": {"feature_mode": "symmetric", "sampling": "stride", "use_pw": True, "aug": True},
-        "2.5.2.2": {"feature_mode": "symmetric", "sampling": "snapshot", "use_pw": True, "aug": True},
+        "2.5.1.0": {"feature_mode": "raw", "sampling": "none", "use_pw": False, "aug": False, "target_level": "base"},
+        "2.5.1.1": {"feature_mode": "raw", "sampling": "none", "use_pw": True, "aug": False, "target_level": "base"},
+        "2.5.1.2": {"feature_mode": "raw", "sampling": "none", "use_pw": True, "aug": True, "target_level": "base"},
+        
+        # Исследование стратегий прореживания (на симметричных составляющих - 6 каналов)
+        "2.5.2.1": {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.2.2": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "use_pw": True, "aug": True, "target_level": "base"},
+        
+        # Сравнение типов признаков (Symmetric)
+        "2.5.3.1_rect":  {"feature_mode": "symmetric", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.3.1_polar": {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
+        
+        # Сравнение Фазных признаков (8 каналов) - Аналог Фазы 2
+        "2.5.3.1_phase_rect":  {"feature_mode": "phase_complex", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.3.1_phase_polar": {"feature_mode": "phase_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
+
+        "2.5.3.2_power": {"feature_mode": "power", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.3.2_ab":    {"feature_mode": "alpha_beta", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
+        
+        "2.5.4.1":       {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.4.2":       {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "full"},
+        "2.5.5.1":       {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "full"},
     }
     
     if args.exp not in exp_params:
@@ -218,26 +247,78 @@ def main():
     
     for model_name in models:
         for comp in complexities:
-            # Маппинг сложности под стратегию (как просил пользователь)
+            # Маппинг сложности под стратегию
             # Лёгкая - для ALL (dense/none)
             # Средняя - для Strided
             # Тяжёлая - для Snapshot
             # Но если пользователь явно указал --complexity, используем её.
             
             actual_comp = comp
-            if args.complexity == 'light' and p['sampling'] == 'stride':
-                actual_comp = 'medium'
-            if args.complexity == 'light' and p['sampling'] == 'snapshot':
-                actual_comp = 'heavy'
+            current_stride = stride # По умолчанию из цикла/функции
+            current_harmonics = 1 # по умолчанию
+            
+            # Логика маппинга параметров сложности
+            if args.complexity == 'all': # Только авто-выбор
+                if p['sampling'] == 'stride':
+                    # Medium: Stride 32, Harmonics 3 (как в ТЗ)
+                    actual_comp = 'medium'
+                    current_stride = 32
+                    current_harmonics = 3
+                elif p['sampling'] == 'snapshot':
+                    # Heavy: Snapshot (нет страйда), Harmonics 9 (как в ТЗ)
+                    actual_comp = 'heavy'
+                    current_harmonics = 9
+                else: 
+                    # Light: Stride 2 (для Dense/None?), Harmonics 1
+                    actual_comp = 'light'
+                    current_stride = 2 # Если sampling='none', stride игнорируется, но передадим для порядка
+                    current_harmonics = 1
+            
+                if comp != 'light': 
+                    continue
+            else:
+                # Если сложность задана явно, настраиваем параметры под неё
+                if comp == 'light':
+                    current_harmonics = 1
+                    current_stride = 2
+                elif comp == 'medium':
+                    current_harmonics = 3
+                    current_stride = 32
+                elif comp == 'heavy':
+                    current_harmonics = 9
+                     # Stride не важен для snapshot, но для stride - пусть будет 32 или меньше?
+                    current_stride = 32
+
+            # Если пользователь явно указал сложность (args.complexity != 'all'), используем её (comp).
                 
             run_experiment(
                 args.exp, model_name, actual_comp, df, train_indices, val_indices, 
-                feature_cols, target_cols, NORM_COEF_PATH,
+                feature_cols, p['target_level'], NORM_COEF_PATH,
                 feature_mode=p['feature_mode'], 
                 sampling_strategy=p['sampling'],
+                stride=current_stride,
                 use_pos_weight=p['use_pw'],
-                augment=p['aug']
+                augment=p['aug'],
+                num_harmonics=current_harmonics
             )
 
 if __name__ == "__main__":
+    # --- Инструкция по запуску и параметры (для GitHub Copilot и пользователей) ---
+    # Основной скрипт для запуска экспериментов этапа 2.5 "Углубленная оптимизация (Data-Centric)"
+    #
+    # Аргументы командной строки:
+    # --exp: ID эксперимента (например, "2.5.1.0"). Определяет конфигурацию данных из словаря exp_params.
+    # --model: Имя модели или 'all' для запуска всех. Доступны:
+    #          SimpleMLP, SimpleCNN, ConvKAN, SimpleKAN, PhysicsKAN, ResNet1D.
+    # --complexity: Уровень сложности модели или 'all'. Влияет на размеры слоев (hidden_sizes, channels).
+    #          'light', 'medium', 'heavy'.
+    #          Примечание: Для экспериментов "2.5.2.*" и далее сложность часто привязана к стратегии сэмплирования
+    #          (Dense, Stride, Snapshot), поэтому 'all' автоматически выберет наиболее подходящий вариант.
+    #
+    # Пример запуска (тестовый прогон проверки пайплайна):
+    # python scripts/phase2_experiments/run_phase2_5_all.py --exp 2.5.1.0 --model SimpleMLP --complexity light
+    #
+    # Пример запуска основного сравнения стратегий:
+    # python scripts/phase2_experiments/run_phase2_5_all.py --exp 2.5.2.1 --complexity all
+    
     main()

@@ -188,7 +188,7 @@ class ExperimentRunner:
                     # Используйте F1-macro или F1-weighted
                     val_acc = accuracy_score(all_targets, all_preds) # Exact match
                     val_f1 = f1_score(all_targets, all_preds, average='macro')
-                    val_balanced_acc = 0.0 # Balanced accuracy is tricky for multilabel
+                    val_balanced_acc = 0.0 # Не определено для multilabel
                     per_class_f1 = f1_score(all_targets, all_preds, average=None).tolist()
                     
             else:

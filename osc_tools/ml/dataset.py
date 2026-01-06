@@ -34,7 +34,8 @@ class OscillogramDataset(Dataset):
         norm_coef_path: Optional[str] = None,
         augmentation_config: Optional[dict] = None,
         downsampling_mode: str = 'none',
-        downsampling_stride: int = 16
+        downsampling_stride: int = 16,
+        num_harmonics: int = 1
     ):
         """
         Args:
@@ -54,6 +55,7 @@ class OscillogramDataset(Dataset):
             augmentation_config: Конфигурация аугментации (только для mode='classification'/'segmentation' в train).
             downsampling_mode: Режим прореживания ('none', 'stride', 'snapshot').
             downsampling_stride: Шаг прореживания (для mode='stride').
+            num_harmonics: Количество гармоник для спектрального анализа (feature_mode='symmetric' etc.).
         """
         if isinstance(dataframe, pl.LazyFrame):
             self.data = dataframe.collect()
@@ -70,6 +72,8 @@ class OscillogramDataset(Dataset):
         self.physical_normalization = physical_normalization
         self.downsampling_mode = downsampling_mode
         self.downsampling_stride = downsampling_stride
+        self.num_harmonics = num_harmonics
+
         
         self.augmenter = None
         if augmentation_config:
@@ -94,7 +98,7 @@ class OscillogramDataset(Dataset):
         if mode not in valid_modes:
             raise ValueError(f"Unknown mode: {mode}. Valid modes: {valid_modes}")
             
-        valid_feature_modes = ['raw', 'symmetric', 'complex_channels', 'power', 'instantaneous_power', 'alpha_beta', 'polar']
+        valid_feature_modes = ['raw', 'symmetric', 'complex_channels', 'power', 'instantaneous_power', 'alpha_beta', 'polar', 'symmetric_polar']
         for fm in self.feature_mode:
             if fm not in valid_feature_modes:
                 raise ValueError(f"Unknown feature_mode: {fm}. Valid modes: {valid_feature_modes}")
@@ -457,43 +461,140 @@ class OscillogramDataset(Dataset):
                     collected_features.append(raw_data)
                 
             elif fm == 'symmetric':
-                # Расчет симметричных составляющих из raw_data
-                fft_window = int(self.sampling_rate / 50)
-                
-                # Токи (каналы 0, 1, 2, 3)
-                phasors_i = [sliding_window_fft(raw_data[:, i], fft_window, 1)[:, 0] for i in range(3)]
+                # sliding_window_fft returns (Time, NumHarmonics)
+                # Берем все запрошенные гармоники
+                phasors_i = [sliding_window_fft(raw_data[:, i], fft_window, self.num_harmonics) for i in range(3)]
                 i1, i2, i0 = calculate_symmetrical_components(*phasors_i)
                 
-                # Если In (канал 3) не пустой, используем его для I0
                 if not np.allclose(raw_data[:, 3], 0):
-                    in_phasor = sliding_window_fft(raw_data[:, 3], fft_window, 1)[:, 0]
+                    in_phasor = sliding_window_fft(raw_data[:, 3], fft_window, self.num_harmonics)
                     i0 = in_phasor / 3
                 
-                features_i = np.stack([i1.real, i1.imag, i2.real, i2.imag, i0.real, i0.imag], axis=1)
+                # Сглаживание гармоник в каналы if num_harmonics > 1
+                # Форма i1: (Время, Гармоники)
+                # Мы объединяем компоненты: I1, I2, I0
+                # Полуитоговая форма перед сглаживанием: (Время, 3 компоненты, Гармоники)
                 
                 # Напряжения (каналы 4, 5, 6, 7)
-                phasors_u = [sliding_window_fft(raw_data[:, i], fft_window, 1)[:, 0] for i in range(4, 7)]
+                phasors_u = [sliding_window_fft(raw_data[:, i], fft_window, self.num_harmonics) for i in range(4, 7)]
                 u1, u2, u0 = calculate_symmetrical_components(*phasors_u)
                 
-                # Если Un (канал 7) не пустой, используем его для U0
                 if not np.allclose(raw_data[:, 7], 0):
-                    un_phasor = sliding_window_fft(raw_data[:, 7], fft_window, 1)[:, 0]
+                    un_phasor = sliding_window_fft(raw_data[:, 7], fft_window, self.num_harmonics)
                     u0 = un_phasor / 3
-                    
-                features_u = np.stack([u1.real, u1.imag, u2.real, u2.imag, u0.real, u0.imag], axis=1)
+
+                # Сборка фичей
+                # Для каждой компоненты (I1, I2... U0) берем Re и Im для всех гармоник
+                # Итоговый порядок: 
+                # [I1_h1_re, I1_h1_im, I1_h2_re, ... I2_h1..., I0..., U1..., U2..., U0...]
                 
-                collected_features.append(np.concatenate([features_i, features_u], axis=1))
+                components = [i1, i2, i0, u1, u2, u0] # List of (Time, Harmonics) arrays
+                
+                feature_list = []
+                for comp in components:
+                    # comp: (Time, Harmonics)
+                    for h in range(self.num_harmonics):
+                        feature_list.append(comp[:, h].real)
+                        feature_list.append(comp[:, h].imag)
+                        
+                # Stack all features -> (Time, 12 * NumHarmonics)
+                collected_features.append(np.stack(feature_list, axis=1))
+
+            elif fm == 'symmetric_polar':
+                # Расчет симметричных составляющих с переводом в полярные координаты
+                fft_window = int(self.sampling_rate / 50)
+                
+                # Токи (I1, I2, I0)
+                phasors_i = [sliding_window_fft(raw_data[:, i], fft_window, self.num_harmonics) for i in range(3)]
+                i1, i2, i0 = calculate_symmetrical_components(*phasors_i)
+                
+                if not np.allclose(raw_data[:, 3], 0):
+                    in_phasor = sliding_window_fft(raw_data[:, 3], fft_window, self.num_harmonics)
+                    i0 = in_phasor / 3
+                
+                # Напряжения (U1, U2, U0)
+                phasors_u = [sliding_window_fft(raw_data[:, i], fft_window, self.num_harmonics) for i in range(4, 7)]
+                u1, u2, u0 = calculate_symmetrical_components(*phasors_u)
+                
+                if not np.allclose(raw_data[:, 7], 0):
+                    un_phasor = sliding_window_fft(raw_data[:, 7], fft_window, self.num_harmonics)
+                    u0 = un_phasor / 3
+                
+                # Собираем все 6 комплексных компонент: (Time, 6, NumHarmonics)
+                # stack axis=1 -> (Time, 6, Harmonics)
+                complex_features = np.stack([i1, i2, i0, u1, u2, u0], axis=1)
+                
+                # Определяем Reference (UA или IA) - только по первой гармонике (фундаментальной)
+                ua_phasor = phasors_u[0][:, 0] # (Time,)
+                ia_phasor = phasors_i[0][:, 0] # (Time,)
+                
+                ua_mag = np.nanmean(np.abs(ua_phasor))
+                if ua_mag > 1e-4:
+                    ref_phasor = ua_phasor
+                else:
+                    ia_mag = np.nanmean(np.abs(ia_phasor))
+                    if ia_mag > 1e-4:
+                        ref_phasor = ia_phasor
+                    else:
+                        ref_phasor = None
+                
+                # Конвертация в полярные
+                # Если num_harmonics > 1, нам нужно обработать каждую гармонику отдельно или вместе?
+                # calculate_polar_features принимает (Time, Channels). 
+                # У нас (Time, 6, Harmonics). Можно сделать reshape -> (Time, 6*Harmonics)
+                
+                time_steps, n_comps, n_harm = complex_features.shape
+                complex_features_flat = complex_features.reshape(time_steps, n_comps * n_harm)
+                
+                # Конвертация в полярные
+                polar_feats = calculate_polar_features(complex_features_flat, ref_phasor)
+                collected_features.append(np.nan_to_num(polar_feats))
+
+            elif fm == 'phase_polar':
+                # Поблочный расчет для каждой фазы (IA, IB, IC, IN, UA, UB, UC, UN)
+                fft_window = int(self.sampling_rate / 50)
+                
+                # Собираем комплексные фазоры для всех 8 каналов
+                all_phasors = []
+                for i in range(8):
+                    p = sliding_window_fft(raw_data[:, i], fft_window, self.num_harmonics)
+                    all_phasors.append(p)
+                
+                # stack -> (Time, 8, Harmonics)
+                complex_features = np.stack(all_phasors, axis=1)
+                
+                # Опорный сигнал для фазы (UA или IA)
+                ua_phasor = all_phasors[4][:, 0] # UA_h1
+                ia_phasor = all_phasors[0][:, 0] # IA_h1
+                
+                ua_mag = np.nanmean(np.abs(ua_phasor))
+                ref_phasor = ua_phasor if ua_mag > 1e-4 else (ia_phasor if np.nanmean(np.abs(ia_phasor)) > 1e-4 else None)
+                
+                time_steps, n_signals, n_harm = complex_features.shape
+                # Reshape to (Time, 8 * Harmonics) for calculate_polar_features
+                complex_features_flat = complex_features.reshape(time_steps, n_signals * n_harm)
+                polar_feats = calculate_polar_features(complex_features_flat, ref_phasor)
+                
+                collected_features.append(np.nan_to_num(polar_feats))
+
+            elif fm == 'phase_complex':
+                # Режим Re/Im (Rectangular) для всех 8 фаз (как в Фазе 2)
+                fft_window = int(self.sampling_rate / 50)
+                
+                feature_list = []
+                for i in range(8):
+                    # p: (Time, Harmonics)
+                    p = sliding_window_fft(raw_data[:, i], fft_window, self.num_harmonics)
+                    for h in range(self.num_harmonics):
+                        feature_list.append(p[:, h].real)
+                        feature_list.append(p[:, h].imag)
+                
+                # Stack all features -> (Time, 16 * NumHarmonics)
+                collected_features.append(np.stack(feature_list, axis=1))
 
             elif fm == 'complex_channels':
+                # Оставляем для обратной совместимости (1 гармоника, Re/Im, 8 каналов)
                 fft_window = int(self.sampling_rate / 50)
-                features = []
-                # Проходим по всем 8 каналам
-                for i in range(8):
-                    phasor = sliding_window_fft(raw_data[:, i], fft_window, 1)[:, 0]
-                    features.append(np.stack([phasor.real, phasor.imag], axis=1))
-                
-                data = np.concatenate(features, axis=1)
-                collected_features.append(np.nan_to_num(data))
                 
             elif fm == 'power':
                 fft_window = int(self.sampling_rate / 50)
