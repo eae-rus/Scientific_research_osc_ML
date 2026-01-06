@@ -33,7 +33,7 @@ class TimeSeriesAugmenter:
         """
         self.config = config or {}
         
-        # Вероятности (Default values updated per user request Phase 2.5)
+        # Вероятности (по умолчанию обновлены согласно запросу пользователя для Фазы 2.5)
         self.p_inversion = self.config.get("p_inversion", 0.5)
         self.p_noise = self.config.get("p_noise", 0.1)
         self.p_scaling = self.config.get("p_scaling", 0.2)

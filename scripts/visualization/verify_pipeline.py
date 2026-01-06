@@ -84,17 +84,23 @@ def plot_verification(dataset, idx=None, output_path=None, search_line_only=Fals
             return 'blue', '-'
         return 'gray', '-'
 
-    fig, axes = plt.subplots(5, 1, figsize=(15, 25), sharex=True)
+    fig, axes = plt.subplots(7, 1, figsize=(15, 30), sharex=True)
     
-    def plot_on_ax(ax, cols, title, ylabel):
+    def plot_on_ax(ax, cols, title, ylabel, data_source=None):
         ax.set_title(title, fontsize=12, fontweight='bold')
-        for c in cols:
-            try:
-                data = sample_df[c].cast(pl.Float32).to_numpy()
-                color, linestyle = get_color(c)
-                ax.plot(data, label=c, color=color, linestyle=linestyle, alpha=0.8)
-            except:
-                pass
+        if data_source is not None:
+             # data_source is numpy (Time, Channels)
+             for i, lab in enumerate(cols):
+                color, linestyle = get_color(lab)
+                ax.plot(data_source[:, i], label=lab, color=color, linestyle=linestyle)
+        else:
+            for c in cols:
+                try:
+                    data = sample_df[c].cast(pl.Float32).to_numpy()
+                    color, linestyle = get_color(c)
+                    ax.plot(data, label=c, color=color, linestyle=linestyle, alpha=0.8)
+                except:
+                    pass
         ax.legend(loc='upper right', fontsize='small', ncol=2)
         ax.grid(True, alpha=0.3)
         ax.set_ylabel(ylabel)
@@ -124,25 +130,23 @@ def plot_verification(dataset, idx=None, output_path=None, search_line_only=Fals
     labels_u = ['UA', 'UB', 'UC', 'UN']
 
     # 4. Smart Selector - Токи
-    ax = axes[3]
-    ax.set_title("4. Умный селектор: Токи (Стандартизировано)", fontsize=12, fontweight='bold')
-    for i in range(4):
-        color, linestyle = get_color(labels_i[i])
-        ax.plot(smart_data[:, i], label=labels_i[i], color=color, linestyle=linestyle)
-    ax.legend(loc='upper right')
-    ax.grid(True, alpha=0.3)
-    ax.set_ylabel("Ток (норм)")
+    plot_on_ax(axes[3], labels_i, "4. Умный селектор: Токи (Стандартизировано)", "Ток (норм)", smart_data[:, :4])
 
     # 5. Smart Selector - Напряжения
-    ax = axes[4]
-    ax.set_title("5. Умный селектор: Напряжения (Стандартизировано)", fontsize=12, fontweight='bold')
-    for i in range(4, 8):
-        idx_u = i - 4
-        color, linestyle = get_color(labels_u[idx_u])
-        ax.plot(smart_data[:, i], label=labels_u[idx_u], color=color, linestyle=linestyle)
-    ax.legend(loc='upper right')
-    ax.grid(True, alpha=0.3)
-    ax.set_ylabel("Напр. (норм)")
+    plot_on_ax(axes[4], labels_u, "5. Умный селектор: Напряжения (Стандартизировано)", "Напр. (норм)", smart_data[:, 4:8])
+
+    # 6. Аугментация
+    if dataset.augmenter:
+        # Применяем аугментацию к стандартизированным данным
+        aug_data = dataset.augmenter(smart_data)
+        if isinstance(aug_data, torch.Tensor):
+            aug_data = aug_data.numpy()
+        
+        plot_on_ax(axes[5], labels_i, "6. Аугментация: Токи (Случайная реализация)", "Ток (норм)", aug_data[:, :4])
+        plot_on_ax(axes[6], labels_u, "7. Аугментация: Напряжения (Случайная реализация)", "Напр. (норм)", aug_data[:, 4:8])
+    else:
+        axes[5].text(0.5, 0.5, "Аугментация отключена", ha='center')
+        axes[6].text(0.5, 0.5, "Аугментация отключена", ha='center')
 
     plt.tight_layout()
     plt.savefig(output_path)
@@ -186,13 +190,27 @@ def main():
     window_size = 320
     indices = OscillogramDataset.create_indices(df, window_size, mode='train')
     
+    # Конфигурация аугментации (Стандартная для Фазы 2.5)
+    aug_config = {
+        'p_inversion': 0.5,
+        'p_noise': 0.3, # Увеличим для визуализации, чтобы было заметно
+        'noise_std_current': 0.01,
+        'noise_std_voltage': 0.05,
+        'p_scaling': 0.5, # Увеличим для визуализации
+        'scaling_range_current': (0.8, 1.2),
+        'scaling_range_voltage': (0.9, 1.1),
+        'p_phase_shuffling': 0.5,
+        'p_drop_channel': 0.0
+    }
+
     dataset = OscillogramDataset(
         dataframe=df,
         indices=indices,
         window_size=window_size,
         feature_mode='raw',
         physical_normalization=True, # Включаем для проверки расчётов
-        norm_coef_path="data/ml_datasets/norm_coef_all_v1.4.csv"
+        norm_coef_path="data/ml_datasets/norm_coef_all_v1.4.csv",
+        augmentation_config=aug_config
     )
     
     # Параметр: искать ли осциллограмму только с линейными напряжениями
