@@ -62,6 +62,37 @@ def plot_learning_curves(metrics: List[Dict[str, Any]], save_path: Path):
     plt.savefig(save_path)
     plt.close()
 
+def plot_comparison(all_histories: Dict[str, List[Dict[str, Any]]], save_dir: Path):
+    """
+    Генерирует сравнительные графики для всех экспериментов.
+    """
+    if not all_histories:
+        return
+        
+    metrics_to_plot = ['train_loss', 'val_loss', 'val_acc', 'val_f1']
+    titles = ['Comparison: Train Loss', 'Comparison: Validation Loss', 'Comparison: Validation Accuracy', 'Comparison: Validation F1 (Macro)']
+    
+    plt.figure(figsize=(24, 5))
+    
+    for i, (metric, title) in enumerate(zip(metrics_to_plot, titles)):
+        plt.subplot(1, 4, i + 1)
+        
+        for exp_name, history in all_histories.items():
+            df = pd.DataFrame(history)
+            if metric in df.columns:
+                plt.plot(df['epoch'], df[metric], label=exp_name)
+        
+        plt.title(title)
+        plt.xlabel('Epoch')
+        plt.ylabel(metric.split('_')[-1].capitalize())
+        if len(all_histories) < 10: # Чтобы легенда не перекрывала всё, если много моделей
+            plt.legend()
+        plt.grid(True)
+        
+    plt.tight_layout()
+    plt.savefig(save_dir / "comparison_metrics.png")
+    plt.close()
+
 def aggregate_reports(root_dir: str, output_file: str = None, plot: bool = False):
     """
     Агрегирует отчеты обучения из всех поддиректорий.
@@ -73,6 +104,7 @@ def aggregate_reports(root_dir: str, output_file: str = None, plot: bool = False
     """
     root_path = Path(root_dir)
     experiments = []
+    all_histories = {}
 
     print(f"Сканирование {root_path} на наличие экспериментов...")
 
@@ -87,6 +119,8 @@ def aggregate_reports(root_dir: str, output_file: str = None, plot: bool = False
         
         if not metrics:
             continue
+            
+        all_histories[exp_dir.name] = metrics
 
         # Генерация графиков
         if plot:
@@ -144,6 +178,13 @@ def aggregate_reports(root_dir: str, output_file: str = None, plot: bool = False
     if output_file:
         df.to_csv(output_file, index=False)
         print(f"\nОтчет сохранен в {output_file}")
+        
+    # Сравнительные графики
+    if plot:
+        # Сохраняем рядом с CSV или в папку root_path
+        save_dir = Path(output_file).parent if output_file else root_path
+        plot_comparison(all_histories, save_dir)
+        print(f"Сравнительные графики сохранены в {save_dir / 'comparison_metrics.png'}")
 
 if __name__ == "__main__":
     # === ВЕРСИЯ 1: РУЧНОЙ ЗАПУСК ЧЕРЕЗ КОНСТАНТЫ ===
@@ -151,10 +192,10 @@ if __name__ == "__main__":
     MANUAL_RUN = True
     
     # ROOT_DIR: Папка, где лежат результаты ваших экспериментов (metrics.jsonl, config.json).
-    ROOT_DIR = "experiments/phase2_5"
+    ROOT_DIR = "experiments/phase2_5/Exp_2.5.1.0"
     
     # OUTPUT_CSV: Имя файла для сохранения таблицы с результатами.
-    OUTPUT_CSV = "reports/phase2_5_summary.csv"
+    OUTPUT_CSV = "reports/Exp_2.5.1.0/phase2_5_summary.csv"
     
     # GENERATE_PLOTS: Если True, для каждого эксперимента будут построены графики обучения.
     GENERATE_PLOTS = True
