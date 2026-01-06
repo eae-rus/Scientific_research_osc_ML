@@ -176,7 +176,7 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
     history = runner.train(train_loader, val_loader)
     return history
 
-def main(exp: str = None, model: str = None, complexity: str = None, samples_per_file: int = 1, epochs: int = 30, checkpoint_frequency: int = 1):
+def main(exp: str = None, model: str = None, complexity: str = None, samples_per_file: int = 1, epochs: int = 30, checkpoint_frequency: int = 1, skip_existing: bool = True):
     """
     Главная точка входа для запуска экспериментов.
     
@@ -186,6 +186,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         complexity: Уровень сложности или 'all'.
         samples_per_file: Количество случайных окон из каждого файла за одну эпоху.
         epochs: Количество эпох обучения.
+        skip_existing: Если True, пропускать уже обученные модели (наличие final_model.pt).
     """
     if exp is not None:
         # Ручной режим (параметры переданы напрямую в функцию)
@@ -198,6 +199,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         args.samples_per_file = samples_per_file
         args.epochs = epochs
         args.checkpoint_frequency = checkpoint_frequency
+        args.skip_existing = skip_existing
     else:
         # Стандартный запуск через командную строку
         parser = argparse.ArgumentParser(description="Запуск экспериментов Фазы 2.5")
@@ -207,6 +209,8 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         parser.add_argument("--samples", type=int, default=1, help="Количество случайных окон из каждого файла за эпоху")
         parser.add_argument("--epochs", type=int, default=30, help="Количество эпох обучения")
         parser.add_argument("--checkpoint_freq", type=int, default=1, help="Частота сохранения чекпоинтов (каждые N эпох)")
+        parser.add_argument("--no-skip", action="store_false", dest="skip_existing", help="Не пропускать уже обученные модели")
+        parser.set_defaults(skip_existing=True)
         args = parser.parse_args()
         args.samples_per_file = args.samples
         args.checkpoint_frequency = args.checkpoint_freq
@@ -347,6 +351,14 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
                 current_stride = p.get('stride', current_stride)
                 actual_comp = p.get('complexity', actual_comp) if args.complexity == 'all' else comp
 
+            # Проверка, обучена ли уже модель
+            experiment_name = f"Exp_{args.exp}_{model_name}_{actual_comp}_{p['feature_mode']}_{p['sampling']}_{p['target_level']}"
+            checkpoint_path = ROOT_DIR / 'experiments' / 'phase2_5' / experiment_name / 'final_model.pt'
+            
+            if args.skip_existing and checkpoint_path.exists():
+                print(f">>> Пропуск {experiment_name} (уже обучено)")
+                continue
+
             run_experiment(
                 args.exp, model_name, actual_comp, df, train_indices, val_indices, 
                 feature_cols, p['target_level'], NORM_COEF_PATH,
@@ -367,15 +379,15 @@ if __name__ == "__main__":
     # 1. EXP_ID: Строковый ключ эксперимента (из словаря 'exp_params').
     # ПОЧЕМУ: Определяет физический смысл данных (признаки, гармоники, нормировку).
     # ЗАЧЕМ: Например, '2.5.3.1_phase_polar' активирует 8-канальные полярные признаки.
-    # EXPS = ["2.5.2.0", "2.5.2.1", "2.5.2.2", "2.5.2.3"]  # Для запуска нескольких экспериментов сразу
-    EXPS = ["2.5.2.0", "2.5.2.1", "2.5.2.2", "2.5.2.3"]  # Запуск экспериментов 2.5.2.0-2.5.2.3
-    EXPS = ["2.5.2.4", "2.5.2.5", "2.5.3.0", "2.5.3.1_rect", "2.5.3.1_polar", "2.5.3.1_phase_rect", "2.5.3.1_phase_polar", "2.5.3.2_power", "2.5.3.2_ab"]
+    EXPS = ["2.5.2.1", "2.5.2.2", "2.5.2.3", "2.5.2.4", "2.5.2.5", "2.5.3.0", "2.5.3.1_rect", "2.5.3.1_polar", "2.5.3.1_phase_rect", "2.5.3.1_phase_polar", "2.5.3.2_power", "2.5.3.2_ab"]
+    # EXPS = ["2.5.2.1"]  # Пример запуска одного эксперимента
 
     # 2. MODEL_TYPE: Название архитектуры нейросети.
     # ПОЧЕМУ: Выбирает, какой именно класс модели будет инстанцирован и обучен.
     # ДОСТУПНО: 'SimpleMLP', 'SimpleCNN', 'ConvKAN', 'SimpleKAN', 'PhysicsKAN', 'ResNet1D'.
     # ЗАЧЕМ: 'all' запускает цикл по всем доступным моделям для сравнения.
     MODEL_TYPE = "all"
+    # MODEL_TYPE = "SimpleCNN"  # Пример запуска одной модели
 
     # 3. SELECTED_COMPLEXITY: Уровень сложности модели.
     # ПОЧЕМУ: Мальтипликатор для количества каналов/нейронов.
