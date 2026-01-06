@@ -284,6 +284,16 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         "2.5.3.2_power": {"feature_mode": "power", "sampling": "snapshot", "use_pw": True, "aug": True, "target_level": "base"},
         "2.5.3.2_ab":    {"feature_mode": "alpha_beta", "sampling": "snapshot", "use_pw": True, "aug": True, "target_level": "base"},
         
+        # Развитие раздела 3: Исследование признаков на временных рядах (Strided, Heavy)
+        # Эти эксперименты используют Stride 16 и Heavy сложность для глубокого анализа
+        "2.5.3.0_strided": {"feature_mode": "symmetric_polar", "sampling": "stride", "stride": 16, "complexity": "heavy", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.3.1_rect_strided":  {"feature_mode": "symmetric", "sampling": "stride", "stride": 16, "complexity": "heavy", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.3.1_polar_strided": {"feature_mode": "symmetric_polar", "sampling": "stride", "stride": 16, "complexity": "heavy", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.3.1_phase_rect_strided":  {"feature_mode": "phase_complex", "sampling": "stride", "stride": 16, "complexity": "heavy", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.3.1_phase_polar_strided": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "complexity": "heavy", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.3.2_power_strided": {"feature_mode": "power", "sampling": "stride", "stride": 16, "complexity": "heavy", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.3.2_ab_strided":    {"feature_mode": "alpha_beta", "sampling": "stride", "stride": 16, "complexity": "heavy", "use_pw": True, "aug": True, "target_level": "base"},
+
         "2.5.4.1":       {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
         "2.5.4.2":       {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "full"},
         "2.5.5.1":       {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "full"},
@@ -307,13 +317,19 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
             current_stride = p.get('stride', default_stride)
             current_harmonics = 1 # по умолчанию
             
-            # Если в параметрах эксперимента жестко задана сложность, используем её (для 5.2.x)
+            # Если в параметрах эксперимента жестко задана сложность, используем её (для 2.5.2.x и 2.5.3.x strided)
             if 'complexity' in p and args.complexity == 'all':
                 actual_comp = p['complexity']
+                # Для Heavy сложности в этих разделах по умолчанию используем 9 гармоник
+                if actual_comp == 'heavy':
+                    current_harmonics = 9
+                elif actual_comp == 'medium':
+                    current_harmonics = 3
+                
                 if comp != 'light': # Чтобы не запускать 3 раза одно и то же
                     continue
             
-            # Логика автоматического выбора параметров, если не задано жестко
+            # Логика автоматического выбора параметров для обычных экспериментов
             elif args.complexity == 'all': # Только авто-выбор
                 if p['sampling'] == 'stride':
                     # Medium: Stride 32, Harmonics 3 (как в ТЗ)
@@ -379,8 +395,12 @@ if __name__ == "__main__":
     # 1. EXP_ID: Строковый ключ эксперимента (из словаря 'exp_params').
     # ПОЧЕМУ: Определяет физический смысл данных (признаки, гармоники, нормировку).
     # ЗАЧЕМ: Например, '2.5.3.1_phase_polar' активирует 8-канальные полярные признаки.
-    EXPS = ["2.5.2.1", "2.5.2.2", "2.5.2.3", "2.5.2.4", "2.5.2.5", "2.5.3.0", "2.5.3.1_rect", "2.5.3.1_polar", "2.5.3.1_phase_rect", "2.5.3.1_phase_polar", "2.5.3.2_power", "2.5.3.2_ab"]
-    # EXPS = ["2.5.2.1"]  # Пример запуска одного эксперимента
+    EXPS = [
+        "2.5.2.1", "2.5.2.2", "2.5.2.3", "2.5.2.4", "2.5.2.5", 
+        "2.5.3.0", "2.5.3.1_rect", "2.5.3.1_polar", "2.5.3.1_phase_rect", "2.5.3.1_phase_polar", "2.5.3.2_power", "2.5.3.2_ab",
+        "2.5.3.0_strided", "2.5.3.1_rect_strided", "2.5.3.1_polar_strided", "2.5.3.1_phase_rect_strided", "2.5.3.1_phase_polar_strided", "2.5.3.2_power_strided", "2.5.3.2_ab_strided"
+    ]
+    # EXPS = ["2.5.3.0_strided"]  # Пример запуска одного эксперимента
 
     # 2. MODEL_TYPE: Название архитектуры нейросети.
     # ПОЧЕМУ: Выбирает, какой именно класс модели будет инстанцирован и обучен.
