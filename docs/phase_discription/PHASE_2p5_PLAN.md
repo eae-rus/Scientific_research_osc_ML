@@ -197,8 +197,17 @@
 
 **Модели для тестирования (каждая тестируется на 3-х уровнях сложности: Light, Medium, Heavy):**
 -   `SimpleMLP` (с адаптированным входом под текущую стратегию окна)
+    - Light: Hidden [64, 32]
+    - Medium: Hidden [128, 64, 32]
+    - Heavy: Hidden [256, 128, 64, 32]
 -   `SimpleCNN` (с глубиной 3-7 блоков)
+    - Light: Channels [16, 32, 64]
+    - Medium: Channels [32, 64, 128, 256]
+    - Heavy: Channels [64, 128, 256, 512]
 -   `ConvKAN` (с глубиной 2-5 блоков и переменным `grid_size`)
+    - Light: Channels [8, 16], Grid 5
+    - Medium: Channels [16, 32, 48], Grid 5
+    - Heavy: Channels [32, 64, 96, 128], Grid 3
 -   `ResNet1D`
     - Light: 3 блока (Layers 1-1-1), Base Filters 16
     - Medium: 4 блока (Layers 2-2-2-2), Base Filters 32
@@ -208,6 +217,9 @@
     - Medium: Hidden [128, 64, 32], Grid 5
     - Heavy: Hidden [256, 128, 64, 32], Grid 5
 -   `PhysicsKAN` (аналогично ConvKAN, плюс арифметические слои)
+    - Light: Channels [8, 16], Grid 5
+    - Medium: Channels [16, 32, 48], Grid 5
+    - Heavy: Channels [32, 64, 96, 128], Grid 3
 
 
 ---
