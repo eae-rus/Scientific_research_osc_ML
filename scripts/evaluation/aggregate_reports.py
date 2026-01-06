@@ -166,6 +166,38 @@ def benchmark_model_cpu(exp_dir: Path, config: Dict[str, Any], iterations: int =
         # print(f"Benchmark error for {exp_dir.name}: {e}")
         return 0.0
 
+def combine_training_histories(experiments_dir: Path, output_path: Path):
+    """
+    Объединяет файлы metrics.jsonl всех экспериментов в один текстовый файл.
+    Формат:
+    Model: <Название папки эксперимента>
+    <строка метрик epoch 1>
+    <строка метрик epoch 2>
+    ...
+    """
+    print(f"Combining training histories into {output_path}...")
+    
+    with open(output_path, 'w', encoding='utf-8') as outfile:
+        # Проходим по всем папкам экспериментов
+        exp_dirs = sorted([d for d in experiments_dir.iterdir() if d.is_dir()])
+        
+        for exp_dir in exp_dirs:
+            metrics_path = exp_dir / "metrics.jsonl"
+            if not metrics_path.exists():
+                continue
+                
+            # Записываем заголовок модели для удобства чтения
+            outfile.write(f"Model: {exp_dir.name}\n")
+            
+            # Читаем и записываем метрики
+            try:
+                with open(metrics_path, 'r', encoding='utf-8') as infile:
+                    for line in infile:
+                        outfile.write(line)
+                outfile.write("\n") # Разделитель
+            except Exception as e:
+                print(f"Error reading {metrics_path}: {e}")
+
 def aggregate_reports(root_dir: str, output_file: str = None, plot: bool = False, benchmark: bool = False):
     """
     Агрегирует отчеты обучения из всех поддиректорий.
@@ -261,6 +293,11 @@ def aggregate_reports(root_dir: str, output_file: str = None, plot: bool = False
         df.to_csv(output_file, index=False)
         print(f"\nОтчет сохранен в {output_file}")
         
+        # Также объединяем историю метрик для удобного анализа
+        history_file = Path(output_file).parent / "combined_metrics_history.txt"
+        combine_training_histories(root_path, history_file)
+        print(f"Объединенная история обучения сохранена в {history_file}")
+
     # Сравнительные графики
     if plot:
         # Сохраняем рядом с CSV или в папку root_path
