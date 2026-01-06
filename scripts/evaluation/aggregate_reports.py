@@ -6,6 +6,12 @@ from typing import List, Dict, Any
 import sys
 import matplotlib.pyplot as plt
 import seaborn as sns
+import torch
+import time
+
+# Добавляем корень проекта в путь импорта
+ROOT_DIR_PROJECT = Path(__file__).parent.parent.parent
+sys.path.append(str(ROOT_DIR_PROJECT))
 
 def load_metrics(metrics_path: Path) -> List[Dict[str, Any]]:
     """Загрузка метрик из файла jsonl."""
@@ -93,7 +99,74 @@ def plot_comparison(all_histories: Dict[str, List[Dict[str, Any]]], save_dir: Pa
     plt.savefig(save_dir / "comparison_metrics.png")
     plt.close()
 
-def aggregate_reports(root_dir: str, output_file: str = None, plot: bool = False):
+def benchmark_model_cpu(exp_dir: Path, config: Dict[str, Any], iterations: int = 1000) -> float:
+    """Замер скорости инференса на CPU для конкретной модели на пустых (dummy) данных."""
+    try:
+        model_name = config.get('model', {}).get('name')
+        params = config.get('model', {}).get('params', {})
+        
+        # Динамический импорт моделей
+        from osc_tools.ml.models.baseline import SimpleMLP, SimpleCNN, ResNet1D
+        from osc_tools.ml.models.kan import SimpleKAN, ConvKAN, PhysicsKAN
+        
+        models_map = {
+            'SimpleMLP': SimpleMLP, 'SimpleCNN': SimpleCNN, 'ResNet1D': ResNet1D,
+            'SimpleKAN': SimpleKAN, 'ConvKAN': ConvKAN, 'PhysicsKAN': PhysicsKAN
+        }
+        
+        if model_name not in models_map:
+            return 0.0
+            
+        model = models_map[model_name](**params).cpu()
+        model.eval()
+        
+        # Загрузка весов (если есть)
+        model_path = exp_dir / "best_model.pt"
+        if model_path.exists():
+            checkpoint = torch.load(model_path, map_location='cpu')
+            model.load_state_dict(checkpoint['model_state_dict'])
+
+        # Подготовка данных (dummy)
+        if model_name in ['SimpleMLP', 'SimpleKAN']:
+            input_size = params.get('input_size', 2560)
+            dummy_input = torch.randn(1, input_size)
+        else:
+            in_channels = params.get('in_channels', 8)
+            # Пытаемся определить размер временно окна (320, 20 или 2)
+            pts_options = [320, 20, 10, 2]
+            dummy_input = None
+            for pts in pts_options:
+                try:
+                    test_input = torch.randn(1, in_channels, pts)
+                    with torch.no_grad():
+                        model(test_input)
+                    dummy_input = test_input
+                    break
+                except:
+                    continue
+            
+            if dummy_input is None:
+                return 0.0
+
+        # Warm-up
+        with torch.no_grad():
+            for _ in range(20):
+                model(dummy_input)
+        
+        # Benchmark
+        start = time.time()
+        with torch.no_grad():
+            for _ in range(iterations):
+                model(dummy_input)
+        
+        avg_time_ms = ((time.time() - start) * 1000) / iterations
+        return avg_time_ms
+        
+    except Exception as e:
+        # print(f"Benchmark error for {exp_dir.name}: {e}")
+        return 0.0
+
+def aggregate_reports(root_dir: str, output_file: str = None, plot: bool = False, benchmark: bool = False):
     """
     Агрегирует отчеты обучения из всех поддиректорий.
     
@@ -101,6 +174,7 @@ def aggregate_reports(root_dir: str, output_file: str = None, plot: bool = False
         root_dir: Корневая директория, содержащая папки экспериментов.
         output_file: Опциональный путь для сохранения агрегированного отчета (CSV).
         plot: Генерировать ли графики обучения для каждого эксперимента.
+        benchmark: Выполнять ли глубокий бенчмарк на CPU.
     """
     root_path = Path(root_dir)
     experiments = []
@@ -128,27 +202,35 @@ def aggregate_reports(root_dir: str, output_file: str = None, plot: bool = False
             plot_learning_curves(metrics, plot_path)
 
         # Найти лучшую эпоху (на основе min val_loss)
-        # Если val_loss недоступна (например, только train), взять последнюю эпоху
         if any('val_loss' in m for m in metrics):
             best_epoch = min(metrics, key=lambda x: x.get('val_loss', float('inf')))
         else:
             best_epoch = metrics[-1]
 
         # Извлечение информации
+        # Сначала пробуем взять из нового поля model_info в конфиге
+        num_params = config.get('model_info', {}).get('num_params', best_epoch.get('num_params', 0))
+        
+        cpu_inf = best_epoch.get('cpu_inf_time_ms', 0.0)
+        if benchmark:
+            print(f"Бенчмарк CPU для {exp_dir.name}...")
+            cpu_inf = benchmark_model_cpu(exp_dir, config, iterations=1000)
+
         exp_data = {
             "Experiment": exp_dir.name,
             "Model": config.get('model', {}).get('name', 'Unknown'),
             "Params": str(config.get('model', {}).get('params', {})),
             "Epochs": len(metrics),
             "Best Epoch": best_epoch.get('epoch'),
-            "Num Params": best_epoch.get('num_params', 0),
+            "Num Params": num_params,
             "Train Loss": best_epoch.get('train_loss'),
             "Val Loss": best_epoch.get('val_loss'),
             "Val Acc": best_epoch.get('val_acc'),
             "Val F1": best_epoch.get('val_f1'),
             "Inf Time (ms)": best_epoch.get('inf_time_ms', 0.0),
+            "CPU Inf (ms)": cpu_inf,
             "Val B.Acc": best_epoch.get('val_balanced_acc', 0.0),
-            "Time (s)": best_epoch.get('time'),
+            "Time (s)": best_epoch.get('epoch_time', best_epoch.get('time', 0.0)),
             "Path": str(exp_dir)
         }
         
@@ -192,24 +274,28 @@ if __name__ == "__main__":
     MANUAL_RUN = True
     
     # ROOT_DIR: Папка, где лежат результаты ваших экспериментов (metrics.jsonl, config.json).
-    ROOT_DIR = "experiments/phase2_5/Exp_2.5.1.0"
+    ROOT_DIR = "experiments/phase2_5"
     
     # OUTPUT_CSV: Имя файла для сохранения таблицы с результатами.
-    OUTPUT_CSV = "reports/Exp_2.5.1.0/phase2_5_summary.csv"
+    OUTPUT_CSV = "reports/phase2_5_all_summary.csv"
     
     # GENERATE_PLOTS: Если True, для каждого эксперимента будут построены графики обучения.
     GENERATE_PLOTS = True
+    
+    # RUN_BENCHMARK: Если True, будет выполнен глубокий замер скорости инференса на CPU (1000 итераций).
+    RUN_BENCHMARK = False # Можно включить при финальной агрегации
 
     if MANUAL_RUN:
         # Создаем папку для отчетов, если её нет
         Path(OUTPUT_CSV).parent.mkdir(parents=True, exist_ok=True)
-        aggregate_reports(ROOT_DIR, OUTPUT_CSV, GENERATE_PLOTS)
+        aggregate_reports(ROOT_DIR, OUTPUT_CSV, GENERATE_PLOTS, RUN_BENCHMARK)
     else:
-        # === ВЕРСИЯ 2: ЗАПУСК ЧЕРЕЗ CLI (Командную строку) ===
+        # === ВЕРСИЯ 2: ЗАПУСК ПО УМОЛЧАНИЮ (CLI / Командная строка) ===
         parser = argparse.ArgumentParser(description="Агрегация отчетов экспериментов.")
         parser.add_argument("root_dir", type=str, help="Корневая директория, содержащая эксперименты (например, experiments/)")
         parser.add_argument("--output", type=str, default=None, help="Путь к выходному файлу CSV")
         parser.add_argument("--plot", action="store_true", help="Генерировать графики обучения")
+        parser.add_argument("--benchmark", action="store_true", help="Выполнить глубокий бенчмарк на CPU")
         
         args = parser.parse_args()
-        aggregate_reports(args.root_dir, args.output, args.plot)
+        aggregate_reports(args.root_dir, args.output, args.plot, args.benchmark)

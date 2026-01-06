@@ -30,9 +30,9 @@ class ExperimentRunner:
         # Set seed
         torch.manual_seed(config.training.seed)
         
+        self.model = self._init_model()
         self._save_config()
         
-        self.model = self._init_model()
         self.optimizer = self._init_optimizer()
         # Критерий отложим до наличия train_loader (нужны статистики меток для pos_weight)
         self.criterion = None
@@ -213,22 +213,15 @@ class ExperimentRunner:
             # Logging
             epoch_time = time.time() - start_time
             
-            # Измерение времени инференса (мс на 1 образец)
-            # В режиме валидации мы прогоняем всю выборку, поэтому делим время на кол-во сэмплов
-            inf_time_ms = (epoch_time * 1000) / len(all_targets) if len(all_targets) > 0 else 0
-
             metrics = {
                 "epoch": epoch + 1,
                 "train_loss": avg_train_loss,
                 "val_loss": avg_val_loss,
                 "val_acc": val_acc,
                 "val_f1": val_f1,
-                "val_f1_macro": val_f1, # Дублируем для совместимости
-                "inf_time_ms": inf_time_ms,
-                "num_params": self.num_params,
                 "val_balanced_acc": val_balanced_acc,
                 "per_class_f1": per_class_f1,
-                "time": epoch_time
+                "epoch_time": epoch_time
             }
             self._save_metrics(metrics)
             
@@ -236,8 +229,7 @@ class ExperimentRunner:
                   f"Train Loss: {avg_train_loss:.4f} | "
                   f"Val Loss: {avg_val_loss:.4f} | "
                   f"Val Acc: {val_acc:.4f} | "
-                  f"Val F1: {val_f1:.4f} | "
-                  f"Time: {epoch_time:.2f}s")
+                  f"Val F1: {val_f1:.4f}")
             
             # Сохраняем лучшую модель
             if val_loader and avg_val_loss < best_val_loss:
@@ -259,8 +251,14 @@ class ExperimentRunner:
 
     def _save_config(self):
         config_file = self.save_dir / "config.json"
+        config_dict = asdict(self.config)
+        # Добавляем инфо о параметрах, чтобы не считать потом
+        config_dict['model_info'] = {
+            'num_params': self.num_params,
+            'device': str(self.device)
+        }
         with open(config_file, "w") as f:
-            json.dump(asdict(self.config), f, indent=4)
+            json.dump(config_dict, f, indent=4)
 
     def save_checkpoint(self, filename):
         path = self.save_dir / filename
