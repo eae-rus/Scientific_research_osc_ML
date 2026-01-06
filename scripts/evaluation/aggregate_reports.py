@@ -169,23 +169,17 @@ def benchmark_model_cpu(exp_dir: Path, config: Dict[str, Any], iterations: int =
 def combine_training_histories(experiments_dir: Path, output_path: Path):
     """
     Объединяет файлы metrics.jsonl всех экспериментов в один текстовый файл.
-    Формат:
-    Model: <Название папки эксперимента>
-    <строка метрик epoch 1>
-    <строка метрик epoch 2>
-    ...
+    Рекурсивно ищет файлы во всех подпапках.
     """
     print(f"Combining training histories into {output_path}...")
     
     with open(output_path, 'w', encoding='utf-8') as outfile:
-        # Проходим по всем папкам экспериментов
-        exp_dirs = sorted([d for d in experiments_dir.iterdir() if d.is_dir()])
+        # Рекурсивно ищем все файлы metrics.jsonl
+        metrics_files = sorted(list(experiments_dir.rglob("metrics.jsonl")))
         
-        for exp_dir in exp_dirs:
-            metrics_path = exp_dir / "metrics.jsonl"
-            if not metrics_path.exists():
-                continue
-                
+        for metrics_path in metrics_files:
+            exp_dir = metrics_path.parent
+            
             # Записываем заголовок модели для удобства чтения
             outfile.write(f"Model: {exp_dir.name}\n")
             
