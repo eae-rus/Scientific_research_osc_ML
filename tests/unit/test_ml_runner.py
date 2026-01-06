@@ -43,7 +43,8 @@ class TestExperimentRunner:
         runner = ExperimentRunner(simple_config)
         assert runner.model is not None
         assert runner.optimizer is not None
-        assert runner.criterion is not None
+        # Criterion is initialized in train() now
+        assert runner.criterion is None
 
     def test_train_loop(self, simple_config):
         runner = ExperimentRunner(simple_config)

@@ -451,6 +451,7 @@ class OscillogramDataset(Dataset):
                 raw_data = raw_data.numpy()
 
         collected_features = []
+        fft_window = int(self.sampling_rate / 50)
         
         for fm in self.feature_mode:
             if fm == 'raw':
@@ -502,8 +503,6 @@ class OscillogramDataset(Dataset):
 
             elif fm == 'symmetric_polar':
                 # Расчет симметричных составляющих с переводом в полярные координаты
-                fft_window = int(self.sampling_rate / 50)
-                
                 # Токи (I1, I2, I0)
                 phasors_i = [sliding_window_fft(raw_data[:, i], fft_window, self.num_harmonics) for i in range(3)]
                 i1, i2, i0 = calculate_symmetrical_components(*phasors_i)
@@ -552,8 +551,6 @@ class OscillogramDataset(Dataset):
 
             elif fm == 'phase_polar':
                 # Поблочный расчет для каждой фазы (IA, IB, IC, IN, UA, UB, UC, UN)
-                fft_window = int(self.sampling_rate / 50)
-                
                 # Собираем комплексные фазоры для всех 8 каналов
                 all_phasors = []
                 for i in range(8):
@@ -579,8 +576,6 @@ class OscillogramDataset(Dataset):
 
             elif fm == 'phase_complex':
                 # Режим Re/Im (Rectangular) для всех 8 фаз (как в Фазе 2)
-                fft_window = int(self.sampling_rate / 50)
-                
                 feature_list = []
                 for i in range(8):
                     # p: (Time, Harmonics)
@@ -594,10 +589,10 @@ class OscillogramDataset(Dataset):
 
             elif fm == 'complex_channels':
                 # Оставляем для обратной совместимости (1 гармоника, Re/Im, 8 каналов)
-                fft_window = int(self.sampling_rate / 50)
+                # (Defining it inside for safety, though fft_window is already defined)
+                pass
                 
             elif fm == 'power':
-                fft_window = int(self.sampling_rate / 50)
                 features = []
                 
                 # Пары (IA, UA), (IB, UB), (IC, UC), (In, Un)
@@ -642,8 +637,6 @@ class OscillogramDataset(Dataset):
                 collected_features.append(np.nan_to_num(data))
 
             elif fm == 'polar':
-                fft_window = int(self.sampling_rate / 50)
-                
                 # 1. Вычисляем фазоры для всех 8 каналов
                 # [IA, IB, IC, In, UA, UB, UC, Un]
                 phasors = []
