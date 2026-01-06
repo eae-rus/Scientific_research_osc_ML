@@ -35,7 +35,7 @@ class TimeSeriesAugmenter:
         
         # Вероятности (по умолчанию обновлены согласно запросу пользователя для Фазы 2.5)
         self.p_inversion = self.config.get("p_inversion", 0.5)
-        self.p_noise = self.config.get("p_noise", 0.1)
+        self.p_noise = self.config.get("p_noise", 0)
         self.p_scaling = self.config.get("p_scaling", 0.2)
         self.p_offset = self.config.get("p_offset", 0.0)
         self.p_phase_shuffling = self.config.get("p_phase_shuffling", 0.33)
