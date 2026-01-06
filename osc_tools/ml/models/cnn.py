@@ -1,14 +1,14 @@
 import torch
 import torch.nn as nn
 from osc_tools.ml.models.base import BaseModel
-from osc_tools.ml.layers.complex_ops import cLeakyReLU, cMaxPool1d
+from osc_tools.ml.layers.complex_ops import cLeakyReLU, cMaxPool1d, SafeMaxPool1d
 
 def create_conv_block(in_channels, out_channels, maxPool_size = 2, kernel_size=3, stride=1, padding=1, padding_mode="circular", useComplex=False):
     if useComplex:
         conv = nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding, padding_mode=padding_mode, dtype=torch.cfloat)
         return nn.Sequential(conv, cLeakyReLU(), cMaxPool1d(kernel_size=maxPool_size, stride=maxPool_size))
     conv = nn.Conv1d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding, padding_mode=padding_mode)
-    return nn.Sequential(conv, nn.LeakyReLU(True), nn.MaxPool1d(kernel_size=maxPool_size, stride=maxPool_size))
+    return nn.Sequential(conv, nn.LeakyReLU(True), SafeMaxPool1d(kernel_size=maxPool_size, stride=maxPool_size))
 
 class Conv_3(BaseModel):
     def __init__(self, useComplex=False):
@@ -70,7 +70,7 @@ class ResNet1D(BaseModel):
         self.conv1 = nn.Conv1d(in_channels, base_filters, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = nn.BatchNorm1d(base_filters)
         self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool1d(kernel_size=3, stride=2, padding=1)
+        self.maxpool = SafeMaxPool1d(kernel_size=3, stride=2, padding=1)
 
         # Residual layers
         self.layer1 = self._make_layer(base_filters, layers[0])

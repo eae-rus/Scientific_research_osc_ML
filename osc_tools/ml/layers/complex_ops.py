@@ -24,11 +24,22 @@ class cSigmoid(nn.Module):
     def forward(self, input):
         return torch.sigmoid(input.real)
 
+class SafeMaxPool1d(nn.Module):
+    def __init__(self, kernel_size, stride=None, padding=0, dilation=1, return_indices=False, ceil_mode=False):
+        super(SafeMaxPool1d, self).__init__()
+        self.pool = nn.MaxPool1d(kernel_size, stride, padding, dilation, return_indices, ceil_mode)
+
+    def forward(self, x):
+        # Проверяем размер входа
+        if x.size(-1) < self.pool.kernel_size:
+            return x  # Возвращаем вход без pooling
+        return self.pool(x)
+
 class cMaxPool1d(nn.Module):
     def __init__(self, kernel_size, stride=None, padding=0, dilation=1, return_indices=False, ceil_mode=False):
         super(cMaxPool1d, self).__init__()
-        self.real_pool = nn.MaxPool1d(kernel_size, stride, padding, dilation, return_indices, ceil_mode)
-        self.imag_pool = nn.MaxPool1d(kernel_size, stride, padding, dilation, return_indices, ceil_mode)
+        self.real_pool = SafeMaxPool1d(kernel_size, stride, padding, dilation, return_indices, ceil_mode)
+        self.imag_pool = SafeMaxPool1d(kernel_size, stride, padding, dilation, return_indices, ceil_mode)
 
     def forward(self, x):
         # Разделение на действительную и мнимую части

@@ -23,7 +23,8 @@ from osc_tools.ml.layers.complex_ops import (
     cLeakyReLU,
     cSigmoid,
     cMaxPool1d,
-    cDropout1d
+    cDropout1d,
+    SafeMaxPool1d
 )
 from osc_tools.ml.models.cnn import create_conv_block, Conv_3
 
@@ -138,6 +139,38 @@ class TestCMaxPool1d:
         x = torch.complex(torch.randn(2, 16, 32), torch.randn(2, 16, 32))
         output = pool(x)
         assert not torch.isnan(output).any()
+
+
+class TestSafeMaxPool1d:
+    """Test SafeMaxPool1d for short sequences."""
+    
+    def test_instantiation(self):
+        """Test module can be instantiated."""
+        pool = SafeMaxPool1d(kernel_size=2)
+        assert isinstance(pool, nn.Module)
+    
+    def test_forward_pass_normal_input(self):
+        """Test forward pass with normal input."""
+        pool = SafeMaxPool1d(kernel_size=2, stride=2)
+        x = torch.randn(2, 16, 32)
+        output = pool(x)
+        assert output.shape[0] == 2
+        assert output.shape[1] == 16
+        assert output.shape[2] < 32  # length reduced
+    
+    def test_forward_pass_short_input(self):
+        """Test forward pass with short input (length = kernel_size)."""
+        pool = SafeMaxPool1d(kernel_size=2, stride=2)
+        x = torch.randn(2, 16, 2)  # length 2
+        output = pool(x)
+        assert output.shape == (2, 16, 1)  # pooling applied
+    
+    def test_forward_pass_very_short_input(self):
+        """Test forward pass with very short input (length < kernel_size)."""
+        pool = SafeMaxPool1d(kernel_size=2, stride=2)
+        x = torch.randn(2, 16, 1)  # length 1
+        output = pool(x)
+        assert output.shape == x.shape  # should return input unchanged
 
 
 class TestCreateConvBlock:

@@ -40,7 +40,7 @@ class SafeMaxPool1d(nn.Module):
     def forward(self, x):
         # Если размер меньше кернела, пулинг вернет 0 размера (ошибку) или пустоту
         # Поэтому пропускаем пулинг для экстремально малых размерностей
-        if x.shape[-1] <= 1:
+        if x.shape[-1] < self.pool.kernel_size:
             return x
         return self.pool(x)
 
