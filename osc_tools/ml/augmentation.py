@@ -33,22 +33,22 @@ class TimeSeriesAugmenter:
         """
         self.config = config or {}
         
-        # Вероятности
-        self.p_inversion = self.config.get("p_inversion", 0.0)
-        self.p_noise = self.config.get("p_noise", 0.0)
-        self.p_scaling = self.config.get("p_scaling", 0.0)
+        # Вероятности (Default values updated per user request Phase 2.5)
+        self.p_inversion = self.config.get("p_inversion", 0.5)
+        self.p_noise = self.config.get("p_noise", 0.1)
+        self.p_scaling = self.config.get("p_scaling", 0.2)
         self.p_offset = self.config.get("p_offset", 0.0)
-        self.p_phase_shuffling = self.config.get("p_phase_shuffling", 0.0)
+        self.p_phase_shuffling = self.config.get("p_phase_shuffling", 0.33)
         self.p_drop_channel = self.config.get("p_drop_channel", 0.0)
         
-        # Параметры
-        self.noise_std_current = self.config.get("noise_std_current", 0.02) # ~1-2% от номинала
-        self.noise_std_voltage = self.config.get("noise_std_voltage", 0.5)  # ~0.5-1% от номинала
+        # Параметры (Уменьшена интенсивность шума и масштаб)
+        self.noise_std_current = self.config.get("noise_std_current", 0.005) # ~0.5% от номинала
+        self.noise_std_voltage = self.config.get("noise_std_voltage", 0.05)  # ~0.1-0.2% от номинала
         
-        self.scaling_range_current = self.config.get("scaling_range_current", (0.8, 1.2))
-        self.scaling_range_voltage = self.config.get("scaling_range_voltage", (0.9, 1.1))
+        self.scaling_range_current = self.config.get("scaling_range_current", (0.9, 1.1))
+        self.scaling_range_voltage = self.config.get("scaling_range_voltage", (0.98, 1.02))
         
-        self.offset_range = self.config.get("offset_range", (-0.02, 0.02))
+        self.offset_range = self.config.get("offset_range", (-0.005, 0.005))
         
         # Индексы каналов (стандартные для Smart Selector)
         self.current_indices = [0, 1, 2] # IA, IB, IC

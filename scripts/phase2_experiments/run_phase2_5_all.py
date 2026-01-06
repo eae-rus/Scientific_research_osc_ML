@@ -137,19 +137,18 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
     # Аугментация
     aug_config = None
     if augment:
-        # Полная конфигурация аугментации по запросу пользователя (все доступные методы)
+        # Конфигурация аугментации (Обновлено для Фазы 2.5: меньше шума, меньше масштаб)
         aug_config = {
-            'p_inversion': 0.2,
-            'p_noise': 0.3,
-            'noise_std_current': 0.02,
-            'noise_std_voltage': 0.01,
-            'p_scaling': 0.5,
-            'scaling_range_current': (0.8, 1.2),
-            'scaling_range_voltage': (0.9, 1.1),
-            'p_offset': 0.2,
-            'offset_range': (-0.02, 0.02),
-            'p_phase_shuffling': 0.2,
-            # 'p_drop_channel': 0.1 # Опционально, может быть рискованно для некоторых моделей
+            'p_inversion': 0.5,
+            'p_noise': 0.1,
+            'noise_std_current': 0.005,
+            'noise_std_voltage': 0.05,
+            'p_scaling': 0.2,
+            'scaling_range_current': (0.9, 1.1),
+            'scaling_range_voltage': (0.98, 1.02),
+            'p_offset': 0.0,
+            'p_phase_shuffling': 0.33,
+            'p_drop_channel': 0.0
         }
 
     # Datasets
