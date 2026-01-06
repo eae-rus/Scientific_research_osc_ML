@@ -62,6 +62,9 @@ class ExperimentRunner:
         else:
             raise ValueError(f"Unknown model: {name}")
             
+        # Подсчет параметров
+        self.num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+                
         return model.to(self.device)
     
     def _init_optimizer(self):
@@ -209,12 +212,20 @@ class ExperimentRunner:
                 
             # Logging
             epoch_time = time.time() - start_time
+            
+            # Измерение времени инференса (мс на 1 образец)
+            # В режиме валидации мы прогоняем всю выборку, поэтому делим время на кол-во сэмплов
+            inf_time_ms = (epoch_time * 1000) / len(all_targets) if len(all_targets) > 0 else 0
+
             metrics = {
                 "epoch": epoch + 1,
                 "train_loss": avg_train_loss,
                 "val_loss": avg_val_loss,
                 "val_acc": val_acc,
                 "val_f1": val_f1,
+                "val_f1_macro": val_f1, # Дублируем для совместимости
+                "inf_time_ms": inf_time_ms,
+                "num_params": self.num_params,
                 "val_balanced_acc": val_balanced_acc,
                 "per_class_f1": per_class_f1,
                 "time": epoch_time

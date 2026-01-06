@@ -107,10 +107,12 @@ def aggregate_reports(root_dir: str, output_file: str = None, plot: bool = False
             "Params": str(config.get('model', {}).get('params', {})),
             "Epochs": len(metrics),
             "Best Epoch": best_epoch.get('epoch'),
+            "Num Params": best_epoch.get('num_params', 0),
             "Train Loss": best_epoch.get('train_loss'),
             "Val Loss": best_epoch.get('val_loss'),
             "Val Acc": best_epoch.get('val_acc'),
             "Val F1": best_epoch.get('val_f1'),
+            "Inf Time (ms)": best_epoch.get('inf_time_ms', 0.0),
             "Val B.Acc": best_epoch.get('val_balanced_acc', 0.0),
             "Time (s)": best_epoch.get('time'),
             "Path": str(exp_dir)
@@ -144,11 +146,29 @@ def aggregate_reports(root_dir: str, output_file: str = None, plot: bool = False
         print(f"\nОтчет сохранен в {output_file}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Агрегация отчетов экспериментов.")
-    parser.add_argument("root_dir", type=str, help="Корневая директория, содержащая эксперименты (например, experiments/)")
-    parser.add_argument("--output", type=str, default=None, help="Путь к выходному файлу CSV")
-    parser.add_argument("--plot", action="store_true", help="Генерировать графики обучения")
+    # === ВЕРСИЯ 1: РУЧНОЙ ЗАПУСК ЧЕРЕЗ КОНСТАНТЫ ===
+    # Отредактируйте параметры ниже для быстрого запуска без аргументов командной строки.
+    MANUAL_RUN = True
     
-    args = parser.parse_args()
+    # ROOT_DIR: Папка, где лежат результаты ваших экспериментов (metrics.jsonl, config.json).
+    ROOT_DIR = "experiments/phase2_5"
     
-    aggregate_reports(args.root_dir, args.output, args.plot)
+    # OUTPUT_CSV: Имя файла для сохранения таблицы с результатами.
+    OUTPUT_CSV = "reports/phase2_5_summary.csv"
+    
+    # GENERATE_PLOTS: Если True, для каждого эксперимента будут построены графики обучения.
+    GENERATE_PLOTS = True
+
+    if MANUAL_RUN:
+        # Создаем папку для отчетов, если её нет
+        Path(OUTPUT_CSV).parent.mkdir(parents=True, exist_ok=True)
+        aggregate_reports(ROOT_DIR, OUTPUT_CSV, GENERATE_PLOTS)
+    else:
+        # === ВЕРСИЯ 2: ЗАПУСК ЧЕРЕЗ CLI (Командную строку) ===
+        parser = argparse.ArgumentParser(description="Агрегация отчетов экспериментов.")
+        parser.add_argument("root_dir", type=str, help="Корневая директория, содержащая эксперименты (например, experiments/)")
+        parser.add_argument("--output", type=str, default=None, help="Путь к выходному файлу CSV")
+        parser.add_argument("--plot", action="store_true", help="Генерировать графики обучения")
+        
+        args = parser.parse_args()
+        aggregate_reports(args.root_dir, args.output, args.plot)
