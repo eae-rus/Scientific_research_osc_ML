@@ -140,7 +140,7 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
         # Конфигурация аугментации (Обновлено для Фазы 2.5: меньше шума, меньше масштаб)
         aug_config = {
             'p_inversion': 0.5,
-            'p_noise': 0.1,
+            'p_noise': 0,
             'noise_std_current': 0.005,
             'noise_std_voltage': 0.05,
             'p_scaling': 0.2,
@@ -260,15 +260,18 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         "2.5.1.1": {"feature_mode": "raw", "sampling": "none", "use_pw": True, "aug": False, "target_level": "base"},
         "2.5.1.2": {"feature_mode": "raw", "sampling": "none", "use_pw": True, "aug": True, "target_level": "base"},
         
-        # Исследование стратегий прореживания (на симметричных составляющих - 6 каналов)
-        "2.5.2.1": {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.2.2": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "use_pw": True, "aug": True, "target_level": "base"},
+        # Исследование стратегий прореживания на сырых данных (Raw Data Downsampling)
+        "2.5.2.0": {"feature_mode": "raw", "sampling": "stride", "stride": 16, "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.2.1": {"feature_mode": "raw", "sampling": "snapshot", "stride": 32, "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.2.2": {"feature_mode": "raw", "sampling": "stride", "stride": 16, "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.2.3": {"feature_mode": "raw", "sampling": "snapshot", "stride": 32, "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
         
-        # Сравнение типов признаков (Symmetric)
+        # Исследование признаков (Feature Type Optimization)
+        "2.5.3.0": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "use_pw": True, "aug": True, "target_level": "base"},
         "2.5.3.1_rect":  {"feature_mode": "symmetric", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
         "2.5.3.1_polar": {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
         
-        # Сравнение Фазных признаков (8 каналов) - Аналог Фазы 2
+        # Сравнение Фазных признаков (8 каналов)
         "2.5.3.1_phase_rect":  {"feature_mode": "phase_complex", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
         "2.5.3.1_phase_polar": {"feature_mode": "phase_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
 
@@ -295,11 +298,17 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
             # Но если пользователь явно указал --complexity, используем её.
             
             actual_comp = comp
-            current_stride = default_stride 
+            current_stride = p.get('stride', default_stride)
             current_harmonics = 1 # по умолчанию
             
-            # Логика маппинга параметров сложности
-            if args.complexity == 'all': # Только авто-выбор
+            # Если в параметрах эксперимента жестко задана сложность, используем её (для 5.2.x)
+            if 'complexity' in p and args.complexity == 'all':
+                actual_comp = p['complexity']
+                if comp != 'light': # Чтобы не запускать 3 раза одно и то же
+                    continue
+            
+            # Логика автоматического выбора параметров, если не задано жестко
+            elif args.complexity == 'all': # Только авто-выбор
                 if p['sampling'] == 'stride':
                     # Medium: Stride 32, Harmonics 3 (как в ТЗ)
                     actual_comp = 'medium'
@@ -312,26 +321,30 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
                 else: 
                     # Light: Stride 2 (для Dense/None?), Harmonics 1
                     actual_comp = 'light'
-                    current_stride = 2 # Если sampling='none', stride игнорируется, но передадим для порядка
+                    current_stride = 2 # Если sampling='none', stride игнорируется
                     current_harmonics = 1
             
                 if comp != 'light': 
                     continue
             else:
-                # Если сложность задана явно, настраиваем параметры под неё
+                # Если сложность задана явно пользователем, подстраиваем гармоники
                 if comp == 'light':
                     current_harmonics = 1
-                    current_stride = 2
+                    # stride берем из p или default
                 elif comp == 'medium':
                     current_harmonics = 3
-                    current_stride = 32
+                    if p['sampling'] == 'stride' and 'stride' not in p:
+                        current_stride = 32
                 elif comp == 'heavy':
                     current_harmonics = 9
-                     # Stride не важен для snapshot, но для stride - пусть будет 32 или меньше?
-                    current_stride = 32
+                    if p['sampling'] == 'stride' and 'stride' not in p:
+                        current_stride = 32
 
-            # Если пользователь явно указал сложность (args.complexity != 'all'), используем её (comp).
-                
+            # Если ID эксперимента 2.5.2.x, убеждаемся что stride берется правильный
+            if args.exp.startswith("2.5.2."):
+                current_stride = p.get('stride', current_stride)
+                actual_comp = p.get('complexity', actual_comp) if args.complexity == 'all' else comp
+
             run_experiment(
                 args.exp, model_name, actual_comp, df, train_indices, val_indices, 
                 feature_cols, p['target_level'], NORM_COEF_PATH,
@@ -352,7 +365,7 @@ if __name__ == "__main__":
     # 1. EXP_ID: Строковый ключ эксперимента (из словаря 'exp_params').
     # ПОЧЕМУ: Определяет физический смысл данных (признаки, гармоники, нормировку).
     # ЗАЧЕМ: Например, '2.5.3.1_phase_polar' активирует 8-канальные полярные признаки.
-    EXP_ID = "2.5.1.0"
+    EXP_ID = "2.5.1.2"
 
     # 2. MODEL_TYPE: Название архитектуры нейросети.
     # ПОЧЕМУ: Выбирает, какой именно класс модели будет инстанцирован и обучен.
@@ -378,7 +391,7 @@ if __name__ == "__main__":
     # 6. CHECKPOINT_FREQUENCY: Частота сохранения чекпоинтов.
     # ПОЧЕМУ: Позволяет восстанавливать обучение с любой эпохи.
     # ЗАЧЕМ: 1 - каждую эпоху (для отладки), 5 - каждые 5 эпох (для долгого обучения).
-    CHECKPOINT_FREQUENCY = 1
+    CHECKPOINT_FREQUENCY = EPOCHS+1  # Сохранять только в конце
 
     # Раскомментируйте строку ниже для запуска с этими параметрами:
     if MODEL_TYPE == 'all':
