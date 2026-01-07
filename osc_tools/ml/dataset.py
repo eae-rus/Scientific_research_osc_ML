@@ -98,7 +98,10 @@ class OscillogramDataset(Dataset):
         if mode not in valid_modes:
             raise ValueError(f"Unknown mode: {mode}. Valid modes: {valid_modes}")
             
-        valid_feature_modes = ['raw', 'symmetric', 'complex_channels', 'power', 'instantaneous_power', 'alpha_beta', 'polar', 'symmetric_polar']
+        valid_feature_modes = [
+            'raw', 'symmetric', 'complex_channels', 'power', 'instantaneous_power', 
+            'alpha_beta', 'polar', 'symmetric_polar', 'phase_polar', 'phase_complex'
+        ]
         for fm in self.feature_mode:
             if fm not in valid_feature_modes:
                 raise ValueError(f"Unknown feature_mode: {fm}. Valid modes: {valid_feature_modes}")
