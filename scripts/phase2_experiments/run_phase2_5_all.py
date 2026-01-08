@@ -294,9 +294,43 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         "2.5.3.2_power_strided": {"feature_mode": "power", "sampling": "stride", "stride": 16, "complexity": "heavy", "use_pw": True, "aug": True, "target_level": "base"},
         "2.5.3.2_ab_strided":    {"feature_mode": "alpha_beta", "sampling": "stride", "stride": 16, "complexity": "heavy", "use_pw": True, "aug": True, "target_level": "base"},
 
-        "2.5.4.1":       {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.4.2":       {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "full"},
-        "2.5.5.1":       {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "full"},
+        # Раздел 4: Исследование признаков при средней сложности (Medium)
+        "2.5.4.0_strided": {"feature_mode": "symmetric_polar", "sampling": "stride", "stride": 16, "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.4.1_rect_strided":  {"feature_mode": "symmetric", "sampling": "stride", "stride": 16, "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.4.1_polar_strided": {"feature_mode": "symmetric_polar", "sampling": "stride", "stride": 16, "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.4.1_phase_rect_strided":  {"feature_mode": "phase_complex", "sampling": "stride", "stride": 16, "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.4.1_phase_polar_strided": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.4.2_power_strided": {"feature_mode": "power", "sampling": "stride", "stride": 16, "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.4.2_ab_strided":    {"feature_mode": "alpha_beta", "sampling": "stride", "stride": 16, "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
+
+        "2.5.4.0_snapshot": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.4.1_rect_snapshot":  {"feature_mode": "symmetric", "sampling": "snapshot", "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.4.1_polar_snapshot": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.4.1_phase_rect_snapshot":  {"feature_mode": "phase_complex", "sampling": "snapshot", "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.4.1_phase_polar_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.4.2_power_snapshot": {"feature_mode": "power", "sampling": "snapshot", "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.4.2_ab_snapshot":    {"feature_mode": "alpha_beta", "sampling": "snapshot", "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
+
+        # Раздел 5: Исследование признаков при низкой сложности (Light)
+        "2.5.5.0_strided": {"feature_mode": "symmetric_polar", "sampling": "stride", "stride": 16, "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.5.1_rect_strided":  {"feature_mode": "symmetric", "sampling": "stride", "stride": 16, "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.5.1_polar_strided": {"feature_mode": "symmetric_polar", "sampling": "stride", "stride": 16, "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.5.1_phase_rect_strided":  {"feature_mode": "phase_complex", "sampling": "stride", "stride": 16, "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.5.1_phase_polar_strided": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.5.2_power_strided": {"feature_mode": "power", "sampling": "stride", "stride": 16, "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.5.2_ab_strided":    {"feature_mode": "alpha_beta", "sampling": "stride", "stride": 16, "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
+
+        "2.5.5.0_snapshot": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.5.1_rect_snapshot":  {"feature_mode": "symmetric", "sampling": "snapshot", "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.5.1_polar_snapshot": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.5.1_phase_rect_snapshot":  {"feature_mode": "phase_complex", "sampling": "snapshot", "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.5.1_phase_polar_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.5.2_power_snapshot": {"feature_mode": "power", "sampling": "snapshot", "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.5.2_ab_snapshot":    {"feature_mode": "alpha_beta", "sampling": "snapshot", "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
+
+        "2.5.6.1":       {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.6.2":       {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "full"},
+        "2.5.7.1":       {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "full"},
     }
     
     if args.exp not in exp_params:
@@ -396,11 +430,23 @@ if __name__ == "__main__":
     # ПОЧЕМУ: Определяет физический смысл данных (признаки, гармоники, нормировку).
     # ЗАЧЕМ: Например, '2.5.3.1_phase_polar' активирует 8-канальные полярные признаки.
     EXPS = [
-        "2.5.2.1", "2.5.2.2", "2.5.2.3", "2.5.2.4", "2.5.2.5", 
-        "2.5.3.0", "2.5.3.1_rect", "2.5.3.1_polar", "2.5.3.1_phase_rect", "2.5.3.1_phase_polar", "2.5.3.2_power", "2.5.3.2_ab",
-        "2.5.3.0_strided", "2.5.3.1_rect_strided", "2.5.3.1_polar_strided", "2.5.3.1_phase_rect_strided", "2.5.3.1_phase_polar_strided", "2.5.3.2_power_strided", "2.5.3.2_ab_strided"
+        # Medium Complexity (2.5.4.x)
+        "2.5.4.0_strided", "2.5.4.1_rect_strided", "2.5.4.1_polar_strided", 
+        "2.5.4.1_phase_rect_strided", "2.5.4.1_phase_polar_strided", 
+        "2.5.4.2_power_strided", "2.5.4.2_ab_strided",
+        "2.5.4.0_snapshot", "2.5.4.1_rect_snapshot", "2.5.4.1_polar_snapshot", 
+        "2.5.4.1_phase_rect_snapshot", "2.5.4.1_phase_polar_snapshot", 
+        "2.5.4.2_power_snapshot", "2.5.4.2_ab_snapshot",
+        
+        # Light Complexity (2.5.5.x)
+        "2.5.5.0_strided", "2.5.5.1_rect_strided", "2.5.5.1_polar_strided", 
+        "2.5.5.1_phase_rect_strided", "2.5.5.1_phase_polar_strided", 
+        "2.5.5.2_power_strided", "2.5.5.2_ab_strided",
+        "2.5.5.0_snapshot", "2.5.5.1_rect_snapshot", "2.5.5.1_polar_snapshot", 
+        "2.5.5.1_phase_rect_snapshot", "2.5.5.1_phase_polar_snapshot", 
+        "2.5.5.2_power_snapshot", "2.5.5.2_ab_snapshot",
     ]
-    # EXPS = ["2.5.3.0_strided"]  # Пример запуска одного эксперимента
+    # EXPS = ["2.5.4.0_strided"]  # Пример запуска одного эксперимента
 
     # 2. MODEL_TYPE: Название архитектуры нейросети.
     # ПОЧЕМУ: Выбирает, какой именно класс модели будет инстанцирован и обучен.
