@@ -43,7 +43,7 @@ MODEL_COMPLEXITY = {
     }
 }
 
-def get_model_params(model_name, complexity, input_size=None, num_classes=None, in_channels=None):
+def get_model_params(model_name, complexity, input_size=None, num_classes=None, in_channels=None, kernel_size=None, stride=None):
     params = MODEL_COMPLEXITY[complexity].get(model_name, {}).copy()
     
     if model_name == 'SimpleMLP':
@@ -55,9 +55,14 @@ def get_model_params(model_name, complexity, input_size=None, num_classes=None, 
     elif model_name in ['SimpleCNN', 'ConvKAN', 'PhysicsKAN']:
         params['in_channels'] = in_channels
         params['num_classes'] = num_classes
+        if kernel_size:
+            params['kernel_size'] = kernel_size
+        if stride:
+            params['stride'] = stride
     elif model_name == 'ResNet1D':
         params['in_channels'] = in_channels
         params['num_classes'] = num_classes
+        # ResNet1D имеет свою сложную структуру страйда, оставим как есть или добавим адаптацию позже
     
     return params
 
@@ -95,16 +100,52 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
     if sampling_strategy == 'none':
         pts = window_size
     elif sampling_strategy == 'stride':
-        pts = window_size // stride
+        # Для спектральных признаков пропускаем первые 32 точки (warmup)
+        if feature_mode != 'raw':
+            pts = (window_size - 32) // stride
+        else:
+            pts = window_size // stride
     elif sampling_strategy == 'snapshot':
-        pts = 2
+        # Raw: 32 начала + 32 конца = 64. Spectral: 2 точки.
+        if feature_mode == 'raw':
+            pts = 64
+        else:
+            pts = 2
     else:
         pts = window_size
         
     input_size = in_channels * pts
     num_classes = len(target_cols)
     
-    model_params = get_model_params(model_name, complexity, input_size, num_classes, in_channels)
+    # Адаптация параметров свертки под стратегию (размышления пользователя)
+    m_kernel = 3 
+    m_stride = 1
+
+    if feature_mode == 'raw':
+        if sampling_strategy == 'none':
+            m_kernel = 8
+            m_stride = 1
+        elif sampling_strategy == 'stride':
+            m_kernel = 8
+            m_stride = 8
+        elif sampling_strategy == 'snapshot':
+            m_kernel = 8
+            m_stride = 1
+    else:
+        # Спектральные признаки
+        if sampling_strategy == 'none':
+            m_kernel = 8
+            m_stride = 1
+        elif sampling_strategy in ['stride', 'snapshot']:
+            m_kernel = 3
+            m_stride = 1
+
+    model_params = get_model_params(model_name, complexity, input_size, num_classes, in_channels, m_kernel, m_stride)
+    
+    # Для PhysicsKAN включаем MLP режим, если точек слишком мало для свертки
+    if model_name == 'PhysicsKAN' and pts < 8:
+        model_params['use_mlp'] = True
+        model_params['input_size'] = input_size
     
     experiment_name = f"Exp_{experiment_id}_{model_name}_{complexity}_{feature_mode}_{sampling_strategy}_{target_level}"
     
@@ -401,6 +442,13 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
                 current_stride = p.get('stride', current_stride)
                 actual_comp = p.get('complexity', actual_comp) if args.complexity == 'all' else comp
 
+            # ИСКЛЮЧЕНИЕ СВЕРТОЧНЫХ МОДЕЛЕЙ ДЛЯ СПЕКТРАЛЬНОГО SNAPSHOT (2 точки)
+            if p['sampling'] == 'snapshot' and p['feature_mode'] != 'raw':
+                if model_name in ['SimpleCNN', 'ConvKAN', 'ResNet1D']:
+                    # Пропускаем сверточные сети на 2 точках.
+                    # PhysicsKAN - исключение, т.к. мы сделали для него фоллбек на MLP.
+                    continue
+            
             # Проверка, обучена ли уже модель
             experiment_name = f"Exp_{args.exp}_{model_name}_{actual_comp}_{p['feature_mode']}_{p['sampling']}_{p['target_level']}"
             checkpoint_path = ROOT_DIR / 'experiments' / 'phase2_5' / experiment_name / 'final_model.pt'
@@ -424,27 +472,44 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
 
 if __name__ == "__main__":
     # === ВЕРСИЯ 1: РУЧНОЙ ЗАПУСК ЧЕРЕЗ КОНСТАНТЫ (Рекомендуется для IDE/Notebooks) ===
-    # Отредактируйте параметры ниже и раскомментируйте вызов main(), чтобы запустить одну модель.
-
-    # 1. EXP_ID: Строковый ключ эксперимента (из словаря 'exp_params').
-    # ПОЧЕМУ: Определяет физический смысл данных (признаки, гармоники, нормировку).
-    # ЗАЧЕМ: Например, '2.5.3.1_phase_polar' активирует 8-канальные полярные признаки.
+    
+    # Полный список всех экспериментов Фазы 2.5
     EXPS = [
-        # Medium Complexity (2.5.4.x)
+        # 1. Baseline & Аугментация Tests
+        "2.5.1.0", "2.5.1.1", "2.5.1.2",
+        
+        # 2. Raw Data Sampling Strategies
+        "2.5.2.0", "2.5.2.1", "2.5.2.2", "2.5.2.3", "2.5.2.4", "2.5.2.5",
+        
+        # 3. Feature Optimization (Heavy/Snapshot & Strided)
+        "2.5.3.0", "2.5.3.1_rect", "2.5.3.1_polar", 
+        "2.5.3.1_phase_rect", "2.5.3.1_phase_polar", 
+        "2.5.3.2_power", "2.5.3.2_ab",
+        
+        "2.5.3.0_strided", "2.5.3.1_rect_strided", "2.5.3.1_polar_strided", 
+        "2.5.3.1_phase_rect_strided", "2.5.3.1_phase_polar_strided", 
+        "2.5.3.2_power_strided", "2.5.3.2_ab_strided",
+
+        # 4. Medium Complexity (Strided & Snapshot)
         "2.5.4.0_strided", "2.5.4.1_rect_strided", "2.5.4.1_polar_strided", 
         "2.5.4.1_phase_rect_strided", "2.5.4.1_phase_polar_strided", 
         "2.5.4.2_power_strided", "2.5.4.2_ab_strided",
+        
         "2.5.4.0_snapshot", "2.5.4.1_rect_snapshot", "2.5.4.1_polar_snapshot", 
         "2.5.4.1_phase_rect_snapshot", "2.5.4.1_phase_polar_snapshot", 
         "2.5.4.2_power_snapshot", "2.5.4.2_ab_snapshot",
         
-        # Light Complexity (2.5.5.x)
+        # 5. Light Complexity (Strided & Snapshot)
         "2.5.5.0_strided", "2.5.5.1_rect_strided", "2.5.5.1_polar_strided", 
         "2.5.5.1_phase_rect_strided", "2.5.5.1_phase_polar_strided", 
         "2.5.5.2_power_strided", "2.5.5.2_ab_strided",
+        
         "2.5.5.0_snapshot", "2.5.5.1_rect_snapshot", "2.5.5.1_polar_snapshot", 
         "2.5.5.1_phase_rect_snapshot", "2.5.5.1_phase_polar_snapshot", 
         "2.5.5.2_power_snapshot", "2.5.5.2_ab_snapshot",
+
+        # 6. Targets
+        "2.5.6.1", "2.5.6.2", "2.5.7.1",
     ]
     # EXPS = ["2.5.4.0_strided"]  # Пример запуска одного эксперимента
 
@@ -475,11 +540,14 @@ if __name__ == "__main__":
     # ЗАЧЕМ: 1 - каждую эпоху (для отладки), 5 - каждые 5 эпох (для долгого обучения).
     CHECKPOINT_FREQUENCY = EPOCHS+1  # Сохранять только в конце
 
-    # Раскомментируйте строку ниже для запуска с этими параметрами:
+    # Запуск цикла
     for exp_id in EXPS:
         if MODEL_TYPE == 'all':
             for m in ['SimpleMLP', 'SimpleCNN', 'ConvKAN', 'SimpleKAN', 'PhysicsKAN', 'ResNet1D']:
-                main(exp=exp_id, model=m, complexity=SELECTED_COMPLEXITY, samples_per_file=SAMPLES_PER_FILE, epochs=EPOCHS, checkpoint_frequency=CHECKPOINT_FREQUENCY)
+                try:
+                    main(exp=exp_id, model=m, complexity=SELECTED_COMPLEXITY, samples_per_file=SAMPLES_PER_FILE, epochs=EPOCHS, checkpoint_frequency=CHECKPOINT_FREQUENCY)
+                except Exception as e:
+                    print(f"!!! Ошибка в эксперименте {exp_id} / {m}: {e}")
         else:
             main(exp=exp_id, model=MODEL_TYPE, complexity=SELECTED_COMPLEXITY, samples_per_file=SAMPLES_PER_FILE, epochs=EPOCHS, checkpoint_frequency=CHECKPOINT_FREQUENCY)
 

@@ -698,15 +698,53 @@ class OscillogramDataset(Dataset):
         x = torch.tensor(x_data, dtype=torch.float32).transpose(0, 1)
         
         # Прореживание (downsampling)
+        is_spectral = any(m in ['symmetric', 'symmetric_polar', 'phase_polar', 'phase_complex', 'power', 'alpha_beta', 'polar'] for m in self.feature_mode)
+        is_raw = 'raw' in self.feature_mode and len(self.feature_mode) == 1
+        
         if self.downsampling_mode == 'stride':
+             # Для спектральных/Фурье фичей пропускаем "разгон" FFT (первые 32 точки)
+             # Т.к. там нули/NaN
+             if is_spectral:
+                 fft_warmup = 32
+                 if x.shape[1] > fft_warmup:
+                      x = x[:, fft_warmup:]
+                      
              x = x[:, ::self.downsampling_stride]
+             
         elif self.downsampling_mode == 'snapshot':
-             # Выбираем только первый и последний срез
-             if x.shape[1] >= 2:
-                 x = x[:, [0, -1]]
+             if is_raw:
+                 # Для сырых данных берем окна (начало + конец) вместо точек
+                 # 32 точки = 1 период пром. частоты (20 мс)
+                 window_len = 32
+                 if x.shape[1] >= window_len * 2:
+                     head = x[:, :window_len]
+                     tail = x[:, -window_len:]
+                     x = torch.cat([head, tail], dim=1) # (Channels, 64)
+                 elif x.shape[1] >= 2:
+                     # Fallback для коротких окон: просто начало и конец пополам
+                     mid = x.shape[1] // 2
+                     head = x[:, :mid]
+                     tail = x[:, mid:] # чтобы сумма длин была равна исходной? Нет, лучше фиксированный размер.
+                     # Если меньше 64 точек, просто возвращаем все?
+                     # Или ресайзим? Пока оставим как есть - вернем все x
+                     pass
              else:
-                 # Если окно слишком маленькое, просто дублируем первый срез
-                 x = x.repeat(1, 2)[:, :2]
+                 # Для спектральных данных
+                 # Берем первую валидную точку (индекс 31, т.к. окно 32) и последнюю
+                 fft_warmup = 31
+                 if x.shape[1] > fft_warmup:
+                     last_idx = x.shape[1] - 1
+                     if last_idx > fft_warmup:
+                         x = x[:, [fft_warmup, last_idx]]
+                     else:
+                         # Если длина всего 32, то 31-й индекс это и есть последняя
+                         x = x[:, [fft_warmup, fft_warmup]]
+                 else:
+                     # Fallback (если вдруг окно меньше 32)
+                     if x.shape[1] >= 2:
+                         x = x[:, [0, -1]]
+                     else:
+                         x = x.repeat(1, 2)[:, :2]
 
         # Извлечение целевой переменной (Y)
         y = None

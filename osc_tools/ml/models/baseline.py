@@ -50,7 +50,7 @@ class SimpleCNN(BaseModel):
     Поддерживает произвольное количество слоев через список channels.
     """
     def __init__(self, in_channels: int, num_classes: int, channels: list = [16, 32, 64], 
-                 kernel_size: int = 3, dropout: float = 0.2, use_bn: bool = True,
+                 kernel_size: int = 3, stride: int = 1, dropout: float = 0.2, use_bn: bool = True,
                  pool_every: int = 1):
         super().__init__()
         
@@ -59,7 +59,9 @@ class SimpleCNN(BaseModel):
         
         for i, out_channels in enumerate(channels):
             # Convolutional block
-            layers.append(nn.Conv1d(curr_channels, out_channels, kernel_size, padding=kernel_size//2))
+            # Применяем stride только к первому слою, чтобы сильно не терять разрешение дальше
+            s = stride if i == 0 else 1
+            layers.append(nn.Conv1d(curr_channels, out_channels, kernel_size, stride=s, padding=kernel_size//2))
             if use_bn:
                 layers.append(nn.BatchNorm1d(out_channels))
             layers.append(nn.ReLU())

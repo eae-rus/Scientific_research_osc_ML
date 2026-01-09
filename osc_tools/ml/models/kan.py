@@ -64,7 +64,7 @@ class ConvKAN(BaseModel):
     Поддерживает произвольное количество слоев через список channels.
     """
     def __init__(self, in_channels: int, num_classes: int, channels: list = [8, 16, 32], 
-                 kernel_size: int = 3, grid_size: int = 5, spline_order: int = 3,
+                 kernel_size: int = 3, stride: int = 1, grid_size: int = 5, spline_order: int = 3,
                  dropout: float = 0.2, pool_every: int = 1, base_activation=torch.nn.SiLU):
         super().__init__()
         
@@ -76,17 +76,22 @@ class ConvKAN(BaseModel):
             # grid_size может быть списком или числом. Если список - берем по индексу.
             curr_grid = grid_size[i] if isinstance(grid_size, list) else grid_size
             
+            # Применяем stride только к первому слою
+            s = stride if i == 0 else 1
+            
             layers.append(
                 KANConv1d(
                     curr_channels, 
                     out_channels, 
                     kernel_size=kernel_size, 
+                    stride=s,
                     padding=kernel_size//2, 
                     grid_size=curr_grid, 
                     spline_order=spline_order,
                     base_activation=base_activation
                 )
             )
+            layers.append(nn.BatchNorm1d(out_channels)) # Нормализация для стабильности
             
             # Pooling
             if (i + 1) % pool_every == 0:
@@ -121,8 +126,9 @@ class PhysicsKAN(BaseModel):
     и подает в ConvKAN.
     """
     def __init__(self, in_channels: int, num_classes: int, channels: list = [8, 16, 32], 
-                 kernel_size: int = 3, grid_size: int = 5, spline_order: int = 3,
-                 dropout: float = 0.2, pool_every: int = 1, base_activation=torch.nn.SiLU):
+                 kernel_size: int = 3, stride: int = 1, grid_size: int = 5, spline_order: int = 3,
+                 dropout: float = 0.2, pool_every: int = 1, base_activation=torch.nn.SiLU,
+                 use_mlp: bool = False, input_size: int = 64): # use_mlp для snapshot
         super().__init__()
         
         if in_channels % 2 != 0:
@@ -130,21 +136,51 @@ class PhysicsKAN(BaseModel):
             
         self.mult = MultiplicationLayer()
         self.div = DivisionLayer()
+        self.use_mlp = use_mlp
         
-        # Input to ConvKAN: Original (C) + Mult (C/2) + Div (C/2) = 2 * C
+        # Вход для ConvKAN: Original (C) + Mult (C/2) + Div (C/2) = 2 * C
         conv_in_channels = in_channels + (in_channels // 2) * 2
         
-        self.conv_kan = ConvKAN(
-            in_channels=conv_in_channels,
-            num_classes=num_classes,
-            channels=channels,
-            kernel_size=kernel_size,
-            grid_size=grid_size,
-            spline_order=spline_order,
-            dropout=dropout,
-            pool_every=pool_every,
-            base_activation=base_activation
-        )
+        if self.use_mlp:
+             # Для MLP режима (snapshot c малым кол-вом точек или без временной структуры)
+             # Вход: conv_in_channels * (input_size/in_channels)? Нет, вход уже будет развернут?
+             # input_size здесь - это кол-во временных точек * каналов.
+             # Но мы делаем feature engineering ДО flatten.
+             # Поэтому нам надо знать длину временного ряда (pts).
+             
+             # Если мы получаем (B, C, T), то после mult/div будет (B, 2C, T).
+             # Потом flatten -> (B, 2C*T).
+             # И подаем в SimpleKAN.
+             
+            # Определяем размер входа для MLP на основе доступных признаков
+            pts = input_size // in_channels
+            mlp_input_size = conv_in_channels * pts
+             
+            # Масштабируем размеры скрытых слоев из конфигурации каналов для сохранения относительной сложности
+            hidden_sizes = [h * 4 for h in channels]
+             
+            self.processing_net = SimpleKAN(
+                input_size=mlp_input_size,
+                hidden_sizes=hidden_sizes,
+                output_size=num_classes,
+                grid_size=grid_size,
+                spline_order=spline_order,
+                dropout=dropout,
+                base_activation=base_activation
+             )
+        else:
+            self.processing_net = ConvKAN(
+                in_channels=conv_in_channels,
+                num_classes=num_classes,
+                channels=channels,
+                kernel_size=kernel_size,
+                stride=stride,
+                grid_size=grid_size,
+                spline_order=spline_order,
+                dropout=dropout,
+                pool_every=pool_every,
+                base_activation=base_activation
+            )
 
     def forward(self, x):
         # x: [Batch, Channels, Length]
@@ -157,4 +193,4 @@ class PhysicsKAN(BaseModel):
         # Concatenate along channel dimension
         x_combined = torch.cat([x, s, z], dim=1)
         
-        return self.conv_kan(x_combined)
+        return self.processing_net(x_combined)
