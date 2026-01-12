@@ -136,6 +136,12 @@ class PhysicsKAN(BaseModel):
             
         self.mult = MultiplicationLayer()
         self.div = DivisionLayer()
+        
+        # Нормализация для физических слоев
+        half_channels = in_channels // 2
+        self.bn_mult = nn.BatchNorm1d(half_channels)
+        self.bn_div = nn.BatchNorm1d(half_channels)
+
         self.use_mlp = use_mlp
         
         # Вход для ConvKAN: Original (C) + Mult (C/2) + Div (C/2) = 2 * C
@@ -188,7 +194,10 @@ class PhysicsKAN(BaseModel):
         # MultiplicationLayer делает x[:half] * x[half:]
         
         s = self.mult(x) # Power-like features
+        s = self.bn_mult(s)
+
         z = self.div(x)  # Impedance-like features
+        z = self.bn_div(z)
         
         # Concatenate along channel dimension
         x_combined = torch.cat([x, s, z], dim=1)
