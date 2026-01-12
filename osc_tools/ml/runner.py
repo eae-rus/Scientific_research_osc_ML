@@ -141,8 +141,6 @@ class ExperimentRunner:
             
             # Validation
             val_loss = 0.0
-            val_correct = 0
-            val_total = 0
             
             all_preds = []
             all_targets = []
@@ -161,8 +159,6 @@ class ExperimentRunner:
                                 y = y.squeeze(1)
                             
                             _, predicted = torch.max(outputs.data, 1)
-                            val_total += y.size(0)
-                            val_correct += (predicted == y).sum().item()
                             
                             all_preds.extend(predicted.cpu().numpy())
                             all_targets.extend(y.cpu().numpy())
