@@ -1,7 +1,11 @@
 from .mlp import PDR_MLP_v1, PDR_MLP_v2, PDR_MLP_v3
 from .cnn import Conv_3, ResNet1D
 from .baseline import SimpleMLP, SimpleCNN
-from .advanced import SimpleCNN_Depthwise, ResNet1D_Depthwise
+from .advanced import (
+    HierarchicalCNN, 
+    HierarchicalKAN,
+    HierarchicalMLP
+)
 from .kan import SimpleKAN, ConvKAN, PhysicsKAN
 from .autoencoders import AutoEncoder, KANAE
 from .unet import UNet1D

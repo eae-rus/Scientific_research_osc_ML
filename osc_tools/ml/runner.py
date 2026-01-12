@@ -13,7 +13,7 @@ from osc_tools.ml.config import ExperimentConfig
 from osc_tools.ml.dataset import OscillogramDataset
 from osc_tools.ml.models import (
     SimpleMLP, SimpleCNN, ResNet1D, 
-    SimpleCNN_Depthwise, ResNet1D_Depthwise,
+    HierarchicalCNN, HierarchicalKAN, HierarchicalMLP,
     PDR_MLP_v2, FFT_MLP_COMPLEX_v1,
     SimpleKAN, ConvKAN, PhysicsKAN, AutoEncoder
 )
@@ -46,12 +46,14 @@ class ExperimentRunner:
             model = SimpleMLP(**params)
         elif name == 'SimpleCNN':
             model = SimpleCNN(**params)
-        elif name == 'SimpleCNN_Depthwise':
-            model = SimpleCNN_Depthwise(**params)
         elif name == 'ResNet1D':
             model = ResNet1D(**params)
-        elif name == 'ResNet1D_Depthwise':
-            model = ResNet1D_Depthwise(**params)
+        elif name == 'HierarchicalCNN':
+            model = HierarchicalCNN(**params)
+        elif name == 'HierarchicalKAN':
+            model = HierarchicalKAN(**params)
+        elif name == 'HierarchicalMLP':
+            model = HierarchicalMLP(**params)
         elif name == 'PDR_MLP_v2':
             model = PDR_MLP_v2(**params)
         elif name == 'FFT_MLP_COMPLEX_v1':

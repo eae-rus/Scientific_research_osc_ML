@@ -35,7 +35,10 @@ class OscillogramDataset(Dataset):
         augmentation_config: Optional[dict] = None,
         downsampling_mode: str = 'none',
         downsampling_stride: int = 16,
-        num_harmonics: int = 1
+        num_harmonics: int = 1,
+        augment: bool = False,
+        sampling_strategy: Optional[str] = None,
+        target_level: str = 'full'
     ):
         """
         Args:
@@ -56,6 +59,9 @@ class OscillogramDataset(Dataset):
             downsampling_mode: Режим прореживания ('none', 'stride', 'snapshot').
             downsampling_stride: Шаг прореживания (для mode='stride').
             num_harmonics: Количество гармоник для спектрального анализа (feature_mode='symmetric' etc.).
+            augment: Быстрое включение стандартной аугментации (если True, игнорирует augmentation_config).
+            sampling_strategy: Алиас для downsampling_mode (для совместимости с конфигами экспериментов).
+            target_level: Уровень детализации меток ('full', 'base_labels'). Влияет на output (Y).
         """
         if isinstance(dataframe, pl.LazyFrame):
             self.data = dataframe.collect()
@@ -69,14 +75,30 @@ class OscillogramDataset(Dataset):
         self.sampling_rate = sampling_rate
         self.feature_columns = feature_columns
         self.target_columns = target_columns
+        self.target_level = target_level
         self.physical_normalization = physical_normalization
-        self.downsampling_mode = downsampling_mode
+        
+        # Алиас обработка
+        self.downsampling_mode = sampling_strategy if sampling_strategy is not None else downsampling_mode
         self.downsampling_stride = downsampling_stride
         self.num_harmonics = num_harmonics
 
-        
         self.augmenter = None
-        if augmentation_config:
+        if augment:
+             # Стандартная конфигурация аугментации (восстановлена "легкая" схема Фазы 2)
+             # Инверсия, масштабирование, сдвиг фаз/времени. Шум отключен по умолчанию.
+             default_aug_config = {
+                 'p_inversion': 0.5,
+                 'p_scaling': 0.3,
+                 'scaling_range_current': (0.9, 1.1),
+                 'scaling_range_voltage': (0.95, 1.05),
+                 'p_phase_shuffling': 0.3, 
+                 'p_noise': 0.0,
+                 'p_drop_channel': 0.0,
+                 'p_offset': 0.0
+             }
+             self.augmenter = TimeSeriesAugmenter(default_aug_config)
+        elif augmentation_config:
             self.augmenter = TimeSeriesAugmenter(augmentation_config)
         
         self.norm_coef_df = None
