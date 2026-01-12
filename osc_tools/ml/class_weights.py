@@ -53,5 +53,5 @@ def compute_pos_weight_from_loader(loader: DataLoader, device: Optional[torch.de
     # Формула для pos_weight в BCEWithLogitsLoss: количество отрицательных / количество положительных
     weights = neg_counts / pos_counts_safe
 
-    tensor = torch.tensor(weights, dtype=torch.float32, device=device)
-    return tensor
+    # Принудительное приведение к типу и устройству
+    return weights.clone().detach().to(dtype=torch.float32, device=device)

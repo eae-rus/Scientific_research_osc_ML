@@ -16,189 +16,7 @@ from osc_tools.ml.runner import ExperimentRunner
 from osc_tools.ml.dataset import OscillogramDataset
 from osc_tools.ml.labels import clean_labels, add_base_labels, get_target_columns
 
-def run_single_experiment(
-    exp_name: str, 
-    model_name: str, 
-    model_params: Dict[str, Any],
-    feature_mode: str,
-    sampling_strategy: str,
-    downsampling_stride: int,
-    df: pl.DataFrame,
-    train_indices: List[int],
-    val_indices: List[int],
-    target_cols: List[str],
-    data_config_base: DataConfig,
-    train_config_base: TrainingConfig,
-    norm_coef_path: Path,
-    augment: bool = True  # Добавлен параметр управления аугментацией
-):
-    print(f"\n>>> Запуск эксперимента: {exp_name}")
-    print(f"Модель: {model_name}")
-    print(f"Входные данные: {feature_mode} + {sampling_strategy}")
-    
-    # 1. Подготовка Dataset
-    # feature_mode='phase_polar' -> 8 каналов * 2 (Ампл, Фаза) = 16 каналов
-    # feature_mode='symmetric_polar' -> 6 каналов * 2 (Ампл, Фаза) = 12 каналов
-    
-    # Аугментация используется только если augment=True
-    train_ds = OscillogramDataset(
-        dataframe=df, indices=train_indices, window_size=data_config_base.window_size,
-        mode='classification', feature_mode=feature_mode,
-        sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
-        target_columns=target_cols, target_level='base_labels', # Используем базовые метки для тестов 2.6
-        physical_normalization=True, norm_coef_path=str(norm_coef_path),
-        augment=augment 
-    )
-    
-    # Для валидации отключаем аугментацию
-    val_ds = OscillogramDataset(
-        dataframe=df, indices=val_indices, window_size=data_config_base.window_size,
-        mode='classification', feature_mode=feature_mode,
-        sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
-        target_columns=target_cols, target_level='base_labels',
-        physical_normalization=True, norm_coef_path=str(norm_coef_path),
-        augment=False
-    )
-    
-    train_loader = torch.utils.data.DataLoader(train_ds, batch_size=data_config_base.batch_size, shuffle=True, num_workers=0)
-    val_loader = torch.utils.data.DataLoader(val_ds, batch_size=data_config_base.batch_size, shuffle=False, num_workers=0)
-    
-    # 2. Настройка Config и Runner
-    
-    # Определяем in_channels из первого семпла
-    sample_x, _ = train_ds[0]
-    in_channels = sample_x.shape[0]
-    print(f"Обнаружено входных каналов: {in_channels}, Длина входа: {sample_x.shape[1]}")
-    
-    # Обновляем параметры модели
-    # in_channels обязателен для всех моделей
-    model_params['in_channels'] = in_channels
-    
-    if 'input_size' in model_params:
-        # Для MLP/SimpleKAN нужен расплющенный (flattened) размер
-        model_params['input_size'] = in_channels * sample_x.shape[1]
-
-    # Специальная обработка для PhysicsKAN в режиме snapshot (использует внутренний MLP)
-    if model_name == 'PhysicsKAN' and sampling_strategy == 'snapshot':
-        model_params['use_mlp'] = True
-        model_params['input_size'] = in_channels * sample_x.shape[1] 
-
-    config = ExperimentConfig(
-        model=ModelConfig(name=model_name, params=model_params),
-        data=data_config_base,
-        training=train_config_base
-    )
-    config.training.experiment_name = exp_name
-    
-    runner = ExperimentRunner(config)
-    
-    # Запуск обучения
-    history = runner.train(train_loader, val_loader)
-    
-    # 3. Сохранение результатов
-    history_path = runner.save_dir / f"{exp_name}_history.json"
-    with open(history_path, "w") as f:
-        json.dump(history, f, indent=4)
-        
-    # Сохранение весов
-    torch.save(runner.model.state_dict(), runner.save_dir / f"{exp_name}.pt")
-    
-    return history
-
-def main(exp: str = None, model_type: str = 'all', epochs: int = 30, samples_per_file: int = 12):
-    """
-    Главная точка входа для запуска экспериментов.
-    Поддерживает как ручной запуск (через параметры), так и через CLI.
-    """
-    if exp is None:
-        # Режим CLI
-        parser = argparse.ArgumentParser(description="Запуск экспериментов Фазы 2.6")
-        parser.add_argument('--exp', type=str, default='all', help='ID эксперимента или группы ("all", "2.6.1", "2.6.2" и т.д.)')
-        parser.add_argument('--epochs', type=int, default=30, help='Количество эпох')
-        parser.add_argument('--model', type=str, default='all', help='Фильтр по модели')
-        parser.add_argument('--samples', type=int, default=12, help='Количество случайных окон из файла за эпоху')
-        args = parser.parse_args()
-        target_exp = args.exp
-        target_epochs = args.epochs
-        target_model = args.model
-        target_spf = args.samples
-    else:
-        # Ручной режим
-        target_exp = exp
-        target_epochs = epochs
-        target_model = model_type
-        target_spf = samples_per_file
-
-    print(f"Конфигурация: Exp={target_exp}, Model={target_model}, Epochs={target_epochs}, Samples/File={target_spf}")
-
-    # 1. Настройка путей
-    METADATA_FILE = ROOT_DIR / 'data' / 'ml_datasets' / 'labeled_2025_12_03.csv'
-    EXPERIMENTS_DIR = ROOT_DIR / 'experiments' / 'phase2_6'
-    EXPERIMENTS_DIR.mkdir(parents=True, exist_ok=True)
-    NORM_COEF_PATH = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
-
-    print(f"Загрузка данных из {METADATA_FILE}")
-    df = pl.read_csv(METADATA_FILE, infer_schema_length=50000, null_values=["NA", "nan", "null", ""])
-    
-    # Обработка данных
-    df = clean_labels(df)
-    df = add_base_labels(df)
-    df = df.with_row_index("row_nr") # Важно для create_indices
-    
-    # Целевые колонки (Классы повреждений)
-    target_cols = get_target_columns('base')
-    num_classes = len(target_cols)
-    print(f"Целевые колонки: {target_cols}")
-
-    # 2. Разделение данных (Train/Val Split по файлам)
-    WINDOW_SIZE = 320 # 200мс
-    BATCH_SIZE = 64
-    EPOCHS = target_epochs
-    
-    unique_files = df["file_name"].unique().to_list()
-    np.random.seed(42)
-    np.random.shuffle(unique_files)
-    
-    split_idx = int(len(unique_files) * 0.8)
-    train_files = unique_files[:split_idx]
-    val_files = unique_files[split_idx:]
-    
-    print(f"Файлов для обучения: {len(train_files)}, для валидации: {len(val_files)}")
-
-    # Генерация индексов с использованием create_indices
-    # Для train используем режим 'train' с samples_per_file
-    train_indices = OscillogramDataset.create_indices(
-        df.filter(pl.col("file_name").is_in(train_files)), 
-        window_size=WINDOW_SIZE, 
-        mode='train',
-        samples_per_file=target_spf
-    )
-    
-    # Для val используем режим 'val' (фиксированные окна)
-    val_indices = OscillogramDataset.create_indices(
-        df.filter(pl.col("file_name").is_in(val_files)), 
-        window_size=WINDOW_SIZE, 
-        mode='val'
-    )
-    
-    print(f"Всего примеров на эпоху: Train={len(train_indices)}, Val={len(val_indices)}")
-    
-    data_config = DataConfig(
-        path=str(METADATA_FILE), 
-        window_size=WINDOW_SIZE, 
-        batch_size=BATCH_SIZE, 
-        mode='multilabel'
-    )
-    
-    train_config = TrainingConfig(
-        epochs=EPOCHS, 
-        learning_rate=0.001, 
-        device='cuda' if torch.cuda.is_available() else 'cpu',
-        use_pos_weight=True,
-        save_dir=str(EXPERIMENTS_DIR)
-    )
-
-    # Определение уровней сложности моделей для Фазы 2.6
+# Определение уровней сложности моделей для Фазы 2.6
 MODEL_COMPLEXITY = {
     'light': {
         'SimpleMLP': {'hidden_sizes': [64, 32], 'dropout': 0.2},
@@ -250,7 +68,13 @@ MODEL_COMPLEXITY = {
 def get_model_params(model_name, complexity, num_classes):
     """Возвращает параметры модели на основе сложности."""
     params = MODEL_COMPLEXITY[complexity].get(model_name, {}).copy()
-    params['num_classes'] = num_classes
+    
+    # Унификация имен параметров для разных архитектур
+    if model_name in ['SimpleMLP', 'SimpleKAN']:
+        params['output_size'] = num_classes
+    else:
+        params['num_classes'] = num_classes
+        
     return params
 
 def run_single_experiment(
@@ -295,8 +119,8 @@ def run_single_experiment(
         augment=False
     )
     
-    train_loader = torch.utils.data.DataLoader(train_ds, batch_size=data_config_base.batch_size, shuffle=True)
-    val_loader = torch.utils.data.DataLoader(val_ds, batch_size=data_config_base.batch_size, shuffle=False)
+    train_loader = torch.utils.data.DataLoader(train_ds, batch_size=data_config_base.batch_size, shuffle=True, num_workers=0)
+    val_loader = torch.utils.data.DataLoader(val_ds, batch_size=data_config_base.batch_size, shuffle=False, num_workers=0)
     
     # 3. Определение in_channels из первого семпла
     sample_x, _ = train_ds[0]
@@ -304,8 +128,14 @@ def run_single_experiment(
     seq_len = sample_x.shape[1]
     
     model_params['in_channels'] = in_channels
-    if 'input_size' in model_params or model_name in ['SimpleMLP', 'SimpleKAN', 'HierarchicalMLP', 'HierarchicalSimpleKAN']:
+    
+    # Модели, которые ожидают input_size (обычно плоские MLP/KAN)
+    if model_name in ['SimpleMLP', 'SimpleKAN', 'HierarchicalSimpleKAN', 'PhysicsKAN', 'HierarchicalPhysicsKAN']:
         model_params['input_size'] = in_channels * seq_len
+        
+    # SimpleMLP и SimpleKAN работают только с flatten вектором и не принимают параметр in_channels
+    if model_name in ['SimpleMLP', 'SimpleKAN']:
+        model_params.pop('in_channels', None)
 
     if model_name in ['PhysicsKAN', 'HierarchicalPhysicsKAN'] and sampling_strategy == 'snapshot':
         model_params['use_mlp'] = True
@@ -328,7 +158,7 @@ def run_single_experiment(
         
     return history
 
-def main(exp: str = None, model: str = None, complexity: str = None, samples_per_file: int = 12, epochs: int = 30, checkpoint_frequency: int = 1):
+def main(exp: str = None, model: str = None, complexity: str = None, samples_per_file: int = 12, epochs: int = 30, checkpoint_frequency: int = 1, skip_existing: bool = True):
     """Главная точка входа для запуска экспериментов Phase 2.6."""
     
     # Режим параметров
@@ -374,6 +204,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         epochs=target_epochs, 
         learning_rate=0.001, 
         use_pos_weight=True,
+        checkpoint_frequency=checkpoint_frequency,
         save_dir=str(EXPERIMENTS_DIR)
     )
 
@@ -411,8 +242,8 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
             full_exp_name = f"Exp{target_exp}_{m_name}_{comp}_{p['sampling']}"
             
             # Проверка существования
-            checkpoint_path = EXPERIMENTS_DIR / full_exp_name / "final_model.pt"
-            if checkpoint_path.exists():
+            checkpoint_path = Path(train_config.save_dir) / full_exp_name / "final_model.pt"
+            if skip_existing and checkpoint_path.exists():
                 print(f">>> Пропуск {full_exp_name} (уже обучено)")
                 continue
 
@@ -439,7 +270,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
                 traceback.print_exc()
 
 if __name__ == "__main__":
-    # === ВЕРСИЯ 1: РУЧНОЙ ЗАПУСК (Phase 2.5 Style) ===
+    # === ВЕРСИЯ 1: РУЧНОЙ ЗАПУСК ===
     
     # Набор экспериментов (группы данных)
     EXPS = ["2.6.1_stride", "2.6.1_snapshot", "2.6.2_stride", "2.6.2_snapshot"]
@@ -456,11 +287,11 @@ if __name__ == "__main__":
     # Эпохи
     EPOCHS = 30
     
-    # Частота чекпоинтов (не используется напрямую в run_single_experiment сейчас, но можно добавить)
-    CHECKPOINT_FREQUENCY = EPOCHS + 1
-
     # Пропускать ли уже обученные модели (наличие final_model.pt)
     SKIP_EXISTING = True
+
+    # Частота чекпоинтов (регулирует точки сохранения весов)
+    CHECKPOINT_FREQUENCY = EPOCHS + 1 # По умолчанию сохраняем только в конце
 
     for exp_id in EXPS:
         try:

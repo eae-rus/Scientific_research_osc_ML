@@ -14,6 +14,7 @@ from osc_tools.ml.dataset import OscillogramDataset
 from osc_tools.ml.models import (
     SimpleMLP, SimpleCNN, ResNet1D, 
     HierarchicalCNN, HierarchicalKAN, HierarchicalMLP,
+    HierarchicalResNet, HierarchicalSimpleKAN, HierarchicalPhysicsKAN,
     PDR_MLP_v2, FFT_MLP_COMPLEX_v1,
     SimpleKAN, ConvKAN, PhysicsKAN, AutoEncoder
 )
@@ -54,6 +55,12 @@ class ExperimentRunner:
             model = HierarchicalKAN(**params)
         elif name == 'HierarchicalMLP':
             model = HierarchicalMLP(**params)
+        elif name == 'HierarchicalResNet':
+            model = HierarchicalResNet(**params)
+        elif name == 'HierarchicalSimpleKAN':
+            model = HierarchicalSimpleKAN(**params)
+        elif name == 'HierarchicalPhysicsKAN':
+            model = HierarchicalPhysicsKAN(**params)
         elif name == 'PDR_MLP_v2':
             model = PDR_MLP_v2(**params)
         elif name == 'FFT_MLP_COMPLEX_v1':

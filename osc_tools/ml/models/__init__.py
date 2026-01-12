@@ -4,7 +4,10 @@ from .baseline import SimpleMLP, SimpleCNN
 from .advanced import (
     HierarchicalCNN, 
     HierarchicalKAN,
-    HierarchicalMLP
+    HierarchicalMLP,
+    HierarchicalResNet,
+    HierarchicalSimpleKAN,
+    HierarchicalPhysicsKAN
 )
 from .kan import SimpleKAN, ConvKAN, PhysicsKAN
 from .autoencoders import AutoEncoder, KANAE

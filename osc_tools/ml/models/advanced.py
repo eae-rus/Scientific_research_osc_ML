@@ -246,6 +246,29 @@ class HierarchicalKAN(nn.Module):
         x = self.classifier(x)
         return x
 
+class HierarchicalMLP(HierarchicalCNN):
+    """
+    Полносвязная (MLP) версия иерархической сети.
+    Реализована через свертки 1x1 (Pointwise Convolution).
+    """
+    def __init__(self, in_channels: int, num_classes: int, channels: list = [64, 128], 
+                 dropout: float = 0.2, use_bn: bool = True, stem_config: dict = None):
+        if stem_config is None:
+            # Для MLP "Simple" может быть 1 indep, 1 grouped
+            stem_config = {'independent_layers': 1, 'grouped_layers': 1}
+            
+        super().__init__(
+            in_channels=in_channels,
+            num_classes=num_classes,
+            channels=channels,
+            kernel_size=1, # Ключевой параметр для MLP (свертка 1x1)
+            stride=1,
+            dropout=dropout,
+            use_bn=use_bn,
+            pool_every=999, # Отключаем пулинг внутри backbone
+            stem_config=stem_config
+        )
+
 class HierarchicalResNet(nn.Module):
     """
     ResNet с иерархическим стволом.
