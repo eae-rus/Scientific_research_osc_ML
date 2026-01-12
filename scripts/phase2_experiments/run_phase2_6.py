@@ -382,6 +382,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         "2.6.1_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True},
         "2.6.1_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True},
         "2.6.2_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True},
+        "2.6.2_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True},
     }
 
     if target_exp not in exp_params:
@@ -441,7 +442,7 @@ if __name__ == "__main__":
     # === ВЕРСИЯ 1: РУЧНОЙ ЗАПУСК (Phase 2.5 Style) ===
     
     # Набор экспериментов (группы данных)
-    EXPS = ["2.6.1_stride", "2.6.1_snapshot", "2.6.2_stride"]
+    EXPS = ["2.6.1_stride", "2.6.1_snapshot", "2.6.2_stride", "2.6.2_snapshot"]
     
     # Тип модели ('all' - выберет автоматически подходящие для группы)
     MODEL_TYPE = "all"
