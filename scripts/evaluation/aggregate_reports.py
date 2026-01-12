@@ -99,41 +99,79 @@ def plot_comparison(all_histories: Dict[str, List[Dict[str, Any]]], save_dir: Pa
     plt.savefig(save_dir / "comparison_metrics.png")
     plt.close()
 
-def benchmark_model_cpu(exp_dir: Path, config: Dict[str, Any], iterations: int = 1000) -> float:
+def benchmark_model_cpu(exp_dir: Path, config: Dict[str, Any], iterations: int = 100) -> float:
     """Замер скорости инференса на CPU для конкретной модели на пустых (dummy) данных."""
     try:
         model_name = config.get('model', {}).get('name')
-        params = config.get('model', {}).get('params', {})
+        params = config.get('model', {}).get('params', {}).copy() # Копия, чтобы не портить оригинал
         
-        # Динамический импорт моделей
-        from osc_tools.ml.models.baseline import SimpleMLP, SimpleCNN, ResNet1D
-        from osc_tools.ml.models.kan import SimpleKAN, ConvKAN, PhysicsKAN
+        # Импорт из общего пакета моделей
+        from osc_tools.ml import models as ml_models
         
-        models_map = {
-            'SimpleMLP': SimpleMLP, 'SimpleCNN': SimpleCNN, 'ResNet1D': ResNet1D,
-            'SimpleKAN': SimpleKAN, 'ConvKAN': ConvKAN, 'PhysicsKAN': PhysicsKAN
-        }
-        
-        if model_name not in models_map:
+        # Определение класса модели
+        if not hasattr(ml_models, model_name):
+            try:
+                if model_name in ['SimpleMLP', 'SimpleCNN']:
+                    from osc_tools.ml.models.baseline import SimpleMLP, SimpleCNN
+                    models_map = {'SimpleMLP': SimpleMLP, 'SimpleCNN': SimpleCNN}
+                elif model_name == 'ResNet1D':
+                    from osc_tools.ml.models.resnet import ResNet1D
+                    models_map = {'ResNet1D': ResNet1D}
+                elif model_name in ['SimpleKAN', 'ConvKAN', 'PhysicsKAN']:
+                    from osc_tools.ml.models.kan import SimpleKAN, ConvKAN, PhysicsKAN
+                    models_map = {'SimpleKAN': SimpleKAN, 'ConvKAN': ConvKAN, 'PhysicsKAN': PhysicsKAN}
+                else:
+                    return 0.0
+                model_cls = models_map.get(model_name)
+            except:
+                return 0.0
+        else:
+            model_cls = getattr(ml_models, model_name)
+            
+        if model_cls is None:
             return 0.0
             
-        model = models_map[model_name](**params).cpu()
+        # Очистка параметров от лишних полей
+        valid_params = {}
+        import inspect
+        try:
+            sig = inspect.signature(model_cls)
+            for p_name, p_val in params.items():
+                if p_name in sig.parameters:
+                    valid_params[p_name] = p_val
+        except:
+            valid_params = params
+
+        model = model_cls(**valid_params).cpu()
         model.eval()
         
         # Загрузка весов (если есть)
         model_path = exp_dir / "best_model.pt"
         if model_path.exists():
-            checkpoint = torch.load(model_path, map_location='cpu')
-            model.load_state_dict(checkpoint['model_state_dict'])
+            try:
+                checkpoint = torch.load(model_path, map_location='cpu')
+                model.load_state_dict(checkpoint['model_state_dict'])
+            except:
+                pass # Если веса не подошли, бенчмарк все равно можно прогнать на случайных
 
-        # Подготовка данных (dummy)
-        if model_name in ['SimpleMLP', 'SimpleKAN']:
+        # Подстановка данных (dummy)
+        use_mlp = params.get('use_mlp', False)
+        if model_name in ['SimpleMLP', 'SimpleKAN'] or use_mlp:
             input_size = params.get('input_size', 2560)
+            # Пробуем 2D (B, N)
             dummy_input = torch.randn(1, input_size)
+            try:
+                model(dummy_input)
+            except:
+                # Если PhysicsKAN в MLP режиме, он может хотеть 3D (B, C, T) даже для MLP
+                in_channels = params.get('in_channels', 8)
+                pts = input_size // in_channels
+                dummy_input = torch.randn(1, in_channels, pts)
         else:
             in_channels = params.get('in_channels', 8)
-            # Пытаемся определить размер временно окна (320, 20 или 2)
-            pts_options = [320, 20, 10, 2]
+            # Пытаемся определить размер временного окна (320, 64, 20, 2)
+            # Добавим проверку от большего к меньшему
+            pts_options = [320, 64, 20, 10, 2]
             dummy_input = None
             for pts in pts_options:
                 try:
@@ -142,28 +180,29 @@ def benchmark_model_cpu(exp_dir: Path, config: Dict[str, Any], iterations: int =
                         model(test_input)
                     dummy_input = test_input
                     break
-                except:
+                except Exception:
                     continue
             
             if dummy_input is None:
+                # print(f"Не удалось подобрать вход для {model_name}")
                 return 0.0
 
         # Warm-up
         with torch.no_grad():
-            for _ in range(20):
+            for _ in range(10):
                 model(dummy_input)
         
         # Benchmark
-        start = time.time()
+        start = time.perf_counter()
         with torch.no_grad():
             for _ in range(iterations):
                 model(dummy_input)
         
-        avg_time_ms = ((time.time() - start) * 1000) / iterations
+        avg_time_ms = ((time.perf_counter() - start) * 1000) / iterations
         return avg_time_ms
         
     except Exception as e:
-        # print(f"Benchmark error for {exp_dir.name}: {e}")
+        print(f"Benchmark ошабика для {exp_dir.name} ({model_name}): {e}")
         return 0.0
 
 def combine_training_histories(experiments_dir: Path, output_path: Path):
@@ -253,9 +292,7 @@ def aggregate_reports(root_dir: str, output_file: str = None, plot: bool = False
             "Val Loss": best_epoch.get('val_loss'),
             "Val Acc": best_epoch.get('val_acc'),
             "Val F1": best_epoch.get('val_f1'),
-            "Inf Time (ms)": best_epoch.get('inf_time_ms', 0.0),
             "CPU Inf (ms)": cpu_inf,
-            "Val B.Acc": best_epoch.get('val_balanced_acc', 0.0),
             "Time (s)": best_epoch.get('epoch_time', best_epoch.get('time', 0.0)),
             "Path": str(exp_dir)
         }
@@ -311,10 +348,10 @@ if __name__ == "__main__":
     OUTPUT_CSV = "reports/phase2_5_all_summary.csv"
     
     # GENERATE_PLOTS: Если True, для каждого эксперимента будут построены графики обучения.
-    GENERATE_PLOTS = True
+    GENERATE_PLOTS = False
     
     # RUN_BENCHMARK: Если True, будет выполнен глубокий замер скорости инференса на CPU (1000 итераций).
-    RUN_BENCHMARK = False # Можно включить при финальной агрегации
+    RUN_BENCHMARK = True # Можно включить при финальной агрегации
 
     if MANUAL_RUN:
         # Создаем папку для отчетов, если её нет
