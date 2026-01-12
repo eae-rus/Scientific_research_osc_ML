@@ -1,8 +1,9 @@
 import torch
 import torch.nn as nn
 from osc_tools.ml.models.base import BaseModel
-from osc_tools.ml.models.cnn import ResNet1D
-from osc_tools.ml.models.baseline import SimpleCNN, SafeMaxPool1d
+from osc_tools.ml.models.cnn import ResNet1D, ResBlock1D, SafeMaxPool1d
+from osc_tools.ml.models.baseline import SimpleCNN
+from osc_tools.ml.models.kan import SimpleKAN, PhysicsKAN
 from osc_tools.ml.layers.kan_layers import KANConv1d
 
 # --- Helpers ---
@@ -245,25 +246,176 @@ class HierarchicalKAN(nn.Module):
         x = self.classifier(x)
         return x
 
-class HierarchicalMLP(HierarchicalCNN):
+class HierarchicalResNet(nn.Module):
     """
-    Полносвязная (MLP) версия иерархической сети.
-    Реализована через свертки 1x1 (Pointwise Convolution).
+    ResNet с иерархическим стволом.
+    Заменяет стандартный Conv1 слой ResNet на HierarchicalStem.
     """
-    def __init__(self, in_channels: int, num_classes: int, channels: list = [64, 128], 
-                 dropout: float = 0.2, use_bn: bool = True, stem_config: dict = None):
+    def __init__(self, in_channels: int, num_classes: int, layers=[2, 2, 2, 2], base_filters=64, 
+                 stem_config: dict = None, **kwargs):
+        super().__init__()
+        
         if stem_config is None:
-            # Для MLP "Simple" может быть 1 indep, 1 grouped
-            stem_config = {'independent_layers': 1, 'grouped_layers': 1}
+            stem_config = {'independent_layers': 2, 'grouped_layers': 2}
             
-        super().__init__(
-            in_channels=in_channels,
+        # Stem вместо conv1
+        # Чтобы состыковаться с ResNet, stem.out_channels должен быть совместим или мы адаптируем inplanes
+        self.stem = HierarchicalStem(
+            in_channels, base_filters, stride=1, # ResNet обычно имеет stride=2 в начале, но здесь мы контролируем это
+            use_kan=False, 
+            **stem_config
+        )
+        
+        self.inplanes = self.stem.out_channels
+        self.relu = nn.ReLU(inplace=True)
+        self.maxpool = SafeMaxPool1d(kernel_size=3, stride=2) # Опционально, как в оригинале ResNet
+
+        # Reuse ResNet structure logic
+        self.layer1 = self._make_layer(base_filters, layers[0])
+        self.layer2 = self._make_layer(base_filters * 2, layers[1], stride=2)
+        self.layer3 = self._make_layer(base_filters * 4, layers[2], stride=2)
+        self.layer4 = self._make_layer(base_filters * 8, layers[3], stride=2)
+
+        self.avgpool = nn.AdaptiveAvgPool1d(1)
+        self.fc = nn.Linear(base_filters * 8, num_classes)
+        
+        # Init weights
+        for m in self.modules():
+            if isinstance(m, nn.Conv1d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, nn.BatchNorm1d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
+    def _make_layer(self, planes, blocks, stride=1):
+        # Копия логики из ResNet1D
+        downsample = None
+        if stride != 1 or self.inplanes != planes:
+            downsample = nn.Sequential(
+                nn.Conv1d(self.inplanes, planes, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm1d(planes),
+            )
+
+        layers = []
+        layers.append(ResBlock1D(self.inplanes, planes, stride=stride, downsample=downsample))
+        self.inplanes = planes
+        for _ in range(1, blocks):
+            layers.append(ResBlock1D(self.inplanes, planes))
+
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = self.stem(x)
+        # x = self.maxpool(x) # Можно включить, если нужно сильное понижение размерности
+        
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+
+        x = self.avgpool(x)
+        x = x.flatten(1)
+        x = self.fc(x)
+
+        return x
+
+class HierarchicalSimpleKAN(nn.Module):
+    """
+    Hierarchical Stem + Dense KAN Backbone.
+    Аналог SimpleKAN, но с правильным препроцессингом каналов.
+    """
+    def __init__(self, in_channels: int, num_classes: int, channels: list = [64, 32], 
+                 grid_size=5, spline_order=3, dropout=0.0, stem_config: dict = None, input_size=3200):
+        super().__init__()
+        
+        if stem_config is None:
+            stem_config = {'independent_layers': 1, 'grouped_layers': 1}
+        
+        # Для stem base_filters берется из channels[0], но для SimpleKAN это скрытые слои.
+        # Пусть base_filters для Stem будет in_channels * 2 (эвристика)
+        stem_filters = in_channels * 2
+        
+        self.stem = HierarchicalStem(
+            in_channels, stem_filters, stride=1,
+            use_kan=True, 
+            grid_size=grid_size, spline_order=spline_order,
+            **stem_config
+        )
+        
+        # Расчет размера входа для MLP части
+        # input_size здесь - это изначальная длина * каналы.
+        # Нам нужно знать длину временного ряда после стемминга. 
+        # Stem с stride=1 не меняет длину.
+        # Если input_size передан как Total Points (C*L), то L = Input / C
+        seq_len = input_size // in_channels
+        kan_input_size = self.stem.out_channels * seq_len
+        
+        self.backbone = SimpleKAN(
+            input_size=kan_input_size, 
+            hidden_sizes=channels, 
+            output_size=num_classes,
+            grid_size=grid_size, 
+            spline_order=spline_order,
+            dropout=dropout
+        )
+
+    def forward(self, x):
+        x = self.stem(x)
+        # Flatten внутри SimpleKAN, но SimpleKAN ожидает (B, Features) или (B, C, L)?
+        # SimpleKAN проверяет dim > 2 и делает flatten.
+        # Так что можно передавать (B, C, L) прямо туда.
+        return self.backbone(x)
+
+class HierarchicalPhysicsKAN(nn.Module):
+    """
+    Hierarchical Stem + PhysicsKAN Logic.
+    Stem подготавливает "физические группы" признаков, которые затем обрабатываются через Mult/Div.
+    """
+    def __init__(self, in_channels: int, num_classes: int, channels: list = [16, 32], 
+                 grid_size=5, spline_order=3, dropout=0.2, stem_config: dict = None, input_size=None, **kwargs):
+        super().__init__()
+        
+        if stem_config is None:
+            stem_config = {'independent_layers': 1, 'grouped_layers': 2}
+            
+        stem_filters = channels[0]
+        
+        self.stem = HierarchicalStem(
+            in_channels, stem_filters, stride=1,
+            use_kan=True,
+            grid_size=grid_size, spline_order=spline_order,
+            **stem_config
+        )
+        
+        # PhysicsKAN ожидает четное кол-во каналов
+        if self.stem.out_channels % 2 != 0:
+            # Этого не должно быть по логике Stem, но на всякий случай
+            raise ValueError("Stem output channels must be even for PhysicsKAN")
+            
+        # PhysicsKAN сам создаст ConvKAN или SimpleKAN внутри
+        # Если передан input_size (для snapshot/MLP режима), нужно скорректировать его
+        # т.к. PhysicsKAN будет думать, что это размер входа.
+        # Но теперь входом является выход Stem.
+        # Если это MLP режим (use_mlp=True внутри kwargs?), то input_size важен.
+        
+        adjusted_input_size = input_size
+        if input_size is not None and kwargs.get('use_mlp', False):
+             seq_len = input_size // in_channels
+             adjusted_input_size = self.stem.out_channels * seq_len
+
+        self.physics = PhysicsKAN(
+            in_channels=self.stem.out_channels,
             num_classes=num_classes,
             channels=channels,
-            kernel_size=1, # Ключевой параметр для MLP (свертка 1x1)
-            stride=1,
+            grid_size=grid_size,
+            spline_order=spline_order,
             dropout=dropout,
-            use_bn=use_bn,
-            pool_every=999, # Отключаем пулинг внутри backbone
-            stem_config=stem_config
+            input_size=adjusted_input_size,
+            **kwargs
         )
+
+    def forward(self, x):
+        x = self.stem(x)
+        x = self.physics(x)
+        return x
+
