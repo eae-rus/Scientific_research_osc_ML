@@ -27,7 +27,7 @@ MODEL_COMPLEXITY = {
         'ResNet1D':  {'layers': [1, 1, 1, 1], 'base_filters': 16},
         # Иерархические модели (2.6)
         'HierarchicalCNN': {'channels': [16, 32], 'dropout': 0.2, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
-        'HierarchicalKAN': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
+        'HierarchicalConvKAN': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
         'HierarchicalMLP': {'channels': [16, 32], 'dropout': 0.2, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
         'HierarchicalResNet': {'layers': [1, 1, 1, 1], 'base_filters': 16, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
         'HierarchicalSimpleKAN': {'channels': [64, 32], 'grid_size': 3, 'dropout': 0.1, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
@@ -42,7 +42,7 @@ MODEL_COMPLEXITY = {
         'ResNet1D':  {'layers': [2, 2, 2, 2], 'base_filters': 32},
         # Иерархические модели (2.6)
         'HierarchicalCNN': {'channels': [32, 64, 128], 'dropout': 0.3, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
-        'HierarchicalKAN': {'channels': [16, 32, 48], 'dropout': 0.2, 'grid_size': 5, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
+        'HierarchicalConvKAN': {'channels': [16, 32, 48], 'dropout': 0.2, 'grid_size': 5, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
         'HierarchicalMLP': {'channels': [32, 64, 128], 'dropout': 0.3, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
         'HierarchicalResNet': {'layers': [2, 2, 2, 2], 'base_filters': 32, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
         'HierarchicalSimpleKAN': {'channels': [128, 64, 32], 'grid_size': 5, 'dropout': 0.2, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
@@ -57,7 +57,7 @@ MODEL_COMPLEXITY = {
         'ResNet1D':  {'layers': [3, 4, 6, 3], 'base_filters': 64},
         # Иерархические модели (2.6)
         'HierarchicalCNN': {'channels': [64, 128, 256], 'dropout': 0.4, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
-        'HierarchicalKAN': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
+        'HierarchicalConvKAN': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
         'HierarchicalMLP': {'channels': [64, 128, 256], 'dropout': 0.4, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
         'HierarchicalResNet': {'layers': [3, 4, 6, 3], 'base_filters': 64, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
         'HierarchicalSimpleKAN': {'channels': [256, 128, 64, 32], 'grid_size': 5, 'dropout': 0.3, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
@@ -226,7 +226,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
     if target_model == 'all':
         if target_exp.startswith("2.6.2"):
             models_to_run = [
-                'HierarchicalCNN', 'HierarchicalKAN', 'HierarchicalMLP', 
+                'HierarchicalCNN', 'HierarchicalConvKAN', 'HierarchicalMLP', 
                 'HierarchicalResNet', 'HierarchicalSimpleKAN', 'HierarchicalPhysicsKAN'
             ]
         else:

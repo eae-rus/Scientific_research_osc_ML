@@ -3,7 +3,7 @@ from .cnn import Conv_3, ResNet1D
 from .baseline import SimpleMLP, SimpleCNN
 from .advanced import (
     HierarchicalCNN, 
-    HierarchicalKAN,
+    HierarchicalConvKAN,
     HierarchicalMLP,
     HierarchicalResNet,
     HierarchicalSimpleKAN,

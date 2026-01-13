@@ -13,7 +13,7 @@ from osc_tools.ml.config import ExperimentConfig
 from osc_tools.ml.dataset import OscillogramDataset
 from osc_tools.ml.models import (
     SimpleMLP, SimpleCNN, ResNet1D, 
-    HierarchicalCNN, HierarchicalKAN, HierarchicalMLP,
+    HierarchicalCNN, HierarchicalConvKAN, HierarchicalMLP,
     HierarchicalResNet, HierarchicalSimpleKAN, HierarchicalPhysicsKAN,
     PDR_MLP_v2, FFT_MLP_COMPLEX_v1,
     SimpleKAN, ConvKAN, PhysicsKAN, AutoEncoder
@@ -51,8 +51,8 @@ class ExperimentRunner:
             model = ResNet1D(**params)
         elif name == 'HierarchicalCNN':
             model = HierarchicalCNN(**params)
-        elif name == 'HierarchicalKAN':
-            model = HierarchicalKAN(**params)
+        elif name == 'HierarchicalConvKAN':
+            model = HierarchicalConvKAN(**params)
         elif name == 'HierarchicalMLP':
             model = HierarchicalMLP(**params)
         elif name == 'HierarchicalResNet':

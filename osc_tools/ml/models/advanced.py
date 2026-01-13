@@ -61,7 +61,11 @@ class HierarchicalStem(nn.Module):
         
         if use_kan:
             ConvType = GroupedKANConv1d
-            conv_kwargs = kwargs
+            # Обеспечиваем сохранение длины (padding), если не задано иное
+            conv_kwargs = kwargs.copy()
+            if 'padding' not in conv_kwargs:
+                conv_kwargs['padding'] = kernel_size // 2
+                
             def act_layer(): return nn.Identity()
             def bn_layer(ch): return nn.Identity()
         else:
@@ -191,9 +195,10 @@ class HierarchicalCNN(nn.Module):
         x = self.classifier(x)
         return x
 
-class HierarchicalKAN(nn.Module):
+class HierarchicalConvKAN(nn.Module):
     """
-    KAN версия иерархической сети.
+    Hierarchical Signal Processing + KAN Convolutional Backbone.
+    KAN-версия иерархической сети (свёрточная).
     """
     def __init__(self, in_channels: int, num_classes: int, channels: list = [16, 32], 
                  kernel_size: int = 3, stride: int = 1, dropout: float = 0.2, 

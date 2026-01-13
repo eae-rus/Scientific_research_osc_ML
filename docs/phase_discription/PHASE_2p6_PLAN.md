@@ -45,7 +45,7 @@
     3.  **Global Stage:** Финальное смешивание всех признаков (Global Backbone).
 *   **Реализованные модели:**
     *   `HierarchicalCNN`: Stem + CNN Backbone.
-    *   `HierarchicalKAN`: Stem + KAN Backbone (сплайны).
+    *   `HierarchicalConvKAN`: Stem + KAN Backbone (сплайны).
     *   `HierarchicalMLP`: Реализован через Pointwise Conv1d (kernel=1) с сохранением той же иерархии ствола.
 *   **Конфигурация:** Лучшие параметры Exp 2.6.1.
 *   **Ожидание:** Повышение интерпретируемости (можно смотреть веса отдельных фаз), улучшение сходимости за счет структурирования задачи.
