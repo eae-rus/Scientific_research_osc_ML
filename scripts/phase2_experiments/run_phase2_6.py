@@ -14,7 +14,9 @@ sys.path.append(str(ROOT_DIR))
 from osc_tools.ml.config import ExperimentConfig, ModelConfig, DataConfig, TrainingConfig
 from osc_tools.ml.runner import ExperimentRunner
 from osc_tools.ml.dataset import OscillogramDataset
+from osc_tools.ml.precomputed_dataset import PrecomputedDataset
 from osc_tools.ml.labels import clean_labels, add_base_labels, get_target_columns
+from osc_tools.data_management import DatasetManager
 
 # Определение уровней сложности моделей для Фазы 2.6
 MODEL_COMPLEXITY = {
@@ -91,7 +93,9 @@ def run_single_experiment(
     data_config_base: DataConfig,
     train_config_base: TrainingConfig,
     norm_coef_path: Path,
-    augment: bool = True
+    augment: bool = True,
+    val_df: pl.DataFrame = None,
+    use_precomputed_val: bool = True
 ):
     print(f"\n>>> Запуск эксперимента: {exp_name}")
     print(f"Модель: {model_name} ({complexity})")
@@ -110,14 +114,31 @@ def run_single_experiment(
         augment=augment 
     )
     
-    val_ds = OscillogramDataset(
-        dataframe=df, indices=val_indices, window_size=data_config_base.window_size,
-        mode='classification', feature_mode=feature_mode,
-        sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
-        target_columns=target_cols, target_level='base_labels',
-        physical_normalization=True, norm_coef_path=str(norm_coef_path),
-        augment=False
+    # Валидационный датасет - используем предрассчитанные данные если возможно
+    can_use_precomputed = (
+        use_precomputed_val and 
+        val_df is not None and 
+        feature_mode in ['raw', 'phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex']
     )
+    
+    if can_use_precomputed:
+        print(f"  [Использую предрассчитанные признаки для валидации]")
+        val_ds = PrecomputedDataset(
+            dataframe=val_df, indices=val_indices, window_size=data_config_base.window_size,
+            feature_mode=feature_mode,
+            target_columns=target_cols, target_level='base',
+            sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride
+        )
+    else:
+        print(f"  [Расчёт признаков на лету для валидации]")
+        val_ds = OscillogramDataset(
+            dataframe=df, indices=val_indices, window_size=data_config_base.window_size,
+            mode='classification', feature_mode=feature_mode,
+            sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
+            target_columns=target_cols, target_level='base_labels',
+            physical_normalization=True, norm_coef_path=str(norm_coef_path),
+            augment=False
+        )
     
     train_loader = torch.utils.data.DataLoader(train_ds, batch_size=data_config_base.batch_size, shuffle=True, num_workers=0)
     val_loader = torch.utils.data.DataLoader(val_ds, batch_size=data_config_base.batch_size, shuffle=False, num_workers=0)
@@ -169,34 +190,42 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
     target_epochs = epochs
 
     # Настройка путей
-    METADATA_FILE = ROOT_DIR / 'data' / 'ml_datasets' / 'labeled_2025_12_03.csv'
+    DATA_DIR = ROOT_DIR / 'data' / 'ml_datasets'
     EXPERIMENTS_DIR = ROOT_DIR / 'experiments' / 'phase2_6'
     EXPERIMENTS_DIR.mkdir(parents=True, exist_ok=True)
     NORM_COEF_PATH = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
+    METADATA_FILE = DATA_DIR / 'train.csv'
 
-    df = pl.read_csv(METADATA_FILE, infer_schema_length=50000, null_values=["NA", "nan", "null", ""])
-    df = clean_labels(df)
-    df = add_base_labels(df)
+    # Используем DatasetManager для гарантированного разделения данных
+    print("Инициализация DatasetManager...")
+    dm = DatasetManager(str(DATA_DIR))
+    dm.ensure_train_test_split()  # Создаёт train.csv/test.csv если их нет
+    dm.create_precomputed_test_csv()  # Создаёт предрассчитанный файл если его нет
+    
+    # Загружаем тренировочные данные
+    print(f"Загрузка тренировочных данных...")
+    df = dm.load_train_df()
     df = df.with_row_index("row_nr")
     
     target_cols = get_target_columns('base')
     WINDOW_SIZE = 320
     
-    # Split
-    unique_files = df["file_name"].unique().to_list()
-    np.random.seed(42)
-    np.random.shuffle(unique_files)
-    split_idx = int(len(unique_files) * 0.8)
-    train_files = unique_files[:split_idx]
-    val_files = unique_files[split_idx:]
-    
+    # Создаём индексы для тренировки
     train_indices = OscillogramDataset.create_indices(
-        df.filter(pl.col("file_name").is_in(train_files)), 
+        df, 
         window_size=WINDOW_SIZE, mode='train', samples_per_file=target_spf
     )
-    val_indices = OscillogramDataset.create_indices(
-        df.filter(pl.col("file_name").is_in(val_files)), 
-        window_size=WINDOW_SIZE, mode='val'
+    
+    # Загружаем предрассчитанный тестовый датасет
+    print(f"Загрузка предрассчитанных тестовых данных...")
+    test_df = dm.load_test_df(precomputed=True)
+    test_df = test_df.with_row_index("row_nr")
+    
+    # Создаём индексы для валидации
+    val_indices = PrecomputedDataset.create_indices(
+        test_df,
+        window_size=WINDOW_SIZE,
+        mode='val'
     )
     
     data_config = DataConfig(path=str(METADATA_FILE), window_size=WINDOW_SIZE, batch_size=64, mode='multilabel')
@@ -262,7 +291,9 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
                     data_config_base=data_config,
                     train_config_base=train_config,
                     norm_coef_path=NORM_COEF_PATH,
-                    augment=p.get("aug", True)
+                    augment=p.get("aug", True),
+                    val_df=test_df,
+                    use_precomputed_val=True
                 )
             except Exception as e:
                 print(f"!!! Ошибка в {full_exp_name}: {e}")

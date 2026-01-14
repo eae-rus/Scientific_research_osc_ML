@@ -13,7 +13,9 @@ sys.path.append(str(ROOT_DIR))
 from osc_tools.ml.config import ExperimentConfig, ModelConfig, DataConfig, TrainingConfig
 from osc_tools.ml.runner import ExperimentRunner
 from osc_tools.ml.dataset import OscillogramDataset
+from osc_tools.ml.precomputed_dataset import PrecomputedDataset
 from osc_tools.ml.labels import clean_labels, add_base_labels, get_target_columns, get_ml_columns
+from osc_tools.data_management import DatasetManager
 
 # Определение уровней сложности моделей
 MODEL_COMPLEXITY = {
@@ -68,7 +70,8 @@ def get_model_params(model_name, complexity, input_size=None, num_classes=None, 
 
 def run_experiment(experiment_id, model_name, complexity, df, train_indices, val_indices, feature_cols, target_level, 
                    norm_coef_path, feature_mode='raw', sampling_strategy='none', stride=16, 
-                   use_pos_weight=True, augment=False, num_harmonics=1, epochs=30, checkpoint_frequency=1):
+                   use_pos_weight=True, augment=False, num_harmonics=1, epochs=30, checkpoint_frequency=1,
+                   val_df=None, use_precomputed_val=True):
     
     # Расчет входных параметров
     window_size = 320 # Базовый для Фазы 2.5
@@ -202,13 +205,37 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
         augmentation_config=aug_config, num_harmonics=num_harmonics
     )
     
-    val_ds = OscillogramDataset(
-        dataframe=df, indices=val_indices, window_size=window_size,
-        mode='classification', feature_mode=feature_mode,
-        feature_columns=feature_cols, target_columns=target_cols,
-        physical_normalization=True, norm_coef_path=str(norm_coef_path),
-        downsampling_mode=sampling_strategy, downsampling_stride=stride, num_harmonics=num_harmonics
+    # Валидационный датасет - используем предрассчитанные данные если возможно
+    # Условия для использования PrecomputedDataset:
+    # 1. use_precomputed_val=True
+    # 2. val_df предоставлен (предрассчитанный DataFrame)
+    # 3. feature_mode поддерживается (raw, phase_polar, symmetric, phase_complex)
+    # 4. num_harmonics=1 (предрассчитаны только для 1 гармоники)
+    
+    can_use_precomputed = (
+        use_precomputed_val and 
+        val_df is not None and 
+        feature_mode in ['raw', 'phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex'] and
+        num_harmonics == 1
     )
+    
+    if can_use_precomputed:
+        print(f"  [Использую предрассчитанные признаки для валидации]")
+        val_ds = PrecomputedDataset(
+            dataframe=val_df, indices=val_indices, window_size=window_size,
+            feature_mode=feature_mode,
+            target_columns=target_cols, target_level=target_level,
+            sampling_strategy=sampling_strategy, downsampling_stride=stride
+        )
+    else:
+        print(f"  [Расчёт признаков на лету для валидации (num_harmonics={num_harmonics})]")
+        val_ds = OscillogramDataset(
+            dataframe=df, indices=val_indices, window_size=window_size,
+            mode='classification', feature_mode=feature_mode,
+            feature_columns=feature_cols, target_columns=target_cols,
+            physical_normalization=True, norm_coef_path=str(norm_coef_path),
+            downsampling_mode=sampling_strategy, downsampling_stride=stride, num_harmonics=num_harmonics
+        )
     
     train_loader = torch.utils.data.DataLoader(train_ds, batch_size=data_config.batch_size, shuffle=True)
     val_loader = torch.utils.data.DataLoader(val_ds, batch_size=data_config.batch_size, shuffle=False)
@@ -257,37 +284,38 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         args.checkpoint_frequency = args.checkpoint_freq
 
     # 1. Setup Paths
-    METADATA_FILE = ROOT_DIR / 'data' / 'ml_datasets' / 'labeled_2025_12_03.csv'
+    DATA_DIR = ROOT_DIR / 'data' / 'ml_datasets'
     NORM_COEF_PATH = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
 
-    print(f"Загрузка данных из {METADATA_FILE}")
-    df = pl.read_csv(METADATA_FILE, infer_schema_length=10000)
-    df = clean_labels(df)
-    df = add_base_labels(df)
+    # Используем DatasetManager для гарантированного разделения данных
+    print("Инициализация DatasetManager...")
+    dm = DatasetManager(str(DATA_DIR))
+    dm.ensure_train_test_split()  # Создаёт train.csv/test.csv если их нет
+    dm.create_precomputed_test_csv()  # Создаёт предрассчитанный файл если его нет
+    
+    # Загружаем тренировочные данные
+    print(f"Загрузка тренировочных данных...")
+    df = dm.load_train_df()
     df = df.with_row_index("row_nr")
     
-    # Сплит данных (на уровне файлов для корректности)
-    unique_files = df["file_name"].unique().to_list()
-    np.random.seed(42)
-    np.random.shuffle(unique_files)
-    
-    split_idx = int(len(unique_files) * 0.8)
-    train_files = unique_files[:split_idx]
-    val_files = unique_files[split_idx:]
-    
-    # Создаем индексы начал окон
-    # Используем встроенный метод Dataset для корректной обработки границ окон и случайного сэмплирования
+    # Создаем индексы начал окон (только для train)
     window_size = 320
-    
     train_indices = OscillogramDataset.create_indices(
-        df.filter(pl.col("file_name").is_in(train_files)), 
+        df, 
         window_size=window_size, 
         mode='train',
         samples_per_file=args.samples_per_file
     )
-    val_indices = OscillogramDataset.create_indices(
-        df.filter(pl.col("file_name").is_in(val_files)), 
-        window_size=window_size, 
+    
+    # Загружаем предрассчитанный тестовый датасет
+    print(f"Загрузка предрассчитанных тестовых данных...")
+    test_df = dm.load_test_df(precomputed=True)
+    test_df = test_df.with_row_index("row_nr")
+    
+    # Создаём индексы для валидации
+    val_indices = PrecomputedDataset.create_indices(
+        test_df,
+        window_size=window_size,
         mode='val'
     )
     
@@ -467,7 +495,9 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
                 augment=p['aug'],
                 num_harmonics=current_harmonics,
                 epochs=args.epochs,
-                checkpoint_frequency=args.checkpoint_frequency
+                checkpoint_frequency=args.checkpoint_frequency,
+                val_df=test_df,
+                use_precomputed_val=True
             )
 
 if __name__ == "__main__":
