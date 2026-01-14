@@ -1,5 +1,106 @@
 # Лог работ по Фазе 2.6 (Архитектурные улучшения)
 
+## [2026-01-14] Оптимизация и cleanup
+
+### Сделано
+
+1. **Очистка debug файлов:**
+   - Удалено: `scripts/evaluation/debug_normalization.py`
+   - Удалено: `scripts/evaluation/debug_data_comparison.py`
+   - Удалено: `scripts/evaluation/compare_same_file.py`
+   - Удалено: `scripts/test_fft_comparison.py`
+   - Удалено: `scripts/quick_test.py`
+
+2. **Перемещение тестов:**
+   - `scripts/evaluation/test_full_eval.py` → `tests/integration/test_full_eval.py`
+
+3. **Оптимизация `aggregate_reports.py`:**
+   - Использование `PrecomputedDataset` вместо `OscillogramDataset` (×10-20 быстрее)
+   - Автоматическое определение `feature_mode` из `in_channels` или `input_size`:
+     - `in_channels=16` или `input_size % 16 == 0` → `phase_polar`
+     - `in_channels=12` или `input_size % 12 == 0` → `symmetric`
+     - `in_channels=8` → `raw`
+   - Добавлен `tqdm` прогресс-бар для итерации по моделям
+   - Исправлена ошибка "Несоответствие размера: ожидалось 24, получено 32" для SymSnapshot моделей
+
+4. **Полезные утилиты оставлены:**
+   - `scripts/regen_precomputed.py` — для регенерации test_precomputed.csv
+
+---
+
+## [2026-01-14] Критические исправления в пайплайне данных
+
+### Обнаруженные проблемы
+
+При попытке добавить полную оценку на тестовой выборке (`aggregate_reports.py`) 
+обнаружено, что модели предсказывают один и тот же выход `[1,0,0,1]` независимо 
+от входных данных с accuracy ~0.05%.
+
+Расследование выявило **три критические ошибки**:
+
+#### 1. Баг нормализации в OscillogramDataset (КРИТИЧНО)
+**Файл:** `osc_tools/ml/dataset.py`, строка 216
+
+**Было (НЕПРАВИЛЬНО):**
+```python
+parts = file_name[0].split('_Bus ')  # BUG: file_name[0] = первый символ '0'!
+```
+
+**Стало (ИСПРАВЛЕНО):**
+```python
+parts = file_name.split('_Bus ')  # CORRECT: file_name это уже строка
+```
+
+**Последствия:** Физическая нормализация **НИКОГДА не применялась** во время 
+обучения Phase 2.6. Модели обучались на ненормализованных данных (UA_mag ≈ 40 
+вместо ≈ 0.14).
+
+#### 2. Несогласованность углов (relative vs absolute)
+**Файл:** `osc_tools/data_management/dataset_manager.py`
+
+OscillogramDataset использовал **относительные углы** (от UA), а 
+`create_precomputed_test_csv()` выдавал **абсолютные углы**.
+
+**Исправление:** Добавлен расчёт относительных углов в `create_precomputed_test_csv()`:
+- Phase Polar: углы относительно UA (UA_angle = 0)
+- Symmetric: углы относительно U1 (U1_angle ≈ 0)
+
+#### 3. Разное окно FFT (×2 разница амплитуд)
+**Файлы:** 
+- `osc_tools/features/pdr_calculator.py` — использует окно Ханнинга
+- `osc_tools/data_management/dataset_manager.py` — использовал прямоугольное окно
+
+Окно Ханнинга уменьшает амплитуду в ~2 раза по сравнению с прямоугольным.
+
+**Исправление:** Переписан метод `_compute_fft_phasors()` в dataset_manager.py:
+- Добавлено окно Ханнинга (`np.hanning`)
+- Используется `sliding_window_view` как в pdr_calculator
+- Результат синхронизирован с OscillogramDataset
+
+### Произведённые изменения
+
+1. **osc_tools/ml/dataset.py:216** — Исправлен `file_name[0]` → `file_name`
+2. **osc_tools/data_management/dataset_manager.py** — Полностью переписан FFT
+3. **data/ml_datasets/test_precomputed.csv** — Перегенерирован с корректным FFT
+
+### Верификация
+
+После исправлений сравнение данных OscillogramDataset vs PrecomputedDataset:
+- **До:** MSE = 0.66, Ratio ≈ 2.07x
+- **После:** MSE = 0.0024, Ratio ≈ 1.005x
+- **Статус:** ✓ Данные практически идентичны
+
+### Влияние на модели
+
+**ВСЕ модели Phase 2.6 были обучены с некорректными данными** из-за бага 
+нормализации. Необходимо **переобучение**.
+
+Текущая accuracy 35% на исправленных данных объясняется тем, что:
+- Модели обучались на данных с UA_mag ≈ 40
+- Тестируются на данных с UA_mag ≈ 0.14 (в 300 раз меньше)
+
+---
+
 ## [2026-01-13] Полная реализация системы управления датасетами
 
 ### 1. Новый DatasetManager (`osc_tools/data_management/dataset_manager.py`)

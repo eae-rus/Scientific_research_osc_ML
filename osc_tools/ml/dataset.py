@@ -213,7 +213,8 @@ class OscillogramDataset(Dataset):
         # Парсинг имени файла: hash_Bus X -> hash, X
         # Пример: 00d4242f4fa66c50a89a7fc565f8ea58_Bus 1
         try:
-            parts = file_name[0].split('_Bus ')
+            # file_name уже строка - не нужно индексирование
+            parts = file_name.split('_Bus ')
             if len(parts) != 2:
                 return df
             file_hash = parts[0]

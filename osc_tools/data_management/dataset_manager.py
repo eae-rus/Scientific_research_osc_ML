@@ -152,12 +152,15 @@ class DatasetManager:
         """
         Вычисляет комплексные фазоры первой гармоники (50 Гц) методом скользящего окна.
         
+        ВАЖНО: Использует окно Ханнинга для согласованности с 
+        pdr_calculator.sliding_window_fft, который применяется в OscillogramDataset.
+        
         Args:
             signal: 1D массив сигнала (Time,)
             
         Returns:
             (real, imag) - Re и Im части фазора для каждой точки.
-            Первые FFT_WINDOW-1 точек содержат 0 (warmup).
+            Первые FFT_WINDOW точек содержат 0 (warmup).
         """
         n = len(signal)
         real = np.zeros(n, dtype=np.float32)
@@ -166,27 +169,28 @@ class DatasetManager:
         if n < self.FFT_WINDOW:
             return real, imag
         
-        # Ядра для свертки (DFT coefs для 1-й гармоники)
-        t_kernel = np.arange(self.FFT_WINDOW)
-        angle = 2 * np.pi * 1 * t_kernel / self.FFT_WINDOW
-        kernel_cos = np.cos(angle) * (2 / self.FFT_WINDOW)
-        kernel_sin = -np.sin(angle) * (2 / self.FFT_WINDOW)
+        # Используем sliding_window_view для эффективности
+        windows = np.lib.stride_tricks.sliding_window_view(signal.astype(np.float32), self.FFT_WINDOW)
         
-        # Обратные ядра для np.convolve
-        kernel_cos = kernel_cos[::-1].astype(np.float32)
-        kernel_sin = kernel_sin[::-1].astype(np.float32)
+        # Применяем окно Ханнинга (как в pdr_calculator.sliding_window_fft)
+        hanning_window = np.hanning(self.FFT_WINDOW).astype(np.float32)
+        windows_windowed = windows * hanning_window
         
-        # Свертка
-        re_full = np.convolve(signal.astype(np.float32), kernel_cos, mode='full')
-        im_full = np.convolve(signal.astype(np.float32), kernel_sin, mode='full')
+        # FFT
+        fft_coeffs = np.fft.fft(windows_windowed, axis=-1) / self.FFT_WINDOW
         
-        # Берем первые n элементов (валидные начинаются с индекса FFT_WINDOW-1)
-        real = re_full[:n]
-        imag = im_full[:n]
+        # Извлекаем первую гармонику и умножаем на 2
+        first_harmonic = fft_coeffs[:, 1] * 2
         
-        # Зануляем warmup
-        real[:self.FFT_WINDOW - 1] = 0
-        imag[:self.FFT_WINDOW - 1] = 0
+        # Заполняем результат
+        # sliding_window_view даёт n - FFT_WINDOW + 1 окон
+        # Результат начинается с индекса FFT_WINDOW - 1 (последняя точка первого окна)
+        n_windows = len(first_harmonic)
+        end_idx = min(self.FFT_WINDOW - 1 + n_windows, n)
+        actual_windows = end_idx - (self.FFT_WINDOW - 1)
+        
+        real[self.FFT_WINDOW - 1 : end_idx] = first_harmonic[:actual_windows].real.astype(np.float32)
+        imag[self.FFT_WINDOW - 1 : end_idx] = first_harmonic[:actual_windows].imag.astype(np.float32)
         
         return real, imag
     
@@ -312,12 +316,24 @@ class DatasetManager:
             phasors_re = np.stack(phasors_re, axis=1)  # (Time, 8)
             phasors_im = np.stack(phasors_im, axis=1)  # (Time, 8)
             
-            # Phase Polar: magnitude и angle для каждого канала
+            # Phase Polar: magnitude и ОТНОСИТЕЛЬНЫЙ angle для каждого канала
+            # Опорный сигнал - UA (канал 4)
             complex_phasors = phasors_re + 1j * phasors_im
+            ua_phasor = complex_phasors[:, 4]  # UA
+            
+            # Вычисляем опорный угол (используем UA, если он достаточно большой)
+            ua_mag = np.abs(ua_phasor)
+            ref_angle = np.zeros(n_points, dtype=np.float32)
+            valid_mask = ua_mag > 1e-6
+            ref_angle[valid_mask] = np.angle(ua_phasor[valid_mask])
+            
             phase_polar = np.zeros((n_points, 16), dtype=np.float32)
             for i in range(8):
                 phase_polar[:, 2*i] = np.abs(complex_phasors[:, i])
-                phase_polar[:, 2*i + 1] = np.angle(complex_phasors[:, i])
+                # Относительный угол (от UA)
+                raw_angle = np.angle(complex_phasors[:, i]) - ref_angle
+                # Нормализация в [-pi, pi]
+                phase_polar[:, 2*i + 1] = np.arctan2(np.sin(raw_angle), np.cos(raw_angle))
             
             # Phase Complex: Re и Im для каждого канала
             phase_complex = np.zeros((n_points, 16), dtype=np.float32)
@@ -334,19 +350,30 @@ class DatasetManager:
             U_abc = complex_phasors[:, 4:7]
             U1, U2, U0 = self._compute_symmetric_components(U_abc[:, 0], U_abc[:, 1], U_abc[:, 2])
             
+            # Опорный угол для симметричных компонент - U1 (прямая последовательность напряжения)
+            u1_mag = np.abs(U1)
+            sym_ref_angle = np.zeros(n_points, dtype=np.float32)
+            sym_valid_mask = u1_mag > 1e-6
+            sym_ref_angle[sym_valid_mask] = np.angle(U1[sym_valid_mask])
+            
+            def relative_angle(phasor: np.ndarray, ref: np.ndarray) -> np.ndarray:
+                """Вычисляет относительный угол в [-pi, pi]."""
+                raw = np.angle(phasor) - ref
+                return np.arctan2(np.sin(raw), np.cos(raw)).astype(np.float32)
+            
             symmetric = np.zeros((n_points, 12), dtype=np.float32)
             symmetric[:, 0] = np.abs(I1)
-            symmetric[:, 1] = np.angle(I1)
+            symmetric[:, 1] = relative_angle(I1, sym_ref_angle)
             symmetric[:, 2] = np.abs(I2)
-            symmetric[:, 3] = np.angle(I2)
+            symmetric[:, 3] = relative_angle(I2, sym_ref_angle)
             symmetric[:, 4] = np.abs(I0)
-            symmetric[:, 5] = np.angle(I0)
+            symmetric[:, 5] = relative_angle(I0, sym_ref_angle)
             symmetric[:, 6] = np.abs(U1)
-            symmetric[:, 7] = np.angle(U1)
+            symmetric[:, 7] = relative_angle(U1, sym_ref_angle)  # Должен быть ~0
             symmetric[:, 8] = np.abs(U2)
-            symmetric[:, 9] = np.angle(U2)
+            symmetric[:, 9] = relative_angle(U2, sym_ref_angle)
             symmetric[:, 10] = np.abs(U0)
-            symmetric[:, 11] = np.angle(U0)
+            symmetric[:, 11] = relative_angle(U0, sym_ref_angle)
             
             # Извлекаем метки
             labels = file_data.select(target_cols + ml_cols).to_numpy()
