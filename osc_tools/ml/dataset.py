@@ -102,11 +102,14 @@ class OscillogramDataset(Dataset):
             self.augmenter = TimeSeriesAugmenter(augmentation_config)
         
         self.norm_coef_df = None
+        self._norm_coef_cache = {}  # Кэш коэффициентов для каждого файла
         if self.physical_normalization:
             if norm_coef_path is None:
                 raise ValueError("norm_coef_path must be provided if physical_normalization is True")
             try:
                 self.norm_coef_df = pl.read_csv(norm_coef_path, infer_schema_length=100000)
+                # Предварительно строим индекс для быстрого поиска
+                self._build_norm_coef_index()
             except Exception as e:
                 print(f"Предупреждение: не удалось загрузить коэффициенты нормализации из {norm_coef_path}: {e}")
         
@@ -203,88 +206,141 @@ class OscillogramDataset(Dataset):
     def __len__(self):
         return len(self.indices)
 
+    def _build_norm_coef_index(self):
+        """
+        Строит индекс коэффициентов для быстрого поиска.
+        Вызывается один раз при инициализации.
+        """
+        if self.norm_coef_df is None:
+            return
+        
+        # Строим словарь: file_hash -> row_dict с коэффициентами
+        self._norm_coef_index = {}
+        for row in self.norm_coef_df.iter_rows(named=True):
+            name = row.get('name')
+            if name:
+                self._norm_coef_index[name] = row
+
+    def _get_normalization_factors(self, file_name: str) -> Optional[dict]:
+        """
+        Возвращает кэшированные факторы нормализации для файла.
+        Использует кэш для избежания повторных вычислений.
+        
+        Returns:
+            dict с ключами 'ip', 'iz', 'ub', 'uc' (номиналы) или None
+        """
+        if file_name in self._norm_coef_cache:
+            return self._norm_coef_cache[file_name]
+        
+        # Вычисляем факторы один раз
+        try:
+            parts = file_name.split('_Bus ')
+            if len(parts) != 2:
+                self._norm_coef_cache[file_name] = None
+                return None
+            file_hash = parts[0]
+            bus_num = int(parts[1].split('_')[0])
+        except Exception:
+            self._norm_coef_cache[file_name] = None
+            return None
+        
+        # Ищем строку в индексе
+        row = self._norm_coef_index.get(file_hash)
+        if row is None:
+            self._norm_coef_cache[file_name] = None
+            return None
+        
+        # Проверка флага norm
+        norm_val = str(row.get('norm', ''))
+        if 'YES' not in norm_val:
+            self._norm_coef_cache[file_name] = None
+            return None
+        
+        # Извлекаем коэффициенты
+        factors = {}
+        
+        # Ip (фазные токи)
+        col_ip = f"{bus_num}Ip_base"
+        val = row.get(col_ip)
+        if val is not None:
+            nominal = 20 * float(val)
+            if nominal > 0:
+                factors['ip'] = nominal
+        
+        # Iz (ток нулевой последовательности)
+        col_iz = f"{bus_num}Iz_base"
+        val = row.get(col_iz)
+        if val is not None:
+            nominal = 5 * float(val)
+            if nominal > 0:
+                factors['iz'] = nominal
+        
+        # Ub (напряжения СШ)
+        col_ub = f"{bus_num}Ub_base"
+        val = row.get(col_ub)
+        if val is not None:
+            nominal = 3 * float(val)
+            if nominal > 0:
+                factors['ub'] = nominal
+        
+        # Uc (напряжения КЛ)
+        col_uc = f"{bus_num}Uc_base"
+        val = row.get(col_uc)
+        if val is not None:
+            nominal = 3 * float(val)
+            if nominal > 0:
+                factors['uc'] = nominal
+        
+        # Кэшируем результат
+        result = factors if factors else None
+        self._norm_coef_cache[file_name] = result
+        return result
+
     def _apply_physical_normalization(self, df: pl.DataFrame, file_name: str) -> pl.DataFrame:
         """
         Применяет физическую нормализацию к DataFrame на основе коэффициентов.
+        Использует кэшированные факторы для скорости.
         """
         if self.norm_coef_df is None:
             return df
-            
-        # Парсинг имени файла: hash_Bus X -> hash, X
-        # Пример: 00d4242f4fa66c50a89a7fc565f8ea58_Bus 1
-        try:
-            # file_name уже строка - не нужно индексирование
-            parts = file_name.split('_Bus ')
-            if len(parts) != 2:
-                return df
-            file_hash = parts[0]
-            bus_num = int(parts[1].split('_')[0]) # На случай если там еще что-то есть
-        except Exception:
+        
+        factors = self._get_normalization_factors(file_name)
+        if factors is None:
             return df
-            
-        # Поиск строки в коэффициентах
-        norm_row = self.norm_coef_df.filter(pl.col("name") == file_hash)
-        if norm_row.is_empty():
-            return df
-            
-        # Проверка флага norm (YES...)
-        norm_val = str(norm_row.get_column("norm")[0])
-        if "YES" not in norm_val:
-            return df
-            
+        
         new_cols = {}
         
-        # Предварительно соберем списки колонок для ускорения
-        ip_cols = ['IA', 'IB', 'IC']
-        iz_cols = ['IN']
-        ub_cols = [c for c in df.columns if 'BB' in c]
-        uc_cols = [c for c in df.columns if 'CL' in c]
-        
         # 1. Фазные токи (Ip)
-        col_ip = f"{bus_num}Ip_base"
-        if col_ip in norm_row.columns:
-            val = norm_row.get_column(col_ip)[0]
-            if val is not None:
-                nominal = 20 * float(val)
-                if nominal > 0:
-                    for c in ip_cols:
-                        if c in df.columns:
-                            new_cols[c] = pl.col(c).cast(pl.Float32) / nominal
-
+        if 'ip' in factors:
+            nominal = factors['ip']
+            for c in ['IA', 'IB', 'IC']:
+                if c in df.columns:
+                    new_cols[c] = pl.col(c).cast(pl.Float32) / nominal
+        
         # 2. Ток нулевой последовательности (Iz)
-        col_iz = f"{bus_num}Iz_base"
-        if col_iz in norm_row.columns:
-            val = norm_row.get_column(col_iz)[0]
-            if val is not None:
-                nominal = 5 * float(val)
-                if nominal > 0:
-                    for c in iz_cols:
-                        if c in df.columns:
-                            new_cols[c] = pl.col(c).cast(pl.Float32) / nominal
-
-        # 3. Напряжения СШ (Ub) -> * BB
-        col_ub = f"{bus_num}Ub_base"
-        if col_ub in norm_row.columns:
-            val = norm_row.get_column(col_ub)[0]
-            if val is not None:
-                nominal = 3 * float(val)
-                if nominal > 0:
-                    for c in ub_cols:
-                        new_cols[c] = pl.col(c).cast(pl.Float32) / nominal
-
-        # 4. Напряжения КЛ (Uc) -> * CL
-        col_uc = f"{bus_num}Uc_base"
-        if col_uc in norm_row.columns:
-            val = norm_row.get_column(col_uc)[0]
-            if val is not None:
-                nominal = 3 * float(val)
-                if nominal > 0:
-                    for c in uc_cols:
-                        new_cols[c] = pl.col(c).cast(pl.Float32) / nominal
-
+        if 'iz' in factors:
+            nominal = factors['iz']
+            for c in ['IN']:
+                if c in df.columns:
+                    new_cols[c] = pl.col(c).cast(pl.Float32) / nominal
+        
+        # 3. Напряжения СШ (Ub) -> колонки с 'BB'
+        if 'ub' in factors:
+            nominal = factors['ub']
+            for c in df.columns:
+                if 'BB' in c:
+                    new_cols[c] = pl.col(c).cast(pl.Float32) / nominal
+        
+        # 4. Напряжения КЛ (Uc) -> колонки с 'CL'
+        if 'uc' in factors:
+            nominal = factors['uc']
+            for c in df.columns:
+                if 'CL' in c:
+                    new_cols[c] = pl.col(c).cast(pl.Float32) / nominal
+        
         if new_cols:
-            return df.with_columns(**new_cols)
-            
+            df = df.with_columns(**new_cols)
+        
         return df
 
     def _get_best_voltage_channels(self, df: pl.DataFrame) -> Tuple[List[np.ndarray], str]:

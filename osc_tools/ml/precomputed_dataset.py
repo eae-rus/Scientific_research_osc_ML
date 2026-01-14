@@ -123,6 +123,27 @@ class PrecomputedDataset(Dataset):
         
         # Определяем является ли режим спектральным (с warmup)
         self.is_spectral = any(fm != 'raw' for fm in self.feature_mode)
+        
+        # === ОПТИМИЗАЦИЯ: Предзагрузка всех данных в numpy массивы ===
+        # Это критично для скорости — избегаем конвертации Polars→NumPy при каждом __getitem__
+        self._preload_data()
+    
+    def _preload_data(self):
+        """Предзагружает данные в numpy массивы для быстрого доступа."""
+        import time
+        start_t = time.perf_counter()
+        
+        # Признаки: (N, C) → транспонируем позже при извлечении
+        self._features_np = self.data.select(self.feature_columns).to_numpy().astype(np.float32)
+        self._features_np = np.nan_to_num(self._features_np, nan=0.0, posinf=0.0, neginf=0.0)
+        
+        # Метки: (N, num_classes)
+        self._targets_np = self.data.select(self.target_columns).to_numpy().astype(np.float32)
+        
+        elapsed = time.perf_counter() - start_t
+        mem_mb = (self._features_np.nbytes + self._targets_np.nbytes) / (1024 * 1024)
+        print(f"    [PrecomputedDataset] Предзагружено {len(self.indices):,} индексов, "
+              f"память: {mem_mb:.1f} MB, время: {elapsed:.2f}s")
     
     def __len__(self) -> int:
         return len(self.indices)
@@ -149,25 +170,19 @@ class PrecomputedDataset(Dataset):
         else:
             start_idx = index_item
         
-        # Извлекаем окно данных
-        sample_df = self.data.slice(start_idx, self.window_size)
-        
-        # Извлекаем признаки
-        x_data = sample_df.select(self.feature_columns).to_numpy().astype(np.float32)
-        
-        # Обрабатываем NaN
-        x_data = np.nan_to_num(x_data, nan=0.0, posinf=0.0, neginf=0.0)
+        # Извлекаем признаки из предзагруженного массива (Time, Channels)
+        end_idx = start_idx + self.window_size
+        x_data = self._features_np[start_idx:end_idx]  # (window_size, n_features)
         
         # Конвертируем в тензор (Channels, Time)
-        x = torch.tensor(x_data, dtype=torch.float32).transpose(0, 1)
+        x = torch.from_numpy(x_data.T.copy())  # .T даёт (Channels, Time), copy() для contiguous
         
         # Применяем sampling strategy
         x = self._apply_sampling(x)
         
         # Извлекаем метки
         target_idx = start_idx + self.target_position
-        y_val = self.data.select(self.target_columns).row(target_idx)
-        y = torch.tensor(y_val, dtype=torch.float32)
+        y = torch.from_numpy(self._targets_np[target_idx].copy())
         
         return x, y
     

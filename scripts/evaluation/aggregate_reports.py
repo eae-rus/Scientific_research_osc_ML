@@ -687,8 +687,8 @@ def aggregate_reports(root_dir: str, output_file: str = None, plot: bool = False
     
     # Если full_eval включен, используем tqdm для прогресс-бара
     pbar = None
-    if full_eval:
-        pbar = tqdm(total=len(all_exp_dirs), desc="Полная оценка моделей", unit="exp")
+    #if full_eval:
+    #    pbar = tqdm(total=len(all_exp_dirs), desc="Полная оценка моделей", unit="exp")
 
     # Найти все файлы metrics.jsonl
     for exp_idx, exp_dir in enumerate(all_exp_dirs):
@@ -748,9 +748,9 @@ def aggregate_reports(root_dir: str, output_file: str = None, plot: bool = False
         # Полная оценка на тестовом датасете (GPU)
         if full_eval:
             # Обновляем прогресс-бар
-            if pbar:
-                pbar.set_postfix(model=exp_dir.name[:30])
-                pbar.update(1)
+            # if pbar:
+            #     pbar.set_postfix(model=exp_dir.name[:30])
+            #     pbar.update(1)
             full_metrics = evaluate_full_test_dataset(exp_dir, config, data_dir)
             
             exp_data['Full Best Acc'] = full_metrics['full_best_acc']
@@ -763,8 +763,8 @@ def aggregate_reports(root_dir: str, output_file: str = None, plot: bool = False
         experiments.append(exp_data)
     
     # Закрываем прогресс-бар
-    if pbar:
-        pbar.close()
+    # if pbar:
+    #     pbar.close()
 
     if not experiments:
         print("Эксперименты не найдены.")
@@ -815,7 +815,7 @@ if __name__ == "__main__":
     GENERATE_PLOTS = False
     
     # RUN_BENCHMARK: Если True, будет выполнен глубокий замер скорости инференса на CPU (1000 итераций).
-    RUN_BENCHMARK = False  # Отключаем CPU бенчмарк, если включён full_eval (нужен GPU)
+    RUN_BENCHMARK = True  # Отключаем CPU бенчмарк, если включён full_eval (нужен GPU)
     
     # RUN_FULL_EVAL: Если True, будет выполнена полная оценка на всём тестовом датасете (GPU).
     # Это более точная оценка, чем Val Acc/F1 из обучения (там используется подвыборка).

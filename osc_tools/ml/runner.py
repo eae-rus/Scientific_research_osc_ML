@@ -128,7 +128,7 @@ class ExperimentRunner:
             # Training
             self.model.train()
             train_loss = 0.0
-            pbar = tqdm(train_loader, desc=f"Эпоха {epoch+1}/{self.config.training.epochs} [Train]")
+            pbar = tqdm(train_loader, desc=f"Эпоха {epoch+1}/{self.config.training.epochs} [Train]", leave=False)
             for x, y in pbar:
                 x, y = x.to(self.device), y.to(self.device)
                 
