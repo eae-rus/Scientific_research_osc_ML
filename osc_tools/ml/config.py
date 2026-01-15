@@ -15,6 +15,7 @@ class DataConfig:
     features: Optional[List[str]] = None
     target: Optional[str] = None
     mode: str = 'classification' # classification, segmentation, reconstruction
+    norm_coef_path: Optional[str] = None # Путь к файлу нормализации
 
 @dataclass
 class TrainingConfig:

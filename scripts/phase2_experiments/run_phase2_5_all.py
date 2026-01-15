@@ -5,6 +5,7 @@ import torch
 import sys
 import json
 import argparse
+from typing import Optional, List, Tuple, Dict, Any
 
 # Добавляем корень проекта в путь импорта
 ROOT_DIR = Path(__file__).parent.parent.parent
@@ -16,6 +17,10 @@ from osc_tools.ml.dataset import OscillogramDataset
 from osc_tools.ml.precomputed_dataset import PrecomputedDataset
 from osc_tools.ml.labels import clean_labels, add_base_labels, get_target_columns, get_ml_columns
 from osc_tools.data_management import DatasetManager
+from osc_tools.ml.class_balancing import (
+    GlobalClassBalancer, OscillogramClassBalancer, 
+    BalancingConfig, get_balancing_strategy
+)
 
 # Определение уровней сложности моделей
 MODEL_COMPLEXITY = {
@@ -70,9 +75,27 @@ def get_model_params(model_name, complexity, input_size=None, num_classes=None, 
 
 def run_experiment(experiment_id, model_name, complexity, df, train_indices, val_indices, feature_cols, target_level, 
                    norm_coef_path, feature_mode='raw', sampling_strategy='none', stride=16, 
-                   use_pos_weight=True, augment=False, num_harmonics=1, epochs=30, checkpoint_frequency=1,
-                   val_df=None, use_precomputed_val=True):
+                   augment=False, num_harmonics=1, epochs=30, checkpoint_frequency=1,
+                   val_df=None, use_precomputed_val=True,
+                   balancing_mode: str = 'none', balancer: Optional[Any] = None,
+                   val_stride: int = 4):
+    """
+    Запуск одного эксперимента обучения.
     
+    Args:
+        balancing_mode: 'none', 'weights', 'global', 'oscillogram' - режим балансировки
+        balancer: Предподготовленный балансировщик (для режимов global/oscillogram)
+        val_stride: Шаг валидации (4 = полная валидация как в aggregate_reports)
+    """
+    # Логика определения use_pos_weight
+    # 'weights' -> True. 'global'/'oscillogram' -> False (так как выборка уже сбалансирована)
+    use_pos_weight = (balancing_mode == 'weights')
+    
+    # Логика определения balancing_strategy для загрузчика
+    balancing_strategy = 'none'
+    if balancing_mode in ['global', 'oscillogram']:
+        balancing_strategy = balancing_mode
+
     # Расчет входных параметров
     window_size = 320 # Базовый для Фазы 2.5
     
@@ -150,7 +173,44 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
         model_params['use_mlp'] = True
         model_params['input_size'] = input_size
     
+    # Формирование имени эксперимента в формате 2.6
+    # Добавляем режим балансировки и флаг аугментации
+    name_parts = [
+        f"Exp_{experiment_id}",
+        model_name,
+        complexity,
+        feature_mode,
+        sampling_strategy,
+        target_level
+        # balancing_mode добавляем только если он отличается от none или weights (для обратной совместимости)?
+        # Нет, пользователь просил писать стратегию.
+    ]
+    
+    if balancing_mode != 'none':
+        name_parts.append(balancing_mode)
+    else:
+        # Для совместимости со старыми именами (none) можно ничего не добавлять или добавить none
+        # Если balancing_mode=none, то это базовый вариант.
+        pass
+
+    if augment:
+        name_parts.append("aug")
+        
+    experiment_name = "_".join(name_parts)
+    
+    # Для старых имен exp_id 2.5.1.0 (none) и 2.5.1.1 (weights/use_pw)
+    # Чтобы не ломать старую структуру если не надо. Но пользователь просил "писать и стратегию и аугментацию".
+    # Давайте сделаем полностью явным.
+    # Но для обратной совместимости с уже обученными 2.5.1.0/1.1 проверим
+    # Если balancing='weights' и augment=False -> это старый 'base' в некотором смысле, но там не было суффикса.
+    # Оставим как есть для новых - с суффиксом.
+    
+    # Переопределяем имя для точного соответствия запросу
     experiment_name = f"Exp_{experiment_id}_{model_name}_{complexity}_{feature_mode}_{sampling_strategy}_{target_level}"
+    if balancing_mode != 'none':
+        experiment_name += f"_{balancing_mode}"
+    if augment:
+        experiment_name += "_aug"
     
     train_config = TrainingConfig(
         epochs=epochs,
@@ -167,7 +227,8 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
         window_size=window_size,
         batch_size=64,
         mode='multilabel',
-        features=[feature_mode]
+        features=[feature_mode],
+        norm_coef_path=str(norm_coef_path)
     )
     
     config = ExperimentConfig(
@@ -195,9 +256,27 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
             'p_drop_channel': 0.0
         }
 
+    # Определяем индексы для обучения
+    # Если указана балансировка - используем балансировщик
+    actual_train_indices = train_indices
+    actual_batch_size = data_config.batch_size
+    
+    if balancing_strategy != 'none' and balancer is not None:
+        print(f"  [Используется балансировка: {balancing_strategy}]")
+        rng = np.random.default_rng(42)  # Фиксированный seed для воспроизводимости
+        actual_train_indices = balancer.create_epoch_indices(rng)
+        
+        if balancing_strategy == 'global':
+            actual_batch_size, steps = balancer.get_batch_config()
+            print(f"    Batch size: {actual_batch_size}, Steps per epoch: {steps}, Total samples: {len(actual_train_indices)}")
+        else:
+            print(f"    Total samples: {len(actual_train_indices)}")
+    elif balancing_strategy != 'none':
+        print(f"  [!] ОШИБКА: Балансировка {balancing_strategy} запрошена, но balancer не предоставлен. Используется стандартное обучение.")
+
     # Datasets
     train_ds = OscillogramDataset(
-        dataframe=df, indices=train_indices, window_size=window_size,
+        dataframe=df, indices=actual_train_indices, window_size=window_size,
         mode='classification', feature_mode=feature_mode,
         feature_columns=feature_cols, target_columns=target_cols,
         physical_normalization=True, norm_coef_path=str(norm_coef_path),
@@ -220,7 +299,7 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
     )
     
     if can_use_precomputed:
-        print(f"  [Использую предрассчитанные признаки для валидации]")
+        print(f"  [Использую предрассчитанные признаки для валидации (stride={val_stride})]")
         val_ds = PrecomputedDataset(
             dataframe=val_df, indices=val_indices, window_size=window_size,
             feature_mode=feature_mode,
@@ -228,7 +307,7 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
             sampling_strategy=sampling_strategy, downsampling_stride=stride
         )
     else:
-        print(f"  [Расчёт признаков на лету для валидации (num_harmonics={num_harmonics})]")
+        print(f"  [Расчёт признаков на лету для валидации (num_harmonics={num_harmonics}, stride={val_stride})]")
         val_ds = OscillogramDataset(
             dataframe=df, indices=val_indices, window_size=window_size,
             mode='classification', feature_mode=feature_mode,
@@ -237,8 +316,9 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
             downsampling_mode=sampling_strategy, downsampling_stride=stride, num_harmonics=num_harmonics
         )
     
-    train_loader = torch.utils.data.DataLoader(train_ds, batch_size=data_config.batch_size, shuffle=True)
-    val_loader = torch.utils.data.DataLoader(val_ds, batch_size=data_config.batch_size, shuffle=False)
+    # Используем актуальный batch_size (может быть изменён балансировкой)
+    train_loader = torch.utils.data.DataLoader(train_ds, batch_size=actual_batch_size, shuffle=True, num_workers=0)
+    val_loader = torch.utils.data.DataLoader(val_ds, batch_size=128, shuffle=False, num_workers=0)  # Больший batch для валидации
     
     print(f"\n>>> Запуск {experiment_name}")
     history = runner.train(train_loader, val_loader)
@@ -289,7 +369,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
 
     # Используем DatasetManager для гарантированного разделения данных
     print("Инициализация DatasetManager...")
-    dm = DatasetManager(str(DATA_DIR))
+    dm = DatasetManager(str(DATA_DIR), norm_coef_path=str(NORM_COEF_PATH))
     dm.ensure_train_test_split()  # Создаёт train.csv/test.csv если их нет
     dm.create_precomputed_test_csv()  # Создаёт предрассчитанный файл если его нет
     
@@ -312,12 +392,15 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
     test_df = dm.load_test_df(precomputed=True)
     test_df = test_df.with_row_index("row_nr")
     
-    # Создаём индексы для валидации
+    # Создаём индексы для валидации с шагом 4 (полная валидация как в aggregate_reports)
+    VAL_STRIDE = 4
     val_indices = PrecomputedDataset.create_indices(
         test_df,
         window_size=window_size,
-        mode='val'
+        mode='val',
+        stride=VAL_STRIDE  # Шаг 4 для полного покрытия
     )
+    print(f"  Валидационные индексы: {len(val_indices)} (stride={VAL_STRIDE})")
     
     default_stride = 16 # Базовый страйд по умолчанию
     
@@ -327,79 +410,107 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
     models = ['SimpleMLP', 'SimpleCNN', 'ConvKAN', 'SimpleKAN', 'PhysicsKAN', 'ResNet1D'] if args.model == 'all' else [args.model]
     complexities = ['light', 'medium', 'heavy'] if args.complexity == 'all' else [args.complexity]
     
+    # === Предподготовка балансировщиков (один раз на все эксперименты) ===
+    target_cols_base = get_target_columns('base')
+    balancers_cache: Dict[str, Any] = {}
+    
+    def get_or_create_balancer(strategy: str) -> Optional[Any]:
+        """Создаёт или возвращает кэшированный балансировщик."""
+        if strategy == 'none' or strategy == 'weights':
+            return None
+        if strategy in balancers_cache:
+            return balancers_cache[strategy]
+        
+        print(f"[Предподготовка балансировщика: {strategy}]")
+        config = BalancingConfig(
+            min_batch_size=64,
+            samples_per_oscillogram=12,
+            total_samples_per_epoch=10000,
+            cache_dir=str(DATA_DIR / 'balancing_cache')
+        )
+        balancer = get_balancing_strategy(strategy, df, target_cols_base, window_size, config)
+        if balancer:
+            balancer.analyze()  # Предварительный анализ
+        balancers_cache[strategy] = balancer
+        return balancer
+    
     # Настройка параметров в зависимости от эксперимента
     exp_params = {
-        "2.5.1.0": {"feature_mode": "raw", "sampling": "none", "use_pw": False, "aug": False, "target_level": "base"},
-        "2.5.1.1": {"feature_mode": "raw", "sampling": "none", "use_pw": True, "aug": False, "target_level": "base"},
-        "2.5.1.2": {"feature_mode": "raw", "sampling": "none", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.1.0": {"feature_mode": "raw", "sampling": "none", "balancing": "none", "aug": False, "target_level": "base"},
+        "2.5.1.1": {"feature_mode": "raw", "sampling": "none", "balancing": "weights", "aug": False, "target_level": "base"},
+        # НОВЫЕ ЭКСПЕРИМЕНТЫ: Балансировка классов
+        "2.5.1.2": {"feature_mode": "raw", "sampling": "none", "balancing": "global", "aug": False, "target_level": "base"},  # Глобальная балансировка
+        "2.5.1.3": {"feature_mode": "raw", "sampling": "none", "balancing": "oscillogram", "aug": False, "target_level": "base"},  # Балансировка внутри осциллограмм
+        # СДВИНУТАЯ АУГМЕНТАЦИЯ (была 2.5.1.2)
+        "2.5.1.4": {"feature_mode": "raw", "sampling": "none", "balancing": "weights", "aug": True, "target_level": "base"},
         
         # Исследование стратегий прореживания на сырых данных (Raw Data Downsampling)
-        "2.5.2.0": {"feature_mode": "raw", "sampling": "stride", "stride": 16, "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.2.1": {"feature_mode": "raw", "sampling": "snapshot", "stride": 32, "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.2.2": {"feature_mode": "raw", "sampling": "stride", "stride": 16, "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.2.3": {"feature_mode": "raw", "sampling": "snapshot", "stride": 32, "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.2.4": {"feature_mode": "raw", "sampling": "stride", "stride": 16, "complexity": "heavy", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.2.5": {"feature_mode": "raw", "sampling": "snapshot", "stride": 32, "complexity": "heavy", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.2.0": {"feature_mode": "raw", "sampling": "stride", "stride": 16, "complexity": "light", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.2.1": {"feature_mode": "raw", "sampling": "snapshot", "stride": 32, "complexity": "light", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.2.2": {"feature_mode": "raw", "sampling": "stride", "stride": 16, "complexity": "medium", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.2.3": {"feature_mode": "raw", "sampling": "snapshot", "stride": 32, "complexity": "medium", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.2.4": {"feature_mode": "raw", "sampling": "stride", "stride": 16, "complexity": "heavy", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.2.5": {"feature_mode": "raw", "sampling": "snapshot", "stride": 32, "complexity": "heavy", "balancing": "weights", "aug": True, "target_level": "base"},
         
         # Исследование признаков (Feature Type Optimization)
-        "2.5.3.0": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.3.1_rect":  {"feature_mode": "symmetric", "sampling": "snapshot", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.3.1_polar": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.3.0": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.3.1_rect":  {"feature_mode": "symmetric", "sampling": "snapshot", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.3.1_polar": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "balancing": "weights", "aug": True, "target_level": "base"},
         
         # Сравнение Фазных признаков (8 каналов)
-        "2.5.3.1_phase_rect":  {"feature_mode": "phase_complex", "sampling": "snapshot", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.3.1_phase_polar": {"feature_mode": "phase_polar", "sampling": "snapshot", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.3.1_phase_rect":  {"feature_mode": "phase_complex", "sampling": "snapshot", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.3.1_phase_polar": {"feature_mode": "phase_polar", "sampling": "snapshot", "balancing": "weights", "aug": True, "target_level": "base"},
 
-        "2.5.3.2_power": {"feature_mode": "power", "sampling": "snapshot", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.3.2_ab":    {"feature_mode": "alpha_beta", "sampling": "snapshot", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.3.2_power": {"feature_mode": "power", "sampling": "snapshot", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.3.2_ab":    {"feature_mode": "alpha_beta", "sampling": "snapshot", "balancing": "weights", "aug": True, "target_level": "base"},
         
         # Развитие раздела 3: Исследование признаков на временных рядах (Strided, Heavy)
         # Эти эксперименты используют Stride 16 и Heavy сложность для глубокого анализа
-        "2.5.3.0_strided": {"feature_mode": "symmetric_polar", "sampling": "stride", "stride": 16, "complexity": "heavy", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.3.1_rect_strided":  {"feature_mode": "symmetric", "sampling": "stride", "stride": 16, "complexity": "heavy", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.3.1_polar_strided": {"feature_mode": "symmetric_polar", "sampling": "stride", "stride": 16, "complexity": "heavy", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.3.1_phase_rect_strided":  {"feature_mode": "phase_complex", "sampling": "stride", "stride": 16, "complexity": "heavy", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.3.1_phase_polar_strided": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "complexity": "heavy", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.3.2_power_strided": {"feature_mode": "power", "sampling": "stride", "stride": 16, "complexity": "heavy", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.3.2_ab_strided":    {"feature_mode": "alpha_beta", "sampling": "stride", "stride": 16, "complexity": "heavy", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.3.0_strided": {"feature_mode": "symmetric_polar", "sampling": "stride", "stride": 16, "complexity": "heavy", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.3.1_rect_strided":  {"feature_mode": "symmetric", "sampling": "stride", "stride": 16, "complexity": "heavy", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.3.1_polar_strided": {"feature_mode": "symmetric_polar", "sampling": "stride", "stride": 16, "complexity": "heavy", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.3.1_phase_rect_strided":  {"feature_mode": "phase_complex", "sampling": "stride", "stride": 16, "complexity": "heavy", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.3.1_phase_polar_strided": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "complexity": "heavy", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.3.2_power_strided": {"feature_mode": "power", "sampling": "stride", "stride": 16, "complexity": "heavy", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.3.2_ab_strided":    {"feature_mode": "alpha_beta", "sampling": "stride", "stride": 16, "complexity": "heavy", "balancing": "weights", "aug": True, "target_level": "base"},
 
         # Раздел 4: Исследование признаков при средней сложности (Medium)
-        "2.5.4.0_strided": {"feature_mode": "symmetric_polar", "sampling": "stride", "stride": 16, "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.4.1_rect_strided":  {"feature_mode": "symmetric", "sampling": "stride", "stride": 16, "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.4.1_polar_strided": {"feature_mode": "symmetric_polar", "sampling": "stride", "stride": 16, "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.4.1_phase_rect_strided":  {"feature_mode": "phase_complex", "sampling": "stride", "stride": 16, "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.4.1_phase_polar_strided": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.4.2_power_strided": {"feature_mode": "power", "sampling": "stride", "stride": 16, "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.4.2_ab_strided":    {"feature_mode": "alpha_beta", "sampling": "stride", "stride": 16, "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.4.0_strided": {"feature_mode": "symmetric_polar", "sampling": "stride", "stride": 16, "complexity": "medium", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.4.1_rect_strided":  {"feature_mode": "symmetric", "sampling": "stride", "stride": 16, "complexity": "medium", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.4.1_polar_strided": {"feature_mode": "symmetric_polar", "sampling": "stride", "stride": 16, "complexity": "medium", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.4.1_phase_rect_strided":  {"feature_mode": "phase_complex", "sampling": "stride", "stride": 16, "complexity": "medium", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.4.1_phase_polar_strided": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "complexity": "medium", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.4.2_power_strided": {"feature_mode": "power", "sampling": "stride", "stride": 16, "complexity": "medium", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.4.2_ab_strided":    {"feature_mode": "alpha_beta", "sampling": "stride", "stride": 16, "complexity": "medium", "balancing": "weights", "aug": True, "target_level": "base"},
 
-        "2.5.4.0_snapshot": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.4.1_rect_snapshot":  {"feature_mode": "symmetric", "sampling": "snapshot", "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.4.1_polar_snapshot": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.4.1_phase_rect_snapshot":  {"feature_mode": "phase_complex", "sampling": "snapshot", "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.4.1_phase_polar_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.4.2_power_snapshot": {"feature_mode": "power", "sampling": "snapshot", "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.4.2_ab_snapshot":    {"feature_mode": "alpha_beta", "sampling": "snapshot", "complexity": "medium", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.4.0_snapshot": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "complexity": "medium", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.4.1_rect_snapshot":  {"feature_mode": "symmetric", "sampling": "snapshot", "complexity": "medium", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.4.1_polar_snapshot": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "complexity": "medium", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.4.1_phase_rect_snapshot":  {"feature_mode": "phase_complex", "sampling": "snapshot", "complexity": "medium", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.4.1_phase_polar_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "complexity": "medium", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.4.2_power_snapshot": {"feature_mode": "power", "sampling": "snapshot", "complexity": "medium", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.4.2_ab_snapshot":    {"feature_mode": "alpha_beta", "sampling": "snapshot", "complexity": "medium", "balancing": "weights", "aug": True, "target_level": "base"},
 
         # Раздел 5: Исследование признаков при низкой сложности (Light)
-        "2.5.5.0_strided": {"feature_mode": "symmetric_polar", "sampling": "stride", "stride": 16, "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.5.1_rect_strided":  {"feature_mode": "symmetric", "sampling": "stride", "stride": 16, "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.5.1_polar_strided": {"feature_mode": "symmetric_polar", "sampling": "stride", "stride": 16, "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.5.1_phase_rect_strided":  {"feature_mode": "phase_complex", "sampling": "stride", "stride": 16, "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.5.1_phase_polar_strided": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.5.2_power_strided": {"feature_mode": "power", "sampling": "stride", "stride": 16, "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.5.2_ab_strided":    {"feature_mode": "alpha_beta", "sampling": "stride", "stride": 16, "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.5.0_strided": {"feature_mode": "symmetric_polar", "sampling": "stride", "stride": 16, "complexity": "light", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.5.1_rect_strided":  {"feature_mode": "symmetric", "sampling": "stride", "stride": 16, "complexity": "light", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.5.1_polar_strided": {"feature_mode": "symmetric_polar", "sampling": "stride", "stride": 16, "complexity": "light", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.5.1_phase_rect_strided":  {"feature_mode": "phase_complex", "sampling": "stride", "stride": 16, "complexity": "light", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.5.1_phase_polar_strided": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "complexity": "light", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.5.2_power_strided": {"feature_mode": "power", "sampling": "stride", "stride": 16, "complexity": "light", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.5.2_ab_strided":    {"feature_mode": "alpha_beta", "sampling": "stride", "stride": 16, "complexity": "light", "balancing": "weights", "aug": True, "target_level": "base"},
 
-        "2.5.5.0_snapshot": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.5.1_rect_snapshot":  {"feature_mode": "symmetric", "sampling": "snapshot", "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.5.1_polar_snapshot": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.5.1_phase_rect_snapshot":  {"feature_mode": "phase_complex", "sampling": "snapshot", "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.5.1_phase_polar_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.5.2_power_snapshot": {"feature_mode": "power", "sampling": "snapshot", "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.5.2_ab_snapshot":    {"feature_mode": "alpha_beta", "sampling": "snapshot", "complexity": "light", "use_pw": True, "aug": True, "target_level": "base"},
+        "2.5.5.0_snapshot": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "complexity": "light", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.5.1_rect_snapshot":  {"feature_mode": "symmetric", "sampling": "snapshot", "complexity": "light", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.5.1_polar_snapshot": {"feature_mode": "symmetric_polar", "sampling": "snapshot", "complexity": "light", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.5.1_phase_rect_snapshot":  {"feature_mode": "phase_complex", "sampling": "snapshot", "complexity": "light", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.5.1_phase_polar_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "complexity": "light", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.5.2_power_snapshot": {"feature_mode": "power", "sampling": "snapshot", "complexity": "light", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.5.2_ab_snapshot":    {"feature_mode": "alpha_beta", "sampling": "snapshot", "complexity": "light", "balancing": "weights", "aug": True, "target_level": "base"},
 
-        "2.5.6.1":       {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "base"},
-        "2.5.6.2":       {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "full"},
-        "2.5.7.1":       {"feature_mode": "symmetric_polar", "sampling": "stride", "use_pw": True, "aug": True, "target_level": "full"},
+        "2.5.6.1":       {"feature_mode": "symmetric_polar", "sampling": "stride", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.6.2":       {"feature_mode": "symmetric_polar", "sampling": "stride", "balancing": "weights", "aug": True, "target_level": "full"},
+        "2.5.7.1":       {"feature_mode": "symmetric_polar", "sampling": "stride", "balancing": "weights", "aug": True, "target_level": "full"},
     }
     
     if args.exp not in exp_params:
@@ -491,13 +602,16 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
                 feature_mode=p['feature_mode'], 
                 sampling_strategy=p['sampling'],
                 stride=current_stride,
-                use_pos_weight=p['use_pw'],
+                # use_pos_weight удален, выводится из balancing_mode
                 augment=p['aug'],
                 num_harmonics=current_harmonics,
                 epochs=args.epochs,
                 checkpoint_frequency=args.checkpoint_frequency,
                 val_df=test_df,
-                use_precomputed_val=True
+                use_precomputed_val=True,
+                balancing_mode=p.get('balancing', 'none'),
+                balancer=get_or_create_balancer(p.get('balancing', 'none')),
+                val_stride=VAL_STRIDE
             )
 
 if __name__ == "__main__":
@@ -505,41 +619,43 @@ if __name__ == "__main__":
     
     # Полный список всех экспериментов Фазы 2.5
     EXPS = [
-        # 1. Baseline & Аугментация Tests
-        "2.5.1.0", "2.5.1.1", "2.5.1.2",
+        # 1. Baseline & Балансировка Tests
+        # "2.5.1.0", 
+        "2.5.1.1", "2.5.1.2", "2.5.1.3"# ,
+        # "2.5.1.4",
         
         # 2. Raw Data Sampling Strategies
-        "2.5.2.0", "2.5.2.1", "2.5.2.2", "2.5.2.3", "2.5.2.4", "2.5.2.5",
-        
-        # 3. Feature Optimization (Heavy/Snapshot & Strided)
-        "2.5.3.0", "2.5.3.1_rect", "2.5.3.1_polar", 
-        "2.5.3.1_phase_rect", "2.5.3.1_phase_polar", 
-        "2.5.3.2_power", "2.5.3.2_ab",
-        
-        "2.5.3.0_strided", "2.5.3.1_rect_strided", "2.5.3.1_polar_strided", 
-        "2.5.3.1_phase_rect_strided", "2.5.3.1_phase_polar_strided", 
-        "2.5.3.2_power_strided", "2.5.3.2_ab_strided",
-
-        # 4. Medium Complexity (Strided & Snapshot)
-        "2.5.4.0_strided", "2.5.4.1_rect_strided", "2.5.4.1_polar_strided", 
-        "2.5.4.1_phase_rect_strided", "2.5.4.1_phase_polar_strided", 
-        "2.5.4.2_power_strided", "2.5.4.2_ab_strided",
-        
-        "2.5.4.0_snapshot", "2.5.4.1_rect_snapshot", "2.5.4.1_polar_snapshot", 
-        "2.5.4.1_phase_rect_snapshot", "2.5.4.1_phase_polar_snapshot", 
-        "2.5.4.2_power_snapshot", "2.5.4.2_ab_snapshot",
-        
-        # 5. Light Complexity (Strided & Snapshot)
-        "2.5.5.0_strided", "2.5.5.1_rect_strided", "2.5.5.1_polar_strided", 
-        "2.5.5.1_phase_rect_strided", "2.5.5.1_phase_polar_strided", 
-        "2.5.5.2_power_strided", "2.5.5.2_ab_strided",
-        
-        "2.5.5.0_snapshot", "2.5.5.1_rect_snapshot", "2.5.5.1_polar_snapshot", 
-        "2.5.5.1_phase_rect_snapshot", "2.5.5.1_phase_polar_snapshot", 
-        "2.5.5.2_power_snapshot", "2.5.5.2_ab_snapshot",
-
-        # 6. Targets
-        # "2.5.6.1", "2.5.6.2", "2.5.7.1",
+#         "2.5.2.0", "2.5.2.1", "2.5.2.2", "2.5.2.3", "2.5.2.4", "2.5.2.5",
+#         
+#         # 3. Feature Optimization (Heavy/Snapshot & Strided)
+#         "2.5.3.0", "2.5.3.1_rect", "2.5.3.1_polar", 
+#         "2.5.3.1_phase_rect", "2.5.3.1_phase_polar", 
+#         "2.5.3.2_power", "2.5.3.2_ab",
+#         
+#         "2.5.3.0_strided", "2.5.3.1_rect_strided", "2.5.3.1_polar_strided", 
+#         "2.5.3.1_phase_rect_strided", "2.5.3.1_phase_polar_strided", 
+#         "2.5.3.2_power_strided", "2.5.3.2_ab_strided",
+# 
+#         # 4. Medium Complexity (Strided & Snapshot)
+#         "2.5.4.0_strided", "2.5.4.1_rect_strided", "2.5.4.1_polar_strided", 
+#         "2.5.4.1_phase_rect_strided", "2.5.4.1_phase_polar_strided", 
+#         "2.5.4.2_power_strided", "2.5.4.2_ab_strided",
+#         
+#         "2.5.4.0_snapshot", "2.5.4.1_rect_snapshot", "2.5.4.1_polar_snapshot", 
+#         "2.5.4.1_phase_rect_snapshot", "2.5.4.1_phase_polar_snapshot", 
+#         "2.5.4.2_power_snapshot", "2.5.4.2_ab_snapshot",
+#         
+#         # 5. Light Complexity (Strided & Snapshot)
+#         "2.5.5.0_strided", "2.5.5.1_rect_strided", "2.5.5.1_polar_strided", 
+#         "2.5.5.1_phase_rect_strided", "2.5.5.1_phase_polar_strided", 
+#         "2.5.5.2_power_strided", "2.5.5.2_ab_strided",
+#         
+#         "2.5.5.0_snapshot", "2.5.5.1_rect_snapshot", "2.5.5.1_polar_snapshot", 
+#         "2.5.5.1_phase_rect_snapshot", "2.5.5.1_phase_polar_snapshot", 
+#         "2.5.5.2_power_snapshot", "2.5.5.2_ab_snapshot",
+# 
+#         # 6. Targets
+#         # "2.5.6.1", "2.5.6.2", "2.5.7.1",
     ]
     # EXPS = ["2.5.4.0_strided"]  # Пример запуска одного эксперимента
 

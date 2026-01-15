@@ -49,18 +49,23 @@ class DatasetManager:
     # Аналоговые колонки (стандартизированные имена)
     ANALOG_COLS_RAW = ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']
     
-    def __init__(self, data_dir: str):
+    def __init__(self, data_dir: str, norm_coef_path: Optional[str] = None):
         """
         Args:
             data_dir: Путь к директории с датасетами (обычно 'data/ml_datasets')
+            norm_coef_path: Путь к файлу коэффициентов нормализации.
         """
         self.data_dir = Path(data_dir)
+        self.custom_norm_path = Path(norm_coef_path) if norm_coef_path else None
         
         # Пути к файлам в родительской директории (для norm_coef)
         self.project_root = self.data_dir.parent.parent
         
     def _get_norm_coef_path(self) -> Path:
         """Возвращает путь к файлу коэффициентов нормализации."""
+        if self.custom_norm_path and self.custom_norm_path.exists():
+            return self.custom_norm_path
+            
         # Пробуем несколько стандартных мест
         candidates = [
             self.data_dir / self.NORM_COEF_CSV,

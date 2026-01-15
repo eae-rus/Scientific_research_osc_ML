@@ -5,7 +5,7 @@ import torch
 import sys
 import json
 import argparse
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 # Добавляем корень проекта в путь импорта
 ROOT_DIR = Path(__file__).parent.parent.parent
@@ -17,6 +17,10 @@ from osc_tools.ml.dataset import OscillogramDataset
 from osc_tools.ml.precomputed_dataset import PrecomputedDataset
 from osc_tools.ml.labels import clean_labels, add_base_labels, get_target_columns
 from osc_tools.data_management import DatasetManager
+from osc_tools.ml.class_balancing import (
+    GlobalClassBalancer, OscillogramClassBalancer, 
+    BalancingConfig, get_balancing_strategy
+)
 
 # Определение уровней сложности моделей для Фазы 2.6
 MODEL_COMPLEXITY = {
@@ -95,18 +99,38 @@ def run_single_experiment(
     norm_coef_path: Path,
     augment: bool = True,
     val_df: pl.DataFrame = None,
-    use_precomputed_val: bool = True
+    use_precomputed_val: bool = True,
+    balancing_mode: str = 'none',
+    balancer: Any = None
 ):
     print(f"\n>>> Запуск эксперимента: {exp_name}")
     print(f"Модель: {model_name} ({complexity})")
+    print(f"Балансировка: {balancing_mode}")
+
+    # Настройка веса Loss функции
+    use_pos_weight = (balancing_mode == 'weights')
+    train_config_base.use_pos_weight = use_pos_weight
     
     # 1. Получение параметров модели
     num_classes = len(target_cols)
     model_params = get_model_params(model_name, complexity, num_classes)
     
+    # Балансировка индексов (если выбрана стратегия активной выборки)
+    actual_train_indices = train_indices
+    actual_batch_size = data_config_base.batch_size
+    
+    if balancing_mode in ['global', 'oscillogram'] and balancer is not None:
+        print(f"  [Активная балансировка: {balancing_mode}]")
+        rng = np.random.default_rng(42)  # Фиксированный seed
+        actual_train_indices = balancer.create_epoch_indices(rng)
+        
+        if balancing_mode == 'global':
+            actual_batch_size, steps = balancer.get_batch_config()
+            print(f"    Batch size: {actual_batch_size}, Steps: {steps}, Total: {len(actual_train_indices)}")
+
     # 2. Подготовка Dataset
     train_ds = OscillogramDataset(
-        dataframe=df, indices=train_indices, window_size=data_config_base.window_size,
+        dataframe=df, indices=actual_train_indices, window_size=data_config_base.window_size,
         mode='classification', feature_mode=feature_mode,
         sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
         target_columns=target_cols, target_level='base_labels',
@@ -198,7 +222,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
 
     # Используем DatasetManager для гарантированного разделения данных
     print("Инициализация DatasetManager...")
-    dm = DatasetManager(str(DATA_DIR))
+    dm = DatasetManager(str(DATA_DIR), norm_coef_path=str(NORM_COEF_PATH))
     dm.ensure_train_test_split()  # Создаёт train.csv/test.csv если их нет
     dm.create_precomputed_test_csv()  # Создаёт предрассчитанный файл если его нет
     
@@ -228,21 +252,50 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         mode='val'
     )
     
-    data_config = DataConfig(path=str(METADATA_FILE), window_size=WINDOW_SIZE, batch_size=64, mode='multilabel')
+    # === Предподготовка балансировщиков ===
+    balancers_cache: Dict[str, Any] = {}
+    
+    def get_or_create_balancer(strategy: str) -> Optional[Any]:
+        """Создаёт или возвращает кэшированный балансировщик."""
+        if strategy == 'none' or strategy == 'weights':
+            return None
+        if strategy in balancers_cache:
+            return balancers_cache[strategy]
+        
+        print(f"[Предподготовка балансировщика: {strategy}]")
+        config = BalancingConfig(
+            min_batch_size=64,
+            samples_per_oscillogram=target_spf,
+            total_samples_per_epoch=10000,
+            cache_dir=str(DATA_DIR / 'balancing_cache')
+        )
+        balancer = get_balancing_strategy(strategy, df, target_cols, WINDOW_SIZE, config)
+        if balancer:
+            balancer.analyze()
+        balancers_cache[strategy] = balancer
+        return balancer
+
+    data_config = DataConfig(
+        path=str(METADATA_FILE), 
+        window_size=WINDOW_SIZE, 
+        batch_size=64, 
+        mode='multilabel',
+        norm_coef_path=str(NORM_COEF_PATH)
+    )
     train_config = TrainingConfig(
         epochs=target_epochs, 
         learning_rate=0.001, 
-        use_pos_weight=True,
+        use_pos_weight=True, # Will be updated in run loop based on strategy
         checkpoint_frequency=checkpoint_frequency,
         save_dir=str(EXPERIMENTS_DIR)
     )
 
     # Таблица экспериментов (логика данных)
     exp_params = {
-        "2.6.1_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True},
-        "2.6.1_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True},
-        "2.6.2_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True},
-        "2.6.2_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True},
+        "2.6.1_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights"},
+        "2.6.1_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights"},
+        "2.6.2_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights"},
+        "2.6.2_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights"},
     }
 
     if target_exp not in exp_params:
@@ -270,6 +323,12 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         for comp in complexities_to_run:
             full_exp_name = f"Exp{target_exp}_{m_name}_{comp}_{p['sampling']}"
             
+            # Добавляем суффиксы балансировки и аугментации в имя
+            if p.get('balancing', 'none') != 'none':
+                full_exp_name += f"_{p.get('balancing')}"
+            if p.get("aug", True):
+                full_exp_name += "_aug"
+            
             # Проверка существования
             checkpoint_path = Path(train_config.save_dir) / full_exp_name / "final_model.pt"
             if skip_existing and checkpoint_path.exists():
@@ -293,7 +352,9 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
                     norm_coef_path=NORM_COEF_PATH,
                     augment=p.get("aug", True),
                     val_df=test_df,
-                    use_precomputed_val=True
+                    use_precomputed_val=True,
+                    balancing_mode=p.get('balancing', 'weights'),
+                    balancer=get_or_create_balancer(p.get('balancing', 'weights'))
                 )
             except Exception as e:
                 print(f"!!! Ошибка в {full_exp_name}: {e}")

@@ -227,7 +227,8 @@ _test_data_cache: Dict[str, Any] = {}
 def _get_test_data_cached(
     data_dir: str, 
     window_size: int = 320,
-    eval_stride: int = 1  # Stride=1 для полного перебора ВСЕХ точек
+    eval_stride: int = 1,  # Stride=1 для полного перебора ВСЕХ точек
+    norm_coef_path: Optional[str] = None
 ) -> Tuple[Any, List[int], List[str]]:
     """
     Возвращает кэшированные данные тестового датасета (PrecomputedDataset).
@@ -242,20 +243,24 @@ def _get_test_data_cached(
         data_dir: Путь к директории с данными
         window_size: Размер окна
         eval_stride: Stride между окнами (1 = все точки, default)
+        norm_coef_path: Путь к файлу нормализации
     
     Returns:
         (test_df, indices, target_cols)
     """
     import polars as pl
     
-    cache_key = f"{data_dir}_{window_size}_{eval_stride}"
+    # Включаем norm_coef_path в ключ кэша
+    cache_key = f"{data_dir}_{window_size}_{eval_stride}_{norm_coef_path}"
     
     if cache_key not in _test_data_cache:
-        dm = DatasetManager(data_dir)
+        dm = DatasetManager(data_dir, norm_coef_path=norm_coef_path)
         target_cols = get_target_columns('base')
         
         print(f"[Full Eval] Загрузка тестового датасета (PrecomputedDataset)...")
         # Убеждаемся что предрассчитанный файл существует
+        # Если пришёл нестандартный путь к нормализации, форсируем пересоздание если файл старый?
+        # Пока просто создаем если нет.
         dm.create_precomputed_test_csv()
         
         # Загружаем
@@ -471,6 +476,9 @@ def evaluate_full_test_dataset(
         elif 'snapshot' in exp_name:
             sampling_strategy = 'snapshot'
             downsampling_stride = 32
+        elif 'none' in exp_name or 'full' in exp_name:
+            sampling_strategy = 'none'
+            downsampling_stride = 1
         else:
             # Пробуем определить по input_size модели
             input_size = config.get('model', {}).get('params', {}).get('input_size', 0)
@@ -496,8 +504,12 @@ def evaluate_full_test_dataset(
             else:
                 seq_len = 18  # Default для stride
             
+            # Если seq_len совпадает с window_size, это 'none'
+            if seq_len >= window_size:
+                sampling_strategy = 'none'
+                downsampling_stride = 1
             # Snapshot дает 2 точки, stride дает ~18-20
-            if seq_len <= 4:
+            elif seq_len <= 4:
                 sampling_strategy = 'snapshot'
                 downsampling_stride = 32
             else:
@@ -511,25 +523,37 @@ def evaluate_full_test_dataset(
         in_channels = config.get('model', {}).get('params', {}).get('in_channels', None)
         
         if in_channels is None:
-            # Вычисляем из input_size
-            input_size = config.get('model', {}).get('params', {}).get('input_size', 0)
-            if input_size > 0:
-                if sampling_strategy == 'snapshot':
-                    # input_size = in_channels * 2
-                    in_channels = input_size // 2
-                else:
-                    # input_size = in_channels * seq_len (~18)
-                    # Пробуем сначала 16 (phase_polar), потом 12 (symmetric)
-                    if input_size % 16 == 0:
-                        in_channels = 16
-                    elif input_size % 12 == 0:
-                        in_channels = 12
-                    elif input_size % 8 == 0:
-                        in_channels = 8
+            # Сначала пытаемся найти в названии
+            if 'raw' in exp_name:
+                in_channels = 8
+            elif 'symmetric' in exp_name:
+                in_channels = 12
+            elif 'phase_polar' in exp_name or 'polar' in exp_name:
+                in_channels = 16
+            
+            # Если не нашли в названии, вычисляем из input_size
+            if in_channels is None:
+                input_size = config.get('model', {}).get('params', {}).get('input_size', 0)
+                if input_size > 0:
+                    if sampling_strategy == 'snapshot':
+                        # input_size = in_channels * 2
+                        in_channels = input_size // 2
+                    elif sampling_strategy == 'none':
+                        # input_size = in_channels * window_size
+                        in_channels = input_size // window_size
                     else:
-                        in_channels = 16  # Default
-            else:
-                in_channels = 16  # Default
+                        # input_size = in_channels * seq_len (~18)
+                        # Пробуем сначала 16 (phase_polar), потом 12 (symmetric)
+                        if input_size % 16 == 0:
+                            in_channels = 16
+                        elif input_size % 12 == 0:
+                            in_channels = 12
+                        elif input_size % 8 == 0:
+                            in_channels = 8
+                        else:
+                            in_channels = 16  # Default
+                else:
+                    in_channels = 16  # Default
         
         if in_channels == 12:
             feature_mode = 'symmetric'
@@ -540,8 +564,9 @@ def evaluate_full_test_dataset(
         
         # Загружаем кэшированные данные (PrecomputedDataset - быстро и точно после исправлений)
         # stride=1 для полного перебора ВСЕХ точек
+        norm_coef_path = config.get('data', {}).get('norm_coef_path')
         test_df, all_indices, target_cols = _get_test_data_cached(
-            data_dir, window_size, eval_stride=1
+            data_dir, window_size, eval_stride=1, norm_coef_path=norm_coef_path
         )
         
         # Создаём PrecomputedDataset для быстрой оценки
@@ -806,10 +831,10 @@ if __name__ == "__main__":
     MANUAL_RUN = True
     
     # ROOT_DIR: Папка, где лежат результаты ваших экспериментов (metrics.jsonl, config.json).
-    ROOT_DIR = "experiments/phase2_6"
+    ROOT_DIR = "experiments/phase2_5/_новые опыты/Exp_2.5.1"
     
     # OUTPUT_CSV: Имя файла для сохранения таблицы с результатами.
-    OUTPUT_CSV = "reports/phase2_6_full.csv"
+    OUTPUT_CSV = "reports/phase2_5_1_full.csv"
     
     # GENERATE_PLOTS: Если True, для каждого эксперимента будут построены графики обучения.
     GENERATE_PLOTS = False
