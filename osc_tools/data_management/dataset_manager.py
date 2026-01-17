@@ -24,6 +24,9 @@ from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
 from osc_tools.ml.labels import clean_labels, add_base_labels, get_target_columns, get_ml_columns
+from osc_tools.features.pdr_calculator import sliding_window_fft
+from osc_tools.features.phasor import calculate_symmetrical_components
+from osc_tools.features.polar import calculate_polar_features
 
 
 class DatasetManager:
@@ -167,37 +170,15 @@ class DatasetManager:
             (real, imag) - Re и Im части фазора для каждой точки.
             Первые FFT_WINDOW точек содержат 0 (warmup).
         """
-        n = len(signal)
-        real = np.zeros(n, dtype=np.float32)
-        imag = np.zeros(n, dtype=np.float32)
-        
-        if n < self.FFT_WINDOW:
-            return real, imag
-        
-        # Используем sliding_window_view для эффективности
-        windows = np.lib.stride_tricks.sliding_window_view(signal.astype(np.float32), self.FFT_WINDOW)
-        
-        # Применяем окно Ханнинга (как в pdr_calculator.sliding_window_fft)
-        hanning_window = np.hanning(self.FFT_WINDOW).astype(np.float32)
-        windows_windowed = windows * hanning_window
-        
-        # FFT
-        fft_coeffs = np.fft.fft(windows_windowed, axis=-1) / self.FFT_WINDOW
-        
-        # Извлекаем первую гармонику и умножаем на 2
-        first_harmonic = fft_coeffs[:, 1] * 2
-        
-        # Заполняем результат
-        # sliding_window_view даёт n - FFT_WINDOW + 1 окон
-        # Результат начинается с индекса FFT_WINDOW - 1 (последняя точка первого окна)
-        n_windows = len(first_harmonic)
-        end_idx = min(self.FFT_WINDOW - 1 + n_windows, n)
-        actual_windows = end_idx - (self.FFT_WINDOW - 1)
-        
-        real[self.FFT_WINDOW - 1 : end_idx] = first_harmonic[:actual_windows].real.astype(np.float32)
-        imag[self.FFT_WINDOW - 1 : end_idx] = first_harmonic[:actual_windows].imag.astype(np.float32)
-        
+        phasors = sliding_window_fft(signal, self.FFT_WINDOW, num_harmonics=1)
+        phasors = np.nan_to_num(phasors, nan=0.0, posinf=0.0, neginf=0.0)
+        real = phasors[:, 0].real.astype(np.float32)
+        imag = phasors[:, 0].imag.astype(np.float32)
         return real, imag
+
+    def _harmonic_suffix(self, harmonic_idx: int) -> str:
+        """Возвращает суффикс для гармоники (h=1 без суффикса)."""
+        return "" if harmonic_idx == 1 else f"_h{harmonic_idx}"
     
     def _compute_symmetric_components(
         self, 
@@ -223,17 +204,17 @@ class DatasetManager:
         
         return s1, s2, s0
     
-    def create_precomputed_test_csv(self, force: bool = False) -> Path:
+    def create_precomputed_test_csv(self, force: bool = False, num_harmonics: int = 1) -> Path:
         """
         Создает CSV файл с предрассчитанными признаками для тестовой выборки.
         
         Структура колонок:
         1. Метаданные: sample, file_name
         2. Raw аналоговые (8): IA, IB, IC, IN, UA, UB, UC, UN  
-        3. Phase Polar (16): IA_mag, IA_angle, IB_mag, ..., UN_angle
-        4. Symmetric (12): I1_mag, I1_angle, I2_mag, I2_angle, I0_mag, I0_angle,
-                           U1_mag, U1_angle, U2_mag, U2_angle, U0_mag, U0_angle
-        5. Phase Complex (16): IA_re, IA_im, IB_re, ..., UN_im
+        3. Phase Polar (16 * H): IA_mag/angle для h1, IA_h2_mag/angle для h2 и т.д.
+        4. Symmetric Rect (12 * H): I1_re/im для h1, I1_h2_re/im для h2 и т.д.
+        5. Symmetric Polar (12 * H): I1_mag/angle для h1, I1_h2_mag/angle для h2 и т.д.
+        6. Phase Complex (16 * H): IA_re/im для h1, IA_h2_re/im для h2 и т.д.
         6. Метки ML_*
         
         Первые 31 точка в расчётных колонках содержат 0 (warmup FFT).
@@ -241,6 +222,7 @@ class DatasetManager:
         
         Args:
             force: Принудительно пересоздать файл
+            num_harmonics: Количество гармоник для предрасчёта
             
         Returns:
             Путь к созданному файлу
@@ -251,7 +233,8 @@ class DatasetManager:
             print(f"[DatasetManager] Найден существующий файл: {output_path.name}")
             return output_path
         
-        print(f"[DatasetManager] Создание предрассчитанного тестового датасета...")
+        num_harmonics = max(1, int(num_harmonics))
+        print(f"[DatasetManager] Создание предрассчитанного тестового датасета (гармоники={num_harmonics})...")
         
         # Убеждаемся что train/test разделение существует
         _, test_path = self.ensure_train_test_split()
@@ -280,15 +263,22 @@ class DatasetManager:
                 print(f"  Предупреждение: не удалось загрузить коэффициенты: {e}")
         
         # Имена колонок для расчётных признаков
-        phase_polar_names = []
-        phase_complex_names = []
+        phase_polar_names: List[str] = []
+        phase_complex_names: List[str] = []
+        symmetric_rect_names: List[str] = []
+        symmetric_polar_names: List[str] = []
+
         for ch in ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']:
-            phase_polar_names.extend([f'{ch}_mag', f'{ch}_angle'])
-            phase_complex_names.extend([f'{ch}_re', f'{ch}_im'])
+            for h in range(1, num_harmonics + 1):
+                suffix = self._harmonic_suffix(h)
+                phase_polar_names.extend([f'{ch}{suffix}_mag', f'{ch}{suffix}_angle'])
+                phase_complex_names.extend([f'{ch}{suffix}_re', f'{ch}{suffix}_im'])
             
-        symmetric_names = []
         for comp in ['I1', 'I2', 'I0', 'U1', 'U2', 'U0']:
-            symmetric_names.extend([f'{comp}_mag', f'{comp}_angle'])
+            for h in range(1, num_harmonics + 1):
+                suffix = self._harmonic_suffix(h)
+                symmetric_rect_names.extend([f'{comp}{suffix}_re', f'{comp}{suffix}_im'])
+                symmetric_polar_names.extend([f'{comp}{suffix}_mag', f'{comp}{suffix}_angle'])
         
         # Обрабатываем по файлам для прогресса
         unique_files = test_df['file_name'].unique().to_list()
@@ -310,75 +300,64 @@ class DatasetManager:
             if norm_df is not None:
                 raw_values = self._apply_normalization(raw_values, fname, norm_df)
             
-            # Вычисляем фазоры для всех 8 каналов
-            phasors_re = []
-            phasors_im = []
+            # Вычисляем фазоры для всех 8 каналов (несколько гармоник)
+            phasors: List[np.ndarray] = []
             for i in range(8):
-                re, im = self._compute_fft_phasors(raw_values[:, i])
-                phasors_re.append(re)
-                phasors_im.append(im)
+                p = sliding_window_fft(raw_values[:, i], self.FFT_WINDOW, num_harmonics)
+                p = np.nan_to_num(p, nan=0.0, posinf=0.0, neginf=0.0).astype(np.complex64)
+                phasors.append(p)
             
-            phasors_re = np.stack(phasors_re, axis=1)  # (Time, 8)
-            phasors_im = np.stack(phasors_im, axis=1)  # (Time, 8)
+            # Phase Polar: magnitude и относительный angle (опора UA/IA на 1-й гармонике)
+            complex_features = np.stack(phasors, axis=1)  # (Time, 8, H)
+            time_steps = complex_features.shape[0]
+            complex_features_flat = complex_features.reshape(time_steps, 8 * num_harmonics)
             
-            # Phase Polar: magnitude и ОТНОСИТЕЛЬНЫЙ angle для каждого канала
-            # Опорный сигнал - UA (канал 4)
-            complex_phasors = phasors_re + 1j * phasors_im
-            ua_phasor = complex_phasors[:, 4]  # UA
+            ua_phasor = phasors[4][:, 0]
+            ia_phasor = phasors[0][:, 0]
+            ua_mag = np.nanmean(np.abs(ua_phasor))
+            if ua_mag > 1e-4:
+                ref_phasor = ua_phasor
+            else:
+                ia_mag = np.nanmean(np.abs(ia_phasor))
+                ref_phasor = ia_phasor if ia_mag > 1e-4 else None
             
-            # Вычисляем опорный угол (используем UA, если он достаточно большой)
-            ua_mag = np.abs(ua_phasor)
-            ref_angle = np.zeros(n_points, dtype=np.float32)
-            valid_mask = ua_mag > 1e-6
-            ref_angle[valid_mask] = np.angle(ua_phasor[valid_mask])
+            phase_polar = calculate_polar_features(complex_features_flat, ref_phasor)
+            phase_polar = np.nan_to_num(phase_polar, nan=0.0, posinf=0.0, neginf=0.0)
             
-            phase_polar = np.zeros((n_points, 16), dtype=np.float32)
+            # Phase Complex: Re/Im для каждого канала и гармоники
+            phase_complex_list = []
             for i in range(8):
-                phase_polar[:, 2*i] = np.abs(complex_phasors[:, i])
-                # Относительный угол (от UA)
-                raw_angle = np.angle(complex_phasors[:, i]) - ref_angle
-                # Нормализация в [-pi, pi]
-                phase_polar[:, 2*i + 1] = np.arctan2(np.sin(raw_angle), np.cos(raw_angle))
+                for h in range(num_harmonics):
+                    phase_complex_list.append(phasors[i][:, h].real)
+                    phase_complex_list.append(phasors[i][:, h].imag)
+            phase_complex = np.stack(phase_complex_list, axis=1).astype(np.float32)
+            phase_complex = np.nan_to_num(phase_complex, nan=0.0, posinf=0.0, neginf=0.0)
             
-            # Phase Complex: Re и Im для каждого канала
-            phase_complex = np.zeros((n_points, 16), dtype=np.float32)
-            for i in range(8):
-                phase_complex[:, 2*i] = phasors_re[:, i]
-                phase_complex[:, 2*i + 1] = phasors_im[:, i]
+            # Symmetric Components (комплексные значения)
+            i1, i2, i0 = calculate_symmetrical_components(phasors[0], phasors[1], phasors[2])
+            if not np.allclose(raw_values[:, 3], 0):
+                i0 = phasors[3] / 3
             
-            # Symmetric Components
-            # Токи: каналы 0, 1, 2
-            I_abc = complex_phasors[:, 0:3]
-            I1, I2, I0 = self._compute_symmetric_components(I_abc[:, 0], I_abc[:, 1], I_abc[:, 2])
+            u1, u2, u0 = calculate_symmetrical_components(phasors[4], phasors[5], phasors[6])
+            if not np.allclose(raw_values[:, 7], 0):
+                u0 = phasors[7] / 3
             
-            # Напряжения: каналы 4, 5, 6
-            U_abc = complex_phasors[:, 4:7]
-            U1, U2, U0 = self._compute_symmetric_components(U_abc[:, 0], U_abc[:, 1], U_abc[:, 2])
+            components = [i1, i2, i0, u1, u2, u0]
             
-            # Опорный угол для симметричных компонент - U1 (прямая последовательность напряжения)
-            u1_mag = np.abs(U1)
-            sym_ref_angle = np.zeros(n_points, dtype=np.float32)
-            sym_valid_mask = u1_mag > 1e-6
-            sym_ref_angle[sym_valid_mask] = np.angle(U1[sym_valid_mask])
+            # Symmetric Rect (Re/Im)
+            symmetric_rect_list = []
+            for comp in components:
+                for h in range(num_harmonics):
+                    symmetric_rect_list.append(comp[:, h].real)
+                    symmetric_rect_list.append(comp[:, h].imag)
+            symmetric_rect = np.stack(symmetric_rect_list, axis=1).astype(np.float32)
+            symmetric_rect = np.nan_to_num(symmetric_rect, nan=0.0, posinf=0.0, neginf=0.0)
             
-            def relative_angle(phasor: np.ndarray, ref: np.ndarray) -> np.ndarray:
-                """Вычисляет относительный угол в [-pi, pi]."""
-                raw = np.angle(phasor) - ref
-                return np.arctan2(np.sin(raw), np.cos(raw)).astype(np.float32)
-            
-            symmetric = np.zeros((n_points, 12), dtype=np.float32)
-            symmetric[:, 0] = np.abs(I1)
-            symmetric[:, 1] = relative_angle(I1, sym_ref_angle)
-            symmetric[:, 2] = np.abs(I2)
-            symmetric[:, 3] = relative_angle(I2, sym_ref_angle)
-            symmetric[:, 4] = np.abs(I0)
-            symmetric[:, 5] = relative_angle(I0, sym_ref_angle)
-            symmetric[:, 6] = np.abs(U1)
-            symmetric[:, 7] = relative_angle(U1, sym_ref_angle)  # Должен быть ~0
-            symmetric[:, 8] = np.abs(U2)
-            symmetric[:, 9] = relative_angle(U2, sym_ref_angle)
-            symmetric[:, 10] = np.abs(U0)
-            symmetric[:, 11] = relative_angle(U0, sym_ref_angle)
+            # Symmetric Polar (Mag/Angle)
+            symmetric_complex = np.stack(components, axis=1)  # (Time, 6, H)
+            symmetric_complex_flat = symmetric_complex.reshape(time_steps, 6 * num_harmonics)
+            symmetric_polar = calculate_polar_features(symmetric_complex_flat, ref_phasor)
+            symmetric_polar = np.nan_to_num(symmetric_polar, nan=0.0, posinf=0.0, neginf=0.0)
             
             # Извлекаем метки
             labels = file_data.select(target_cols + ml_cols).to_numpy()
@@ -396,13 +375,16 @@ class DatasetManager:
                 # Raw (8)
                 for j, col in enumerate(['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']):
                     row[col] = float(raw_values[idx, j])
-                # Phase Polar (16)
+                # Phase Polar (16 * H)
                 for j, col in enumerate(phase_polar_names):
                     row[col] = float(phase_polar[idx, j])
-                # Symmetric (12)
-                for j, col in enumerate(symmetric_names):
-                    row[col] = float(symmetric[idx, j])
-                # Phase Complex (16)
+                # Symmetric Rect (12 * H)
+                for j, col in enumerate(symmetric_rect_names):
+                    row[col] = float(symmetric_rect[idx, j])
+                # Symmetric Polar (12 * H)
+                for j, col in enumerate(symmetric_polar_names):
+                    row[col] = float(symmetric_polar[idx, j])
+                # Phase Complex (16 * H)
                 for j, col in enumerate(phase_complex_names):
                     row[col] = float(phase_complex[idx, j])
                 # Labels
@@ -422,9 +404,10 @@ class DatasetManager:
         # Выводим информацию о колонках
         print(f"  - Метаданные: sample, file_name")
         print(f"  - Raw аналоговые (8): IA...UN")
-        print(f"  - Phase Polar (16): *_mag, *_angle")
-        print(f"  - Symmetric (12): I1, I2, I0, U1, U2, U0 (mag, angle)")
-        print(f"  - Phase Complex (16): *_re, *_im")
+        print(f"  - Phase Polar (16 * H): *_mag, *_angle")
+        print(f"  - Symmetric Rect (12 * H): *_re, *_im")
+        print(f"  - Symmetric Polar (12 * H): *_mag, *_angle")
+        print(f"  - Phase Complex (16 * H): *_re, *_im")
         print(f"  - Метки ({len(target_cols + ml_cols)}): Target_*, ML_*")
         
         return output_path
@@ -494,35 +477,52 @@ class DatasetManager:
             # Если что-то пошло не так, возвращаем исходные данные
             return raw_values
     
-    def get_precomputed_feature_columns(self, feature_mode: str) -> List[str]:
+    def get_precomputed_feature_columns(self, feature_mode: str, num_harmonics: int = 1) -> List[str]:
         """
         Возвращает имена колонок для указанного режима признаков.
         
         Args:
-            feature_mode: 'raw', 'phase_polar', 'symmetric', 'phase_complex'
+            feature_mode: 'raw', 'phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex'
+            num_harmonics: Количество гармоник
             
         Returns:
             Список имён колонок
         """
+        num_harmonics = max(1, int(num_harmonics))
+
         if feature_mode == 'raw':
             return ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']
         
         elif feature_mode == 'phase_polar':
             cols = []
             for ch in ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']:
-                cols.extend([f'{ch}_mag', f'{ch}_angle'])
+                for h in range(1, num_harmonics + 1):
+                    suffix = self._harmonic_suffix(h)
+                    cols.extend([f'{ch}{suffix}_mag', f'{ch}{suffix}_angle'])
             return cols
         
-        elif feature_mode in ['symmetric', 'symmetric_polar']:
+        elif feature_mode == 'symmetric':
             cols = []
             for comp in ['I1', 'I2', 'I0', 'U1', 'U2', 'U0']:
-                cols.extend([f'{comp}_mag', f'{comp}_angle'])
+                for h in range(1, num_harmonics + 1):
+                    suffix = self._harmonic_suffix(h)
+                    cols.extend([f'{comp}{suffix}_re', f'{comp}{suffix}_im'])
+            return cols
+        
+        elif feature_mode == 'symmetric_polar':
+            cols = []
+            for comp in ['I1', 'I2', 'I0', 'U1', 'U2', 'U0']:
+                for h in range(1, num_harmonics + 1):
+                    suffix = self._harmonic_suffix(h)
+                    cols.extend([f'{comp}{suffix}_mag', f'{comp}{suffix}_angle'])
             return cols
         
         elif feature_mode == 'phase_complex':
             cols = []
             for ch in ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']:
-                cols.extend([f'{ch}_re', f'{ch}_im'])
+                for h in range(1, num_harmonics + 1):
+                    suffix = self._harmonic_suffix(h)
+                    cols.extend([f'{ch}{suffix}_re', f'{ch}{suffix}_im'])
             return cols
         
         else:

@@ -423,7 +423,7 @@ def evaluate_full_test_dataset(
     exp_dir: Path,
     config: Dict[str, Any],
     data_dir: str,
-    batch_size: int = 2048,  # Большой батч для эффективного использования GPU
+    batch_size: int = 8192,  # Большой батч для эффективного использования GPU
     use_gpu: bool = True
 ) -> Dict[str, Any]:
     """
@@ -431,14 +431,14 @@ def evaluate_full_test_dataset(
     
     Стратегия оптимизации:
     - stride=1: перебираем ВСЕ возможные окна (полное покрытие)
-    - batch_size=2048: GPU обрабатывает большие батчи параллельно
+    - batch_size=8192: GPU обрабатывает большие батчи параллельно
     - PrecomputedDataset: данные уже предрассчитаны, извлечение быстрое
     
     Args:
         exp_dir: Путь к директории эксперимента
         config: Конфигурация эксперимента
         data_dir: Путь к директории с датасетами
-        batch_size: Размер батча (2048 по умолчанию для GPU)
+        batch_size: Размер батча (8192 по умолчанию для GPU)
         use_gpu: Использовать GPU
     
     Returns:

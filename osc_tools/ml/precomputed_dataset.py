@@ -36,33 +36,64 @@ class PrecomputedDataset(Dataset):
     
     Ограничения:
     - Только для тестирования (без аугментации)
-    - Только 1 гармоника (расчёты в CSV для 1-й гармоники)
     - FFT_WARMUP = 32 точки (первые 31 точка = 0)
     """
     
     # Константы
     FFT_WARMUP = 32  # Точка с которой данные валидны (0-indexed: 31)
     
-    # Маппинг имён колонок для каждого feature_mode
-    FEATURE_COLUMNS = {
-        'raw': ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN'],
-        'phase_polar': [
-            'IA_mag', 'IA_angle', 'IB_mag', 'IB_angle', 'IC_mag', 'IC_angle', 'IN_mag', 'IN_angle',
-            'UA_mag', 'UA_angle', 'UB_mag', 'UB_angle', 'UC_mag', 'UC_angle', 'UN_mag', 'UN_angle'
-        ],
-        'symmetric': [
-            'I1_mag', 'I1_angle', 'I2_mag', 'I2_angle', 'I0_mag', 'I0_angle',
-            'U1_mag', 'U1_angle', 'U2_mag', 'U2_angle', 'U0_mag', 'U0_angle'
-        ],
-        'symmetric_polar': [  # Алиас для symmetric
-            'I1_mag', 'I1_angle', 'I2_mag', 'I2_angle', 'I0_mag', 'I0_angle',
-            'U1_mag', 'U1_angle', 'U2_mag', 'U2_angle', 'U0_mag', 'U0_angle'
-        ],
-        'phase_complex': [
-            'IA_re', 'IA_im', 'IB_re', 'IB_im', 'IC_re', 'IC_im', 'IN_re', 'IN_im',
-            'UA_re', 'UA_im', 'UB_re', 'UB_im', 'UC_re', 'UC_im', 'UN_re', 'UN_im'
-        ]
-    }
+    ANALOG_CHANNELS = ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']
+    SYMMETRIC_COMPONENTS = ['I1', 'I2', 'I0', 'U1', 'U2', 'U0']
+
+    @staticmethod
+    def _harmonic_suffix(harmonic_idx: int) -> str:
+        """Суффикс гармоники (h=1 без суффикса)."""
+        return "" if harmonic_idx == 1 else f"_h{harmonic_idx}"
+
+    @classmethod
+    def _build_feature_columns(cls, feature_mode: str, num_harmonics: int, legacy_symmetric: bool = False) -> List[str]:
+        """Формирует список колонок для выбранного режима и числа гармоник."""
+        num_harmonics = max(1, int(num_harmonics))
+
+        if feature_mode == 'raw':
+            return cls.ANALOG_CHANNELS.copy()
+
+        if feature_mode == 'phase_polar':
+            cols = []
+            for ch in cls.ANALOG_CHANNELS:
+                for h in range(1, num_harmonics + 1):
+                    suffix = cls._harmonic_suffix(h)
+                    cols.extend([f'{ch}{suffix}_mag', f'{ch}{suffix}_angle'])
+            return cols
+
+        if feature_mode == 'phase_complex':
+            cols = []
+            for ch in cls.ANALOG_CHANNELS:
+                for h in range(1, num_harmonics + 1):
+                    suffix = cls._harmonic_suffix(h)
+                    cols.extend([f'{ch}{suffix}_re', f'{ch}{suffix}_im'])
+            return cols
+
+        if feature_mode == 'symmetric':
+            cols = []
+            for comp in cls.SYMMETRIC_COMPONENTS:
+                for h in range(1, num_harmonics + 1):
+                    suffix = cls._harmonic_suffix(h)
+                    if legacy_symmetric:
+                        cols.extend([f'{comp}{suffix}_mag', f'{comp}{suffix}_angle'])
+                    else:
+                        cols.extend([f'{comp}{suffix}_re', f'{comp}{suffix}_im'])
+            return cols
+
+        if feature_mode == 'symmetric_polar':
+            cols = []
+            for comp in cls.SYMMETRIC_COMPONENTS:
+                for h in range(1, num_harmonics + 1):
+                    suffix = cls._harmonic_suffix(h)
+                    cols.extend([f'{comp}{suffix}_mag', f'{comp}{suffix}_angle'])
+            return cols
+
+        raise ValueError(f"Неподдерживаемый feature_mode: {feature_mode}")
     
     def __init__(
         self,
@@ -74,19 +105,21 @@ class PrecomputedDataset(Dataset):
         target_level: str = 'base',
         sampling_strategy: str = 'snapshot',
         downsampling_stride: int = 16,
-        target_position: Optional[int] = None
+        target_position: Optional[int] = None,
+        num_harmonics: int = 1
     ):
         """
         Args:
             dataframe: Предрассчитанный DataFrame (из test_precomputed.csv)
             indices: Список индексов начал окон (int) или кортежей (start, length)
             window_size: Размер окна
-            feature_mode: Режим признаков ('raw', 'phase_polar', 'symmetric', 'phase_complex')
+            feature_mode: Режим признаков ('raw', 'phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex')
             target_columns: Колонки меток (если None, используется target_level)
             target_level: 'base' (4 класса) или указанный список
             sampling_strategy: 'none', 'stride', 'snapshot'
             downsampling_stride: Шаг для режима 'stride'
             target_position: Позиция метки в окне (по умолчанию window_size - 1)
+            num_harmonics: Количество гармоник в предрасчитанном датасете
         """
         if isinstance(dataframe, pl.LazyFrame):
             self.data = dataframe.collect()
@@ -98,6 +131,7 @@ class PrecomputedDataset(Dataset):
         self.feature_mode = feature_mode if isinstance(feature_mode, list) else [feature_mode]
         self.sampling_strategy = sampling_strategy
         self.downsampling_stride = downsampling_stride
+        self.num_harmonics = max(1, int(num_harmonics))
         
         # Определяем колонки меток
         if target_columns is not None:
@@ -108,18 +142,24 @@ class PrecomputedDataset(Dataset):
         # Позиция метки
         self.target_position = target_position if target_position is not None else window_size - 1
         
-        # Определяем колонки признаков
+        # Определяем колонки признаков с учётом гармоник
         self.feature_columns = []
         for fm in self.feature_mode:
-            if fm in self.FEATURE_COLUMNS:
-                self.feature_columns.extend(self.FEATURE_COLUMNS[fm])
-            else:
-                raise ValueError(f"Неподдерживаемый feature_mode: {fm}")
-        
-        # Проверка что все колонки существуют
-        missing = set(self.feature_columns) - set(self.data.columns)
-        if missing:
-            raise ValueError(f"Отсутствуют колонки в DataFrame: {missing}")
+            cols = self._build_feature_columns(fm, self.num_harmonics, legacy_symmetric=False)
+            missing = set(cols) - set(self.data.columns)
+
+            if missing and fm == 'symmetric' and self.num_harmonics == 1:
+                legacy_cols = self._build_feature_columns(fm, self.num_harmonics, legacy_symmetric=True)
+                legacy_missing = set(legacy_cols) - set(self.data.columns)
+                if not legacy_missing:
+                    print("    [PrecomputedDataset] Использую legacy-колонки symmetric (mag/angle) для h1")
+                    cols = legacy_cols
+                    missing = set()
+
+            if missing:
+                raise ValueError(f"Отсутствуют колонки в DataFrame: {missing}")
+
+            self.feature_columns.extend(cols)
         
         # Определяем является ли режим спектральным (с warmup)
         self.is_spectral = any(fm != 'raw' for fm in self.feature_mode)
@@ -293,7 +333,8 @@ def create_precomputed_dataset(
     window_size: int = 320,
     feature_mode: str = 'phase_polar',
     sampling_strategy: str = 'snapshot',
-    target_level: str = 'base'
+    target_level: str = 'base',
+    num_harmonics: int = 1
 ) -> PrecomputedDataset:
     """
     Утилитная функция для создания PrecomputedDataset из test_precomputed.csv.
@@ -304,6 +345,7 @@ def create_precomputed_dataset(
         feature_mode: Режим признаков
         sampling_strategy: Стратегия прореживания
         target_level: Уровень меток
+        num_harmonics: Количество гармоник
         
     Returns:
         Настроенный PrecomputedDataset
@@ -314,7 +356,7 @@ def create_precomputed_dataset(
     dm = DatasetManager(data_dir)
     
     # Убеждаемся что файл существует
-    dm.create_precomputed_test_csv()
+    dm.create_precomputed_test_csv(num_harmonics=num_harmonics)
     
     # Загружаем данные
     df = dm.load_test_df(precomputed=True)
@@ -331,7 +373,8 @@ def create_precomputed_dataset(
         window_size=window_size,
         feature_mode=feature_mode,
         sampling_strategy=sampling_strategy,
-        target_level=target_level
+        target_level=target_level,
+        num_harmonics=num_harmonics
     )
     
     return dataset

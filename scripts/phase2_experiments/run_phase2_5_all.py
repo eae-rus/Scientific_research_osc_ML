@@ -294,18 +294,29 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
     can_use_precomputed = (
         use_precomputed_val and 
         val_df is not None and 
-        feature_mode in ['raw', 'phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex'] and
-        num_harmonics == 1
+        feature_mode in ['raw', 'phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex']
     )
     
     if can_use_precomputed:
-        print(f"  [Использую предрассчитанные признаки для валидации (stride={val_stride})]")
-        val_ds = PrecomputedDataset(
-            dataframe=val_df, indices=val_indices, window_size=window_size,
-            feature_mode=feature_mode,
-            target_columns=target_cols, target_level=target_level,
-            sampling_strategy=sampling_strategy, downsampling_stride=stride
-        )
+        try:
+            print(f"  [Использую предрассчитанные признаки для валидации (stride={val_stride})]")
+            val_ds = PrecomputedDataset(
+                dataframe=val_df, indices=val_indices, window_size=window_size,
+                feature_mode=feature_mode,
+                target_columns=target_cols, target_level=target_level,
+                sampling_strategy=sampling_strategy, downsampling_stride=stride,
+                num_harmonics=num_harmonics
+            )
+        except ValueError as e:
+            print(f"  [!] Предрасчёт недоступен: {e}")
+            print(f"  [Расчёт признаков на лету для валидации (num_harmonics={num_harmonics}, stride={val_stride})]")
+            val_ds = OscillogramDataset(
+                dataframe=df, indices=val_indices, window_size=window_size,
+                mode='classification', feature_mode=feature_mode,
+                feature_columns=feature_cols, target_columns=target_cols,
+                physical_normalization=True, norm_coef_path=str(norm_coef_path),
+                downsampling_mode=sampling_strategy, downsampling_stride=stride, num_harmonics=num_harmonics
+            )
     else:
         print(f"  [Расчёт признаков на лету для валидации (num_harmonics={num_harmonics}, stride={val_stride})]")
         val_ds = OscillogramDataset(
@@ -318,7 +329,7 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
     
     # Используем актуальный batch_size (может быть изменён балансировкой)
     train_loader = torch.utils.data.DataLoader(train_ds, batch_size=actual_batch_size, shuffle=True, num_workers=0)
-    val_loader = torch.utils.data.DataLoader(val_ds, batch_size=128, shuffle=False, num_workers=0)  # Больший batch для валидации
+    val_loader = torch.utils.data.DataLoader(val_ds, batch_size=8192, shuffle=False, num_workers=0)  # Больший batch для валидации
     
     print(f"\n>>> Запуск {experiment_name}")
     history = runner.train(train_loader, val_loader)
@@ -371,36 +382,70 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
     print("Инициализация DatasetManager...")
     dm = DatasetManager(str(DATA_DIR), norm_coef_path=str(NORM_COEF_PATH))
     dm.ensure_train_test_split()  # Создаёт train.csv/test.csv если их нет
-    dm.create_precomputed_test_csv()  # Создаёт предрассчитанный файл если его нет
+
+    # Предрасчёт с максимальным числом гармоник (для всех режимов)
+    PRECOMPUTED_NUM_HARMONICS = 9
+
+    def needs_precomputed_regen(num_harmonics: int) -> bool:
+        precomputed_path = DATA_DIR / dm.PRECOMPUTED_TEST_CSV
+        if not precomputed_path.exists():
+            return True
+        try:
+            header_cols = set(pl.read_csv(precomputed_path, n_rows=1, infer_schema_length=0).columns)
+        except Exception:
+            return True
+        required_cols = set(dm.get_precomputed_feature_columns('phase_polar', num_harmonics=num_harmonics))
+        return not required_cols.issubset(header_cols)
+
+    force_precompute = needs_precomputed_regen(PRECOMPUTED_NUM_HARMONICS)
+    if force_precompute:
+        print("[DatasetManager] Предрасчёт требует обновления — пересоздание файла test_precomputed.csv")
+    dm.create_precomputed_test_csv(force=force_precompute, num_harmonics=PRECOMPUTED_NUM_HARMONICS)
     
-    # Загружаем тренировочные данные
-    print(f"Загрузка тренировочных данных...")
-    df = dm.load_train_df()
-    df = df.with_row_index("row_nr")
-    
-    # Создаем индексы начал окон (только для train)
+    # === ОТЛОЖЕННАЯ ЗАГРУЗКА ДАННЫХ ===
+    # Данные будут загружены только если нужно обучать модели
+    df = None
+    test_df = None
+    train_indices = None
+    val_indices = None
     window_size = 320
-    train_indices = OscillogramDataset.create_indices(
-        df, 
-        window_size=window_size, 
-        mode='train',
-        samples_per_file=args.samples_per_file
-    )
-    
-    # Загружаем предрассчитанный тестовый датасет
-    print(f"Загрузка предрассчитанных тестовых данных...")
-    test_df = dm.load_test_df(precomputed=True)
-    test_df = test_df.with_row_index("row_nr")
-    
-    # Создаём индексы для валидации с шагом 4 (полная валидация как в aggregate_reports)
     VAL_STRIDE = 4
-    val_indices = PrecomputedDataset.create_indices(
-        test_df,
-        window_size=window_size,
-        mode='val',
-        stride=VAL_STRIDE  # Шаг 4 для полного покрытия
-    )
-    print(f"  Валидационные индексы: {len(val_indices)} (stride={VAL_STRIDE})")
+    data_loaded = False
+    
+    def load_data_if_needed():
+        """Загружает данные один раз при первой необходимости."""
+        nonlocal df, test_df, train_indices, val_indices, data_loaded, window_size, VAL_STRIDE
+        
+        if data_loaded:
+            return
+        
+        # Загружаем тренировочные данные
+        print(f"Загрузка тренировочных данных...")
+        df = dm.load_train_df()
+        df = df.with_row_index("row_nr")
+        
+        # Создаем индексы начал окон (только для train)
+        train_indices = OscillogramDataset.create_indices(
+            df, 
+            window_size=window_size, 
+            mode='train',
+            samples_per_file=args.samples_per_file
+        )
+        
+        # Загружаем предрассчитанный тестовый датасет
+        print(f"Загрузка предрассчитанных тестовых данных...")
+        test_df = dm.load_test_df(precomputed=True)
+        test_df = test_df.with_row_index("row_nr")
+        
+        # Создаём индексы для валидации с шагом 4 (полная валидация как в aggregate_reports)
+        val_indices = PrecomputedDataset.create_indices(
+            test_df,
+            window_size=window_size,
+            mode='val',
+            stride=VAL_STRIDE  # Шаг 4 для полного покрытия
+        )
+        print(f"  Валидационные индексы: {len(val_indices)} (stride={VAL_STRIDE})")
+        data_loaded = True
     
     default_stride = 16 # Базовый страйд по умолчанию
     
@@ -590,11 +635,20 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
             
             # Проверка, обучена ли уже модель
             experiment_name = f"Exp_{args.exp}_{model_name}_{actual_comp}_{p['feature_mode']}_{p['sampling']}_{p['target_level']}"
+            # Добавляем суффиксы балансировки и аугментации, чтобы проверка соответствовала сохранённому имени
+            if p.get('balancing', 'none') != 'none':
+                experiment_name += f"_{p.get('balancing')}"
+            if p.get('aug', False):
+                experiment_name += "_aug"
+            
             checkpoint_path = ROOT_DIR / 'experiments' / 'phase2_5' / experiment_name / 'final_model.pt'
             
             if args.skip_existing and checkpoint_path.exists():
                 print(f">>> Пропуск {experiment_name} (уже обучено)")
                 continue
+            
+            # Загружаем данные только если нужно обучать модель
+            load_data_if_needed()
 
             run_experiment(
                 args.exp, model_name, actual_comp, df, train_indices, val_indices, 

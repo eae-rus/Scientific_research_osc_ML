@@ -101,7 +101,8 @@ def run_single_experiment(
     val_df: pl.DataFrame = None,
     use_precomputed_val: bool = True,
     balancing_mode: str = 'none',
-    balancer: Any = None
+    balancer: Any = None,
+    num_harmonics: int = 1
 ):
     print(f"\n>>> Запуск эксперимента: {exp_name}")
     print(f"Модель: {model_name} ({complexity})")
@@ -135,7 +136,8 @@ def run_single_experiment(
         sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
         target_columns=target_cols, target_level='base_labels',
         physical_normalization=True, norm_coef_path=str(norm_coef_path),
-        augment=augment 
+        augment=augment,
+        num_harmonics=num_harmonics
     )
     
     # Валидационный датасет - используем предрассчитанные данные если возможно
@@ -146,13 +148,27 @@ def run_single_experiment(
     )
     
     if can_use_precomputed:
-        print(f"  [Использую предрассчитанные признаки для валидации]")
-        val_ds = PrecomputedDataset(
-            dataframe=val_df, indices=val_indices, window_size=data_config_base.window_size,
-            feature_mode=feature_mode,
-            target_columns=target_cols, target_level='base',
-            sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride
-        )
+        try:
+            print(f"  [Использую предрассчитанные признаки для валидации]")
+            val_ds = PrecomputedDataset(
+                dataframe=val_df, indices=val_indices, window_size=data_config_base.window_size,
+                feature_mode=feature_mode,
+                target_columns=target_cols, target_level='base',
+                sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
+                num_harmonics=num_harmonics
+            )
+        except ValueError as e:
+            print(f"  [!] Предрасчёт недоступен: {e}")
+            print(f"  [Расчёт признаков на лету для валидации]")
+            val_ds = OscillogramDataset(
+                dataframe=df, indices=val_indices, window_size=data_config_base.window_size,
+                mode='classification', feature_mode=feature_mode,
+                sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
+                target_columns=target_cols, target_level='base_labels',
+                physical_normalization=True, norm_coef_path=str(norm_coef_path),
+                augment=False,
+                num_harmonics=num_harmonics
+            )
     else:
         print(f"  [Расчёт признаков на лету для валидации]")
         val_ds = OscillogramDataset(
@@ -161,11 +177,12 @@ def run_single_experiment(
             sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
             target_columns=target_cols, target_level='base_labels',
             physical_normalization=True, norm_coef_path=str(norm_coef_path),
-            augment=False
+            augment=False,
+            num_harmonics=num_harmonics
         )
     
     train_loader = torch.utils.data.DataLoader(train_ds, batch_size=data_config_base.batch_size, shuffle=True, num_workers=0)
-    val_loader = torch.utils.data.DataLoader(val_ds, batch_size=data_config_base.batch_size, shuffle=False, num_workers=0)
+    val_loader = torch.utils.data.DataLoader(val_ds, batch_size=8192, shuffle=False, num_workers=0)
     
     # 3. Определение in_channels из первого семпла
     sample_x, _ = train_ds[0]
@@ -224,33 +241,69 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
     print("Инициализация DatasetManager...")
     dm = DatasetManager(str(DATA_DIR), norm_coef_path=str(NORM_COEF_PATH))
     dm.ensure_train_test_split()  # Создаёт train.csv/test.csv если их нет
-    dm.create_precomputed_test_csv()  # Создаёт предрассчитанный файл если его нет
+
+    # Предрасчёт с максимальным числом гармоник (для всех режимов)
+    PRECOMPUTED_NUM_HARMONICS = 9
+
+    def needs_precomputed_regen(num_harmonics: int) -> bool:
+        precomputed_path = DATA_DIR / dm.PRECOMPUTED_TEST_CSV
+        if not precomputed_path.exists():
+            return True
+        try:
+            header_cols = set(pl.read_csv(precomputed_path, n_rows=1, infer_schema_length=0).columns)
+        except Exception:
+            return True
+        required_cols = set(dm.get_precomputed_feature_columns('phase_polar', num_harmonics=num_harmonics))
+        return not required_cols.issubset(header_cols)
+
+    force_precompute = needs_precomputed_regen(PRECOMPUTED_NUM_HARMONICS)
+    if force_precompute:
+        print("[DatasetManager] Предрасчёт требует обновления — пересоздание файла test_precomputed.csv")
+    dm.create_precomputed_test_csv(force=force_precompute, num_harmonics=PRECOMPUTED_NUM_HARMONICS)
     
-    # Загружаем тренировочные данные
-    print(f"Загрузка тренировочных данных...")
-    df = dm.load_train_df()
-    df = df.with_row_index("row_nr")
+    # === ОТЛОЖЕННАЯ ЗАГРУЗКА ДАННЫХ ===
+    # Данные будут загружены только если нужно обучать модели
+    df = None
+    test_df = None
+    train_indices = None
+    val_indices = None
+    WINDOW_SIZE = 320
+    VAL_STRIDE = 4
+    data_loaded = False
     
     target_cols = get_target_columns('base')
-    WINDOW_SIZE = 320
     
-    # Создаём индексы для тренировки
-    train_indices = OscillogramDataset.create_indices(
-        df, 
-        window_size=WINDOW_SIZE, mode='train', samples_per_file=target_spf
-    )
-    
-    # Загружаем предрассчитанный тестовый датасет
-    print(f"Загрузка предрассчитанных тестовых данных...")
-    test_df = dm.load_test_df(precomputed=True)
-    test_df = test_df.with_row_index("row_nr")
-    
-    # Создаём индексы для валидации
-    val_indices = PrecomputedDataset.create_indices(
-        test_df,
-        window_size=WINDOW_SIZE,
-        mode='val'
-    )
+    def load_data_if_needed():
+        """Загружает данные один раз при первой необходимости."""
+        nonlocal df, test_df, train_indices, val_indices, data_loaded, WINDOW_SIZE, VAL_STRIDE
+        
+        if data_loaded:
+            return
+        
+        # Загружаем тренировочные данные
+        print(f"Загрузка тренировочных данных...")
+        df = dm.load_train_df()
+        df = df.with_row_index("row_nr")
+        
+        # Создаём индексы для тренировки
+        train_indices = OscillogramDataset.create_indices(
+            df, 
+            window_size=WINDOW_SIZE, mode='train', samples_per_file=target_spf
+        )
+        
+        # Загружаем предрассчитанный тестовый датасет
+        print(f"Загрузка предрассчитанных тестовых данных...")
+        test_df = dm.load_test_df(precomputed=True)
+        test_df = test_df.with_row_index("row_nr")
+        
+        # Создаём индексы для валидации с шагом 4 (полная валидация как в aggregate_reports)
+        val_indices = PrecomputedDataset.create_indices(
+            test_df,
+            window_size=WINDOW_SIZE,
+            mode='val',
+            stride=VAL_STRIDE  # Шаг 4 для полного покрытия
+        )
+        data_loaded = True
     
     # === Предподготовка балансировщиков ===
     balancers_cache: Dict[str, Any] = {}
@@ -319,6 +372,13 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
     # Определяем список сложностей
     complexities_to_run = ['light', 'medium', 'heavy'] if target_complexity == 'all' else [target_complexity]
 
+    def get_num_harmonics_by_complexity(level: str) -> int:
+        if level == 'heavy':
+            return 9
+        if level == 'medium':
+            return 3
+        return 1
+
     for m_name in models_to_run:
         for comp in complexities_to_run:
             full_exp_name = f"Exp{target_exp}_{m_name}_{comp}_{p['sampling']}"
@@ -334,8 +394,12 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
             if skip_existing and checkpoint_path.exists():
                 print(f">>> Пропуск {full_exp_name} (уже обучено)")
                 continue
+            
+            # Загружаем данные только если нужно обучать модель
+            load_data_if_needed()
 
             try:
+                current_harmonics = get_num_harmonics_by_complexity(comp)
                 run_single_experiment(
                     exp_name=full_exp_name,
                     model_name=m_name,
@@ -354,7 +418,8 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
                     val_df=test_df,
                     use_precomputed_val=True,
                     balancing_mode=p.get('balancing', 'weights'),
-                    balancer=get_or_create_balancer(p.get('balancing', 'weights'))
+                    balancer=get_or_create_balancer(p.get('balancing', 'weights')),
+                    num_harmonics=current_harmonics
                 )
             except Exception as e:
                 print(f"!!! Ошибка в {full_exp_name}: {e}")
