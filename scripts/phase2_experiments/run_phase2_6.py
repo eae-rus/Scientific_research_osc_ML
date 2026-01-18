@@ -261,49 +261,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         print("[DatasetManager] Предрасчёт требует обновления — пересоздание файла test_precomputed.csv")
     dm.create_precomputed_test_csv(force=force_precompute, num_harmonics=PRECOMPUTED_NUM_HARMONICS)
     
-    # === ОТЛОЖЕННАЯ ЗАГРУЗКА ДАННЫХ ===
-    # Данные будут загружены только если нужно обучать модели
-    df = None
-    test_df = None
-    train_indices = None
-    val_indices = None
-    WINDOW_SIZE = 320
-    VAL_STRIDE = 4
-    data_loaded = False
-    
     target_cols = get_target_columns('base')
-    
-    def load_data_if_needed():
-        """Загружает данные один раз при первой необходимости."""
-        nonlocal df, test_df, train_indices, val_indices, data_loaded, WINDOW_SIZE, VAL_STRIDE
-        
-        if data_loaded:
-            return
-        
-        # Загружаем тренировочные данные
-        print(f"Загрузка тренировочных данных...")
-        df = dm.load_train_df()
-        df = df.with_row_index("row_nr")
-        
-        # Создаём индексы для тренировки
-        train_indices = OscillogramDataset.create_indices(
-            df, 
-            window_size=WINDOW_SIZE, mode='train', samples_per_file=target_spf
-        )
-        
-        # Загружаем предрассчитанный тестовый датасет
-        print(f"Загрузка предрассчитанных тестовых данных...")
-        test_df = dm.load_test_df(precomputed=True)
-        test_df = test_df.with_row_index("row_nr")
-        
-        # Создаём индексы для валидации с шагом 4 (полная валидация как в aggregate_reports)
-        val_indices = PrecomputedDataset.create_indices(
-            test_df,
-            window_size=WINDOW_SIZE,
-            mode='val',
-            stride=VAL_STRIDE  # Шаг 4 для полного покрытия
-        )
-        data_loaded = True
     
     # === Предподготовка балансировщиков ===
     balancers_cache: Dict[str, Any] = {}
@@ -372,6 +330,55 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
     # Определяем список сложностей
     complexities_to_run = ['light', 'medium', 'heavy'] if target_complexity == 'all' else [target_complexity]
 
+    # === ПРЕДВАРИТЕЛЬНЫЙ ПРОХОД: Определяем, нужна ли загрузка данных ===
+    need_training = False
+    for m_name in models_to_run:
+        for comp in complexities_to_run:
+            full_exp_name = f"Exp{target_exp}_{m_name}_{comp}_{p['sampling']}"
+            
+            # Добавляем суффиксы балансировки и аугментации в имя
+            if p.get('balancing', 'none') != 'none':
+                full_exp_name += f"_{p.get('balancing')}"
+            if p.get("aug", True):
+                full_exp_name += "_aug"
+            
+            # Проверка существования
+            checkpoint_path = Path(train_config.save_dir) / full_exp_name / "final_model.pt"
+            if not (skip_existing and checkpoint_path.exists()):
+                need_training = True
+                break
+        if need_training:
+            break
+    
+    # === ЗАГРУЗКА ДАННЫХ (один раз в начале, если нужно) ===
+    if need_training:
+        WINDOW_SIZE = 320
+        print(f"Загрузка тренировочных данных...")
+        df = dm.load_train_df()
+        df = df.with_row_index("row_nr")
+        
+        # Создаём индексы для тренировки
+        train_indices = OscillogramDataset.create_indices(
+            df, 
+            window_size=WINDOW_SIZE, mode='train', samples_per_file=target_spf
+        )
+        
+        print(f"Загрузка предрассчитанных тестовых данных...")
+        test_df = dm.load_test_df(precomputed=True)
+        test_df = test_df.with_row_index("row_nr")
+        
+        # Создаём индексы для валидации с шагом 4 (полная валидация как в aggregate_reports)
+        VAL_STRIDE = 4
+        val_indices = PrecomputedDataset.create_indices(
+            test_df,
+            window_size=WINDOW_SIZE,
+            mode='val',
+            stride=VAL_STRIDE  # Шаг 4 для полного покрытия
+        )
+    else:
+        print("Все модели уже обучены, пропуск загрузки данных")
+        return
+
     def get_num_harmonics_by_complexity(level: str) -> int:
         if level == 'heavy':
             return 9
@@ -394,9 +401,6 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
             if skip_existing and checkpoint_path.exists():
                 print(f">>> Пропуск {full_exp_name} (уже обучено)")
                 continue
-            
-            # Загружаем данные только если нужно обучать модель
-            load_data_if_needed()
 
             try:
                 current_harmonics = get_num_harmonics_by_complexity(comp)

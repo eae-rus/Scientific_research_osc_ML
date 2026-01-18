@@ -402,51 +402,6 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         print("[DatasetManager] Предрасчёт требует обновления — пересоздание файла test_precomputed.csv")
     dm.create_precomputed_test_csv(force=force_precompute, num_harmonics=PRECOMPUTED_NUM_HARMONICS)
     
-    # === ОТЛОЖЕННАЯ ЗАГРУЗКА ДАННЫХ ===
-    # Данные будут загружены только если нужно обучать модели
-    df = None
-    test_df = None
-    train_indices = None
-    val_indices = None
-    window_size = 320
-    VAL_STRIDE = 4
-    data_loaded = False
-    
-    def load_data_if_needed():
-        """Загружает данные один раз при первой необходимости."""
-        nonlocal df, test_df, train_indices, val_indices, data_loaded, window_size, VAL_STRIDE
-        
-        if data_loaded:
-            return
-        
-        # Загружаем тренировочные данные
-        print(f"Загрузка тренировочных данных...")
-        df = dm.load_train_df()
-        df = df.with_row_index("row_nr")
-        
-        # Создаем индексы начал окон (только для train)
-        train_indices = OscillogramDataset.create_indices(
-            df, 
-            window_size=window_size, 
-            mode='train',
-            samples_per_file=args.samples_per_file
-        )
-        
-        # Загружаем предрассчитанный тестовый датасет
-        print(f"Загрузка предрассчитанных тестовых данных...")
-        test_df = dm.load_test_df(precomputed=True)
-        test_df = test_df.with_row_index("row_nr")
-        
-        # Создаём индексы для валидации с шагом 4 (полная валидация как в aggregate_reports)
-        val_indices = PrecomputedDataset.create_indices(
-            test_df,
-            window_size=window_size,
-            mode='val',
-            stride=VAL_STRIDE  # Шаг 4 для полного покрытия
-        )
-        print(f"  Валидационные индексы: {len(val_indices)} (stride={VAL_STRIDE})")
-        data_loaded = True
-    
     default_stride = 16 # Базовый страйд по умолчанию
     
     # target_cols = get_target_columns('base') # Moved to loop
@@ -564,6 +519,58 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
 
     p = exp_params[args.exp]
     
+    # === ПРЕДВАРИТЕЛЬНЫЙ ПРОХОД: Определяем, нужна ли загрузка данных ===
+    need_training = False
+    for model_name in models:
+        for comp in complexities:
+            actual_comp = comp
+            # (Пропускаем логику определения сложности для краткости - просто проверяем существование)
+            
+            # Быстрая проверка: есть ли уже эта модель?
+            experiment_name = f"Exp_{args.exp}_{model_name}_{actual_comp}_{p['feature_mode']}_{p['sampling']}_{p['target_level']}"
+            if p.get('balancing', 'none') != 'none':
+                experiment_name += f"_{p.get('balancing')}"
+            if p.get('aug', False):
+                experiment_name += "_aug"
+            
+            checkpoint_path = ROOT_DIR / 'experiments' / 'phase2_5' / experiment_name / 'final_model.pt'
+            
+            if not (args.skip_existing and checkpoint_path.exists()):
+                need_training = True
+                break  # Если нашли хотя бы одну модель для обучения, выходим
+        if need_training:
+            break
+    
+    # === ЗАГРУЗКА ДАННЫХ (один раз в начале, если нужно) ===
+    if need_training:
+        print(f"Загрузка тренировочных данных...")
+        df = dm.load_train_df()
+        df = df.with_row_index("row_nr")
+        
+        window_size = 320
+        train_indices = OscillogramDataset.create_indices(
+            df, 
+            window_size=window_size, 
+            mode='train',
+            samples_per_file=args.samples_per_file
+        )
+        
+        print(f"Загрузка предрассчитанных тестовых данных...")
+        test_df = dm.load_test_df(precomputed=True)
+        test_df = test_df.with_row_index("row_nr")
+        
+        VAL_STRIDE = 4
+        val_indices = PrecomputedDataset.create_indices(
+            test_df,
+            window_size=window_size,
+            mode='val',
+            stride=VAL_STRIDE
+        )
+        print(f"  Валидационные индексы: {len(val_indices)} (stride={VAL_STRIDE})")
+    else:
+        print("Все модели уже обучены, пропуск загрузки данных")
+        return
+    
     for model_name in models:
         for comp in complexities:
             # Маппинг сложности под стратегию
@@ -646,9 +653,6 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
             if args.skip_existing and checkpoint_path.exists():
                 print(f">>> Пропуск {experiment_name} (уже обучено)")
                 continue
-            
-            # Загружаем данные только если нужно обучать модель
-            load_data_if_needed()
 
             run_experiment(
                 args.exp, model_name, actual_comp, df, train_indices, val_indices, 
