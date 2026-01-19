@@ -11,6 +11,7 @@ sys.path.insert(0, str(ROOT_DIR))
 os.chdir(ROOT_DIR)
 
 import torch
+import polars as pl
 from osc_tools.data_management import DatasetManager
 from osc_tools.ml.dataset import OscillogramDataset
 from osc_tools.ml.precomputed_dataset import PrecomputedDataset
@@ -31,7 +32,21 @@ def test_smoke():
     print("\n1. Инициализация DatasetManager...")
     dm = DatasetManager(str(DATA_DIR))
     dm.ensure_train_test_split()
-    dm.create_precomputed_test_csv()
+    precomputed_path = dm.create_precomputed_test_csv()
+    try:
+        header_cols = set(pl.read_csv(precomputed_path, n_rows=1, infer_schema_length=0).columns)
+        required_modes = [
+            'raw', 'phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex',
+            'power', 'alpha_beta'
+        ]
+        required_cols = set()
+        for mode in required_modes:
+            required_cols.update(dm.get_precomputed_feature_columns(mode, num_harmonics=1))
+        if not required_cols.issubset(header_cols):
+            print("   [INFO] Предрасчитанный файл неполный, пересоздаём...")
+            precomputed_path = dm.create_precomputed_test_csv(force=True, num_harmonics=1)
+    except Exception:
+        precomputed_path = dm.create_precomputed_test_csv(force=True, num_harmonics=1)
     print("   OK: DatasetManager инициализирован")
     
     # 2. Загрузка данных
@@ -119,7 +134,7 @@ def test_smoke():
     # 6. Тест различных режимов
     print("\n6. Тест различных feature_mode...")
     
-    for fm in ['raw', 'symmetric', 'phase_complex']:
+    for fm in ['raw', 'symmetric', 'phase_complex', 'power', 'alpha_beta']:
         val_ds_test = PrecomputedDataset(
             dataframe=test_df,
             indices=val_indices[:10],

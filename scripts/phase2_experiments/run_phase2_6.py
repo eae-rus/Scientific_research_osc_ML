@@ -142,9 +142,9 @@ def run_single_experiment(
     
     # Валидационный датасет - используем предрассчитанные данные если возможно
     can_use_precomputed = (
-        use_precomputed_val and 
-        val_df is not None and 
-        feature_mode in ['raw', 'phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex']
+        use_precomputed_val and
+        val_df is not None and
+        feature_mode in ['raw', 'phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex', 'power', 'alpha_beta']
     )
     
     if can_use_precomputed:
@@ -181,8 +181,21 @@ def run_single_experiment(
             num_harmonics=num_harmonics
         )
     
-    train_loader = torch.utils.data.DataLoader(train_ds, batch_size=data_config_base.batch_size, shuffle=True, num_workers=0)
-    val_loader = torch.utils.data.DataLoader(val_ds, batch_size=8192, shuffle=False, num_workers=0)
+    # Динамическое уменьшение batch_size для тяжёлых режимов (экономия GPU памяти)
+    is_harmonic_mode = feature_mode in ['phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex']
+    base_batch_size = data_config_base.batch_size
+    val_batch_size = 8192
+
+    if is_harmonic_mode and num_harmonics >= 3:
+        base_batch_size = min(base_batch_size, 32)
+        val_batch_size = 2048
+
+    if is_harmonic_mode and complexity == 'heavy' and model_name in ['PhysicsKAN', 'ConvKAN', 'ResNet1D', 'HierarchicalPhysicsKAN', 'HierarchicalConvKAN', 'HierarchicalResNet']:
+        base_batch_size = min(base_batch_size, 16)
+        val_batch_size = 1024
+
+    train_loader = torch.utils.data.DataLoader(train_ds, batch_size=base_batch_size, shuffle=True, num_workers=0)
+    val_loader = torch.utils.data.DataLoader(val_ds, batch_size=val_batch_size, shuffle=False, num_workers=0)
     
     # 3. Определение in_channels из первого семпла
     sample_x, _ = train_ds[0]
@@ -236,6 +249,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
     EXPERIMENTS_DIR.mkdir(parents=True, exist_ok=True)
     NORM_COEF_PATH = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
     METADATA_FILE = DATA_DIR / 'train.csv'
+    WINDOW_SIZE = 320
 
     # Используем DatasetManager для гарантированного разделения данных
     print("Инициализация DatasetManager...")
@@ -253,7 +267,13 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
             header_cols = set(pl.read_csv(precomputed_path, n_rows=1, infer_schema_length=0).columns)
         except Exception:
             return True
-        required_cols = set(dm.get_precomputed_feature_columns('phase_polar', num_harmonics=num_harmonics))
+        required_modes = [
+            'raw', 'phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex',
+            'power', 'alpha_beta'
+        ]
+        required_cols: set[str] = set()
+        for mode in required_modes:
+            required_cols.update(dm.get_precomputed_feature_columns(mode, num_harmonics=num_harmonics))
         return not required_cols.issubset(header_cols)
 
     force_precompute = needs_precomputed_regen(PRECOMPUTED_NUM_HARMONICS)
@@ -352,7 +372,6 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
     
     # === ЗАГРУЗКА ДАННЫХ (один раз в начале, если нужно) ===
     if need_training:
-        WINDOW_SIZE = 320
         print(f"Загрузка тренировочных данных...")
         df = dm.load_train_df()
         df = df.with_row_index("row_nr")

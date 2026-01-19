@@ -212,6 +212,19 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
     if augment:
         experiment_name += "_aug"
     
+    # Динамическое уменьшение batch_size для тяжёлых режимов (экономия GPU памяти)
+    is_harmonic_mode = feature_mode in ['phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex']
+    base_batch_size = 64
+    val_batch_size = 8192
+
+    if is_harmonic_mode and num_harmonics >= 3:
+        base_batch_size = 64
+        val_batch_size = 4096
+
+    if is_harmonic_mode and complexity == 'heavy' and model_name in ['PhysicsKAN', 'ConvKAN', 'ResNet1D']:
+        base_batch_size = 64
+        val_batch_size = 2048
+
     train_config = TrainingConfig(
         epochs=epochs,
         learning_rate=0.001,
@@ -225,7 +238,7 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
     data_config = DataConfig(
         path="", # Не используется напрямую runner, если мы предоставляем загрузчики
         window_size=window_size,
-        batch_size=64,
+        batch_size=base_batch_size,
         mode='multilabel',
         features=[feature_mode],
         norm_coef_path=str(norm_coef_path)
@@ -288,13 +301,13 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
     # Условия для использования PrecomputedDataset:
     # 1. use_precomputed_val=True
     # 2. val_df предоставлен (предрассчитанный DataFrame)
-    # 3. feature_mode поддерживается (raw, phase_polar, symmetric, phase_complex)
-    # 4. num_harmonics=1 (предрассчитаны только для 1 гармоники)
+    # 3. feature_mode поддерживается (raw, phase_polar, symmetric, symmetric_polar, phase_complex, power, alpha_beta)
+    # 4. num_harmonics допускается любой — при отсутствии колонок сработает fallback
     
     can_use_precomputed = (
-        use_precomputed_val and 
-        val_df is not None and 
-        feature_mode in ['raw', 'phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex']
+        use_precomputed_val and
+        val_df is not None and
+        feature_mode in ['raw', 'phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex', 'power', 'alpha_beta']
     )
     
     if can_use_precomputed:
@@ -329,7 +342,7 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
     
     # Используем актуальный batch_size (может быть изменён балансировкой)
     train_loader = torch.utils.data.DataLoader(train_ds, batch_size=actual_batch_size, shuffle=True, num_workers=0)
-    val_loader = torch.utils.data.DataLoader(val_ds, batch_size=8192, shuffle=False, num_workers=0)  # Больший batch для валидации
+    val_loader = torch.utils.data.DataLoader(val_ds, batch_size=val_batch_size, shuffle=False, num_workers=0)  # Больший batch для валидации
     
     print(f"\n>>> Запуск {experiment_name}")
     history = runner.train(train_loader, val_loader)
@@ -394,7 +407,13 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
             header_cols = set(pl.read_csv(precomputed_path, n_rows=1, infer_schema_length=0).columns)
         except Exception:
             return True
-        required_cols = set(dm.get_precomputed_feature_columns('phase_polar', num_harmonics=num_harmonics))
+        required_modes = [
+            'raw', 'phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex',
+            'power', 'alpha_beta'
+        ]
+        required_cols: set[str] = set()
+        for mode in required_modes:
+            required_cols.update(dm.get_precomputed_feature_columns(mode, num_harmonics=num_harmonics))
         return not required_cols.issubset(header_cols)
 
     force_precompute = needs_precomputed_regen(PRECOMPUTED_NUM_HARMONICS)
@@ -679,41 +698,38 @@ if __name__ == "__main__":
     EXPS = [
         # 1. Baseline & Балансировка Tests
         # "2.5.1.0", 
-        "2.5.1.1", "2.5.1.2", "2.5.1.3"# ,
+        # "2.5.1.1", "2.5.1.2", "2.5.1.3"# ,
         # "2.5.1.4",
         
         # 2. Raw Data Sampling Strategies
-#         "2.5.2.0", "2.5.2.1", "2.5.2.2", "2.5.2.3", "2.5.2.4", "2.5.2.5",
+#        "2.5.2.0", "2.5.2.1", "2.5.2.2", "2.5.2.3", "2.5.2.4", "2.5.2.5",
 #         
-#         # 3. Feature Optimization (Heavy/Snapshot & Strided)
-#         "2.5.3.0", "2.5.3.1_rect", "2.5.3.1_polar", 
-#         "2.5.3.1_phase_rect", "2.5.3.1_phase_polar", 
-#         "2.5.3.2_power", "2.5.3.2_ab",
-#         
-#         "2.5.3.0_strided", "2.5.3.1_rect_strided", "2.5.3.1_polar_strided", 
-#         "2.5.3.1_phase_rect_strided", "2.5.3.1_phase_polar_strided", 
-#         "2.5.3.2_power_strided", "2.5.3.2_ab_strided",
-# 
-#         # 4. Medium Complexity (Strided & Snapshot)
-#         "2.5.4.0_strided", "2.5.4.1_rect_strided", "2.5.4.1_polar_strided", 
-#         "2.5.4.1_phase_rect_strided", "2.5.4.1_phase_polar_strided", 
-#         "2.5.4.2_power_strided", "2.5.4.2_ab_strided",
-#         
-#         "2.5.4.0_snapshot", "2.5.4.1_rect_snapshot", "2.5.4.1_polar_snapshot", 
-#         "2.5.4.1_phase_rect_snapshot", "2.5.4.1_phase_polar_snapshot", 
-#         "2.5.4.2_power_snapshot", "2.5.4.2_ab_snapshot",
-#         
-#         # 5. Light Complexity (Strided & Snapshot)
-#         "2.5.5.0_strided", "2.5.5.1_rect_strided", "2.5.5.1_polar_strided", 
-#         "2.5.5.1_phase_rect_strided", "2.5.5.1_phase_polar_strided", 
-#         "2.5.5.2_power_strided", "2.5.5.2_ab_strided",
-#         
-#         "2.5.5.0_snapshot", "2.5.5.1_rect_snapshot", "2.5.5.1_polar_snapshot", 
-#         "2.5.5.1_phase_rect_snapshot", "2.5.5.1_phase_polar_snapshot", 
-#         "2.5.5.2_power_snapshot", "2.5.5.2_ab_snapshot",
-# 
-#         # 6. Targets
-#         # "2.5.6.1", "2.5.6.2", "2.5.7.1",
+#        # 3. Feature Optimization (Heavy/Snapshot & Strided)
+#        "2.5.3.0", "2.5.3.1_rect", "2.5.3.1_polar", 
+#        "2.5.3.1_phase_rect", "2.5.3.1_phase_polar", 
+#        "2.5.3.2_power", "2.5.3.2_ab",
+        
+        "2.5.3.0_strided", "2.5.3.1_rect_strided", "2.5.3.1_polar_strided", 
+        "2.5.3.1_phase_rect_strided", "2.5.3.1_phase_polar_strided", 
+        "2.5.3.2_power_strided", "2.5.3.2_ab_strided",
+ 
+        # 4. Medium Complexity (Strided & Snapshot)
+        "2.5.4.0_strided", "2.5.4.1_rect_strided", "2.5.4.1_polar_strided", 
+        "2.5.4.1_phase_rect_strided", "2.5.4.1_phase_polar_strided", 
+        "2.5.4.2_power_strided", "2.5.4.2_ab_strided",
+         
+        "2.5.4.0_snapshot", "2.5.4.1_rect_snapshot", "2.5.4.1_polar_snapshot", 
+        "2.5.4.1_phase_rect_snapshot", "2.5.4.1_phase_polar_snapshot", 
+        "2.5.4.2_power_snapshot", "2.5.4.2_ab_snapshot",
+         
+        # 5. Light Complexity (Strided & Snapshot)
+        "2.5.5.0_strided", "2.5.5.1_rect_strided", "2.5.5.1_polar_strided", 
+        "2.5.5.1_phase_rect_strided", "2.5.5.1_phase_polar_strided", 
+        "2.5.5.2_power_strided", "2.5.5.2_ab_strided",
+         
+        "2.5.5.0_snapshot", "2.5.5.1_rect_snapshot", "2.5.5.1_polar_snapshot", 
+        "2.5.5.1_phase_rect_snapshot", "2.5.5.1_phase_polar_snapshot", 
+        "2.5.5.2_power_snapshot", "2.5.5.2_ab_snapshot"
     ]
     # EXPS = ["2.5.4.0_strided"]  # Пример запуска одного эксперимента
 

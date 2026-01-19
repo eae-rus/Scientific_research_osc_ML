@@ -32,7 +32,7 @@ class PrecomputedDataset(Dataset):
     Преимущества:
     - Не выполняет FFT расчёты при каждом __getitem__
     - Значительно быстрее на валидации/тесте
-    - Поддерживает те же режимы (phase_polar, symmetric, phase_complex)
+    - Поддерживает те же режимы (phase_polar, symmetric, phase_complex, power, alpha_beta)
     
     Ограничения:
     - Только для тестирования (без аугментации)
@@ -44,6 +44,8 @@ class PrecomputedDataset(Dataset):
     
     ANALOG_CHANNELS = ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']
     SYMMETRIC_COMPONENTS = ['I1', 'I2', 'I0', 'U1', 'U2', 'U0']
+    POWER_COLUMNS = ['P_IA', 'Q_IA', 'P_IB', 'Q_IB', 'P_IC', 'Q_IC', 'P_IN', 'Q_IN']
+    ALPHA_BETA_COLUMNS = ['I_alpha', 'I_beta', 'I_zero', 'U_alpha', 'U_beta', 'U_zero']
 
     @staticmethod
     def _harmonic_suffix(harmonic_idx: int) -> str:
@@ -93,6 +95,12 @@ class PrecomputedDataset(Dataset):
                     cols.extend([f'{comp}{suffix}_mag', f'{comp}{suffix}_angle'])
             return cols
 
+        if feature_mode == 'power':
+            return cls.POWER_COLUMNS.copy()
+
+        if feature_mode == 'alpha_beta':
+            return cls.ALPHA_BETA_COLUMNS.copy()
+
         raise ValueError(f"Неподдерживаемый feature_mode: {feature_mode}")
     
     def __init__(
@@ -113,7 +121,7 @@ class PrecomputedDataset(Dataset):
             dataframe: Предрассчитанный DataFrame (из test_precomputed.csv)
             indices: Список индексов начал окон (int) или кортежей (start, length)
             window_size: Размер окна
-            feature_mode: Режим признаков ('raw', 'phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex')
+            feature_mode: Режим признаков ('raw', 'phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex', 'power', 'alpha_beta')
             target_columns: Колонки меток (если None, используется target_level)
             target_level: 'base' (4 класса) или указанный список
             sampling_strategy: 'none', 'stride', 'snapshot'

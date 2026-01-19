@@ -25,7 +25,7 @@ from tqdm import tqdm
 
 from osc_tools.ml.labels import clean_labels, add_base_labels, get_target_columns, get_ml_columns
 from osc_tools.features.pdr_calculator import sliding_window_fft
-from osc_tools.features.phasor import calculate_symmetrical_components
+from osc_tools.features.phasor import calculate_symmetrical_components, calculate_power
 from osc_tools.features.polar import calculate_polar_features
 
 
@@ -215,7 +215,9 @@ class DatasetManager:
         4. Symmetric Rect (12 * H): I1_re/im для h1, I1_h2_re/im для h2 и т.д.
         5. Symmetric Polar (12 * H): I1_mag/angle для h1, I1_h2_mag/angle для h2 и т.д.
         6. Phase Complex (16 * H): IA_re/im для h1, IA_h2_re/im для h2 и т.д.
-        6. Метки ML_*
+        7. Power (8): P/Q для IA/IB/IC/IN
+        8. Alpha-Beta (6): I_alpha/I_beta/I_zero, U_alpha/U_beta/U_zero
+        9. Метки ML_*
         
         Первые 31 точка в расчётных колонках содержат 0 (warmup FFT).
         Валидные данные начинаются с точки 32 (индекс 31).
@@ -267,6 +269,8 @@ class DatasetManager:
         phase_complex_names: List[str] = []
         symmetric_rect_names: List[str] = []
         symmetric_polar_names: List[str] = []
+        power_names = ['P_IA', 'Q_IA', 'P_IB', 'Q_IB', 'P_IC', 'Q_IC', 'P_IN', 'Q_IN']
+        alpha_beta_names = ['I_alpha', 'I_beta', 'I_zero', 'U_alpha', 'U_beta', 'U_zero']
 
         for ch in ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']:
             for h in range(1, num_harmonics + 1):
@@ -358,6 +362,30 @@ class DatasetManager:
             symmetric_complex_flat = symmetric_complex.reshape(time_steps, 6 * num_harmonics)
             symmetric_polar = calculate_polar_features(symmetric_complex_flat, ref_phasor)
             symmetric_polar = np.nan_to_num(symmetric_polar, nan=0.0, posinf=0.0, neginf=0.0)
+
+            # Power (P/Q) для пар IA/UA, IB/UB, IC/UC, IN/UN
+            power_features = []
+            for i_idx, u_idx in zip(range(4), range(4, 8)):
+                i_phasor = phasors[i_idx][:, 0]
+                u_phasor = phasors[u_idx][:, 0]
+                _, p_act, q_react = calculate_power(u_phasor, i_phasor)
+                power_features.append(np.stack([p_act, q_react], axis=1))
+            power_data = np.concatenate(power_features, axis=1).astype(np.float32)
+            power_data = np.nan_to_num(power_data, nan=0.0, posinf=0.0, neginf=0.0)
+
+            # Alpha-Beta (для токов и напряжений)
+            a_i, b_i, c_i = raw_values[:, 0], raw_values[:, 1], raw_values[:, 2]
+            i_alpha = (2 / 3) * (a_i - 0.5 * b_i - 0.5 * c_i)
+            i_beta = (2 / 3) * (np.sqrt(3) / 2 * (b_i - c_i))
+            i_zero = (1 / 3) * (a_i + b_i + c_i)
+
+            a_u, b_u, c_u = raw_values[:, 4], raw_values[:, 5], raw_values[:, 6]
+            u_alpha = (2 / 3) * (a_u - 0.5 * b_u - 0.5 * c_u)
+            u_beta = (2 / 3) * (np.sqrt(3) / 2 * (b_u - c_u))
+            u_zero = (1 / 3) * (a_u + b_u + c_u)
+
+            alpha_beta = np.stack([i_alpha, i_beta, i_zero, u_alpha, u_beta, u_zero], axis=1).astype(np.float32)
+            alpha_beta = np.nan_to_num(alpha_beta, nan=0.0, posinf=0.0, neginf=0.0)
             
             # Извлекаем метки
             labels = file_data.select(target_cols + ml_cols).to_numpy()
@@ -387,6 +415,12 @@ class DatasetManager:
                 # Phase Complex (16 * H)
                 for j, col in enumerate(phase_complex_names):
                     row[col] = float(phase_complex[idx, j])
+                # Power (8)
+                for j, col in enumerate(power_names):
+                    row[col] = float(power_data[idx, j])
+                # Alpha-Beta (6)
+                for j, col in enumerate(alpha_beta_names):
+                    row[col] = float(alpha_beta[idx, j])
                 # Labels
                 for j, col in enumerate(target_cols + ml_cols):
                     row[col] = int(labels[idx, j])
@@ -408,6 +442,8 @@ class DatasetManager:
         print(f"  - Symmetric Rect (12 * H): *_re, *_im")
         print(f"  - Symmetric Polar (12 * H): *_mag, *_angle")
         print(f"  - Phase Complex (16 * H): *_re, *_im")
+        print("  - Power (8): P/Q для IA/IB/IC/IN")
+        print("  - Alpha-Beta (6): I_alpha/I_beta/I_zero, U_alpha/U_beta/U_zero")
         print(f"  - Метки ({len(target_cols + ml_cols)}): Target_*, ML_*")
         
         return output_path
@@ -482,7 +518,7 @@ class DatasetManager:
         Возвращает имена колонок для указанного режима признаков.
         
         Args:
-            feature_mode: 'raw', 'phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex'
+            feature_mode: 'raw', 'phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex', 'power', 'alpha_beta'
             num_harmonics: Количество гармоник
             
         Returns:
@@ -524,6 +560,12 @@ class DatasetManager:
                     suffix = self._harmonic_suffix(h)
                     cols.extend([f'{ch}{suffix}_re', f'{ch}{suffix}_im'])
             return cols
+
+        elif feature_mode == 'power':
+            return ['P_IA', 'Q_IA', 'P_IB', 'Q_IB', 'P_IC', 'Q_IC', 'P_IN', 'Q_IN']
+
+        elif feature_mode == 'alpha_beta':
+            return ['I_alpha', 'I_beta', 'I_zero', 'U_alpha', 'U_beta', 'U_zero']
         
         else:
             raise ValueError(f"Неизвестный feature_mode: {feature_mode}")
