@@ -6,9 +6,8 @@ import sys
 import os
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).parent.parent
-sys.path.insert(0, str(ROOT_DIR))
-os.chdir(ROOT_DIR)
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
 import torch
 import polars as pl
@@ -24,7 +23,10 @@ def test_smoke():
     print("SMOKE TEST: Проверка системы датасетов")
     print("=" * 60)
     
-    DATA_DIR = ROOT_DIR / 'data' / 'ml_datasets'
+    DATA_DIR = PROJECT_ROOT / 'data' / 'ml_datasets'
+    main_csv = DATA_DIR / 'labeled_2025_12_03.csv'
+    if not main_csv.exists():
+        pytest.skip(f"Нет основного датасета: {main_csv}")
     WINDOW_SIZE = 320
     BATCH_SIZE = 16
     
@@ -75,7 +77,9 @@ def test_smoke():
     print("\n4. Тест: phase_polar + snapshot")
     
     target_cols = get_target_columns('base')
-    NORM_COEF_PATH = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
+    NORM_COEF_PATH = PROJECT_ROOT / 'raw_data' / 'norm_coef_all_v1.4.csv'
+    if not NORM_COEF_PATH.exists():
+        pytest.skip(f"Нет файла нормализации: {NORM_COEF_PATH}")
     
     # Train Dataset (обычный)
     train_ds = OscillogramDataset(
@@ -150,8 +154,4 @@ def test_smoke():
     print("SMOKE TEST: УСПЕШНО!")
     print("=" * 60)
     
-    return True
-
-
-if __name__ == "__main__":
-    test_smoke()
+    assert True

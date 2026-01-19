@@ -26,7 +26,12 @@ class TestTimeSeriesAugmenter:
         config = {
             "p_scaling": 1.0,
             "scaling_range_current": (2.0, 2.0), # Fixed scaling
-            "scaling_range_voltage": (0.5, 0.5)
+            "scaling_range_voltage": (0.5, 0.5),
+            "p_inversion": 0.0,
+            "p_noise": 0.0,
+            "p_offset": 0.0,
+            "p_phase_shuffling": 0.0,
+            "p_drop_channel": 0.0
         }
         augmenter = TimeSeriesAugmenter(config)
         output = augmenter(sample_data)
@@ -52,7 +57,12 @@ class TestTimeSeriesAugmenter:
     def test_offset(self, sample_data):
         config = {
             "p_offset": 1.0,
-            "offset_range": (1.0, 1.0)
+            "offset_range": (1.0, 1.0),
+            "p_inversion": 0.0,
+            "p_noise": 0.0,
+            "p_scaling": 0.0,
+            "p_phase_shuffling": 0.0,
+            "p_drop_channel": 0.0
         }
         augmenter = TimeSeriesAugmenter(config)
         output = augmenter(sample_data)
@@ -70,7 +80,14 @@ class TestTimeSeriesAugmenter:
         data[:, :, 5] = 20
         data[:, :, 6] = 30
         
-        config = {"p_phase_shuffling": 1.0}
+        config = {
+            "p_phase_shuffling": 1.0,
+            "p_inversion": 0.0,
+            "p_noise": 0.0,
+            "p_scaling": 0.0,
+            "p_offset": 0.0,
+            "p_drop_channel": 0.0
+        }
         augmenter = TimeSeriesAugmenter(config)
         
         # Запускаем один раз — случайность внутри может дать сдвиг 1 или 2.
@@ -140,7 +157,14 @@ class TestDatasetAugmentation:
         window_size = 50
         
         # Конфигурация, инвертирующая сигнал
-        aug_config = {"p_inversion": 1.0}
+        aug_config = {
+            "p_inversion": 1.0,
+            "p_noise": 0.0,
+            "p_scaling": 0.0,
+            "p_offset": 0.0,
+            "p_phase_shuffling": 0.0,
+            "p_drop_channel": 0.0
+        }
         
         ds = OscillogramDataset(
             sample_df, 

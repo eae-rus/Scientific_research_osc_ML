@@ -11,8 +11,9 @@ class TestExperimentRunner:
     
     @pytest.fixture
     def temp_dir(self):
-        path = Path('tests/temp_experiments')
-        path.mkdir(exist_ok=True)
+        base_dir = Path(__file__).parent.parent
+        path = base_dir / 'temp_experiments'
+        path.mkdir(parents=True, exist_ok=True)
         yield path
         if path.exists():
             shutil.rmtree(path)

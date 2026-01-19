@@ -106,20 +106,30 @@ def sample_spef_dataframe() -> pl.DataFrame:
 def mock_overvoltage_init(monkeypatch):
     """Мокирует инициализацию OvervoltageAnalyzer чтобы избежать реальных файловых операций."""
     with patch('osc_tools.analysis.overvoltage.ComtradeParser') as mock_comtrade, \
+         patch('osc_tools.analysis.overvoltage.ReadComtrade') as mock_read_comtrade, \
+         patch('osc_tools.analysis.overvoltage.NormOsc') as mock_normosc, \
          patch('builtins.open') as mock_open, \
-         patch('osc_tools.features.normalization.os.path.exists', return_value=True) as mock_exists, \
-         patch('polars.read_csv') as mock_read_csv:
+         patch('osc_tools.io.comtrade_parser.os.path.exists', return_value=True) as mock_raw_exists:
         
         mock_comtrade.return_value = MagicMock()
+        mock_read_comtrade.return_value = MagicMock()
+        mock_normosc.return_value = MagicMock()
         mock_open.return_value.__enter__ = lambda s: s
         mock_open.return_value.__exit__ = lambda s, *args: None
         
         yield {
             'comtrade': mock_comtrade,
+            'read_comtrade': mock_read_comtrade,
+            'normosc': mock_normosc,
             'open': mock_open,
-            'exists': mock_exists,
-            'read_csv': mock_read_csv
+            'raw_exists': mock_raw_exists,
         }
+
+
+@pytest.fixture(autouse=True)
+def _auto_mock_overvoltage_external(mock_overvoltage_init):
+    """Автоматически мокаем внешние зависимости для всех тестов модуля."""
+    return mock_overvoltage_init
 
 
 # ============================================================================

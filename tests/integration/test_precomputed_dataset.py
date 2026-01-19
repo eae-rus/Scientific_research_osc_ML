@@ -1,43 +1,50 @@
-"""Тестовый скрипт для проверки PrecomputedDataset."""
+"""Тесты для PrecomputedDataset."""
 import sys
-sys.path.insert(0, '.')
+from pathlib import Path
+import pytest
+
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from osc_tools.ml.precomputed_dataset import create_precomputed_dataset
-import torch
 
-# Создаём dataset
-ds = create_precomputed_dataset(
-    'data/ml_datasets',
-    window_size=320,
-    feature_mode='phase_polar',
-    sampling_strategy='snapshot'
-)
-print(f'Dataset length: {len(ds)}')
 
-# Проверяем один элемент
-x, y = ds[0]
-print(f'X shape: {x.shape}')
-print(f'Y shape: {y.shape}')
-print(f'Y values: {y}')
+@pytest.fixture
+def data_dir() -> Path:
+    data_path = PROJECT_ROOT / 'data' / 'ml_datasets'
+    main_csv = data_path / 'labeled_2025_12_03.csv'
+    if not main_csv.exists():
+        pytest.skip(f"Нет основного датасета: {main_csv}")
+    return data_path
 
-# Проверяем symmetric режим
-ds_sym = create_precomputed_dataset(
-    'data/ml_datasets',
-    window_size=320,
-    feature_mode='symmetric',
-    sampling_strategy='snapshot'
-)
-x_sym, y_sym = ds_sym[0]
-print(f'Symmetric X shape: {x_sym.shape}')
 
-# Проверяем raw режим
-ds_raw = create_precomputed_dataset(
-    'data/ml_datasets',
-    window_size=320,
-    feature_mode='raw',
-    sampling_strategy='snapshot'
-)
-x_raw, y_raw = ds_raw[0]
-print(f'Raw X shape: {x_raw.shape}')
+def test_precomputed_dataset_basic(data_dir: Path):
+    ds = create_precomputed_dataset(
+        str(data_dir),
+        window_size=320,
+        feature_mode='phase_polar',
+        sampling_strategy='snapshot'
+    )
+    assert len(ds) > 0
+    x, y = ds[0]
+    assert x is not None and y is not None
 
-print('SUCCESS: Все тесты пройдены!')
+
+def test_precomputed_dataset_modes(data_dir: Path):
+    ds_sym = create_precomputed_dataset(
+        str(data_dir),
+        window_size=320,
+        feature_mode='symmetric',
+        sampling_strategy='snapshot'
+    )
+    x_sym, y_sym = ds_sym[0]
+    assert x_sym is not None and y_sym is not None
+
+    ds_raw = create_precomputed_dataset(
+        str(data_dir),
+        window_size=320,
+        feature_mode='raw',
+        sampling_strategy='snapshot'
+    )
+    x_raw, y_raw = ds_raw[0]
+    assert x_raw is not None and y_raw is not None

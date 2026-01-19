@@ -23,6 +23,23 @@ from osc_tools.analysis.overvoltage import OvervoltageAnalyzer
 # FIXTURES
 # ============================================================================
 
+@pytest.fixture(autouse=True)
+def _auto_mock_overvoltage_external():
+    """Автоматически мокаем внешние зависимости для всех тестов модуля."""
+    with patch('osc_tools.analysis.overvoltage.ComtradeParser') as mock_comtrade, \
+         patch('osc_tools.analysis.overvoltage.ReadComtrade') as mock_read_comtrade, \
+         patch('builtins.open') as mock_open, \
+         patch('osc_tools.features.normalization.os.path.exists', return_value=True), \
+         patch('osc_tools.io.comtrade_parser.os.path.exists', return_value=True), \
+         patch('polars.read_csv') as mock_read_csv:
+        
+        mock_comtrade.return_value = MagicMock()
+        mock_read_comtrade.return_value = MagicMock()
+        mock_open.return_value.__enter__ = lambda s: s
+        mock_open.return_value.__exit__ = lambda s, *args: None
+        mock_read_csv.return_value = pl.DataFrame()
+        yield
+
 @pytest.fixture
 def sample_norm_coef_df() -> pl.DataFrame:
     """DataFrame с коэффициентами нормализации."""

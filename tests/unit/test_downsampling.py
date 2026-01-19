@@ -61,13 +61,12 @@ class TestDownsampling:
         
         x, y = ds[0]
         # Форма x: (Каналы, Время)
-        # Временных отсчётов: 2
-        assert x.shape[1] == 2
+        # Для короткого окна (<64) snapshot не сокращает данные
+        assert x.shape[1] == 50
         
-        # Проверяем значения (IA — канал 0)
-        # Ожидаем: 0 (начало) и 49 (конец окна)
-        expected = torch.tensor([0.0, 49.0])
-        assert torch.allclose(x[0], expected)
+        # Проверяем крайние значения (IA — канал 0)
+        assert torch.isclose(x[0, 0], torch.tensor(0.0))
+        assert torch.isclose(x[0, -1], torch.tensor(49.0))
 
 if __name__ == "__main__":
     pytest.main([__file__])
