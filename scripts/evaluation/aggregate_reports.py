@@ -13,6 +13,7 @@ import time
 import numpy as np
 from sklearn.metrics import accuracy_score, f1_score, balanced_accuracy_score
 from tqdm import tqdm
+import re
 
 # Добавляем корень проекта в путь импорта
 ROOT_DIR_PROJECT = Path(__file__).parent.parent.parent
@@ -681,27 +682,252 @@ def combine_training_histories(experiments_dir: Path, output_path: Path):
             except Exception as e:
                 print(f"Error reading {metrics_path}: {e}")
 
-def aggregate_reports(root_dir: str, output_file: str = None, plot: bool = False, benchmark: bool = False, full_eval: bool = False, data_dir: str = None):
+# =============================================================================
+# УТИЛИТЫ ПАРСИНГА
+# =============================================================================
+
+def parse_experiment_info(folder_name: str) -> Dict[str, str]:
+    """
+    Разбирает имя папки на структурированные теги.
+    Пример: Exp_2.6.1_HierarchicalCNN_medium...
+    """
+    info = {
+        "exp_id": "Unknown",
+        "model_family": "Unknown",
+        "complexity": "Unknown",
+        "feature_mode": "Unknown",
+        "sampling": "Unknown",
+        "target": "Unknown",
+        "is_aug": "No",
+        "balancing": "None",
+        "arch_type": "Base"  # Тип архитектуры: Base или Hierarchical
+    }
+    
+    parts = folder_name.split('_')
+    
+    # Пытаемся вытащить ID опыта
+    id_match = re.search(r'(\d+\.\d+\.\d+\.?\w*)', folder_name)
+    if id_match:
+        info["exp_id"] = id_match.group(1)
+
+    # Определяем архитектуру
+    if 'Hierarchical' in folder_name:
+        info["arch_type"] = "Hierarchical"
+
+    # Поиск ключевого семейства моделей (чистим от префиксов)
+    models_map = {
+        'SimpleMLP': 'MLP',
+        'SimpleCNN': 'CNN',
+        'ConvKAN': 'ConvKAN',
+        'SimpleKAN': 'SimpleKAN',
+        'PhysicsKAN': 'PhysicsKAN',
+        'ResNet1D': 'ResNet',
+    }
+    
+    # Сначала ищем полное соответствие в имени
+    found_model = False
+    for pattern, clean_name in models_map.items():
+        if pattern in folder_name:
+            info["model_family"] = clean_name
+            found_model = True
+            break
+            
+    # Если это иерархическая модель и мы не нашли семейство явно (напр. HierarchicalCNN)
+    if not found_model and info["arch_type"] == "Hierarchical":
+        # Вытаскиваем то, что идет после слова Hierarchical
+        match = re.search(r'Hierarchical([a-zA-Z0-9]+)', folder_name)
+        if match:
+            info["model_family"] = match.group(1)
+
+    if 'light' in parts: info["complexity"] = 'Light'
+    elif 'medium' in parts: info["complexity"] = 'Medium'
+    elif 'heavy' in parts: info["complexity"] = 'Heavy'
+
+    if 'raw' in parts: info["feature_mode"] = 'Raw'
+    elif 'phase_polar' in folder_name: info["feature_mode"] = 'PhasePolar'
+    elif 'symmetric' in folder_name: info["feature_mode"] = 'Symmetric'
+    
+    if 'stride' in parts: info["sampling"] = 'Stride'
+    elif 'snapshot' in parts: info["sampling"] = 'Snapshot'
+    
+    if 'aug' in parts: info["is_aug"] = 'Yes'
+    if 'weights' in parts: info["balancing"] = 'Weights'
+    elif 'global' in parts: info["balancing"] = 'Global'
+
+    return info
+
+# =============================================================================
+# ВИЗУАЛИЗАЦИЯ
+# =============================================================================
+
+class ReportVisualizer:
+    # Словарь переводов
+    TEXTS = {
+        'ru': {
+            'loss_title': "Опыт {}: Лосс валидации (Обрезано по 2.0)",
+            'f1_title': "Опыт {}: F1-Macro (Валидация)",
+            'epoch': "Эпоха",
+            'loss': "Лосс",
+            'f1': "F1 Score",
+            'pareto_title': "Кривая Парето: Точность vs Скорость инференса (CPU)",
+            'latency': "Задержка (мс) - Лог. шкала",
+            'val_f1_label': "F1-Macro (Валидация)",
+            'model': "Модель",
+            'complexity': "Сложность",
+            'groups_desc': "Генерация групповых графиков"
+        },
+        'en': {
+            'loss_title': "Exp {}: Validation Loss (Clipped at 2.0)",
+            'f1_title': "Exp {}: F1-Macro Score",
+            'epoch': "Epoch",
+            'loss': "Loss",
+            'f1': "F1 Score",
+            'pareto_title': "Pareto Frontier: Accuracy vs Inference Speed (CPU)",
+            'latency': "Latency (ms) - Log Scale",
+            'val_f1_label': "Validation F1-Macro",
+            'model': "Model",
+            'complexity': "Complexity",
+            'groups_desc': "Generating group plots"
+        }
+    }
+
+    def __init__(self, output_root: Path, lang: str = 'ru'):
+        self.output_root = output_root
+        self.output_root.mkdir(parents=True, exist_ok=True)
+        self.lang = lang if lang in self.TEXTS else 'ru'
+        self.t = self.TEXTS[self.lang]
+        
+        # Цвета для моделей, чтобы они были одинаковыми на всех графиках
+        self.color_map = {
+            'MLP': '#95a5a6',
+            'CNN': '#3498db',
+            'ResNet': '#2ecc71',
+            'SimpleKAN': '#e67e22',
+            'ConvKAN': '#e74c3c',
+            'PhysicsKAN': '#9b59b6',
+            'Unknown': '#34495e'
+        }
+
+    def plot_group_curves(self, exp_id: str, group_df: pd.DataFrame, histories: Dict[str, List[Dict]]):
+        """Рисует сравнение всех моделей внутри одного ExpID."""
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+        
+        for name, history in histories.items():
+            if not history: continue
+            df_h = pd.DataFrame(history)
+            info = parse_experiment_info(name)
+            
+            # Формируем метку: CNN (H) или CNN (Base)
+            arch_suffix = "H" if info['arch_type'] == "Hierarchical" else "B"
+            model_label = f"{info['model_family']} ({arch_suffix}-{info['complexity']})"
+            
+            color = self.color_map.get(info['model_family'], self.color_map['Unknown'])
+            # Иерархические модели рисуем пунктиром для отличия
+            ls = '--' if info['arch_type'] == "Hierarchical" else '-'
+            
+            # 1. Loss (с ограничением, чтобы не "взрывалось")
+            val_loss = df_h['val_loss'].clip(upper=2.0) # Защита от бесконечности
+            ax1.plot(df_h['epoch'], val_loss, label=model_label, color=color, linestyle=ls, alpha=0.8)
+            
+            # 2. F1 Score
+            if 'val_f1' in df_h.columns:
+                ax2.plot(df_h['epoch'], df_h['val_f1'], label=model_label, color=color, linestyle=ls, alpha=0.8)
+
+        ax1.set_title(self.t['loss_title'].format(exp_id))
+        ax1.set_xlabel(self.t['epoch'])
+        ax1.set_ylabel(self.t['loss'])
+        ax1.grid(True, alpha=0.3)
+        
+        ax2.set_title(self.t['f1_title'].format(exp_id))
+        ax2.set_xlabel(self.t['epoch'])
+        ax2.set_ylabel(self.t['f1'])
+        ax2.set_ylim([0, 1.0])
+        ax2.grid(True, alpha=0.3)
+        ax2.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+
+        plt.tight_layout()
+        save_path = self.output_root / "groups" / f"exp_{exp_id}_comparison_{self.lang}.png"
+        save_path.parent.mkdir(exist_ok=True)
+        plt.savefig(save_path, dpi=150)
+        plt.close()
+
+    def plot_pareto(self, summary_df: pd.DataFrame):
+        """Рисует график 'Точность vs Скорость'."""
+        plt.figure(figsize=(10, 7))
+        # Очистка данных от 0 или некорректных замеров времени
+        # Проверяем наличие колонки
+        if 'CPU Inf (ms)' not in summary_df.columns:
+            return
+            
+        df_plot = summary_df[summary_df['CPU Inf (ms)'] > 0].copy()
+        if df_plot.empty: return
+
+        # Создаем колонку для отображения: CNN (H)
+        df_plot['DisplayModel'] = df_plot.apply(
+            lambda x: f"{x['Model']} ({x['arch_type'][0]})" if 'arch_type' in x else x['Model'], axis=1
+        )
+
+        sns.scatterplot(
+            data=df_plot, 
+            x='CPU Inf (ms)', 
+            y='Val F1', 
+            hue='Model', 
+            style='Complexity',
+            s=120, 
+            alpha=0.8
+        )
+        
+        plt.xscale('log')
+        plt.title(self.t['pareto_title'])
+        plt.xlabel(self.t['latency'])
+        plt.ylabel(self.t['val_f1_label'])
+        plt.grid(True, which="both", ls="-", alpha=0.2)
+        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        
+        plt.tight_layout()
+        plt.savefig(self.output_root / f"summary_pareto_{self.lang}.png", dpi=200)
+        plt.close()
+
+def aggregate_reports(root_dir: str, output_dir: str = None, plot: bool = False, benchmark: bool = False, full_eval: bool = False, data_dir: str = None, lang: str = 'ru'):
     """
     Агрегирует отчеты обучения из всех поддиректорий.
     
     Args:
         root_dir: Корневая директория, содержащая папки экспериментов.
-        output_file: Опциональный путь для сохранения агрегированного отчета (CSV).
+        output_dir: Опциональный путь к папке для сохранения всех отчетов и графиков.
         plot: Генерировать ли графики обучения для каждого эксперимента.
         benchmark: Выполнять ли глубокий бенчмарк на CPU.
         full_eval: Выполнять ли полную оценку на тестовом датасете (GPU, все точки).
         data_dir: Путь к директории с датасетами (для full_eval).
+        lang: Язык графиков ('ru' или 'en').
     """
     root_path = Path(root_dir)
     experiments = []
     all_histories = {}
     
+    # Подготовка путей вывода
+    if output_dir:
+        out_path = Path(output_dir)
+        out_path.mkdir(parents=True, exist_ok=True)
+        figures_path = out_path / "figures"
+        csv_path = out_path / "summary_report.csv"
+        history_path = out_path / "combined_metrics_history.txt"
+        error_log_path = out_path / "processing_errors.log"
+        # Очищаем лог ошибок при новом запуске
+        if error_log_path.exists():
+            error_log_path.unlink()
+    else:
+        out_path = None
+        figures_path = root_path / "figures"
+        csv_path = None
+        history_path = None
+        error_log_path = None
+
     # Путь к датасетам по умолчанию
     if data_dir is None:
         data_dir = str(ROOT_DIR_PROJECT / 'data' / 'ml_datasets')
 
-    print(f"Сканирование {root_path} на наличие экспериментов...")
+    print(f"Сканирование {root_path} (Язык: {lang})...")
     
     # Сначала собираем все эксперименты
     all_exp_dirs = []
@@ -709,169 +935,190 @@ def aggregate_reports(root_dir: str, output_file: str = None, plot: bool = False
         all_exp_dirs.append(metrics_file.parent)
     
     print(f"Найдено {len(all_exp_dirs)} экспериментов")
-    
-    # Если full_eval включен, используем tqdm для прогресс-бара
-    pbar = None
-    #if full_eval:
-    #    pbar = tqdm(total=len(all_exp_dirs), desc="Полная оценка моделей", unit="exp")
 
     # Найти все файлы metrics.jsonl
-    for exp_idx, exp_dir in enumerate(all_exp_dirs):
-        metrics_file = exp_dir / "metrics.jsonl"
-        config_file = exp_dir / "config.json"
-        
-        # Загрузка данных
-        metrics = load_metrics(metrics_file)
-        config = load_config(config_file) if config_file.exists() else {}
-        
-        if not metrics:
+    for exp_idx, exp_dir in enumerate(tqdm(all_exp_dirs, desc="Сбор логов")):
+        try:
+            metrics_file = exp_dir / "metrics.jsonl"
+            config_file = exp_dir / "config.json"
+            
+            # Загрузка данных
+            metrics = load_metrics(metrics_file)
+            config = load_config(config_file) if config_file.exists() else {}
+            
+            if not metrics:
+                continue
+                
+            all_histories[exp_dir.name] = metrics
+
+            # Умный парсинг инфо из имени папки
+            info = parse_experiment_info(exp_dir.name)
+
+            # Генерация графиков
+            if plot:
+                plot_path = exp_dir / "learning_curves.png"
+                plot_learning_curves(metrics, plot_path)
+
+            # Найти лучшую эпоху (на основе min val_loss, с защитой от пустых данных)
+            if any('val_loss' in m for m in metrics):
+                best_epoch = min(metrics, key=lambda x: x.get('val_loss', 999.0))
+            else:
+                best_epoch = metrics[-1]
+
+            # Извлечение информации
+            # Сначала пробуем взять из нового поля model_info в конфиге
+            num_params = config.get('model_info', {}).get('num_params', best_epoch.get('num_params', 0))
+            
+            cpu_inf = best_epoch.get('cpu_inf_time_ms', 0.0)
+            if benchmark:
+                cpu_inf = benchmark_model_cpu(exp_dir, config, iterations=1000)
+
+            exp_data = {
+                "ExpID": info["exp_id"],
+                "Experiment": exp_dir.name,
+                "Model": info["model_family"],
+                "Complexity": info["complexity"],
+                "Features": info["feature_mode"],
+                "Sampling": info["sampling"],
+                "Balancing": info["balancing"],
+                "Aug": info["is_aug"],
+                "arch_type": info["arch_type"],
+                "Val F1": best_epoch.get('val_f1', 0.0),
+                "Val Loss": best_epoch.get('val_loss', 0.0),
+                "Val Acc": best_epoch.get('val_acc', 0.0),
+                "CPU Inf (ms)": cpu_inf,
+                "Params": num_params,
+                "Epochs": len(metrics),
+                "Best Epoch": best_epoch.get('epoch'),
+                "Path": exp_dir.name
+            }
+            
+            if 'data' in config:
+                exp_data['Window'] = config['data'].get('window_size')
+                exp_data['Batch'] = config['data'].get('batch_size')
+            
+            # Полная оценка на тестовом датасете (GPU)
+            if full_eval:
+                full_metrics = evaluate_full_test_dataset(exp_dir, config, data_dir)
+                exp_data['Full Best Acc'] = full_metrics['full_best_acc']
+                exp_data['Full Best F1'] = full_metrics['full_best_f1']
+                exp_data['Full Final Acc'] = full_metrics['full_final_acc']
+                exp_data['Full Final F1'] = full_metrics['full_final_f1']
+                exp_data['Full Eval Time (s)'] = full_metrics['full_eval_time_s']
+                exp_data['Full Eval Samples'] = full_metrics['full_eval_samples']
+            
+            experiments.append(exp_data)
+            
+        except Exception as e:
+            error_msg = f"Ошибка при обработке опыта {exp_dir.name}: {str(e)}"
+            print(f"\n[!] {error_msg}")
+            if error_log_path:
+                with open(error_log_path, 'a', encoding='utf-8') as f:
+                    f.write(f"=== {exp_dir.name} ===\n")
+                    f.write(f"Error: {str(e)}\n")
+                    import traceback
+                    f.write(traceback.format_exc())
+                    f.write("-" * 50 + "\n\n")
             continue
-            
-        all_histories[exp_dir.name] = metrics
-
-        # Генерация графиков
-        if plot:
-            plot_path = exp_dir / "learning_curves.png"
-            plot_learning_curves(metrics, plot_path)
-
-        # Найти лучшую эпоху (на основе min val_loss)
-        if any('val_loss' in m for m in metrics):
-            best_epoch = min(metrics, key=lambda x: x.get('val_loss', float('inf')))
-        else:
-            best_epoch = metrics[-1]
-
-        # Извлечение информации
-        # Сначала пробуем взять из нового поля model_info в конфиге
-        num_params = config.get('model_info', {}).get('num_params', best_epoch.get('num_params', 0))
-        
-        cpu_inf = best_epoch.get('cpu_inf_time_ms', 0.0)
-        if benchmark:
-            print(f"\nБенчмарк CPU для {exp_dir.name}...")
-            cpu_inf = benchmark_model_cpu(exp_dir, config, iterations=1000)
-
-        exp_data = {
-            "Experiment": exp_dir.name,
-            "Model": config.get('model', {}).get('name', 'Unknown'),
-            "Params": str(config.get('model', {}).get('params', {})),
-            "Epochs": len(metrics),
-            "Best Epoch": best_epoch.get('epoch'),
-            "Num Params": num_params,
-            "Train Loss": best_epoch.get('train_loss'),
-            "Val Loss": best_epoch.get('val_loss'),
-            "Val Acc": best_epoch.get('val_acc'),
-            "Val F1": best_epoch.get('val_f1'),
-            "CPU Inf (ms)": cpu_inf,
-            "Time (s)": best_epoch.get('epoch_time', best_epoch.get('time', 0.0)),
-            "Path": str(exp_dir)
-        }
-        
-        # Добавить некоторые детали конфигурации, если доступны
-        if 'data' in config:
-            exp_data['Window'] = config['data'].get('window_size')
-            exp_data['Batch'] = config['data'].get('batch_size')
-        
-        # Полная оценка на тестовом датасете (GPU)
-        if full_eval:
-            # Обновляем прогресс-бар
-            # if pbar:
-            #     pbar.set_postfix(model=exp_dir.name[:30])
-            #     pbar.update(1)
-            full_metrics = evaluate_full_test_dataset(exp_dir, config, data_dir)
-            
-            exp_data['Full Best Acc'] = full_metrics['full_best_acc']
-            exp_data['Full Best F1'] = full_metrics['full_best_f1']
-            exp_data['Full Final Acc'] = full_metrics['full_final_acc']
-            exp_data['Full Final F1'] = full_metrics['full_final_f1']
-            exp_data['Full Eval Time (s)'] = full_metrics['full_eval_time_s']
-            exp_data['Full Eval Samples'] = full_metrics['full_eval_samples']
-        
-        experiments.append(exp_data)
     
-    # Закрываем прогресс-бар
-    # if pbar:
-    #     pbar.close()
-
     if not experiments:
         print("Эксперименты не найдены.")
         return
 
-    # Создать DataFrame
-    df = pd.DataFrame(experiments)
+    # Создать DataFrame и заполнить пропуски
+    df = pd.DataFrame(experiments).fillna(0)
     
-    # Сортировать по Val Loss (или по Full Best F1 если есть full_eval)
-    if full_eval and 'Full Best F1' in df.columns:
-        df = df.sort_values('Full Best F1', ascending=False)
-    elif 'Val Loss' in df.columns:
-        df = df.sort_values('Val Loss')
-
-    # Отобразить
-    print("\nАгрегированный отчет:")
-    print(df.to_markdown(index=False, floatfmt=".4f"))
-
-    # Сохранить
-    if output_file:
-        df.to_csv(output_file, index=False)
-        print(f"\nОтчет сохранен в {output_file}")
-        
-        # Также объединяем историю метрик для удобного анализа
-        history_file = Path(output_file).parent / "combined_metrics_history.txt"
-        combine_training_histories(root_path, history_file)
-        print(f"Объединенная история обучения сохранена в {history_file}")
-
-    # Сравнительные графики
+    # --- ВИЗУАЛИЗАЦИЯ (Report Engine 2.0) ---
     if plot:
-        # Сохраняем рядом с CSV или в папку root_path
-        save_dir = Path(output_file).parent if output_file else root_path
-        plot_comparison(all_histories, save_dir)
-        print(f"Сравнительные графики сохранены в {save_dir / 'comparison_metrics.png'}")
+        viz = ReportVisualizer(figures_path, lang=lang)
+        
+        # 1. Групповые графики по ExpID
+        unique_exps = df['ExpID'].unique()
+        for eid in tqdm(unique_exps, desc=viz.t['groups_desc']):
+            if eid == "Unknown": continue
+            # Находим все папки, относящиеся к этому опыту
+            exp_folders = df[df['ExpID'] == eid]['Path'].tolist()
+            group_histories = {f: all_histories[f] for f in exp_folders if f in all_histories}
+            viz.plot_group_curves(eid, df, group_histories)
+            
+        # 2. Паррето график скорость/точность
+        viz.plot_pareto(df)
+
+    # Сортировка
+    if full_eval and 'Full Best F1' in df.columns:
+        df = df.sort_values(['ExpID', 'Full Best F1'], ascending=[True, False])
+    else:
+        df = df.sort_values(['ExpID', 'Val F1'], ascending=[True, False])
+
+    # Отобразить топ-результаты
+    print("\nАгрегированный отчет (Топ-20):")
+    cols_to_show = ['ExpID', 'Model', 'Complexity', 'Val F1', 'CPU Inf (ms)']
+    if full_eval: cols_to_show.extend(['Full Best F1'])
+    cols_to_show = [c for c in cols_to_show if c in df.columns]
+    print(df[cols_to_show].head(20).to_markdown(index=False, floatfmt=".4f"))
+
+    # Сохранение файлов
+    if out_path:
+        df.to_csv(csv_path, index=False)
+        print(f"\nCSV-отчет сохранен: {csv_path}")
+        
+        combine_training_histories(root_path, history_path)
+        print(f"История обучения объединена: {history_path}")
+
+    if plot:
+        plot_comparison(all_histories, out_path if out_path else root_path)
 
 if __name__ == "__main__":
+    # Сначала проверяем CLI, если нет аргументов - MANUAL_RUN
+    parser = argparse.ArgumentParser(description="Агрегация отчетов экспериментов.")
+    parser.add_argument("--root", type=str, default=None, help="Корневая директория экспериментов")
+    parser.add_argument("--out-dir", type=str, default=None, help="Путь к папке для сохранения всех отчетов")
+    parser.add_argument("--plot", action="store_true", help="Генерировать графики обучения")
+    parser.add_argument("--benchmark", action="store_true", help="Выполнить глубокий бенчмарк на CPU")
+    parser.add_argument("--full-eval", action="store_true", help="Выполнить полную оценку на тестовом датасете (GPU)")
+    parser.add_argument("--data-dir", type=str, default=None, help="Путь к директории с датасетами")
+    parser.add_argument("--lang", type=str, default="ru", choices=["ru", "en"], help="Язык графиков (ru/en)")
+    
+    args, unknown = parser.parse_known_args()
+
     # === ВЕРСИЯ 1: РУЧНОЙ ЗАПУСК ЧЕРЕЗ КОНСТАНТЫ ===
     # Отредактируйте параметры ниже для быстрого запуска без аргументов командной строки.
     MANUAL_RUN = True
     
-    # ROOT_DIR: Папка, где лежат результаты ваших экспериментов (metrics.jsonl, config.json).
-    ROOT_DIR = "experiments/phase2_5/_новые опыты/Exp_2.5.1"
-    
-    # OUTPUT_CSV: Имя файла для сохранения таблицы с результатами.
-    OUTPUT_CSV = "reports/phase2_5_1_full.csv"
-    
-    # GENERATE_PLOTS: Если True, для каждого эксперимента будут построены графики обучения.
-    GENERATE_PLOTS = False
-    
-    # RUN_BENCHMARK: Если True, будет выполнен глубокий замер скорости инференса на CPU (1000 итераций).
-    RUN_BENCHMARK = True  # Отключаем CPU бенчмарк, если включён full_eval (нужен GPU)
-    
-    # RUN_FULL_EVAL: Если True, будет выполнена полная оценка на всём тестовом датасете (GPU).
-    # Это более точная оценка, чем Val Acc/F1 из обучения (там используется подвыборка).
-    RUN_FULL_EVAL = True
+    # Если аргументы не переданы, используем MANUAL-конфиг
+    if MANUAL_RUN or len(sys.argv) <= 1 or args.root is None:
+        # === MANUAL CONFIG ===
+        # ROOT_DIR: Папка, где лежат результаты ваших экспериментов (metrics.jsonl, config.json).
+        ROOT_DIR = "experiments/phase2_5" # пока сюда скопировал часть 2.6
+        # OUTPUT_DIR: Папка, куда сохранять ВСЕ отчёты / файлы / картинки
+        OUTPUT_DIR = "reports/Exp_2_5_and_start_Exp_2_6"
+        # GENERATE_PLOTS: Если True, для каждого эксперимента будут построены графики обучения.
+        GENERATE_PLOTS = True
+        # RUN_BENCHMARK: Если True, будет выполнен глубокий замер скорости инференса на CPU (1000 итераций).
+        RUN_BENCHMARK = True
+        # RUN_FULL_EVAL: Если True, будет выполнена полная оценка на всём тестовом датасете (GPU).
+        # Это более точная оценка, чем Val Acc/F1 из обучения (там используется подвыборка).
+        RUN_FULL_EVAL = True
+        # LANG: Язык графиков ('ru' или 'en').
+        LANG = "ru"
+        
+        print(f"[!] Запуск в ручном режиме (MANUAL_RUN)")
+    else:
+        # === CLI CONFIG ===
+        ROOT_DIR = args.root
+        OUTPUT_DIR = args.out_dir
+        GENERATE_PLOTS = args.plot
+        RUN_BENCHMARK = args.benchmark
+        RUN_FULL_EVAL = args.full_eval
+        LANG = args.lang
 
-    if MANUAL_RUN:
-        # Создаем папку для отчетов, если её нет
-        Path(OUTPUT_CSV).parent.mkdir(parents=True, exist_ok=True)
+    if ROOT_DIR:
         aggregate_reports(
             ROOT_DIR, 
-            OUTPUT_CSV, 
+            OUTPUT_DIR, 
             GENERATE_PLOTS, 
             RUN_BENCHMARK,
-            full_eval=RUN_FULL_EVAL
-        )
-    else:
-        # === ВЕРСИЯ 2: ЗАПУСК ПО УМОЛЧАНИЮ (CLI / Командная строка) ===
-        parser = argparse.ArgumentParser(description="Агрегация отчетов экспериментов.")
-        parser.add_argument("root_dir", type=str, help="Корневая директория, содержащая эксперименты (например, experiments/)")
-        parser.add_argument("--output", type=str, default=None, help="Путь к выходному файлу CSV")
-        parser.add_argument("--plot", action="store_true", help="Генерировать графики обучения")
-        parser.add_argument("--benchmark", action="store_true", help="Выполнить глубокий бенчмарк на CPU")
-        parser.add_argument("--full-eval", action="store_true", help="Выполнить полную оценку на тестовом датасете (GPU)")
-        parser.add_argument("--data-dir", type=str, default=None, help="Путь к директории с датасетами")
-        
-        args = parser.parse_args()
-        aggregate_reports(
-            args.root_dir, 
-            args.output, 
-            args.plot, 
-            args.benchmark,
-            full_eval=args.full_eval,
+            full_eval=RUN_FULL_EVAL,
+            lang=LANG,
             data_dir=args.data_dir
         )
