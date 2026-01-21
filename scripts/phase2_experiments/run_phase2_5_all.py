@@ -205,8 +205,11 @@ def run_experiment(experiment_id, model_name, complexity, df, train_indices, val
     # Если balancing='weights' и augment=False -> это старый 'base' в некотором смысле, но там не было суффикса.
     # Оставим как есть для новых - с суффиксом.
     
+    # Очистка ID от суффиксов (например 2.5.5.2_ab_snapshot -> 2.5.5.2)
+    exp_id_clean = experiment_id.split('_')[0]
+    
     # Переопределяем имя для точного соответствия запросу
-    experiment_name = f"Exp_{experiment_id}_{model_name}_{complexity}_{feature_mode}_{sampling_strategy}_{target_level}"
+    experiment_name = f"Exp_{exp_id_clean}_{model_name}_{complexity}_{feature_mode}_{sampling_strategy}_{target_level}"
     if balancing_mode != 'none':
         experiment_name += f"_{balancing_mode}"
     if augment:
@@ -455,13 +458,13 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
     
     # Настройка параметров в зависимости от эксперимента
     exp_params = {
-        "2.5.1.0": {"feature_mode": "raw", "sampling": "none", "balancing": "none", "aug": False, "target_level": "base"},
-        "2.5.1.1": {"feature_mode": "raw", "sampling": "none", "balancing": "weights", "aug": False, "target_level": "base"},
+        "2.5.1.0": {"feature_mode": "raw", "sampling": "none_sampl", "balancing": "none_weights", "aug": False, "target_level": "base"},
+        "2.5.1.1": {"feature_mode": "raw", "sampling": "none_sampl", "balancing": "weights", "aug": False, "target_level": "base"},
         # НОВЫЕ ЭКСПЕРИМЕНТЫ: Балансировка классов
-        "2.5.1.2": {"feature_mode": "raw", "sampling": "none", "balancing": "global", "aug": False, "target_level": "base"},  # Глобальная балансировка
-        "2.5.1.3": {"feature_mode": "raw", "sampling": "none", "balancing": "oscillogram", "aug": False, "target_level": "base"},  # Балансировка внутри осциллограмм
+        "2.5.1.2": {"feature_mode": "raw", "sampling": "none_sampl", "balancing": "global", "aug": False, "target_level": "base"},  # Глобальная балансировка
+        "2.5.1.3": {"feature_mode": "raw", "sampling": "none_sampl", "balancing": "oscillogram", "aug": False, "target_level": "base"},  # Балансировка внутри осциллограмм
         # СДВИНУТАЯ АУГМЕНТАЦИЯ (была 2.5.1.2)
-        "2.5.1.4": {"feature_mode": "raw", "sampling": "none", "balancing": "weights", "aug": True, "target_level": "base"},
+        "2.5.1.4": {"feature_mode": "raw", "sampling": "none_sampl", "balancing": "weights", "aug": True, "target_level": "base"},
         
         # Исследование стратегий прореживания на сырых данных (Raw Data Downsampling)
         "2.5.2.0": {"feature_mode": "raw", "sampling": "stride", "stride": 16, "complexity": "light", "balancing": "weights", "aug": True, "target_level": "base"},
@@ -545,8 +548,9 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
             actual_comp = comp
             # (Пропускаем логику определения сложности для краткости - просто проверяем существование)
             
+            exp_id_clean = args.exp.split('_')[0]
             # Быстрая проверка: есть ли уже эта модель?
-            experiment_name = f"Exp_{args.exp}_{model_name}_{actual_comp}_{p['feature_mode']}_{p['sampling']}_{p['target_level']}"
+            experiment_name = f"Exp_{exp_id_clean}_{model_name}_{actual_comp}_{p['feature_mode']}_{p['sampling']}_{p['target_level']}"
             if p.get('balancing', 'none') != 'none':
                 experiment_name += f"_{p.get('balancing')}"
             if p.get('aug', False):
@@ -659,8 +663,9 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
                     # PhysicsKAN - исключение, т.к. мы сделали для него фоллбек на MLP.
                     continue
             
+            exp_id_clean = args.exp.split('_')[0]
             # Проверка, обучена ли уже модель
-            experiment_name = f"Exp_{args.exp}_{model_name}_{actual_comp}_{p['feature_mode']}_{p['sampling']}_{p['target_level']}"
+            experiment_name = f"Exp_{exp_id_clean}_{model_name}_{actual_comp}_{p['feature_mode']}_{p['sampling']}_{p['target_level']}"
             # Добавляем суффиксы балансировки и аугментации, чтобы проверка соответствовала сохранённому имени
             if p.get('balancing', 'none') != 'none':
                 experiment_name += f"_{p.get('balancing')}"

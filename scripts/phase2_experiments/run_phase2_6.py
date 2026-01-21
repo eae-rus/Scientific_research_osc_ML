@@ -354,7 +354,12 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
     need_training = False
     for m_name in models_to_run:
         for comp in complexities_to_run:
-            full_exp_name = f"Exp{target_exp}_{m_name}_{comp}_{p['sampling']}"
+            exp_id_clean = target_exp.split('_')[0]
+            feature_mode = p["feature_mode"]
+            sampling_strategy = p["sampling"]
+            target_level = 'base' # По умолчанию для Фазы 2.6
+            
+            full_exp_name = f"Exp_{exp_id_clean}_{m_name}_{comp}_{feature_mode}_{sampling_strategy}_{target_level}"
             
             # Добавляем суффиксы балансировки и аугментации в имя
             if p.get('balancing', 'none') != 'none':
@@ -407,7 +412,12 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
 
     for m_name in models_to_run:
         for comp in complexities_to_run:
-            full_exp_name = f"Exp{target_exp}_{m_name}_{comp}_{p['sampling']}"
+            exp_id_clean = target_exp.split('_')[0]
+            feature_mode = p["feature_mode"]
+            sampling_strategy = p["sampling"]
+            target_level = 'base' # По умолчанию для Фазы 2.6
+            
+            full_exp_name = f"Exp_{exp_id_clean}_{m_name}_{comp}_{feature_mode}_{sampling_strategy}_{target_level}"
             
             # Добавляем суффиксы балансировки и аугментации в имя
             if p.get('balancing', 'none') != 'none':
