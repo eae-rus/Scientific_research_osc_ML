@@ -24,6 +24,90 @@ from osc_tools.ml.precomputed_dataset import PrecomputedDataset
 from osc_tools.ml.dataset import OscillogramDataset
 from osc_tools.ml.labels import get_target_columns
 
+
+def load_existing_summary(csv_path: Path) -> Optional[pd.DataFrame]:
+    """
+    Загружает существующий summary_report.csv если он есть.
+    
+    Returns:
+        DataFrame с предыдущими результатами или None
+    """
+    if csv_path and csv_path.exists():
+        try:
+            df = pd.read_csv(csv_path)
+            print(f"[Cache] Загружен существующий отчёт: {csv_path} ({len(df)} записей)")
+            return df
+        except Exception as e:
+            print(f"[Cache] Ошибка загрузки {csv_path}: {e}")
+    return None
+
+
+def needs_full_eval_recalc(existing_row: Optional[pd.Series]) -> bool:
+    """
+    Проверяет, нужен ли пересчёт full_eval для данной модели.
+    
+    Возвращает True если:
+    - Нет существующих данных (existing_row is None)
+    - Full Best Acc/F1 или Full Final Acc/F1 равны 0
+    - Full Eval Time (s) или Full Eval Samples равны 0
+    """
+    if existing_row is None:
+        return True
+    
+    # Проверяем ключевые метрики на 0
+    full_eval_cols = [
+        'Full Best Acc', 'Full Best F1', 'Full Final Acc', 'Full Final F1',
+        'Full Eval Time (s)', 'Full Eval Samples'
+    ]
+    
+    for col in full_eval_cols:
+        if col in existing_row.index:
+            val = existing_row[col]
+            # Проверяем на 0, NaN или пустое значение
+            if pd.isna(val) or val == 0 or val == 0.0:
+                return True
+    
+    return False
+
+
+def needs_benchmark_recalc(existing_row: Optional[pd.Series]) -> bool:
+    """
+    Проверяет, нужен ли пересчёт benchmark для данной модели.
+    
+    Возвращает True если:
+    - Нет существующих данных
+    - CPU Inf (ms) равен 0 или NaN
+    """
+    if existing_row is None:
+        return True
+    
+    if 'CPU Inf (ms)' in existing_row.index:
+        val = existing_row['CPU Inf (ms)']
+        if pd.isna(val) or val == 0 or val == 0.0:
+            return True
+    
+    return False
+
+
+def get_existing_row(existing_df: Optional[pd.DataFrame], exp_name: str) -> Optional[pd.Series]:
+    """
+    Ищет строку в существующем DataFrame по имени эксперимента.
+    """
+    if existing_df is None:
+        return None
+    
+    matches = existing_df[existing_df['Path'] == exp_name]
+    if len(matches) > 0:
+        return matches.iloc[0]
+    
+    # Fallback: поиск по Experiment
+    matches = existing_df[existing_df['Experiment'] == exp_name]
+    if len(matches) > 0:
+        return matches.iloc[0]
+    
+    return None
+
+
 def load_metrics(metrics_path: Path) -> List[Dict[str, Any]]:
     """Загрузка метрик из файла jsonl."""
     metrics = []
@@ -455,6 +539,8 @@ def evaluate_full_test_dataset(
         'full_eval_time_s': 0.0,
         'full_eval_samples': 0
     }
+
+    config_path = exp_dir / "config.json"
     
     try:
         # Определяем устройство
@@ -517,13 +603,20 @@ def evaluate_full_test_dataset(
                 sampling_strategy = 'stride'
                 downsampling_stride = 16
         
-        # Feature mode - определяем по in_channels или input_size
+        # Feature mode - сначала пробуем взять из конфига данных
         # 16 = phase_polar (8 сигналов × 2: amp + phase)
         # 12 = symmetric (6 составляющих × 2: amp + phase)
         # 8 = raw (8 сигналов без FFT)
         in_channels = config.get('model', {}).get('params', {}).get('in_channels', None)
+        feature_mode = None
+
+        data_features = config.get('data', {}).get('features')
+        if isinstance(data_features, list) and data_features:
+            feature_mode = data_features[0]
+        elif isinstance(data_features, str) and data_features:
+            feature_mode = data_features
         
-        if in_channels is None:
+        if feature_mode is None and in_channels is None:
             # Сначала пытаемся найти в названии
             if 'raw' in exp_name:
                 in_channels = 8
@@ -555,13 +648,63 @@ def evaluate_full_test_dataset(
                             in_channels = 16  # Default
                 else:
                     in_channels = 16  # Default
+
+        # Если feature_mode так и не определён, определяем его по in_channels
+        if feature_mode is None:
+            if in_channels == 12:
+                feature_mode = 'symmetric'
+            elif in_channels == 8:
+                feature_mode = 'raw'
+            else:
+                feature_mode = 'phase_polar'  # Default для Phase 2.x
+
+        # Определяем базовое число каналов для feature_mode
+        base_ch = 0
+        if feature_mode in ['symmetric', 'symmetric_polar']:
+            base_ch = 12
+        elif feature_mode in ['phase_polar', 'phase_complex']:
+            base_ch = 16
+        elif feature_mode == 'raw':
+            base_ch = 8
+        elif feature_mode == 'power':
+            base_ch = 8
+        elif feature_mode == 'alpha_beta':
+            base_ch = 6
         
-        if in_channels == 12:
-            feature_mode = 'symmetric'
-        elif in_channels == 8:
-            feature_mode = 'raw'
-        else:
-            feature_mode = 'phase_polar'  # Default для Phase 2.6
+        # Определяем число гармоник:
+        # 1. Из in_channels (если есть): num_harmonics = in_channels / base_ch
+        # 2. Из input_size (для MLP/KAN без in_channels): 
+        #    - snapshot: input_size = in_channels * 2 → in_channels = input_size / 2
+        #    - stride: input_size = in_channels * seq_len (~18)
+        #    - none: input_size = in_channels * window_size
+        num_harmonics = 1
+        input_size_cfg = config.get('model', {}).get('params', {}).get('input_size', 0)
+        
+        if in_channels and base_ch > 0 and in_channels % base_ch == 0:
+            num_harmonics = max(1, in_channels // base_ch)
+        elif input_size_cfg > 0 and base_ch > 0:
+            # Вычисляем in_channels из input_size и sampling_strategy
+            if sampling_strategy == 'snapshot':
+                # Для спектральных: 2 точки, для raw: 64 точки
+                if feature_mode == 'raw':
+                    pts = 64
+                else:
+                    pts = 2
+                derived_in_channels = input_size_cfg // pts
+            elif sampling_strategy == 'none':
+                derived_in_channels = input_size_cfg // window_size
+            else:  # stride
+                # Для спектральных: (window_size - 32) // stride точек
+                if feature_mode == 'raw':
+                    pts = window_size // downsampling_stride
+                else:
+                    pts = (window_size - 32) // downsampling_stride
+                pts = max(1, pts)
+                derived_in_channels = input_size_cfg // pts
+            
+            if derived_in_channels > 0 and derived_in_channels % base_ch == 0:
+                num_harmonics = max(1, derived_in_channels // base_ch)
+                in_channels = derived_in_channels  # Обновляем для последующего использования
         
         # Загружаем кэшированные данные (PrecomputedDataset - быстро и точно после исправлений)
         # stride=1 для полного перебора ВСЕХ точек
@@ -579,7 +722,8 @@ def evaluate_full_test_dataset(
             target_columns=target_cols,
             target_level='base',
             sampling_strategy=sampling_strategy,
-            downsampling_stride=downsampling_stride
+            downsampling_stride=downsampling_stride,
+            num_harmonics=num_harmonics
         )
         
         # Проверяем форму данных соответствует ожиданиям модели
@@ -589,8 +733,19 @@ def evaluate_full_test_dataset(
         expected_input_size = config.get('model', {}).get('params', {}).get('input_size', 0)
         
         if expected_input_size > 0 and actual_input_size != expected_input_size:
-            print(f"    [!] Несоответствие размера: ожидалось {expected_input_size}, получено {actual_input_size}")
-            print(f"        Проверьте sampling_strategy={sampling_strategy}")
+            error_msg = (
+                f"[!] Несоответствие размера: ожидалось {expected_input_size}, получено {actual_input_size}\n"
+                f"    Эксперимент: {exp_dir.name}\n"
+                f"    Модель: {config.get('model', {}).get('name')}\n"
+                f"    feature_mode={feature_mode} | sampling_strategy={sampling_strategy}\n"
+            )
+            print(error_msg)
+            # breakpoint()  # Точка остановки закомментирована для массового запуска
+            
+            # Логируем ошибку в файл (если путь доступен через data_dir хак или передадим глобально)
+            # Но у нас есть return results. Попробуем вернуть ошибку в результатах?
+            # Пока просто выведем в stdout, перехватится вызывающим кодом если будет exception
+            
             # Возвращаем пустые результаты, т.к. модель не сможет работать с такими данными
             return results
         
@@ -630,6 +785,7 @@ def evaluate_full_test_dataset(
                 results['full_best_per_class_f1'] = best_metrics['per_class_f1']
             except Exception as e:
                 print(f"    [!] Ошибка загрузки best_model: {e}")
+                # breakpoint()  # Точка остановки закомментирована
         
         # Оценка final_model.pt
         final_path = exp_dir / "final_model.pt"
@@ -645,6 +801,7 @@ def evaluate_full_test_dataset(
                 results['full_final_per_class_f1'] = final_metrics['per_class_f1']
             except Exception as e:
                 print(f"    [!] Ошибка загрузки final_model: {e}")
+                # breakpoint()  # Точка остановки закомментирована
         
         results['full_eval_time_s'] = time.perf_counter() - start_time
         
@@ -652,6 +809,7 @@ def evaluate_full_test_dataset(
         print(f"  [!] Ошибка full evaluation для {exp_dir.name}: {e}")
         import traceback
         traceback.print_exc()
+        # breakpoint()  # Точка остановки закомментирована
     
     return results
 
@@ -907,6 +1065,11 @@ def aggregate_reports(root_dir: str, output_dir: str = None, plot: bool = False,
         full_eval: Выполнять ли полную оценку на тестовом датасете (GPU, все точки).
         data_dir: Путь к директории с датасетами (для full_eval).
         lang: Язык графиков ('ru' или 'en').
+    
+    Оптимизация:
+        - Загружает существующий summary_report.csv для пропуска уже посчитанных моделей
+        - Пропускает full_eval/benchmark если метрики уже валидны (не 0)
+        - Пропускает генерацию графиков если файлы уже существуют (кроме pareto)
     """
     root_path = Path(root_dir)
     experiments = []
@@ -934,6 +1097,19 @@ def aggregate_reports(root_dir: str, output_dir: str = None, plot: bool = False,
     if data_dir is None:
         data_dir = str(ROOT_DIR_PROJECT / 'data' / 'ml_datasets')
 
+    # Загружаем существующий отчёт для пропуска уже посчитанных моделей
+    existing_df = load_existing_summary(csv_path) if csv_path else None
+    
+    # Счётчики для статистики пропусков
+    skip_stats = {
+        'full_eval_skipped': 0,
+        'full_eval_recalc': 0,
+        'benchmark_skipped': 0,
+        'benchmark_recalc': 0,
+        'plots_skipped': 0,
+        'plots_generated': 0
+    }
+
     print(f"Сканирование {root_path} (Язык: {lang})...")
     
     # Сначала собираем все эксперименты
@@ -960,11 +1136,18 @@ def aggregate_reports(root_dir: str, output_dir: str = None, plot: bool = False,
 
             # Умный парсинг инфо из имени папки
             info = parse_experiment_info(exp_dir.name)
+            
+            # Получаем существующие данные для этого эксперимента
+            existing_row = get_existing_row(existing_df, exp_dir.name)
 
-            # Генерация графиков
+            # Генерация графиков (пропускаем если файл уже существует)
             if plot:
                 plot_path = exp_dir / "learning_curves.png"
-                plot_learning_curves(metrics, plot_path)
+                if plot_path.exists():
+                    skip_stats['plots_skipped'] += 1
+                else:
+                    plot_learning_curves(metrics, plot_path)
+                    skip_stats['plots_generated'] += 1
 
             # Найти лучшую эпоху (на основе min val_loss, с защитой от пустых данных)
             if any('val_loss' in m for m in metrics):
@@ -977,28 +1160,58 @@ def aggregate_reports(root_dir: str, output_dir: str = None, plot: bool = False,
             num_params = config.get('model_info', {}).get('num_params', best_epoch.get('num_params', 0))
             
             cpu_inf = best_epoch.get('cpu_inf_time_ms', 0.0)
+            
+            # Benchmark: проверяем нужен ли пересчёт
             if benchmark:
-                cpu_inf = benchmark_model_cpu(exp_dir, config, iterations=1000)
+                if needs_benchmark_recalc(existing_row):
+                    cpu_inf = benchmark_model_cpu(exp_dir, config, iterations=1000)
+                    skip_stats['benchmark_recalc'] += 1
+                else:
+                    # Используем существующее значение из кэша
+                    cpu_inf = existing_row['CPU Inf (ms)']
+                    skip_stats['benchmark_skipped'] += 1
 
-            exp_data = {
-                "ExpID": info["exp_id"],
-                "Experiment": exp_dir.name,
-                "Model": info["model_family"],
-                "Complexity": info["complexity"],
-                "Features": info["feature_mode"],
-                "Sampling": info["sampling"],
-                "Balancing": info["balancing"],
-                "Aug": info["is_aug"],
-                "arch_type": info["arch_type"],
-                "Val F1": best_epoch.get('val_f1', 0.0),
-                "Val Loss": best_epoch.get('val_loss', 0.0),
-                "Val Acc": best_epoch.get('val_acc', 0.0),
-                "CPU Inf (ms)": cpu_inf,
-                "Params": num_params,
-                "Epochs": len(metrics),
-                "Best Epoch": best_epoch.get('epoch'),
-                "Path": exp_dir.name
-            }
+            # Формируем данные: приоритет отдаем существующей строке (вашим ручным правкам в CSV)
+            if existing_row is not None:
+                exp_data = {
+                    "ExpID": existing_row.get("ExpID", info["exp_id"]),
+                    "Experiment": exp_dir.name,
+                    "Model": existing_row.get("Model", info["model_family"]),
+                    "Complexity": existing_row.get("Complexity", info["complexity"]),
+                    "Features": existing_row.get("Features", info["feature_mode"]),
+                    "Sampling": existing_row.get("Sampling", info["sampling"]),
+                    "Balancing": existing_row.get("Balancing", info["balancing"]),
+                    "Aug": existing_row.get("Aug", info["is_aug"]),
+                    "arch_type": existing_row.get("arch_type", info["arch_type"]),
+                    "Val F1": best_epoch.get('val_f1', 0.0),
+                    "Val Loss": best_epoch.get('val_loss', 0.0),
+                    "Val Acc": best_epoch.get('val_acc', 0.0),
+                    "CPU Inf (ms)": cpu_inf,
+                    "Params": num_params,
+                    "Epochs": len(metrics),
+                    "Best Epoch": best_epoch.get('epoch'),
+                    "Path": exp_dir.name
+                }
+            else:
+                exp_data = {
+                    "ExpID": info["exp_id"],
+                    "Experiment": exp_dir.name,
+                    "Model": info["model_family"],
+                    "Complexity": info["complexity"],
+                    "Features": info["feature_mode"],
+                    "Sampling": info["sampling"],
+                    "Balancing": info["balancing"],
+                    "Aug": info["is_aug"],
+                    "arch_type": info["arch_type"],
+                    "Val F1": best_epoch.get('val_f1', 0.0),
+                    "Val Loss": best_epoch.get('val_loss', 0.0),
+                    "Val Acc": best_epoch.get('val_acc', 0.0),
+                    "CPU Inf (ms)": cpu_inf,
+                    "Params": num_params,
+                    "Epochs": len(metrics),
+                    "Best Epoch": best_epoch.get('epoch'),
+                    "Path": exp_dir.name
+                }
             
             if 'data' in config:
                 exp_data['Window'] = config['data'].get('window_size')
@@ -1006,26 +1219,44 @@ def aggregate_reports(root_dir: str, output_dir: str = None, plot: bool = False,
             
             # Полная оценка на тестовом датасете (GPU)
             if full_eval:
-                full_metrics = evaluate_full_test_dataset(exp_dir, config, data_dir)
-                exp_data['Full Best Acc'] = full_metrics['full_best_acc']
-                exp_data['Full Best F1'] = full_metrics['full_best_f1']
-                exp_data['Full Final Acc'] = full_metrics['full_final_acc']
-                exp_data['Full Final F1'] = full_metrics['full_final_f1']
-                exp_data['Full Eval Time (s)'] = full_metrics['full_eval_time_s']
-                exp_data['Full Eval Samples'] = full_metrics['full_eval_samples']
+                if needs_full_eval_recalc(existing_row):
+                    # Нужен пересчёт
+                    full_metrics = evaluate_full_test_dataset(exp_dir, config, data_dir)
+                    exp_data['Full Best Acc'] = full_metrics['full_best_acc']
+                    exp_data['Full Best F1'] = full_metrics['full_best_f1']
+                    exp_data['Full Final Acc'] = full_metrics['full_final_acc']
+                    exp_data['Full Final F1'] = full_metrics['full_final_f1']
+                    exp_data['Full Eval Time (s)'] = full_metrics['full_eval_time_s']
+                    exp_data['Full Eval Samples'] = full_metrics['full_eval_samples']
+                    skip_stats['full_eval_recalc'] += 1
+                else:
+                    # Используем существующие данные из кэша
+                    exp_data['Full Best Acc'] = existing_row.get('Full Best Acc', 0.0)
+                    exp_data['Full Best F1'] = existing_row.get('Full Best F1', 0.0)
+                    exp_data['Full Final Acc'] = existing_row.get('Full Final Acc', 0.0)
+                    exp_data['Full Final F1'] = existing_row.get('Full Final F1', 0.0)
+                    exp_data['Full Eval Time (s)'] = existing_row.get('Full Eval Time (s)', 0.0)
+                    exp_data['Full Eval Samples'] = existing_row.get('Full Eval Samples', 0)
+                    skip_stats['full_eval_skipped'] += 1
             
             experiments.append(exp_data)
             
         except Exception as e:
             error_msg = f"Ошибка при обработке опыта {exp_dir.name}: {str(e)}"
             print(f"\n[!] {error_msg}")
-            if error_log_path:
-                with open(error_log_path, 'a', encoding='utf-8') as f:
-                    f.write(f"=== {exp_dir.name} ===\n")
-                    f.write(f"Error: {str(e)}\n")
-                    import traceback
-                    f.write(traceback.format_exc())
-                    f.write("-" * 50 + "\n\n")
+            
+            # Логируем ошибку в файл, если задан out_dir
+            if output_dir:
+                try:
+                    error_log = Path(output_dir) / "processing_errors.log"
+                    with open(error_log, 'a', encoding='utf-8') as f:
+                        f.write(f"=== {exp_dir.name} ===\n")
+                        f.write(f"{error_msg}\n")
+                        import traceback
+                        f.write(traceback.format_exc())
+                        f.write("-" * 50 + "\n\n")
+                except:
+                    pass
             continue
     
     if not experiments:
@@ -1039,16 +1270,24 @@ def aggregate_reports(root_dir: str, output_dir: str = None, plot: bool = False,
     if plot:
         viz = ReportVisualizer(figures_path, lang=lang)
         
-        # 1. Групповые графики по ExpID
+        # 1. Групповые графики по ExpID (пропускаем если файл уже существует)
         unique_exps = df['ExpID'].unique()
         for eid in tqdm(unique_exps, desc=viz.t['groups_desc']):
             if eid == "Unknown": continue
+            
+            # Проверяем существование графика
+            group_plot_path = figures_path / "groups" / f"exp_{eid}_comparison_{lang}.png"
+            if group_plot_path.exists():
+                skip_stats['plots_skipped'] += 1
+                continue
+            
             # Находим все папки, относящиеся к этому опыту
             exp_folders = df[df['ExpID'] == eid]['Path'].tolist()
             group_histories = {f: all_histories[f] for f in exp_folders if f in all_histories}
             viz.plot_group_curves(eid, df, group_histories)
+            skip_stats['plots_generated'] += 1
             
-        # 2. Паррето график скорость/точность
+        # 2. Паррето график скорость/точность (ВСЕГДА обновляем)
         viz.plot_pareto(df)
 
     # Сортировка
@@ -1074,6 +1313,15 @@ def aggregate_reports(root_dir: str, output_dir: str = None, plot: bool = False,
 
     if plot:
         plot_comparison(all_histories, out_path if out_path else root_path)
+    
+    # Выводим статистику пропусков
+    print(f"\n=== Статистика оптимизации ===")
+    if full_eval:
+        print(f"  Full Eval: пересчитано {skip_stats['full_eval_recalc']}, пропущено {skip_stats['full_eval_skipped']}")
+    if benchmark:
+        print(f"  Benchmark: пересчитано {skip_stats['benchmark_recalc']}, пропущено {skip_stats['benchmark_skipped']}")
+    if plot:
+        print(f"  Графики: сгенерировано {skip_stats['plots_generated']}, пропущено {skip_stats['plots_skipped']}")
 
 if __name__ == "__main__":
     # Сначала проверяем CLI, если нет аргументов - MANUAL_RUN
@@ -1096,7 +1344,7 @@ if __name__ == "__main__":
     if MANUAL_RUN or len(sys.argv) <= 1 or args.root is None:
         # === MANUAL CONFIG ===
         # ROOT_DIR: Папка, где лежат результаты ваших экспериментов (metrics.jsonl, config.json).
-        ROOT_DIR = "experiments/phase2_5" # пока сюда скопировал часть 2.6
+        ROOT_DIR = "experiments/phase2_5" #_новые опыты/Exp_2.5.1/Exp_2.5.1.0_ConvKAN_light_raw_none_base" # пока сюда скопировал часть 2.6
         # OUTPUT_DIR: Папка, куда сохранять ВСЕ отчёты / файлы / картинки
         OUTPUT_DIR = "reports/Exp_2_5_and_start_Exp_2_6"
         # GENERATE_PLOTS: Если True, для каждого эксперимента будут построены графики обучения.
