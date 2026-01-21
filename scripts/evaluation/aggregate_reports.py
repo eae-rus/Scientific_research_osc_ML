@@ -745,14 +745,21 @@ def parse_experiment_info(folder_name: str) -> Dict[str, str]:
 
     if 'raw' in parts: info["feature_mode"] = 'Raw'
     elif 'phase_polar' in folder_name: info["feature_mode"] = 'PhasePolar'
+    elif 'phase_rect' in folder_name: info["feature_mode"] = 'PhaseRect'
     elif 'symmetric' in folder_name: info["feature_mode"] = 'Symmetric'
+    elif 'power' in parts: info["feature_mode"] = 'Power'
+    elif 'ab' in parts: info["feature_mode"] = 'AB'
     
     if 'stride' in parts: info["sampling"] = 'Stride'
     elif 'snapshot' in parts: info["sampling"] = 'Snapshot'
+    elif 'none_sampl' in parts: info["sampling"] = 'NoneSampling'
     
     if 'aug' in parts: info["is_aug"] = 'Yes'
+    
     if 'weights' in parts: info["balancing"] = 'Weights'
     elif 'global' in parts: info["balancing"] = 'Global'
+    elif 'oscillogram' in parts: info["balancing"] = 'Oscillogram'
+    elif 'none_weights' in parts: info["balancing"] = 'NoneWeights'
 
     return info
 
