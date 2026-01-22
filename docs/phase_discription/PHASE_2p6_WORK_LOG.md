@@ -1,5 +1,179 @@
 # Лог работ по Фазе 2.6 (Архитектурные улучшения)
 
+## [2026-01-22] Реализация 6 гибридных моделей (Exp 2.6.3)
+
+### Выполненные работы
+
+Переработана архитектура гибридных моделей для соответствия 6 базовым моделям.
+
+#### 1. Новые гибридные модели — `osc_tools/ml/models/hybrid.py`
+
+Вместо 3 кастомных гибридных моделей создано 6, аналогичных базовым:
+
+| Базовая модель | Гибридная модель | Особенности |
+|----------------|------------------|-------------|
+| SimpleMLP | **HybridMLP** | Две MLP ветки (raw + features) → Fusion |
+| SimpleCNN | **HybridCNN** | Две CNN ветки → Fusion |
+| ResNet1D | **HybridResNet** | Две ResNet ветки → Fusion |
+| SimpleKAN | **HybridSimpleKAN** | Две KANLinear ветки → KAN Fusion |
+| ConvKAN | **HybridConvKAN** | Две KANConv1d ветки → KAN Fusion |
+| PhysicsKAN | **HybridPhysicsKAN** | Физические операции + ConvKAN × 2 |
+
+**Архитектурный принцип:**
+- Параметры по ширине уменьшены вдвое для каждой ветки (суммарно ≈ столько же как у базовой модели)
+- Ветка 1: Raw данные (8 каналов: IA, IB, IC, IN, UA, UB, UC, UN)
+- Ветка 2: Features — спектральные признаки (16 каналов Phase Polar)
+- Late Fusion: `FusionHead(concat(raw_out, feat_out) → FC → num_classes)`
+
+**Вспомогательные компоненты:**
+- `SafeMaxPool1d` — Pooling с защитой от малых размеров входа
+- `FusionHead` — Слой слияния двух веток с BatchNorm и Dropout
+- `_ResBlock1D`, `_ResNetBranch` — Локальные классы для HybridResNet
+
+#### 2. Обновлён `run_phase2_6.py`
+
+**MODEL_COMPLEXITY** — добавлены конфигурации для 6 гибридных моделей:
+```python
+'HybridMLP': {'hidden_sizes': [32, 16], 'dropout': 0.2},  # light
+'HybridCNN': {'channels': [8, 16], 'dropout': 0.2},
+'HybridResNet': {'layers': [1, 1, 1, 1], 'base_filters': 8},
+'HybridSimpleKAN': {'hidden_sizes': [32, 16], 'grid_size': 3, 'dropout': 0.1},
+'HybridConvKAN': {'channels': [4, 8], 'dropout': 0.1, 'grid_size': 3},
+'HybridPhysicsKAN': {'channels': [4, 8], 'dropout': 0.1, 'grid_size': 3}
+```
+
+**exp_params** — добавлены эксперименты 2.6.3:
+- `2.6.3_stride` — гибридные модели с stride sampling
+- `2.6.3_snapshot` — гибридные модели с snapshot sampling
+
+**Автоматический выбор моделей:**
+- `exp.startswith("2.6.3")` → HybridMLP, HybridCNN, HybridResNet, HybridSimpleKAN, HybridConvKAN, HybridPhysicsKAN
+
+#### 3. Обновлены импорты
+
+- `osc_tools/ml/models/__init__.py` — экспорт 6 новых гибридных моделей
+- `osc_tools/ml/runner.py` — регистрация 6 гибридных моделей в `_init_model()`
+
+#### 4. Тестирование
+
+Все 6 гибридных моделей успешно проходят forward pass:
+```
+HybridCNN: torch.Size([2, 24, 64]) -> torch.Size([2, 4])
+HybridMLP: torch.Size([2, 24, 64]) -> torch.Size([2, 4])
+HybridResNet: torch.Size([2, 24, 64]) -> torch.Size([2, 4])
+HybridSimpleKAN: torch.Size([2, 24, 64]) -> torch.Size([2, 4])
+HybridConvKAN: torch.Size([2, 24, 64]) -> torch.Size([2, 4])
+HybridPhysicsKAN: torch.Size([2, 24, 64]) -> torch.Size([2, 4])
+```
+
+---
+
+## [2026-01-22] Подготовка к экспериментам 2.6.3 и 2.6.4 (начальная версия)
+
+### Выполненные работы
+
+Реализованы компоненты для проведения экспериментов с гибридными моделями (Exp 2.6.3) и гранулярностью меток (Exp 2.6.4).
+
+#### 1. Гибридные модели (Exp 2.6.3) — `osc_tools/ml/models/hybrid.py`
+
+Создан новый модуль с двухголовыми архитектурами:
+
+| Модель | Описание | Применение |
+|--------|----------|------------|
+| `HybridTwoHeadedCNN` | CNN для Raw + CNN для Features | Stride режим |
+| `HybridTwoHeadedMLP` | MLP для Raw + MLP для Features | Snapshot режим |
+| `HybridKANCNN` | CNN для Raw + KAN-like для Features | Интерпретируемость |
+
+**Архитектура:**
+- **Ветка 1 (Fast):** Обрабатывает Raw данные (8 каналов: IA, IB, IC, IN, UA, UB, UC, UN) — ловит резкие фронты
+- **Ветка 2 (Precise):** Обрабатывает спектральные признаки (Phase Polar, 16 каналов) — точная классификация
+- **Fusion:** Конкатенация выходов веток + FC слой
+- **Head:** Классификатор на 4 класса (base_labels)
+
+**Поддерживаемые сложности:** light, medium, heavy через `create_hybrid_model()` фабрику.
+
+#### 2. Гранулярность меток (Exp 2.6.4) — `osc_tools/ml/labels.py`
+
+Расширен модуль работы с метками:
+
+| Уровень | Описание | Колонки |
+|---------|----------|---------|
+| `base_labels` | 4 обобщённых класса | Target_Normal, Target_ML_1, Target_ML_2, Target_ML_3 |
+| `full` | Все ML_* метки | ML_1, ML_1_1, ML_1_1_1, ML_2, ML_2_1, ... |
+| `full_by_levels` | С распространением иерархии | ML_2_3_1=1 → ML_2_3=1 → ML_2=1 |
+
+**Новые функции:**
+- `propagate_hierarchical_labels(df)` — распространяет метки вверх по иерархии
+- `prepare_labels_for_experiment(df, target_level)` — подготавливает DataFrame для эксперимента
+- `get_target_columns(level, df)` — возвращает список целевых колонок (расширена для 'full', 'full_by_levels')
+- `get_label_hierarchy()` — статическая структура иерархии меток
+- `add_intermediate_labels(df)` — добавляет промежуточные уровни (Target_Level2_*)
+
+#### 3. Многоуровневая оценка (Multi-Level Evaluation) — `osc_tools/ml/evaluation.py`
+
+Создан новый модуль для оценки моделей на разных уровнях гранулярности:
+
+**Класс `MultiLevelEvaluator`:**
+- `evaluate_multilabel()` — метрики для multilabel классификации
+- `evaluate_per_class()` — метрики по каждому классу отдельно
+- `compute_hierarchical_accuracy()` — **ключевая метрика**: обучаем на Full, проверяем на Base
+- `_aggregate_to_base()` — агрегация полных предсказаний в 4 базовых класса
+- `_aggregate_to_level()` — агрегация до указанного уровня иерархии (Level 1, Level 2)
+
+**Удобные функции:**
+- `evaluate_model_multilevel(model, dataloader, device, target_columns)` — полная оценка модели
+- `compute_confusion_at_levels()` — confusion matrices на разных уровнях
+
+**Пример использования Hierarchical Accuracy:**
+```python
+evaluator = MultiLevelEvaluator(
+    target_level='full',
+    full_target_columns=get_ml_columns(df)
+)
+results = evaluator.compute_hierarchical_accuracy(predictions, targets)
+
+# results содержит:
+# - base_metrics: F1/Precision/Recall на 4 классах
+# - full_metrics: метрики на всех ML_* 
+# - level1_metrics: ML_1, ML_2, ML_3
+# - level2_metrics: ML_X_Y
+# - per_class_*: метрики по каждому классу
+```
+
+#### 4. Обновлён Runner — `osc_tools/ml/runner.py`
+
+Добавлена поддержка гибридных моделей:
+- `HybridTwoHeadedCNN`
+- `HybridTwoHeadedMLP`
+- `HybridKANCNN`
+
+#### 5. Обновлён экспорт моделей — `osc_tools/ml/models/__init__.py`
+
+Добавлены экспорты:
+- `HybridTwoHeadedCNN`, `HybridTwoHeadedMLP`, `HybridKANCNN`
+- `create_hybrid_model`
+
+### Тестирование
+
+Проверено:
+- ✅ Синтаксис всех новых файлов
+- ✅ Импорты работают корректно
+- ✅ Обратная совместимость старого кода
+- ✅ `get_target_columns('base')` и `get_target_columns('base_labels')` возвращают одинаковый результат
+- ✅ `HybridTwoHeadedCNN` forward pass: input (2, 24, 100) → output (2, 4)
+- ✅ `propagate_hierarchical_labels` корректно распространяет метки
+
+### Как проверять точность на разных уровнях (план для Exp 2.6.4)
+
+1. **Обучение:** Модель обучается на `target_level='full'` (все ML_* метки)
+2. **Оценка:**
+   - `full_metrics` — точность на полном наборе меток
+   - `base_metrics` — **Hierarchical Accuracy** (агрегация до 4 классов)
+   - `level1_metrics`, `level2_metrics` — промежуточные уровни
+3. **Сравнение:** Модели, обученные на `base_labels`, сравниваются с моделями на `full` по base_metrics
+
+---
+
 ## [2026-01-22] Доработка системы визуализации v2.1
 
 ### Выполненные работы

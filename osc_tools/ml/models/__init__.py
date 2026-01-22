@@ -19,4 +19,13 @@ from .experimental import (
     FFT_MLP_KAN_v1,
     FFT_MLP_COMPLEX_v1
 )
+from .hybrid import (
+    HybridMLP,
+    HybridCNN,
+    HybridResNet,
+    HybridSimpleKAN,
+    HybridConvKAN,
+    HybridPhysicsKAN
+)
 from .base import BaseModel
+

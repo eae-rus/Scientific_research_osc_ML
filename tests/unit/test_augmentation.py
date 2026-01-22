@@ -17,7 +17,15 @@ class TestTimeSeriesAugmenter:
         return torch.ones(batch, time, channels)
 
     def test_inversion(self, sample_data):
-        config = {"p_inversion": 1.0}
+        config = {
+            "p_inversion": 1.0,
+            # Отключаем остальные аугментации
+            "p_scaling": 0.0,
+            "p_noise": 0.0,
+            "p_offset": 0.0,
+            "p_phase_shuffling": 0.0,
+            "p_drop_channel": 0.0
+        }
         augmenter = TimeSeriesAugmenter(config)
         output = augmenter(sample_data)
         assert torch.allclose(output, -sample_data)
@@ -45,7 +53,13 @@ class TestTimeSeriesAugmenter:
         config = {
             "p_noise": 1.0,
             "noise_std_current": 0.1,
-            "noise_std_voltage": 0.1
+            "noise_std_voltage": 0.1,
+            # Отключаем остальные аугментации, чтобы тестировать изолированно
+            "p_inversion": 0.0,
+            "p_scaling": 0.0,
+            "p_offset": 0.0,
+            "p_phase_shuffling": 0.0,
+            "p_drop_channel": 0.0
         }
         augmenter = TimeSeriesAugmenter(config)
         output = augmenter(sample_data)

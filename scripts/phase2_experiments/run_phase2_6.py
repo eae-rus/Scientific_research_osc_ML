@@ -31,13 +31,20 @@ MODEL_COMPLEXITY = {
         'SimpleKAN': {'hidden_sizes': [64, 32], 'grid_size': 3, 'dropout': 0.1},
         'PhysicsKAN': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
         'ResNet1D':  {'layers': [1, 1, 1, 1], 'base_filters': 16},
-        # Иерархические модели (2.6)
+        # Иерархические модели (2.6.1, 2.6.2)
         'HierarchicalCNN': {'channels': [16, 32], 'dropout': 0.2, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
         'HierarchicalConvKAN': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
         'HierarchicalMLP': {'channels': [16, 32], 'dropout': 0.2, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
         'HierarchicalResNet': {'layers': [1, 1, 1, 1], 'base_filters': 16, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
         'HierarchicalSimpleKAN': {'channels': [64, 32], 'grid_size': 3, 'dropout': 0.1, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
-        'HierarchicalPhysicsKAN': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}}
+        'HierarchicalPhysicsKAN': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
+        # Гибридные модели (2.6.3) — параметры уменьшены вдвое для каждой ветки
+        'HybridMLP': {'hidden_sizes': [32, 16], 'dropout': 0.2},
+        'HybridCNN': {'channels': [8, 16], 'dropout': 0.2},
+        'HybridResNet': {'layers': [1, 1, 1, 1], 'base_filters': 8},
+        'HybridSimpleKAN': {'hidden_sizes': [32, 16], 'grid_size': 3, 'dropout': 0.1},
+        'HybridConvKAN': {'channels': [4, 8], 'dropout': 0.1, 'grid_size': 3},
+        'HybridPhysicsKAN': {'channels': [4, 8], 'dropout': 0.1, 'grid_size': 3}
     },
     'medium': {
         'SimpleMLP': {'hidden_sizes': [256, 128, 64], 'dropout': 0.3},
@@ -46,13 +53,20 @@ MODEL_COMPLEXITY = {
         'SimpleKAN': {'hidden_sizes': [128, 64, 32], 'grid_size': 5, 'dropout': 0.2},
         'PhysicsKAN': {'channels': [16, 32, 48], 'dropout': 0.2, 'grid_size': 5},
         'ResNet1D':  {'layers': [2, 2, 2, 2], 'base_filters': 32},
-        # Иерархические модели (2.6)
+        # Иерархические модели (2.6.1, 2.6.2)
         'HierarchicalCNN': {'channels': [32, 64, 128], 'dropout': 0.3, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
         'HierarchicalConvKAN': {'channels': [16, 32, 48], 'dropout': 0.2, 'grid_size': 5, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
         'HierarchicalMLP': {'channels': [32, 64, 128], 'dropout': 0.3, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
         'HierarchicalResNet': {'layers': [2, 2, 2, 2], 'base_filters': 32, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
         'HierarchicalSimpleKAN': {'channels': [128, 64, 32], 'grid_size': 5, 'dropout': 0.2, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
-        'HierarchicalPhysicsKAN': {'channels': [16, 32, 48], 'dropout': 0.2, 'grid_size': 5, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}}
+        'HierarchicalPhysicsKAN': {'channels': [16, 32, 48], 'dropout': 0.2, 'grid_size': 5, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
+        # Гибридные модели (2.6.3)
+        'HybridMLP': {'hidden_sizes': [128, 64, 32], 'dropout': 0.3},
+        'HybridCNN': {'channels': [16, 32, 64], 'dropout': 0.3},
+        'HybridResNet': {'layers': [2, 2, 2, 2], 'base_filters': 16},
+        'HybridSimpleKAN': {'hidden_sizes': [64, 32, 16], 'grid_size': 5, 'dropout': 0.2},
+        'HybridConvKAN': {'channels': [8, 16, 24], 'dropout': 0.2, 'grid_size': 5},
+        'HybridPhysicsKAN': {'channels': [8, 16, 24], 'dropout': 0.2, 'grid_size': 5}
     },
     'heavy': {
         'SimpleMLP': {'hidden_sizes': [512, 256, 128, 64], 'dropout': 0.4},
@@ -61,13 +75,20 @@ MODEL_COMPLEXITY = {
         'SimpleKAN': {'hidden_sizes': [256, 128, 64, 32], 'grid_size': 5, 'dropout': 0.3},
         'PhysicsKAN': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8},
         'ResNet1D':  {'layers': [3, 4, 6, 3], 'base_filters': 64},
-        # Иерархические модели (2.6)
+        # Иерархические модели (2.6.1, 2.6.2)
         'HierarchicalCNN': {'channels': [64, 128, 256], 'dropout': 0.4, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
         'HierarchicalConvKAN': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
         'HierarchicalMLP': {'channels': [64, 128, 256], 'dropout': 0.4, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
         'HierarchicalResNet': {'layers': [3, 4, 6, 3], 'base_filters': 64, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
         'HierarchicalSimpleKAN': {'channels': [256, 128, 64, 32], 'grid_size': 5, 'dropout': 0.3, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
-        'HierarchicalPhysicsKAN': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}}
+        'HierarchicalPhysicsKAN': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
+        # Гибридные модели (2.6.3)
+        'HybridMLP': {'hidden_sizes': [256, 128, 64, 32], 'dropout': 0.4},
+        'HybridCNN': {'channels': [32, 64, 128, 256], 'dropout': 0.4},
+        'HybridResNet': {'layers': [3, 4, 6, 3], 'base_filters': 32},
+        'HybridSimpleKAN': {'hidden_sizes': [128, 64, 32, 16], 'grid_size': 5, 'dropout': 0.3},
+        'HybridConvKAN': {'channels': [16, 32, 64], 'dropout': 0.3, 'grid_size': 8},
+        'HybridPhysicsKAN': {'channels': [16, 32, 64], 'dropout': 0.3, 'grid_size': 8}
     }
 }
 
@@ -76,7 +97,7 @@ def get_model_params(model_name, complexity, num_classes):
     params = MODEL_COMPLEXITY[complexity].get(model_name, {}).copy()
     
     # Унификация имен параметров для разных архитектур
-    if model_name in ['SimpleMLP', 'SimpleKAN']:
+    if model_name in ['SimpleMLP', 'SimpleKAN', 'HybridMLP', 'HybridSimpleKAN']:
         params['output_size'] = num_classes
     else:
         params['num_classes'] = num_classes
@@ -205,7 +226,8 @@ def run_single_experiment(
     model_params['in_channels'] = in_channels
     
     # Модели, которые ожидают input_size (обычно плоские MLP/KAN)
-    if model_name in ['SimpleMLP', 'SimpleKAN', 'HierarchicalSimpleKAN', 'PhysicsKAN', 'HierarchicalPhysicsKAN']:
+    if model_name in ['SimpleMLP', 'SimpleKAN', 'HierarchicalSimpleKAN', 'PhysicsKAN', 'HierarchicalPhysicsKAN', 
+                      'HybridMLP', 'HybridSimpleKAN']:
         model_params['input_size'] = in_channels * seq_len
         
     # SimpleMLP и SimpleKAN работают только с flatten вектором и не принимают параметр in_channels
@@ -215,6 +237,13 @@ def run_single_experiment(
     if model_name in ['PhysicsKAN', 'HierarchicalPhysicsKAN'] and sampling_strategy == 'snapshot':
         model_params['use_mlp'] = True
         model_params['input_size'] = in_channels * seq_len
+    
+    # Гибридные модели нуждаются в параметрах разделения каналов
+    if model_name.startswith('Hybrid'):
+        # Разделение: первые 8 каналов — raw (I,U), остальные — features (phase_polar и т.д.)
+        model_params['raw_channels'] = 8
+        model_params['features_channels'] = in_channels - 8
+        model_params['seq_len'] = seq_len
 
     config = ExperimentConfig(
         model=ModelConfig(name=model_name, params=model_params),
@@ -327,6 +356,9 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         "2.6.1_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights"},
         "2.6.2_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights"},
         "2.6.2_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights"},
+        # Эксперимент 2.6.3: Гибридные модели (Raw + Phase Polar)
+        "2.6.3_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights"},
+        "2.6.3_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights"},
     }
 
     if target_exp not in exp_params:
@@ -337,7 +369,13 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
     
     # Определяем список моделей для запуска
     if target_model == 'all':
-        if target_exp.startswith("2.6.2"):
+        if target_exp.startswith("2.6.3"):
+            # Гибридные модели для эксперимента 2.6.3
+            models_to_run = [
+                'HybridMLP', 'HybridCNN', 'HybridResNet',
+                'HybridSimpleKAN', 'HybridConvKAN', 'HybridPhysicsKAN'
+            ]
+        elif target_exp.startswith("2.6.2"):
             models_to_run = [
                 'HierarchicalCNN', 'HierarchicalConvKAN', 'HierarchicalMLP', 
                 'HierarchicalResNet', 'HierarchicalSimpleKAN', 'HierarchicalPhysicsKAN'
@@ -463,7 +501,12 @@ if __name__ == "__main__":
     # === ВЕРСИЯ 1: РУЧНОЙ ЗАПУСК ===
     
     # Набор экспериментов (группы данных)
-    EXPS = ["2.6.1_stride", "2.6.1_snapshot", "2.6.2_stride", "2.6.2_snapshot"]
+    # 2.6.1 - базовые модели, 2.6.2 - иерархические, 2.6.3 - гибридные
+    EXPS = [
+        "2.6.1_stride", "2.6.1_snapshot", 
+        "2.6.2_stride", "2.6.2_snapshot",
+        "2.6.3_stride", "2.6.3_snapshot"
+    ]
     
     # Тип модели ('all' - выберет автоматически подходящие для группы)
     MODEL_TYPE = "all"

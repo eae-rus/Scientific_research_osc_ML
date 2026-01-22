@@ -15,6 +15,8 @@ from osc_tools.ml.models import (
     SimpleMLP, SimpleCNN, ResNet1D, 
     HierarchicalCNN, HierarchicalConvKAN, HierarchicalMLP,
     HierarchicalResNet, HierarchicalSimpleKAN, HierarchicalPhysicsKAN,
+    HybridMLP, HybridCNN, HybridResNet,
+    HybridSimpleKAN, HybridConvKAN, HybridPhysicsKAN,
     PDR_MLP_v2, FFT_MLP_COMPLEX_v1,
     SimpleKAN, ConvKAN, PhysicsKAN, AutoEncoder
 )
@@ -73,6 +75,19 @@ class ExperimentRunner:
             model = PhysicsKAN(**params)
         elif name == 'AutoEncoder':
             model = AutoEncoder(**params)
+        # Гибридные модели (Exp 2.6.3)
+        elif name == 'HybridMLP':
+            model = HybridMLP(**params)
+        elif name == 'HybridCNN':
+            model = HybridCNN(**params)
+        elif name == 'HybridResNet':
+            model = HybridResNet(**params)
+        elif name == 'HybridSimpleKAN':
+            model = HybridSimpleKAN(**params)
+        elif name == 'HybridConvKAN':
+            model = HybridConvKAN(**params)
+        elif name == 'HybridPhysicsKAN':
+            model = HybridPhysicsKAN(**params)
         else:
             raise ValueError(f"Unknown model: {name}")
             
