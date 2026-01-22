@@ -1,5 +1,186 @@
 # Лог работ по Фазе 2.6 (Архитектурные улучшения)
 
+## [2026-01-22] Доработка системы визуализации v2.1
+
+### Выполненные работы
+
+Внесены улучшения в систему визуализации на основе обратной связи.
+
+#### 1. Heatmaps по лучшим моделям
+
+Добавлены новые heatmaps помимо средних значений:
+- `heatmap_model_features_mean.png` — средняя F1 (как было)
+- `heatmap_model_features_best.png` — **лучшая F1** для каждой комбинации
+- `heatmap_model_sampling_mean.png` — средняя F1 по sampling
+- `heatmap_model_sampling_best.png` — **лучшая F1** по sampling
+
+#### 2. Исправлены кривые обучения (learning_curves)
+
+**Проблема:** Графики строились для каждой модели отдельно, а не для сравнения.
+
+**Решение:** Теперь для каждого эксперимента (ExpID) строится **один график**, на котором отображаются **все модели** этого эксперимента.
+
+- Группировка: "все параметры одинаковые, отличается только тип модели"
+- На одном графике: MLP, CNN, ConvKAN, PhysicsKAN и др. для одного ExpID
+- 3 подграфика: Val Loss, Val F1, Val Acc
+- Различие по цвету (модель) и стилю линии (сложность: L=сплошная, M=пунктир, H=точки)
+- Файлы: `learning_curves/exp_{ExpID}_all_models.png`
+
+#### 3. Согласованность обозначений Парето
+
+Унифицированы обозначения между `pareto_cpu_time/` и `pareto_params/`:
+- Фиксированный порядок моделей: MLP → CNN → ResNet → SimpleKAN → ConvKAN → PhysicsKAN
+- Фиксированный порядок сложности: Light → Medium → Heavy
+- Единый формат меток: `Model (L/M/H)` вместо `Model (Light/Medium/Heavy)`
+- Легенда отсортирована одинаково на всех графиках
+
+#### 4. Radar charts по классам
+
+Добавлены radar (spider) charts для анализа F1 по отдельным классам:
+- **Классы:** Норма, Коммутации, Аномалии, Аварии
+- `radar_top5_models.png` — топ-5 моделей по общей F1
+- `radar_by_model_type.png` — усреднённые значения по типам моделей
+
+**Изменения в aggregate_reports.py:**
+- Добавлены колонки: `Class_0_F1`, `Class_1_F1`, `Class_2_F1`, `Class_3_F1`
+- Значения берутся из `full_best_per_class_f1` при расчёте full_eval
+- Поддержка кэширования per-class метрик
+
+### Структура выходных файлов (обновлённая)
+
+```
+figures_advanced/
+├── pareto_cpu_time/         # 4 Парето (согласованные обозначения)
+├── pareto_params/           # 4 Парето (согласованные обозначения)
+├── learning_curves/         # ИЗМЕНЕНО: один файл на ExpID
+│   └── exp_{ExpID}_all_models.png
+├── data_type_analysis/
+│   └── {Model}/
+└── additional/
+    ├── heatmaps/
+    │   ├── heatmap_model_features_mean.png
+    │   ├── heatmap_model_features_best.png  # НОВОЕ
+    │   ├── heatmap_model_sampling_mean.png
+    │   └── heatmap_model_sampling_best.png  # НОВОЕ
+    ├── boxplots/
+    └── radar/               # НОВОЕ
+        ├── radar_top5_models.png
+        └── radar_by_model_type.png
+```
+
+### Технические детали
+
+- Per-class F1 вычисляется через `sklearn.metrics.f1_score(average=None)`
+- Radar charts используют `matplotlib` с `polar=True`
+- Совместимость: старый код продолжает работать, новые графики опциональны
+
+---
+
+## [2026-01-22] Реализация расширенной системы визуализации (Report Engine 2.0)
+
+### Выполненные работы
+
+Реализована полноценная система расширенной визуализации для анализа результатов экспериментов.
+
+#### 1. Создан модуль `scripts/visualization/advanced_plots.py`
+
+Новый класс `AdvancedVisualizer` с поддержкой русского и английского языков.
+
+#### 2. Реализованы 8 графиков Парето
+
+| № | Ось Y | Ось X | Назначение |
+|---|-------|-------|------------|
+| 1 | Val F1 | CPU time (ms) | Метрика валидации vs скорость |
+| 2 | Val Accuracy | CPU time (ms) | Точность валидации vs скорость |
+| 3 | Best Full F1 | CPU time (ms) | Лучшая из Full Best/Final F1 vs скорость |
+| 4 | Best Full Acc | CPU time (ms) | Лучшая из Full Best/Final Acc vs скорость |
+| 5 | Val F1 | Params | Метрика vs размер модели |
+| 6 | Val Accuracy | Params | Точность vs размер модели |
+| 7 | Best Full F1 | Params | Full F1 vs размер модели |
+| 8 | Best Full Acc | Params | Full Acc vs размер модели |
+
+На всех графиках:
+- Цвет точки = тип модели (MLP, CNN, ConvKAN, PhysicsKAN, etc.)
+- Форма маркера = сложность (Light ●, Medium ■, Heavy ▲)
+- Отображается фронт Парето (пунктирная линия)
+
+#### 3. Кривые обучения по сложности
+
+- Для каждого эксперимента (ExpID) строятся отдельные графики для Light / Medium / Heavy
+- 3 подграфика: Val Loss (с ограничением 2.0), Val F1, Val Acc
+- Все модели одной сложности на одном графике для удобного сравнения
+- Сплошная линия = Base архитектура, пунктир = Hierarchical
+
+#### 4. Парето по типам данных для каждой модели
+
+Отдельный график для каждой модели (MLP, CNN, ConvKAN, PhysicsKAN, ResNet, SimpleKAN):
+- **Цвет** = тип входных данных (Raw 🟢, PhasePolar 🔵, Symmetric 🟣, Power 🔴)
+- **Маркер** = стратегия sampling (Stride ●, Snapshot ■, NoneSampling ▲)
+- Буква около точки = сложность (L/M/H)
+- Ось X: CPU время инференса (лог. шкала)
+- Ось Y: лучшая Full Test F1
+
+#### 5. Дополнительные аналитические графики
+
+- **Heatmap Model×Features** — средняя F1 для каждой комбинации модели и типа данных
+- **Heatmap Model×Sampling** — влияние стратегии sampling на разные модели
+- **Boxplot по моделям** — распределение F1 (медиана, квартили, выбросы)
+- **Boxplot по типам данных** — сравнение Raw, PhasePolar, Symmetric
+- **Complexity comparison** — grouped bar chart: модели × сложность
+- **Top-20 ranking** — таблица лучших моделей (CSV + Markdown)
+
+#### 6. Интеграция в `aggregate_reports.py`
+
+- Добавлен флаг `--advanced-plots` в CLI
+- Добавлена константа `ADVANCED_PLOTS = True` в MANUAL режим
+- Автоматическое создание структуры папок
+
+### Структура выходных файлов
+
+```
+reports/{experiment}/figures_advanced/
+├── pareto_cpu_time/
+│   ├── pareto_val_f1_cpu.png
+│   ├── pareto_val_acc_cpu.png
+│   ├── pareto_full_f1_cpu.png
+│   └── pareto_full_acc_cpu.png
+├── pareto_params/
+│   ├── pareto_val_f1_params.png
+│   ├── pareto_val_acc_params.png
+│   ├── pareto_full_f1_params.png
+│   └── pareto_full_acc_params.png
+├── learning_curves/
+│   ├── light/
+│   ├── medium/
+│   └── heavy/
+├── data_type_analysis/
+│   ├── MLP/
+│   ├── CNN/
+│   ├── ConvKAN/
+│   └── ...
+└── additional/
+    ├── heatmaps/
+    ├── boxplots/
+    └── rankings/
+```
+
+### Технические детали
+
+- Использованы библиотеки: matplotlib, seaborn
+- Поддержка русского языка в графиках (DejaVu Sans)
+- Реализован расчёт фронта Парето (недоминируемые точки)
+- Автоматическое определение лучшей метрики между Full Best и Full Final
+
+### Научная ценность
+
+Данная система визуализации позволяет:
+1. Выбрать оптимальную модель для конкретных требований (скорость vs точность)
+2. Определить лучший тип входных данных для каждой архитектуры
+3. Оценить влияние стратегии sampling на качество
+4. Сравнить эффективность увеличения сложности модели
+
+---
+
 ## [2026-01-20] Отчёт / мысли о том, что и как отображать
 
 Это отличный момент для систематизации. Вы проделали огромную работу по генерации данных (Phase 2.5 и начало 2.6), и теперь у нас есть «сырье» для серьезной научной публикации.

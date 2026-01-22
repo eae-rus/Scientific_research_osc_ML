@@ -294,20 +294,32 @@ class AdvancedVisualizer:
         
         plt.figure(figsize=(12, 8))
         
+        # Фиксированный порядок моделей и сложностей для согласованности между графиками
+        model_order = ['MLP', 'CNN', 'ResNet', 'SimpleKAN', 'ConvKAN', 'PhysicsKAN', 'Unknown']
+        complexity_order = ['Light', 'Medium', 'Heavy', 'Unknown']
+        
         # Scatter plot с разными маркерами для сложности
-        for complexity in df_plot['Complexity'].unique():
+        for complexity in complexity_order:
+            if complexity not in df_plot['Complexity'].unique():
+                continue
             df_c = df_plot[df_plot['Complexity'] == complexity]
             marker = self.COMPLEXITY_MARKERS.get(complexity, 'o')
             
-            for model in df_c['Model'].unique():
+            for model in model_order:
+                if model not in df_c['Model'].unique():
+                    continue
                 df_m = df_c[df_c['Model'] == model]
                 color = self.MODEL_COLORS.get(model, self.MODEL_COLORS['Unknown'])
+                
+                # Унифицированный формат метки: Model (L/M/H)
+                complexity_short = complexity[0] if complexity and complexity != 'Unknown' else '?'
+                label = f"{model} ({complexity_short})"
                 
                 plt.scatter(
                     df_m[x_col], df_m[y_col],
                     c=color, marker=marker,
                     s=100, alpha=0.7,
-                    label=f"{model} ({complexity})"
+                    label=label
                 )
         
         # Выделяем фронт Парето (опционально)
@@ -326,12 +338,20 @@ class AdvancedVisualizer:
         plt.title(title, fontsize=14)
         plt.grid(True, which='both', alpha=0.3)
         
-        # Легенда
+        # Легенда - сортируем для согласованности между графиками
         handles, labels = plt.gca().get_legend_handles_labels()
-        # Убираем дубликаты
-        by_label = dict(zip(labels, handles))
+        # Убираем дубликаты, сохраняя порядок
+        seen = set()
+        unique_handles = []
+        unique_labels = []
+        for h, l in zip(handles, labels):
+            if l not in seen:
+                seen.add(l)
+                unique_handles.append(h)
+                unique_labels.append(l)
+        
         plt.legend(
-            by_label.values(), by_label.keys(),
+            unique_handles, unique_labels,
             bbox_to_anchor=(1.05, 1), loc='upper left',
             fontsize=9
         )
@@ -382,16 +402,16 @@ class AdvancedVisualizer:
     # ЧАСТЬ 2: ГРАФИКИ ОБУЧЕНИЯ ПО СЛОЖНОСТИ
     # =========================================================================
     
-    def plot_learning_curves_by_complexity(
+    def plot_learning_curves_by_experiment(
         self,
         df: pd.DataFrame,
         histories: Dict[str, List[Dict[str, Any]]]
     ):
         """
-        Строит графики обучения, группируя модели по сложности.
+        Строит графики обучения, группируя ВСЕ модели одного эксперимента вместе.
         
-        Для каждого эксперимента и каждой сложности строится отдельный график
-        с 3 параметрами: Val F1, Val Loss, Val Acc.
+        Принцип группировки: "все параметры одинаковые, отличается только тип модели".
+        То есть на одном графике - все модели с одинаковым ExpID.
         
         Args:
             df: DataFrame с информацией об экспериментах
@@ -405,26 +425,144 @@ class AdvancedVisualizer:
             
             exp_df = df[df['ExpID'] == exp_id]
             
-            for complexity in ['Light', 'Medium', 'Heavy']:
-                comp_df = exp_df[exp_df['Complexity'] == complexity]
-                if comp_df.empty:
-                    continue
-                
-                # Собираем истории для моделей этой сложности
-                comp_histories = {}
-                for _, row in comp_df.iterrows():
-                    exp_name = row['Path']
-                    if exp_name in histories:
-                        comp_histories[exp_name] = histories[exp_name]
-                
-                if not comp_histories:
-                    continue
-                
-                self._plot_complexity_learning_curves(
-                    exp_id, complexity, comp_histories, comp_df
-                )
+            # Собираем истории для всех моделей этого эксперимента
+            exp_histories = {}
+            for _, row in exp_df.iterrows():
+                exp_name = row['Path']
+                if exp_name in histories:
+                    exp_histories[exp_name] = histories[exp_name]
+            
+            if not exp_histories:
+                continue
+            
+            self._plot_experiment_learning_curves(exp_id, exp_histories, exp_df)
         
         print(f"[Learning Curves] Сохранены графики обучения в {self.output_root / 'learning_curves'}")
+    
+    def _plot_experiment_learning_curves(
+        self,
+        exp_id: str,
+        histories: Dict[str, List[Dict]],
+        df_info: pd.DataFrame
+    ):
+        """Строит график обучения для одного эксперимента (все модели вместе)."""
+        fig, axes = plt.subplots(1, 3, figsize=(20, 6))
+        
+        metrics_config = [
+            ('val_loss', self.t['loss'], 'Val Loss', True),   # clip_upper
+            ('val_f1', self.t['f1'], 'Val F1', False),
+            ('val_acc', self.t['acc'], 'Val Accuracy', False)
+        ]
+        
+        legend_handles = []
+        legend_labels = []
+        
+        for exp_name, history in histories.items():
+            if not history:
+                continue
+            
+            df_h = pd.DataFrame(history)
+            
+            # Определяем модель из DataFrame
+            model_row = df_info[df_info['Path'] == exp_name]
+            if not model_row.empty:
+                model_name = model_row.iloc[0]['Model']
+                complexity = model_row.iloc[0].get('Complexity', 'Unknown')
+                arch_type = model_row.iloc[0].get('arch_type', 'Base')
+            else:
+                model_name = 'Unknown'
+                complexity = 'Unknown'
+                arch_type = 'Base'
+            
+            color = self.MODEL_COLORS.get(model_name, self.MODEL_COLORS['Unknown'])
+            # Разные стили линий для сложности
+            ls_map = {'Light': '-', 'Medium': '--', 'Heavy': ':'}
+            ls = ls_map.get(complexity, '-')
+            
+            # Пунктирнее для Hierarchical
+            if arch_type == 'Hierarchical':
+                ls = (0, (3, 1, 1, 1))  # dashdotdot
+            
+            # Метка: Model (Complexity)
+            label = f"{model_name} ({complexity[0] if complexity else '?'})"
+            
+            for ax, (metric, ylabel, metric_name, clip_upper) in zip(axes, metrics_config):
+                if metric in df_h.columns:
+                    values = df_h[metric]
+                    if clip_upper:
+                        values = values.clip(upper=2.0)
+                    line, = ax.plot(
+                        df_h['epoch'], values,
+                        color=color, linestyle=ls, alpha=0.8, linewidth=1.5
+                    )
+            
+            # Сохраняем для легенды (только один раз на модель)
+            legend_handles.append(plt.Line2D([0], [0], color=color, linestyle=ls, linewidth=1.5))
+            legend_labels.append(label)
+        
+        # Настройка осей
+        for ax, (metric, ylabel, metric_name, _) in zip(axes, metrics_config):
+            ax.set_xlabel(self.t['epoch'])
+            ax.set_ylabel(ylabel)
+            ax.set_title(f"{metric_name}")
+            ax.grid(True, alpha=0.3)
+            if metric in ['val_f1', 'val_acc']:
+                ax.set_ylim([0, 1.0])
+        
+        # Легенда справа от последнего графика
+        # Убираем дубликаты
+        unique_labels = {}
+        for h, l in zip(legend_handles, legend_labels):
+            if l not in unique_labels:
+                unique_labels[l] = h
+        
+        axes[-1].legend(
+            unique_labels.values(), unique_labels.keys(),
+            bbox_to_anchor=(1.05, 1), loc='upper left',
+            fontsize=9
+        )
+        
+        # Определяем параметры эксперимента для заголовка
+        if not df_info.empty:
+            first_row = df_info.iloc[0]
+            features = first_row.get('Features', '?')
+            sampling = first_row.get('Sampling', '?')
+            title_info = f"Features: {features}, Sampling: {sampling}"
+        else:
+            title_info = ""
+        
+        fig.suptitle(
+            f"Exp {exp_id}: Кривые обучения ({title_info})" if self.lang == 'ru' 
+            else f"Exp {exp_id}: Learning Curves ({title_info})",
+            fontsize=14
+        )
+        
+        plt.tight_layout()
+        
+        # Создаём папку и сохраняем
+        save_dir = self.output_root / 'learning_curves'
+        save_dir.mkdir(parents=True, exist_ok=True)
+        save_path = save_dir / f'exp_{exp_id}_all_models.png'
+        plt.savefig(save_path, dpi=150, bbox_inches='tight')
+        plt.close()
+    
+    # Старый метод оставляем для совместимости, но теперь вызываем новый
+    def plot_learning_curves_by_complexity(
+        self,
+        df: pd.DataFrame,
+        histories: Dict[str, List[Dict[str, Any]]]
+    ):
+        """
+        Строит графики обучения, группируя модели по эксперименту.
+        
+        ИЗМЕНЕНО: Теперь группирует по ExpID, а не по сложности.
+        Все модели одного эксперимента на одном графике.
+        
+        Args:
+            df: DataFrame с информацией об экспериментах
+            histories: Словарь {exp_name: [метрики по эпохам]}
+        """
+        self.plot_learning_curves_by_experiment(df, histories)
     
     def _plot_complexity_learning_curves(
         self,
@@ -584,35 +722,54 @@ class AdvancedVisualizer:
     # ЧАСТЬ 4: ДОПОЛНИТЕЛЬНЫЕ ВИЗУАЛИЗАЦИИ
     # =========================================================================
     
+    # Названия классов для radar charts
+    CLASS_NAMES = {
+        'ru': ['Норма', 'Коммутации', 'Аномалии', 'Аварии'],
+        'en': ['Normal', 'Switching', 'Abnormal', 'Fault']
+    }
+    
     def plot_additional_visualizations(self, df: pd.DataFrame):
         """
         Строит дополнительные полезные визуализации.
         
         Включает:
         1. Heatmap: Модель x Тип данных (средняя F1)
-        2. Boxplot: Распределение F1 по моделям
-        3. Radar chart: Сравнение топ-моделей по нескольким метрикам
-        4. Ranking: Таблица-рейтинг моделей
+        2. Heatmap: Модель x Тип данных (лучшая F1)
+        3. Boxplot: Распределение F1 по моделям
+        4. Radar chart: Сравнение топ-моделей по классам (если есть per_class данные)
+        5. Ranking: Таблица-рейтинг моделей
         """
         df = df.copy()
         df['Best Full F1'] = df.apply(lambda r: self._get_best_full_metric(r, 'f1'), axis=1)
         
-        self._plot_heatmap_model_features(df)
-        self._plot_heatmap_model_sampling(df)
+        # Средние heatmaps
+        self._plot_heatmap_model_features(df, aggfunc='mean', suffix='mean')
+        self._plot_heatmap_model_sampling(df, aggfunc='mean', suffix='mean')
+        
+        # Лучшие heatmaps
+        self._plot_heatmap_model_features(df, aggfunc='max', suffix='best')
+        self._plot_heatmap_model_sampling(df, aggfunc='max', suffix='best')
+        
+        # Boxplots
         self._plot_boxplot_f1_by_model(df)
         self._plot_boxplot_f1_by_features(df)
         self._plot_complexity_comparison(df)
+        
+        # Radar charts (если есть per-class F1)
+        self._plot_radar_charts(df)
+        
+        # Rankings
         self._save_ranking_table(df)
         
         print(f"[Additional] Сохранены дополнительные графики в {self.output_root / 'additional'}")
     
-    def _plot_heatmap_model_features(self, df: pd.DataFrame):
-        """Heatmap: Модель vs Тип данных (средняя Best Full F1)."""
+    def _plot_heatmap_model_features(self, df: pd.DataFrame, aggfunc: str = 'mean', suffix: str = 'mean'):
+        """Heatmap: Модель vs Тип данных."""
         pivot = df.pivot_table(
             values='Best Full F1',
             index='Model',
             columns='Features',
-            aggfunc='mean'
+            aggfunc=aggfunc
         )
         
         if pivot.empty:
@@ -624,21 +781,25 @@ class AdvancedVisualizer:
             cmap='RdYlGn', vmin=0, vmax=1,
             linewidths=0.5
         )
-        plt.title(
-            'Средняя F1 по типам данных' if self.lang == 'ru' else 'Mean F1 by Feature Type',
-            fontsize=14
-        )
+        
+        title_map = {
+            'mean': ('Средняя F1 по типам данных', 'Mean F1 by Feature Type'),
+            'best': ('Лучшая F1 по типам данных', 'Best F1 by Feature Type'),
+            'max': ('Лучшая F1 по типам данных', 'Best F1 by Feature Type')
+        }
+        title = title_map.get(suffix, title_map['mean'])
+        plt.title(title[0] if self.lang == 'ru' else title[1], fontsize=14)
         plt.tight_layout()
-        plt.savefig(self.output_root / 'additional/heatmaps' / 'heatmap_model_features.png', dpi=150)
+        plt.savefig(self.output_root / 'additional/heatmaps' / f'heatmap_model_features_{suffix}.png', dpi=150)
         plt.close()
     
-    def _plot_heatmap_model_sampling(self, df: pd.DataFrame):
-        """Heatmap: Модель vs Sampling (средняя Best Full F1)."""
+    def _plot_heatmap_model_sampling(self, df: pd.DataFrame, aggfunc: str = 'mean', suffix: str = 'mean'):
+        """Heatmap: Модель vs Sampling."""
         pivot = df.pivot_table(
             values='Best Full F1',
             index='Model',
             columns='Sampling',
-            aggfunc='mean'
+            aggfunc=aggfunc
         )
         
         if pivot.empty:
@@ -650,12 +811,127 @@ class AdvancedVisualizer:
             cmap='RdYlGn', vmin=0, vmax=1,
             linewidths=0.5
         )
-        plt.title(
-            'Средняя F1 по стратегии Sampling' if self.lang == 'ru' else 'Mean F1 by Sampling Strategy',
-            fontsize=14
-        )
+        
+        title_map = {
+            'mean': ('Средняя F1 по стратегии Sampling', 'Mean F1 by Sampling Strategy'),
+            'best': ('Лучшая F1 по стратегии Sampling', 'Best F1 by Sampling Strategy'),
+            'max': ('Лучшая F1 по стратегии Sampling', 'Best F1 by Sampling Strategy')
+        }
+        title = title_map.get(suffix, title_map['mean'])
+        plt.title(title[0] if self.lang == 'ru' else title[1], fontsize=14)
         plt.tight_layout()
-        plt.savefig(self.output_root / 'additional/heatmaps' / 'heatmap_model_sampling.png', dpi=150)
+        plt.savefig(self.output_root / 'additional/heatmaps' / f'heatmap_model_sampling_{suffix}.png', dpi=150)
+        plt.close()
+    
+    def _plot_radar_charts(self, df: pd.DataFrame):
+        """
+        Строит radar charts для сравнения моделей по классам.
+        
+        Требует наличия колонок: Class_0_F1, Class_1_F1, Class_2_F1, Class_3_F1
+        """
+        # Проверяем наличие per-class метрик
+        per_class_cols = ['Class_0_F1', 'Class_1_F1', 'Class_2_F1', 'Class_3_F1']
+        if not all(col in df.columns for col in per_class_cols):
+            print("  [Radar] Пропуск: нет per-class метрик в данных")
+            return
+        
+        # Фильтруем модели с валидными данными
+        df_valid = df[df[per_class_cols].notna().all(axis=1)]
+        if df_valid.empty:
+            print("  [Radar] Пропуск: нет моделей с валидными per-class метриками")
+            return
+        
+        # Выбираем топ-5 моделей по общей F1
+        top_models = df_valid.nlargest(5, 'Best Full F1')
+        
+        # Radar chart
+        self._plot_radar_top_models(top_models, per_class_cols)
+        
+        # Сравнение по типам моделей (усреднённое)
+        self._plot_radar_by_model_type(df_valid, per_class_cols)
+        
+        print(f"  [Radar] Сохранены radar charts в {self.output_root / 'additional/radar'}")
+    
+    def _plot_radar_top_models(self, df: pd.DataFrame, class_cols: List[str]):
+        """Radar chart для топ-5 моделей."""
+        class_names = self.CLASS_NAMES[self.lang]
+        
+        # Количество осей
+        num_vars = len(class_names)
+        angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+        angles += angles[:1]  # Замыкаем
+        
+        fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
+        
+        for idx, (_, row) in enumerate(df.iterrows()):
+            values = [row[col] for col in class_cols]
+            values += values[:1]  # Замыкаем
+            
+            model_name = row['Model']
+            complexity = row.get('Complexity', '?')
+            color = self.MODEL_COLORS.get(model_name, self.MODEL_COLORS['Unknown'])
+            
+            label = f"{model_name} ({complexity[0] if complexity else '?'})"
+            ax.plot(angles, values, 'o-', linewidth=2, label=label, color=color)
+            ax.fill(angles, values, alpha=0.1, color=color)
+        
+        ax.set_xticks(angles[:-1])
+        ax.set_xticklabels(class_names, fontsize=12)
+        ax.set_ylim(0, 1)
+        ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
+        ax.set_yticklabels(['0.2', '0.4', '0.6', '0.8', '1.0'], fontsize=9)
+        ax.grid(True)
+        
+        plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1.0))
+        plt.title(
+            'Топ-5 моделей: F1 по классам' if self.lang == 'ru' else 'Top-5 Models: F1 by Class',
+            fontsize=14, y=1.08
+        )
+        
+        plt.tight_layout()
+        plt.savefig(self.output_root / 'additional/radar' / 'radar_top5_models.png', dpi=150, bbox_inches='tight')
+        plt.close()
+    
+    def _plot_radar_by_model_type(self, df: pd.DataFrame, class_cols: List[str]):
+        """Radar chart: усреднённые значения по типам моделей."""
+        class_names = self.CLASS_NAMES[self.lang]
+        
+        # Группируем по типу модели
+        grouped = df.groupby('Model')[class_cols].mean()
+        
+        if grouped.empty:
+            return
+        
+        num_vars = len(class_names)
+        angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+        angles += angles[:1]
+        
+        fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
+        
+        for model_name, row in grouped.iterrows():
+            values = row.tolist()
+            values += values[:1]
+            
+            color = self.MODEL_COLORS.get(model_name, self.MODEL_COLORS['Unknown'])
+            ax.plot(angles, values, 'o-', linewidth=2, label=model_name, color=color)
+            ax.fill(angles, values, alpha=0.1, color=color)
+        
+        ax.set_xticks(angles[:-1])
+        ax.set_xticklabels(class_names, fontsize=12)
+        ax.set_ylim(0, 1)
+        ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
+        ax.set_yticklabels(['0.2', '0.4', '0.6', '0.8', '1.0'], fontsize=9)
+        ax.grid(True)
+        
+        plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1.0))
+        plt.title(
+            'Средняя F1 по классам (по типам моделей)' if self.lang == 'ru' 
+            else 'Mean F1 by Class (by Model Type)',
+            fontsize=14, y=1.08
+        )
+        
+        plt.tight_layout()
+        plt.savefig(self.output_root / 'additional/radar' / 'radar_by_model_type.png', dpi=150, bbox_inches='tight')
         plt.close()
     
     def _plot_boxplot_f1_by_model(self, df: pd.DataFrame):

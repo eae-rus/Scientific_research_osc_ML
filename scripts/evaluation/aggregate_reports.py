@@ -1484,6 +1484,16 @@ def aggregate_reports(
                     exp_data['Full Final F1'] = full_metrics['full_final_f1']
                     exp_data['Full Eval Time (s)'] = full_metrics['full_eval_time_s']
                     exp_data['Full Eval Samples'] = full_metrics['full_eval_samples']
+                    
+                    # Per-class F1 для radar charts
+                    # Берём лучшие per_class метрики (от best модели)
+                    best_per_class = full_metrics.get('full_best_per_class_f1', [])
+                    if best_per_class and len(best_per_class) >= 4:
+                        exp_data['Class_0_F1'] = best_per_class[0]  # Normal
+                        exp_data['Class_1_F1'] = best_per_class[1]  # Switching
+                        exp_data['Class_2_F1'] = best_per_class[2]  # Abnormal
+                        exp_data['Class_3_F1'] = best_per_class[3]  # Fault
+                    
                     skip_stats['full_eval_recalc'] += 1
                 else:
                     # Используем существующие данные из кэша
@@ -1493,6 +1503,13 @@ def aggregate_reports(
                     exp_data['Full Final F1'] = existing_row.get('Full Final F1', 0.0)
                     exp_data['Full Eval Time (s)'] = existing_row.get('Full Eval Time (s)', 0.0)
                     exp_data['Full Eval Samples'] = existing_row.get('Full Eval Samples', 0)
+                    
+                    # Per-class F1 из кэша (если есть)
+                    for i in range(4):
+                        col = f'Class_{i}_F1'
+                        if col in existing_row.index:
+                            exp_data[col] = existing_row.get(col, None)
+                    
                     skip_stats['full_eval_skipped'] += 1
             
             experiments.append(exp_data)
