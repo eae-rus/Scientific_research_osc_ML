@@ -28,6 +28,14 @@ from osc_tools.ml.precomputed_dataset import PrecomputedDataset
 from osc_tools.ml.dataset import OscillogramDataset
 from osc_tools.ml.labels import get_target_columns
 
+# Импорт расширенного визуализатора
+try:
+    from scripts.visualization.advanced_plots import AdvancedVisualizer
+    ADVANCED_VIZ_AVAILABLE = True
+except ImportError:
+    ADVANCED_VIZ_AVAILABLE = False
+    print("[Warning] advanced_plots.py не найден - расширенная визуализация недоступна")
+
 
 def load_existing_summary(csv_path: Path) -> Optional[pd.DataFrame]:
     """
@@ -1270,7 +1278,16 @@ class ReportVisualizer:
         plt.savefig(self.output_root / f"summary_pareto_{self.lang}.png", dpi=200)
         plt.close()
 
-def aggregate_reports(root_dir: str, output_dir: str = None, plot: bool = False, benchmark: bool = False, full_eval: bool = False, data_dir: str = None, lang: str = 'ru'):
+def aggregate_reports(
+    root_dir: str, 
+    output_dir: str = None, 
+    plot: bool = False, 
+    benchmark: bool = False, 
+    full_eval: bool = False, 
+    data_dir: str = None, 
+    lang: str = 'ru',
+    advanced_plots: bool = False
+):
     """
     Агрегирует отчеты обучения из всех поддиректорий.
     
@@ -1282,6 +1299,7 @@ def aggregate_reports(root_dir: str, output_dir: str = None, plot: bool = False,
         full_eval: Выполнять ли полную оценку на тестовом датасете (GPU, все точки).
         data_dir: Путь к директории с датасетами (для full_eval).
         lang: Язык графиков ('ru' или 'en').
+        advanced_plots: Генерировать ли расширенные графики (Парето, heatmaps и др.).
     
     Оптимизация:
         - Загружает существующий summary_report.csv для пропуска уже посчитанных моделей
@@ -1552,6 +1570,15 @@ def aggregate_reports(root_dir: str, output_dir: str = None, plot: bool = False,
     if plot:
         plot_comparison(all_histories, out_path if out_path else root_path)
     
+    # --- РАСШИРЕННАЯ ВИЗУАЛИЗАЦИЯ ---
+    if advanced_plots and ADVANCED_VIZ_AVAILABLE and out_path:
+        print("\n=== Генерация расширенных графиков ===")
+        advanced_figures_path = out_path / "figures_advanced"
+        adv_viz = AdvancedVisualizer(advanced_figures_path, lang=lang)
+        adv_viz.generate_all_plots(df, histories=all_histories)
+    elif advanced_plots and not ADVANCED_VIZ_AVAILABLE:
+        print("[!] Расширенная визуализация недоступна (модуль не найден)")
+    
     # Выводим статистику пропусков
     print(f"\n=== Статистика оптимизации ===")
     if full_eval:
@@ -1569,6 +1596,7 @@ if __name__ == "__main__":
     parser.add_argument("--plot", action="store_true", help="Генерировать графики обучения")
     parser.add_argument("--benchmark", action="store_true", help="Выполнить глубокий бенчмарк на CPU")
     parser.add_argument("--full-eval", action="store_true", help="Выполнить полную оценку на тестовом датасете (GPU)")
+    parser.add_argument("--advanced-plots", action="store_true", help="Генерировать расширенные графики (Парето, heatmaps)")
     parser.add_argument("--data-dir", type=str, default=None, help="Путь к директории с датасетами")
     parser.add_argument("--lang", type=str, default="ru", choices=["ru", "en"], help="Язык графиков (ru/en)")
     
@@ -1592,6 +1620,8 @@ if __name__ == "__main__":
         # RUN_FULL_EVAL: Если True, будет выполнена полная оценка на всём тестовом датасете (GPU).
         # Это более точная оценка, чем Val Acc/F1 из обучения (там используется подвыборка).
         RUN_FULL_EVAL = True
+        # ADVANCED_PLOTS: Если True, строятся расширенные графики (8 Парето, heatmaps, boxplots и др.)
+        ADVANCED_PLOTS = True
         # LANG: Язык графиков ('ru' или 'en').
         LANG = "ru"
         
@@ -1603,6 +1633,7 @@ if __name__ == "__main__":
         GENERATE_PLOTS = args.plot
         RUN_BENCHMARK = args.benchmark
         RUN_FULL_EVAL = args.full_eval
+        ADVANCED_PLOTS = args.advanced_plots
         LANG = args.lang
 
     if ROOT_DIR:
@@ -1613,5 +1644,5 @@ if __name__ == "__main__":
             RUN_BENCHMARK,
             full_eval=RUN_FULL_EVAL,
             lang=LANG,
-            data_dir=args.data_dir
-        )
+            data_dir=args.data_dir,
+            advanced_plots=ADVANCED_PLOTS        )
