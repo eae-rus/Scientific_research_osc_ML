@@ -14,10 +14,14 @@ import numpy as np
 from sklearn.metrics import accuracy_score, f1_score, balanced_accuracy_score
 from tqdm import tqdm
 import re
+import logging
 
 # Добавляем корень проекта в путь импорта
 ROOT_DIR_PROJECT = Path(__file__).parent.parent.parent
 sys.path.append(str(ROOT_DIR_PROJECT))
+
+# Глобальный логгер (инициализируется в aggregate_reports)
+_eval_logger: Optional[logging.Logger] = None
 
 from osc_tools.data_management.dataset_manager import DatasetManager
 from osc_tools.ml.precomputed_dataset import PrecomputedDataset
@@ -441,11 +445,176 @@ def _create_model_from_config(config: Dict[str, Any]) -> Optional[nn.Module]:
         return None
 
 
+def _get_eval_batch_size(
+    config: Dict[str, Any],
+    model_name: str = None,
+    feature_mode: str = None,
+    num_harmonics: int = 1
+) -> int:
+    """
+    Определяет оптимальный batch_size для оценки модели,
+    учитывая архитектуру и особенности данных.
+    
+    Основано на логике из run_phase2_6.py (строки 184-195):
+    - KAN модели с harmonic режимами требуют меньше памяти
+    - Heavy режимы требуют еще меньше
+    
+    Args:
+        config: Конфиг эксперимента
+        model_name: Имя модели
+        feature_mode: Режим признаков (raw, phase_polar и т.д.)
+        num_harmonics: Количество гармоник
+    
+    Returns:
+        Оптимальный batch_size для оценки
+    """
+    if model_name is None:
+        model_name = config.get('model', {}).get('name', '')
+    
+    if feature_mode is None:
+        data_features = config.get('data', {}).get('features', [])
+        if isinstance(data_features, list) and data_features:
+            feature_mode = data_features[0]
+        elif isinstance(data_features, str):
+            feature_mode = data_features
+    
+    # Дефолтный батч
+    batch_size = 8192
+    val_batch_size = 8192
+    
+    # Проверяем, это ли harmonic режим (спектральные данные требуют больше памяти)
+    is_harmonic_mode = feature_mode in ['phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex']
+    
+    # Уменьшаем для harmonic режимов
+    if is_harmonic_mode and num_harmonics >= 3:
+        batch_size = 32
+        val_batch_size = 2048
+    
+    # Дополнительно уменьшаем для heavy режимов + KAN модели
+    if is_harmonic_mode and model_name in ['PhysicsKAN', 'ConvKAN', 'HierarchicalPhysicsKAN', 'HierarchicalConvKAN']:
+        batch_size = 16
+        val_batch_size = 1024
+    
+    return val_batch_size
+
+
+def _normalize_state_dict_keys(state_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+    """
+    Нормализует ключи state_dict для совместимости старых чекпоинтов.
+    
+    Причина: в части экспериментов структура имен слоёв была изменена
+    (например, physics.processing_net.net.* -> physics.processing_net.features.*).
+    """
+    if not state_dict:
+        return state_dict
+    
+    remap_prefixes = {
+        'physics.processing_net.net.': 'physics.processing_net.features.'
+    }
+    
+    new_state_dict: Dict[str, torch.Tensor] = {}
+    for key, value in state_dict.items():
+        new_key = key
+        for old_prefix, new_prefix in remap_prefixes.items():
+            if key.startswith(old_prefix):
+                new_key = new_prefix + key[len(old_prefix):]
+                break
+        new_state_dict[new_key] = value
+    
+    return new_state_dict
+
+
+def _load_state_dict_safe(
+    model: nn.Module,
+    checkpoint: Dict[str, Any],
+    exp_name: str,
+    tag: str
+) -> None:
+    """
+    Загружает state_dict с совместимостью по ключам и строгим логированием.
+    """
+    state_dict = checkpoint.get('model_state_dict', checkpoint)
+    state_dict = _normalize_state_dict_keys(state_dict)
+    
+    load_result = model.load_state_dict(state_dict, strict=False)
+    if _eval_logger:
+        if load_result.missing_keys:
+            _eval_logger.error(
+                f"{exp_name} - {tag}: Missing keys: {load_result.missing_keys}"
+            )
+        if load_result.unexpected_keys:
+            _eval_logger.error(
+                f"{exp_name} - {tag}: Unexpected keys: {load_result.unexpected_keys}"
+            )
+
+
+def _evaluate_with_batch_fallback(
+    model: nn.Module,
+    test_ds: torch.utils.data.Dataset,
+    base_batch_size: int,
+    device: torch.device,
+    mode: str,
+    exp_name: str,
+    tag: str
+) -> Tuple[Dict[str, float], int, torch.device]:
+    """
+    Оценка с понижением batch_size при OOM и fallback на CPU.
+    """
+    current_batch_size = base_batch_size
+    current_device = device
+    
+    while True:
+        test_loader = DataLoader(
+            test_ds,
+            batch_size=current_batch_size,
+            shuffle=False,
+            num_workers=0,
+            pin_memory=(current_device.type == 'cuda')
+        )
+        
+        try:
+            if current_device.type == 'cuda':
+                torch.cuda.empty_cache()
+            metrics = evaluate_model_full(
+                model,
+                test_loader,
+                current_device,
+                mode,
+                raise_on_oom=True
+            )
+            return metrics, current_batch_size, current_device
+        except Exception as e:
+            err_text = str(e)
+            is_oom = 'CUDA out of memory' in err_text
+            if is_oom and current_device.type == 'cuda':
+                if _eval_logger:
+                    _eval_logger.error(
+                        f"{exp_name} - {tag}: OOM при batch_size={current_batch_size}. Уменьшаем и повторяем."
+                    )
+                # Уменьшаем batch_size до минимума, затем fallback на CPU
+                if current_batch_size > 16:
+                    current_batch_size = max(16, current_batch_size // 2)
+                    continue
+                
+                if _eval_logger:
+                    _eval_logger.error(
+                        f"{exp_name} - {tag}: OOM даже при batch_size=16. Переходим на CPU."
+                    )
+                current_device = torch.device('cpu')
+                model = model.to(current_device)
+                continue
+            
+            if _eval_logger:
+                _eval_logger.error(f"{exp_name} - {tag}: Ошибка оценки: {e}")
+            return {}, current_batch_size, current_device
+
+
 def evaluate_model_full(
     model: nn.Module,
     test_loader: DataLoader,
     device: torch.device,
-    mode: str = 'multilabel'
+    mode: str = 'multilabel',
+    raise_on_oom: bool = False
 ) -> Dict[str, float]:
     """
     Полная оценка модели на тестовом датасете.
@@ -463,24 +632,34 @@ def evaluate_model_full(
     all_preds = []
     all_targets = []
     
-    with torch.no_grad():
-        for x, y in test_loader:  # Без tqdm здесь - итерация быстрая
-            x, y = x.to(device), y.to(device)
-            outputs = model(x)
-            
-            if mode == 'classification':
-                y = y.long()
-                if y.dim() > 1 and y.shape[1] == 1:
-                    y = y.squeeze(1)
-                _, predicted = torch.max(outputs.data, 1)
-                all_preds.extend(predicted.cpu().numpy())
-                all_targets.extend(y.cpu().numpy())
-            else:  # multilabel
-                y = y.float()
-                probs = torch.sigmoid(outputs)
-                predicted = (probs > 0.5).float()
-                all_preds.extend(predicted.cpu().numpy())
-                all_targets.extend(y.cpu().numpy())
+    try:
+        with torch.no_grad():
+            for x, y in test_loader:  # Без tqdm здесь - итерация быстрая
+                x, y = x.to(device), y.to(device)
+                outputs = model(x)
+                
+                if mode == 'classification':
+                    y = y.long()
+                    if y.dim() > 1 and y.shape[1] == 1:
+                        y = y.squeeze(1)
+                    _, predicted = torch.max(outputs.data, 1)
+                    all_preds.extend(predicted.cpu().numpy())
+                    all_targets.extend(y.cpu().numpy())
+                else:  # multilabel
+                    y = y.float()
+                    probs = torch.sigmoid(outputs)
+                    predicted = (probs > 0.5).float()
+                    all_preds.extend(predicted.cpu().numpy())
+                    all_targets.extend(y.cpu().numpy())
+    except Exception as e:
+        # Очищаем GPU при ошибке
+        if device.type == 'cuda':
+            torch.cuda.empty_cache()
+        if raise_on_oom and 'CUDA out of memory' in str(e):
+            raise
+        if _eval_logger:
+            _eval_logger.error(f"Ошибка при оценке модели: {e}")
+        return {}
     
     all_preds = np.array(all_preds)
     all_targets = np.array(all_targets)
@@ -508,7 +687,7 @@ def evaluate_full_test_dataset(
     exp_dir: Path,
     config: Dict[str, Any],
     data_dir: str,
-    batch_size: int = 8192,  # Большой батч для эффективного использования GPU
+    batch_size: int = 8192,  # Параметр сохранен для обратной совместимости (игнорируется, батч определяется динамически)
     use_gpu: bool = True
 ) -> Dict[str, Any]:
     """
@@ -516,14 +695,14 @@ def evaluate_full_test_dataset(
     
     Стратегия оптимизации:
     - stride=1: перебираем ВСЕ возможные окна (полное покрытие)
-    - batch_size=8192: GPU обрабатывает большие батчи параллельно
+    - Динамический batch_size: автоматически уменьшается для тяжелых моделей (KAN + harmonic)
     - PrecomputedDataset: данные уже предрассчитаны, извлечение быстрое
     
     Args:
         exp_dir: Путь к директории эксперимента
         config: Конфигурация эксперимента
         data_dir: Путь к директории с датасетами
-        batch_size: Размер батча (8192 по умолчанию для GPU)
+        batch_size: (Игнорируется) Размер батча теперь определяется динамически на основе архитектуры модели
         use_gpu: Использовать GPU
     
     Returns:
@@ -749,16 +928,17 @@ def evaluate_full_test_dataset(
             # Возвращаем пустые результаты, т.к. модель не сможет работать с такими данными
             return results
         
-        # DataLoader с большим батчем для скорости
-        # На Windows num_workers > 0 может вызвать проблемы с multiprocessing,
-        # поэтому используем 0 по умолчанию (данные уже предрассчитаны, загрузка быстрая)
-        test_loader = DataLoader(
-            test_ds, 
-            batch_size=batch_size, 
-            shuffle=False, 
-            num_workers=0,  # На Windows безопаснее 0 (данные предрассчитаны, загрузка быстрая)
-            pin_memory=(device.type == 'cuda')
+        # Динамическое определение batch_size для сложных моделей
+        # Основано на логике run_phase2_6.py (для экономии GPU памяти)
+        eval_batch_size = _get_eval_batch_size(
+            config=config,
+            model_name=config.get('model', {}).get('name'),
+            feature_mode=feature_mode,
+            num_harmonics=num_harmonics
         )
+        
+        if _eval_logger:
+            _eval_logger.info(f"Batch size для {exp_dir.name}: {eval_batch_size} (модель: {config.get('model', {}).get('name')}, features: {feature_mode})")
         
         results['full_eval_samples'] = len(all_indices)
         
@@ -776,40 +956,77 @@ def evaluate_full_test_dataset(
         if best_path.exists():
             try:
                 # weights_only=False т.к. чекпоинт содержит config (ExperimentConfig)
-                checkpoint = torch.load(best_path, map_location=device, weights_only=False)
-                model.load_state_dict(checkpoint['model_state_dict'])
+                checkpoint = torch.load(best_path, map_location='cpu', weights_only=False)
+                _load_state_dict_safe(model, checkpoint, exp_dir.name, 'best_model')
                 
-                best_metrics = evaluate_model_full(model, test_loader, device, mode)
-                results['full_best_acc'] = best_metrics['acc']
-                results['full_best_f1'] = best_metrics['f1']
-                results['full_best_per_class_f1'] = best_metrics['per_class_f1']
+                best_metrics, used_batch, used_device = _evaluate_with_batch_fallback(
+                    model=model,
+                    test_ds=test_ds,
+                    base_batch_size=eval_batch_size,
+                    device=device,
+                    mode=mode,
+                    exp_name=exp_dir.name,
+                    tag='best_model'
+                )
+                if best_metrics:  # Проверяем что оценка прошла успешно
+                    results['full_best_acc'] = best_metrics['acc']
+                    results['full_best_f1'] = best_metrics['f1']
+                    results['full_best_per_class_f1'] = best_metrics['per_class_f1']
+                if used_device.type != device.type:
+                    device = used_device
             except Exception as e:
-                print(f"    [!] Ошибка загрузки best_model: {e}")
-                # breakpoint()  # Точка остановки закомментирована
+                error_msg = f"    [!] Ошибка загрузки best_model: {e}"
+                print(error_msg)
+                if _eval_logger:
+                    _eval_logger.error(f"{exp_dir.name} - best_model: {e}")
+                # Очищаем GPU память при ошибке
+                if device.type == 'cuda':
+                    torch.cuda.empty_cache()
         
         # Оценка final_model.pt
         final_path = exp_dir / "final_model.pt"
         if final_path.exists():
             try:
                 # weights_only=False т.к. чекпоинт содержит config (ExperimentConfig)
-                checkpoint = torch.load(final_path, map_location=device, weights_only=False)
-                model.load_state_dict(checkpoint['model_state_dict'])
+                checkpoint = torch.load(final_path, map_location='cpu', weights_only=False)
+                _load_state_dict_safe(model, checkpoint, exp_dir.name, 'final_model')
                 
-                final_metrics = evaluate_model_full(model, test_loader, device, mode)
-                results['full_final_acc'] = final_metrics['acc']
-                results['full_final_f1'] = final_metrics['f1']
-                results['full_final_per_class_f1'] = final_metrics['per_class_f1']
+                final_metrics, used_batch, used_device = _evaluate_with_batch_fallback(
+                    model=model,
+                    test_ds=test_ds,
+                    base_batch_size=eval_batch_size,
+                    device=device,
+                    mode=mode,
+                    exp_name=exp_dir.name,
+                    tag='final_model'
+                )
+                if final_metrics:  # Проверяем что оценка прошла успешно
+                    results['full_final_acc'] = final_metrics['acc']
+                    results['full_final_f1'] = final_metrics['f1']
+                    results['full_final_per_class_f1'] = final_metrics['per_class_f1']
+                if used_device.type != device.type:
+                    device = used_device
             except Exception as e:
-                print(f"    [!] Ошибка загрузки final_model: {e}")
-                # breakpoint()  # Точка остановки закомментирована
+                error_msg = f"    [!] Ошибка загрузки final_model: {e}"
+                print(error_msg)
+                if _eval_logger:
+                    _eval_logger.error(f"{exp_dir.name} - final_model: {e}")
+                # Очищаем GPU память при ошибке
+                if device.type == 'cuda':
+                    torch.cuda.empty_cache()
         
         results['full_eval_time_s'] = time.perf_counter() - start_time
         
     except Exception as e:
-        print(f"  [!] Ошибка full evaluation для {exp_dir.name}: {e}")
+        error_msg = f"  [!] Ошибка full evaluation для {exp_dir.name}: {e}"
+        print(error_msg)
+        if _eval_logger:
+            _eval_logger.error(error_msg)
         import traceback
         traceback.print_exc()
-        # breakpoint()  # Точка остановки закомментирована
+        # Очищаем GPU при критической ошибке
+        if device.type == 'cuda':
+            torch.cuda.empty_cache()
     
     return results
 
@@ -1083,15 +1300,36 @@ def aggregate_reports(root_dir: str, output_dir: str = None, plot: bool = False,
         csv_path = out_path / "summary_report.csv"
         history_path = out_path / "combined_metrics_history.txt"
         error_log_path = out_path / "processing_errors.log"
-        # Очищаем лог ошибок при новом запуске
+        eval_log_path = out_path / "eval_log.txt"
+        # Очищаем логи при новом запуске
         if error_log_path.exists():
             error_log_path.unlink()
+        if eval_log_path.exists():
+            eval_log_path.unlink()
     else:
         out_path = None
         figures_path = root_path / "figures"
         csv_path = None
         history_path = None
         error_log_path = None
+        eval_log_path = None
+
+    # Инициализация логгера для оценки
+    global _eval_logger
+    if eval_log_path:
+        _eval_logger = logging.getLogger('eval_logger')
+        _eval_logger.setLevel(logging.DEBUG)
+        # Удаляем старые обработчики если есть
+        _eval_logger.handlers.clear()
+        # Добавляем обработчик для файла
+        fh = logging.FileHandler(eval_log_path, encoding='utf-8')
+        fh.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        fh.setFormatter(formatter)
+        _eval_logger.addHandler(fh)
+        print(f"[Log] Оценка будет логироваться в: {eval_log_path}")
+    else:
+        _eval_logger = None
 
     # Путь к датасетам по умолчанию
     if data_dir is None:
