@@ -15,7 +15,7 @@ from osc_tools.ml.config import ExperimentConfig, ModelConfig, DataConfig, Train
 from osc_tools.ml.runner import ExperimentRunner
 from osc_tools.ml.dataset import OscillogramDataset
 from osc_tools.ml.precomputed_dataset import PrecomputedDataset
-from osc_tools.ml.labels import clean_labels, add_base_labels, get_target_columns
+from osc_tools.ml.labels import clean_labels, add_base_labels, get_target_columns, prepare_labels_for_experiment
 from osc_tools.data_management import DatasetManager
 from osc_tools.ml.class_balancing import (
     GlobalClassBalancer, OscillogramClassBalancer, 
@@ -63,8 +63,8 @@ MODEL_COMPLEXITY = {
         # Гибридные модели (2.6.3)
         'HybridMLP': {'hidden_sizes': [128, 64, 32], 'dropout': 0.3},
         'HybridCNN': {'channels': [16, 32, 64], 'dropout': 0.3},
-        'HybridSimpleKAN': {'hidden_sizes': [64, 32, 16], 'grid_size': 5, 'dropout': 0.2},
         'HybridConvKAN': {'channels': [8, 16, 32], 'dropout': 0.2, 'grid_size': 5},
+        'HybridSimpleKAN': {'hidden_sizes': [64, 32, 16], 'grid_size': 5, 'dropout': 0.2},
         'HybridPhysicsKAN': {'channels': [8, 16, 32], 'dropout': 0.2, 'grid_size': 5},
         'HybridResNet': {'layers': [2, 2, 2, 2], 'base_filters': 16}
     },
@@ -123,11 +123,13 @@ def run_single_experiment(
     use_precomputed_val: bool = True,
     balancing_mode: str = 'none',
     balancer: Any = None,
-    num_harmonics: int = 1
+    num_harmonics: int = 1,
+    target_level: str = 'base'
 ):
     print(f"\n>>> Запуск эксперимента: {exp_name}")
     print(f"Модель: {model_name} ({complexity})")
     print(f"Балансировка: {balancing_mode}")
+    print(f"Уровень меток: {target_level} ({len(target_cols)} классов)")
 
     # Настройка веса Loss функции
     use_pos_weight = (balancing_mode == 'weights')
@@ -150,12 +152,15 @@ def run_single_experiment(
             actual_batch_size, steps = balancer.get_batch_config()
             print(f"    Batch size: {actual_batch_size}, Steps: {steps}, Total: {len(actual_train_indices)}")
 
+    # Маппинг target_level для OscillogramDataset (ожидает 'base_labels' вместо 'base')
+    ds_target_level = 'base_labels' if target_level == 'base' else target_level
+    
     # 2. Подготовка Dataset
     train_ds = OscillogramDataset(
         dataframe=df, indices=actual_train_indices, window_size=data_config_base.window_size,
         mode='classification', feature_mode=feature_mode,
         sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
-        target_columns=target_cols, target_level='base_labels',
+        target_columns=target_cols, target_level=ds_target_level,
         physical_normalization=True, norm_coef_path=str(norm_coef_path),
         augment=augment,
         num_harmonics=num_harmonics
@@ -174,7 +179,7 @@ def run_single_experiment(
             val_ds = PrecomputedDataset(
                 dataframe=val_df, indices=val_indices, window_size=data_config_base.window_size,
                 feature_mode=feature_mode,
-                target_columns=target_cols, target_level='base',
+                target_columns=target_cols, target_level=target_level,
                 sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
                 num_harmonics=num_harmonics
             )
@@ -185,7 +190,7 @@ def run_single_experiment(
                 dataframe=df, indices=val_indices, window_size=data_config_base.window_size,
                 mode='classification', feature_mode=feature_mode,
                 sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
-                target_columns=target_cols, target_level='base_labels',
+                target_columns=target_cols, target_level=ds_target_level,
                 physical_normalization=True, norm_coef_path=str(norm_coef_path),
                 augment=False,
                 num_harmonics=num_harmonics
@@ -196,7 +201,7 @@ def run_single_experiment(
             dataframe=df, indices=val_indices, window_size=data_config_base.window_size,
             mode='classification', feature_mode=feature_mode,
             sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
-            target_columns=target_cols, target_level='base_labels',
+            target_columns=target_cols, target_level=ds_target_level,
             physical_normalization=True, norm_coef_path=str(norm_coef_path),
             augment=False,
             num_harmonics=num_harmonics
@@ -308,7 +313,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         print("[DatasetManager] Предрасчёт требует обновления — пересоздание файла test_precomputed.csv")
     dm.create_precomputed_test_csv(force=force_precompute, num_harmonics=PRECOMPUTED_NUM_HARMONICS)
     
-    target_cols = get_target_columns('base')
+    # target_cols определяется позже в зависимости от target_level эксперимента
     
     # === Предподготовка балансировщиков ===
     balancers_cache: Dict[str, Any] = {}
@@ -321,13 +326,15 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
             return balancers_cache[strategy]
         
         print(f"[Предподготовка балансировщика: {strategy}]")
+        # Для балансировщика используем базовые метки (4 класса)
+        target_cols_base = get_target_columns('base')
         config = BalancingConfig(
             min_batch_size=64,
             samples_per_oscillogram=target_spf,
             total_samples_per_epoch=10000,
             cache_dir=str(DATA_DIR / 'balancing_cache')
         )
-        balancer = get_balancing_strategy(strategy, df, target_cols, WINDOW_SIZE, config)
+        balancer = get_balancing_strategy(strategy, df, target_cols_base, WINDOW_SIZE, config)
         if balancer:
             balancer.analyze()
         balancers_cache[strategy] = balancer
@@ -350,14 +357,26 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
 
     # Таблица экспериментов (логика данных)
     exp_params = {
-        "2.6.1_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights"},
-        "2.6.1_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights"},
-        # Эксперимент 2.6.2: Иерархические модели
-        "2.6.2_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights"},
-        "2.6.2_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights"},
-        # Эксперимент 2.6.3: Гибридные модели (Raw + Phase Polar)
-        "2.6.3_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights"},
-        "2.6.3_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights"},
+        # === Эксперимент 2.6.1: Калибровка базовых моделей ===
+        "2.6.1_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights", "target_level": "base"},
+        "2.6.1_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights", "target_level": "base"},
+        
+        # === Эксперимент 2.6.2: Иерархические модели ===
+        "2.6.2_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights", "target_level": "base"},
+        "2.6.2_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights", "target_level": "base"},
+        
+        # === Эксперимент 2.6.3: Гибридные модели (Raw + Phase Polar) ===
+        "2.6.3_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights", "target_level": "base"},
+        "2.6.3_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights", "target_level": "base"},
+        
+        # === Эксперимент 2.6.4: Гранулярность меток (Target Granularity) ===
+        # Вариант А: base_labels (4 обобщённых класса) — уже покрыто 2.6.1
+        # Вариант Б: full (все ML_* колонки, независимые)
+        "2.6.4_full_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights", "target_level": "full"},
+        "2.6.4_full_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights", "target_level": "full"},
+        # Вариант В: full_by_levels (все ML_* с иерархическим распространением)
+        "2.6.4_hier_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights", "target_level": "full_by_levels"},
+        "2.6.4_hier_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights", "target_level": "full_by_levels"},
     }
 
     if target_exp not in exp_params:
@@ -375,17 +394,25 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
                 'HybridSimpleKAN', 'HybridConvKAN', 'HybridPhysicsKAN'
             ]
         elif target_exp.startswith("2.6.2"):
+            # Иерархические модели для эксперимента 2.6.2
             models_to_run = [
-                'HierarchicalCNN', 'HierarchicalConvKAN', 'HierarchicalMLP', 
+                'HierarchicalMLP', 'HierarchicalCNN', 'HierarchicalConvKAN', 
                 'HierarchicalResNet', 'HierarchicalSimpleKAN', 'HierarchicalPhysicsKAN'
             ]
+        elif target_exp.startswith("2.6.4"):
+            # Базовые модели для эксперимента 2.6.4 (гранулярность меток)
+            models_to_run = ['SimpleMLP', 'SimpleCNN', 'ConvKAN', 'SimpleKAN', 'PhysicsKAN', 'ResNet1D']
         else:
+            # По умолчанию: базовые модели (2.6.1)
             models_to_run = ['SimpleMLP', 'SimpleCNN', 'ConvKAN', 'SimpleKAN', 'PhysicsKAN', 'ResNet1D']
     else:
         models_to_run = [target_model]
 
     # Определяем список сложностей
     complexities_to_run = ['light', 'medium', 'heavy'] if target_complexity == 'all' else [target_complexity]
+    
+    # Определяем target_level из параметров эксперимента
+    exp_target_level = p.get('target_level', 'base')
 
     # === ПРЕДВАРИТЕЛЬНЫЙ ПРОХОД: Определяем, нужна ли загрузка данных ===
     need_training = False
@@ -394,9 +421,8 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
             exp_id_clean = target_exp.split('_')[0]
             feature_mode = p["feature_mode"]
             sampling_strategy = p["sampling"]
-            target_level = 'base' # По умолчанию для Фазы 2.6
             
-            full_exp_name = f"Exp_{exp_id_clean}_{m_name}_{comp}_{feature_mode}_{sampling_strategy}_{target_level}"
+            full_exp_name = f"Exp_{exp_id_clean}_{m_name}_{comp}_{feature_mode}_{sampling_strategy}_{exp_target_level}"
             
             # Добавляем суффиксы балансировки и аугментации в имя
             if p.get('balancing', 'none') != 'none':
@@ -418,6 +444,11 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         df = dm.load_train_df()
         df = df.with_row_index("row_nr")
         
+        # Подготовка меток в зависимости от target_level
+        if exp_target_level in ('full', 'full_by_levels'):
+            print(f"  [Подготовка меток для уровня: {exp_target_level}]")
+            df = prepare_labels_for_experiment(df, exp_target_level)
+        
         # Создаём индексы для тренировки
         train_indices = OscillogramDataset.create_indices(
             df, 
@@ -428,6 +459,10 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         test_df = dm.load_test_df(precomputed=True)
         test_df = test_df.with_row_index("row_nr")
         
+        # Подготовка меток для валидации
+        if exp_target_level in ('full', 'full_by_levels'):
+            test_df = prepare_labels_for_experiment(test_df, exp_target_level)
+        
         # Создаём индексы для валидации с шагом 4 (полная валидация как в aggregate_reports)
         VAL_STRIDE = 4
         val_indices = PrecomputedDataset.create_indices(
@@ -436,6 +471,10 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
             mode='val',
             stride=VAL_STRIDE  # Шаг 4 для полного покрытия
         )
+        
+        # Определяем целевые колонки в зависимости от target_level
+        target_cols = get_target_columns(exp_target_level, df)
+        print(f"  [Целевые колонки ({exp_target_level}): {len(target_cols)} классов]")
     else:
         print("Все модели уже обучены, пропуск загрузки данных")
         return
@@ -452,9 +491,8 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
             exp_id_clean = target_exp.split('_')[0]
             feature_mode = p["feature_mode"]
             sampling_strategy = p["sampling"]
-            target_level = 'base' # По умолчанию для Фазы 2.6
             
-            full_exp_name = f"Exp_{exp_id_clean}_{m_name}_{comp}_{feature_mode}_{sampling_strategy}_{target_level}"
+            full_exp_name = f"Exp_{exp_id_clean}_{m_name}_{comp}_{feature_mode}_{sampling_strategy}_{exp_target_level}"
             
             # Добавляем суффиксы балансировки и аугментации в имя
             if p.get('balancing', 'none') != 'none':
@@ -489,7 +527,8 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
                     use_precomputed_val=True,
                     balancing_mode=p.get('balancing', 'weights'),
                     balancer=get_or_create_balancer(p.get('balancing', 'weights')),
-                    num_harmonics=current_harmonics
+                    num_harmonics=current_harmonics,
+                    target_level=exp_target_level
                 )
             except Exception as e:
                 print(f"!!! Ошибка в {full_exp_name}: {e}")
@@ -500,11 +539,25 @@ if __name__ == "__main__":
     # === ВЕРСИЯ 1: РУЧНОЙ ЗАПУСК ===
     
     # Набор экспериментов (группы данных)
-    # 2.6.1 - базовые модели, 2.6.2 - иерархические, 2.6.3 - гибридные
+    # 2.6.1 - базовые модели (калибровка)
+    # 2.6.2 - иерархические модели
+    # 2.6.3 - гибридные модели
+    # 2.6.4 - гранулярность меток (full, full_by_levels)
     EXPS = [
+        # === Эксперимент 2.6.1: Калибровка базовых моделей ===
         # "2.6.1_stride", "2.6.1_snapshot", 
+        
+        # === Эксперимент 2.6.2: Иерархические модели ===
         "2.6.2_stride", "2.6.2_snapshot",
-        "2.6.3_stride", "2.6.3_snapshot"
+        
+        # === Эксперимент 2.6.3: Гибридные модели ===
+        "2.6.3_stride", "2.6.3_snapshot",
+        
+        # === Эксперимент 2.6.4: Гранулярность меток ===
+        # Вариант Б: full (все ML_* колонки независимо)
+        "2.6.4_full_stride", "2.6.4_full_snapshot",
+        # Вариант В: full_by_levels (все ML_* с иерархическим распространением)
+        "2.6.4_hier_stride", "2.6.4_hier_snapshot",
     ]
     
     # Тип модели ('all' - выберет автоматически подходящие для группы)
