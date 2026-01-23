@@ -26,69 +26,69 @@ from osc_tools.ml.class_balancing import (
 MODEL_COMPLEXITY = {
     'light': {
         'SimpleMLP': {'hidden_sizes': [64, 32], 'dropout': 0.2},
-        'SimpleCNN': {'channels': [16, 32], 'dropout': 0.2},
+        'SimpleCNN': {'channels': [16, 32], 'dropout': 0.2, 'pool_every': 1},
         'ConvKAN':   {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
         'SimpleKAN': {'hidden_sizes': [64, 32], 'grid_size': 3, 'dropout': 0.1},
         'PhysicsKAN': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
         'ResNet1D':  {'layers': [1, 1, 1, 1], 'base_filters': 16},
         # Иерархические модели (2.6.1, 2.6.2)
-        'HierarchicalCNN': {'channels': [16, 32], 'dropout': 0.2, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
+        'HierarchicalMLP': {'channels': [64, 32], 'dropout': 0.2, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
+        'HierarchicalCNN': {'channels': [16, 32], 'dropout': 0.2, 'pool_every': 1, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
         'HierarchicalConvKAN': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
-        'HierarchicalMLP': {'channels': [16, 32], 'dropout': 0.2, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
-        'HierarchicalResNet': {'layers': [1, 1, 1, 1], 'base_filters': 16, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
         'HierarchicalSimpleKAN': {'channels': [64, 32], 'grid_size': 3, 'dropout': 0.1, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
         'HierarchicalPhysicsKAN': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
+        'HierarchicalResNet': {'layers': [1, 1, 1, 1], 'base_filters': 16, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
         # Гибридные модели (2.6.3) — параметры уменьшены вдвое для каждой ветки
         'HybridMLP': {'hidden_sizes': [32, 16], 'dropout': 0.2},
         'HybridCNN': {'channels': [8, 16], 'dropout': 0.2},
-        'HybridResNet': {'layers': [1, 1, 1, 1], 'base_filters': 8},
-        'HybridSimpleKAN': {'hidden_sizes': [32, 16], 'grid_size': 3, 'dropout': 0.1},
         'HybridConvKAN': {'channels': [4, 8], 'dropout': 0.1, 'grid_size': 3},
-        'HybridPhysicsKAN': {'channels': [4, 8], 'dropout': 0.1, 'grid_size': 3}
+        'HybridSimpleKAN': {'hidden_sizes': [32, 16], 'grid_size': 3, 'dropout': 0.1},
+        'HybridPhysicsKAN': {'channels': [4, 8], 'dropout': 0.1, 'grid_size': 3},
+        'HybridResNet': {'layers': [1, 1, 1, 1], 'base_filters': 8}
     },
     'medium': {
         'SimpleMLP': {'hidden_sizes': [256, 128, 64], 'dropout': 0.3},
-        'SimpleCNN': {'channels': [32, 64, 128, 256], 'dropout': 0.3},
-        'ConvKAN':   {'channels': [16, 32, 48], 'dropout': 0.2, 'grid_size': 5},
+        'SimpleCNN': {'channels': [32, 64, 128], 'dropout': 0.3, 'pool_every': 1},
+        'ConvKAN':   {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5},
         'SimpleKAN': {'hidden_sizes': [128, 64, 32], 'grid_size': 5, 'dropout': 0.2},
-        'PhysicsKAN': {'channels': [16, 32, 48], 'dropout': 0.2, 'grid_size': 5},
+        'PhysicsKAN': {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5},
         'ResNet1D':  {'layers': [2, 2, 2, 2], 'base_filters': 32},
         # Иерархические модели (2.6.1, 2.6.2)
-        'HierarchicalCNN': {'channels': [32, 64, 128], 'dropout': 0.3, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
-        'HierarchicalConvKAN': {'channels': [16, 32, 48], 'dropout': 0.2, 'grid_size': 5, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
-        'HierarchicalMLP': {'channels': [32, 64, 128], 'dropout': 0.3, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
-        'HierarchicalResNet': {'layers': [2, 2, 2, 2], 'base_filters': 32, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
+        'HierarchicalMLP': {'channels': [256, 128, 64], 'dropout': 0.3, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
+        'HierarchicalCNN': {'channels': [32, 64, 128], 'dropout': 0.3, 'pool_every': 1, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
+        'HierarchicalConvKAN': {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
         'HierarchicalSimpleKAN': {'channels': [128, 64, 32], 'grid_size': 5, 'dropout': 0.2, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
-        'HierarchicalPhysicsKAN': {'channels': [16, 32, 48], 'dropout': 0.2, 'grid_size': 5, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
+        'HierarchicalPhysicsKAN': {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
+        'HierarchicalResNet': {'layers': [2, 2, 2, 2], 'base_filters': 32, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
         # Гибридные модели (2.6.3)
         'HybridMLP': {'hidden_sizes': [128, 64, 32], 'dropout': 0.3},
         'HybridCNN': {'channels': [16, 32, 64], 'dropout': 0.3},
-        'HybridResNet': {'layers': [2, 2, 2, 2], 'base_filters': 16},
         'HybridSimpleKAN': {'hidden_sizes': [64, 32, 16], 'grid_size': 5, 'dropout': 0.2},
-        'HybridConvKAN': {'channels': [8, 16, 24], 'dropout': 0.2, 'grid_size': 5},
-        'HybridPhysicsKAN': {'channels': [8, 16, 24], 'dropout': 0.2, 'grid_size': 5}
+        'HybridConvKAN': {'channels': [8, 16, 32], 'dropout': 0.2, 'grid_size': 5},
+        'HybridPhysicsKAN': {'channels': [8, 16, 32], 'dropout': 0.2, 'grid_size': 5},
+        'HybridResNet': {'layers': [2, 2, 2, 2], 'base_filters': 16}
     },
     'heavy': {
         'SimpleMLP': {'hidden_sizes': [512, 256, 128, 64], 'dropout': 0.4},
-        'SimpleCNN': {'channels': [64, 128, 256, 512], 'dropout': 0.4},
+        'SimpleCNN': {'channels': [64, 128, 256, 512], 'dropout': 0.4, 'pool_every': 1},
         'ConvKAN':   {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8},
         'SimpleKAN': {'hidden_sizes': [256, 128, 64, 32], 'grid_size': 5, 'dropout': 0.3},
         'PhysicsKAN': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8},
         'ResNet1D':  {'layers': [3, 4, 6, 3], 'base_filters': 64},
         # Иерархические модели (2.6.1, 2.6.2)
-        'HierarchicalCNN': {'channels': [64, 128, 256], 'dropout': 0.4, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
+        'HierarchicalMLP': {'channels': [512, 256, 128, 64], 'dropout': 0.4, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
+        'HierarchicalCNN': {'channels': [64, 128, 256, 512], 'dropout': 0.4, 'pool_every': 1, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
         'HierarchicalConvKAN': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
-        'HierarchicalMLP': {'channels': [64, 128, 256], 'dropout': 0.4, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
-        'HierarchicalResNet': {'layers': [3, 4, 6, 3], 'base_filters': 64, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
         'HierarchicalSimpleKAN': {'channels': [256, 128, 64, 32], 'grid_size': 5, 'dropout': 0.3, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
         'HierarchicalPhysicsKAN': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
+        'HierarchicalResNet': {'layers': [3, 4, 6, 3], 'base_filters': 64, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
         # Гибридные модели (2.6.3)
         'HybridMLP': {'hidden_sizes': [256, 128, 64, 32], 'dropout': 0.4},
         'HybridCNN': {'channels': [32, 64, 128, 256], 'dropout': 0.4},
-        'HybridResNet': {'layers': [3, 4, 6, 3], 'base_filters': 32},
-        'HybridSimpleKAN': {'hidden_sizes': [128, 64, 32, 16], 'grid_size': 5, 'dropout': 0.3},
         'HybridConvKAN': {'channels': [16, 32, 64], 'dropout': 0.3, 'grid_size': 8},
-        'HybridPhysicsKAN': {'channels': [16, 32, 64], 'dropout': 0.3, 'grid_size': 8}
+        'HybridSimpleKAN': {'hidden_sizes': [128, 64, 32, 16], 'grid_size': 5, 'dropout': 0.3},
+        'HybridPhysicsKAN': {'channels': [16, 32, 64], 'dropout': 0.3, 'grid_size': 8},
+        'HybridResNet': {'layers': [3, 4, 6, 3], 'base_filters': 32}
     }
 }
 
@@ -208,11 +208,9 @@ def run_single_experiment(
     val_batch_size = 8192
 
     if is_harmonic_mode and num_harmonics >= 3:
-        base_batch_size = min(base_batch_size, 32)
         val_batch_size = 2048
 
     if is_harmonic_mode and complexity == 'heavy' and model_name in ['PhysicsKAN', 'ConvKAN', 'ResNet1D', 'HierarchicalPhysicsKAN', 'HierarchicalConvKAN', 'HierarchicalResNet']:
-        base_batch_size = min(base_batch_size, 16)
         val_batch_size = 1024
 
     train_loader = torch.utils.data.DataLoader(train_ds, batch_size=base_batch_size, shuffle=True, num_workers=0)
@@ -354,6 +352,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
     exp_params = {
         "2.6.1_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights"},
         "2.6.1_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights"},
+        # Эксперимент 2.6.2: Иерархические модели
         "2.6.2_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights"},
         "2.6.2_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights"},
         # Эксперимент 2.6.3: Гибридные модели (Raw + Phase Polar)
@@ -503,7 +502,7 @@ if __name__ == "__main__":
     # Набор экспериментов (группы данных)
     # 2.6.1 - базовые модели, 2.6.2 - иерархические, 2.6.3 - гибридные
     EXPS = [
-        "2.6.1_stride", "2.6.1_snapshot", 
+        # "2.6.1_stride", "2.6.1_snapshot", 
         "2.6.2_stride", "2.6.2_snapshot",
         "2.6.3_stride", "2.6.3_snapshot"
     ]
