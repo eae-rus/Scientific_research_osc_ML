@@ -26,7 +26,7 @@ _eval_logger: Optional[logging.Logger] = None
 from osc_tools.data_management.dataset_manager import DatasetManager
 from osc_tools.ml.precomputed_dataset import PrecomputedDataset
 from osc_tools.ml.dataset import OscillogramDataset
-from osc_tools.ml.labels import get_target_columns
+from osc_tools.ml.labels import get_target_columns, prepare_labels_for_experiment
 
 # Импорт расширенного визуализатора
 try:
@@ -227,6 +227,32 @@ def benchmark_model_cpu(exp_dir: Path, config: Dict[str, Any], iterations: int =
                 elif model_name in ['SimpleKAN', 'ConvKAN', 'PhysicsKAN']:
                     from osc_tools.ml.models.kan import SimpleKAN, ConvKAN, PhysicsKAN
                     models_map = {'SimpleKAN': SimpleKAN, 'ConvKAN': ConvKAN, 'PhysicsKAN': PhysicsKAN}
+                elif model_name.startswith('Hierarchical'):
+                    from osc_tools.ml.models.advanced import (
+                        HierarchicalCNN, HierarchicalConvKAN, HierarchicalMLP,
+                        HierarchicalResNet, HierarchicalSimpleKAN, HierarchicalPhysicsKAN
+                    )
+                    models_map = {
+                        'HierarchicalCNN': HierarchicalCNN,
+                        'HierarchicalConvKAN': HierarchicalConvKAN,
+                        'HierarchicalMLP': HierarchicalMLP,
+                        'HierarchicalResNet': HierarchicalResNet,
+                        'HierarchicalSimpleKAN': HierarchicalSimpleKAN,
+                        'HierarchicalPhysicsKAN': HierarchicalPhysicsKAN
+                    }
+                elif model_name.startswith('Hybrid'):
+                    from osc_tools.ml.models.hybrid import (
+                        HybridMLP, HybridCNN, HybridConvKAN,
+                        HybridSimpleKAN, HybridPhysicsKAN, HybridResNet
+                    )
+                    models_map = {
+                        'HybridMLP': HybridMLP,
+                        'HybridCNN': HybridCNN,
+                        'HybridConvKAN': HybridConvKAN,
+                        'HybridSimpleKAN': HybridSimpleKAN,
+                        'HybridPhysicsKAN': HybridPhysicsKAN,
+                        'HybridResNet': HybridResNet
+                    }
                 else:
                     return 0.0
                 model_cls = models_map.get(model_name)
@@ -325,7 +351,8 @@ def _get_test_data_cached(
     data_dir: str, 
     window_size: int = 320,
     eval_stride: int = 1,  # Stride=1 для полного перебора ВСЕХ точек
-    norm_coef_path: Optional[str] = None
+    norm_coef_path: Optional[str] = None,
+    target_level: str = 'base'
 ) -> Tuple[Any, List[int], List[str]]:
     """
     Возвращает кэшированные данные тестового датасета (PrecomputedDataset).
@@ -341,28 +368,32 @@ def _get_test_data_cached(
         window_size: Размер окна
         eval_stride: Stride между окнами (1 = все точки, default)
         norm_coef_path: Путь к файлу нормализации
+        target_level: Уровень детализации меток ('base', 'full', 'full_by_levels')
     
     Returns:
         (test_df, indices, target_cols)
     """
     import polars as pl
     
-    # Включаем norm_coef_path в ключ кэша
-    cache_key = f"{data_dir}_{window_size}_{eval_stride}_{norm_coef_path}"
+    # Включаем target_level в ключ кэша
+    cache_key = f"{data_dir}_{window_size}_{eval_stride}_{norm_coef_path}_{target_level}"
     
     if cache_key not in _test_data_cache:
         dm = DatasetManager(data_dir, norm_coef_path=norm_coef_path)
-        target_cols = get_target_columns('base')
         
-        print(f"[Full Eval] Загрузка тестового датасета (PrecomputedDataset)...")
+        print(f"[Full Eval] Загрузка тестового датасета (target_level={target_level})...")
         # Убеждаемся что предрассчитанный файл существует
-        # Если пришёл нестандартный путь к нормализации, форсируем пересоздание если файл старый?
-        # Пока просто создаем если нет.
         dm.create_precomputed_test_csv()
         
         # Загружаем
         test_df = dm.load_test_df(precomputed=True)
         test_df = test_df.with_row_index("row_nr")
+        
+        # Подготавливаем метки в зависимости от target_level
+        test_df = prepare_labels_for_experiment(test_df, target_level)
+        
+        # Получаем целевые колонки
+        target_cols = get_target_columns(target_level, test_df)
         
         # Создаём индексы для полной оценки
         indices = PrecomputedDataset.create_indices(
@@ -371,7 +402,7 @@ def _get_test_data_cached(
             mode='val',
             stride=eval_stride
         )
-        print(f"[Full Eval] Загружено {len(indices):,} точек (stride={eval_stride})")
+        print(f"[Full Eval] Загружено {len(indices):,} точек (stride={eval_stride}, {len(target_cols)} классов)")
         
         _test_data_cache[cache_key] = (test_df, indices, target_cols)
     
@@ -426,6 +457,20 @@ def _create_model_from_config(config: Dict[str, Any]) -> Optional[nn.Module]:
                     'HierarchicalResNet': HierarchicalResNet,
                     'HierarchicalSimpleKAN': HierarchicalSimpleKAN,
                     'HierarchicalPhysicsKAN': HierarchicalPhysicsKAN
+                }
+                model_cls = models_map.get(model_name)
+            elif model_name.startswith('Hybrid'):
+                from osc_tools.ml.models.hybrid import (
+                    HybridMLP, HybridCNN, HybridConvKAN,
+                    HybridSimpleKAN, HybridPhysicsKAN, HybridResNet
+                )
+                models_map = {
+                    'HybridMLP': HybridMLP,
+                    'HybridCNN': HybridCNN,
+                    'HybridConvKAN': HybridConvKAN,
+                    'HybridSimpleKAN': HybridSimpleKAN,
+                    'HybridPhysicsKAN': HybridPhysicsKAN,
+                    'HybridResNet': HybridResNet
                 }
                 model_cls = models_map.get(model_name)
         except Exception as e:
@@ -744,13 +789,16 @@ def evaluate_full_test_dataset(
         # Это критично для правильного формата данных
         exp_name = exp_dir.name.lower()
         
+        # ВАЖНО: Для экспериментов 2.6.4 слово 'full' означает target_level, а не sampling
+        # Поэтому сначала проверяем stride/snapshot, а 'none' только если нет других маркеров
         if 'stride' in exp_name:
             sampling_strategy = 'stride'
             downsampling_stride = 16
         elif 'snapshot' in exp_name:
             sampling_strategy = 'snapshot'
             downsampling_stride = 32
-        elif 'none' in exp_name or 'full' in exp_name:
+        elif 'none_sampl' in exp_name or ('none' in exp_name and 'full' not in exp_name):
+            # Только если явно указано 'none' в контексте sampling (не target_level)
             sampling_strategy = 'none'
             downsampling_stride = 1
         else:
@@ -893,12 +941,26 @@ def evaluate_full_test_dataset(
                 num_harmonics = max(1, derived_in_channels // base_ch)
                 in_channels = derived_in_channels  # Обновляем для последующего использования
         
+        # Определяем target_level из имени эксперимента
+        # Примеры: 2.6.4_full_stride → full, 2.6.4_hier_stride → full_by_levels
+        if 'full_by_levels' in exp_name or ('hier_' in exp_name and '2.6.4' in exp_name):
+            target_level = 'full_by_levels'
+        elif '2.6.4' in exp_name and 'full' in exp_name:
+            target_level = 'full'
+        else:
+            target_level = 'base'
+        
         # Загружаем кэшированные данные (PrecomputedDataset - быстро и точно после исправлений)
         # stride=1 для полного перебора ВСЕХ точек
         norm_coef_path = config.get('data', {}).get('norm_coef_path')
         test_df, all_indices, target_cols = _get_test_data_cached(
-            data_dir, window_size, eval_stride=1, norm_coef_path=norm_coef_path
+            data_dir, window_size, eval_stride=1, norm_coef_path=norm_coef_path,
+            target_level=target_level
         )
+        
+        # Определяем ds_target_level для PrecomputedDataset
+        # PrecomputedDataset ожидает 'base' или 'multi_label' (не 'full'/'full_by_levels')
+        ds_target_level = 'base' if target_level == 'base' else target_level
         
         # Создаём PrecomputedDataset для быстрой оценки
         test_ds = PrecomputedDataset(
@@ -907,7 +969,7 @@ def evaluate_full_test_dataset(
             window_size=window_size,
             feature_mode=feature_mode,
             target_columns=target_cols,
-            target_level='base',
+            target_level=ds_target_level,
             sampling_strategy=sampling_strategy,
             downsampling_stride=downsampling_stride,
             num_harmonics=num_harmonics
@@ -1081,9 +1143,10 @@ def parse_experiment_info(folder_name: str) -> Dict[str, str]:
         "feature_mode": "Unknown",
         "sampling": "Unknown",
         "target": "Unknown",
+        "target_level": "base",  # Уровень детализации меток: base, full, full_by_levels
         "is_aug": "No",
         "balancing": "None",
-        "arch_type": "Base"  # Тип архитектуры: Base или Hierarchical
+        "arch_type": "Base"  # Тип архитектуры: Base, Hierarchical или Hybrid
     }
     
     parts = folder_name.split('_')
@@ -1093,9 +1156,21 @@ def parse_experiment_info(folder_name: str) -> Dict[str, str]:
     if id_match:
         info["exp_id"] = id_match.group(1)
 
-    # Определяем архитектуру
-    if 'Hierarchical' in folder_name:
+    # Определяем архитектуру (порядок важен: сначала проверяем более специфичные)
+    if 'Hybrid' in folder_name:
+        info["arch_type"] = "Hybrid"
+    elif 'Hierarchical' in folder_name:
         info["arch_type"] = "Hierarchical"
+    
+    # Определяем target_level из имени эксперимента
+    # Примеры: full_stride, full_snapshot, hier_stride (full_by_levels)
+    if 'full_by_levels' in folder_name or ('hier_' in folder_name.lower() and '2.6.4' in folder_name):
+        info["target_level"] = "full_by_levels"
+    elif 'full' in folder_name.lower() and '2.6.4' in folder_name:
+        # Только для 2.6.4 эксперимента, чтобы не спутать с 'full' в других контекстах
+        info["target_level"] = "full"
+    else:
+        info["target_level"] = "base"
 
     # Поиск ключевого семейства моделей (чистим от префиксов)
     models_map = {
@@ -1115,10 +1190,10 @@ def parse_experiment_info(folder_name: str) -> Dict[str, str]:
             found_model = True
             break
             
-    # Если это иерархическая модель и мы не нашли семейство явно (напр. HierarchicalCNN)
-    if not found_model and info["arch_type"] == "Hierarchical":
-        # Вытаскиваем то, что идет после слова Hierarchical
-        match = re.search(r'Hierarchical([a-zA-Z0-9]+)', folder_name)
+    # Если это иерархическая или гибридная модель и мы не нашли семейство явно
+    if not found_model and info["arch_type"] in ("Hierarchical", "Hybrid"):
+        # Вытаскиваем то, что идет после слова Hierarchical или Hybrid
+        match = re.search(r'(?:Hierarchical|Hybrid)([a-zA-Z0-9]+)', folder_name)
         if match:
             info["model_family"] = match.group(1)
 
@@ -1436,6 +1511,7 @@ def aggregate_reports(
                     "Complexity": existing_row.get("Complexity", info["complexity"]),
                     "Features": existing_row.get("Features", info["feature_mode"]),
                     "Sampling": existing_row.get("Sampling", info["sampling"]),
+                    "TargetLevel": existing_row.get("TargetLevel", info["target_level"]),
                     "Balancing": existing_row.get("Balancing", info["balancing"]),
                     "Aug": existing_row.get("Aug", info["is_aug"]),
                     "arch_type": existing_row.get("arch_type", info["arch_type"]),
@@ -1456,6 +1532,7 @@ def aggregate_reports(
                     "Complexity": info["complexity"],
                     "Features": info["feature_mode"],
                     "Sampling": info["sampling"],
+                    "TargetLevel": info["target_level"],
                     "Balancing": info["balancing"],
                     "Aug": info["is_aug"],
                     "arch_type": info["arch_type"],
