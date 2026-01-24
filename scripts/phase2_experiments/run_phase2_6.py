@@ -318,26 +318,28 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
     # === Предподготовка балансировщиков ===
     balancers_cache: Dict[str, Any] = {}
     
-    def get_or_create_balancer(strategy: str) -> Optional[Any]:
+    def get_or_create_balancer(strategy: str, level: str = 'base') -> Optional[Any]:
         """Создаёт или возвращает кэшированный балансировщик."""
         if strategy == 'none' or strategy == 'weights':
             return None
-        if strategy in balancers_cache:
-            return balancers_cache[strategy]
         
-        print(f"[Предподготовка балансировщика: {strategy}]")
-        # Для балансировщика используем базовые метки (4 класса)
-        target_cols_base = get_target_columns('base')
+        cache_key = f"{strategy}_{level}"
+        if cache_key in balancers_cache:
+            return balancers_cache[cache_key]
+        
+        print(f"[Предподготовка балансировщика: {strategy} level: {level}]")
+        # Для балансировщика используем метки соответствующего уровня
+        target_cols_for_balancing = get_target_columns(level, df)
         config = BalancingConfig(
             min_batch_size=64,
             samples_per_oscillogram=target_spf,
             total_samples_per_epoch=10000,
             cache_dir=str(DATA_DIR / 'balancing_cache')
         )
-        balancer = get_balancing_strategy(strategy, df, target_cols_base, WINDOW_SIZE, config)
+        balancer = get_balancing_strategy(strategy, df, target_cols_for_balancing, WINDOW_SIZE, config)
         if balancer:
             balancer.analyze()
-        balancers_cache[strategy] = balancer
+        balancers_cache[cache_key] = balancer
         return balancer
 
     data_config = DataConfig(
@@ -374,9 +376,11 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         # Вариант Б: full (все ML_* колонки, независимые)
         "2.6.4_full_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights", "target_level": "full"},
         "2.6.4_full_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights", "target_level": "full"},
+        "2.6.4_full_global_stride": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "aug": True, "balancing": "global", "target_level": "full"},
         # Вариант В: full_by_levels (все ML_* с иерархическим распространением)
         "2.6.4_hier_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights", "target_level": "full_by_levels"},
         "2.6.4_hier_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights", "target_level": "full_by_levels"},
+        "2.6.4_hier_global_stride": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "aug": True, "balancing": "global", "target_level": "full_by_levels"},
     }
 
     if target_exp not in exp_params:
@@ -526,7 +530,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
                     val_df=test_df,
                     use_precomputed_val=True,
                     balancing_mode=p.get('balancing', 'weights'),
-                    balancer=get_or_create_balancer(p.get('balancing', 'weights')),
+                    balancer=get_or_create_balancer(p.get('balancing', 'weights'), exp_target_level),
                     num_harmonics=current_harmonics,
                     target_level=exp_target_level
                 )
@@ -555,9 +559,9 @@ if __name__ == "__main__":
         
         # === Эксперимент 2.6.4: Гранулярность меток ===
         # Вариант Б: full (все ML_* колонки независимо)
-        "2.6.4_full_stride", "2.6.4_full_snapshot",
+        "2.6.4_full_stride", "2.6.4_full_snapshot", "2.6.4_full_global_stride",
         # Вариант В: full_by_levels (все ML_* с иерархическим распространением)
-        "2.6.4_hier_stride", "2.6.4_hier_snapshot",
+        "2.6.4_hier_stride", "2.6.4_hier_snapshot", "2.6.4_hier_global_stride",
     ]
     
     # Тип модели ('all' - выберет автоматически подходящие для группы)
