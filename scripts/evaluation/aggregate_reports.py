@@ -1221,6 +1221,17 @@ def parse_experiment_info(folder_name: str) -> Dict[str, str]:
 
     return info
 
+
+def extract_base_exp_id(text: str) -> str:
+    """
+    Извлекает базовый ID опыта из строки (например, 2.5.1.0 или 2.6.4).
+    Используется для устойчивой группировки и понятных заголовков графиков.
+    """
+    match = re.search(r'(\d+\.\d+\.\d+\.\d+|\d+\.\d+\.\d+)', text)
+    if match:
+        return match.group(1)
+    return "Unknown"
+
 # =============================================================================
 # ВИЗУАЛИЗАЦИЯ
 # =============================================================================
@@ -1273,8 +1284,8 @@ class ReportVisualizer:
             'Unknown': '#34495e'
         }
 
-    def plot_group_curves(self, exp_id: str, group_df: pd.DataFrame, histories: Dict[str, List[Dict]]):
-        """Рисует сравнение всех моделей внутри одного ExpID."""
+    def plot_group_curves(self, group_label: str, group_df: pd.DataFrame, histories: Dict[str, List[Dict]], group_file_id: str):
+        """Рисует сравнение всех моделей внутри одной группы (по заданным параметрам)."""
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
         
         for name, history in histories.items():
@@ -1298,12 +1309,12 @@ class ReportVisualizer:
             if 'val_f1' in df_h.columns:
                 ax2.plot(df_h['epoch'], df_h['val_f1'], label=model_label, color=color, linestyle=ls, alpha=0.8)
 
-        ax1.set_title(self.t['loss_title'].format(exp_id))
+        ax1.set_title(self.t['loss_title'].format(group_label))
         ax1.set_xlabel(self.t['epoch'])
         ax1.set_ylabel(self.t['loss'])
         ax1.grid(True, alpha=0.3)
         
-        ax2.set_title(self.t['f1_title'].format(exp_id))
+        ax2.set_title(self.t['f1_title'].format(group_label))
         ax2.set_xlabel(self.t['epoch'])
         ax2.set_ylabel(self.t['f1'])
         ax2.set_ylim([0, 1.0])
@@ -1311,7 +1322,7 @@ class ReportVisualizer:
         ax2.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 
         plt.tight_layout()
-        save_path = self.output_root / "groups" / f"exp_{exp_id}_comparison_{self.lang}.png"
+        save_path = self.output_root / "groups" / f"{group_file_id}_comparison_{self.lang}.png"
         save_path.parent.mkdir(exist_ok=True)
         plt.savefig(save_path, dpi=150)
         plt.close()
@@ -1620,21 +1631,44 @@ def aggregate_reports(
     if plot:
         viz = ReportVisualizer(figures_path, lang=lang)
         
-        # 1. Групповые графики по ExpID (пропускаем если файл уже существует)
-        unique_exps = df['ExpID'].unique()
-        for eid in tqdm(unique_exps, desc=viz.t['groups_desc']):
-            if eid == "Unknown": continue
-            
+        # 1. Групповые графики по параметрам (Complexity, Features, Sampling, TargetLevel, Balancing, Aug, arch_type)
+        group_cols = [
+            'Complexity', 'Features', 'Sampling', 'TargetLevel',
+            'Balancing', 'Aug', 'arch_type'
+        ]
+
+        grouped = df.groupby(group_cols, dropna=False)
+        for idx, (group_keys, group_df) in enumerate(tqdm(grouped, desc=viz.t['groups_desc'])):
+            # Список базовых ID опытов в группе
+            base_ids = sorted({extract_base_exp_id(str(x)) for x in group_df['Experiment'].tolist()})
+            base_ids = [x for x in base_ids if x != "Unknown"]
+
+            # Формируем читаемую метку группы
+            if len(base_ids) == 1:
+                group_label = base_ids[0]
+                file_prefix = f"exp_{base_ids[0]}"
+            elif len(base_ids) > 1:
+                group_label = ", ".join(base_ids)
+                file_prefix = f"exp_multi_{idx:03d}"
+            else:
+                group_label = f"Group {idx:03d}"
+                file_prefix = f"group_{idx:03d}"
+
+            # Небольшой суффикс по параметрам для уникальности файлов
+            params_suffix = "_".join([str(k) for k in group_keys])
+            params_suffix = re.sub(r'[^a-zA-Z0-9._-]+', '_', params_suffix)[:80]
+            group_file_id = f"{file_prefix}_{params_suffix}" if params_suffix else file_prefix
+
             # Проверяем существование графика
-            group_plot_path = figures_path / "groups" / f"exp_{eid}_comparison_{lang}.png"
+            group_plot_path = figures_path / "groups" / f"{group_file_id}_comparison_{lang}.png"
             if group_plot_path.exists():
                 skip_stats['plots_skipped'] += 1
                 continue
-            
-            # Находим все папки, относящиеся к этому опыту
-            exp_folders = df[df['ExpID'] == eid]['Path'].tolist()
+
+            # Находим все папки, относящиеся к этой группе
+            exp_folders = group_df['Path'].tolist()
             group_histories = {f: all_histories[f] for f in exp_folders if f in all_histories}
-            viz.plot_group_curves(eid, df, group_histories)
+            viz.plot_group_curves(group_label, group_df, group_histories, group_file_id)
             skip_stats['plots_generated'] += 1
             
         # 2. Паррето график скорость/точность (ВСЕГДА обновляем)
