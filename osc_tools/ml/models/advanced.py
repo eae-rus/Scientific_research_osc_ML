@@ -44,9 +44,13 @@ class HierarchicalStem(nn.Module):
     Архитектура:
     1. Independent Signal Stage: Каждый входной сигнал обрабатывается независимо.
     2. Physical Group Stage: Объединение в группы (Токи, Напряжения).
+    
+    Параметры:
+    - expand_stage2: Если False, stage2 сохраняет кол-во каналов (для лёгких моделей).
+                     Если True, удваивает каналы (старое поведение для CNN/ResNet).
     """
     def __init__(self, in_channels, base_filters, kernel_size=3, stride=1, use_kan=False, 
-                 independent_layers=2, grouped_layers=2, **kwargs):
+                 independent_layers=2, grouped_layers=2, expand_stage2=True, **kwargs):
         super().__init__()
         
         # --- Stage 1: Independent Signals ---
@@ -97,7 +101,9 @@ class HierarchicalStem(nn.Module):
         # Делим на 2 группы.
         
         groups_stage2 = 2
-        stage2_out = stage1_out * 2 # Расширяем кол-во фильтров при объединении
+        # expand_stage2=True: удваиваем каналы (для CNN/ResNet)
+        # expand_stage2=False: сохраняем размерность (для SimpleKAN чтобы не раздувать вход)
+        stage2_out = stage1_out * 2 if expand_stage2 else stage1_out
         
         s2_layers_list = []
         curr_s2 = curr # Output of stage 1
@@ -199,6 +205,11 @@ class HierarchicalConvKAN(nn.Module):
     """
     Hierarchical Signal Processing + KAN Convolutional Backbone.
     KAN-версия иерархической сети (свёрточная).
+    
+    Оптимизации (v2):
+    - Stem использует обычные Conv1d для скорости
+    - KAN слои только в backbone
+    - expand_stage2=True для свёрточных сетей (сохраняем оригинальную логику)
     """
     def __init__(self, in_channels: int, num_classes: int, channels: list = [16, 32], 
                  kernel_size: int = 3, stride: int = 1, dropout: float = 0.2, 
@@ -211,8 +222,8 @@ class HierarchicalConvKAN(nn.Module):
         base_filters = channels[0]
         self.stem = HierarchicalStem(
             in_channels, base_filters, kernel_size, stride, 
-            use_kan=True, 
-            grid_size=grid_size, spline_order=spline_order,
+            use_kan=False,  # Обычные Conv1d для скорости!
+            expand_stage2=True,  # Для Conv сетей раздуваем каналы (больше capacity)
             **stem_config
         )
         
@@ -350,7 +361,17 @@ class HierarchicalResNet(nn.Module):
 class HierarchicalSimpleKAN(nn.Module):
     """
     Hierarchical Stem + Dense KAN Backbone.
-    Аналог SimpleKAN, но с правильным препроцессингом каналов.
+    Аналог SimpleKAN, но с физически-обоснованным препроцессингом сигналов.
+    
+    Ключевые оптимизации (исправлено v3):
+    - Stem использует ОБЫЧНЫЕ Conv1d (быстрые), а не KANConv1d
+    - GlobalAvgPool сжимает временную ось перед KAN backbone
+    - KAN слои только в backbone (где они дают интерпретируемость)
+    - Это даёт сопоставимое с SimpleKAN количество параметров И скорость
+    
+    Параметры:
+    - channels: список hidden_sizes для KAN backbone (как у SimpleKAN)
+    - stem_config: {'independent_layers': N, 'grouped_layers': M}
     """
     def __init__(self, in_channels: int, num_classes: int, channels: list = [64, 32], 
                  grid_size=5, spline_order=3, dropout=0.0, stem_config: dict = None, input_size=3200):
@@ -359,24 +380,23 @@ class HierarchicalSimpleKAN(nn.Module):
         if stem_config is None:
             stem_config = {'independent_layers': 1, 'grouped_layers': 1}
         
-        # Для stem base_filters берется из channels[0], но для SimpleKAN это скрытые слои.
-        # Пусть base_filters для Stem будет in_channels * 2 (эвристика)
-        stem_filters = in_channels * 2
+        # Stem с минимальным расширением каналов
+        # base_filters = in_channels чтобы сохранить размерность
+        stem_filters = in_channels
         
         self.stem = HierarchicalStem(
             in_channels, stem_filters, stride=1,
-            use_kan=True, 
-            grid_size=grid_size, spline_order=spline_order,
+            use_kan=False,  # КРИТИЧНО: используем обычные Conv1d для скорости!
+            expand_stage2=False,  # НЕ раздуваем каналы в stage2
             **stem_config
         )
         
-        # Расчет размера входа для MLP части
-        # input_size здесь - это изначальная длина * каналы.
-        # Нам нужно знать длину временного ряда после стемминга. 
-        # Stem с stride=1 не меняет длину.
-        # Если input_size передан как Total Points (C*L), то L = Input / C
-        seq_len = input_size // in_channels
-        kan_input_size = self.stem.out_channels * seq_len
+        # GlobalAvgPool для сжатия временной оси
+        # Это критично: вместо flatten(C*L) мы получаем вектор размера C
+        self.global_pool = nn.AdaptiveAvgPool1d(1)
+        
+        # Backbone работает с вектором размера stem.out_channels
+        kan_input_size = self.stem.out_channels
         
         self.backbone = SimpleKAN(
             input_size=kan_input_size, 
@@ -388,16 +408,18 @@ class HierarchicalSimpleKAN(nn.Module):
         )
 
     def forward(self, x):
-        x = self.stem(x)
-        # Flatten внутри SimpleKAN, но SimpleKAN ожидает (B, Features) или (B, C, L)?
-        # SimpleKAN проверяет dim > 2 и делает flatten.
-        # Так что можно передавать (B, C, L) прямо туда.
+        x = self.stem(x)                  # (B, C', L)
+        x = self.global_pool(x)           # (B, C', 1)
+        x = x.flatten(start_dim=1)        # (B, C')
         return self.backbone(x)
 
 class HierarchicalPhysicsKAN(nn.Module):
     """
     Hierarchical Stem + PhysicsKAN Logic.
     Stem подготавливает "физические группы" признаков, которые затем обрабатываются через Mult/Div.
+    
+    Оптимизации (v2):
+    - Stem не раздувает каналы (expand_stage2=False)
     """
     def __init__(self, in_channels: int, num_classes: int, channels: list = [16, 32], 
                  grid_size=5, spline_order=3, dropout=0.2, stem_config: dict = None, input_size=None, **kwargs):
@@ -410,8 +432,8 @@ class HierarchicalPhysicsKAN(nn.Module):
         
         self.stem = HierarchicalStem(
             in_channels, stem_filters, stride=1,
-            use_kan=True,
-            grid_size=grid_size, spline_order=spline_order,
+            use_kan=False,  # КРИТИЧНО: обычные Conv1d для скорости!
+            expand_stage2=False,  # НЕ раздуваем каналы
             **stem_config
         )
         

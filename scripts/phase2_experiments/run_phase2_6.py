@@ -362,6 +362,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         # === Эксперимент 2.6.1: Калибровка базовых моделей ===
         "2.6.1_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights", "target_level": "base"},
         "2.6.1_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights", "target_level": "base"},
+        "2.6.1_global_stride": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "aug": True, "balancing": "global", "target_level": "base"},
         
         # === Эксперимент 2.6.2: Иерархические модели ===
         "2.6.2_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights", "target_level": "base"},
@@ -549,7 +550,7 @@ if __name__ == "__main__":
     # 2.6.4 - гранулярность меток (full, full_by_levels)
     EXPS = [
         # === Эксперимент 2.6.1: Калибровка базовых моделей ===
-        # "2.6.1_stride", "2.6.1_snapshot", 
+        #"2.6.1_stride", "2.6.1_snapshot", "2.6.1_global_stride",
         
         # === Эксперимент 2.6.2: Иерархические модели ===
         "2.6.2_stride", "2.6.2_snapshot",
