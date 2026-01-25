@@ -97,7 +97,7 @@ def get_model_params(model_name, complexity, num_classes):
     params = MODEL_COMPLEXITY[complexity].get(model_name, {}).copy()
     
     # Унификация имен параметров для разных архитектур
-    if model_name in ['SimpleMLP', 'SimpleKAN', 'HybridMLP', 'HybridSimpleKAN']:
+    if model_name in ['SimpleMLP', 'SimpleKAN']:
         params['output_size'] = num_classes
     else:
         params['num_classes'] = num_classes
@@ -131,6 +131,31 @@ def run_single_experiment(
     print(f"Балансировка: {balancing_mode}")
     print(f"Уровень меток: {target_level} ({len(target_cols)} классов)")
 
+    # === Специальная логика для гибридных моделей ===
+    effective_feature_mode = feature_mode
+    features_mode_for_hybrid = feature_mode
+    effective_use_precomputed_val = use_precomputed_val
+
+    if model_name.startswith('Hybrid'):
+        # Гибриды ожидают raw + features
+        if isinstance(feature_mode, list):
+            if 'raw' not in feature_mode:
+                effective_feature_mode = ['raw'] + feature_mode
+            features_mode_for_hybrid = next((m for m in effective_feature_mode if m != 'raw'), 'raw')
+        else:
+            effective_feature_mode = ['raw', feature_mode]
+            features_mode_for_hybrid = feature_mode
+
+    def get_features_tail_len(mode: str) -> int:
+        """Определяет длину хвоста для features-ветки гибридов."""
+        spectral_modes = {
+            'symmetric', 'symmetric_polar', 'phase_polar', 'phase_complex',
+            'power', 'polar'
+        }
+        if mode in spectral_modes:
+            return 1
+        return 32
+
     # Настройка веса Loss функции
     use_pos_weight = (balancing_mode == 'weights')
     train_config_base.use_pos_weight = use_pos_weight
@@ -158,7 +183,7 @@ def run_single_experiment(
     # 2. Подготовка Dataset
     train_ds = OscillogramDataset(
         dataframe=df, indices=actual_train_indices, window_size=data_config_base.window_size,
-        mode='classification', feature_mode=feature_mode,
+        mode='classification', feature_mode=effective_feature_mode,
         sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
         target_columns=target_cols, target_level=ds_target_level,
         physical_normalization=True, norm_coef_path=str(norm_coef_path),
@@ -167,10 +192,15 @@ def run_single_experiment(
     )
     
     # Валидационный датасет - используем предрассчитанные данные если возможно
+    supported_precomputed_modes = {
+        'raw', 'phase_polar', 'symmetric', 'symmetric_polar',
+        'phase_complex', 'power', 'alpha_beta'
+    }
+    modes_for_precomputed = effective_feature_mode if isinstance(effective_feature_mode, list) else [effective_feature_mode]
     can_use_precomputed = (
-        use_precomputed_val and
+        effective_use_precomputed_val and
         val_df is not None and
-        feature_mode in ['raw', 'phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex', 'power', 'alpha_beta']
+        all(m in supported_precomputed_modes for m in modes_for_precomputed)
     )
     
     if can_use_precomputed:
@@ -178,7 +208,7 @@ def run_single_experiment(
             print(f"  [Использую предрассчитанные признаки для валидации]")
             val_ds = PrecomputedDataset(
                 dataframe=val_df, indices=val_indices, window_size=data_config_base.window_size,
-                feature_mode=feature_mode,
+                feature_mode=effective_feature_mode,
                 target_columns=target_cols, target_level=target_level,
                 sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
                 num_harmonics=num_harmonics
@@ -188,7 +218,7 @@ def run_single_experiment(
             print(f"  [Расчёт признаков на лету для валидации]")
             val_ds = OscillogramDataset(
                 dataframe=df, indices=val_indices, window_size=data_config_base.window_size,
-                mode='classification', feature_mode=feature_mode,
+                mode='classification', feature_mode=effective_feature_mode,
                 sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
                 target_columns=target_cols, target_level=ds_target_level,
                 physical_normalization=True, norm_coef_path=str(norm_coef_path),
@@ -199,7 +229,7 @@ def run_single_experiment(
         print(f"  [Расчёт признаков на лету для валидации]")
         val_ds = OscillogramDataset(
             dataframe=df, indices=val_indices, window_size=data_config_base.window_size,
-            mode='classification', feature_mode=feature_mode,
+            mode='classification', feature_mode=effective_feature_mode,
             sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
             target_columns=target_cols, target_level=ds_target_level,
             physical_normalization=True, norm_coef_path=str(norm_coef_path),
@@ -208,7 +238,8 @@ def run_single_experiment(
         )
     
     # Динамическое уменьшение batch_size для тяжёлых режимов (экономия GPU памяти)
-    is_harmonic_mode = feature_mode in ['phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex']
+    mode_for_harmonics = features_mode_for_hybrid if model_name.startswith('Hybrid') else feature_mode
+    is_harmonic_mode = mode_for_harmonics in ['phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex']
     base_batch_size = data_config_base.batch_size
     val_batch_size = 8192
 
@@ -247,6 +278,7 @@ def run_single_experiment(
         model_params['raw_channels'] = 8
         model_params['features_channels'] = in_channels - 8
         model_params['seq_len'] = seq_len
+        model_params['features_seq_len'] = min(get_features_tail_len(features_mode_for_hybrid), seq_len)
 
     config = ExperimentConfig(
         model=ModelConfig(name=model_name, params=model_params),

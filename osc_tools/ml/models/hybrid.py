@@ -4,6 +4,7 @@
 Двухголовая архитектура (Two-Headed Model):
 - Ветка 1 (Fast): обрабатывает Raw данные — ловит резкие фронты и паттерны
 - Ветка 2 (Precise): обрабатывает спектральные признаки (Phase Polar) — точная классификация
+    и получает только хвост окна (последний снимок/период) для локализации по времени.
 
 Все 6 гибридных моделей соответствуют 6 базовым:
 - HybridMLP = SimpleMLP + SimpleMLP → Fusion
@@ -70,6 +71,17 @@ class FusionHead(nn.Module):
         return self.fusion(combined)
 
 
+def _slice_tail(x: torch.Tensor, tail_len: Optional[int]) -> torch.Tensor:
+    """Возвращает последние tail_len точек по времени (если задано)."""
+    if tail_len is None or tail_len <= 0:
+        return x
+    if x.dim() != 3:
+        return x
+    if x.shape[-1] <= tail_len:
+        return x
+    return x[:, :, -tail_len:]
+
+
 # ============================================================================
 # HybridMLP: SimpleMLP + SimpleMLP
 # ============================================================================
@@ -91,17 +103,19 @@ class HybridMLP(BaseModel):
         use_bn: bool = True,
         raw_channels: int = 8,
         features_channels: int = 16,
-        seq_len: int = 64  # Длина последовательности
+        seq_len: int = 64,  # Длина последовательности (Raw ветка)
+        features_seq_len: Optional[int] = None  # Длина последовательности (Features ветка)
     ):
         super().__init__()
         
         self.raw_channels = raw_channels
         self.features_channels = features_channels
         self.seq_len = seq_len
+        self.features_seq_len = features_seq_len if features_seq_len is not None else seq_len
         
         # Размеры входов для каждой ветки
         self.raw_input_size = raw_channels * seq_len
-        self.features_input_size = features_channels * seq_len
+        self.features_input_size = features_channels * self.features_seq_len
         
         # Ветка 1: Raw данные
         self.raw_branch = self._make_mlp_branch(
@@ -142,7 +156,7 @@ class HybridMLP(BaseModel):
         if x.dim() == 3:
             # Разделяем по каналам
             x_raw = x[:, :self.raw_channels, :].flatten(start_dim=1)
-            x_feat = x[:, self.raw_channels:, :].flatten(start_dim=1)
+            x_feat = _slice_tail(x[:, self.raw_channels:, :], self.features_seq_len).flatten(start_dim=1)
         else:
             # Уже flatten
             x_raw = x[:, :self.raw_input_size]
@@ -176,12 +190,14 @@ class HybridCNN(BaseModel):
         use_bn: bool = True,
         pool_every: int = 1,
         raw_channels: int = 8,
-        features_channels: int = 16
+        features_channels: int = 16,
+        features_seq_len: Optional[int] = None
     ):
         super().__init__()
         
         self.raw_channels = raw_channels
         self.features_channels = features_channels
+        self.features_seq_len = features_seq_len
         
         # Ветка 1: Raw данные
         self.raw_branch = self._make_cnn_branch(
@@ -225,7 +241,7 @@ class HybridCNN(BaseModel):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: (Batch, Channels, Length)
         x_raw = x[:, :self.raw_channels, :]
-        x_feat = x[:, self.raw_channels:, :]
+        x_feat = _slice_tail(x[:, self.raw_channels:, :], self.features_seq_len)
         
         raw_out = self.raw_branch(x_raw)
         raw_out = nn.functional.adaptive_avg_pool1d(raw_out, 1).flatten(1)
@@ -325,12 +341,14 @@ class HybridResNet(BaseModel):
         layers: List[int] = [1, 1, 1, 1],  # Количество блоков в каждом layer
         base_filters: int = 32,  # Уменьшено вдвое (было 64)
         raw_channels: int = 8,
-        features_channels: int = 16
+        features_channels: int = 16,
+        features_seq_len: Optional[int] = None
     ):
         super().__init__()
         
         self.raw_channels = raw_channels
         self.features_channels = features_channels
+        self.features_seq_len = features_seq_len
         
         # Ветка 1: Raw данные
         self.raw_branch = _ResNetBranch(raw_channels, layers, base_filters)
@@ -349,7 +367,7 @@ class HybridResNet(BaseModel):
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x_raw = x[:, :self.raw_channels, :]
-        x_feat = x[:, self.raw_channels:, :]
+        x_feat = _slice_tail(x[:, self.raw_channels:, :], self.features_seq_len)
         
         raw_out = self.raw_branch(x_raw)
         feat_out = self.features_branch(x_feat)
@@ -380,17 +398,19 @@ class HybridSimpleKAN(BaseModel):
         base_activation=torch.nn.SiLU,
         raw_channels: int = 8,
         features_channels: int = 16,
-        seq_len: int = 64
+        seq_len: int = 64,
+        features_seq_len: Optional[int] = None
     ):
         super().__init__()
         
         self.raw_channels = raw_channels
         self.features_channels = features_channels
         self.seq_len = seq_len
+        self.features_seq_len = features_seq_len if features_seq_len is not None else seq_len
         
         # Размеры входов
         self.raw_input_size = raw_channels * seq_len
-        self.features_input_size = features_channels * seq_len
+        self.features_input_size = features_channels * self.features_seq_len
         
         # Ветка 1: Raw данные
         self.raw_branch = self._make_kan_branch(
@@ -429,7 +449,7 @@ class HybridSimpleKAN(BaseModel):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if x.dim() == 3:
             x_raw = x[:, :self.raw_channels, :].flatten(start_dim=1)
-            x_feat = x[:, self.raw_channels:, :].flatten(start_dim=1)
+            x_feat = _slice_tail(x[:, self.raw_channels:, :], self.features_seq_len).flatten(start_dim=1)
         else:
             x_raw = x[:, :self.raw_input_size]
             x_feat = x[:, self.raw_input_size:]
@@ -465,12 +485,14 @@ class HybridConvKAN(BaseModel):
         pool_every: int = 1,
         base_activation=torch.nn.SiLU,
         raw_channels: int = 8,
-        features_channels: int = 16
+        features_channels: int = 16,
+        features_seq_len: Optional[int] = None
     ):
         super().__init__()
         
         self.raw_channels = raw_channels
         self.features_channels = features_channels
+        self.features_seq_len = features_seq_len
         
         # Ветка 1: Raw данные
         self.raw_branch = self._make_convkan_branch(
@@ -520,7 +542,7 @@ class HybridConvKAN(BaseModel):
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x_raw = x[:, :self.raw_channels, :]
-        x_feat = x[:, self.raw_channels:, :]
+        x_feat = _slice_tail(x[:, self.raw_channels:, :], self.features_seq_len)
         
         raw_out = self.raw_branch(x_raw)
         raw_out = nn.functional.adaptive_avg_pool1d(raw_out, 1).flatten(1)
@@ -556,12 +578,14 @@ class HybridPhysicsKAN(BaseModel):
         pool_every: int = 1,
         base_activation=torch.nn.SiLU,
         raw_channels: int = 8,
-        features_channels: int = 16
+        features_channels: int = 16,
+        features_seq_len: Optional[int] = None
     ):
         super().__init__()
         
         self.raw_channels = raw_channels
         self.features_channels = features_channels
+        self.features_seq_len = features_seq_len
         
         # Физические слои для Raw ветки (предполагаем [I, U] структуру)
         # Raw: [IA, IB, IC, IN, UA, UB, UC, UN] -> half = 4 канала токов, 4 напряжений
@@ -642,7 +666,7 @@ class HybridPhysicsKAN(BaseModel):
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x_raw = x[:, :self.raw_channels, :]
-        x_feat = x[:, self.raw_channels:, :]
+        x_feat = _slice_tail(x[:, self.raw_channels:, :], self.features_seq_len)
         
         # Физические операции
         x_raw = self._apply_physics(x_raw, self.mult_raw, self.div_raw, self.bn_mult_raw, self.bn_div_raw)
