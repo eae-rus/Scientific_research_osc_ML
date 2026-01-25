@@ -908,23 +908,21 @@ def evaluate_full_test_dataset(
         
         # Определяем число гармоник:
         # 1. Из in_channels (если есть): num_harmonics = in_channels / base_ch
-        # 2. Из input_size (для MLP/KAN без in_channels): 
+        # 2. Из input_size (для MLP/KAN без in_channels):
         #    - snapshot: input_size = in_channels * 2 → in_channels = input_size / 2
         #    - stride: input_size = in_channels * seq_len (~18)
         #    - none: input_size = in_channels * window_size
+        # ВАЖНО: если in_channels был угадан по названию (например, 16),
+        #        но input_size говорит о большем числе гармоник, мы обязаны обновить.
         num_harmonics = 1
         input_size_cfg = config.get('model', {}).get('params', {}).get('input_size', 0)
+        derived_in_channels = None
         
-        if in_channels and base_ch > 0 and in_channels % base_ch == 0:
-            num_harmonics = max(1, in_channels // base_ch)
-        elif input_size_cfg > 0 and base_ch > 0:
+        if input_size_cfg > 0 and base_ch > 0:
             # Вычисляем in_channels из input_size и sampling_strategy
             if sampling_strategy == 'snapshot':
                 # Для спектральных: 2 точки, для raw: 64 точки
-                if feature_mode == 'raw':
-                    pts = 64
-                else:
-                    pts = 2
+                pts = 64 if feature_mode == 'raw' else 2
                 derived_in_channels = input_size_cfg // pts
             elif sampling_strategy == 'none':
                 derived_in_channels = input_size_cfg // window_size
@@ -936,10 +934,15 @@ def evaluate_full_test_dataset(
                     pts = (window_size - 32) // downsampling_stride
                 pts = max(1, pts)
                 derived_in_channels = input_size_cfg // pts
-            
-            if derived_in_channels > 0 and derived_in_channels % base_ch == 0:
-                num_harmonics = max(1, derived_in_channels // base_ch)
-                in_channels = derived_in_channels  # Обновляем для последующего использования
+        
+        # Приоритетно обновляем in_channels по input_size (если там больше гармоник)
+        if derived_in_channels and base_ch > 0 and derived_in_channels % base_ch == 0:
+            derived_harmonics = max(1, derived_in_channels // base_ch)
+            if (in_channels is None) or (derived_in_channels != in_channels and derived_harmonics > 1):
+                in_channels = derived_in_channels
+            num_harmonics = max(num_harmonics, derived_harmonics)
+        elif in_channels and base_ch > 0 and in_channels % base_ch == 0:
+            num_harmonics = max(1, in_channels // base_ch)
         
         # Определяем target_level из имени эксперимента
         # Примеры: 2.6.4_full_stride → full, 2.6.4_hier_stride → full_by_levels

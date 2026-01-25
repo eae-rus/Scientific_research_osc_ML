@@ -40,6 +40,7 @@ import seaborn as sns
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 import warnings
+import re
 
 # Настройки matplotlib для русского языка
 plt.rcParams['font.family'] = 'DejaVu Sans'
@@ -846,6 +847,9 @@ class AdvancedVisualizer:
         
         # Radar chart
         self._plot_radar_top_models(top_models, per_class_cols)
+
+        # Radar charts: топ-3 внутри каждой модели
+        self._plot_radar_top3_per_model(df_valid, per_class_cols)
         
         # Сравнение по типам моделей (усреднённое)
         self._plot_radar_by_model_type(df_valid, per_class_cols)
@@ -891,6 +895,60 @@ class AdvancedVisualizer:
         plt.tight_layout()
         plt.savefig(self.output_root / 'additional/radar' / 'radar_top5_models.png', dpi=150, bbox_inches='tight')
         plt.close()
+
+    def _plot_radar_top3_per_model(self, df: pd.DataFrame, class_cols: List[str]):
+        """Radar chart: топ-3 конфигурации внутри каждой модели."""
+        class_names = self.CLASS_NAMES[self.lang]
+
+        # Группируем по типу модели
+        grouped = df.groupby('Model')
+        if grouped.ngroups == 0:
+            return
+
+        num_vars = len(class_names)
+        angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+        angles += angles[:1]
+
+        for model_name, group_df in grouped:
+            top3 = group_df.nlargest(3, 'Best Full F1')
+            if len(top3) < 2:
+                # Для одиночной модели радар не информативен
+                continue
+
+            fig, ax = plt.subplots(figsize=(9, 9), subplot_kw=dict(polar=True))
+            palette = sns.color_palette('tab10', n_colors=len(top3))
+
+            for idx, (_, row) in enumerate(top3.iterrows()):
+                values = [row[col] for col in class_cols]
+                values += values[:1]
+
+                complexity = row.get('Complexity', '?')
+                features = row.get('Features', '?')
+                sampling = row.get('Sampling', '?')
+                label = f"{complexity} | {features} | {sampling}"
+
+                color = palette[idx]
+                ax.plot(angles, values, 'o-', linewidth=2, label=label, color=color)
+                ax.fill(angles, values, alpha=0.1, color=color)
+
+            ax.set_xticks(angles[:-1])
+            ax.set_xticklabels(class_names, fontsize=12)
+            ax.set_ylim(0, 1)
+            ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
+            ax.set_yticklabels(['0.2', '0.4', '0.6', '0.8', '1.0'], fontsize=9)
+            ax.grid(True)
+
+            plt.legend(loc='upper right', bbox_to_anchor=(1.35, 1.0))
+            plt.title(
+                f"Топ-3 конфигурации: {model_name}" if self.lang == 'ru' else f"Top-3 Configs: {model_name}",
+                fontsize=14, y=1.08
+            )
+
+            safe_name = re.sub(r'[^a-zA-Z0-9._-]+', '_', str(model_name))
+            out_path = self.output_root / 'additional/radar' / f"radar_top3_{safe_name}.png"
+            plt.tight_layout()
+            plt.savefig(out_path, dpi=150, bbox_inches='tight')
+            plt.close()
     
     def _plot_radar_by_model_type(self, df: pd.DataFrame, class_cols: List[str]):
         """Radar chart: усреднённые значения по типам моделей."""
