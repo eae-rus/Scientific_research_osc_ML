@@ -277,8 +277,11 @@ def run_single_experiment(
         # Разделение: первые 8 каналов — raw (I,U), остальные — features (phase_polar и т.д.)
         model_params['raw_channels'] = 8
         model_params['features_channels'] = in_channels - 8
-        model_params['seq_len'] = seq_len
         model_params['features_seq_len'] = min(get_features_tail_len(features_mode_for_hybrid), seq_len)
+
+        # seq_len нужен только для MLP/KAN веток
+        if model_name in ['HybridMLP', 'HybridSimpleKAN']:
+            model_params['seq_len'] = seq_len
 
     config = ExperimentConfig(
         model=ModelConfig(name=model_name, params=model_params),
