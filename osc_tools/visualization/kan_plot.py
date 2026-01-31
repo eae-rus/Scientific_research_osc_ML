@@ -70,11 +70,21 @@ def plot_kan_activation(layer: KANLinear, in_idx: int, out_idx: int, x_range=(-1
     ax.grid(True, alpha=0.3)
     ax.legend()
 
-def plot_kan_layer_grid(layer: KANLinear, max_inputs=5, max_outputs=5):
+def plot_kan_layer_grid(layer: KANLinear, max_inputs=5, max_outputs=5, show=True, save_path=None):
     """
     Строит сетку графиков активаций для слоя (первые N входов/выходов).
 
     Подписи осей и заголовки также на русском языке.
+    
+    Args:
+        layer: слой KANLinear
+        max_inputs: максимум входов для отображения
+        max_outputs: максимум выходов для отображения
+        show: показать ли график (plt.show())
+        save_path: путь для сохранения (если None, не сохраняет)
+    
+    Returns:
+        fig: объект matplotlib.figure
     """
     n_in = min(layer.in_features, max_inputs)
     n_out = min(layer.out_features, max_outputs)
@@ -97,7 +107,14 @@ def plot_kan_layer_grid(layer: KANLinear, max_inputs=5, max_outputs=5):
                 axes[i, j].set_ylabel(f"Выход {i}")
                 
     plt.tight_layout()
-    plt.show()
+    
+    if save_path:
+        fig.savefig(save_path, dpi=150, bbox_inches='tight')
+        
+    if show:
+        plt.show()
+    
+    return fig
 
 if __name__ == "__main__":
     # Пример использования для проверки
