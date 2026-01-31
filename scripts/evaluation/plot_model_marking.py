@@ -256,9 +256,20 @@ def generate_marking_plots_for_model(
     output_dir: Path,
     data_dir: Path,
     include_zero_current: bool = True,
-    include_zero_voltage: bool = True
+    include_zero_voltage: bool = True,
+    split: str = 'test'
 ) -> None:
-    """Генерация графиков разметки для всех тестовых осциллограмм по выбранной модели."""
+    """
+    Генерация графиков разметки для осциллограмм по выбранной модели.
+    
+    Args:
+        exp_name: Имя эксперимента.
+        output_dir: Папка для сохранения отчётов.
+        data_dir: Папка с датасетами.
+        include_zero_current: Отображать ток нуля (IN).
+        include_zero_voltage: Отображать напряжение нуля (UN).
+        split: Какие данные использовать — 'test' или 'train'.
+    """
     exp_dir = _find_experiment_dir(exp_name)
     config_path = exp_dir / "config.json"
     if not config_path.exists():
@@ -285,11 +296,17 @@ def generate_marking_plots_for_model(
 
     # Подготовка данных
     dm = DatasetManager(str(data_dir))
-    test_df = dm.load_test_df(precomputed=False)
-    test_df = test_df.with_row_index("row_nr")
-    test_df = prepare_labels_for_experiment(test_df, target_level)
+    if split == 'train':
+        data_df = dm.load_train_df(precomputed=False)
+        split_label = 'train'
+    else:
+        data_df = dm.load_test_df(precomputed=False)
+        split_label = 'test'
+    
+    data_df = data_df.with_row_index("row_nr")
+    data_df = prepare_labels_for_experiment(data_df, target_level)
 
-    target_cols = get_target_columns(target_level, test_df)
+    target_cols = get_target_columns(target_level, data_df)
 
     # Модель
     model = _create_model_from_config(config)
@@ -308,13 +325,17 @@ def generate_marking_plots_for_model(
     model = model.to(device)
     model.eval()
 
-    out_dir = output_dir / "marking_plots" / exp_name
+    # Добавляем суффикс split к папке вывода для разделения train/test
+    out_dir = output_dir / "marking_plots" / f"{exp_name}_{split_label}"
     out_dir.mkdir(parents=True, exist_ok=True)
+    
+    print(f"Генерация графиков разметки для split='{split_label}'")
+    print(f"Выходная папка: {out_dir}")
 
     # Работа по файлам
-    file_names = test_df['file_name'].unique().to_list()
-    for file_name in tqdm(file_names, desc="Разметка тестовых осциллограмм"):
-        file_df = test_df.filter(pl.col('file_name') == file_name)
+    file_names = data_df['file_name'].unique().to_list()
+    for file_name in tqdm(file_names, desc=f"Разметка {split_label} осциллограмм"):
+        file_df = data_df.filter(pl.col('file_name') == file_name)
         if len(file_df) < window_size + 1:
             continue
 
@@ -417,6 +438,8 @@ if __name__ == "__main__":
                         help="Отключить отображение I0 (IN)")
     parser.add_argument("--no-zero-voltage", action="store_true",
                         help="Отключить отображение U0 (UN)")
+    parser.add_argument("--split", type=str, default='test', choices=['train', 'test'],
+                        help="Какие данные использовать: 'train' или 'test' (по умолчанию: test)")
 
     args, _ = parser.parse_known_args()
 
@@ -429,17 +452,20 @@ if __name__ == "__main__":
         DATA_DIR = "data/ml_datasets"
         INCLUDE_ZERO_CURRENT = True
         INCLUDE_ZERO_VOLTAGE = True
+        SPLIT = 'test'  # 'train' или 'test'
     else:
         EXP_NAME = args.exp
         OUTPUT_DIR = args.output_dir or "reports/Exp_2_5_and_start_Exp_2_6"
         DATA_DIR = args.data_dir or "data/ml_datasets"
         INCLUDE_ZERO_CURRENT = not args.no_zero_current
         INCLUDE_ZERO_VOLTAGE = not args.no_zero_voltage
+        SPLIT = args.split
 
     generate_marking_plots_for_model(
         exp_name=EXP_NAME,
         output_dir=ROOT_DIR / OUTPUT_DIR,
         data_dir=ROOT_DIR / DATA_DIR,
         include_zero_current=INCLUDE_ZERO_CURRENT,
-        include_zero_voltage=INCLUDE_ZERO_VOLTAGE
+        include_zero_voltage=INCLUDE_ZERO_VOLTAGE,
+        split=SPLIT
     )
