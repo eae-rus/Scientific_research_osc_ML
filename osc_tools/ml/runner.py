@@ -213,16 +213,16 @@ class ExperimentRunner:
                 
                 if self.config.data.mode == 'classification':
                     val_acc = accuracy_score(all_targets, all_preds)
-                    val_f1 = f1_score(all_targets, all_preds, average='macro')
+                    val_f1 = f1_score(all_targets, all_preds, average='macro', zero_division=0)
                     val_balanced_acc = balanced_accuracy_score(all_targets, all_preds)
-                    per_class_f1 = f1_score(all_targets, all_preds, average=None).tolist()
+                    per_class_f1 = f1_score(all_targets, all_preds, average=None, zero_division=0).tolist()
                 elif self.config.data.mode == 'multilabel':
                     # Для multilabel, accuracy - это точное совпадение (строгое)
                     # Используйте F1-macro или F1-weighted
                     val_acc = accuracy_score(all_targets, all_preds) # Exact match
-                    val_f1 = f1_score(all_targets, all_preds, average='macro')
+                    val_f1 = f1_score(all_targets, all_preds, average='macro', zero_division=0)
                     val_balanced_acc = 0.0 # Не определено для multilabel
-                    per_class_f1 = f1_score(all_targets, all_preds, average=None).tolist()
+                    per_class_f1 = f1_score(all_targets, all_preds, average=None, zero_division=0).tolist()
                     
             else:
                 avg_val_loss = 0.0

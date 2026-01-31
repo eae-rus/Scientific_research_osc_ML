@@ -838,6 +838,8 @@ def evaluate_full_test_dataset(
                 sampling_strategy = 'stride'
                 downsampling_stride = 16
         
+        model_name = config.get('model', {}).get('name', '')
+
         # Feature mode - сначала пробуем взять из конфига данных
         # 16 = phase_polar (8 сигналов × 2: amp + phase)
         # 12 = symmetric (6 составляющих × 2: amp + phase)
@@ -893,22 +895,36 @@ def evaluate_full_test_dataset(
             else:
                 feature_mode = 'phase_polar'  # Default для Phase 2.x
 
-        # Определяем базовое число каналов для feature_mode
-        base_ch = 0
-        if feature_mode in ['symmetric', 'symmetric_polar']:
-            base_ch = 12
-        elif feature_mode in ['phase_polar', 'phase_complex']:
-            base_ch = 16
-        elif feature_mode == 'raw':
-            base_ch = 8
-        elif feature_mode == 'power':
-            base_ch = 8
-        elif feature_mode == 'alpha_beta':
-            base_ch = 6
+        # Гибридные модели ожидают raw + features
+        if model_name.startswith('Hybrid'):
+            if isinstance(feature_mode, list):
+                if 'raw' not in feature_mode:
+                    feature_mode = ['raw'] + feature_mode
+            else:
+                feature_mode = ['raw', feature_mode]
+
+        modes_list = feature_mode if isinstance(feature_mode, list) else [feature_mode]
+        has_spectral = any(m != 'raw' for m in modes_list)
+
+        # Определяем базовые каналы
+        raw_base_ch = 8 if 'raw' in modes_list else 0
+        spectral_mode = next((m for m in modes_list if m != 'raw'), None)
+        spectral_base_ch = 0
+        if spectral_mode in ['symmetric', 'symmetric_polar']:
+            spectral_base_ch = 12
+        elif spectral_mode in ['phase_polar', 'phase_complex']:
+            spectral_base_ch = 16
+        elif spectral_mode == 'power':
+            spectral_base_ch = 8
+        elif spectral_mode == 'alpha_beta':
+            spectral_base_ch = 6
+        elif spectral_mode is None and raw_base_ch > 0:
+            spectral_base_ch = 0
         
         # Определяем число гармоник:
-        # 1. Из in_channels (если есть): num_harmonics = in_channels / base_ch
-        # 2. Из input_size (для MLP/KAN без in_channels):
+        # 1. Из features_channels (для гибридных): num_harmonics = features_channels / base_ch
+        # 2. Из in_channels (если есть): num_harmonics = in_channels / base_ch
+        # 3. Из input_size (для MLP/KAN без in_channels):
         #    - snapshot: input_size = in_channels * 2 → in_channels = input_size / 2
         #    - stride: input_size = in_channels * seq_len (~18)
         #    - none: input_size = in_channels * window_size
@@ -916,19 +932,24 @@ def evaluate_full_test_dataset(
         #        но input_size говорит о большем числе гармоник, мы обязаны обновить.
         num_harmonics = 1
         input_size_cfg = config.get('model', {}).get('params', {}).get('input_size', 0)
+        features_channels_cfg = config.get('model', {}).get('params', {}).get('features_channels', 0)
         derived_in_channels = None
         
-        if input_size_cfg > 0 and base_ch > 0:
+        # Для гибридных моделей: вычисляем num_harmonics из features_channels напрямую
+        if model_name.startswith('Hybrid') and features_channels_cfg > 0 and spectral_base_ch > 0:
+            if features_channels_cfg % spectral_base_ch == 0:
+                num_harmonics = max(1, features_channels_cfg // spectral_base_ch)
+        elif input_size_cfg > 0 and (spectral_base_ch > 0 or raw_base_ch > 0):
             # Вычисляем in_channels из input_size и sampling_strategy
             if sampling_strategy == 'snapshot':
                 # Для спектральных: 2 точки, для raw: 64 точки
-                pts = 64 if feature_mode == 'raw' else 2
+                pts = 2 if has_spectral else 64
                 derived_in_channels = input_size_cfg // pts
             elif sampling_strategy == 'none':
                 derived_in_channels = input_size_cfg // window_size
             else:  # stride
                 # Для спектральных: (window_size - 32) // stride точек
-                if feature_mode == 'raw':
+                if not has_spectral:
                     pts = window_size // downsampling_stride
                 else:
                     pts = (window_size - 32) // downsampling_stride
@@ -936,13 +957,21 @@ def evaluate_full_test_dataset(
                 derived_in_channels = input_size_cfg // pts
         
         # Приоритетно обновляем in_channels по input_size (если там больше гармоник)
-        if derived_in_channels and base_ch > 0 and derived_in_channels % base_ch == 0:
-            derived_harmonics = max(1, derived_in_channels // base_ch)
-            if (in_channels is None) or (derived_in_channels != in_channels and derived_harmonics > 1):
-                in_channels = derived_in_channels
-            num_harmonics = max(num_harmonics, derived_harmonics)
-        elif in_channels and base_ch > 0 and in_channels % base_ch == 0:
-            num_harmonics = max(1, in_channels // base_ch)
+        if derived_in_channels:
+            if raw_base_ch > 0 and spectral_base_ch > 0:
+                spectral_ch = max(0, derived_in_channels - raw_base_ch)
+                if spectral_ch % spectral_base_ch == 0:
+                    derived_harmonics = max(1, spectral_ch // spectral_base_ch)
+                    if (in_channels is None) or (derived_in_channels != in_channels and derived_harmonics > 1):
+                        in_channels = derived_in_channels
+                    num_harmonics = max(num_harmonics, derived_harmonics)
+            elif spectral_base_ch > 0 and derived_in_channels % spectral_base_ch == 0:
+                derived_harmonics = max(1, derived_in_channels // spectral_base_ch)
+                if (in_channels is None) or (derived_in_channels != in_channels and derived_harmonics > 1):
+                    in_channels = derived_in_channels
+                num_harmonics = max(num_harmonics, derived_harmonics)
+        elif in_channels and spectral_base_ch > 0 and in_channels % spectral_base_ch == 0:
+            num_harmonics = max(1, in_channels // spectral_base_ch)
         
         # Определяем target_level из имени эксперимента
         # Примеры: 2.6.4_full_stride → full, 2.6.4_hier_stride → full_by_levels
@@ -983,20 +1012,27 @@ def evaluate_full_test_dataset(
         actual_shape = sample_x.shape  # (C, T)
         actual_input_size = sample_x.numel()
         expected_input_size = config.get('model', {}).get('params', {}).get('input_size', 0)
+        expected_in_channels = config.get('model', {}).get('params', {}).get('in_channels', 0)
         
+        # Для CNN/Conv моделей проверяем in_channels вместо input_size
+        shape_mismatch = False
         if expected_input_size > 0 and actual_input_size != expected_input_size:
+            shape_mismatch = True
+        elif expected_in_channels > 0 and actual_shape[0] != expected_in_channels:
+            shape_mismatch = True
+        
+        if shape_mismatch:
             error_msg = (
-                f"[!] Несоответствие размера: ожидалось {expected_input_size}, получено {actual_input_size}\n"
+                f"[!] Несоответствие размера данных:\n"
                 f"    Эксперимент: {exp_dir.name}\n"
-                f"    Модель: {config.get('model', {}).get('name')}\n"
-                f"    feature_mode={feature_mode} | sampling_strategy={sampling_strategy}\n"
+                f"    Модель: {model_name}\n"
+                f"    Ожидалось: in_channels={expected_in_channels}, input_size={expected_input_size}\n"
+                f"    Получено: shape={actual_shape}, numel={actual_input_size}\n"
+                f"    feature_mode={feature_mode} | sampling={sampling_strategy} | num_harmonics={num_harmonics}\n"
             )
             print(error_msg)
-            # breakpoint()  # Точка остановки закомментирована для массового запуска
-            
-            # Логируем ошибку в файл (если путь доступен через data_dir хак или передадим глобально)
-            # Но у нас есть return results. Попробуем вернуть ошибку в результатах?
-            # Пока просто выведем в stdout, перехватится вызывающим кодом если будет exception
+            if _eval_logger:
+                _eval_logger.error(error_msg)
             
             # Возвращаем пустые результаты, т.к. модель не сможет работать с такими данными
             return results
@@ -1199,6 +1235,12 @@ def parse_experiment_info(folder_name: str) -> Dict[str, str]:
         match = re.search(r'(?:Hierarchical|Hybrid)([a-zA-Z0-9]+)', folder_name)
         if match:
             info["model_family"] = match.group(1)
+    
+    # Добавляем префикс архитектуры к model_family для Hybrid/Hierarchical
+    if info["arch_type"] == "Hybrid" and not info["model_family"].startswith("Hybrid"):
+        info["model_family"] = "Hybrid" + info["model_family"]
+    elif info["arch_type"] == "Hierarchical" and not info["model_family"].startswith("Hier"):
+        info["model_family"] = "Hier" + info["model_family"]
 
     if 'light' in parts: info["complexity"] = 'Light'
     elif 'medium' in parts: info["complexity"] = 'Medium'

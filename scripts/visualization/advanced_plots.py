@@ -52,12 +52,27 @@ class AdvancedVisualizer:
     
     # Цветовая палитра для моделей
     MODEL_COLORS = {
+        # Базовые модели
         'MLP': '#95a5a6',
         'CNN': '#3498db',
         'ResNet': '#2ecc71',
         'SimpleKAN': '#e67e22',
         'ConvKAN': '#e74c3c',
         'PhysicsKAN': '#9b59b6',
+        # Гибридные модели (те же цвета, слегка темнее)
+        'HybridMLP': '#7f8c8d',
+        'HybridCNN': '#2980b9',
+        'HybridResNet': '#27ae60',
+        'HybridSimpleKAN': '#d35400',
+        'HybridConvKAN': '#c0392b',
+        'HybridPhysicsKAN': '#8e44ad',
+        # Иерархические модели (если понадобятся)
+        'HierMLP': '#bdc3c7',
+        'HierCNN': '#5dade2',
+        'HierResNet': '#58d68d',
+        'HierSimpleKAN': '#f39c12',
+        'HierConvKAN': '#ec7063',
+        'HierPhysicsKAN': '#bb8fce',
         'Unknown': '#34495e'
     }
     
