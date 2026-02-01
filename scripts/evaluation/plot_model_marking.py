@@ -374,6 +374,13 @@ def generate_marking_plots_for_model(
         pred_labels = {col: np.zeros(len(file_df), dtype=np.int8) for col in target_cols}
         real_labels = {col: file_df[col].to_numpy().astype(np.int8) for col in target_cols}
 
+        data_mode = config.get('data', {}).get('mode', 'multilabel')
+        model_name = model.__class__.__name__
+        is_conditional_model = 'conditional' in model_name.lower() or 'conditional' in exp_name.lower()
+        if target_level == 'base_sequential' and data_mode == 'multilabel':
+            # Фикс: для последовательных голов ожидаем multitask_conditional
+            data_mode = 'multitask_conditional'
+
         batch_size = 64
         for batch_start in range(0, len(indices), batch_size):
             batch_indices = indices[batch_start:batch_start + batch_size]
@@ -386,14 +393,16 @@ def generate_marking_plots_for_model(
             with torch.no_grad():
                 outputs = model(x_tensor)
 
-            data_mode = config.get('data', {}).get('mode', 'multilabel')
             if data_mode == 'classification':
                 preds = torch.argmax(outputs, dim=1).cpu().numpy()
                 pred_matrix = np.zeros((len(preds), len(target_cols)), dtype=np.int8)
                 pred_matrix[np.arange(len(preds)), preds] = 1
-            elif data_mode == 'multitask_conditional':
+            elif data_mode == 'multitask_conditional' or is_conditional_model or target_level == 'base_sequential':
                 probs = torch.sigmoid(outputs[:, :4])
                 pred_matrix = (probs > 0.5).int().cpu().numpy()
+
+                # Ограничение: если Normal=1, то остальные = 0
+                pred_matrix[:, 1:] = np.where(pred_matrix[:, 0:1] == 1, 0, pred_matrix[:, 1:])
 
                 # Ограничение: если ML_3=1, то ML_2=0
                 pred_matrix[:, 2] = np.where(pred_matrix[:, 3] == 1, 0, pred_matrix[:, 2])
@@ -456,7 +465,8 @@ if __name__ == "__main__":
     MANUAL_RUN = True
 
     if MANUAL_RUN or args.exp is None:
-        EXP_NAME = "Exp_2.6.1_PhysicsKAN_medium_phase_polar_stride_base_weights_aug"
+        # EXP_NAME = "Exp_2.6.1_PhysicsKAN_medium_phase_polar_stride_base_weights_aug"
+        EXP_NAME = "Exp_2.6.7_PhysicsKANConditional_heavy_phase_polar_stride_base_sequential_weights_aug"
         OUTPUT_DIR = "reports/Exp_2_5_and_start_Exp_2_6"
         DATA_DIR = "data/ml_datasets"
         INCLUDE_ZERO_CURRENT = True
