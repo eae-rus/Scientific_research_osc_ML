@@ -68,6 +68,38 @@ def add_base_labels(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
+def add_sequential_base_labels(df: pl.DataFrame) -> pl.DataFrame:
+    """
+    Добавляет базовые метки для последовательных голов:
+    - Target_Normal: нормальный режим (нет событий)
+    - Target_ML_1: любая метка ML_1*
+    - Target_ML_3: любая метка ML_3*
+    - Target_ML_2: любая метка ML_2*, но если Target_ML_3=1, то Target_ML_2=0
+    """
+    # Сначала создаём стандартные базовые метки
+    df = add_base_labels(df)
+
+    # Если есть авария (ML_3), то ML_2 должен быть 0
+    df = df.with_columns(
+        pl.when(pl.col("Target_ML_3") == 1)
+        .then(0)
+        .otherwise(pl.col("Target_ML_2"))
+        .cast(pl.Int8)
+        .alias("Target_ML_2")
+    )
+
+    # Пересчитываем Target_Normal с учётом коррекции
+    df = df.with_columns(
+        (
+            (pl.col("Target_ML_1") == 0) &
+            (pl.col("Target_ML_2") == 0) &
+            (pl.col("Target_ML_3") == 0)
+        ).cast(pl.Int8).alias("Target_Normal")
+    )
+
+    return df
+
+
 def propagate_hierarchical_labels(df: pl.DataFrame) -> pl.DataFrame:
     """
     Распространяет метки вверх по иерархии (full_by_levels).
@@ -166,6 +198,7 @@ def get_target_columns(level: str = 'base', df: Optional[pl.DataFrame] = None) -
     Args:
         level: 
             - 'base' или 'base_labels': 4 обобщённых класса (Target_Normal, Target_ML_1, Target_ML_2, Target_ML_3)
+            - 'base_sequential': 4 класса (Target_Normal, Target_ML_1, Target_ML_2, Target_ML_3) с ограничением ML_2=0 при ML_3=1
             - 'full': все колонки ML_* (требует df)
             - 'full_by_levels': все ML_* колонки с распространением иерархии (требует df)
             - 'level1': только колонки первого уровня (ML_1, ML_2, ML_3)
@@ -176,6 +209,8 @@ def get_target_columns(level: str = 'base', df: Optional[pl.DataFrame] = None) -
         Список имён целевых колонок
     """
     if level in ('base', 'base_labels'):
+        return ["Target_Normal", "Target_ML_1", "Target_ML_2", "Target_ML_3"]
+    elif level == 'base_sequential':
         return ["Target_Normal", "Target_ML_1", "Target_ML_2", "Target_ML_3"]
     
     elif level == 'full':
@@ -224,6 +259,9 @@ def prepare_labels_for_experiment(
     if target_level in ('base', 'base_labels'):
         # Добавляем базовые метки (4 класса)
         df = add_base_labels(df)
+    elif target_level == 'base_sequential':
+        # Добавляем базовые метки с ограничением ML_2=0 при ML_3=1
+        df = add_sequential_base_labels(df)
         
     elif target_level == 'full_by_levels':
         # Распространяем метки по иерархии

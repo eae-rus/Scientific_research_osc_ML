@@ -441,9 +441,14 @@ def _create_model_from_config(config: Dict[str, Any]) -> Optional[nn.Module]:
             elif model_name == 'ResNet1D':
                 from osc_tools.ml.models.resnet import ResNet1D
                 model_cls = ResNet1D
-            elif model_name in ['SimpleKAN', 'ConvKAN', 'PhysicsKAN']:
-                from osc_tools.ml.models.kan import SimpleKAN, ConvKAN, PhysicsKAN
-                models_map = {'SimpleKAN': SimpleKAN, 'ConvKAN': ConvKAN, 'PhysicsKAN': PhysicsKAN}
+            elif model_name in ['SimpleKAN', 'ConvKAN', 'PhysicsKAN', 'PhysicsKANConditional']:
+                from osc_tools.ml.models.kan import SimpleKAN, ConvKAN, PhysicsKAN, PhysicsKANConditional
+                models_map = {
+                    'SimpleKAN': SimpleKAN,
+                    'ConvKAN': ConvKAN,
+                    'PhysicsKAN': PhysicsKAN,
+                    'PhysicsKANConditional': PhysicsKANConditional
+                }
                 model_cls = models_map.get(model_name)
             elif model_name.startswith('Hierarchical'):
                 from osc_tools.ml.models.advanced import (
@@ -684,6 +689,8 @@ def evaluate_model_full(
     model.eval()
     all_preds = []
     all_targets = []
+    all_targets_ml23 = []
+    all_preds_ml23 = []
     
     try:
         with torch.no_grad():
@@ -698,12 +705,26 @@ def evaluate_model_full(
                     _, predicted = torch.max(outputs.data, 1)
                     all_preds.extend(predicted.cpu().numpy())
                     all_targets.extend(y.cpu().numpy())
-                else:  # multilabel
+                elif mode == 'multilabel':
                     y = y.float()
                     probs = torch.sigmoid(outputs)
                     predicted = (probs > 0.5).float()
                     all_preds.extend(predicted.cpu().numpy())
                     all_targets.extend(y.cpu().numpy())
+                elif mode == 'multitask_conditional':
+                    y = y.float()
+                    probs = torch.sigmoid(outputs[:, :4])
+                    pred_binary = (probs > 0.5).int().cpu().numpy()
+
+                    # Ограничение: если ML_3=1, то ML_2=0
+                    pred_binary[:, 2] = np.where(pred_binary[:, 3] == 1, 0, pred_binary[:, 2])
+
+                    all_preds.extend(pred_binary)
+                    all_targets.extend(y[:, :4].cpu().numpy())
+                    all_preds_ml23.extend([])
+                    all_targets_ml23.extend([])
+                else:
+                    raise ValueError(f"Unknown mode: {mode}")
     except Exception as e:
         # Очищаем GPU при ошибке
         if device.type == 'cuda':
@@ -718,15 +739,34 @@ def evaluate_model_full(
     all_targets = np.array(all_targets)
     
     # Расчёт метрик
-    acc = accuracy_score(all_targets, all_preds)
-    f1 = f1_score(all_targets, all_preds, average='macro', zero_division=0)
-    
-    if mode == 'classification':
-        balanced_acc = balanced_accuracy_score(all_targets, all_preds)
-    else:
+    if mode == 'multitask_conditional':
+        y_true = all_targets
+        y_pred = all_preds
+
+        f1_normal = f1_score(y_true[:, 0], y_pred[:, 0], zero_division=0)
+        f1_ml1 = f1_score(y_true[:, 1], y_pred[:, 1], zero_division=0)
+        f1_ml2 = f1_score(y_true[:, 2], y_pred[:, 2], zero_division=0)
+        f1_ml3 = f1_score(y_true[:, 3], y_pred[:, 3], zero_division=0)
+
+        acc_normal = accuracy_score(y_true[:, 0], y_pred[:, 0])
+        acc_ml1 = accuracy_score(y_true[:, 1], y_pred[:, 1])
+        acc_ml2 = accuracy_score(y_true[:, 2], y_pred[:, 2])
+        acc_ml3 = accuracy_score(y_true[:, 3], y_pred[:, 3])
+
+        acc = float(np.mean([acc_normal, acc_ml1, acc_ml2, acc_ml3]))
+        f1 = float(np.mean([f1_normal, f1_ml1, f1_ml2, f1_ml3]))
         balanced_acc = 0.0
-    
-    per_class_f1 = f1_score(all_targets, all_preds, average=None, zero_division=0).tolist()
+        per_class_f1 = [float(f1_normal), float(f1_ml1), float(f1_ml2), float(f1_ml3)]
+    else:
+        acc = accuracy_score(all_targets, all_preds)
+        f1 = f1_score(all_targets, all_preds, average='macro', zero_division=0)
+
+        if mode == 'classification':
+            balanced_acc = balanced_accuracy_score(all_targets, all_preds)
+        else:
+            balanced_acc = 0.0
+
+        per_class_f1 = f1_score(all_targets, all_preds, average=None, zero_division=0).tolist()
     
     return {
         'acc': acc,
@@ -975,7 +1015,9 @@ def evaluate_full_test_dataset(
         
         # Определяем target_level из имени эксперимента
         # Примеры: 2.6.4_full_stride → full, 2.6.4_hier_stride → full_by_levels
-        if 'full_by_levels' in exp_name or ('hier_' in exp_name and '2.6.4' in exp_name):
+        if 'base_sequential' in exp_name:
+            target_level = 'base_sequential'
+        elif 'full_by_levels' in exp_name or ('hier_' in exp_name and '2.6.4' in exp_name):
             target_level = 'full_by_levels'
         elif '2.6.4' in exp_name and 'full' in exp_name:
             target_level = 'full'
@@ -991,7 +1033,7 @@ def evaluate_full_test_dataset(
         )
         
         # Определяем ds_target_level для PrecomputedDataset
-        # PrecomputedDataset ожидает 'base' или 'multi_label' (не 'full'/'full_by_levels')
+        # PrecomputedDataset ожидает 'base' или расширенные уровни (не 'full'/'full_by_levels')
         ds_target_level = 'base' if target_level == 'base' else target_level
         
         # Создаём PrecomputedDataset для быстрой оценки
@@ -1818,4 +1860,4 @@ if __name__ == "__main__":
             full_eval=RUN_FULL_EVAL,
             lang=LANG,
             data_dir=args.data_dir,
-            advanced_plots=ADVANCED_PLOTS        )
+            advanced_plots=ADVANCED_PLOTS)

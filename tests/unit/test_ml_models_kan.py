@@ -1,6 +1,6 @@
 import pytest
 import torch
-from osc_tools.ml.models.kan import SimpleKAN, ConvKAN
+from osc_tools.ml.models.kan import SimpleKAN, ConvKAN, PhysicsKANConditional
 
 class TestKANModels:
     """
@@ -39,4 +39,17 @@ class TestKANModels:
         y = model(x)
         
         assert y.shape == (batch_size, num_classes)
+        assert not torch.isnan(y).any()
+
+    def test_physics_kan_conditional_forward(self):
+        """Smoke test для PhysicsKANConditional (проверка формы выхода)."""
+        batch_size = 2
+        in_channels = 8
+        seq_len = 128
+        model = PhysicsKANConditional(in_channels=in_channels, num_classes=4)
+
+        x = torch.randn(batch_size, in_channels, seq_len)
+        y = model(x)
+
+        assert y.shape == (batch_size, 4)
         assert not torch.isnan(y).any()

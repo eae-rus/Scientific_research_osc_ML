@@ -9,7 +9,7 @@ from .advanced import (
     HierarchicalSimpleKAN,
     HierarchicalPhysicsKAN
 )
-from .kan import SimpleKAN, ConvKAN, PhysicsKAN
+from .kan import SimpleKAN, ConvKAN, PhysicsKAN, PhysicsKANConditional
 from .autoencoders import AutoEncoder, KANAE
 from .unet import UNet1D
 from .experimental import (

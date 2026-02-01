@@ -18,7 +18,7 @@ from osc_tools.ml.models import (
     HybridMLP, HybridCNN, HybridResNet,
     HybridSimpleKAN, HybridConvKAN, HybridPhysicsKAN,
     PDR_MLP_v2, FFT_MLP_COMPLEX_v1,
-    SimpleKAN, ConvKAN, PhysicsKAN, AutoEncoder
+    SimpleKAN, ConvKAN, PhysicsKAN, PhysicsKANConditional, AutoEncoder
 )
 from osc_tools.ml.class_weights import compute_pos_weight_from_loader
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, balanced_accuracy_score
@@ -73,6 +73,8 @@ class ExperimentRunner:
             model = ConvKAN(**params)
         elif name == 'PhysicsKAN':
             model = PhysicsKAN(**params)
+        elif name == 'PhysicsKANConditional':
+            model = PhysicsKANConditional(**params)
         elif name == 'AutoEncoder':
             model = AutoEncoder(**params)
         # Гибридные модели (Exp 2.6.3)
@@ -121,12 +123,41 @@ class ExperimentRunner:
                 return nn.BCEWithLogitsLoss(pos_weight=pw)
             else:
                 return nn.BCEWithLogitsLoss()
+        elif mode == 'multitask_conditional':
+            # Для условных голов: BCE по 4 бинарным классам (Normal, ML_1, ML_2, ML_3)
+            use_pw = getattr(self.config.training, 'use_pos_weight', False) if hasattr(self.config, 'training') else False
+            if use_pw:
+                if train_loader is None:
+                    raise ValueError('train_loader должен быть предоставлен для вычисления pos_weight.')
+                pos_weight = self._compute_pos_weight_multitask(train_loader)
+                self.bce_loss = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+            else:
+                self.bce_loss = nn.BCEWithLogitsLoss()
+            return None
         elif mode == 'reconstruction':
             return nn.MSELoss()
         elif mode == 'segmentation':
             return nn.CrossEntropyLoss() # Assuming class indices
         else:
             raise ValueError(f"Unknown mode: {mode}")
+
+    def _compute_pos_weight_multitask(self, train_loader: DataLoader) -> torch.Tensor:
+        """Вычисляет pos_weight для 4 бинарных таргетов (Normal, ML_1, ML_2, ML_3)."""
+        total_pos = torch.zeros(4, device=self.device)
+        total_count = 0
+        for _, y in train_loader:
+            y = y.to(self.device).float()
+            total_pos += y[:, :4].sum(dim=0)
+            total_count += y.shape[0]
+        total_neg = total_count - total_pos
+        pos_weight = total_neg / (total_pos + 1e-6)
+        return pos_weight
+
+    def _compute_multitask_conditional_loss(self, outputs: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        """Лосс для режима multitask_conditional (BCE по 4 бинарным таргетам)."""
+        y = y.float()
+        out_binary = outputs[:, :4]
+        return self.bce_loss(out_binary, y[:, :4])
 
     def train(self, train_loader: DataLoader, val_loader: Optional[DataLoader] = None):
         # Инициализируем критерий здесь, т.к. для pos_weight нужен train_loader
@@ -155,10 +186,14 @@ class ExperimentRunner:
                     y = y.long()
                     if y.dim() > 1 and y.shape[1] == 1:
                         y = y.squeeze(1)
+                    loss = self.criterion(outputs, y)
                 elif self.config.data.mode == 'multilabel':
                     y = y.float()
-                
-                loss = self.criterion(outputs, y)
+                    loss = self.criterion(outputs, y)
+                elif self.config.data.mode == 'multitask_conditional':
+                    loss = self._compute_multitask_conditional_loss(outputs, y)
+                else:
+                    raise ValueError(f"Unknown mode: {self.config.data.mode}")
                 loss.backward()
                 self.optimizer.step()
                 
@@ -191,6 +226,7 @@ class ExperimentRunner:
                             
                             all_preds.extend(predicted.cpu().numpy())
                             all_targets.extend(y.cpu().numpy())
+                            loss = self.criterion(outputs, y)
                             
                         elif self.config.data.mode == 'multilabel':
                             y = y.float()
@@ -200,8 +236,23 @@ class ExperimentRunner:
                             
                             all_preds.extend(predicted.cpu().numpy())
                             all_targets.extend(y.cpu().numpy())
+                            loss = self.criterion(outputs, y)
                                 
-                        loss = self.criterion(outputs, y)
+                        elif self.config.data.mode == 'multitask_conditional':
+                            y = y.float()
+
+                            probs = torch.sigmoid(outputs[:, :4])
+                            pred_binary = (probs > 0.5).int().cpu().numpy()
+
+                            # Ограничение: если ML_3=1, то ML_2=0
+                            pred_binary[:, 2] = np.where(pred_binary[:, 3] == 1, 0, pred_binary[:, 2])
+
+                            all_preds.extend(pred_binary)
+                            all_targets.extend(y[:, :4].cpu().numpy())
+
+                            loss = self._compute_multitask_conditional_loss(outputs, y)
+                        else:
+                            raise ValueError(f"Unknown mode: {self.config.data.mode}")
                         val_loss += loss.item()
                         val_pbar.set_postfix({'loss': loss.item()})
                 
@@ -223,6 +274,30 @@ class ExperimentRunner:
                     val_f1 = f1_score(all_targets, all_preds, average='macro', zero_division=0)
                     val_balanced_acc = 0.0 # Не определено для multilabel
                     per_class_f1 = f1_score(all_targets, all_preds, average=None, zero_division=0).tolist()
+                elif self.config.data.mode == 'multitask_conditional':
+                    # Отдельные метрики по головам (4 бинарных)
+                    y_true = np.array(all_targets)
+                    y_pred = np.array(all_preds)
+
+                    f1_normal = f1_score(y_true[:, 0], y_pred[:, 0], zero_division=0)
+                    f1_ml1 = f1_score(y_true[:, 1], y_pred[:, 1], zero_division=0)
+                    f1_ml2 = f1_score(y_true[:, 2], y_pred[:, 2], zero_division=0)
+                    f1_ml3 = f1_score(y_true[:, 3], y_pred[:, 3], zero_division=0)
+
+                    acc_normal = accuracy_score(y_true[:, 0], y_pred[:, 0])
+                    acc_ml1 = accuracy_score(y_true[:, 1], y_pred[:, 1])
+                    acc_ml2 = accuracy_score(y_true[:, 2], y_pred[:, 2])
+                    acc_ml3 = accuracy_score(y_true[:, 3], y_pred[:, 3])
+
+                    val_acc = float(np.mean([acc_normal, acc_ml1, acc_ml2, acc_ml3]))
+                    val_f1 = float(np.mean([f1_normal, f1_ml1, f1_ml2, f1_ml3]))
+                    val_balanced_acc = 0.0
+                    per_class_f1 = [float(f1_normal), float(f1_ml1), float(f1_ml2), float(f1_ml3)]
+                else:
+                    val_acc = 0.0
+                    val_f1 = 0.0
+                    val_balanced_acc = 0.0
+                    per_class_f1 = []
                     
             else:
                 avg_val_loss = 0.0

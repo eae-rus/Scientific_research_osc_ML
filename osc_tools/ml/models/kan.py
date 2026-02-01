@@ -203,3 +203,133 @@ class PhysicsKAN(BaseModel):
         x_combined = torch.cat([x, s, z], dim=1)
         
         return self.processing_net(x_combined)
+
+
+class PhysicsKANConditional(BaseModel):
+    """
+    PhysicsKAN с последовательными головами:
+    - Голова 1: Target_Normal (0/1)
+    - Голова 2: Target_ML_1 (0/1), получает доп. вход от головы 1
+    - Голова 3: Target_ML_3 (0/1), получает доп. вход от головы 1
+    - Голова 4: Target_ML_2 (0/1), получает доп. вход от головы 1 и головы 3
+    """
+    def __init__(
+        self,
+        in_channels: int,
+        num_classes: int = 4,
+        channels: list = [16, 32, 64],
+        kernel_size: int = 3,
+        stride: int = 1,
+        grid_size: int = 5,
+        spline_order: int = 3,
+        dropout: float = 0.2,
+        pool_every: int = 1,
+        base_activation=torch.nn.SiLU,
+        use_mlp: bool = False,
+        input_size: int = 64
+    ):
+        super().__init__()
+
+        if num_classes != 4:
+            raise ValueError(f"PhysicsKANConditional требует num_classes=4, получено {num_classes}")
+
+        if in_channels % 2 != 0:
+            raise ValueError(f"PhysicsKANConditional требует чётное число каналов (I, U пары), получено {in_channels}")
+
+        if use_mlp:
+            raise ValueError("PhysicsKANConditional пока не поддерживает use_mlp=True (snapshot режим)")
+
+        self.mult = MultiplicationLayer()
+        self.div = DivisionLayer()
+
+        half_channels = in_channels // 2
+        self.bn_mult = nn.BatchNorm1d(half_channels)
+        self.bn_div = nn.BatchNorm1d(half_channels)
+
+        # Вход для ConvKAN: Original (C) + Mult (C/2) + Div (C/2) = 2 * C
+        conv_in_channels = in_channels + (in_channels // 2) * 2
+
+        # Feature extractor (аналог ConvKAN, но без финального классификатора)
+        layers = []
+        curr_channels = conv_in_channels
+        for i, out_channels in enumerate(channels):
+            curr_grid = grid_size[i] if isinstance(grid_size, list) else grid_size
+            s = stride if i == 0 else 1
+            layers.append(
+                KANConv1d(
+                    curr_channels,
+                    out_channels,
+                    kernel_size=kernel_size,
+                    stride=s,
+                    padding=kernel_size // 2,
+                    grid_size=curr_grid,
+                    spline_order=spline_order,
+                    base_activation=base_activation
+                )
+            )
+            layers.append(nn.BatchNorm1d(out_channels))
+            if (i + 1) % pool_every == 0:
+                layers.append(SafeMaxPool1d(2))
+            if dropout > 0:
+                layers.append(nn.Dropout(dropout))
+            curr_channels = out_channels
+
+        self.features = nn.Sequential(*layers)
+        self.pool = nn.AdaptiveAvgPool1d(1)
+
+        # Размер скрытого пространства
+        feat_dim = curr_channels
+        head_hidden = max(4, feat_dim // 2)
+        grid_head = grid_size[0] if isinstance(grid_size, list) else grid_size
+
+        # Голова 1: Target_Normal
+        self.head_normal = nn.Sequential(
+            KANLinear(feat_dim, head_hidden, grid_size=grid_head, base_activation=base_activation),
+            KANLinear(head_hidden, 1, grid_size=grid_head, base_activation=base_activation)
+        )
+
+        # Головы 2 и 3: получают +1 признак от головы 1
+        head_in_dim = feat_dim + 1
+        self.head_ml1 = nn.Sequential(
+            KANLinear(head_in_dim, head_hidden, grid_size=grid_head, base_activation=base_activation),
+            KANLinear(head_hidden, 1, grid_size=grid_head, base_activation=base_activation)
+        )
+        self.head_ml3 = nn.Sequential(
+            KANLinear(head_in_dim, head_hidden, grid_size=grid_head, base_activation=base_activation),
+            KANLinear(head_hidden, 1, grid_size=grid_head, base_activation=base_activation)
+        )
+
+        # Голова 4: получает +2 признака (Normal + ML_3)
+        head_in_dim_ml2 = feat_dim + 2
+        self.head_ml2 = nn.Sequential(
+            KANLinear(head_in_dim_ml2, head_hidden, grid_size=grid_head, base_activation=base_activation),
+            KANLinear(head_hidden, 1, grid_size=grid_head, base_activation=base_activation)
+        )
+
+    def forward(self, x):
+        # Физические преобразования
+        s = self.mult(x)
+        s = self.bn_mult(s)
+
+        z = self.div(x)
+        z = self.bn_div(z)
+
+        x_combined = torch.cat([x, s, z], dim=1)
+
+        feats = self.features(x_combined)
+        feats = self.pool(feats)
+        feats = feats.flatten(1)
+
+        normal_logit = self.head_normal(feats).squeeze(1)
+        normal_prob = torch.sigmoid(normal_logit).unsqueeze(1)
+
+        head_input = torch.cat([feats, normal_prob], dim=1)
+        ml1_logit = self.head_ml1(head_input).squeeze(1)
+        ml3_logit = self.head_ml3(head_input).squeeze(1)
+
+        ml3_prob = torch.sigmoid(ml3_logit).unsqueeze(1)
+        head_input_ml2 = torch.cat([feats, normal_prob, ml3_prob], dim=1)
+        ml2_logit = self.head_ml2(head_input_ml2).squeeze(1)
+
+        # Возвращаем 4 выхода: normal, ml1, ml2, ml3
+        return torch.stack([normal_logit, ml1_logit, ml2_logit, ml3_logit], dim=1)

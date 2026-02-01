@@ -139,6 +139,18 @@
 
 ---
 
+### [] Exp 2.6.7: Финальный тест (200 эпох)
+**Зачем:** Проверить предел качества PhysicsKAN и сравнить с улучшенной версией, где логика меток и головы сделаны зависимыми.
+
+*   **Вариант A (Baseline 200):** PhysicsKAN, `phase_polar + stride`, `target_level=base`, 200 эпох.
+    - Конфигурация: [scripts/phase2_experiments/run_phase2_6.py](scripts/phase2_experiments/run_phase2_6.py#L425-L434)
+*   **Вариант B (Conditional 200):** PhysicsKANConditional, `phase_polar + stride`, `target_level=base_sequential`, 200 эпох.
+    - Конфигурация: [scripts/phase2_experiments/run_phase2_6.py](scripts/phase2_experiments/run_phase2_6.py#L436-L448)
+    - Новые метки: [osc_tools/ml/labels.py](osc_tools/ml/labels.py#L69-L257)
+    - Новая модель: [osc_tools/ml/models/kan.py](osc_tools/ml/models/kan.py#L208-L306)
+
+---
+
 ## 📝 Резюме по изменениям кода (To-Do List)
 
 1.  **Dataset:**

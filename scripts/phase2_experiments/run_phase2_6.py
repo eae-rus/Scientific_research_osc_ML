@@ -30,6 +30,7 @@ MODEL_COMPLEXITY = {
         'ConvKAN':   {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
         'SimpleKAN': {'hidden_sizes': [64, 32], 'grid_size': 3, 'dropout': 0.1},
         'PhysicsKAN': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
+        'PhysicsKANConditional': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
         'ResNet1D':  {'layers': [1, 1, 1, 1], 'base_filters': 16},
         # Иерархические модели (2.6.1, 2.6.2)
         'HierarchicalMLP': {'channels': [64, 32], 'dropout': 0.2, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
@@ -52,6 +53,7 @@ MODEL_COMPLEXITY = {
         'ConvKAN':   {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5},
         'SimpleKAN': {'hidden_sizes': [128, 64, 32], 'grid_size': 5, 'dropout': 0.2},
         'PhysicsKAN': {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5},
+        'PhysicsKANConditional': {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5},
         'ResNet1D':  {'layers': [2, 2, 2, 2], 'base_filters': 32},
         # Иерархические модели (2.6.1, 2.6.2)
         'HierarchicalMLP': {'channels': [256, 128, 64], 'dropout': 0.3, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
@@ -74,6 +76,7 @@ MODEL_COMPLEXITY = {
         'ConvKAN':   {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8},
         'SimpleKAN': {'hidden_sizes': [256, 128, 64, 32], 'grid_size': 5, 'dropout': 0.3},
         'PhysicsKAN': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8},
+        'PhysicsKANConditional': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8},
         'ResNet1D':  {'layers': [3, 4, 6, 3], 'base_filters': 64},
         # Иерархические модели (2.6.1, 2.6.2)
         'HierarchicalMLP': {'channels': [512, 256, 128, 64], 'dropout': 0.4, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
@@ -246,7 +249,7 @@ def run_single_experiment(
     if is_harmonic_mode and num_harmonics >= 3:
         val_batch_size = 2048
 
-    if is_harmonic_mode and complexity == 'heavy' and model_name in ['PhysicsKAN', 'ConvKAN', 'ResNet1D', 'HierarchicalPhysicsKAN', 'HierarchicalConvKAN', 'HierarchicalResNet']:
+    if is_harmonic_mode and complexity == 'heavy' and model_name in ['PhysicsKAN', 'PhysicsKANConditional', 'ConvKAN', 'ResNet1D', 'HierarchicalPhysicsKAN', 'HierarchicalConvKAN', 'HierarchicalResNet']:
         val_batch_size = 1024
 
     train_loader = torch.utils.data.DataLoader(train_ds, batch_size=base_batch_size, shuffle=True, num_workers=0)
@@ -417,6 +420,30 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         "2.6.4_hier_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights", "target_level": "full_by_levels"},
         "2.6.4_hier_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights", "target_level": "full_by_levels"},
         "2.6.4_hier_global_stride": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "aug": True, "balancing": "global", "target_level": "full_by_levels"},
+
+        # === Эксперимент 2.6.7: Финальный тест (200 эпох) ===
+        "2.6.7_baseline_200": {
+            "feature_mode": "phase_polar",
+            "sampling": "stride",
+            "stride": 16,
+            "aug": True,
+            "balancing": "weights",
+            "target_level": "base",
+            "epochs": 200,
+            "models_override": ["PhysicsKAN"],
+            "complexities_override": ["heavy"],
+        },
+        "2.6.7_conditional_200": {
+            "feature_mode": "phase_polar",
+            "sampling": "stride",
+            "stride": 16,
+            "aug": True,
+            "balancing": "weights",
+            "target_level": "base_sequential",
+            "epochs": 200,
+            "models_override": ["PhysicsKANConditional"],
+            "complexities_override": ["heavy"]
+        }
     }
 
     if target_exp not in exp_params:
@@ -427,7 +454,9 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
     
     # Определяем список моделей для запуска
     if target_model == 'all':
-        if target_exp.startswith("2.6.3"):
+        if p.get("models_override"):
+            models_to_run = p["models_override"]
+        elif target_exp.startswith("2.6.3"):
             # Гибридные модели для эксперимента 2.6.3
             models_to_run = [
                 'HybridMLP', 'HybridCNN', 'HybridResNet',
@@ -449,7 +478,10 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         models_to_run = [target_model]
 
     # Определяем список сложностей
-    complexities_to_run = ['light', 'medium', 'heavy'] if target_complexity == 'all' else [target_complexity]
+    if p.get("complexities_override"):
+        complexities_to_run = p["complexities_override"]
+    else:
+        complexities_to_run = ['light', 'medium', 'heavy'] if target_complexity == 'all' else [target_complexity]
     
     # Определяем target_level из параметров эксперимента
     exp_target_level = p.get('target_level', 'base')
@@ -485,7 +517,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         df = df.with_row_index("row_nr")
         
         # Подготовка меток в зависимости от target_level
-        if exp_target_level in ('full', 'full_by_levels'):
+        if exp_target_level in ('full', 'full_by_levels', 'base_sequential'):
             print(f"  [Подготовка меток для уровня: {exp_target_level}]")
             df = prepare_labels_for_experiment(df, exp_target_level)
         
@@ -500,7 +532,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         test_df = test_df.with_row_index("row_nr")
         
         # Подготовка меток для валидации
-        if exp_target_level in ('full', 'full_by_levels'):
+        if exp_target_level in ('full', 'full_by_levels', 'base_sequential'):
             test_df = prepare_labels_for_experiment(test_df, exp_target_level)
         
         # Создаём индексы для валидации с шагом 4 (полная валидация как в aggregate_reports)
@@ -547,6 +579,24 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
                 continue
 
             try:
+                exp_epochs = p.get("epochs", target_epochs)
+                exp_data_mode = p.get("data_mode", data_config.mode)
+
+                data_config_exp = DataConfig(
+                    path=data_config.path,
+                    window_size=data_config.window_size,
+                    batch_size=data_config.batch_size,
+                    mode=exp_data_mode,
+                    norm_coef_path=data_config.norm_coef_path
+                )
+                train_config_exp = TrainingConfig(
+                    epochs=exp_epochs,
+                    learning_rate=train_config.learning_rate,
+                    use_pos_weight=train_config.use_pos_weight,
+                    checkpoint_frequency=checkpoint_frequency,
+                    save_dir=train_config.save_dir,
+                    ml23_loss_weight=train_config.ml23_loss_weight
+                )
                 current_harmonics = get_num_harmonics_by_complexity(comp)
                 run_single_experiment(
                     exp_name=full_exp_name,
@@ -559,8 +609,8 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
                     train_indices=train_indices,
                     val_indices=val_indices,
                     target_cols=target_cols,
-                    data_config_base=data_config,
-                    train_config_base=train_config,
+                    data_config_base=data_config_exp,
+                    train_config_base=train_config_exp,
                     norm_coef_path=NORM_COEF_PATH,
                     augment=p.get("aug", True),
                     val_df=test_df,

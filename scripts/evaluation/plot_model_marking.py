@@ -46,6 +46,8 @@ def _find_experiment_dir(exp_name: str) -> Path:
 def _resolve_target_level(exp_name: str) -> str:
     """Определяем target_level по имени эксперимента."""
     name = exp_name.lower()
+    if 'base_sequential' in name:
+        return 'base_sequential'
     if 'full_by_levels' in name or ('hier_' in name and '2.6.4' in name):
         return 'full_by_levels'
     if '2.6.4' in name and 'full' in name:
@@ -384,10 +386,17 @@ def generate_marking_plots_for_model(
             with torch.no_grad():
                 outputs = model(x_tensor)
 
-            if config.get('data', {}).get('mode', 'multilabel') == 'classification':
+            data_mode = config.get('data', {}).get('mode', 'multilabel')
+            if data_mode == 'classification':
                 preds = torch.argmax(outputs, dim=1).cpu().numpy()
                 pred_matrix = np.zeros((len(preds), len(target_cols)), dtype=np.int8)
                 pred_matrix[np.arange(len(preds)), preds] = 1
+            elif data_mode == 'multitask_conditional':
+                probs = torch.sigmoid(outputs[:, :4])
+                pred_matrix = (probs > 0.5).int().cpu().numpy()
+
+                # Ограничение: если ML_3=1, то ML_2=0
+                pred_matrix[:, 2] = np.where(pred_matrix[:, 3] == 1, 0, pred_matrix[:, 2])
             else:
                 probs = torch.sigmoid(outputs)
                 pred_matrix = (probs > 0.5).int().cpu().numpy()

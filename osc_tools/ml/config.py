@@ -28,6 +28,7 @@ class TrainingConfig:
     seed: int = 42
     use_pos_weight: bool = False
     checkpoint_frequency: int = 2
+    ml23_loss_weight: float = 1.0
 
 @dataclass
 class ExperimentConfig:
