@@ -297,10 +297,10 @@ def generate_marking_plots_for_model(
     # Подготовка данных
     dm = DatasetManager(str(data_dir))
     if split == 'train':
-        data_df = dm.load_train_df(precomputed=False)
+        data_df = dm.load_train_df() # precomputed=False
         split_label = 'train'
     else:
-        data_df = dm.load_test_df(precomputed=False)
+        data_df = dm.load_test_df(precomputed=True)
         split_label = 'test'
     
     data_df = data_df.with_row_index("row_nr")
