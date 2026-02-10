@@ -54,7 +54,7 @@ def load_existing_summary(csv_path: Path) -> Optional[pd.DataFrame]:
     return None
 
 
-def needs_full_eval_recalc(existing_row: Optional[pd.Series]) -> bool:
+def needs_full_eval_recalc(existing_row: Optional[pd.Series], require_hierarchical: bool = False) -> bool:
     """
     Проверяет, нужен ли пересчёт full_eval для данной модели.
     
@@ -62,6 +62,7 @@ def needs_full_eval_recalc(existing_row: Optional[pd.Series]) -> bool:
     - Нет существующих данных (existing_row is None)
     - Full Best Acc/F1 или Full Final Acc/F1 равны 0
     - Full Eval Time (s) или Full Eval Samples равны 0
+    - (Опционально) отсутствуют метрики Hierarchical Accuracy
     """
     if existing_row is None:
         return True
@@ -79,6 +80,22 @@ def needs_full_eval_recalc(existing_row: Optional[pd.Series]) -> bool:
             if pd.isna(val) or val == 0 or val == 0.0:
                 return True
     
+    if require_hierarchical:
+        hier_cols = [
+            'Hier Base F1 (Best)', 'Hier Base Acc (Best)', 'Hier Base Exact (Best)',
+            'Hier Base F1 (Final)', 'Hier Base Acc (Final)', 'Hier Base Exact (Final)',
+            'Num Classes',
+            'Full Per Class F1 Count',
+            'Full Per Class Support Count'
+        ]
+        for col in hier_cols:
+            if col in existing_row.index:
+                val = existing_row[col]
+                if pd.isna(val) or val == 0 or val == 0.0:
+                    return True
+            else:
+                return True
+
     return False
 
 
@@ -667,6 +684,67 @@ def _evaluate_with_batch_fallback(
             return {}, current_batch_size, current_device
 
 
+def _evaluate_hierarchical_with_batch_fallback(
+    model: nn.Module,
+    test_ds: torch.utils.data.Dataset,
+    base_batch_size: int,
+    device: torch.device,
+    exp_name: str,
+    tag: str,
+    target_columns: List[str]
+) -> Tuple[Dict[str, Any], int, torch.device]:
+    """
+    Оценка Hierarchical Accuracy с понижением batch_size при OOM и fallback на CPU.
+    """
+    from osc_tools.ml.evaluation import evaluate_model_multilevel
+
+    current_batch_size = base_batch_size
+    current_device = device
+
+    while True:
+        test_loader = DataLoader(
+            test_ds,
+            batch_size=current_batch_size,
+            shuffle=False,
+            num_workers=0,
+            pin_memory=(current_device.type == 'cuda')
+        )
+
+        try:
+            if current_device.type == 'cuda':
+                torch.cuda.empty_cache()
+            results = evaluate_model_multilevel(
+                model,
+                test_loader,
+                current_device,
+                target_columns
+            )
+            return results, current_batch_size, current_device
+        except Exception as e:
+            err_text = str(e)
+            is_oom = 'CUDA out of memory' in err_text
+            if is_oom and current_device.type == 'cuda':
+                if _eval_logger:
+                    _eval_logger.error(
+                        f"{exp_name} - {tag}: OOM при Hier Eval batch_size={current_batch_size}. Уменьшаем и повторяем."
+                    )
+                if current_batch_size > 16:
+                    current_batch_size = max(16, current_batch_size // 2)
+                    continue
+
+                if _eval_logger:
+                    _eval_logger.error(
+                        f"{exp_name} - {tag}: OOM при Hier Eval даже при batch_size=16. Переходим на CPU."
+                    )
+                current_device = torch.device('cpu')
+                model = model.to(current_device)
+                continue
+
+            if _eval_logger:
+                _eval_logger.error(f"{exp_name} - {tag}: Ошибка Hier Eval: {e}")
+            return {}, current_batch_size, current_device
+
+
 def evaluate_model_full(
     model: nn.Module,
     test_loader: DataLoader,
@@ -739,6 +817,8 @@ def evaluate_model_full(
     all_targets = np.array(all_targets)
     
     # Расчёт метрик
+    per_class_support = []
+
     if mode == 'multitask_conditional':
         y_true = all_targets
         y_pred = all_preds
@@ -763,8 +843,12 @@ def evaluate_model_full(
 
         if mode == 'classification':
             balanced_acc = balanced_accuracy_score(all_targets, all_preds)
+            class_counts = np.bincount(all_targets.astype(int), minlength=len(set(all_targets.tolist())))
+            per_class_support = class_counts.tolist()
         else:
             balanced_acc = 0.0
+            if all_targets.ndim == 2 and all_targets.size > 0:
+                per_class_support = all_targets.sum(axis=0).astype(int).tolist()
 
         per_class_f1 = f1_score(all_targets, all_preds, average=None, zero_division=0).tolist()
     
@@ -772,7 +856,8 @@ def evaluate_model_full(
         'acc': acc,
         'f1': f1,
         'balanced_acc': balanced_acc,
-        'per_class_f1': per_class_f1
+        'per_class_f1': per_class_f1,
+        'per_class_support': per_class_support
     }
 
 
@@ -809,7 +894,20 @@ def evaluate_full_test_dataset(
         'full_final_f1': 0.0,
         'full_final_per_class_f1': [],
         'full_eval_time_s': 0.0,
-        'full_eval_samples': 0
+        'full_eval_samples': 0,
+        'num_classes': 0,
+        'hier_base_f1_best': 0.0,
+        'hier_base_acc_best': 0.0,
+        'hier_base_exact_best': 0.0,
+        'hier_base_f1_final': 0.0,
+        'hier_base_acc_final': 0.0,
+        'hier_base_exact_final': 0.0,
+        'full_best_per_class_f1_map': {},
+        'full_final_per_class_f1_map': {},
+        'full_best_per_class_support_map': {},
+        'full_final_per_class_support_map': {},
+        'full_per_class_f1_count': 0,
+        'full_per_class_support_count': 0
     }
 
     config_path = exp_dir / "config.json"
@@ -1031,6 +1129,8 @@ def evaluate_full_test_dataset(
             data_dir, window_size, eval_stride=1, norm_coef_path=norm_coef_path,
             target_level=target_level
         )
+
+        results['num_classes'] = len(target_cols)
         
         # Определяем ds_target_level для PrecomputedDataset
         # PrecomputedDataset ожидает 'base' или расширенные уровни (не 'full'/'full_by_levels')
@@ -1101,6 +1201,9 @@ def evaluate_full_test_dataset(
             return results
         
         model = model.to(device)
+
+        # Нужно ли считать Hierarchical Accuracy (только для full / full_by_levels)
+        use_hier_eval = (mode == 'multilabel' and target_level in ('full', 'full_by_levels'))
         
         # Оценка best_model.pt
         best_path = exp_dir / "best_model.pt"
@@ -1123,8 +1226,33 @@ def evaluate_full_test_dataset(
                     results['full_best_acc'] = best_metrics['acc']
                     results['full_best_f1'] = best_metrics['f1']
                     results['full_best_per_class_f1'] = best_metrics['per_class_f1']
+                    best_support = best_metrics.get('per_class_support', [])
+                    if len(results['full_best_per_class_f1']) == len(target_cols):
+                        results['full_best_per_class_f1_map'] = dict(zip(target_cols, results['full_best_per_class_f1']))
+                        results['full_per_class_f1_count'] = len(results['full_best_per_class_f1'])
+                    if best_support and len(best_support) == len(target_cols):
+                        results['full_best_per_class_support_map'] = dict(zip(target_cols, best_support))
+                        results['full_per_class_support_count'] = len(best_support)
                 if used_device.type != device.type:
                     device = used_device
+
+                if use_hier_eval:
+                    hier_results, hier_batch, hier_device = _evaluate_hierarchical_with_batch_fallback(
+                        model=model,
+                        test_ds=test_ds,
+                        base_batch_size=eval_batch_size,
+                        device=device,
+                        exp_name=exp_dir.name,
+                        tag='best_model_hier',
+                        target_columns=target_cols
+                    )
+                    if hier_results and 'base_metrics' in hier_results:
+                        base_m = hier_results['base_metrics']
+                        results['hier_base_f1_best'] = base_m.get('f1', 0.0)
+                        results['hier_base_acc_best'] = base_m.get('accuracy', 0.0)
+                        results['hier_base_exact_best'] = base_m.get('exact_match', 0.0)
+                    if hier_device.type != device.type:
+                        device = hier_device
             except Exception as e:
                 error_msg = f"    [!] Ошибка загрузки best_model: {e}"
                 print(error_msg)
@@ -1155,8 +1283,39 @@ def evaluate_full_test_dataset(
                     results['full_final_acc'] = final_metrics['acc']
                     results['full_final_f1'] = final_metrics['f1']
                     results['full_final_per_class_f1'] = final_metrics['per_class_f1']
+                    final_support = final_metrics.get('per_class_support', [])
+                    if len(results['full_final_per_class_f1']) == len(target_cols):
+                        results['full_final_per_class_f1_map'] = dict(zip(target_cols, results['full_final_per_class_f1']))
+                        results['full_per_class_f1_count'] = max(
+                            results.get('full_per_class_f1_count', 0),
+                            len(results['full_final_per_class_f1'])
+                        )
+                    if final_support and len(final_support) == len(target_cols):
+                        results['full_final_per_class_support_map'] = dict(zip(target_cols, final_support))
+                        results['full_per_class_support_count'] = max(
+                            results.get('full_per_class_support_count', 0),
+                            len(final_support)
+                        )
                 if used_device.type != device.type:
                     device = used_device
+
+                if use_hier_eval:
+                    hier_results, hier_batch, hier_device = _evaluate_hierarchical_with_batch_fallback(
+                        model=model,
+                        test_ds=test_ds,
+                        base_batch_size=eval_batch_size,
+                        device=device,
+                        exp_name=exp_dir.name,
+                        tag='final_model_hier',
+                        target_columns=target_cols
+                    )
+                    if hier_results and 'base_metrics' in hier_results:
+                        base_m = hier_results['base_metrics']
+                        results['hier_base_f1_final'] = base_m.get('f1', 0.0)
+                        results['hier_base_acc_final'] = base_m.get('accuracy', 0.0)
+                        results['hier_base_exact_final'] = base_m.get('exact_match', 0.0)
+                    if hier_device.type != device.type:
+                        device = hier_device
             except Exception as e:
                 error_msg = f"    [!] Ошибка загрузки final_model: {e}"
                 print(error_msg)
@@ -1245,7 +1404,9 @@ def parse_experiment_info(folder_name: str) -> Dict[str, str]:
     
     # Определяем target_level из имени эксперимента
     # Примеры: full_stride, full_snapshot, hier_stride (full_by_levels)
-    if 'full_by_levels' in folder_name or ('hier_' in folder_name.lower() and '2.6.4' in folder_name):
+    if 'base_sequential' in folder_name.lower():
+        info["target_level"] = "base_sequential"
+    elif 'full_by_levels' in folder_name or ('hier_' in folder_name.lower() and '2.6.4' in folder_name):
         info["target_level"] = "full_by_levels"
     elif 'full' in folder_name.lower() and '2.6.4' in folder_name:
         # Только для 2.6.4 эксперимента, чтобы не спутать с 'full' в других контекстах
@@ -1569,6 +1730,11 @@ def aggregate_reports(
             # Получаем существующие данные для этого эксперимента
             existing_row = get_existing_row(existing_df, exp_dir.name)
 
+            # Определяем target_level для логики пересчёта
+            current_target_level = info.get("target_level", "base")
+            if existing_row is not None and 'TargetLevel' in existing_row.index:
+                current_target_level = existing_row.get('TargetLevel', current_target_level)
+
             # Генерация графиков (пропускаем если файл уже существует)
             if plot:
                 plot_path = exp_dir / "learning_curves.png"
@@ -1650,7 +1816,8 @@ def aggregate_reports(
             
             # Полная оценка на тестовом датасете (GPU)
             if full_eval:
-                if needs_full_eval_recalc(existing_row):
+                require_hier = current_target_level in ('full', 'full_by_levels')
+                if needs_full_eval_recalc(existing_row, require_hierarchical=require_hier):
                     # Нужен пересчёт
                     full_metrics = evaluate_full_test_dataset(exp_dir, config, data_dir)
                     exp_data['Full Best Acc'] = full_metrics['full_best_acc']
@@ -1659,6 +1826,33 @@ def aggregate_reports(
                     exp_data['Full Final F1'] = full_metrics['full_final_f1']
                     exp_data['Full Eval Time (s)'] = full_metrics['full_eval_time_s']
                     exp_data['Full Eval Samples'] = full_metrics['full_eval_samples']
+                    exp_data['Num Classes'] = full_metrics.get('num_classes', 0)
+                    exp_data['Full Per Class F1 Count'] = full_metrics.get('full_per_class_f1_count', 0)
+                    exp_data['Full Per Class Support Count'] = full_metrics.get('full_per_class_support_count', 0)
+
+                    # Hierarchical Accuracy (только для full/full_by_levels)
+                    if require_hier:
+                        exp_data['Hier Base F1 (Best)'] = full_metrics.get('hier_base_f1_best', 0.0)
+                        exp_data['Hier Base Acc (Best)'] = full_metrics.get('hier_base_acc_best', 0.0)
+                        exp_data['Hier Base Exact (Best)'] = full_metrics.get('hier_base_exact_best', 0.0)
+                        exp_data['Hier Base F1 (Final)'] = full_metrics.get('hier_base_f1_final', 0.0)
+                        exp_data['Hier Base Acc (Final)'] = full_metrics.get('hier_base_acc_final', 0.0)
+                        exp_data['Hier Base Exact (Final)'] = full_metrics.get('hier_base_exact_final', 0.0)
+
+                        # Per-class F1/Support для всех классов (полный набор меток)
+                        best_f1_map = full_metrics.get('full_best_per_class_f1_map', {})
+                        final_f1_map = full_metrics.get('full_final_per_class_f1_map', {})
+                        best_sup_map = full_metrics.get('full_best_per_class_support_map', {})
+                        final_sup_map = full_metrics.get('full_final_per_class_support_map', {})
+
+                        for cls_name, val in best_f1_map.items():
+                            exp_data[f"Full F1 {cls_name} (Best)"] = val
+                        for cls_name, val in final_f1_map.items():
+                            exp_data[f"Full F1 {cls_name} (Final)"] = val
+                        for cls_name, val in best_sup_map.items():
+                            exp_data[f"Full Support {cls_name} (Best)"] = val
+                        for cls_name, val in final_sup_map.items():
+                            exp_data[f"Full Support {cls_name} (Final)"] = val
                     
                     # Per-class F1 для radar charts
                     # Берём лучшие per_class метрики (от best модели)
@@ -1678,6 +1872,23 @@ def aggregate_reports(
                     exp_data['Full Final F1'] = existing_row.get('Full Final F1', 0.0)
                     exp_data['Full Eval Time (s)'] = existing_row.get('Full Eval Time (s)', 0.0)
                     exp_data['Full Eval Samples'] = existing_row.get('Full Eval Samples', 0)
+                    exp_data['Num Classes'] = existing_row.get('Num Classes', 0)
+                    exp_data['Full Per Class F1 Count'] = existing_row.get('Full Per Class F1 Count', 0)
+                    exp_data['Full Per Class Support Count'] = existing_row.get('Full Per Class Support Count', 0)
+
+                    # Hierarchical Accuracy из кэша (если есть)
+                    if require_hier:
+                        exp_data['Hier Base F1 (Best)'] = existing_row.get('Hier Base F1 (Best)', 0.0)
+                        exp_data['Hier Base Acc (Best)'] = existing_row.get('Hier Base Acc (Best)', 0.0)
+                        exp_data['Hier Base Exact (Best)'] = existing_row.get('Hier Base Exact (Best)', 0.0)
+                        exp_data['Hier Base F1 (Final)'] = existing_row.get('Hier Base F1 (Final)', 0.0)
+                        exp_data['Hier Base Acc (Final)'] = existing_row.get('Hier Base Acc (Final)', 0.0)
+                        exp_data['Hier Base Exact (Final)'] = existing_row.get('Hier Base Exact (Final)', 0.0)
+
+                        # Переносим все per-class колонки из кэша
+                        for col_name in existing_row.index:
+                            if col_name.startswith('Full F1 ') or col_name.startswith('Full Support '):
+                                exp_data[col_name] = existing_row.get(col_name, 0)
                     
                     # Per-class F1 из кэша (если есть)
                     for i in range(4):
