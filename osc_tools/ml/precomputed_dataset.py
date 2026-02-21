@@ -114,6 +114,7 @@ class PrecomputedDataset(Dataset):
         sampling_strategy: str = 'snapshot',
         downsampling_stride: int = 16,
         target_position: Optional[int] = None,
+        target_window_mode: str = 'point',
         num_harmonics: int = 1
     ):
         """
@@ -127,6 +128,9 @@ class PrecomputedDataset(Dataset):
             sampling_strategy: 'none', 'stride', 'snapshot'
             downsampling_stride: Шаг для режима 'stride'
             target_position: Позиция метки в окне (по умолчанию window_size - 1)
+            target_window_mode: Режим формирования метки из окна.
+                                'point' — берём одну точку (target_position).
+                                'any_in_window' — берём максимум по всему окну.
             num_harmonics: Количество гармоник в предрасчитанном датасете
         """
         if isinstance(dataframe, pl.LazyFrame):
@@ -140,6 +144,7 @@ class PrecomputedDataset(Dataset):
         self.sampling_strategy = sampling_strategy
         self.downsampling_stride = downsampling_stride
         self.num_harmonics = max(1, int(num_harmonics))
+        self.target_window_mode = target_window_mode
         
         # Определяем колонки меток
         if target_columns is not None:
@@ -149,6 +154,10 @@ class PrecomputedDataset(Dataset):
         
         # Позиция метки
         self.target_position = target_position if target_position is not None else window_size - 1
+
+        valid_target_window_modes = ['point', 'any_in_window']
+        if self.target_window_mode not in valid_target_window_modes:
+            raise ValueError(f"Unknown target_window_mode: {self.target_window_mode}. Valid modes: {valid_target_window_modes}")
         
         # Определяем колонки признаков с учётом гармоник
         self.feature_columns = []
@@ -229,8 +238,12 @@ class PrecomputedDataset(Dataset):
         x = self._apply_sampling(x)
         
         # Извлекаем метки
-        target_idx = start_idx + self.target_position
-        y = torch.from_numpy(self._targets_np[target_idx].copy())
+        if self.target_window_mode == 'any_in_window':
+            y_window = np.max(self._targets_np[start_idx:end_idx], axis=0)
+            y = torch.from_numpy(y_window.astype(np.float32))
+        else:
+            target_idx = start_idx + self.target_position
+            y = torch.from_numpy(self._targets_np[target_idx].copy())
         
         return x, y
     

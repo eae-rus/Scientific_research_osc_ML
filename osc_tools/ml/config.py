@@ -16,6 +16,7 @@ class DataConfig:
     target: Optional[str] = None
     mode: str = 'classification' # classification, segmentation, reconstruction
     norm_coef_path: Optional[str] = None # Путь к файлу нормализации
+    target_window_mode: str = 'point' # point | any_in_window
 
 @dataclass
 class TrainingConfig:

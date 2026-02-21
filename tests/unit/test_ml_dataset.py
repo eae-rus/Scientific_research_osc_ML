@@ -63,6 +63,26 @@ class TestOscillogramDataset:
         # y должен быть target[9] = 0
         assert y.item() == 0.0
 
+    def test_classification_any_in_window(self, sample_data, sample_indices):
+        window_size = 10
+        ds = OscillogramDataset(
+            dataframe=sample_data,
+            indices=sample_indices,
+            window_size=window_size,
+            mode='classification',
+            feature_columns=['feat1'],
+            target_columns='target',
+            target_window_mode='any_in_window'
+        )
+
+        # Окно 0..9: метка отсутствует
+        _, y0 = ds[0]
+        assert y0.item() == 0.0
+
+        # Окно 35..44 пересекается с [40, 60] => метка 1
+        _, y1 = ds[7]
+        assert y1.item() == 1.0
+
     def test_segmentation_mode(self, sample_data, sample_indices):
         window_size = 10
         ds = OscillogramDataset(

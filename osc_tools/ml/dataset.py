@@ -30,6 +30,7 @@ class OscillogramDataset(Dataset):
         feature_columns: Optional[List[str]] = None,
         target_columns: Optional[Union[str, List[str]]] = None,
         target_position: Optional[int] = None,
+        target_window_mode: str = 'point',
         physical_normalization: bool = False,
         norm_coef_path: Optional[str] = None,
         augmentation_config: Optional[dict] = None,
@@ -53,6 +54,9 @@ class OscillogramDataset(Dataset):
             target_columns: Колонка(и) для выхода (Y).
             target_position: Позиция целевого значения внутри окна (для classification). 
                              По умолчанию - последнее значение (window_size - 1).
+            target_window_mode: Режим формирования метки из окна.
+                                'point' — берём одну точку (target_position).
+                                'any_in_window' — берём максимум по всему окну.
             physical_normalization: Применять ли физическую нормализацию по коэффициентам.
             norm_coef_path: Путь к CSV файлу с коэффициентами нормализации.
             augmentation_config: Конфигурация аугментации (только для mode='classification'/'segmentation' в train).
@@ -76,6 +80,7 @@ class OscillogramDataset(Dataset):
         self.feature_columns = feature_columns
         self.target_columns = target_columns
         self.target_level = target_level
+        self.target_window_mode = target_window_mode
         self.physical_normalization = physical_normalization
         
         # Алиас обработка
@@ -130,6 +135,10 @@ class OscillogramDataset(Dataset):
         for fm in self.feature_mode:
             if fm not in valid_feature_modes:
                 raise ValueError(f"Unknown feature_mode: {fm}. Valid modes: {valid_feature_modes}")
+
+        valid_target_window_modes = ['point', 'any_in_window']
+        if self.target_window_mode not in valid_target_window_modes:
+            raise ValueError(f"Unknown target_window_mode: {self.target_window_mode}. Valid modes: {valid_target_window_modes}")
 
     @staticmethod
     def create_indices(
@@ -829,16 +838,27 @@ class OscillogramDataset(Dataset):
         y = None
         if self.mode == 'classification':
             if self.target_columns:
-                # Polars indexing
-                target_idx = start_idx + self.target_position
-                # row() returns tuple, we need specific columns
-                # select().row() is safer
-                if isinstance(self.target_columns, list):
-                    y_val = self.data.select(self.target_columns).row(target_idx)
-                    y = torch.tensor(y_val, dtype=torch.float32)
+                if self.target_window_mode == 'any_in_window':
+                    # Максимум по окну (сдвиг метки вправо на длину окна)
+                    if isinstance(self.target_columns, list):
+                        y_window = sample_df.select(self.target_columns).to_numpy()
+                        y_val = np.max(y_window, axis=0)
+                        y = torch.tensor(y_val, dtype=torch.float32)
+                    else:
+                        y_window = sample_df.select([self.target_columns]).to_numpy()
+                        y_val = float(np.max(y_window))
+                        y = torch.tensor(y_val, dtype=torch.long)
                 else:
-                    y_val = self.data.select(self.target_columns).row(target_idx)[0]
-                    y = torch.tensor(y_val, dtype=torch.long)
+                    # Polars indexing
+                    target_idx = start_idx + self.target_position
+                    # row() returns tuple, we need specific columns
+                    # select().row() is safer
+                    if isinstance(self.target_columns, list):
+                        y_val = self.data.select(self.target_columns).row(target_idx)
+                        y = torch.tensor(y_val, dtype=torch.float32)
+                    else:
+                        y_val = self.data.select(self.target_columns).row(target_idx)[0]
+                        y = torch.tensor(y_val, dtype=torch.long)
                     
         elif self.mode == 'segmentation':
             if self.target_columns:

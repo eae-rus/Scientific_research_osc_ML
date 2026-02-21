@@ -1,5 +1,21 @@
 # Лог работ по Фазе 2.6 (Архитектурные улучшения)
 
+## [2026-02-10] Exp 2.6.8 и обновление визуализации уверенности
+
+### Выполненные работы
+
+1. Добавлен режим меток по окну (сдвиг вправо)
+   - Поддержан `target_window_mode='any_in_window'` в [osc_tools/ml/dataset.py](osc_tools/ml/dataset.py)
+   - Поддержан аналогичный режим в [osc_tools/ml/precomputed_dataset.py](osc_tools/ml/precomputed_dataset.py)
+   - Добавлен новый эксперимент `2.6.8_stride` в [scripts/phase2_experiments/run_phase2_6.py](scripts/phase2_experiments/run_phase2_6.py)
+
+2. Обновлена визуализация разметки
+   - Добавлен режим `confidence` для отображения уверенности с порогом в [scripts/evaluation/plot_model_marking.py](scripts/evaluation/plot_model_marking.py)
+   - Добавлена возможность выбора конкретных файлов и диапазонов времени (мс)
+
+3. Тестирование
+   - Добавлены тесты для режима `any_in_window` в [tests/unit/test_ml_dataset.py](tests/unit/test_ml_dataset.py) и [tests/unit/test_precomputed_dataset.py](tests/unit/test_precomputed_dataset.py)
+
 ## [2026-01-24] Добавление эксперимента 2.6.1 Вариант Б (Global Balancing)
 
 ### Выполненные работы

@@ -2,6 +2,7 @@ import argparse
 import re
 import sys
 import hashlib
+import json
 from pathlib import Path
 from typing import Dict, Any, List, Tuple, Optional
 
@@ -53,6 +54,18 @@ def _resolve_target_level(exp_name: str) -> str:
     if '2.6.4' in name and 'full' in name:
         return 'full'
     return 'base'
+
+
+def _resolve_target_window_mode(config: Dict[str, Any], exp_name: str) -> str:
+    """Определяем режим формирования метки по окну."""
+    data_cfg = config.get('data', {})
+    mode = data_cfg.get('target_window_mode')
+    if isinstance(mode, str) and mode:
+        return mode
+    name = exp_name.lower()
+    if 'win_any' in name or 'window_any' in name:
+        return 'any_in_window'
+    return 'point'
 
 
 def _resolve_feature_mode(config: Dict[str, Any], exp_name: str) -> str:
@@ -191,6 +204,38 @@ def _select_signal_columns(df: pl.DataFrame) -> Tuple[List[str], List[str]]:
     return current_cols, voltage_cols
 
 
+def _build_window_any_labels(
+    df: pl.DataFrame,
+    target_cols: List[str],
+    window_size: int
+) -> Dict[str, np.ndarray]:
+    """Строит метки по правилу "событие было в окне" (сдвиг вправо)."""
+    labels = {}
+    kernel = np.ones(window_size, dtype=np.int32)
+
+    for col in target_cols:
+        raw = df[col].to_numpy().astype(np.int32)
+        # trailing window sum для каждого времени
+        counts = np.convolve(raw, kernel, mode='full')
+        window_any = (counts[:len(raw)] > 0).astype(np.int8)
+        if len(raw) >= window_size:
+            window_any[:window_size - 1] = 0
+        labels[col] = window_any
+
+    return labels
+
+
+def _apply_time_range(
+    time_axis: np.ndarray,
+    series: Dict[str, np.ndarray],
+    start_ms: float,
+    end_ms: float
+) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
+    """Обрезает временной диапазон для набора сигналов."""
+    mask = (time_axis >= start_ms) & (time_axis <= end_ms)
+    return time_axis[mask], {k: v[mask] for k, v in series.items()}
+
+
 def _plot_marking(
     out_path: Path,
     time_axis: np.ndarray,
@@ -198,9 +243,84 @@ def _plot_marking(
     voltages: Dict[str, np.ndarray],
     real_labels: Dict[str, np.ndarray],
     pred_labels: Dict[str, np.ndarray],
-    title: str
+    title: str,
+    pred_probs: Optional[Dict[str, np.ndarray]] = None,
+    plot_mode: str = 'discrete',
+    threshold: float = 0.5
 ) -> None:
     """Строит график токов/напряжений и дискретов (реальные сверху, предикт снизу)."""
+    labels = list(real_labels.keys())
+    amplitudes = np.arange(1, len(labels) + 1)
+
+    if plot_mode == 'confidence':
+        height_ratios = [1.1, 1.1, 0.8] + [0.6] * len(labels)
+        fig = plt.figure(figsize=(16, 10 + 1.2 * len(labels)))
+        gs = fig.add_gridspec(nrows=3 + len(labels), ncols=1, height_ratios=height_ratios)
+
+        ax_curr = fig.add_subplot(gs[0, 0])
+        for name, data in currents.items():
+            ax_curr.plot(time_axis, data, label=name, linewidth=1.2)
+        ax_curr.set_ylabel("Токи")
+        ax_curr.legend(loc='upper right')
+        ax_curr.grid(True, alpha=0.3, linestyle=':')
+
+        ax_volt = fig.add_subplot(gs[1, 0], sharex=ax_curr)
+        for name, data in voltages.items():
+            ax_volt.plot(time_axis, data, label=name, linewidth=1.2)
+        ax_volt.set_ylabel("Напряжения")
+        ax_volt.legend(loc='upper right')
+        ax_volt.grid(True, alpha=0.3, linestyle=':')
+
+        ax_disc = fig.add_subplot(gs[2, 0], sharex=ax_curr)
+        # Реальные метки — в плюс
+        for i, label_name in enumerate(labels):
+            color = f"C{i % 10}"
+            real_positions = [amplitudes[i] if v else np.nan for v in real_labels[label_name]]
+            ax_disc.scatter(time_axis, real_positions, marker='o', s=16, alpha=0.8, color=color, label=f"GT: {label_name}")
+
+        # Предсказания — в минус
+        for i, label_name in enumerate(labels):
+            color = f"C{i % 10}"
+            pred_positions = [-amplitudes[i] if v else np.nan for v in pred_labels[label_name]]
+            ax_disc.scatter(time_axis, pred_positions, marker='s', s=14, alpha=0.6, color=color, label=f"Pred: {label_name}")
+
+        ax_disc.axhline(0, color='black', linewidth=1)
+        ax_disc.set_ylim(-len(labels) - 0.5, len(labels) + 0.5)
+
+        # Настраиваем y-ticks для дискретов
+        y_ticks = np.concatenate([-amplitudes[::-1], amplitudes])
+        y_tick_labels = [f"P:{l}" for l in labels[::-1]] + [f"G:{l}" for l in labels]
+        ax_disc.set_yticks(y_ticks)
+        ax_disc.set_yticklabels(y_tick_labels, fontsize=7)
+
+        ax_disc.set_ylabel("Дискреты (GT:+, Pred:-)")
+        ax_disc.grid(True, alpha=0.3, linestyle=':')
+        ax_disc.legend(loc='upper right', ncols=2, fontsize=8)
+
+        for i, label_name in enumerate(labels):
+            ax_conf = fig.add_subplot(gs[3 + i, 0], sharex=ax_curr)
+            color = f"C{i % 10}"
+            probs = pred_probs.get(label_name, np.zeros_like(time_axis)) if pred_probs else np.zeros_like(time_axis)
+
+            ax_conf.plot(time_axis, probs, color=color, linewidth=1.2, alpha=0.6)
+            mask = probs >= threshold
+            if np.any(mask):
+                ax_conf.scatter(time_axis[mask], probs[mask], color=color, s=8, alpha=0.9)
+
+            ax_conf.axhline(threshold, color='red', linewidth=0.9, linestyle='--', alpha=0.7)
+            ax_conf.set_ylim(-0.02, 1.02)
+            ax_conf.set_yticks([0.0, threshold, 1.0])
+            ax_conf.set_yticklabels(["0", f"{threshold:.2f}", "1"], fontsize=7)
+            ax_conf.set_ylabel(label_name, fontsize=8)
+            ax_conf.grid(True, alpha=0.3, linestyle=':')
+
+        ax_conf.set_xlabel("Время, мс")
+        fig.suptitle(title, fontsize=14)
+        fig.tight_layout()
+        fig.savefig(out_path, dpi=150)
+        plt.close(fig)
+        return
+
     plt.figure(figsize=(16, 10))
 
     ax_curr = plt.subplot(3, 1, 1)
@@ -218,8 +338,6 @@ def _plot_marking(
     ax_volt.grid(True, alpha=0.3, linestyle=':')
 
     ax_disc = plt.subplot(3, 1, 3)
-    labels = list(real_labels.keys())
-    amplitudes = np.arange(1, len(labels) + 1)
 
     # Реальные метки — в плюс
     for i, label_name in enumerate(labels):
@@ -259,7 +377,11 @@ def generate_marking_plots_for_model(
     data_dir: Path,
     include_zero_current: bool = True,
     include_zero_voltage: bool = True,
-    split: str = 'test'
+    split: str = 'test',
+    plot_mode: str = 'discrete',
+    threshold: float = 0.5,
+    selected_files: Optional[List[str]] = None,
+    file_time_ranges_ms: Optional[Dict[str, Tuple[float, float]]] = None
 ) -> None:
     """
     Генерация графиков разметки для осциллограмм по выбранной модели.
@@ -271,6 +393,10 @@ def generate_marking_plots_for_model(
         include_zero_current: Отображать ток нуля (IN).
         include_zero_voltage: Отображать напряжение нуля (UN).
         split: Какие данные использовать — 'test' или 'train'.
+        plot_mode: 'discrete' (как раньше) или 'confidence' (уверенность по классам).
+        threshold: Порог для подсветки уверенности.
+        selected_files: Ограничить список файлов конкретным набором.
+        file_time_ranges_ms: Диапазоны времени по файлам (мс) для обрезки графиков.
     """
     exp_dir = _find_experiment_dir(exp_name)
     config_path = exp_dir / "config.json"
@@ -295,6 +421,7 @@ def generate_marking_plots_for_model(
     )
 
     target_level = _resolve_target_level(exp_name)
+    target_window_mode = _resolve_target_window_mode(config, exp_name)
 
     # Подготовка данных
     dm = DatasetManager(str(data_dir))
@@ -336,6 +463,9 @@ def generate_marking_plots_for_model(
 
     # Работа по файлам
     file_names = data_df['file_name'].unique().to_list()
+    if selected_files:
+        selected_set = set(selected_files)
+        file_names = [name for name in file_names if name in selected_set]
     for file_name in tqdm(file_names, desc=f"Разметка {split_label} осциллограмм"):
         file_df = data_df.filter(pl.col('file_name') == file_name)
         if len(file_df) < window_size + 1:
@@ -364,6 +494,7 @@ def generate_marking_plots_for_model(
             downsampling_stride=downsampling_stride,
             target_columns=target_cols,
             target_level=target_level if target_level != 'base' else 'base_labels',
+            target_window_mode=target_window_mode,
             physical_normalization=True,
             norm_coef_path=config.get('data', {}).get('norm_coef_path'),
             num_harmonics=num_harmonics,
@@ -372,7 +503,12 @@ def generate_marking_plots_for_model(
 
         # Предсказания по всем окнам
         pred_labels = {col: np.zeros(len(file_df), dtype=np.int8) for col in target_cols}
-        real_labels = {col: file_df[col].to_numpy().astype(np.int8) for col in target_cols}
+        pred_probs = {col: np.zeros(len(file_df), dtype=np.float32) for col in target_cols}
+
+        if target_window_mode == 'any_in_window':
+            real_labels = _build_window_any_labels(file_df, target_cols, window_size)
+        else:
+            real_labels = {col: file_df[col].to_numpy().astype(np.int8) for col in target_cols}
 
         data_mode = config.get('data', {}).get('mode', 'multilabel')
         model_name = model.__class__.__name__
@@ -394,21 +530,29 @@ def generate_marking_plots_for_model(
                 outputs = model(x_tensor)
 
             if data_mode == 'classification':
-                preds = torch.argmax(outputs, dim=1).cpu().numpy()
+                probs = torch.softmax(outputs, dim=1).cpu().numpy()
+                preds = np.argmax(probs, axis=1)
                 pred_matrix = np.zeros((len(preds), len(target_cols)), dtype=np.int8)
                 pred_matrix[np.arange(len(preds)), preds] = 1
+                prob_matrix = probs
             elif data_mode == 'multitask_conditional' or is_conditional_model or target_level == 'base_sequential':
-                probs = torch.sigmoid(outputs[:, :4])
-                pred_matrix = (probs > 0.5).int().cpu().numpy()
+                probs = torch.sigmoid(outputs[:, :4]).cpu().numpy()
+                pred_matrix = (probs > threshold).astype(np.int8)
+                prob_matrix = probs.copy()
 
                 # Ограничение: если Normal=1, то остальные = 0
-                pred_matrix[:, 1:] = np.where(pred_matrix[:, 0:1] == 1, 0, pred_matrix[:, 1:])
+                normal_mask = pred_matrix[:, 0:1] == 1
+                pred_matrix[:, 1:] = np.where(normal_mask, 0, pred_matrix[:, 1:])
+                prob_matrix[:, 1:] = np.where(normal_mask, 0.0, prob_matrix[:, 1:])
 
                 # Ограничение: если ML_3=1, то ML_2=0
-                pred_matrix[:, 2] = np.where(pred_matrix[:, 3] == 1, 0, pred_matrix[:, 2])
+                ml3_mask = pred_matrix[:, 3] == 1
+                pred_matrix[:, 2] = np.where(ml3_mask, 0, pred_matrix[:, 2])
+                prob_matrix[:, 2] = np.where(ml3_mask, 0.0, prob_matrix[:, 2])
             else:
-                probs = torch.sigmoid(outputs)
-                pred_matrix = (probs > 0.5).int().cpu().numpy()
+                probs = torch.sigmoid(outputs).cpu().numpy()
+                pred_matrix = (probs > threshold).astype(np.int8)
+                prob_matrix = probs
 
             for j, start_idx in enumerate(batch_indices):
                 target_idx = start_idx + (window_size - 1)
@@ -416,9 +560,20 @@ def generate_marking_plots_for_model(
                     continue
                 for k, col in enumerate(target_cols):
                     pred_labels[col][target_idx] = pred_matrix[j, k]
+                    pred_probs[col][target_idx] = prob_matrix[j, k]
 
         # Ось времени
         time_axis = np.arange(len(file_df)) * 1000 / sampling_rate
+
+        if file_time_ranges_ms and file_name in file_time_ranges_ms:
+            start_ms, end_ms = file_time_ranges_ms[file_name]
+            mask = (time_axis >= start_ms) & (time_axis <= end_ms)
+            time_axis = time_axis[mask]
+            currents = {k: v[mask] for k, v in currents.items()}
+            voltages = {k: v[mask] for k, v in voltages.items()}
+            real_labels = {k: v[mask] for k, v in real_labels.items()}
+            pred_labels = {k: v[mask] for k, v in pred_labels.items()}
+            pred_probs = {k: v[mask] for k, v in pred_probs.items()}
 
         title = f"{exp_name} | {file_name}"
         name_hash = hashlib.md5(f"{file_name}|{exp_name}".encode('utf-8')).hexdigest()[:12]
@@ -433,7 +588,10 @@ def generate_marking_plots_for_model(
             voltages=voltages,
             real_labels=real_labels,
             pred_labels=pred_labels,
-            title=title
+            title=title,
+            pred_probs=pred_probs,
+            plot_mode=plot_mode,
+            threshold=threshold
         )
 
 
@@ -458,6 +616,14 @@ if __name__ == "__main__":
                         help="Отключить отображение U0 (UN)")
     parser.add_argument("--split", type=str, default='test', choices=['train', 'test'],
                         help="Какие данные использовать: 'train' или 'test' (по умолчанию: test)")
+    parser.add_argument("--plot-mode", type=str, default='discrete', choices=['discrete', 'confidence'],
+                        help="Режим графика: дискреты или уверенность")
+    parser.add_argument("--threshold", type=float, default=0.5,
+                        help="Порог для уверенности модели")
+    parser.add_argument("--files", type=str, default=None,
+                        help="Список файлов через запятую для построения")
+    parser.add_argument("--time-ranges-json", type=str, default=None,
+                        help="JSON с диапазонами времени (мс) по файлам")
 
     args, _ = parser.parse_known_args()
 
@@ -466,12 +632,23 @@ if __name__ == "__main__":
 
     if MANUAL_RUN or args.exp is None:
         # EXP_NAME = "Exp_2.6.1_PhysicsKAN_medium_phase_polar_stride_base_weights_aug"
-        EXP_NAME = "Exp_2.6.7_PhysicsKANConditional_heavy_phase_polar_stride_base_sequential_weights_aug"
+        EXP_NAME = "Exp_2.6.8_PhysicsKAN_medium_phase_polar_stride_base_win_any_weights_aug"
         OUTPUT_DIR = "reports/Exp_2_5_and_start_Exp_2_6"
         DATA_DIR = "data/ml_datasets"
         INCLUDE_ZERO_CURRENT = True
         INCLUDE_ZERO_VOLTAGE = True
         SPLIT = 'test'  # 'train' или 'test'
+        PLOT_MODE = 'confidence'  # 'discrete' или 'confidence'
+        THRESHOLD = 0.5
+
+        # Пример выбора файлов и диапазонов времени (мс)
+        # SELECTED_FILES = ["file_001.cfg", "file_002.cfg"]
+        # FILE_TIME_RANGES_MS = {
+        #     "file_001.cfg": (120.0, 420.0),
+        #     "file_002.cfg": (800.0, 1400.0)
+        # }
+        SELECTED_FILES = None
+        FILE_TIME_RANGES_MS = None
     else:
         EXP_NAME = args.exp
         OUTPUT_DIR = args.output_dir or "reports/Exp_2_5_and_start_Exp_2_6"
@@ -479,6 +656,13 @@ if __name__ == "__main__":
         INCLUDE_ZERO_CURRENT = not args.no_zero_current
         INCLUDE_ZERO_VOLTAGE = not args.no_zero_voltage
         SPLIT = args.split
+        PLOT_MODE = args.plot_mode
+        THRESHOLD = args.threshold
+        SELECTED_FILES = args.files.split(',') if args.files else None
+        FILE_TIME_RANGES_MS = None
+        if args.time_ranges_json:
+            with open(args.time_ranges_json, 'r', encoding='utf-8') as f:
+                FILE_TIME_RANGES_MS = json.load(f)
 
     generate_marking_plots_for_model(
         exp_name=EXP_NAME,
@@ -486,5 +670,9 @@ if __name__ == "__main__":
         data_dir=ROOT_DIR / DATA_DIR,
         include_zero_current=INCLUDE_ZERO_CURRENT,
         include_zero_voltage=INCLUDE_ZERO_VOLTAGE,
-        split=SPLIT
+        split=SPLIT,
+        plot_mode=PLOT_MODE,
+        threshold=THRESHOLD,
+        selected_files=SELECTED_FILES,
+        file_time_ranges_ms=FILE_TIME_RANGES_MS
     )

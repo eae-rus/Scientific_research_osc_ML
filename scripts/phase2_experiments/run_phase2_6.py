@@ -127,7 +127,8 @@ def run_single_experiment(
     balancing_mode: str = 'none',
     balancer: Any = None,
     num_harmonics: int = 1,
-    target_level: str = 'base'
+    target_level: str = 'base',
+    target_window_mode: str = 'point'
 ):
     print(f"\n>>> Запуск эксперимента: {exp_name}")
     print(f"Модель: {model_name} ({complexity})")
@@ -189,6 +190,7 @@ def run_single_experiment(
         mode='classification', feature_mode=effective_feature_mode,
         sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
         target_columns=target_cols, target_level=ds_target_level,
+        target_window_mode=target_window_mode,
         physical_normalization=True, norm_coef_path=str(norm_coef_path),
         augment=augment,
         num_harmonics=num_harmonics
@@ -214,7 +216,8 @@ def run_single_experiment(
                 feature_mode=effective_feature_mode,
                 target_columns=target_cols, target_level=target_level,
                 sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
-                num_harmonics=num_harmonics
+                num_harmonics=num_harmonics,
+                target_window_mode=target_window_mode
             )
         except ValueError as e:
             print(f"  [!] Предрасчёт недоступен: {e}")
@@ -224,6 +227,7 @@ def run_single_experiment(
                 mode='classification', feature_mode=effective_feature_mode,
                 sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
                 target_columns=target_cols, target_level=ds_target_level,
+                target_window_mode=target_window_mode,
                 physical_normalization=True, norm_coef_path=str(norm_coef_path),
                 augment=False,
                 num_harmonics=num_harmonics
@@ -235,6 +239,7 @@ def run_single_experiment(
             mode='classification', feature_mode=effective_feature_mode,
             sampling_strategy=sampling_strategy, downsampling_stride=downsampling_stride,
             target_columns=target_cols, target_level=ds_target_level,
+            target_window_mode=target_window_mode,
             physical_normalization=True, norm_coef_path=str(norm_coef_path),
             augment=False,
             num_harmonics=num_harmonics
@@ -285,6 +290,9 @@ def run_single_experiment(
         # seq_len нужен только для MLP/KAN веток
         if model_name in ['HybridMLP', 'HybridSimpleKAN']:
             model_params['seq_len'] = seq_len
+
+    # Сохраняем режим формирования меток в конфиг
+    data_config_base.target_window_mode = target_window_mode
 
     config = ExperimentConfig(
         model=ModelConfig(name=model_name, params=model_params),
@@ -401,6 +409,9 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         "2.6.1_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights", "target_level": "base"},
         "2.6.1_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights", "target_level": "base"},
         "2.6.1_global_stride": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "aug": True, "balancing": "global", "target_level": "base"},
+
+        # === Эксперимент 2.6.8: Метка по всему окну (сдвиг вправо) ===
+        "2.6.8_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights", "target_level": "base", "target_window": "any_in_window"},
         
         # === Эксперимент 2.6.2: Иерархические модели ===
         "2.6.2_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights", "target_level": "base"},
@@ -485,6 +496,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
     
     # Определяем target_level из параметров эксперимента
     exp_target_level = p.get('target_level', 'base')
+    exp_target_window = p.get('target_window', 'point')
 
     # === ПРЕДВАРИТЕЛЬНЫЙ ПРОХОД: Определяем, нужна ли загрузка данных ===
     need_training = False
@@ -495,6 +507,9 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
             sampling_strategy = p["sampling"]
             
             full_exp_name = f"Exp_{exp_id_clean}_{m_name}_{comp}_{feature_mode}_{sampling_strategy}_{exp_target_level}"
+
+            if exp_target_window == 'any_in_window':
+                full_exp_name += "_win_any"
             
             # Добавляем суффиксы балансировки и аугментации в имя
             if p.get('balancing', 'none') != 'none':
@@ -565,6 +580,9 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
             sampling_strategy = p["sampling"]
             
             full_exp_name = f"Exp_{exp_id_clean}_{m_name}_{comp}_{feature_mode}_{sampling_strategy}_{exp_target_level}"
+
+            if exp_target_window == 'any_in_window':
+                full_exp_name += "_win_any"
             
             # Добавляем суффиксы балансировки и аугментации в имя
             if p.get('balancing', 'none') != 'none':
@@ -618,7 +636,8 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
                     balancing_mode=p.get('balancing', 'weights'),
                     balancer=get_or_create_balancer(p.get('balancing', 'weights'), exp_target_level),
                     num_harmonics=current_harmonics,
-                    target_level=exp_target_level
+                    target_level=exp_target_level,
+                    target_window_mode=exp_target_window
                 )
             except Exception as e:
                 print(f"!!! Ошибка в {full_exp_name}: {e}")
@@ -633,21 +652,29 @@ if __name__ == "__main__":
     # 2.6.2 - иерархические модели
     # 2.6.3 - гибридные модели
     # 2.6.4 - гранулярность меток (full, full_by_levels)
+    # 2.6.7 - финальный тест (200 эпох, conditional heads)
     EXPS = [
         # === Эксперимент 2.6.1: Калибровка базовых моделей ===
         #"2.6.1_stride", "2.6.1_snapshot", "2.6.1_global_stride",
         
         # === Эксперимент 2.6.2: Иерархические модели ===
-        "2.6.2_stride", "2.6.2_snapshot",
+        # "2.6.2_stride", "2.6.2_snapshot",
         
         # === Эксперимент 2.6.3: Гибридные модели ===
-        "2.6.3_stride", "2.6.3_snapshot",
+        # "2.6.3_stride", "2.6.3_snapshot",
         
         # === Эксперимент 2.6.4: Гранулярность меток ===
         # Вариант Б: full (все ML_* колонки независимо)
-        "2.6.4_full_stride", "2.6.4_full_snapshot", "2.6.4_full_global_stride",
+        # "2.6.4_full_stride", "2.6.4_full_snapshot", "2.6.4_full_global_stride",
         # Вариант В: full_by_levels (все ML_* с иерархическим распространением)
-        "2.6.4_hier_stride", "2.6.4_hier_snapshot", "2.6.4_hier_global_stride",
+        # "2.6.4_hier_stride", "2.6.4_hier_snapshot", "2.6.4_hier_global_stride",
+
+        # === Эксперимент 2.6.7: Финальный тест (200 эпох) ===
+        # "2.6.7_conditional_200",
+        # "2.6.7_baseline_200", 
+
+        # === Эксперимент 2.6.8: Метка по всему окну (сдвиг вправо) ===
+        "2.6.8_stride",
     ]
     
     # Тип модели ('all' - выберет автоматически подходящие для группы)
