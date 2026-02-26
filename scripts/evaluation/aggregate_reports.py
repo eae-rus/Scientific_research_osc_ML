@@ -11,7 +11,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 import time
 import numpy as np
-from sklearn.metrics import accuracy_score, f1_score, balanced_accuracy_score
+from sklearn.metrics import accuracy_score, f1_score, balanced_accuracy_score, roc_auc_score
 from tqdm import tqdm
 import re
 import logging
@@ -62,6 +62,7 @@ def needs_full_eval_recalc(existing_row: Optional[pd.Series], require_hierarchic
     - Нет существующих данных (existing_row is None)
     - Full Best Acc/F1 или Full Final Acc/F1 равны 0
     - Full Eval Time (s) или Full Eval Samples равны 0
+    - Full Best ROC-AUC отсутствует или равен 0 (новая метрика)
     - (Опционально) отсутствуют метрики Hierarchical Accuracy
     """
     if existing_row is None:
@@ -79,6 +80,13 @@ def needs_full_eval_recalc(existing_row: Optional[pd.Series], require_hierarchic
             # Проверяем на 0, NaN или пустое значение
             if pd.isna(val) or val == 0 or val == 0.0:
                 return True
+    
+    # ROC-AUC: если колонки нет или значение 0/NaN — нужен пересчёт
+    if 'Full Best ROC-AUC' not in existing_row.index:
+        return True
+    roc_val = existing_row.get('Full Best ROC-AUC', 0)
+    if pd.isna(roc_val) or roc_val == 0 or roc_val == 0.0:
+        return True
     
     if require_hierarchical:
         hier_cols = [
@@ -767,6 +775,7 @@ def evaluate_model_full(
     model.eval()
     all_preds = []
     all_targets = []
+    all_probs = []  # Сырые вероятности для ROC-AUC
     all_targets_ml23 = []
     all_preds_ml23 = []
     
@@ -781,14 +790,18 @@ def evaluate_model_full(
                     if y.dim() > 1 and y.shape[1] == 1:
                         y = y.squeeze(1)
                     _, predicted = torch.max(outputs.data, 1)
+                    # Softmax вероятности для ROC-AUC (multi-class OvR)
+                    probs = torch.softmax(outputs, dim=1)
                     all_preds.extend(predicted.cpu().numpy())
                     all_targets.extend(y.cpu().numpy())
+                    all_probs.extend(probs.cpu().numpy())
                 elif mode == 'multilabel':
                     y = y.float()
                     probs = torch.sigmoid(outputs)
                     predicted = (probs > 0.5).float()
                     all_preds.extend(predicted.cpu().numpy())
                     all_targets.extend(y.cpu().numpy())
+                    all_probs.extend(probs.cpu().numpy())
                 elif mode == 'multitask_conditional':
                     y = y.float()
                     probs = torch.sigmoid(outputs[:, :4])
@@ -799,6 +812,7 @@ def evaluate_model_full(
 
                     all_preds.extend(pred_binary)
                     all_targets.extend(y[:, :4].cpu().numpy())
+                    all_probs.extend(probs.cpu().numpy())
                     all_preds_ml23.extend([])
                     all_targets_ml23.extend([])
                 else:
@@ -815,6 +829,7 @@ def evaluate_model_full(
     
     all_preds = np.array(all_preds)
     all_targets = np.array(all_targets)
+    all_probs = np.array(all_probs) if all_probs else np.array([])
     
     # Расчёт метрик
     per_class_support = []
@@ -852,12 +867,63 @@ def evaluate_model_full(
 
         per_class_f1 = f1_score(all_targets, all_preds, average=None, zero_division=0).tolist()
     
+    # === ROC-AUC ===
+    # Вычисляется по сырым вероятностям (sigmoid/softmax), НЕ зависит от порога.
+    # Для multilabel: считаем AUC для каждого класса отдельно, потом macro-среднее.
+    # Для classification: используем One-vs-Rest (OvR) стратегию.
+    # Это стандарт для научных публикаций — оценка качества ранжирования модели.
+    roc_auc = 0.0
+    per_class_roc_auc = []
+    
+    if all_probs.size > 0:
+        try:
+            if mode == 'classification':
+                # Multi-class OvR: передаём матрицу вероятностей (N, num_classes)
+                roc_auc = roc_auc_score(
+                    all_targets, all_probs,
+                    average='macro', multi_class='ovr'
+                )
+                # Per-class ROC-AUC для classification (one-hot кодирование)
+                num_classes = all_probs.shape[1]
+                for cls_idx in range(num_classes):
+                    y_true_bin = (all_targets == cls_idx).astype(int)
+                    # Проверяем наличие обоих классов (0 и 1)
+                    if len(np.unique(y_true_bin)) < 2:
+                        per_class_roc_auc.append(0.0)
+                    else:
+                        cls_auc = roc_auc_score(y_true_bin, all_probs[:, cls_idx])
+                        per_class_roc_auc.append(float(cls_auc))
+            elif mode in ('multilabel', 'multitask_conditional'):
+                # Multilabel: AUC по каждому классу отдельно, затем macro
+                num_classes = all_targets.shape[1] if all_targets.ndim == 2 else 1
+                valid_aucs = []
+                for cls_idx in range(num_classes):
+                    y_true_cls = all_targets[:, cls_idx]
+                    y_prob_cls = all_probs[:, cls_idx]
+                    # ROC-AUC не определён если класс содержит только одно значение
+                    if len(np.unique(y_true_cls)) < 2:
+                        per_class_roc_auc.append(0.0)
+                    else:
+                        cls_auc = roc_auc_score(y_true_cls, y_prob_cls)
+                        per_class_roc_auc.append(float(cls_auc))
+                        valid_aucs.append(cls_auc)
+                # Macro-среднее только по классам, где AUC определён
+                roc_auc = float(np.mean(valid_aucs)) if valid_aucs else 0.0
+        except Exception as e:
+            # ROC-AUC может упасть при вырожденных данных — не критично
+            if _eval_logger:
+                _eval_logger.warning(f"Не удалось вычислить ROC-AUC: {e}")
+            roc_auc = 0.0
+            per_class_roc_auc = []
+    
     return {
         'acc': acc,
         'f1': f1,
         'balanced_acc': balanced_acc,
         'per_class_f1': per_class_f1,
-        'per_class_support': per_class_support
+        'per_class_support': per_class_support,
+        'roc_auc': roc_auc,
+        'per_class_roc_auc': per_class_roc_auc
     }
 
 
@@ -890,9 +956,13 @@ def evaluate_full_test_dataset(
         'full_best_acc': 0.0,
         'full_best_f1': 0.0,
         'full_best_per_class_f1': [],
+        'full_best_roc_auc': 0.0,
+        'full_best_per_class_roc_auc': [],
         'full_final_acc': 0.0,
         'full_final_f1': 0.0,
         'full_final_per_class_f1': [],
+        'full_final_roc_auc': 0.0,
+        'full_final_per_class_roc_auc': [],
         'full_eval_time_s': 0.0,
         'full_eval_samples': 0,
         'num_classes': 0,
@@ -1226,6 +1296,8 @@ def evaluate_full_test_dataset(
                     results['full_best_acc'] = best_metrics['acc']
                     results['full_best_f1'] = best_metrics['f1']
                     results['full_best_per_class_f1'] = best_metrics['per_class_f1']
+                    results['full_best_roc_auc'] = best_metrics.get('roc_auc', 0.0)
+                    results['full_best_per_class_roc_auc'] = best_metrics.get('per_class_roc_auc', [])
                     best_support = best_metrics.get('per_class_support', [])
                     if len(results['full_best_per_class_f1']) == len(target_cols):
                         results['full_best_per_class_f1_map'] = dict(zip(target_cols, results['full_best_per_class_f1']))
@@ -1283,6 +1355,8 @@ def evaluate_full_test_dataset(
                     results['full_final_acc'] = final_metrics['acc']
                     results['full_final_f1'] = final_metrics['f1']
                     results['full_final_per_class_f1'] = final_metrics['per_class_f1']
+                    results['full_final_roc_auc'] = final_metrics.get('roc_auc', 0.0)
+                    results['full_final_per_class_roc_auc'] = final_metrics.get('per_class_roc_auc', [])
                     final_support = final_metrics.get('per_class_support', [])
                     if len(results['full_final_per_class_f1']) == len(target_cols):
                         results['full_final_per_class_f1_map'] = dict(zip(target_cols, results['full_final_per_class_f1']))
@@ -1824,6 +1898,8 @@ def aggregate_reports(
                     exp_data['Full Best F1'] = full_metrics['full_best_f1']
                     exp_data['Full Final Acc'] = full_metrics['full_final_acc']
                     exp_data['Full Final F1'] = full_metrics['full_final_f1']
+                    exp_data['Full Best ROC-AUC'] = full_metrics.get('full_best_roc_auc', 0.0)
+                    exp_data['Full Final ROC-AUC'] = full_metrics.get('full_final_roc_auc', 0.0)
                     exp_data['Full Eval Time (s)'] = full_metrics['full_eval_time_s']
                     exp_data['Full Eval Samples'] = full_metrics['full_eval_samples']
                     exp_data['Num Classes'] = full_metrics.get('num_classes', 0)
@@ -1863,6 +1939,14 @@ def aggregate_reports(
                         exp_data['Class_2_F1'] = best_per_class[2]  # Abnormal
                         exp_data['Class_3_F1'] = best_per_class[3]  # Fault
                     
+                    # Per-class ROC-AUC для детального анализа
+                    best_per_class_auc = full_metrics.get('full_best_per_class_roc_auc', [])
+                    if best_per_class_auc and len(best_per_class_auc) >= 4:
+                        exp_data['Class_0_ROC-AUC'] = best_per_class_auc[0]  # Normal
+                        exp_data['Class_1_ROC-AUC'] = best_per_class_auc[1]  # Switching
+                        exp_data['Class_2_ROC-AUC'] = best_per_class_auc[2]  # Abnormal
+                        exp_data['Class_3_ROC-AUC'] = best_per_class_auc[3]  # Fault
+                    
                     skip_stats['full_eval_recalc'] += 1
                 else:
                     # Используем существующие данные из кэша
@@ -1870,6 +1954,8 @@ def aggregate_reports(
                     exp_data['Full Best F1'] = existing_row.get('Full Best F1', 0.0)
                     exp_data['Full Final Acc'] = existing_row.get('Full Final Acc', 0.0)
                     exp_data['Full Final F1'] = existing_row.get('Full Final F1', 0.0)
+                    exp_data['Full Best ROC-AUC'] = existing_row.get('Full Best ROC-AUC', 0.0)
+                    exp_data['Full Final ROC-AUC'] = existing_row.get('Full Final ROC-AUC', 0.0)
                     exp_data['Full Eval Time (s)'] = existing_row.get('Full Eval Time (s)', 0.0)
                     exp_data['Full Eval Samples'] = existing_row.get('Full Eval Samples', 0)
                     exp_data['Num Classes'] = existing_row.get('Num Classes', 0)
@@ -1893,6 +1979,12 @@ def aggregate_reports(
                     # Per-class F1 из кэша (если есть)
                     for i in range(4):
                         col = f'Class_{i}_F1'
+                        if col in existing_row.index:
+                            exp_data[col] = existing_row.get(col, None)
+                    
+                    # Per-class ROC-AUC из кэша (если есть)
+                    for i in range(4):
+                        col = f'Class_{i}_ROC-AUC'
                         if col in existing_row.index:
                             exp_data[col] = existing_row.get(col, None)
                     
@@ -1981,7 +2073,7 @@ def aggregate_reports(
     # Отобразить топ-результаты
     print("\nАгрегированный отчет (Топ-20):")
     cols_to_show = ['ExpID', 'Model', 'Complexity', 'Val F1', 'CPU Inf (ms)']
-    if full_eval: cols_to_show.extend(['Full Best F1'])
+    if full_eval: cols_to_show.extend(['Full Best F1', 'Full Best ROC-AUC'])
     cols_to_show = [c for c in cols_to_show if c in df.columns]
     print(df[cols_to_show].head(20).to_markdown(index=False, floatfmt=".4f"))
 
