@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from osc_tools.ml.models.base import BaseModel
 from osc_tools.ml.layers.complex_ops import cLeakyReLU, cMaxPool1d, SafeMaxPool1d
+from osc_tools.ml.layers.temporal_pooling import TemporalPooling
 
 def create_conv_block(in_channels, out_channels, maxPool_size = 2, kernel_size=3, stride=1, padding=1, padding_mode="circular", useComplex=False):
     if useComplex:
@@ -62,7 +63,8 @@ class ResNet1D(BaseModel):
     ResNet для 1D временных рядов.
     Адаптировано из классической архитектуры ResNet.
     """
-    def __init__(self, in_channels, num_classes, layers=[2, 2, 2, 2], base_filters=64):
+    def __init__(self, in_channels, num_classes, layers=[2, 2, 2, 2], base_filters=64,
+                 pooling_strategy: str = "global_avg"):
         super(ResNet1D, self).__init__()
         self.inplanes = base_filters
         
@@ -79,8 +81,9 @@ class ResNet1D(BaseModel):
         self.layer4 = self._make_layer(base_filters * 8, layers[3], stride=2)
 
         # Final classification
-        self.avgpool = nn.AdaptiveAvgPool1d(1)
-        self.fc = nn.Linear(base_filters * 8, num_classes)
+        self.avgpool = TemporalPooling(channels=base_filters * 8, strategy=pooling_strategy)
+        classifier_input = base_filters * 8 * self.avgpool.output_scale
+        self.fc = nn.Linear(classifier_input, num_classes)
 
         # Initialization
         for m in self.modules():
@@ -118,7 +121,6 @@ class ResNet1D(BaseModel):
         x = self.layer4(x)
 
         x = self.avgpool(x)
-        x = torch.flatten(x, 1)
         x = self.fc(x)
 
         return x

@@ -128,7 +128,8 @@ def run_single_experiment(
     balancer: Any = None,
     num_harmonics: int = 1,
     target_level: str = 'base',
-    target_window_mode: str = 'point'
+    target_window_mode: str = 'point',
+    pooling_strategy: str = 'global_avg'
 ):
     print(f"\n>>> Запуск эксперимента: {exp_name}")
     print(f"Модель: {model_name} ({complexity})")
@@ -291,6 +292,12 @@ def run_single_experiment(
         if model_name in ['HybridMLP', 'HybridSimpleKAN']:
             model_params['seq_len'] = seq_len
 
+    # Стратегия временного пулинга (attention или global_avg)
+    # Не передаём для полносвязных моделей (у них нет временной оси перед классификатором)
+    MODELS_WITHOUT_TEMPORAL_POOLING = {'SimpleMLP', 'SimpleKAN', 'HybridMLP', 'HybridSimpleKAN'}
+    if pooling_strategy != 'global_avg' and model_name not in MODELS_WITHOUT_TEMPORAL_POOLING:
+        model_params['pooling_strategy'] = pooling_strategy
+
     # Сохраняем режим формирования меток в конфиг
     data_config_base.target_window_mode = target_window_mode
 
@@ -409,9 +416,6 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         "2.6.1_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights", "target_level": "base"},
         "2.6.1_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights", "target_level": "base"},
         "2.6.1_global_stride": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "aug": True, "balancing": "global", "target_level": "base"},
-
-        # === Эксперимент 2.6.8: Метка по всему окну (сдвиг вправо) ===
-        "2.6.8_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights", "target_level": "base", "target_window": "any_in_window"},
         
         # === Эксперимент 2.6.2: Иерархические модели ===
         "2.6.2_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights", "target_level": "base"},
@@ -433,28 +437,21 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         "2.6.4_hier_global_stride": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "aug": True, "balancing": "global", "target_level": "full_by_levels"},
 
         # === Эксперимент 2.6.7: Финальный тест (200 эпох) ===
-        "2.6.7_baseline_200": {
-            "feature_mode": "phase_polar",
-            "sampling": "stride",
-            "stride": 16,
-            "aug": True,
-            "balancing": "weights",
-            "target_level": "base",
-            "epochs": 200,
-            "models_override": ["PhysicsKAN"],
-            "complexities_override": ["heavy"],
+        "2.6.7_baseline_200": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "aug": True, "balancing": "weights", "target_level": "base", "epochs": 200, "models_override": ["PhysicsKAN"], "complexities_override": ["heavy"],
         },
-        "2.6.7_conditional_200": {
-            "feature_mode": "phase_polar",
-            "sampling": "stride",
-            "stride": 16,
-            "aug": True,
-            "balancing": "weights",
-            "target_level": "base_sequential",
-            "epochs": 200,
-            "models_override": ["PhysicsKANConditional"],
-            "complexities_override": ["heavy"]
-        }
+        "2.6.7_conditional_200": { "feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "aug": True, "balancing": "weights", "target_level": "base_sequential", "epochs": 200, "models_override": ["PhysicsKANConditional"], "complexities_override": ["heavy"]
+        },
+                
+        # === Эксперимент 2.6.8: Метка по всему окну (сдвиг вправо) ===
+        "2.6.8_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights", "target_level": "base", "target_window": "any_in_window"},
+
+        # === Эксперимент 2.6.9: Temporal Attention Pooling ===
+        # Зеркалит 2.6.1, но с pooling_strategy="attention" вместо global_avg.
+        # Модель сама учится фокусироваться на важных временных шагах вместо слепого усреднения.
+        "2.6.9_stride":         {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights", "target_level": "base", "pooling_strategy": "attention"},
+        "2.6.9_snapshot":       {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights", "target_level": "base", "pooling_strategy": "attention"},
+        "2.6.9_global_stride":  {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "global",  "target_level": "base", "pooling_strategy": "attention"},
+
     }
 
     if target_exp not in exp_params:
@@ -497,6 +494,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
     # Определяем target_level из параметров эксперимента
     exp_target_level = p.get('target_level', 'base')
     exp_target_window = p.get('target_window', 'point')
+    exp_pooling_strategy = p.get('pooling_strategy', 'global_avg')
 
     # === ПРЕДВАРИТЕЛЬНЫЙ ПРОХОД: Определяем, нужна ли загрузка данных ===
     need_training = False
@@ -510,6 +508,10 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
 
             if exp_target_window == 'any_in_window':
                 full_exp_name += "_win_any"
+            
+            # Суффикс стратегии пулинга (только если не дефолт)
+            if exp_pooling_strategy != 'global_avg':
+                full_exp_name += f"_{exp_pooling_strategy}"
             
             # Добавляем суффиксы балансировки и аугментации в имя
             if p.get('balancing', 'none') != 'none':
@@ -637,7 +639,8 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
                     balancer=get_or_create_balancer(p.get('balancing', 'weights'), exp_target_level),
                     num_harmonics=current_harmonics,
                     target_level=exp_target_level,
-                    target_window_mode=exp_target_window
+                    target_window_mode=exp_target_window,
+                    pooling_strategy=exp_pooling_strategy
                 )
             except Exception as e:
                 print(f"!!! Ошибка в {full_exp_name}: {e}")
@@ -653,6 +656,8 @@ if __name__ == "__main__":
     # 2.6.3 - гибридные модели
     # 2.6.4 - гранулярность меток (full, full_by_levels)
     # 2.6.7 - финальный тест (200 эпох, conditional heads)
+    # 2.6.8 - метка по всему окну (сдвиг вправо)
+    # 2.6.9 - temporal attention pooling
     EXPS = [
         # === Эксперимент 2.6.1: Калибровка базовых моделей ===
         #"2.6.1_stride", "2.6.1_snapshot", "2.6.1_global_stride",
@@ -674,7 +679,12 @@ if __name__ == "__main__":
         # "2.6.7_baseline_200", 
 
         # === Эксперимент 2.6.8: Метка по всему окну (сдвиг вправо) ===
-        "2.6.8_stride",
+        # "2.6.8_stride",
+
+        # === Эксперимент 2.6.9: Temporal Attention Pooling ===
+        "2.6.9_stride",
+        "2.6.9_snapshot",
+        "2.6.9_global_stride",
     ]
     
     # Тип модели ('all' - выберет автоматически подходящие для группы)

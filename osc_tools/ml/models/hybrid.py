@@ -26,6 +26,7 @@ import torch.nn as nn
 from typing import Optional, Dict, Tuple, List
 from osc_tools.ml.models.base import BaseModel
 from osc_tools.ml.layers.kan_layers import KANLinear, KANConv1d
+from osc_tools.ml.layers.temporal_pooling import TemporalPooling
 from osc_tools.ml.kan_conv.arithmetic import MultiplicationLayer, DivisionLayer
 
 
@@ -191,7 +192,8 @@ class HybridCNN(BaseModel):
         pool_every: int = 1,
         raw_channels: int = 8,
         features_channels: int = 16,
-        features_seq_len: Optional[int] = None
+        features_seq_len: Optional[int] = None,
+        pooling_strategy: str = "global_avg"
     ):
         super().__init__()
         
@@ -209,12 +211,19 @@ class HybridCNN(BaseModel):
             features_channels, channels, kernel_size, stride, dropout, use_bn, pool_every
         )
         
-        # Размер выхода каждой ветки после AdaptiveAvgPool1d(1)
+        # Размер выхода каждой ветки после TemporalPooling
         branch_out = channels[-1] if channels else raw_channels
+        
+        # TemporalPooling для каждой ветки
+        self.raw_pool = TemporalPooling(channels=branch_out, strategy=pooling_strategy)
+        self.feat_pool = TemporalPooling(channels=branch_out, strategy=pooling_strategy)
+        
+        raw_pool_out = branch_out * self.raw_pool.output_scale
+        feat_pool_out = branch_out * self.feat_pool.output_scale
         
         # Fusion + Classifier
         self.head = FusionHead(
-            branch_out, branch_out, num_classes,
+            raw_pool_out, feat_pool_out, num_classes,
             fusion_hidden=branch_out, dropout=dropout
         )
         
@@ -244,10 +253,10 @@ class HybridCNN(BaseModel):
         x_feat = _slice_tail(x[:, self.raw_channels:, :], self.features_seq_len)
         
         raw_out = self.raw_branch(x_raw)
-        raw_out = nn.functional.adaptive_avg_pool1d(raw_out, 1).flatten(1)
+        raw_out = self.raw_pool(raw_out)
         
         feat_out = self.features_branch(x_feat)
-        feat_out = nn.functional.adaptive_avg_pool1d(feat_out, 1).flatten(1)
+        feat_out = self.feat_pool(feat_out)
         
         return self.head(raw_out, feat_out)
 
@@ -283,7 +292,7 @@ class _ResBlock1D(nn.Module):
 
 class _ResNetBranch(nn.Module):
     """Одна ветка ResNet для гибридной модели."""
-    def __init__(self, in_channels, layers, base_filters):
+    def __init__(self, in_channels, layers, base_filters, pooling_strategy="global_avg"):
         super().__init__()
         self.inplanes = base_filters
         
@@ -297,8 +306,8 @@ class _ResNetBranch(nn.Module):
         self.layer3 = self._make_layer(base_filters * 4, layers[2], stride=2)
         self.layer4 = self._make_layer(base_filters * 8, layers[3], stride=2)
         
-        self.avgpool = nn.AdaptiveAvgPool1d(1)
-        self.out_features = base_filters * 8
+        self.avgpool = TemporalPooling(channels=base_filters * 8, strategy=pooling_strategy)
+        self.out_features = base_filters * 8 * self.avgpool.output_scale
         
     def _make_layer(self, planes, blocks, stride=1):
         downsample = None
@@ -324,7 +333,7 @@ class _ResNetBranch(nn.Module):
         x = self.layer3(x)
         x = self.layer4(x)
         x = self.avgpool(x)
-        return x.flatten(1)
+        return x
 
 
 class HybridResNet(BaseModel):
@@ -342,7 +351,8 @@ class HybridResNet(BaseModel):
         base_filters: int = 32,  # Уменьшено вдвое (было 64)
         raw_channels: int = 8,
         features_channels: int = 16,
-        features_seq_len: Optional[int] = None
+        features_seq_len: Optional[int] = None,
+        pooling_strategy: str = "global_avg"
     ):
         super().__init__()
         
@@ -351,13 +361,13 @@ class HybridResNet(BaseModel):
         self.features_seq_len = features_seq_len
         
         # Ветка 1: Raw данные
-        self.raw_branch = _ResNetBranch(raw_channels, layers, base_filters)
+        self.raw_branch = _ResNetBranch(raw_channels, layers, base_filters, pooling_strategy)
         
         # Ветка 2: Features
-        self.features_branch = _ResNetBranch(features_channels, layers, base_filters)
+        self.features_branch = _ResNetBranch(features_channels, layers, base_filters, pooling_strategy)
         
-        # Выход каждой ветки: base_filters * 8 (после layer4)
-        branch_out = base_filters * 8
+        # Выход каждой ветки: base_filters * 8 * output_scale (после layer4 + pool)
+        branch_out = self.raw_branch.out_features
         
         # Fusion + Classifier
         self.head = FusionHead(
@@ -486,7 +496,8 @@ class HybridConvKAN(BaseModel):
         base_activation=torch.nn.SiLU,
         raw_channels: int = 8,
         features_channels: int = 16,
-        features_seq_len: Optional[int] = None
+        features_seq_len: Optional[int] = None,
+        pooling_strategy: str = "global_avg"
     ):
         super().__init__()
         
@@ -508,8 +519,15 @@ class HybridConvKAN(BaseModel):
         
         branch_out = channels[-1] if channels else raw_channels
         
+        # TemporalPooling для каждой ветки
+        self.raw_pool = TemporalPooling(channels=branch_out, strategy=pooling_strategy)
+        self.feat_pool = TemporalPooling(channels=branch_out, strategy=pooling_strategy)
+        
+        raw_pool_out = branch_out * self.raw_pool.output_scale
+        feat_pool_out = branch_out * self.feat_pool.output_scale
+        
         # Fusion + Classifier с KANLinear
-        fusion_size = branch_out * 2
+        fusion_size = raw_pool_out + feat_pool_out
         self.classifier = nn.Sequential(
             KANLinear(fusion_size, branch_out, grid_size=grid_size, base_activation=base_activation),
             KANLinear(branch_out, num_classes, grid_size=grid_size, base_activation=base_activation)
@@ -545,10 +563,10 @@ class HybridConvKAN(BaseModel):
         x_feat = _slice_tail(x[:, self.raw_channels:, :], self.features_seq_len)
         
         raw_out = self.raw_branch(x_raw)
-        raw_out = nn.functional.adaptive_avg_pool1d(raw_out, 1).flatten(1)
+        raw_out = self.raw_pool(raw_out)
         
         feat_out = self.features_branch(x_feat)
-        feat_out = nn.functional.adaptive_avg_pool1d(feat_out, 1).flatten(1)
+        feat_out = self.feat_pool(feat_out)
         
         combined = torch.cat([raw_out, feat_out], dim=1)
         return self.classifier(combined)
@@ -579,7 +597,8 @@ class HybridPhysicsKAN(BaseModel):
         base_activation=torch.nn.SiLU,
         raw_channels: int = 8,
         features_channels: int = 16,
-        features_seq_len: Optional[int] = None
+        features_seq_len: Optional[int] = None,
+        pooling_strategy: str = "global_avg"
     ):
         super().__init__()
         
@@ -619,8 +638,15 @@ class HybridPhysicsKAN(BaseModel):
         
         branch_out = channels[-1] if channels else raw_conv_in
         
+        # TemporalPooling для каждой ветки
+        self.raw_pool = TemporalPooling(channels=branch_out, strategy=pooling_strategy)
+        self.feat_pool = TemporalPooling(channels=branch_out, strategy=pooling_strategy)
+        
+        raw_pool_out = branch_out * self.raw_pool.output_scale
+        feat_pool_out = branch_out * self.feat_pool.output_scale
+        
         # Fusion + Classifier
-        fusion_size = branch_out * 2
+        fusion_size = raw_pool_out + feat_pool_out
         self.classifier = nn.Sequential(
             KANLinear(fusion_size, branch_out, grid_size=grid_size, base_activation=base_activation),
             KANLinear(branch_out, num_classes, grid_size=grid_size, base_activation=base_activation)
@@ -675,8 +701,8 @@ class HybridPhysicsKAN(BaseModel):
         raw_out = self.raw_branch(x_raw)
         feat_out = self.features_branch(x_feat)
         
-        raw_out = nn.functional.adaptive_avg_pool1d(raw_out, 1).flatten(1)
-        feat_out = nn.functional.adaptive_avg_pool1d(feat_out, 1).flatten(1)
+        raw_out = self.raw_pool(raw_out)
+        feat_out = self.feat_pool(feat_out)
         
         combined = torch.cat([raw_out, feat_out], dim=1)
         return self.classifier(combined)

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from osc_tools.ml.models.base import BaseModel
+from osc_tools.ml.layers.temporal_pooling import TemporalPooling
 
 class SimpleMLP(BaseModel):
     """
@@ -51,7 +52,7 @@ class SimpleCNN(BaseModel):
     """
     def __init__(self, in_channels: int, num_classes: int, channels: list = [16, 32, 64], 
                  kernel_size: int = 3, stride: int = 1, dropout: float = 0.2, use_bn: bool = True,
-                 pool_every: int = 1):
+                 pool_every: int = 1, pooling_strategy: str = "global_avg"):
         super().__init__()
         
         layers = []
@@ -76,18 +77,20 @@ class SimpleCNN(BaseModel):
             curr_channels = out_channels
             
         self.features = nn.Sequential(*layers)
-        self.pool = nn.AdaptiveAvgPool1d(1)
+        self.pool = TemporalPooling(channels=curr_channels, strategy=pooling_strategy)
+        
+        # Размер входа классификатора зависит от стратегии пулинга
+        classifier_input = curr_channels * self.pool.output_scale
         
         # Classifier
         self.classifier = nn.Sequential(
-            nn.Linear(curr_channels, curr_channels // 2),
+            nn.Linear(classifier_input, max(4, classifier_input // 2)),
             nn.ReLU(),
-            nn.Linear(curr_channels // 2, num_classes)
+            nn.Linear(max(4, classifier_input // 2), num_classes)
         )
 
     def forward(self, x):
         x = self.features(x)
-        x = self.pool(x)
-        x = x.flatten(1)
+        x = self.pool(x)       # (B, C * output_scale) — уже без временной оси
         x = self.classifier(x)
         return x

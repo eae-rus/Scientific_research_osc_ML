@@ -5,6 +5,7 @@ from osc_tools.ml.models.cnn import ResNet1D, ResBlock1D, SafeMaxPool1d
 from osc_tools.ml.models.baseline import SimpleCNN
 from osc_tools.ml.models.kan import SimpleKAN, PhysicsKAN
 from osc_tools.ml.layers.kan_layers import KANConv1d
+from osc_tools.ml.layers.temporal_pooling import TemporalPooling
 
 # --- Helpers ---
 
@@ -152,7 +153,8 @@ class HierarchicalCNN(nn.Module):
     """
     def __init__(self, in_channels: int, num_classes: int, channels: list = [32, 64, 128], 
                  kernel_size: int = 3, stride: int = 1, dropout: float = 0.2, use_bn: bool = True,
-                 pool_every: int = 1, stem_config: dict = None):
+                 pool_every: int = 1, stem_config: dict = None,
+                 pooling_strategy: str = "global_avg"):
         super().__init__()
         
         if stem_config is None:
@@ -191,13 +193,13 @@ class HierarchicalCNN(nn.Module):
             *layers
         )
         
-        self.global_pool = nn.AdaptiveAvgPool1d(1)
-        self.classifier = nn.Linear(curr_in, num_classes)
+        self.global_pool = TemporalPooling(channels=curr_in, strategy=pooling_strategy)
+        classifier_input = curr_in * self.global_pool.output_scale
+        self.classifier = nn.Linear(classifier_input, num_classes)
 
     def forward(self, x):
         x = self.features(x)
         x = self.global_pool(x)
-        x = x.flatten(1)
         x = self.classifier(x)
         return x
 
@@ -213,8 +215,10 @@ class HierarchicalConvKAN(nn.Module):
     """
     def __init__(self, in_channels: int, num_classes: int, channels: list = [16, 32], 
                  kernel_size: int = 3, stride: int = 1, dropout: float = 0.2, 
-                 grid_size=5, spline_order=3, pool_every: int = 1, stem_config: dict = None):
-        super().__init__()
+                 grid_size=5, spline_order=3, pool_every: int = 1, stem_config: dict = None,
+                 pooling_strategy: str = "global_avg"):
+        super().__init__(
+        )
         
         if stem_config is None:
              stem_config = {'independent_layers': 2, 'grouped_layers': 2}
@@ -252,13 +256,13 @@ class HierarchicalConvKAN(nn.Module):
             *layers
         )
         
-        self.global_pool = nn.AdaptiveAvgPool1d(1)
-        self.classifier = nn.Linear(curr_in, num_classes)
+        self.global_pool = TemporalPooling(channels=curr_in, strategy=pooling_strategy)
+        classifier_input = curr_in * self.global_pool.output_scale
+        self.classifier = nn.Linear(classifier_input, num_classes)
 
     def forward(self, x):
         x = self.features(x)
         x = self.global_pool(x)
-        x = x.flatten(1)
         x = self.classifier(x)
         return x
 
@@ -291,7 +295,7 @@ class HierarchicalResNet(nn.Module):
     Заменяет стандартный Conv1 слой ResNet на HierarchicalStem.
     """
     def __init__(self, in_channels: int, num_classes: int, layers=[2, 2, 2, 2], base_filters=64, 
-                 stem_config: dict = None, **kwargs):
+                 stem_config: dict = None, pooling_strategy: str = "global_avg", **kwargs):
         super().__init__()
         
         if stem_config is None:
@@ -315,8 +319,9 @@ class HierarchicalResNet(nn.Module):
         self.layer3 = self._make_layer(base_filters * 4, layers[2], stride=2)
         self.layer4 = self._make_layer(base_filters * 8, layers[3], stride=2)
 
-        self.avgpool = nn.AdaptiveAvgPool1d(1)
-        self.fc = nn.Linear(base_filters * 8, num_classes)
+        self.avgpool = TemporalPooling(channels=base_filters * 8, strategy=pooling_strategy)
+        classifier_input = base_filters * 8 * self.avgpool.output_scale
+        self.fc = nn.Linear(classifier_input, num_classes)
         
         # Init weights
         for m in self.modules():
@@ -353,7 +358,6 @@ class HierarchicalResNet(nn.Module):
         x = self.layer4(x)
 
         x = self.avgpool(x)
-        x = x.flatten(1)
         x = self.fc(x)
 
         return x
@@ -374,7 +378,8 @@ class HierarchicalSimpleKAN(nn.Module):
     - stem_config: {'independent_layers': N, 'grouped_layers': M}
     """
     def __init__(self, in_channels: int, num_classes: int, channels: list = [64, 32], 
-                 grid_size=5, spline_order=3, dropout=0.0, stem_config: dict = None, input_size=3200):
+                 grid_size=5, spline_order=3, dropout=0.0, stem_config: dict = None, input_size=3200,
+                 pooling_strategy: str = "global_avg"):
         super().__init__()
         
         if stem_config is None:
@@ -391,12 +396,12 @@ class HierarchicalSimpleKAN(nn.Module):
             **stem_config
         )
         
-        # GlobalAvgPool для сжатия временной оси
-        # Это критично: вместо flatten(C*L) мы получаем вектор размера C
-        self.global_pool = nn.AdaptiveAvgPool1d(1)
+        # TemporalPooling для сжатия временной оси
+        # Вместо простого AdaptiveAvgPool1d(1) можно использовать attention
+        self.global_pool = TemporalPooling(channels=self.stem.out_channels, strategy=pooling_strategy)
         
-        # Backbone работает с вектором размера stem.out_channels
-        kan_input_size = self.stem.out_channels
+        # Backbone работает с вектором размера stem.out_channels * output_scale
+        kan_input_size = self.stem.out_channels * self.global_pool.output_scale
         
         self.backbone = SimpleKAN(
             input_size=kan_input_size, 
@@ -409,8 +414,7 @@ class HierarchicalSimpleKAN(nn.Module):
 
     def forward(self, x):
         x = self.stem(x)                  # (B, C', L)
-        x = self.global_pool(x)           # (B, C', 1)
-        x = x.flatten(start_dim=1)        # (B, C')
+        x = self.global_pool(x)           # (B, C') — уже без временной оси
         return self.backbone(x)
 
 class HierarchicalPhysicsKAN(nn.Module):
@@ -422,7 +426,8 @@ class HierarchicalPhysicsKAN(nn.Module):
     - Stem не раздувает каналы (expand_stage2=False)
     """
     def __init__(self, in_channels: int, num_classes: int, channels: list = [16, 32], 
-                 grid_size=5, spline_order=3, dropout=0.2, stem_config: dict = None, input_size=None, **kwargs):
+                 grid_size=5, spline_order=3, dropout=0.2, stem_config: dict = None, input_size=None,
+                 pooling_strategy: str = "global_avg", **kwargs):
         super().__init__()
         
         if stem_config is None:
@@ -461,6 +466,7 @@ class HierarchicalPhysicsKAN(nn.Module):
             spline_order=spline_order,
             dropout=dropout,
             input_size=adjusted_input_size,
+            pooling_strategy=pooling_strategy,
             **kwargs
         )
 

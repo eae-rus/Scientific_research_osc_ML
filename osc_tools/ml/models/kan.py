@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from osc_tools.ml.models.base import BaseModel
 from osc_tools.ml.layers.kan_layers import KANLinear, KANConv1d
+from osc_tools.ml.layers.temporal_pooling import TemporalPooling
 from osc_tools.ml.kan_conv.arithmetic import MultiplicationLayer, DivisionLayer
 
 class SimpleKAN(BaseModel):
@@ -65,7 +66,8 @@ class ConvKAN(BaseModel):
     """
     def __init__(self, in_channels: int, num_classes: int, channels: list = [8, 16, 32], 
                  kernel_size: int = 3, stride: int = 1, grid_size: int = 5, spline_order: int = 3,
-                 dropout: float = 0.2, pool_every: int = 1, base_activation=torch.nn.SiLU):
+                 dropout: float = 0.2, pool_every: int = 1, base_activation=torch.nn.SiLU,
+                 pooling_strategy: str = "global_avg"):
         super().__init__()
         
         layers = []
@@ -103,18 +105,21 @@ class ConvKAN(BaseModel):
             curr_channels = out_channels
             
         self.features = nn.Sequential(*layers)
-        self.pool = nn.AdaptiveAvgPool1d(1)
+        self.pool = TemporalPooling(channels=curr_channels, strategy=pooling_strategy)
+        
+        # Размер входа классификатора зависит от стратегии пулинга
+        classifier_input = curr_channels * self.pool.output_scale
         
         # Classifier
+        grid_cls = grid_size[0] if isinstance(grid_size, list) else grid_size
         self.classifier = nn.Sequential(
-            KANLinear(curr_channels, curr_channels // 2, grid_size=grid_size[0] if isinstance(grid_size, list) else grid_size, base_activation=base_activation),
-            KANLinear(curr_channels // 2, num_classes, grid_size=grid_size[0] if isinstance(grid_size, list) else grid_size, base_activation=base_activation)
+            KANLinear(classifier_input, max(4, classifier_input // 2), grid_size=grid_cls, base_activation=base_activation),
+            KANLinear(max(4, classifier_input // 2), num_classes, grid_size=grid_cls, base_activation=base_activation)
         )
 
     def forward(self, x):
         x = self.features(x)
-        x = self.pool(x)
-        x = x.flatten(1)
+        x = self.pool(x)       # (B, C * output_scale) — уже без временной оси
         x = self.classifier(x)
         return x
 
@@ -128,7 +133,8 @@ class PhysicsKAN(BaseModel):
     def __init__(self, in_channels: int, num_classes: int, channels: list = [8, 16, 32], 
                  kernel_size: int = 3, stride: int = 1, grid_size: int = 5, spline_order: int = 3,
                  dropout: float = 0.2, pool_every: int = 1, base_activation=torch.nn.SiLU,
-                 use_mlp: bool = False, input_size: int = 64): # use_mlp для snapshot
+                 use_mlp: bool = False, input_size: int = 64,
+                 pooling_strategy: str = "global_avg"): # use_mlp для snapshot
         super().__init__()
         
         if in_channels % 2 != 0:
@@ -185,7 +191,8 @@ class PhysicsKAN(BaseModel):
                 spline_order=spline_order,
                 dropout=dropout,
                 pool_every=pool_every,
-                base_activation=base_activation
+                base_activation=base_activation,
+                pooling_strategy=pooling_strategy
             )
 
     def forward(self, x):
@@ -226,7 +233,8 @@ class PhysicsKANConditional(BaseModel):
         pool_every: int = 1,
         base_activation=torch.nn.SiLU,
         use_mlp: bool = False,
-        input_size: int = 64
+        input_size: int = 64,
+        pooling_strategy: str = "global_avg"
     ):
         super().__init__()
 
@@ -275,10 +283,10 @@ class PhysicsKANConditional(BaseModel):
             curr_channels = out_channels
 
         self.features = nn.Sequential(*layers)
-        self.pool = nn.AdaptiveAvgPool1d(1)
+        self.pool = TemporalPooling(channels=curr_channels, strategy=pooling_strategy)
 
-        # Размер скрытого пространства
-        feat_dim = curr_channels
+        # Размер скрытого пространства (с учётом стратегии пулинга)
+        feat_dim = curr_channels * self.pool.output_scale
         head_hidden = max(4, feat_dim // 2)
         grid_head = grid_size[0] if isinstance(grid_size, list) else grid_size
 
@@ -317,8 +325,7 @@ class PhysicsKANConditional(BaseModel):
         x_combined = torch.cat([x, s, z], dim=1)
 
         feats = self.features(x_combined)
-        feats = self.pool(feats)
-        feats = feats.flatten(1)
+        feats = self.pool(feats)  # (B, feat_dim) — уже без временной оси
 
         normal_logit = self.head_normal(feats).squeeze(1)
         normal_prob = torch.sigmoid(normal_logit).unsqueeze(1)

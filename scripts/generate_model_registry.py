@@ -36,7 +36,7 @@ def parse_experiment_name(exp_name: str) -> Dict[str, str]:
     # Phase detection
     if 'Exp_2.5' in exp_name:
         result['phase'] = '2.5'
-    elif 'Exp2.6' in exp_name:
+    elif 'Exp2.6' in exp_name or 'Exp_2.6' in exp_name:
         result['phase'] = '2.6'
     else:
         return result
@@ -88,8 +88,8 @@ def find_best_models(
     
     models_by_arch: Dict[str, List[Dict]] = {}
     
-    # Сканируем phase2_5
-    for exp_dir in sorted(phase2_5_dir.glob('Exp_*')):
+    # Сканируем phase2_5 (рекурсивно — эксперименты вложены в подпапки)
+    for exp_dir in sorted(phase2_5_dir.glob('**/Exp_*')):
         if not exp_dir.is_dir():
             continue
         
@@ -132,8 +132,8 @@ def find_best_models(
             'phase_priority': phase_priority,
         })
     
-    # Сканируем phase2_6
-    for exp_dir in sorted(phase2_6_dir.glob('Exp*')):
+    # Сканируем phase2_6 (рекурсивно — эксперименты вложены в подпапки)
+    for exp_dir in sorted(phase2_6_dir.glob('**/Exp*')):
         if not exp_dir.is_dir():
             continue
         
