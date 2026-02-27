@@ -9,7 +9,7 @@ from osc_tools.features.phasor import (
     calculate_power, 
     calculate_symmetrical_components_from_line
 )
-from osc_tools.features.polar import calculate_polar_features
+from osc_tools.features.polar import calculate_polar_features_multiharmonic
 from osc_tools.ml.augmentation import TimeSeriesAugmenter
 
 class OscillogramDataset(Dataset):
@@ -615,33 +615,26 @@ class OscillogramDataset(Dataset):
                     u0 = un_phasor / 3
                 
                 # Собираем все 6 комплексных компонент: (Time, 6, NumHarmonics)
-                # stack axis=1 -> (Time, 6, Harmonics)
                 complex_features = np.stack([i1, i2, i0, u1, u2, u0], axis=1)
                 
-                # Определяем Reference (UA или IA) - только по первой гармонике (фундаментальной)
-                ua_phasor = phasors_u[0][:, 0] # (Time,)
-                ia_phasor = phasors_i[0][:, 0] # (Time,)
+                # Опорный сигнал — UA или IA, ПОЛНЫЙ массив со всеми гармониками
+                ua_full = phasors_u[0]  # (Time, H)
+                ia_full = phasors_i[0]  # (Time, H)
                 
-                ua_mag = np.nanmean(np.abs(ua_phasor))
+                ua_mag = np.nanmean(np.abs(ua_full[:, 0]))
                 if ua_mag > 1e-4:
-                    ref_phasor = ua_phasor
+                    ref_signal = ua_full   # (Time, H)
                 else:
-                    ia_mag = np.nanmean(np.abs(ia_phasor))
+                    ia_mag = np.nanmean(np.abs(ia_full[:, 0]))
                     if ia_mag > 1e-4:
-                        ref_phasor = ia_phasor
+                        ref_signal = ia_full  # (Time, H)
                     else:
-                        ref_phasor = None
+                        ref_signal = None
                 
-                # Конвертация в полярные
-                # Если num_harmonics > 1, нам нужно обработать каждую гармонику отдельно или вместе?
-                # calculate_polar_features принимает (Time, Channels). 
-                # У нас (Time, 6, Harmonics). Можно сделать reshape -> (Time, 6*Harmonics)
-                
-                time_steps, n_comps, n_harm = complex_features.shape
-                complex_features_flat = complex_features.reshape(time_steps, n_comps * n_harm)
-                
-                # Конвертация в полярные
-                polar_feats = calculate_polar_features(complex_features_flat, ref_phasor)
+                # Погармоничная коррекция угла
+                polar_feats = calculate_polar_features_multiharmonic(
+                    complex_features, ref_signal
+                )
                 collected_features.append(np.nan_to_num(polar_feats))
 
             elif fm == 'phase_polar':
@@ -655,17 +648,23 @@ class OscillogramDataset(Dataset):
                 # stack -> (Time, 8, Harmonics)
                 complex_features = np.stack(all_phasors, axis=1)
                 
-                # Опорный сигнал для фазы (UA или IA)
-                ua_phasor = all_phasors[4][:, 0] # UA_h1
-                ia_phasor = all_phasors[0][:, 0] # IA_h1
+                # Опорный сигнал для фазы (UA или IA) — ПОЛНЫЙ массив со всеми гармониками
+                ua_full = all_phasors[4]  # (Time, H)
+                ia_full = all_phasors[0]  # (Time, H)
                 
-                ua_mag = np.nanmean(np.abs(ua_phasor))
-                ref_phasor = ua_phasor if ua_mag > 1e-4 else (ia_phasor if np.nanmean(np.abs(ia_phasor)) > 1e-4 else None)
+                ua_mag = np.nanmean(np.abs(ua_full[:, 0]))
+                if ua_mag > 1e-4:
+                    ref_signal = ua_full   # (Time, H)
+                elif np.nanmean(np.abs(ia_full[:, 0])) > 1e-4:
+                    ref_signal = ia_full   # (Time, H)
+                else:
+                    ref_signal = None
                 
-                time_steps, n_signals, n_harm = complex_features.shape
-                # Reshape to (Time, 8 * Harmonics) for calculate_polar_features
-                complex_features_flat = complex_features.reshape(time_steps, n_signals * n_harm)
-                polar_feats = calculate_polar_features(complex_features_flat, ref_phasor)
+                # Погармоничная коррекция угла: для k-й гармоники
+                # вычитается угол k-й гармоники опорного сигнала
+                polar_feats = calculate_polar_features_multiharmonic(
+                    complex_features, ref_signal
+                )
                 
                 collected_features.append(np.nan_to_num(polar_feats))
 
@@ -732,37 +731,29 @@ class OscillogramDataset(Dataset):
                 collected_features.append(np.nan_to_num(data))
 
             elif fm == 'polar':
-                # 1. Вычисляем фазоры для всех 8 каналов
+                # Legacy-режим (1 гармоника). Используем multiharmonic для единообразия.
                 # [IA, IB, IC, In, UA, UB, UC, Un]
-                phasors = []
+                phasors_list = []
                 for i in range(8):
-                    p = sliding_window_fft(raw_data[:, i], fft_window, 1)[:, 0]
-                    phasors.append(p)
+                    p = sliding_window_fft(raw_data[:, i], fft_window, 1)
+                    phasors_list.append(p)
                 
-                phasors = np.stack(phasors, axis=1) # (Time, 8)
+                # (Time, 8, 1)
+                complex_features = np.stack(phasors_list, axis=1)
                 
-                # 2. Определяем опорный фазор (Reference Phasor)
-                # Приоритет: UA (idx 4) -> UAB (если бы были линейные, но тут у нас уже фазные восстановленные) -> IA (idx 0)
-                # В raw_data у нас всегда [IA, IB, IC, In, UA, UB, UC, Un]
-                # Если UA валидный (не нули), берем его. Иначе IA.
+                # Опорный сигнал: UA или IA (Time, 1)
+                ua_full = phasors_list[4]  # (Time, 1)
+                ia_full = phasors_list[0]  # (Time, 1)
                 
-                # Проверка на "валидность" UA (амплитуда > порога)
-                # Берем среднюю амплитуду по окну (игнорируя NaN)
-                ua_mag = np.nanmean(np.abs(phasors[:, 4]))
-                
-                if ua_mag > 1e-4: # т.к. напряжение в о.е.
-                    ref_phasor = phasors[:, 4]
+                ua_mag = np.nanmean(np.abs(ua_full[:, 0]))
+                if ua_mag > 1e-4:
+                    ref_signal = ua_full
+                elif np.nanmean(np.abs(ia_full[:, 0])) > 1e-4:
+                    ref_signal = ia_full
                 else:
-                    # Если напряжения нет, пробуем ток фазы А
-                    ia_mag = np.nanmean(np.abs(phasors[:, 0]))
-                    if ia_mag > 1e-4: # ток в о.е.
-                        ref_phasor = phasors[:, 0]
-                    else:
-                        # Если и тока нет, то фаза 0 (абсолютная)
-                        ref_phasor = None
+                    ref_signal = None
                 
-                # 3. Расчет Magnitude/Angle
-                polar_feats = calculate_polar_features(phasors, ref_phasor)
+                polar_feats = calculate_polar_features_multiharmonic(complex_features, ref_signal)
                 collected_features.append(np.nan_to_num(polar_feats))
 
         if not collected_features:

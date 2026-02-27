@@ -26,7 +26,7 @@ from tqdm import tqdm
 from osc_tools.ml.labels import clean_labels, add_base_labels, get_target_columns, get_ml_columns
 from osc_tools.features.pdr_calculator import sliding_window_fft
 from osc_tools.features.phasor import calculate_symmetrical_components, calculate_power
-from osc_tools.features.polar import calculate_polar_features
+from osc_tools.features.polar import calculate_polar_features_multiharmonic
 
 
 class DatasetManager:
@@ -311,21 +311,23 @@ class DatasetManager:
                 p = np.nan_to_num(p, nan=0.0, posinf=0.0, neginf=0.0).astype(np.complex64)
                 phasors.append(p)
             
-            # Phase Polar: magnitude и относительный angle (опора UA/IA на 1-й гармонике)
+            # Phase Polar: magnitude и относительный angle с погармоничной коррекцией
             complex_features = np.stack(phasors, axis=1)  # (Time, 8, H)
             time_steps = complex_features.shape[0]
-            complex_features_flat = complex_features.reshape(time_steps, 8 * num_harmonics)
             
-            ua_phasor = phasors[4][:, 0]
-            ia_phasor = phasors[0][:, 0]
-            ua_mag = np.nanmean(np.abs(ua_phasor))
+            # Опорный сигнал со всеми гармониками (UA или IA)
+            ua_full = phasors[4]  # (Time, H)
+            ia_full = phasors[0]  # (Time, H)
+            ua_mag = np.nanmean(np.abs(ua_full[:, 0]))
             if ua_mag > 1e-4:
-                ref_phasor = ua_phasor
+                ref_signal = ua_full
             else:
-                ia_mag = np.nanmean(np.abs(ia_phasor))
-                ref_phasor = ia_phasor if ia_mag > 1e-4 else None
+                ia_mag = np.nanmean(np.abs(ia_full[:, 0]))
+                ref_signal = ia_full if ia_mag > 1e-4 else None
             
-            phase_polar = calculate_polar_features(complex_features_flat, ref_phasor)
+            phase_polar = calculate_polar_features_multiharmonic(
+                complex_features, ref_signal
+            )
             phase_polar = np.nan_to_num(phase_polar, nan=0.0, posinf=0.0, neginf=0.0)
             
             # Phase Complex: Re/Im для каждого канала и гармоники
@@ -357,10 +359,11 @@ class DatasetManager:
             symmetric_rect = np.stack(symmetric_rect_list, axis=1).astype(np.float32)
             symmetric_rect = np.nan_to_num(symmetric_rect, nan=0.0, posinf=0.0, neginf=0.0)
             
-            # Symmetric Polar (Mag/Angle)
+            # Symmetric Polar (Mag/Angle) с погармоничной коррекцией
             symmetric_complex = np.stack(components, axis=1)  # (Time, 6, H)
-            symmetric_complex_flat = symmetric_complex.reshape(time_steps, 6 * num_harmonics)
-            symmetric_polar = calculate_polar_features(symmetric_complex_flat, ref_phasor)
+            symmetric_polar = calculate_polar_features_multiharmonic(
+                symmetric_complex, ref_signal
+            )
             symmetric_polar = np.nan_to_num(symmetric_polar, nan=0.0, posinf=0.0, neginf=0.0)
 
             # Power (P/Q) для пар IA/UA, IB/UB, IC/UC, IN/UN
