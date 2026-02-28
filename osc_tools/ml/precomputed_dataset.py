@@ -355,7 +355,7 @@ def create_precomputed_dataset(
     feature_mode: str = 'phase_polar',
     sampling_strategy: str = 'snapshot',
     target_level: str = 'base',
-    num_harmonics: int = 1
+    num_harmonics: int = 9 # TODO: разобраться, почему я принудительно прописываю 9, ведь чуть ли не волшебное число...
 ) -> PrecomputedDataset:
     """
     Утилитная функция для создания PrecomputedDataset из test_precomputed.csv.

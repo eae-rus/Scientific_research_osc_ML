@@ -5,7 +5,7 @@ from typing import Tuple, Optional
 def calculate_polar_features_multiharmonic(
     complex_features: np.ndarray,
     ref_signal: Optional[np.ndarray] = None,
-    ref_mag_threshold: float = 1e-6
+    ref_mag_threshold: float = 1e-4
 ) -> np.ndarray:
     """
     Преобразует комплексные фазоры в полярные координаты с ПОГАРМОНИЧНОЙ коррекцией угла.

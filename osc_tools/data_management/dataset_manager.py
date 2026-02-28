@@ -204,7 +204,7 @@ class DatasetManager:
         
         return s1, s2, s0
     
-    def create_precomputed_test_csv(self, force: bool = False, num_harmonics: int = 1) -> Path:
+    def create_precomputed_test_csv(self, force: bool = False, num_harmonics: int = 9) -> Path:
         """
         Создает CSV файл с предрассчитанными признаками для тестовой выборки.
         
@@ -224,7 +224,7 @@ class DatasetManager:
         
         Args:
             force: Принудительно пересоздать файл
-            num_harmonics: Количество гармоник для предрасчёта
+            num_harmonics: Количество гармоник для предрасчёта TODO: разобраться, почему не передаётся это число нигде нормально равным 9, от этого ошибки есть
             
         Returns:
             Путь к созданному файлу
