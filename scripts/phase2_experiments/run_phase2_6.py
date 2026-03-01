@@ -128,7 +128,8 @@ def run_single_experiment(
     balancer: Any = None,
     num_harmonics: int = 9,
     target_level: str = 'base',
-    target_window_mode: str = 'point'
+    target_window_mode: str = 'point',
+    model_param_overrides: Optional[Dict[str, Any]] = None
 ):
     print(f"\n>>> Запуск эксперимента: {exp_name}")
     print(f"Модель: {model_name} ({complexity})")
@@ -199,7 +200,7 @@ def run_single_experiment(
     # Валидационный датасет - используем предрассчитанные данные если возможно
     supported_precomputed_modes = {
         'raw', 'phase_polar', 'symmetric', 'symmetric_polar',
-        'phase_complex', 'power', 'alpha_beta'
+        'phase_complex', 'power', 'alpha_beta', 'phase_polar_h1_angle'
     }
     modes_for_precomputed = effective_feature_mode if isinstance(effective_feature_mode, list) else [effective_feature_mode]
     can_use_precomputed = (
@@ -279,6 +280,9 @@ def run_single_experiment(
     if model_name in ['PhysicsKAN', 'HierarchicalPhysicsKAN'] and sampling_strategy == 'snapshot':
         model_params['use_mlp'] = True
         model_params['input_size'] = in_channels * seq_len
+
+    if model_param_overrides:
+        model_params.update(model_param_overrides)
     
     # Гибридные модели нуждаются в параметрах разделения каналов
     if model_name.startswith('Hybrid'):

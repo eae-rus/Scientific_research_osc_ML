@@ -52,3 +52,21 @@ def test_precomputed_any_in_window_mode():
 
     _, y_point = ds_point[0]
     assert torch.allclose(y_point, torch.tensor([0.0, 0.0]))
+
+
+def test_build_feature_columns_phase_polar_h1_angle_h3():
+    cols = PrecomputedDataset._build_feature_columns('phase_polar_h1_angle', num_harmonics=3)
+
+    # 8 каналов: по 3 модуля + 1 угол (только h1) = 4 признака на канал
+    assert len(cols) == 8 * (3 + 1)
+
+    # Для 2-й и 3-й гармоник углы не должны присутствовать
+    assert 'IA_h2_angle' not in cols
+    assert 'IA_h3_angle' not in cols
+    assert 'UA_h2_angle' not in cols
+
+    # Угол 1-й гармоники и модули всех гармоник должны быть
+    assert 'IA_angle' in cols
+    assert 'IA_mag' in cols
+    assert 'IA_h2_mag' in cols
+    assert 'IA_h3_mag' in cols

@@ -3,6 +3,7 @@ import torch.nn as nn
 from osc_tools.ml.models.base import BaseModel
 from osc_tools.ml.layers.kan_layers import KANLinear, KANConv1d
 from osc_tools.ml.kan_conv.arithmetic import MultiplicationLayer, DivisionLayer
+from osc_tools.ml.kan_conv.modern_wrappers import build_kan_linear
 
 class SimpleKAN(BaseModel):
     """
@@ -226,7 +227,8 @@ class PhysicsKANConditional(BaseModel):
         pool_every: int = 1,
         base_activation=torch.nn.SiLU,
         use_mlp: bool = False,
-        input_size: int = 64
+        input_size: int = 64,
+        kan_backend: str = 'baseline'
     ):
         super().__init__()
 
@@ -238,6 +240,8 @@ class PhysicsKANConditional(BaseModel):
 
         if use_mlp:
             raise ValueError("PhysicsKANConditional пока не поддерживает use_mlp=True (snapshot режим)")
+
+        self.kan_backend = kan_backend
 
         self.mult = MultiplicationLayer()
         self.div = DivisionLayer()
@@ -284,26 +288,82 @@ class PhysicsKANConditional(BaseModel):
 
         # Голова 1: Target_Normal
         self.head_normal = nn.Sequential(
-            KANLinear(feat_dim, head_hidden, grid_size=grid_head, base_activation=base_activation),
-            KANLinear(head_hidden, 1, grid_size=grid_head, base_activation=base_activation)
+            build_kan_linear(
+                backend=self.kan_backend,
+                in_features=feat_dim,
+                out_features=head_hidden,
+                grid_size=grid_head,
+                spline_order=spline_order,
+                base_activation=base_activation,
+            ),
+            build_kan_linear(
+                backend=self.kan_backend,
+                in_features=head_hidden,
+                out_features=1,
+                grid_size=grid_head,
+                spline_order=spline_order,
+                base_activation=base_activation,
+            )
         )
 
         # Головы 2 и 3: получают +1 признак от головы 1
         head_in_dim = feat_dim + 1
         self.head_ml1 = nn.Sequential(
-            KANLinear(head_in_dim, head_hidden, grid_size=grid_head, base_activation=base_activation),
-            KANLinear(head_hidden, 1, grid_size=grid_head, base_activation=base_activation)
+            build_kan_linear(
+                backend=self.kan_backend,
+                in_features=head_in_dim,
+                out_features=head_hidden,
+                grid_size=grid_head,
+                spline_order=spline_order,
+                base_activation=base_activation,
+            ),
+            build_kan_linear(
+                backend=self.kan_backend,
+                in_features=head_hidden,
+                out_features=1,
+                grid_size=grid_head,
+                spline_order=spline_order,
+                base_activation=base_activation,
+            )
         )
         self.head_ml3 = nn.Sequential(
-            KANLinear(head_in_dim, head_hidden, grid_size=grid_head, base_activation=base_activation),
-            KANLinear(head_hidden, 1, grid_size=grid_head, base_activation=base_activation)
+            build_kan_linear(
+                backend=self.kan_backend,
+                in_features=head_in_dim,
+                out_features=head_hidden,
+                grid_size=grid_head,
+                spline_order=spline_order,
+                base_activation=base_activation,
+            ),
+            build_kan_linear(
+                backend=self.kan_backend,
+                in_features=head_hidden,
+                out_features=1,
+                grid_size=grid_head,
+                spline_order=spline_order,
+                base_activation=base_activation,
+            )
         )
 
         # Голова 4: получает +2 признака (Normal + ML_3)
         head_in_dim_ml2 = feat_dim + 2
         self.head_ml2 = nn.Sequential(
-            KANLinear(head_in_dim_ml2, head_hidden, grid_size=grid_head, base_activation=base_activation),
-            KANLinear(head_hidden, 1, grid_size=grid_head, base_activation=base_activation)
+            build_kan_linear(
+                backend=self.kan_backend,
+                in_features=head_in_dim_ml2,
+                out_features=head_hidden,
+                grid_size=grid_head,
+                spline_order=spline_order,
+                base_activation=base_activation,
+            ),
+            build_kan_linear(
+                backend=self.kan_backend,
+                in_features=head_hidden,
+                out_features=1,
+                grid_size=grid_head,
+                spline_order=spline_order,
+                base_activation=base_activation,
+            )
         )
 
     def forward(self, x):

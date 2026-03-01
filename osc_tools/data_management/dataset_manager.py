@@ -204,7 +204,13 @@ class DatasetManager:
         
         return s1, s2, s0
     
-    def create_precomputed_test_csv(self, force: bool = False, num_harmonics: int = 9) -> Path:
+    def create_precomputed_test_csv(
+        self,
+        force: bool = False,
+        num_harmonics: int = 9,
+        output_filename: Optional[str] = None,
+        phase_polar_h1_angle_only: bool = False,
+    ) -> Path:
         """
         Создает CSV файл с предрассчитанными признаками для тестовой выборки.
         
@@ -225,11 +231,14 @@ class DatasetManager:
         Args:
             force: Принудительно пересоздать файл
             num_harmonics: Количество гармоник для предрасчёта
+            output_filename: Имя выходного precomputed файла (по умолчанию test_precomputed.csv)
+            phase_polar_h1_angle_only: Если True, для phase_polar сохраняет угол только 1-й гармоники
             
         Returns:
             Путь к созданному файлу
         """
-        output_path = self.data_dir / self.PRECOMPUTED_TEST_CSV
+        output_name = output_filename or self.PRECOMPUTED_TEST_CSV
+        output_path = self.data_dir / output_name
         
         if output_path.exists() and not force:
             print(f"[DatasetManager] Найден существующий файл: {output_path.name}")
@@ -275,7 +284,9 @@ class DatasetManager:
         for ch in ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']:
             for h in range(1, num_harmonics + 1):
                 suffix = self._harmonic_suffix(h)
-                phase_polar_names.extend([f'{ch}{suffix}_mag', f'{ch}{suffix}_angle'])
+                phase_polar_names.append(f'{ch}{suffix}_mag')
+                if (not phase_polar_h1_angle_only) or h == 1:
+                    phase_polar_names.append(f'{ch}{suffix}_angle')
                 phase_complex_names.extend([f'{ch}{suffix}_re', f'{ch}{suffix}_im'])
             
         for comp in ['I1', 'I2', 'I0', 'U1', 'U2', 'U0']:
@@ -327,6 +338,18 @@ class DatasetManager:
             
             phase_polar = calculate_polar_features(complex_features_flat, ref_phasor)
             phase_polar = np.nan_to_num(phase_polar, nan=0.0, posinf=0.0, neginf=0.0)
+
+            if phase_polar_h1_angle_only:
+                phase_polar_reduced_list: List[np.ndarray] = []
+                for sig_idx in range(8):
+                    for harm_idx in range(num_harmonics):
+                        flat_idx = sig_idx * num_harmonics + harm_idx
+                        mag_col = 2 * flat_idx
+                        angle_col = mag_col + 1
+                        phase_polar_reduced_list.append(phase_polar[:, mag_col])
+                        if harm_idx == 0:
+                            phase_polar_reduced_list.append(phase_polar[:, angle_col])
+                phase_polar = np.stack(phase_polar_reduced_list, axis=1)
             
             # Phase Complex: Re/Im для каждого канала и гармоники
             phase_complex_list = []
@@ -438,7 +461,10 @@ class DatasetManager:
         # Выводим информацию о колонках
         print(f"  - Метаданные: sample, file_name")
         print(f"  - Raw аналоговые (8): IA...UN")
-        print(f"  - Phase Polar (16 * H): *_mag, *_angle")
+        if phase_polar_h1_angle_only:
+            print(f"  - Phase Polar (8 * H + 8): *_mag для всех гармоник, *_angle только для h1")
+        else:
+            print(f"  - Phase Polar (16 * H): *_mag, *_angle")
         print(f"  - Symmetric Rect (12 * H): *_re, *_im")
         print(f"  - Symmetric Polar (12 * H): *_mag, *_angle")
         print(f"  - Phase Complex (16 * H): *_re, *_im")
@@ -518,7 +544,7 @@ class DatasetManager:
         Возвращает имена колонок для указанного режима признаков.
         
         Args:
-            feature_mode: 'raw', 'phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex', 'power', 'alpha_beta'
+            feature_mode: 'raw', 'phase_polar', 'phase_polar_h1_angle', 'symmetric', 'symmetric_polar', 'phase_complex', 'power', 'alpha_beta'
             num_harmonics: Количество гармоник
             
         Returns:
@@ -535,6 +561,16 @@ class DatasetManager:
                 for h in range(1, num_harmonics + 1):
                     suffix = self._harmonic_suffix(h)
                     cols.extend([f'{ch}{suffix}_mag', f'{ch}{suffix}_angle'])
+            return cols
+
+        elif feature_mode == 'phase_polar_h1_angle':
+            cols = []
+            for ch in ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']:
+                for h in range(1, num_harmonics + 1):
+                    suffix = self._harmonic_suffix(h)
+                    cols.append(f'{ch}{suffix}_mag')
+                    if h == 1:
+                        cols.append(f'{ch}{suffix}_angle')
             return cols
         
         elif feature_mode == 'symmetric':
@@ -579,12 +615,13 @@ class DatasetManager:
         df = add_base_labels(df)
         return df
     
-    def load_test_df(self, precomputed: bool = False) -> pl.DataFrame:
+    def load_test_df(self, precomputed: bool = False, precomputed_filename: Optional[str] = None) -> pl.DataFrame:
         """
         Загружает и подготавливает тестовый DataFrame.
         
         Args:
             precomputed: Если True, загружает предрассчитанный файл
+            precomputed_filename: Имя precomputed CSV (по умолчанию test_precomputed.csv)
             
         Returns:
             DataFrame с тестовыми данными
@@ -592,9 +629,10 @@ class DatasetManager:
         self.ensure_train_test_split()
         
         if precomputed:
-            precomputed_path = self.data_dir / self.PRECOMPUTED_TEST_CSV
+            precomputed_name = precomputed_filename or self.PRECOMPUTED_TEST_CSV
+            precomputed_path = self.data_dir / precomputed_name
             if not precomputed_path.exists():
-                self.create_precomputed_test_csv()
+                self.create_precomputed_test_csv(output_filename=precomputed_name)
             df = pl.read_csv(precomputed_path, infer_schema_length=50000)
             return df
         else:

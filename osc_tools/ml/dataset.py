@@ -130,7 +130,8 @@ class OscillogramDataset(Dataset):
             
         valid_feature_modes = [
             'raw', 'symmetric', 'complex_channels', 'power', 'instantaneous_power', 
-            'alpha_beta', 'polar', 'symmetric_polar', 'phase_polar', 'phase_complex'
+            'alpha_beta', 'polar', 'symmetric_polar', 'phase_polar', 'phase_complex',
+            'phase_polar_h1_angle'
         ]
         for fm in self.feature_mode:
             if fm not in valid_feature_modes:
@@ -663,6 +664,38 @@ class OscillogramDataset(Dataset):
                 
                 collected_features.append(np.nan_to_num(polar_feats))
 
+            elif fm == 'phase_polar_h1_angle':
+                # Фаза 3: оставляем амплитуды всех гармоник, углы только для 1-й гармоники
+                all_phasors = []
+                for i in range(8):
+                    p = sliding_window_fft(raw_data[:, i], fft_window, self.num_harmonics)
+                    all_phasors.append(p)
+
+                complex_features = np.stack(all_phasors, axis=1)  # (Time, 8, Harmonics)
+
+                ua_phasor = all_phasors[4][:, 0]  # UA_h1
+                ia_phasor = all_phasors[0][:, 0]  # IA_h1
+
+                ua_mag = np.nanmean(np.abs(ua_phasor))
+                ref_phasor = ua_phasor if ua_mag > 1e-4 else (ia_phasor if np.nanmean(np.abs(ia_phasor)) > 1e-4 else None)
+
+                time_steps, n_signals, n_harm = complex_features.shape
+                complex_features_flat = complex_features.reshape(time_steps, n_signals * n_harm)
+                polar_feats = calculate_polar_features(complex_features_flat, ref_phasor)
+                polar_feats = np.nan_to_num(polar_feats)
+
+                reduced_features: List[np.ndarray] = []
+                for sig_idx in range(n_signals):
+                    for harm_idx in range(n_harm):
+                        flat_idx = sig_idx * n_harm + harm_idx
+                        mag_col = 2 * flat_idx
+                        angle_col = mag_col + 1
+                        reduced_features.append(polar_feats[:, mag_col])
+                        if harm_idx == 0:
+                            reduced_features.append(polar_feats[:, angle_col])
+
+                collected_features.append(np.stack(reduced_features, axis=1))
+
             elif fm == 'phase_complex':
                 # Режим Re/Im (Rectangular) для всех 8 фаз (как в Фазе 2)
                 feature_list = []
@@ -780,7 +813,10 @@ class OscillogramDataset(Dataset):
         x = torch.tensor(x_data, dtype=torch.float32).transpose(0, 1)
         
         # Прореживание (downsampling)
-        is_spectral = any(m in ['symmetric', 'symmetric_polar', 'phase_polar', 'phase_complex', 'power', 'alpha_beta', 'polar'] for m in self.feature_mode)
+        is_spectral = any(
+            m in ['symmetric', 'symmetric_polar', 'phase_polar', 'phase_polar_h1_angle', 'phase_complex', 'power', 'alpha_beta', 'polar']
+            for m in self.feature_mode
+        )
         is_raw = 'raw' in self.feature_mode and len(self.feature_mode) == 1
         
         if self.downsampling_mode == 'stride':
