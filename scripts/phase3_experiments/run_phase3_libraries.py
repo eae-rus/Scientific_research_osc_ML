@@ -37,6 +37,14 @@ _phase3_summary_module = importlib.util.module_from_spec(_phase3_summary_spec)
 _phase3_summary_spec.loader.exec_module(_phase3_summary_module)
 run_phase3_summary = _phase3_summary_module.run_phase3_summary
 
+PHASE3_AGGREGATE_SCRIPT_PATH = ROOT_DIR / 'scripts' / 'phase3_experiments' / 'aggregate_phase3_reports.py'
+_phase3_agg_spec = importlib.util.spec_from_file_location('aggregate_phase3_reports', PHASE3_AGGREGATE_SCRIPT_PATH)
+if _phase3_agg_spec is None or _phase3_agg_spec.loader is None:
+    raise ImportError(f'Не удалось загрузить агрегатор Фазы 3 из {PHASE3_AGGREGATE_SCRIPT_PATH}')
+_phase3_agg_module = importlib.util.module_from_spec(_phase3_agg_spec)
+_phase3_agg_spec.loader.exec_module(_phase3_agg_module)
+run_phase3_aggregate = _phase3_agg_module.run_phase3_aggregate
+
 from osc_tools.data_management import DatasetManager
 from osc_tools.ml.config import DataConfig, TrainingConfig
 from osc_tools.ml.dataset import OscillogramDataset
@@ -58,7 +66,7 @@ PHASE3_MANUAL_CONFIG = {
     'val_index_stride': 16,
     'num_harmonics': 9,
     'kan_backend': 'baseline',
-    'train_backends': '',
+    'train_backends': 'baseline,efficient,fast,cheby,wav,torch_wavelet',
     'benchmark_backends': 'baseline,efficient,fast,cheby,wav,torch_wavelet',
     'benchmark_train_steps': 20,
     'benchmark_val_steps': 10,
@@ -68,6 +76,7 @@ PHASE3_MANUAL_CONFIG = {
     'checkpoint_frequency': 0,
     'no_skip_existing': False,
     'no_summary': False,
+    'no_aggregate': False,
 }
 
 
@@ -91,6 +100,7 @@ def _manual_namespace() -> argparse.Namespace:
         checkpoint_frequency=PHASE3_MANUAL_CONFIG['checkpoint_frequency'],
         no_skip_existing=PHASE3_MANUAL_CONFIG['no_skip_existing'],
         no_summary=PHASE3_MANUAL_CONFIG['no_summary'],
+        no_aggregate=PHASE3_MANUAL_CONFIG['no_aggregate'],
     )
 
 
@@ -190,6 +200,10 @@ def run_phase3_libraries(
     print(f"  [Целевые колонки (base_sequential): {len(target_cols)} классов]")
     print(f"  [KAN backend: {kan_backend}]")
 
+    learning_rate = 0.0003 if kan_backend == 'cheby' else 0.001
+    if kan_backend == 'cheby':
+        print(f"  [Стабилизация cheby: learning_rate={learning_rate}]")
+
     data_config = DataConfig(
         path=str(metadata_file),
         window_size=window_size,
@@ -199,7 +213,7 @@ def run_phase3_libraries(
     )
     train_config = TrainingConfig(
         epochs=epochs,
-        learning_rate=0.001,
+        learning_rate=learning_rate,
         use_pos_weight=True,
         checkpoint_frequency=checkpoint_frequency,
         save_dir=str(experiments_dir),
@@ -271,6 +285,7 @@ def main() -> None:
     parser.add_argument('--checkpoint-frequency', type=int, default=PHASE3_MANUAL_CONFIG['checkpoint_frequency'], help='Частота сохранения чекпоинтов (<=0: epochs+1)')
     parser.add_argument('--no-skip-existing', action='store_true', help='Не пропускать уже обученные запуски')
     parser.add_argument('--no-summary', action='store_true', help='Не запускать авто-сводку результатов в конце')
+    parser.add_argument('--no-aggregate', action='store_true', help='Не запускать расширенную агрегацию отчётов в конце')
 
     if len(sys.argv) == 1:
         args = _manual_namespace()
@@ -325,6 +340,9 @@ def main() -> None:
 
     if not args.no_summary:
         run_phase3_summary(run_name_filter=args.exp_name)
+
+    if not args.no_aggregate:
+        run_phase3_aggregate(run_name_filter=args.exp_name)
 
 
 if __name__ == '__main__':

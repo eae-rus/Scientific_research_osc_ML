@@ -18,6 +18,12 @@ class ChebyKANLayer(nn.Module):
         # Since Chebyshev polynomial is defined in [-1, 1]
         # We need to normalize x to [-1, 1] using tanh
         x = torch.tanh(x)
+        # Численная стабилизация:
+        # производная acos(x) стремится к бесконечности при x -> ±1,
+        # поэтому отступаем от границ и убираем нечисловые значения.
+        eps = 1e-6
+        x = torch.nan_to_num(x, nan=0.0, posinf=1.0 - eps, neginf=-1.0 + eps)
+        x = torch.clamp(x, min=-1.0 + eps, max=1.0 - eps)
         # View and repeat input degree + 1 times
         x = x.view((-1, self.inputdim, 1)).expand(
             -1, -1, self.degree + 1

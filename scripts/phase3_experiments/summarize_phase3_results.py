@@ -53,6 +53,24 @@ def _safe_float(value: Any) -> Optional[float]:
         return None
 
 
+def _extract_series(
+    history: Optional[Dict[str, Any]],
+    metrics_rows: List[Dict[str, Any]],
+    key: str,
+) -> List[float]:
+    """Возвращает числовой ряд из history, либо fallback из metrics.jsonl."""
+    if isinstance(history, dict):
+        raw = history.get(key)
+        if isinstance(raw, list):
+            values = [_safe_float(v) for v in raw]
+            values = [v for v in values if v is not None]
+            if values:
+                return values
+
+    values = [_safe_float(row.get(key)) for row in metrics_rows]
+    return [v for v in values if v is not None]
+
+
 def collect_training_summary(run_name_filter: Optional[str] = None) -> List[Dict[str, Any]]:
     """Собирает summary по обученным экспериментам Фазы 3."""
     if not EXPERIMENTS_DIR.exists():
@@ -83,22 +101,25 @@ def collect_training_summary(run_name_filter: Optional[str] = None) -> List[Dict
 
         backend = _extract_backend_from_name(exp_name)
 
-        train_loss_list = history.get('train_loss', []) if isinstance(history, dict) else []
-        val_loss_list = history.get('val_loss', []) if isinstance(history, dict) else []
-        val_f1_list = history.get('val_f1', []) if isinstance(history, dict) else []
+        train_loss_list = _extract_series(history, metrics_rows, 'train_loss')
+        val_loss_list = _extract_series(history, metrics_rows, 'val_loss')
+        val_f1_list = _extract_series(history, metrics_rows, 'val_f1')
 
-        epochs_done = len(train_loss_list) if train_loss_list else len(metrics_rows)
+        epochs_done = max(len(train_loss_list), len(val_loss_list), len(val_f1_list), len(metrics_rows))
 
-        best_val_f1 = None
-        best_val_f1_epoch = None
+        best_val_f1: Optional[float] = None
+        best_val_f1_epoch: Optional[int] = None
         if val_f1_list:
             best_idx = max(range(len(val_f1_list)), key=lambda i: val_f1_list[i])
             best_val_f1 = _safe_float(val_f1_list[best_idx])
             best_val_f1_epoch = best_idx + 1
 
-        best_val_loss = None
+        best_val_loss: Optional[float] = None
+        best_val_loss_epoch: Optional[int] = None
         if val_loss_list:
-            best_val_loss = _safe_float(min(val_loss_list))
+            best_loss_idx = min(range(len(val_loss_list)), key=lambda i: val_loss_list[i])
+            best_val_loss = _safe_float(val_loss_list[best_loss_idx])
+            best_val_loss_epoch = best_loss_idx + 1
 
         final_val_f1 = _safe_float(val_f1_list[-1]) if val_f1_list else None
         final_val_loss = _safe_float(val_loss_list[-1]) if val_loss_list else None
@@ -122,6 +143,7 @@ def collect_training_summary(run_name_filter: Optional[str] = None) -> List[Dict
                 'best_val_f1': best_val_f1,
                 'best_val_f1_epoch': best_val_f1_epoch,
                 'best_val_loss': best_val_loss,
+                'best_val_loss_epoch': best_val_loss_epoch,
                 'final_val_f1': final_val_f1,
                 'final_val_loss': final_val_loss,
                 'mean_epoch_time_s': mean_epoch_time_s,
