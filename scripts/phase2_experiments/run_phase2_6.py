@@ -126,7 +126,7 @@ def run_single_experiment(
     use_precomputed_val: bool = True,
     balancing_mode: str = 'none',
     balancer: Any = None,
-    num_harmonics: int = 1,
+    num_harmonics: int = 9,
     target_level: str = 'base',
     target_window_mode: str = 'point'
 ):

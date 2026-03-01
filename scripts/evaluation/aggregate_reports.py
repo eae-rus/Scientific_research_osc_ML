@@ -532,7 +532,7 @@ def _get_eval_batch_size(
     config: Dict[str, Any],
     model_name: str = None,
     feature_mode: str = None,
-    num_harmonics: int = 1
+    num_harmonics: int = 9
 ) -> int:
     """
     Определяет оптимальный batch_size для оценки модели,

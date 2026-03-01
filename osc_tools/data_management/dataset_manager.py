@@ -204,7 +204,7 @@ class DatasetManager:
         
         return s1, s2, s0
     
-    def create_precomputed_test_csv(self, force: bool = False, num_harmonics: int = 1) -> Path:
+    def create_precomputed_test_csv(self, force: bool = False, num_harmonics: int = 9) -> Path:
         """
         Создает CSV файл с предрассчитанными признаками для тестовой выборки.
         
@@ -513,7 +513,7 @@ class DatasetManager:
             # Если что-то пошло не так, возвращаем исходные данные
             return raw_values
     
-    def get_precomputed_feature_columns(self, feature_mode: str, num_harmonics: int = 1) -> List[str]:
+    def get_precomputed_feature_columns(self, feature_mode: str, num_harmonics: int = 9) -> List[str]:
         """
         Возвращает имена колонок для указанного режима признаков.
         

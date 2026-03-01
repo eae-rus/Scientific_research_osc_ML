@@ -115,7 +115,7 @@ class PrecomputedDataset(Dataset):
         downsampling_stride: int = 16,
         target_position: Optional[int] = None,
         target_window_mode: str = 'point',
-        num_harmonics: int = 1
+        num_harmonics: int = 9
     ):
         """
         Args:
@@ -355,7 +355,7 @@ def create_precomputed_dataset(
     feature_mode: str = 'phase_polar',
     sampling_strategy: str = 'snapshot',
     target_level: str = 'base',
-    num_harmonics: int = 1
+    num_harmonics: int = 9
 ) -> PrecomputedDataset:
     """
     Утилитная функция для создания PrecomputedDataset из test_precomputed.csv.

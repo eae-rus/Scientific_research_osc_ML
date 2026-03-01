@@ -36,7 +36,7 @@ class OscillogramDataset(Dataset):
         augmentation_config: Optional[dict] = None,
         downsampling_mode: str = 'none',
         downsampling_stride: int = 16,
-        num_harmonics: int = 1,
+        num_harmonics: int = 9,
         augment: bool = False,
         sampling_strategy: Optional[str] = None,
         target_level: str = 'full'
