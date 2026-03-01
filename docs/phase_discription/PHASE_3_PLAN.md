@@ -33,21 +33,31 @@
 **Срок:** ~1 неделя на анализ + 1 неделя на интеграцию.
 
 1.  **Анализ репозиториев (с приоритетами):**
-    *   [ ] 🥇 `Blealtan/efficient-kan` — https://github.com/Blealtan/efficient-kan (B-Splines, оптимизировано по памяти, ~2.5k stars).
-    *   [ ] 🥈 `ZiyaoLi/fast-kan` — https://github.com/ZiyaoLi/fast-kan (RBF kernels, заявлено 3.3x быстрее).
-    *   [ ] 🥉 `SynodicMonth/ChebyKAN` — https://github.com/SynodicMonth/ChebyKAN (Полиномы Чебышева, нет grid → нет проблем с экстраполяцией).
-    *   [ ] `zavareh1/Wav-KAN` — https://github.com/zavareh1/Wav-KAN (Wavelet KAN, потенциально хорош для временных рядов).
+    *   [x] 🥇 `Blealtan/efficient-kan` — https://github.com/Blealtan/efficient-kan (B-Splines, оптимизировано по памяти, ~2.5k stars).
+        - Подключён backend `efficient` в обёртке (см. [osc_tools/ml/kan_conv/modern_wrappers.py](osc_tools/ml/kan_conv/modern_wrappers.py)).
+    *   [x] 🥈 `ZiyaoLi/fast-kan` — https://github.com/ZiyaoLi/fast-kan (RBF kernels, заявлено 3.3x быстрее).
+        - Подключён backend `fast` в обёртке (см. [osc_tools/ml/kan_conv/modern_wrappers.py](osc_tools/ml/kan_conv/modern_wrappers.py)).
+    *   [x] 🥉 `SynodicMonth/ChebyKAN` — https://github.com/SynodicMonth/ChebyKAN (Полиномы Чебышева, нет grid → нет проблем с экстраполяцией).
+        - Подключён backend `cheby` в обёртке (см. [osc_tools/ml/kan_conv/modern_wrappers.py](osc_tools/ml/kan_conv/modern_wrappers.py)).
+    *   [x] `zavareh1/Wav-KAN` — https://github.com/zavareh1/Wav-KAN (Wavelet KAN, потенциально хорош для временных рядов).
+        - Подключён backend `wav` в обёртке (см. [osc_tools/ml/kan_conv/modern_wrappers.py](osc_tools/ml/kan_conv/modern_wrappers.py)).
+    *   [x] `torch-wavelet-kan` — Может и копия верхнего... Но легко устанавливается как библиотека - установил вот.
+        - Учтён как дополнительный источник wavelet-реализаций при дальнейших сравнениях.
     *   [ ] (опционально) `IvanDrokin/torch-conv-kan` — свёрточные KAN слои.
+    
 2.  **Создание оберток (Wrappers):**
     *   [x] Создан единый интерфейс в `osc_tools/ml/kan_conv/modern_wrappers.py` (см. [osc_tools/ml/kan_conv/modern_wrappers.py](osc_tools/ml/kan_conv/modern_wrappers.py)).
         - Реализован backend `baseline` и первичная интеграция `efficient` с безопасным fallback на baseline при несовместимости/отсутствии библиотеки.
 3.  **Smoke Tests:**
-    *   Проверить, что новые слои поддерживают `batch_size > 1` и не падают на `backward()`.
+    *   [x] Подготовлен benchmark smoke-контур для `PhysicsKANConditional` c backend `baseline|efficient` (см. [scripts/phase3_experiments/run_phase3_benchmark.py](scripts/phase3_experiments/run_phase3_benchmark.py)).
+        - Скрипт измеряет время train-step, инференс-латентность, VRAM/RSS и стабильность loss на коротком прогоне.
 
 4.  **Скрипт запуска:**
     *   [x] Создать `scripts/phase3_experiments/run_phase3_libraries.py` по аналогии с `run_phase2_6.py` (см. [scripts/phase3_experiments/run_phase3_libraries.py](scripts/phase3_experiments/run_phase3_libraries.py)).
     *   [x] Использовать тот же `ExperimentRunner`, но с новыми моделями (пока минимальный сценарий через `run_single_experiment` для `PhysicsKANConditional`).
     *   [x] Добавить параметр backend (`--kan-backend`) для таргетного запуска на `PhysicsKANConditional` (см. [scripts/phase3_experiments/run_phase3_libraries.py](scripts/phase3_experiments/run_phase3_libraries.py)).
+    *   [x] Добавить отдельный benchmark-скрипт для сравнения backend-ов (см. [scripts/phase3_experiments/run_phase3_benchmark.py](scripts/phase3_experiments/run_phase3_benchmark.py)).
+    *   [x] Объединить запуск train и benchmark в единую точку входа через `--mode` (см. [scripts/phase3_experiments/run_phase3_libraries.py](scripts/phase3_experiments/run_phase3_libraries.py)).
 
 ### Этап 0: Минимальный старт (фиксированная база)
 

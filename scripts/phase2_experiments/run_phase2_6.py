@@ -308,10 +308,22 @@ def run_single_experiment(
     runner = ExperimentRunner(config)
     history = runner.train(train_loader, val_loader)
     
-    # Сохранение истории
-    history_path = runner.save_dir / f"{exp_name}_history.json"
-    with open(history_path, "w") as f:
-        json.dump(history, f, indent=4)
+    # Сохранение истории.
+    # На Windows длинные имена файлов могут превышать MAX_PATH,
+    # поэтому основное имя делаем коротким и стабильным.
+    runner.save_dir.mkdir(parents=True, exist_ok=True)
+    history_path = runner.save_dir / "history.json"
+    with open(history_path, "w", encoding="utf-8") as f:
+        json.dump(history, f, indent=4, ensure_ascii=False)
+
+    # Legacy-имя сохраняем по возможности (обратная совместимость).
+    legacy_history_path = runner.save_dir / f"{exp_name}_history.json"
+    if legacy_history_path != history_path:
+        try:
+            with open(legacy_history_path, "w", encoding="utf-8") as f:
+                json.dump(history, f, indent=4, ensure_ascii=False)
+        except OSError:
+            pass
         
     return history
 

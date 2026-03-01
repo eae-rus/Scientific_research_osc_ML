@@ -21,6 +21,22 @@ _phase2_module = importlib.util.module_from_spec(_phase2_spec)
 _phase2_spec.loader.exec_module(_phase2_module)
 run_single_experiment = _phase2_module.run_single_experiment
 
+PHASE3_BENCH_SCRIPT_PATH = ROOT_DIR / 'scripts' / 'phase3_experiments' / 'run_phase3_benchmark.py'
+_phase3_bench_spec = importlib.util.spec_from_file_location('run_phase3_benchmark', PHASE3_BENCH_SCRIPT_PATH)
+if _phase3_bench_spec is None or _phase3_bench_spec.loader is None:
+    raise ImportError(f'Не удалось загрузить benchmark-модуль Фазы 3 из {PHASE3_BENCH_SCRIPT_PATH}')
+_phase3_bench_module = importlib.util.module_from_spec(_phase3_bench_spec)
+_phase3_bench_spec.loader.exec_module(_phase3_bench_module)
+run_phase3_benchmark = _phase3_bench_module.run_phase3_benchmark
+
+PHASE3_SUMMARY_SCRIPT_PATH = ROOT_DIR / 'scripts' / 'phase3_experiments' / 'summarize_phase3_results.py'
+_phase3_summary_spec = importlib.util.spec_from_file_location('summarize_phase3_results', PHASE3_SUMMARY_SCRIPT_PATH)
+if _phase3_summary_spec is None or _phase3_summary_spec.loader is None:
+    raise ImportError(f'Не удалось загрузить summary-модуль Фазы 3 из {PHASE3_SUMMARY_SCRIPT_PATH}')
+_phase3_summary_module = importlib.util.module_from_spec(_phase3_summary_spec)
+_phase3_summary_spec.loader.exec_module(_phase3_summary_module)
+run_phase3_summary = _phase3_summary_module.run_phase3_summary
+
 from osc_tools.data_management import DatasetManager
 from osc_tools.ml.config import DataConfig, TrainingConfig
 from osc_tools.ml.dataset import OscillogramDataset
@@ -30,6 +46,52 @@ from osc_tools.ml.precomputed_dataset import PrecomputedDataset
 
 PHASE3_PRECOMPUTED_CSV = 'test_precomputed_phase3.csv'
 PHASE3_FEATURE_MODE = 'phase_polar_h1_angle'
+ALLOWED_BACKENDS = ('baseline', 'efficient', 'fast', 'cheby', 'wav', 'torch_wavelet')
+
+# Ручной режим (как в Фазе 2.6):
+# Если скрипт запущен без CLI-аргументов, используются значения из этого блока.
+PHASE3_MANUAL_CONFIG = {
+    'mode': 'train',
+    'exp_name': 'phase3_manual',
+    'epochs': 60,
+    'samples_per_file': 12,
+    'val_index_stride': 16,
+    'num_harmonics': 9,
+    'kan_backend': 'baseline',
+    'train_backends': '',
+    'benchmark_backends': 'baseline,efficient,fast,cheby,wav,torch_wavelet',
+    'benchmark_train_steps': 20,
+    'benchmark_val_steps': 10,
+    'benchmark_train_batch_size': 32,
+    'benchmark_val_batch_size': 256,
+    'benchmark_device': 'auto',
+    'checkpoint_frequency': 0,
+    'no_skip_existing': False,
+    'no_summary': False,
+}
+
+
+def _manual_namespace() -> argparse.Namespace:
+    """Возвращает argparse.Namespace на основе PHASE3_MANUAL_CONFIG."""
+    return argparse.Namespace(
+        mode=PHASE3_MANUAL_CONFIG['mode'],
+        exp_name=PHASE3_MANUAL_CONFIG['exp_name'],
+        epochs=PHASE3_MANUAL_CONFIG['epochs'],
+        samples_per_file=PHASE3_MANUAL_CONFIG['samples_per_file'],
+        val_index_stride=PHASE3_MANUAL_CONFIG['val_index_stride'],
+        num_harmonics=PHASE3_MANUAL_CONFIG['num_harmonics'],
+        kan_backend=PHASE3_MANUAL_CONFIG['kan_backend'],
+        train_backends=PHASE3_MANUAL_CONFIG['train_backends'],
+        benchmark_backends=PHASE3_MANUAL_CONFIG['benchmark_backends'],
+        benchmark_train_steps=PHASE3_MANUAL_CONFIG['benchmark_train_steps'],
+        benchmark_val_steps=PHASE3_MANUAL_CONFIG['benchmark_val_steps'],
+        benchmark_train_batch_size=PHASE3_MANUAL_CONFIG['benchmark_train_batch_size'],
+        benchmark_val_batch_size=PHASE3_MANUAL_CONFIG['benchmark_val_batch_size'],
+        benchmark_device=PHASE3_MANUAL_CONFIG['benchmark_device'],
+        checkpoint_frequency=PHASE3_MANUAL_CONFIG['checkpoint_frequency'],
+        no_skip_existing=PHASE3_MANUAL_CONFIG['no_skip_existing'],
+        no_summary=PHASE3_MANUAL_CONFIG['no_summary'],
+    )
 
 
 def _needs_precomputed_regen(dm: DatasetManager, data_dir: Path, num_harmonics: int) -> bool:
@@ -56,6 +118,7 @@ def run_phase3_libraries(
     epochs: int,
     checkpoint_frequency: int,
     samples_per_file: int,
+    val_index_stride: int,
     num_harmonics: int,
     kan_backend: str,
     skip_existing: bool,
@@ -120,7 +183,7 @@ def run_phase3_libraries(
         test_df,
         window_size=window_size,
         mode='val',
-        stride=4,
+        stride=val_index_stride,
     )
 
     target_cols = get_target_columns('base_sequential', df)
@@ -169,26 +232,51 @@ def run_phase3_libraries(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description='Фаза 3: минимальный запуск сравнения KAN библиотек')
-    parser.add_argument('--exp-name', type=str, default='libraries_baseline', help='Короткий идентификатор запуска')
-    parser.add_argument('--epochs', type=int, default=30, help='Количество эпох')
-    parser.add_argument('--samples-per-file', type=int, default=12, help='Окон на файл для train')
+    parser = argparse.ArgumentParser(description='Фаза 3: единый запуск train/benchmark для KAN backend-ов')
+    parser.add_argument('--mode', type=str, default=PHASE3_MANUAL_CONFIG['mode'], choices=['train', 'benchmark', 'both'], help='Режим запуска')
+    parser.add_argument('--exp-name', type=str, default=PHASE3_MANUAL_CONFIG['exp_name'], help='Короткий идентификатор запуска')
+    parser.add_argument('--epochs', type=int, default=PHASE3_MANUAL_CONFIG['epochs'], help='Количество эпох')
+    parser.add_argument('--samples-per-file', type=int, default=PHASE3_MANUAL_CONFIG['samples_per_file'], help='Окон на файл для train')
+    parser.add_argument('--val-index-stride', type=int, default=PHASE3_MANUAL_CONFIG['val_index_stride'], help='Шаг окон для валид. индексов (больше = быстрее валидация)')
     parser.add_argument(
         '--num-harmonics',
         type=int,
-        default=9,
+        default=PHASE3_MANUAL_CONFIG['num_harmonics'],
         help='Количество гармоник для Фазы 3 (по умолчанию 9; угол сохраняется только для 1-й гармоники)',
     )
     parser.add_argument(
         '--kan-backend',
         type=str,
-        default='baseline',
-        choices=['baseline', 'efficient'],
-        help='Backend для KAN-голов PhysicsKANConditional',
+        default=PHASE3_MANUAL_CONFIG['kan_backend'],
+        choices=list(ALLOWED_BACKENDS),
+        help='Backend для train-запуска PhysicsKANConditional',
     )
-    parser.add_argument('--checkpoint-frequency', type=int, default=31, help='Частота сохранения чекпоинтов')
+    parser.add_argument(
+        '--train-backends',
+        type=str,
+        default=PHASE3_MANUAL_CONFIG['train_backends'],
+        help='Список backend-ов для последовательного train-запуска через запятую (переопределяет --kan-backend)',
+    )
+    parser.add_argument(
+        '--benchmark-backends',
+        type=str,
+        default=PHASE3_MANUAL_CONFIG['benchmark_backends'],
+        help='Список backend для benchmark через запятую',
+    )
+    parser.add_argument('--benchmark-train-steps', type=int, default=PHASE3_MANUAL_CONFIG['benchmark_train_steps'], help='Число train шагов на backend в benchmark')
+    parser.add_argument('--benchmark-val-steps', type=int, default=PHASE3_MANUAL_CONFIG['benchmark_val_steps'], help='Число val шагов на backend в benchmark')
+    parser.add_argument('--benchmark-train-batch-size', type=int, default=PHASE3_MANUAL_CONFIG['benchmark_train_batch_size'], help='Train batch size в benchmark')
+    parser.add_argument('--benchmark-val-batch-size', type=int, default=PHASE3_MANUAL_CONFIG['benchmark_val_batch_size'], help='Val batch size в benchmark')
+    parser.add_argument('--benchmark-device', type=str, default=PHASE3_MANUAL_CONFIG['benchmark_device'], choices=['auto', 'cpu', 'cuda'], help='Устройство для benchmark')
+    parser.add_argument('--checkpoint-frequency', type=int, default=PHASE3_MANUAL_CONFIG['checkpoint_frequency'], help='Частота сохранения чекпоинтов (<=0: epochs+1)')
     parser.add_argument('--no-skip-existing', action='store_true', help='Не пропускать уже обученные запуски')
-    args = parser.parse_args()
+    parser.add_argument('--no-summary', action='store_true', help='Не запускать авто-сводку результатов в конце')
+
+    if len(sys.argv) == 1:
+        args = _manual_namespace()
+        print('[Phase3] Ручной режим: используются константы PHASE3_MANUAL_CONFIG (CLI аргументы не переданы).')
+    else:
+        args = parser.parse_args()
 
     if args.num_harmonics < 1:
         raise ValueError('num_harmonics должен быть >= 1')
@@ -197,15 +285,46 @@ def main() -> None:
     if checkpoint_frequency <= 0:
         checkpoint_frequency = args.epochs + 1
 
-    run_phase3_libraries(
-        exp_name=args.exp_name,
-        epochs=args.epochs,
-        checkpoint_frequency=checkpoint_frequency,
-        samples_per_file=args.samples_per_file,
-        num_harmonics=args.num_harmonics,
-        kan_backend=args.kan_backend,
-        skip_existing=not args.no_skip_existing,
-    )
+    if args.mode in {'train', 'both'}:
+        if args.train_backends.strip():
+            train_backends = [b.strip() for b in args.train_backends.split(',') if b.strip()]
+            invalid = [b for b in train_backends if b not in ALLOWED_BACKENDS]
+            if invalid:
+                raise ValueError(f'Неизвестные backend в --train-backends: {invalid}')
+        else:
+            train_backends = [args.kan_backend]
+
+        for backend in train_backends:
+            run_phase3_libraries(
+                exp_name=args.exp_name,
+                epochs=args.epochs,
+                checkpoint_frequency=checkpoint_frequency,
+                samples_per_file=args.samples_per_file,
+                val_index_stride=args.val_index_stride,
+                num_harmonics=args.num_harmonics,
+                kan_backend=backend,
+                skip_existing=not args.no_skip_existing,
+            )
+
+    if args.mode in {'benchmark', 'both'}:
+        benchmark_backends = [b.strip() for b in args.benchmark_backends.split(',') if b.strip()]
+        run_phase3_benchmark(
+            run_name=args.exp_name,
+            backends=benchmark_backends,
+            num_harmonics=args.num_harmonics,
+            samples_per_file=args.samples_per_file,
+            val_index_stride=args.val_index_stride,
+            window_size=320,
+            train_batch_size=args.benchmark_train_batch_size,
+            val_batch_size=args.benchmark_val_batch_size,
+            train_steps=args.benchmark_train_steps,
+            val_steps=args.benchmark_val_steps,
+            learning_rate=0.001,
+            device_name=args.benchmark_device,
+        )
+
+    if not args.no_summary:
+        run_phase3_summary(run_name_filter=args.exp_name)
 
 
 if __name__ == '__main__':

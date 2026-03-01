@@ -1,5 +1,107 @@
 # Лог работ по Фазе 3 (Новые архитектуры и библиотеки KAN)
 
+## [2026-03-01] Инкремент 8: авто-сводка результатов Phase 3 (train + benchmark)
+
+### Выполненные работы
+
+1. Добавлен скрипт сводки
+   - Создан [scripts/phase3_experiments/summarize_phase3_results.py](scripts/phase3_experiments/summarize_phase3_results.py).
+   - Скрипт собирает:
+     - training summary по папкам `experiments/phase3/*`;
+     - latest benchmark summary по `reports/phase3/phase3_benchmark_*.json`;
+     - ranking backend-ов по `best_val_f1`.
+
+2. Добавлен автозапуск сводки из единого раннера
+   - В [scripts/phase3_experiments/run_phase3_libraries.py](scripts/phase3_experiments/run_phase3_libraries.py) подключён вызов `run_phase3_summary(...)` в конце запуска.
+   - Добавлен флаг `--no-summary` для отключения автосводки при необходимости.
+
+3. Форматы итогов
+   - Сводка сохраняется в `reports/phase3` в CSV/JSON:
+     - `phase3_training_summary_*.csv`
+     - `phase3_benchmark_latest_*.csv`
+     - `phase3_backend_ranking_*.csv`
+     - `phase3_summary_*.json`
+
+## [2026-03-01] Инкремент 7: диагностика benchmark-ошибок и пакетный train backend-ов
+
+### Выполненные работы
+
+1. Разобрана причина падения backend `wav`
+   - Причина: в [osc_tools/ml/kan_conv/modern_wrappers.py](osc_tools/ml/kan_conv/modern_wrappers.py) функция `_create_wav_kan_linear` могла возвращать `None` (из-за отсутствия return-блока после `layer_cls is not None`).
+   - Симптом в benchmark: `TypeError: 'NoneType' object is not callable` внутри `nn.Sequential` головы `PhysicsKANConditional`.
+   - Фикс: восстановлен блок `try/return layer_cls(...)` + fallback на baseline.
+
+2. Повторная проверка backend-ов после фикса
+   - На локальном диагностическом прогоне `cheby`, `wav`, `torch_wavelet` проходят forward/train/inference без падений.
+
+3. Добавлен режим пакетного обучения для итогового сравнения точности
+   - В [scripts/phase3_experiments/run_phase3_libraries.py](scripts/phase3_experiments/run_phase3_libraries.py) добавлен аргумент `--train-backends`.
+   - Позволяет запускать последовательное обучение нескольких backend-ов (например, на 60 эпох) одной командой.
+
+## [2026-03-01] Инкремент 6: ускорение валидации и backend torch_wavelet
+
+### Выполненные работы
+
+1. Ускорение валидации через шаг окон
+   - В [scripts/phase3_experiments/run_phase3_libraries.py](scripts/phase3_experiments/run_phase3_libraries.py) добавлен параметр `--val-index-stride` (по умолчанию `16`).
+   - В [scripts/phase3_experiments/run_phase3_benchmark.py](scripts/phase3_experiments/run_phase3_benchmark.py) добавлен аналогичный параметр `--val-index-stride`.
+   - Это уменьшает количество валидационных окон (и шагов), ускоряя `val` при сохранении downsampling признаков.
+
+2. Подключение `torch-wavelet-kan`
+   - В [osc_tools/ml/kan_conv/modern_wrappers.py](osc_tools/ml/kan_conv/modern_wrappers.py) добавлен backend `torch_wavelet`.
+   - Источник: локальная копия `torch-conv-kan-main/kans/layers.py` (`WavKANLayer`).
+   - Добавлены CLI choices `torch_wavelet` для train и benchmark в `run_phase3_libraries.py`.
+
+3. Расширен список backend-ов по умолчанию
+   - Benchmark теперь по умолчанию использует `baseline,efficient,fast,cheby,wav,torch_wavelet`.
+
+## [2026-03-01] Инкремент 5: единая точка запуска и интеграция backend-ов fast/cheby/wav
+
+### Выполненные работы
+
+1. Объединён сценарий запуска Фазы 3
+   - Основной entrypoint: [scripts/phase3_experiments/run_phase3_libraries.py](scripts/phase3_experiments/run_phase3_libraries.py).
+   - Добавлен параметр `--mode {train,benchmark,both}`:
+     - `train` — обучение одного backend;
+     - `benchmark` — сравнение backend-ов по скорости/памяти/стабильности;
+     - `both` — последовательный запуск train + benchmark.
+
+2. Расширены backend-ы KAN в обёртке
+   - Обновлён [osc_tools/ml/kan_conv/modern_wrappers.py](osc_tools/ml/kan_conv/modern_wrappers.py).
+   - Добавлена поддержка backend-ов: `baseline`, `efficient`, `fast`, `cheby`, `wav`.
+   - Источник библиотек: локальные копии в `osc_tools/ml/*-main` и `osc_tools/ml/*-master`.
+   - Для несовместимых сигнатур сохранён безопасный fallback на baseline.
+
+3. Переиспользование benchmark-кода
+   - В [scripts/phase3_experiments/run_phase3_benchmark.py](scripts/phase3_experiments/run_phase3_benchmark.py) добавлена публичная функция `run_phase3_benchmark(...)`.
+   - `run_phase3_libraries.py` использует её напрямую, чтобы не дублировать логику сравнения.
+
+4. Расширены параметры CLI Фазы 3
+   - `--kan-backend` теперь принимает: `baseline|efficient|fast|cheby|wav`.
+   - Добавлены benchmark-параметры (`--benchmark-backends`, `--benchmark-train-steps`, `--benchmark-val-steps`, батчи и устройство).
+
+## [2026-03-01] Инкремент 4: подготовка benchmark-контура для сравнений backend-ов
+
+### Выполненные работы
+
+1. Добавлен отдельный benchmark-скрипт Фазы 3
+   - Создан [scripts/phase3_experiments/run_phase3_benchmark.py](scripts/phase3_experiments/run_phase3_benchmark.py).
+   - Сценарий сравнивает backend-ы (`baseline`, `efficient`) на фиксированной модели `PhysicsKANConditional`.
+
+2. Реализованы метрики сравнения для короткого прогона
+   - Время train-step (среднее/STD).
+   - Стабильность лосса на train (`train_loss_std`) и средний val loss.
+   - Инференс-латентность/FPS через `InferenceBenchmark`.
+   - Пиковая VRAM (CUDA) и RSS процесса (если доступен `psutil`).
+
+3. Реализовано сохранение отчётов
+   - Результаты benchmark сохраняются в `reports/phase3` в форматах JSON и CSV.
+   - Имена файлов включают `run-name` и timestamp для удобного сравнения серий запусков.
+
+4. Сохранена изоляция Фазы 3
+   - Используются только `PhysicsKANConditional`, `phase_polar_h1_angle`, `stride`, `num_harmonics=9`.
+   - Для валидации используется отдельный precomputed-файл Фазы 3 (`test_precomputed_phase3.csv`).
+
 ## [2026-03-01] Инкремент 3: корректировка гармоник для Фазы 3 (амплитуды всех, угол только h1)
 
 ### Выполненные работы
