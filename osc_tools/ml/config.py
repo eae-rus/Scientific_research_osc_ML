@@ -1,0 +1,38 @@
+from dataclasses import dataclass, field
+from typing import List, Optional, Dict, Any
+
+@dataclass
+class ModelConfig:
+    name: str
+    params: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class DataConfig:
+    path: str
+    window_size: int
+    batch_size: int
+    num_workers: int = 0
+    features: Optional[List[str]] = None
+    target: Optional[str] = None
+    mode: str = 'classification' # classification, segmentation, reconstruction
+    norm_coef_path: Optional[str] = None # Путь к файлу нормализации
+    target_window_mode: str = 'point' # point | any_in_window
+
+@dataclass
+class TrainingConfig:
+    epochs: int
+    learning_rate: float
+    weight_decay: float = 0.0
+    device: str = 'cuda'
+    save_dir: str = 'experiments'
+    experiment_name: str = 'default'
+    seed: int = 42
+    use_pos_weight: bool = False
+    checkpoint_frequency: int = 2
+    ml23_loss_weight: float = 1.0
+
+@dataclass
+class ExperimentConfig:
+    model: ModelConfig
+    data: DataConfig
+    training: TrainingConfig

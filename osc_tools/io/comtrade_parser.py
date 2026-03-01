@@ -1,4 +1,4 @@
-import pandas as pd
+import polars as pl
 import numpy as np
 import os
 import sys
@@ -54,7 +54,7 @@ class ComtradeParser():
         Args:
             csv_name (str): Имя файла csv.
         """
-        dataset_df = pd.DataFrame()
+        dataset_dfs = []
         raw_files = sorted([file for file in os.listdir(self.raw_path)
                             if 'cfg' in file])
         with tqdm(total=len(raw_files), desc="Преобразование Comtrade в CSV") as pbar:
@@ -68,8 +68,8 @@ class ComtradeParser():
                 
                 # TODO: Добавить проверки вторичных/первичных данных при чтении и обработке набора данных.
                 self.check_columns(raw_df)
-                if not raw_df.empty:
-                    raw_df = raw_df.reset_index()
+                if not raw_df.is_empty():
+                    # raw_df = raw_df.reset_index() # Not needed in Polars
                     buses_df = self.split_buses(raw_df, file)
 
                     frequency = raw_date.cfg.frequency
@@ -78,18 +78,23 @@ class ComtradeParser():
                     samples_before, samples_after = number_samples * self.number_periods, number_samples * self.number_periods
                     if is_cut_out_area:
                         buses_df = self.cut_out_area(buses_df, samples_before, samples_after)
-                        dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
+                        dataset_dfs.append(buses_df)
                     else:
-                        dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
+                        dataset_dfs.append(buses_df)
                     pbar.update(1)
+        
+        if dataset_dfs:
+            dataset_df = pl.concat(dataset_dfs, how="diagonal")
+        else:
+            dataset_df = pl.DataFrame()
         
         # TODO: Подумайте об организации самой обработки по-другому, а не о добавлении функции.
         dataset_df = self.structure_columns(dataset_df)
         if is_simple_csv:
             # Мы не перезаписываем исходные данные, а только создаем еще один csv-файл
-            self.get_simple_dataset(dataset_df.copy())
+            self.get_simple_dataset(dataset_df.clone())
         
-        dataset_df.to_csv(self.csv_path + csv_name, index=False)
+        dataset_df.write_csv(self.csv_path + csv_name)
         return dataset_df
     
     # TODO: подумать об универсанолизации данной функции с create_csv (основные замечания указаны там)
@@ -101,14 +106,14 @@ class ComtradeParser():
         Args:
             csv_name (str): Имя файла csv.
         """
-        signal_check_df = pd.DataFrame()
+        signal_check_df = pl.DataFrame()
         if (is_check_PDR and (not os.path.exists(signal_check_results_path))):
             raise FileNotFoundError("Путь для результатов проверки сигнала не существует")
             # TODO: Пока что это локальный файл, но надо подумать о том, чтобы он был глобальный, но пока может мешать.
         if is_check_PDR:
-            signal_check_df = pd.read_csv(signal_check_results_path) # Загрузка файла проверки сигналов
+            signal_check_df = pl.read_csv(signal_check_results_path) # Загрузка файла проверки сигналов
         
-        dataset_df = pd.DataFrame()
+        dataset_dfs = []
         raw_files = sorted([file for file in os.listdir(self.raw_path)
                             if 'cfg' in file])
         number_ocs_found = 0
@@ -118,8 +123,8 @@ class ComtradeParser():
                 filename_without_ext = file[:-4] # Имя файла без расширения
                 # FIXME: На будущее - возможно этот файл и лишний, ибо проверки заложил в "_process_signals_for_PDR"
                 if is_check_PDR:
-                    check_result_row = signal_check_df[signal_check_df['filename'] == filename_without_ext]
-                    if check_result_row.empty or not (str(check_result_row['contains_required_signals'].iloc[0]).upper()  == yes_prase):
+                    check_result_row = signal_check_df.filter(pl.col('filename') == filename_without_ext)
+                    if check_result_row.is_empty() or not (str(check_result_row['contains_required_signals'][0]).upper()  == yes_prase):
                         pbar.update(1) # Пропускаем файл, если его нет в signal_check_results_csv или contains_required_signals False
                         continue
                 
@@ -131,7 +136,7 @@ class ComtradeParser():
                         print(f"Предупреждение: В {filename_without_ext} нормализацию провести нельзя, значения не используем.")
                     continue
                     
-                if not raw_df.empty:
+                if not raw_df.is_empty():
                     buses_df = self.split_buses_for_PDR(raw_df, file)
                     
                     if buses_df is None:
@@ -146,15 +151,18 @@ class ComtradeParser():
                     samples_before, samples_after = number_samples * self.number_periods, number_samples * self.number_periods
                     if is_cut_out_area and is_check_PDR:
                         buses_df = self.cut_out_area_for_PDR(buses_df, samples_before, samples_after)
-                        dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
+                        dataset_dfs.append(buses_df)
                     else:
-                        dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
-                    dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
+                        dataset_dfs.append(buses_df)
                     number_ocs_found += 1
                     pbar.update(1)
         
         print(f"Количество найденных образцов = {number_ocs_found}")
-        dataset_df.to_csv(self.csv_path + csv_name, index=False)
+        if dataset_dfs:
+            dataset_df = pl.concat(dataset_dfs, how="diagonal")
+        else:
+            dataset_df = pl.DataFrame()
+        dataset_df.write_csv(self.csv_path + csv_name)
         return dataset_df
     
     # TODO: подумать об универсанолизации данной функции с create_csv (основные замечания указаны там)
@@ -168,17 +176,16 @@ class ComtradeParser():
             norm_coef_file_path (str): Путь к CSV-файлу с коэффициентами нормализации.
             is_cut_out_area (bool): Вырезать ли область вокруг события SPEF.
         """
-        spef_files_df = pd.read_csv(signal_check_results_path)
+        spef_files_df = pl.read_csv(signal_check_results_path)
         spef_filenames_dict = {}
-        for _, row in spef_files_df.iterrows():
+        for row in spef_files_df.iter_rows(named=True):
             filename = row['filename']
             file_name_bus = row['file_name_bus']
             if filename not in spef_filenames_dict:
                 spef_filenames_dict[filename] = set()
             spef_filenames_dict[filename].add(file_name_bus)
 
-        columns = ["file_name", "IA", "IB", "IC", "IN", "UA BB", "UB BB", "UC BB", "UN BB", "UA CL", "UB CL", "UC CL", "UN CL"]
-        dataset_df = pd.DataFrame(columns=columns)
+        dataset_dfs = []
         raw_files = sorted([file for file in os.listdir(self.raw_path)
                             if 'cfg' in file])
         number_spef_found = 0
@@ -192,7 +199,7 @@ class ComtradeParser():
                     continue
 
                 raw_date, raw_df = self.readComtrade.read_comtrade(self.raw_path + file)
-                if not raw_df.empty:
+                if not raw_df.is_empty():
                     raw_df = normOsc.normalize_bus_signals(raw_df, filename_without_ext, yes_prase="YES", is_print_error=False)
                     if raw_df is None:
                         pbar.update(1)
@@ -200,9 +207,12 @@ class ComtradeParser():
                             print(f"Предупреждение: В {filename_without_ext} нормализацию провести нельзя, значения не используем.")
                         continue
                         
-                    buses_df = self.split_buses(raw_df.reset_index(), file) # Использовать общий split_buses согласно вашему комментарию
+                    buses_df = self.split_buses(raw_df, file) # Использовать общий split_buses согласно вашему комментарию
                     processed_bus_dfs = []
-                    for file_name_bus, bus_df in buses_df.groupby('file_name'):
+                    
+                    unique_files = buses_df['file_name'].unique().to_list()
+                    for file_name_bus in unique_files:
+                        bus_df = buses_df.filter(pl.col('file_name') == file_name_bus)
                         if file_name_bus in spef_filenames_dict[filename_without_ext]: # Дальнейшая фильтрация по имени шины
                             bus_df = self._process_signals_for_SPEF(bus_df, is_print_error=False) # Оставить обработку как есть или заменить при необходимости
                             if bus_df is not None:
@@ -211,18 +221,22 @@ class ComtradeParser():
                     if not processed_bus_dfs: # Нет обработанных датафреймов шин для этого файла
                         pbar.update(1)
                         continue
-                    buses_df = pd.concat(processed_bus_dfs, ignore_index=True)
+                    buses_df = pl.concat(processed_bus_dfs, how="diagonal")
 
                     # TODO: Написать cut_out_area_for_SPEF
                     # В теории, можно по аналогии с поисковой функцией, но пока обойдусь без этого.
                     # Либо можно по MLsignal_y_2_1 и всем наследникам - но пока что не много размечено осциллограмм.
-                    dataset_df = pd.concat([dataset_df, buses_df], axis=0, ignore_index=False)
+                    dataset_dfs.append(buses_df)
 
                     number_spef_found += 1
                     pbar.update(1)
 
         print(f"Количество найденных образцов SPEF = {number_spef_found}")
-        dataset_df.to_csv(self.csv_path + csv_name, index=False)
+        if dataset_dfs:
+            dataset_df = pl.concat(dataset_dfs, how="diagonal")
+        else:
+            dataset_df = pl.DataFrame()
+        dataset_df.write_csv(self.csv_path + csv_name)
         return dataset_df
     
     # TODO: подумать об унификации данной вещи, пока это локальная реализация
@@ -239,22 +253,33 @@ class ComtradeParser():
         processed_groups = []
         
         # Группировка по имени файла
-        for file_name, group_df in buses_df.groupby("file_name"):
-            # Мы будем работать с копией группы
-            group_df = group_df.copy()
+        unique_files = buses_df['file_name'].unique().to_list()
+        for file_name in unique_files:
+            group_df = buses_df.filter(pl.col('file_name') == file_name)
             
             # 1. Определяем источник напряжения из первой строки группы
-            row0 = group_df.iloc[0]
-            if all(col in group_df.columns and pd.notna(row0[col]) for col in u_bb_names):
+            row0 = group_df.row(0, named=True)
+            
+            has_bb = all(col in group_df.columns for col in u_bb_names)
+            has_cl = all(col in group_df.columns for col in u_cl_names)
+            
+            use_bb = has_bb and all(row0.get(col) is not None for col in u_bb_names)
+            use_cl = has_cl and all(row0.get(col) is not None for col in u_cl_names)
+
+            if use_bb:
                 # Используем шинные сборки
-                group_df["UA"] = group_df["UA BB"]
-                group_df["UB"] = group_df["UB BB"]
-                group_df["UC"] = group_df["UC BB"]
-            elif all(col in group_df.columns and pd.notna(row0[col]) for col in u_cl_names):
+                group_df = group_df.with_columns([
+                    pl.col("UA BB").alias("UA"),
+                    pl.col("UB BB").alias("UB"),
+                    pl.col("UC BB").alias("UC")
+                ])
+            elif use_cl:
                 # Используем кабельные линии
-                group_df["UA"] = group_df["UA CL"]
-                group_df["UB"] = group_df["UB CL"]
-                group_df["UC"] = group_df["UC CL"]
+                group_df = group_df.with_columns([
+                    pl.col("UA CL").alias("UA"),
+                    pl.col("UB CL").alias("UB"),
+                    pl.col("UC CL").alias("UC")
+                ])
             else:
                 if is_print_error:
                     print(f"Предупреждение: фазные напряжения A/B/C не найдены в {file_name}.")
@@ -269,28 +294,28 @@ class ComtradeParser():
             # 3. Фазный ток B: если столбец "IB" существует и значение не NaN, используем его,
             # иначе вычисляем как -(IA + IC), если IA и IC заданы.
             if "IB" in group_df.columns:
-                IB_series = group_df["IB"].copy()
+                group_df = group_df.with_columns(
+                    pl.when(pl.col("IB").is_null())
+                    .then(-(pl.col("IA") + pl.col("IC")))
+                    .otherwise(pl.col("IB"))
+                    .alias("IB_proc")
+                )
             else:
-                IB_series = pd.Series(np.nan, index=group_df.index)
-            # Находим строки, где IB отсутствует (NaN) и где IA и IC заданы
-            mask_replace = IB_series.isna() & group_df["IA"].notna() & group_df["IC"].notna()
-            IB_series.loc[mask_replace] = -(group_df.loc[mask_replace, "IA"] + group_df.loc[mask_replace, "IC"])
-            group_df["IB_proc"] = IB_series
+                group_df = group_df.with_columns(
+                    (-(pl.col("IA") + pl.col("IC"))).alias("IB_proc")
+                )
 
             # 4. Сигнал PDR:
             # Если столбец "PDR PS" существует и первая строка не NaN, берем его для всей группы.
             if is_check_PDR:
-                if "rPDR PS" in group_df.columns and pd.notna(row0["rPDR PS"]):
-                    group_df["PDR_proc"] = group_df["rPDR PS"]
-                elif all(col in group_df.columns and pd.notna(row0[col]) for col in pdr_phase_names):
+                if "rPDR PS" in group_df.columns and row0.get("rPDR PS") is not None:
+                    group_df = group_df.with_columns(pl.col("rPDR PS").alias("PDR_proc"))
+                elif all(col in group_df.columns for col in pdr_phase_names):
                     # Векторная проверка для каждой строки: если все столбцы pdr_phase_names существуют и равны 1, то PDR = 1, иначе 0.
-                    cond = pd.Series(True, index=group_df.index)
+                    expr = pl.lit(True)
                     for col in pdr_phase_names:
-                        if col in group_df.columns:
-                            cond = cond & (group_df[col] == 1)
-                        else:
-                            cond = cond & False
-                    group_df["PDR_proc"] = cond.astype(int)
+                        expr = expr & (pl.col(col) == 1)
+                    group_df = group_df.with_columns(expr.cast(pl.Int32).alias("PDR_proc"))
                 else:
                     if is_print_error:
                         print(f"Предупреждение: сигналы фазного напряжения PDR не найдены в {file_name}.")
@@ -298,18 +323,18 @@ class ComtradeParser():
                     continue
                 
                 # Выбираем необходимые столбцы и переименовываем временные столбцы
-                processed_group = group_df[["file_name", "UA", "UB", "UC", "IA", "IB_proc", "IC", "PDR_proc"]].rename(
-                    columns={"IB_proc": "IB", "PDR_proc": "rPDR PS"}
+                processed_group = group_df.select(["file_name", "UA", "UB", "UC", "IA", "IB_proc", "IC", "PDR_proc"]).rename(
+                    {"IB_proc": "IB", "PDR_proc": "rPDR PS"}
                 )
             else: # Без сигналов PDR
-                processed_group = group_df[["file_name", "UA", "UB", "UC", "IA", "IB_proc", "IC"]].rename(
-                    columns={"IB_proc": "IB"}
+                processed_group = group_df.select(["file_name", "UA", "UB", "UC", "IA", "IB_proc", "IC"]).rename(
+                    {"IB_proc": "IB"}
                 )
             processed_groups.append(processed_group)
         
         # Объединяем все группы в итоговый DataFrame
         if len(processed_groups) > 0:
-            signal_for_PDR_df = pd.concat(processed_groups, ignore_index=True)
+            signal_for_PDR_df = pl.concat(processed_groups, how="diagonal")
             return signal_for_PDR_df
         else:
             return None
@@ -332,9 +357,9 @@ class ComtradeParser():
         available_signals = [col for col in all_signals if col in buses_df.columns]
 
         # Возвращаем набор данных, состоящий только из необходимых столбцов
-        return buses_df[available_signals]
+        return buses_df.select(available_signals)
         
-    def create_one_df(self, file_path, file_name) -> pd.DataFrame:
+    def create_one_df(self, file_path, file_name) -> pl.DataFrame:
         """
         Функция преобразования одного файла Comtrade в pd.DataFrame().
 
@@ -345,11 +370,11 @@ class ComtradeParser():
         Возвращает:
             pd.DataFrame: DataFrame файла comtrade.
         """
-        dataset_df = pd.DataFrame()
+        dataset_df = pl.DataFrame()
         _, raw_df = self.readComtrade.read_comtrade(file_path)
         self.check_columns(raw_df)
-        if not raw_df.empty:
-            raw_df = raw_df.reset_index()
+        if not raw_df.is_empty():
+            # raw_df = raw_df.reset_index()
             dataset_df = self.split_buses(raw_df, file_name)
 
         return dataset_df
@@ -366,7 +391,7 @@ class ComtradeParser():
         # BusBar / CableLine.
         # For currents - sometimes it is divided into sections
         
-        buses_df = pd.DataFrame()
+        buses_dfs = []
         buses_cols = dict()
         raw_cols = set(raw_df.columns)
         for bus, cols in self.analog_names_dict.items():
@@ -379,16 +404,19 @@ class ComtradeParser():
             if cols:
                 buses_cols[bus] = cols
         for bus, columns in buses_cols.items():
-            bus_df = raw_df.loc[:, list(columns)]
-            bus_df.insert(0, 'file_name',  [file_name[:-4] + "_" + bus] * bus_df.shape[0])
+            bus_df = raw_df.select(list(columns))
+            bus_df = bus_df.with_columns(pl.lit(file_name[:-4] + "_" + bus).alias('file_name'))
             bus_df = self.rename_bus_columns(bus_df)
-            buses_df = pd.concat([buses_df, bus_df], axis=0,
-                                 ignore_index=False)    
-        return buses_df
+            buses_dfs.append(bus_df)
+            
+        if buses_dfs:
+            return pl.concat(buses_dfs, how="diagonal")
+        else:
+            return pl.DataFrame()
     
     def split_buses_for_PDR(self, raw_df, file_name):
         """Реализовано только для шины 1 и шины 2"""
-        buses_df = pd.DataFrame()
+        buses_dfs = []
         buses_cols = dict()
         raw_cols = set(raw_df.columns)
         for bus, cols in self.analog_names_dict.items():
@@ -404,12 +432,15 @@ class ComtradeParser():
                 buses_cols[bus] = cols    
         
         for bus, columns in buses_cols.items():
-            bus_df = raw_df.loc[:, list(columns)]
-            bus_df.insert(0, 'file_name',  [file_name[:-4] + "_" + bus] * bus_df.shape[0])
+            bus_df = raw_df.select(list(columns))
+            bus_df = bus_df.with_columns(pl.lit(file_name[:-4] + "_" + bus).alias('file_name'))
             bus_df = self.rename_bus_columns(bus_df, is_use_ML=False, is_use_discrete=True)
-            buses_df = pd.concat([buses_df, bus_df], axis=0,
-                                 ignore_index=False)    
-        return buses_df
+            buses_dfs.append(bus_df)
+            
+        if buses_dfs:
+            return pl.concat(buses_dfs, how="diagonal")
+        else:
+            return pl.DataFrame()
 
     def get_bus_names(self, analog=True, discrete=False):
         """
@@ -463,8 +494,7 @@ class ComtradeParser():
         raw_columns_to_rename = {'Mlsignal_2_2_1_1': 'MLsignal_2_2_1_1',
                                  'Mlsignal_12_2_1_1': 'MLsignal_12_2_1_1',
                                  'Mlsignal_2_3': 'MLsignal_2_3'}
-        raw_df.rename(columns=raw_columns_to_rename, inplace=True)
-        return raw_df
+        return raw_df.rename(raw_columns_to_rename)
 
     def rename_bus_columns(self, bus_df, is_use_ML = True, is_use_discrete = False):
         """
@@ -524,8 +554,7 @@ class ComtradeParser():
                    
         # TODO: сигналы I_raw, U_raw, I|dif-1, I | braking-1 не учитываются
 
-        bus_df.rename(columns=bus_columns_to_rename, inplace=True)
-        return bus_df
+        return bus_df.rename(bus_columns_to_rename)
     
     def check_columns(self, raw_df):
         """проверка на наличие неизвестных столбцов (только логирование, без выброса исключений)"""
@@ -709,77 +738,96 @@ class ComtradeParser():
         
         return ml_signals
 
-    def cut_out_area(self, buses_df: pd.DataFrame, samples_before: int, samples_after: int) -> pd.DataFrame:
+    def cut_out_area(self, buses_df: pl.DataFrame, samples_before: int, samples_after: int) -> pl.DataFrame:
         """
         Функция отсекает участки, не содержащие сигналов ML, оставляя до и после них заданную границу.
 
         Аргументы:
-            buses_df (pd.DataFrame): DataFrame для обработки
+            buses_df (pl.DataFrame): DataFrame для обработки
             samples_before (int): количество отсчетов для отсечения до первого сигнала ML.
             samples_after (int): количество отсчетов для отсечения после последнего сигнала ML.
             
         Возвращает:
-            pd.DataFrame: DataFrame с вырезанными участками.
+            pl.DataFrame: DataFrame с вырезанными участками.
         """
-        dataset_df = pd.DataFrame()
-        for _, bus_df in buses_df.groupby("file_name"):
-            truncated_dataset = pd.DataFrame()
-            # Сбрасываем индекс перед нарезкой
-            bus_df = bus_df.reset_index(drop=True)
-
-            bus_df["is_save"] = False
+        dataset_dfs = []
+        unique_files = buses_df['file_name'].unique().to_list()
+        
+        for file_name in unique_files:
+            bus_df = buses_df.filter(pl.col('file_name') == file_name)
+            
             filtered_column_names = [col for col in bus_df.columns if col in self.ml_all]
-
-            # Определяем строки с сигналами ML
-            bus_df["is_save"] = bus_df[filtered_column_names].notna().any(axis=1) & (bus_df[filtered_column_names] == 1).any(axis=1)
-
-            # TODO: требует ускорения
-            # Прямое заполнение: расширяем "is_save" для охвата участков перед сигналами ML
-            for index, row in bus_df.iterrows():
-                if index == 0:
-                    continue
-                if bus_df.loc[index, "is_save"] and bus_df.loc[index-1, "is_save"]:
-                    if index >= samples_before:
-                        bus_df.loc[index-samples_before:index, "is_save"] = True
-                    else:
-                        bus_df.loc[0:index, "is_save"] = True
-
-            # TODO: требует ускорения
-            # Обратное заполнение: расширяем "is_save" для охвата участков после сигналов ML
-            for index, row in reversed(list(bus_df.iterrows())):
-                if index == len(bus_df) - 1:
-                    continue
-                if bus_df.loc[index, "is_save"] and bus_df.loc[index+1, "is_save"]:
-                    if index + samples_after < len(bus_df):
-                        bus_df.loc[index+1:index+samples_after+1, "is_save"] = True
-                    else:
-                        bus_df.loc[index+1:len(bus_df), "is_save"] = True
-
-            # Добавляем номера событий к именам файлов
-            event_number = 0
-            for index, row in bus_df.iterrows():
-                if bus_df.loc[index, "is_save"]:
-                    if (index == 0 or not bus_df.loc[index - 1, "is_save"]):
-                        event_number += 1
-                    bus_df.loc[index, 'file_name'] = bus_df.loc[index, 'file_name'] + " _event N" + str(event_number)
-
-            truncated_dataset = bus_df[bus_df["is_save"]]
-            # Если массив пуст, то берем из куска посередине, равного сумме длин до и после
-            if len(truncated_dataset) == 0:
+            
+            if not filtered_column_names:
+                # No ML columns, so no events.
+                # Fallback to middle slice logic
                 if len(bus_df) > samples_before + samples_after:
                     middle = len(bus_df) // 2
-                    truncated_dataset = bus_df.iloc[middle-samples_before:middle+samples_after+1]
+                    start = max(0, middle - samples_before)
+                    end = min(len(bus_df), middle + samples_after + 1)
+                    truncated_dataset = bus_df.slice(start, end - start)
                 else:
                     truncated_dataset = bus_df
+                dataset_dfs.append(truncated_dataset)
+                continue
 
-            truncated_dataset = truncated_dataset.drop(columns=["is_save"])
-            dataset_df = pd.concat([dataset_df, truncated_dataset], axis=0, ignore_index=False)
+            expr = pl.lit(False)
+            for col in filtered_column_names:
+                expr = expr | (pl.col(col) == 1)
             
-        return dataset_df
+            bus_df = bus_df.with_columns(expr.alias("is_save_base"))
+            
+            bus_df = bus_df.with_row_index("row_idx")
+            save_indices = bus_df.filter(pl.col("is_save_base"))["row_idx"].to_list()
+            
+            if not save_indices:
+                 # No events
+                if len(bus_df) > samples_before + samples_after:
+                    middle = len(bus_df) // 2
+                    start = max(0, middle - samples_before)
+                    end = min(len(bus_df), middle + samples_after + 1)
+                    truncated_dataset = bus_df.slice(start, end - start)
+                else:
+                    truncated_dataset = bus_df
+                dataset_dfs.append(truncated_dataset)
+                continue
+            
+            # Create mask
+            is_save = np.zeros(len(bus_df), dtype=bool)
+            
+            for idx in save_indices:
+                start = max(0, idx - samples_before)
+                end = min(len(bus_df) - 1, idx + samples_after)
+                is_save[start:end+1] = True
+                
+            truncated_dataset = bus_df.filter(pl.lit(is_save))
+            
+            # Assign event numbers
+            if not truncated_dataset.is_empty():
+                 truncated_dataset = truncated_dataset.with_columns(
+                     (pl.col("row_idx").diff().fill_null(1) != 1).cum_sum().alias("event_group")
+                 )
+                 
+                 truncated_dataset = truncated_dataset.with_columns(
+                     (pl.col("file_name") + " _event N" + pl.col("event_group").cast(pl.Utf8)).alias("file_name")
+                 )
+            
+            # Drop temp cols
+            cols_to_drop = ["is_save_base", "row_idx", "event_group"]
+            existing_cols_to_drop = [col for col in cols_to_drop if col in truncated_dataset.columns]
+            if existing_cols_to_drop:
+                 truncated_dataset = truncated_dataset.drop(existing_cols_to_drop)
+                 
+            dataset_dfs.append(truncated_dataset)
+            
+        if dataset_dfs:
+            return pl.concat(dataset_dfs, how="diagonal")
+        else:
+            return pl.DataFrame()
     
     # TODO: переписать функции, обобщить. Чтобы набор / обработка столбцов была параметром.
     # К тому же, раньше функция прост расширяла. А это регистрирует изменения (0-1 и 1-0) и расширяет вокруг них.
-    def cut_out_area_for_PDR(self, buses_df: pd.DataFrame, samples_before: int, samples_after: int) -> pd.DataFrame:
+    def cut_out_area_for_PDR(self, buses_df: pl.DataFrame, samples_before: int, samples_after: int) -> pl.DataFrame:
         """
         Обрабатывает DataFrame, регистрируя факты изменения сигнала (0→1 и 1→0)
         и расширяя зону вокруг изменений на заданное число отсчётов.
@@ -791,130 +839,110 @@ class ComtradeParser():
         3. Иначе (если ни один из источников сигнала не доступен), сигнал считается равным 0 для всех строк.
 
         Аргументы:
-            buses_df (pd.DataFrame): Исходный DataFrame с данными. Должен содержать столбец 'file_name'.
+            buses_df (pl.DataFrame): Исходный DataFrame с данными. Должен содержать столбец 'file_name'.
             samples_before (int): Количество строк до точки изменения, которые надо включить.
             samples_after (int): Количество строк после точки изменения, которые надо включить.
 
         Возвращает:
-            pd.DataFrame: Обработанный DataFrame с выделенными зонами и новым столбцом change_event.
+            pl.DataFrame: Обработанный DataFrame с выделенными зонами и новым столбцом change_event.
                           Строки из разных исходных файлов могут быть перемешаны, но сгруппированы по событиям.
         """
-        dataset_df = pd.DataFrame()
+        dataset_dfs = []
         
-        # Define signal column names
         primary_signal_col = "rPDR PS"
         composite_signal_cols = ["rPDR A", "rPDR B", "rPDR C"]
 
-        # Process each file (group) separately
-        for file_name, bus_df in buses_df.groupby("file_name"):
-            # Reset index for correct positional access and slicing
-            bus_df = bus_df.reset_index(drop=True)
+        unique_files = buses_df['file_name'].unique().to_list()
+        for file_name in unique_files:
+            bus_df = buses_df.filter(pl.col('file_name') == file_name)
             
             signal_calculated = False
             
-            # --- Determine the signal source ---
             # 1. Try primary signal "rPDR PS"
-            if primary_signal_col in bus_df.columns and bus_df[primary_signal_col].notna().any():
-                # Use primary signal if it exists and is not all NaN
-                # Ensure comparison handles potential NaNs gracefully (NaN == 1 is False)
-                bus_df["signal"] = (bus_df[primary_signal_col] == 1)
+            if primary_signal_col in bus_df.columns and bus_df[primary_signal_col].is_not_null().any():
+                bus_df = bus_df.with_columns((pl.col(primary_signal_col) == 1).alias("signal"))
                 signal_calculated = True
-                # print(f"File {file_name}: Using primary signal '{primary_signal_col}'.") # Optional: for debugging
 
             # 2. If primary signal not used, try composite signals
             if not signal_calculated:
-                # Check if all required composite columns exist
                 if all(col in bus_df.columns for col in composite_signal_cols):
-                    # Check if there's *any* non-NaN data in these columns before calculating
-                    if bus_df[composite_signal_cols].notna().any().any():
-                        # Calculate composite signal: 1 only if ALL are 1
-                        bus_df[primary_signal_col] = (bus_df[composite_signal_cols] == 1).all(axis=1)
-                        bus_df["signal"] = (bus_df[primary_signal_col] == 1)
-                        signal_calculated = True
-                        # print(f"File {file_name}: Using composite signals {composite_signal_cols}.") # Optional: for debugging
-                    else:
-                         # Composite columns exist but are all NaN
-                         # print(f"File {file_name}: Composite columns {composite_signal_cols} exist but are all NaN. Signal set to False.") # Optional: for debugging
-                         pass # signal_calculated remains False, will default to False below
-
-                else:
-                    # Not all composite columns are present
-                    missing_cols = [col for col in composite_signal_cols if col not in bus_df.columns]
-                    # print(f"File {file_name}: Primary signal '{primary_signal_col}' not usable. Composite columns missing: {missing_cols}. Signal set to False.") # Optional: for debugging
-                    pass # signal_calculated remains False, will default to False below
-
+                    # Calculate composite signal: 1 only if ALL are 1
+                    expr = pl.lit(True)
+                    for col in composite_signal_cols:
+                        expr = expr & (pl.col(col) == 1)
+                    
+                    bus_df = bus_df.with_columns(expr.alias(primary_signal_col))
+                    bus_df = bus_df.with_columns((pl.col(primary_signal_col) == 1).alias("signal"))
+                    signal_calculated = True
+                    
             # 3. Default to False if no signal source was found/usable
             if not signal_calculated:
-                 # print(f"File {file_name}: No usable signal source found. Skipping this file.") # Optional: for debugging
                  continue 
 
-            # --- Continue with the original logic using the calculated 'signal' ---
-
             # Determine the previous signal state to detect changes
-            bus_df["prev_signal"] = bus_df["signal"].shift(1).fillna(False)
+            bus_df = bus_df.with_columns(pl.col("signal").shift(1).fill_null(False).alias("prev_signal"))
 
             # Register changes in 'change_event': "0-1" or "1-0"
-            bus_df["change_event"] = np.nan # Initialize with NaN instead of None for better pandas compatibility
-            bus_df.loc[(bus_df["prev_signal"] == False) & (bus_df["signal"] == True), "change_event"] = "0-1"
-            bus_df.loc[(bus_df["prev_signal"] == True) & (bus_df["signal"] == False), "change_event"] = "1-0"
+            bus_df = bus_df.with_columns(
+                pl.when((pl.col("prev_signal") == False) & (pl.col("signal") == True))
+                .then(pl.lit("0-1"))
+                .when((pl.col("prev_signal") == True) & (pl.col("signal") == False))
+                .then(pl.lit("1-0"))
+                .otherwise(pl.lit(None))
+                .alias("change_event")
+            )
 
-            # Initialize column to mark rows to keep
-            bus_df["is_save"] = False
+            # Find indices where a change occurred
+            bus_df = bus_df.with_row_index("row_idx")
+            change_indices = bus_df.filter(pl.col("change_event").is_not_null())["row_idx"].to_list()
 
-            # Find indices where a change occurred (ignoring potential NaN in change_event)
-            change_indices = bus_df.index[bus_df["change_event"].notna()]
-
-            # Expand the area around each change event
+            ranges = []
             for idx in change_indices:
-                 # Check idx > 0 is implicitly handled by shift(1) for change_event detection
                  start_idx = max(0, idx - samples_before)
-                 # end_idx needs to be inclusive for .loc, so +1 compared to slicing
-                 end_idx = min(len(bus_df) - 1, idx + samples_after) # Adjust end index for .loc
-                 bus_df.loc[start_idx:end_idx, "is_save"] = True
-
-            # Filter rows marked for saving
-            truncated_dataset = bus_df[bus_df["is_save"]].copy() # Use .copy() to avoid SettingWithCopyWarning
-
-            # Assign event numbers within the file_name for saved rows
-            if not truncated_dataset.empty:
-                 event_number = 0
-                 # Identify the start of each contiguous block of 'is_save' == True
-                 # A block starts if 'is_save' is True and the previous was False (or it's the first row)
-                 is_start_of_event = truncated_dataset.index.to_series().diff().fillna(1) != 1
-                 event_groups = is_start_of_event.cumsum()
-                 
-                 # Efficiently apply event numbers using the calculated groups
-                 truncated_dataset['file_name'] = truncated_dataset['file_name'] + " _event N" + event_groups.astype(str)
-
-            # Handle case where no events were found in this file_df
-            if len(truncated_dataset) == 0 and len(bus_df) > 0: # Check if bus_df wasn't empty
+                 end_idx = min(len(bus_df) - 1, idx + samples_after)
+                 ranges.append((start_idx, end_idx))
+            
+            if not ranges:
+                # Handle case where no events were found
                 if len(bus_df) > samples_before + samples_after:
                     middle = len(bus_df) // 2
-                    # Use iloc for slicing by position after reset_index
-                    truncated_dataset = bus_df.iloc[max(0, middle - samples_before) : min(len(bus_df), middle + samples_after + 1)].copy()
+                    start = max(0, middle - samples_before)
+                    end = min(len(bus_df), middle + samples_after + 1)
+                    truncated_dataset = bus_df.slice(start, end - start)
                 else:
-                    truncated_dataset = bus_df.copy()
-                # Ensure the columns added during processing are present even if no events were found, set to default values
-                if "signal" not in truncated_dataset.columns: truncated_dataset["signal"] = False # Or appropriate default
-                if "prev_signal" not in truncated_dataset.columns: truncated_dataset["prev_signal"] = False
-                if "change_event" not in truncated_dataset.columns: truncated_dataset["change_event"] = np.nan
+                    truncated_dataset = bus_df
+            else:
+                # Create mask
+                is_save = np.zeros(len(bus_df), dtype=bool)
+                for start, end in ranges:
+                    is_save[start:end+1] = True
+                
+                truncated_dataset = bus_df.filter(pl.lit(is_save))
 
+            # Assign event numbers
+            if not truncated_dataset.is_empty():
+                 truncated_dataset = truncated_dataset.with_columns(
+                     (pl.col("row_idx").diff().fill_null(1) != 1).cum_sum().alias("event_group")
+                 )
+                 
+                 truncated_dataset = truncated_dataset.with_columns(
+                     (pl.col("file_name") + " _event N" + pl.col("event_group").cast(pl.Utf8)).alias("file_name")
+                 )
 
-            # Drop temporary columns not needed in the final DataFrame
-            # Check if columns exist before dropping to avoid errors if no events were found and columns weren't added
-            cols_to_drop = ["is_save", "prev_signal", "signal", "rPDR A", "rPDR B", "rPDR C"]
+            # Drop temporary columns
+            cols_to_drop = ["is_save", "prev_signal", "signal", "rPDR A", "rPDR B", "rPDR C", "row_idx", "event_group", "change_event"]
             existing_cols_to_drop = [col for col in cols_to_drop if col in truncated_dataset.columns]
             if existing_cols_to_drop:
-                 truncated_dataset = truncated_dataset.drop(columns=existing_cols_to_drop)
+                 truncated_dataset = truncated_dataset.drop(existing_cols_to_drop)
 
-            # Append the processed data for this file to the overall dataset
-            # Use ignore_index=True if you want a clean 0..N index in the final result
-            # Set ignore_index=False if you want to preserve original indices (might be less useful here)
-            dataset_df = pd.concat([dataset_df, truncated_dataset], axis=0, ignore_index=True) 
+            dataset_dfs.append(truncated_dataset)
 
-        return dataset_df
+        if dataset_dfs:
+            return pl.concat(dataset_dfs, how="diagonal")
+        else:
+            return pl.DataFrame()
     
-    def get_simple_dataset(self, dataset_df: pd.DataFrame, csv_name='dataset_simpl.csv'):
+    def get_simple_dataset(self, dataset_df: pl.DataFrame, csv_name='dataset_simpl.csv'):
         """ 
         Создание новых столбцов для упрощенной версии. Формируется только 4 группы сигналов:
         1) Оперативные переключения
@@ -928,19 +956,56 @@ class ComtradeParser():
         ml_emerg_evnt = set(self.ml_emerg_evnt).intersection(column_names)
         ml_all = ml_opr_swch.union(ml_abnorm_evnt).union(ml_emerg_evnt)
         
-        dataset_df["emerg_evnt"] = dataset_df[list(ml_emerg_evnt)].apply(lambda x: 1 if x.any() else "", axis=1)
-        dataset_df["abnorm_evnt"] = dataset_df[list(ml_abnorm_evnt)].apply(lambda x: 1 if x.any() else "", axis=1)
-        dataset_df.loc[dataset_df['emerg_evnt'] == 1, 'abnorm_evnt'] = ""
-        dataset_df["emerg_evnt"] = dataset_df[list(ml_emerg_evnt)].apply(lambda x: 1 if x.any() else "", axis=1)
-        dataset_df["normal"] = dataset_df[list(ml_all)].apply(lambda x: "" if 1 in x.values else 1, axis=1)
-        dataset_df["no_event"] = dataset_df[["abnorm_evnt", 'emerg_evnt']].apply(lambda x: "" if 1 in x.values else 1, axis=1)
+        if ml_emerg_evnt:
+            dataset_df = dataset_df.with_columns(
+                pl.when(pl.any_horizontal(list(ml_emerg_evnt)))
+                .then(pl.lit("1"))
+                .otherwise(pl.lit(""))
+                .alias("emerg_evnt")
+            )
+        else:
+            dataset_df = dataset_df.with_columns(pl.lit("").alias("emerg_evnt"))
+
+        if ml_abnorm_evnt:
+            dataset_df = dataset_df.with_columns(
+                pl.when(pl.any_horizontal(list(ml_abnorm_evnt)))
+                .then(pl.lit("1"))
+                .otherwise(pl.lit(""))
+                .alias("abnorm_evnt")
+            )
+        else:
+            dataset_df = dataset_df.with_columns(pl.lit("").alias("abnorm_evnt"))
+            
+        dataset_df = dataset_df.with_columns(
+            pl.when(pl.col("emerg_evnt") == "1")
+            .then(pl.lit(""))
+            .otherwise(pl.col("abnorm_evnt"))
+            .alias("abnorm_evnt")
+        )
+        
+        if ml_all:
+            dataset_df = dataset_df.with_columns(
+                pl.when(pl.any_horizontal(list(ml_all)))
+                .then(pl.lit(""))
+                .otherwise(pl.lit(1))
+                .alias("normal")
+            )
+        else:
+            dataset_df = dataset_df.with_columns(pl.lit(1).alias("normal"))
+
+        dataset_df = dataset_df.with_columns(
+            pl.when((pl.col("abnorm_evnt") == "1") | (pl.col("emerg_evnt") == "1"))
+            .then(pl.lit(""))
+            .otherwise(pl.lit(1))
+            .alias("no_event")
+        )
         
         # Удаляем сигналы ML
-        dataset_df = dataset_df.drop(columns=ml_all)
+        dataset_df = dataset_df.drop(list(ml_all))
         
-        dataset_df.to_csv(self.csv_path + csv_name, index=False)
+        dataset_df.write_csv(self.csv_path + csv_name)
 
-    def structure_columns(self, dataset_df: pd.DataFrame) -> pd.DataFrame:
+    def structure_columns(self, dataset_df: pl.DataFrame) -> pl.DataFrame:
         """
         Эта функция переструктурирует столбцы набора данных для более простого анализа.
         """
@@ -952,9 +1017,9 @@ class ComtradeParser():
         desired_order.extend(["opr_swch", "abnorm_evnt", "emerg_evnt", "normal"])
         
         # Проверяем, существует ли каждый столбец в желаемом порядке в DataFrame
-        existing_columns = [col for col in desired_order if col in list(dataset_df.columns)]
+        existing_columns = [col for col in desired_order if col in dataset_df.columns]
 
         # Переупорядочиваем столбцы DataFrame на основе существующих столбцов
-        dataset_df = dataset_df[existing_columns]
+        dataset_df = dataset_df.select(existing_columns)
         
         return dataset_df

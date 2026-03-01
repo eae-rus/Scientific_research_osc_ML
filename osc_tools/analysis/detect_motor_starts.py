@@ -4,7 +4,7 @@ import sys
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 sys.path.append(ROOT_DIR)
 
-import pandas as pd
+import polars as pl
 import numpy as np
 import shutil
 from tqdm import tqdm
@@ -76,7 +76,7 @@ class MotorStartDetector:
     def _load_norm_coefficients(self):
         """Загружает единый файл с коэффициентами нормализации."""
         try:
-            self.norm_coef_df = pd.read_csv(self.norm_coef_path)
+            self.norm_coef_df = pl.read_csv(self.norm_coef_path)
             print(f"Файл коэффициентов нормализации '{self.norm_coef_path}' успешно загружен.")
         except FileNotFoundError:
             print(f"Ошибка: Файл коэффициентов нормализации не найден: {self.norm_coef_path}")
@@ -151,26 +151,28 @@ class MotorStartDetector:
         if self.norm_coef_df is None or 'name' not in self.norm_coef_df.columns:
             return None
 
-        norm_row = self.norm_coef_df[self.norm_coef_df['name'].astype(str) == str(filename)]
-        if norm_row.empty:
-            return None
-
-        # Используем .get как в других частях проекта — это возвращает Series или None
-        nominal_series = norm_row.get(nominal_current_col)
-        if nominal_series is None or pd.isna(nominal_series.values[0]):
+        norm_row = self.norm_coef_df.filter(pl.col('name').cast(pl.Utf8) == str(filename))
+        if norm_row.is_empty():
             return None
 
         # В проекте в нескольких местах реальный номинал строится как 20 * xIp_base
         # (см. normalization.normalize_bus_signals и marking_up_oscillograms).
+        if nominal_current_col not in norm_row.columns:
+            return None
+            
+        val = norm_row[nominal_current_col][0]
+        if val is None:
+            return None
+
         try:
-            i_nom = float(nominal_series.values[0])
+            i_nom = float(val)
         except Exception:
             return None
 
-        return i_nom if pd.notna(i_nom) and i_nom > 0 else None
+        return i_nom if i_nom > 0 else None
 
     @staticmethod
-    def _calculate_first_harmonic(signal: pd.Series, samples_per_period: int) -> np.ndarray:
+    def _calculate_first_harmonic(signal: pl.Series, samples_per_period: int) -> np.ndarray:
         """
         Рассчитывает амплитуду первой гармоники для сигнала с использованием скользящего окна.
         """
@@ -370,7 +372,7 @@ class MotorStartDetector:
 
         try:
             raw_date, osc_df_raw = self.readComtrade.read_comtrade(cfg_file_path)
-            if osc_df_raw is None or osc_df_raw.empty:
+            if osc_df_raw is None or osc_df_raw.is_empty():
                 self.error_files.append((filename_without_ext, "Не удалось прочитать или файл пуст"))
                 return
         except Exception as e:
@@ -434,13 +436,13 @@ class MotorStartDetector:
             print("\nОсциллограммы, соответствующие критериям пуска двигателя, не найдены.")
             return
 
-        report_df = pd.DataFrame(self.results)
+        report_df = pl.DataFrame(self.results)
         report_path = os.path.join(self.output_path, "motor_start_report.csv")
-        report_df.to_csv(report_path, index=False)
+        report_df.write_csv(report_path)
         
         print(f"\n--- Итоговый отчет сохранен в: {report_path} ---")
         print("Распределение найденных осциллограмм по факторам:")
-        print(report_df['factor'].value_counts().sort_index())
+        print(report_df['factor'].value_counts().sort(descending=False))
 
         if self.error_files:
             with open(self.log_path, 'w', encoding='utf-8') as f:
@@ -473,10 +475,10 @@ class MotorStartDetector:
 if __name__ == '__main__':
     # Укажите ваши пути здесь
     # ПУТЬ К ПАПКЕ С ИСХОДНЫМИ ОСЦИЛЛОГРАММАМИ
-    OSC_FOLDER = "D:\\DataSet\\__Open EE osc Dataset v1.2 — копия\\osc_comtrade\\f_network = 50\\f_ADC = 1600 v1.4"
-    OSC_FOLDER = "D:\\DataSet\\__Open EE osc Dataset v1.2 — копия\\osc_comtrade"
+    OSC_FOLDER = "D:\\DataSet\\__Open EE osc Dataset v1.3 — копия\\osc_comtrade\\f_network = 50\\f_ADC = 1600 v1.4"
+    OSC_FOLDER = "D:\\DataSet\\__Open EE osc Dataset v1.3 — копия\\osc_comtrade"
     # ПУТЬ К ФАЙЛУ С НОМИНАЛЬНЫМИ ЗНАЧЕНИЯМИ (Iном)
-    NORM_COEF_FILE = "D:\\DataSet\\__Open EE osc Dataset v1.2 — копия\\norm_coef_all_v1.4.csv"
+    NORM_COEF_FILE = "D:\\DataSet\\__Open EE osc Dataset v1.3 — копия\\norm_coef_all_v1.4.csv"
     # ПУТЬ К ПАПКЕ, КУДА БУДУТ СОХРАНЕНЫ РЕЗУЛЬТАТЫ
     OUTPUT_FOLDER = "D:\\DataSet\\_detect_motor_starts_v1.0"
     # ПУТЬ К ЛОГ-ФАЙЛУ
@@ -490,10 +492,24 @@ if __name__ == '__main__':
         print("Работа скрипта прервана. Отредактируйте пути и запустите снова.")
         print("="*50)
     else:
+        # Пример: искать осциллограммы только по Фактору 4
         detector = MotorStartDetector(
             osc_folder_path=OSC_FOLDER,
             norm_coef_path=NORM_COEF_FILE,
             output_path=OUTPUT_FOLDER,
-            log_path=LOG_FILE
+            log_path=LOG_FILE,
+            enable_factor_1=False,  # Отключен
+            enable_factor_2=False,  # Отключен
+            enable_factor_3=False,  # Отключен
+            enable_factor_4=True    # Включен
         )
         detector.run_detection()
+        
+        # Для поиска по всем факторам (по умолчанию):
+        # detector = MotorStartDetector(
+        #     osc_folder_path=OSC_FOLDER,
+        #     norm_coef_path=NORM_COEF_FILE,
+        #     output_path=OUTPUT_FOLDER,
+        #     log_path=LOG_FILE
+        # )
+        # detector.run_detection()

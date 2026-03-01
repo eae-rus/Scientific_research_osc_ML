@@ -31,7 +31,7 @@ import struct
 import sys
 import warnings
 import numpy as np
-import pandas as pd
+import polars as pl
 
 try:
     import numpy
@@ -1026,14 +1026,14 @@ class Comtrade:
 
     def to_dataframe(self):
         """
-        Преобразует загруженные данные осциллограммы в pandas DataFrame.
+        Преобразует загруженные данные осциллограммы в Polars DataFrame.
         
         Возвращает:
-            pandas.DataFrame: DataFrame с временной колонкой и колонками для каждого
+            pl.DataFrame: DataFrame с временной колонкой и колонками для каждого
                               аналогового и дискретного канала.
         """
         if self.total_samples == 0:
-            return pd.DataFrame() # Возвращаем пустой DataFrame, если нет данных
+            return pl.DataFrame() # Возвращаем пустой DataFrame, если нет данных
 
         # Создаем словарь для будущего DataFrame
         data = {'Time': self.time}
@@ -1057,7 +1057,7 @@ class Comtrade:
             else:
                 data[channel_name] = self.status[i]
 
-        return pd.DataFrame(data)
+        return pl.DataFrame(data)
 
     def remove_disallowed_analog_names(self, allowed_names: dict) -> 'Comtrade':
         """

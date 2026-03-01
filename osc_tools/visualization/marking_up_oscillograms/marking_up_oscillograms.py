@@ -2,7 +2,7 @@ import os
 import sys
 from tqdm import tqdm
 import torch
-import pandas as pd
+import polars as pl
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -21,14 +21,14 @@ class ComtradeProcessor(ComtradeParser):
     def __init__(self, norm_file_path: str, device: str = 'cuda'):
         super().__init__()
         self.device = torch.device(device if torch.cuda.is_available() else 'cpu')
-        self.norm_csv = pd.read_csv(norm_file_path)
+        self.norm_csv = pl.read_csv(norm_file_path)
         self.FRAME_SIZE = 64
     
     def load_model(self, model_path: str):
         """Загрузка обученной модели."""
         self.model = torch.load(model_path, map_location=self.device).to(self.device)
     
-    def normalize_signals(self, df_osc: pd.DataFrame, name_osc: str):
+    def normalize_signals(self, df_osc: pl.DataFrame, name_osc: str):
         """Нормализация токов и напряжений."""
         try:
             # Поддержка обоих форматов: 'Bus 2' (старый) и 'Bus-2' (новый)
@@ -46,22 +46,22 @@ class ComtradeProcessor(ComtradeParser):
             return df_osc
         
         name_osc_i_bus = name_osc.split("_")[0]
-        norm_osc_row = self.norm_csv[self.norm_csv["name"] == name_osc_i_bus]
+        norm_osc_row = self.norm_csv.filter(pl.col("name") == name_osc_i_bus)
         
-        if norm_osc_row["norm"].values[0] != "ДА":
+        if norm_osc_row.is_empty() or norm_osc_row["norm"][0] != "ДА":
             return df_osc  # Пропускаем необученные наборы
         
         normalization_params = {
             "current": {
-                "nominal": 20 * float(norm_osc_row[f"{bus}Ip_base"]),
+                "nominal": 20 * float(norm_osc_row[f"{bus}Ip_base"][0]),
                 "features": Features.CURRENT
             },
             "voltage_bb": {
-                "nominal": 3 * float(norm_osc_row[f"{bus}Ub_base"]),
+                "nominal": 3 * float(norm_osc_row[f"{bus}Ub_base"][0]),
                 "features": Features.VOLTAGE_PHAZE_BB + [Features.VOLTAGE_ZERO_SEQ[0]]
             },
             "voltage_cl": {
-                "nominal": 3 * float(norm_osc_row[f"{bus}Uc_base"]),
+                "nominal": 3 * float(norm_osc_row[f"{bus}Uc_base"][0]),
                 "features": Features.VOLTAGE_PHAZE_CL + [Features.VOLTAGE_ZERO_SEQ[1]] + Features.VOLTAGE_LINE_CL
             }
         }
@@ -69,7 +69,7 @@ class ComtradeProcessor(ComtradeParser):
         for key, params in normalization_params.items():
             for feature in params["features"]:
                 if feature in df_osc.columns:
-                    df_osc[feature] = df_osc[feature] / params["nominal"]
+                    df_osc = df_osc.with_columns((pl.col(feature) / params["nominal"]).alias(feature))
         
         return df_osc
 
@@ -94,40 +94,42 @@ class MarkingUpOscillograms(ComtradeProcessor):
         for name in Features.TARGET:
             ml_for_answer.append(f"{name}_bool")
             ml_for_answer.append(f"{name}_count")
-        sorted_files_df = pd.DataFrame(columns=ml_for_answer)
-
-        # Установка типов данных для логических столбцов
+        
+        schema = {"file_name": pl.Utf8, "bus": pl.Int64}
         for name in Features.TARGET:
-            sorted_files_df[f"{name}_bool"] = sorted_files_df[f"{name}_bool"].astype(bool)
+            schema[f"{name}_bool"] = pl.Boolean
+            schema[f"{name}_count"] = pl.Int64
+            
+        sorted_files_df = pl.DataFrame(schema=schema)
 
-        norm_osc_tuple = tuple(self.norm_csv["name"].values)
+        norm_osc_tuple = tuple(self.norm_csv["name"].to_list())
         raw_files = sorted([file[:-4] for file in os.listdir(self.raw_path) if 'cfg' in file])
         raw_files = [file for file in raw_files if file in norm_osc_tuple]
 
         with tqdm(total=len(raw_files), desc="Преобразование Comtrade в CSV") as pbar:
             for file in raw_files:
                 df = self.create_one_df(os.path.join(self.raw_path, f"{file}.cfg"), f"{file}.cfg")
-                if df.empty:
+                if df.is_empty():
                     pbar.update(1)
                     continue
 
-                names_osc = df["file_name"].unique()
+                names_osc = df["file_name"].unique().to_list()
                 for name_osc in names_osc:
-                    df_osc_one_bus = df[df["file_name"] == name_osc].copy()
+                    df_osc_one_bus = df.filter(pl.col("file_name") == name_osc)
 
                     # Инициализация DataFrame с нулевыми значениями
-                    df_osc = pd.DataFrame(0, index=np.arange(len(df_osc_one_bus)), columns=Features.ALL)
+                    df_osc = pl.DataFrame({col: [0.0]*len(df_osc_one_bus) for col in Features.ALL})
 
                     # Заполнение реальными данными, если они есть
                     for feature in Features.ALL:
                         if feature in df_osc_one_bus.columns:
-                            df_osc[feature] = df_osc_one_bus[feature].copy()
+                            df_osc = df_osc.with_columns(df_osc_one_bus[feature])
 
                     # Нормализация сигналов
                     df_osc = self.normalize_signals(df_osc, name_osc)
 
                     indexes = len(df_osc) - self.FRAME_SIZE + 1
-                    df_osc.fillna(0, inplace=True)
+                    df_osc = df_osc.fill_null(0)
 
                     # Инициализация предсказаний
                     predict_labels = {name: np.zeros(len(df_osc)) for name in Features.TARGET}
@@ -135,8 +137,11 @@ class MarkingUpOscillograms(ComtradeProcessor):
                     # Создание окон
                     windows = []
                     target_indices = []
+                    
+                    df_osc_numpy = df_osc.to_numpy().astype(np.float32)
+                    
                     for ind in range(indexes):
-                        window = df_osc.iloc[ind:ind + self.FRAME_SIZE].values.astype(np.float32)
+                        window = df_osc_numpy[ind:ind + self.FRAME_SIZE]
                         windows.append(window)
                         # Определение индекса для присвоения предсказания
                         target_idx = self.FRAME_SIZE - 8 + ind
@@ -151,7 +156,7 @@ class MarkingUpOscillograms(ComtradeProcessor):
                         batch_windows = windows[i:i + batch_size]
                         batch_target_indices = target_indices[i:i + batch_size]
 
-                        batch_tensor = torch.tensor(batch_windows).to(self.device).float()  # Форма: (batch, FRAME_SIZE, features)
+                        batch_tensor = torch.tensor(np.array(batch_windows)).to(self.device).float()  # Форма: (batch, FRAME_SIZE, features)
                         #batch_tensor = batch_tensor.permute(0, 2, 1)  # Вам может потребоваться переставить оси (batch, features, FRAME_SIZE)
                         with torch.no_grad():
                             model_prediction = self.model(batch_tensor)
@@ -189,8 +194,8 @@ class MarkingUpOscillograms(ComtradeProcessor):
                     # Создание новой строки для DataFrame
                     events_predicted = {}
                     for name in Features.TARGET:
-                        events_predicted[f"{name}_bool"] = count_events[name] > 0
-                        events_predicted[f"{name}_count"] = count_events[name]
+                        events_predicted[f"{name}_bool"] = bool(count_events[name] > 0)
+                        events_predicted[f"{name}_count"] = int(count_events[name])
 
                     # безопасная попытка определить секцию
                     bus = 1
@@ -206,15 +211,16 @@ class MarkingUpOscillograms(ComtradeProcessor):
                     except (ValueError, IndexError):
                         pass
 
-                    new_row = pd.DataFrame({
+                    new_row_data = {
                         "file_name": [name_osc.split("_")[0]],
                         "bus": [bus],
                         **{k: [v] for k, v in events_predicted.items()}
-                    })
+                    }
+                    new_row = pl.DataFrame(new_row_data, schema=schema)
 
-                    sorted_files_df = pd.concat([sorted_files_df, new_row], ignore_index=True)
+                    sorted_files_df = pl.concat([sorted_files_df, new_row], how="vertical")
 
-                sorted_files_df.to_csv(csv_name, index=False)
+                sorted_files_df.write_csv(csv_name)
                 pbar.update(1)
 
 

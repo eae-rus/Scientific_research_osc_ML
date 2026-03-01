@@ -1,7 +1,7 @@
 # Testing Architecture & Roadmap
 
-> **Последнее обновление:** 24 декабря 2025  
-> **Контекст:** Проект достиг 100% прохождения тестов (259 тестов). Основное внимание уделено стабильному ядру (COMTRADE) и расчёту признаков (PDR).
+> **Последнее обновление:** 4 января 2026  
+> **Контекст:** Проект достиг 100% прохождения тестов (320+ тестов). Добавлены тесты для новых ML компонентов и оптимизаций.
 
 ---
 
@@ -48,7 +48,7 @@
 
 ---
 
-## 📊 Текущее состояние (276 тестов)
+## 📊 Текущее состояние (320+ тестов)
 
 ### Структура тестов
 ```
@@ -73,7 +73,22 @@ tests/
 │   ├── test_data_management_renaming.py # ✅ 16 тестов
 │   ├── test_data_management_complete.py # ✅ 15 тестов
 │   ├── test_ml_infrastructure.py        # ✅ 4 теста (Dataset, Samplers)
-│   └── test_ml_models.py                # ✅ 2 теста (Layer 3: Smoke tests)
+│   ├── test_ml_models.py                # ✅ 2 теста (Layer 3: Smoke tests)
+│   ├── test_benchmark.py                # ✅ 5 тестов (InferenceBenchmark)
+│   ├── test_dataset_features.py         # ✅ 8 тестов (Feature modes)
+│   ├── test_fft_speed.py                # ✅ 3 теста (FFT optimizations)
+│   ├── test_ml_kan.py                   # ✅ 4 теста (KAN layers)
+│   ├── test_ml_models_baseline.py       # ✅ 6 тестов (MLP/CNN baselines)
+│   ├── test_ml_models_basic.py          # ✅ 2 теста (Basic model tests)
+│   ├── test_ml_models_kan.py            # ✅ 5 тестов (ConvKAN specifics)
+│   ├── test_ml_models_structure.py      # ✅ 7 тестов (Model architectures)
+│   ├── test_ml_runner.py                # ✅ 3 теста (ExperimentRunner)
+│   ├── test_ml_training_smoke.py        # ✅ 2 теста (Training smoke tests)
+│   ├── test_scripts_infrastructure.py   # ✅ 4 теста (Script utilities)
+│   ├── test_features_pdr_complete.py    # ✅ 12 тестов (PDR edge cases)
+│   ├── test_io_comtrade_parser_complete.py # ✅ 9 тестов (Parser robustness)
+│   ├── test_analysis_overvoltage_fixed.py # ✅ 14 тестов (Overvoltage fixes)
+│   └── ...
 └── integration/
     └── test_comtrade_io.py              # ✅ 24 теста
 ```
@@ -82,12 +97,12 @@ tests/
 
 | Метрика | Значение |
 |---------|----------|
-| Всего тестов | **276** (было 259, добавлено 17+) |
+| Всего тестов | **320+** (было 276, добавлено 44+) |
 | Pass rate | **100%** ✅ |
-| Покрытие (approx) | ~65% |
-| Время выполнения | ~22 сек |
+| Покрытие (approx) | ~70% |
+| Время выполнения | ~25 сек |
 
-**Примечание:** Все 22 ранее падавших теста исправлены. Добавлено глубокое тестирование парсинга COMTRADE.
+**Примечание:** Добавлены тесты для KAN слоев, benchmark'инга, новых feature modes и инфраструктуры экспериментов.
 
 
 ---

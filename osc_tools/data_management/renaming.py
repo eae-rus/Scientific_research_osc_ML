@@ -1104,3 +1104,42 @@ def find_and_fix_russian_chars_in_cfg(
     print(f"{'='*80}\n")
     
     return result
+             
+#source_dir = "D:\DataSet\__Open EE osc Dataset v1.2 — копия"
+#output_list_path = "D:\DataSet\__Open EE osc Dataset v1.2 — копия"
+#
+#find_cfg_files_with_russian_chars(source_dir, output_list_path)
+
+
+# --- Пример использования find_and_fix_russian_chars_in_cfg ---
+#if __name__ == '__main__':
+#    # Путь к папке с осциллограммами
+#    comtrade_folder = "raw_data/PDR/"  # Укажите свой путь
+#    
+#    # Опция 1: Только поиск (без замены)
+#    print("\n[ОПЦИЯ 1] Сканирование русских букв (только поиск):\n")
+#    result = find_and_fix_russian_chars_in_cfg(
+#        source_dir=comtrade_folder,
+#        output_report_path="reports/russian_chars_report.txt"
+#    )
+#    print(f"Найдено файлов с русскими буквами: {len(result['files_with_russian'])}")
+#    
+#    # Опция 2: Поиск и замена с приоритетом
+#    print("\n[ОПЦИЯ 2] Сканирование и замена с приоритетом:\n")
+#    replacement_rules = [
+#        (', А,', ', A,'),      # Приоритет 1: замена ", А," на ", A,"
+#        (', В,', ', B,'),      # Приоритет 2: замена ", В," на ", B,"
+#        (', С,', ', C,'),      # Приоритет 3: замена ", С," на ", C,"
+#        ('А', 'A'),            # Приоритет 4: замена одиночной 'А'
+#        ('В', 'B'),            # Приоритет 5: замена одиночной 'В'
+#        ('С', 'C'),            # Приоритет 6: замена одиночной 'С'
+#    ]
+#    
+#    result = find_and_fix_russian_chars_in_cfg(
+#        source_dir=comtrade_folder,
+#        output_report_path="reports/russian_chars_fixed_report.txt",
+#        replacement_rules=replacement_rules
+#    )
+#    print(f"Найдено файлов с русскими буквами: {len(result['files_with_russian'])}")
+#    print(f"Файлов обновлено: {len(result['replacements_made'])}")
+#    print(f"Ошибок: {len(result['errors'])}")

@@ -7,7 +7,7 @@ fixtures для всех тестов в проекте.
 
 import pytest
 import numpy as np
-import pandas as pd
+import polars as pl
 import sys
 import os
 from pathlib import Path
@@ -136,7 +136,7 @@ def sample_normalized_dataframe():
         '2Ic': phase_c * 20,
     }
     
-    return pd.DataFrame(data)
+    return pl.DataFrame(data)
 
 
 @pytest.fixture
@@ -176,7 +176,7 @@ def sample_signal_with_event():
         '1Ic': np.concatenate([phase_c_normal * 10, phase_c_event * 50]),
     }
     
-    return pd.DataFrame(data)
+    return pl.DataFrame(data)
 
 
 @pytest.fixture

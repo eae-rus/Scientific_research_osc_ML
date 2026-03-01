@@ -7,7 +7,6 @@ that actually exist in the module (sliding_window_fft, calculate_symmetrical_com
 
 import pytest
 import numpy as np
-import pandas as pd
 from pathlib import Path
 import sys
 
