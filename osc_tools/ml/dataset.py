@@ -557,8 +557,9 @@ class OscillogramDataset(Dataset):
                     collected_features.append(raw_data)
                 
             elif fm == 'symmetric':
-                # sliding_window_fft returns (Time, NumHarmonics)
-                # Берем все запрошенные гармоники
+                # Контракт режима symmetric: только фундаментальная гармоника.
+                # Это дает фиксированные 12 каналов (I1/I2/I0/U1/U2/U0, Re+Im).
+                # Для многогармонического представления используются phase_* режимы.
                 phasors_i = [sliding_window_fft(raw_data[:, i], fft_window, self.num_harmonics) for i in range(3)]
                 i1, i2, i0 = calculate_symmetrical_components(*phasors_i)
                 
@@ -579,21 +580,14 @@ class OscillogramDataset(Dataset):
                     un_phasor = sliding_window_fft(raw_data[:, 7], fft_window, self.num_harmonics)
                     u0 = un_phasor / 3
 
-                # Сборка фичей
-                # Для каждой компоненты (I1, I2... U0) берем Re и Im для всех гармоник
-                # Итоговый порядок: 
-                # [I1_h1_re, I1_h1_im, I1_h2_re, ... I2_h1..., I0..., U1..., U2..., U0...]
-                
-                components = [i1, i2, i0, u1, u2, u0] # List of (Time, Harmonics) arrays
-                
+                components = [i1, i2, i0, u1, u2, u0]  # List of (Time, Harmonics) arrays
+
                 feature_list = []
                 for comp in components:
-                    # comp: (Time, Harmonics)
-                    for h in range(self.num_harmonics):
-                        feature_list.append(comp[:, h].real)
-                        feature_list.append(comp[:, h].imag)
-                        
-                # Stack all features -> (Time, 12 * NumHarmonics)
+                    feature_list.append(comp[:, 0].real)
+                    feature_list.append(comp[:, 0].imag)
+
+                # Stack all features -> (Time, 12)
                 collected_features.append(np.stack(feature_list, axis=1))
 
             elif fm == 'symmetric_polar':
