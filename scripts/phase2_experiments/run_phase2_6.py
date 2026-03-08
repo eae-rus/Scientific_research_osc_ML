@@ -463,7 +463,38 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         "2.6.8_stride":   {"feature_mode": "phase_polar", "sampling": "stride",  "stride": 16, "aug": True, "balancing": "weights", "target_level": "base", "target_window": "any_in_window"},
 
         # === Эксперимент 2.6.9: Комплексная PhysicsKAN (cPhysicsKAN) ===
-        "2.6.9_stride": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "aug": True, "balancing": "weights", "target_level": "base", "models_override": ["cPhysicsKAN"]}
+        "2.6.9_stride": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "aug": True, "balancing": "weights", "target_level": "base", "target_window": "any_in_window",  "models_override": ["cPhysicsKAN"]},
+
+        # === Эксперимент 2.6.10: Глобальная балансировка, только тяжёлые базовые модели ===
+        "2.6.10_global_stride": {
+            "feature_mode": "phase_polar",
+            "sampling": "stride",
+            "stride": 16,
+            "aug": True,
+            "balancing": "global",
+            "target_level": "base",
+            "target_window": "any_in_window",
+            "models_override": [
+                "SimpleMLP", "SimpleCNN", "ConvKAN", "SimpleKAN", "PhysicsKAN", "cPhysicsKAN", "ResNet1D"
+            ],
+            "complexities_override": ["heavy"]
+        },
+        
+        # === Эксперимент 2.6.10: Взвешенная балансировка, только тяжёлые базовые модели ===
+        "2.6.10_weights_stride": {
+            "feature_mode": "phase_polar",
+            "sampling": "stride",
+            "stride": 16,
+            "aug": True,
+            "balancing": "weights",
+            "target_level": "base",
+            "target_window": "any_in_window",
+            "models_override": [
+                #"SimpleMLP", "SimpleCNN", "ConvKAN", "SimpleKAN", "PhysicsKAN", "cPhysicsKAN", "ResNet1D"
+                "ConvKAN"
+            ],
+            "complexities_override": ["heavy"]
+        }
     }
 
     if target_exp not in exp_params:
@@ -687,7 +718,11 @@ if __name__ == "__main__":
         # "2.6.8_stride",
         
         # === Эксперимент 2.6.9: Комплексная PhysicsKAN (cPhysicsKAN) ===
-        "2.6.9_stride"
+        # "2.6.9_stride",
+        
+        # === Эксперимент 2.6.10: Глобальная балансировка, только тяжёлые базовые модели ===
+        #"2.6.10_global_stride",
+        "2.6.10_weights_stride"
     ]
     
     # Тип модели ('all' - выберет автоматически подходящие для группы)
