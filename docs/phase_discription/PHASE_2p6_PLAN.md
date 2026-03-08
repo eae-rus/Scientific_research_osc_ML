@@ -163,6 +163,28 @@
 
 ---
 
+### [x] Exp 2.6.9: Комплексная PhysicsKAN (cPhysicsKAN)
+**Зачем:** Проверить гипотезу комплексной обработки признаков в полярной форме (амплитуда/фаза) с физическими операциями в комплексной плоскости.
+
+*   **Конфигурация:** Полная копия `2.6.1_stride` по данным и обучению (`phase_polar + stride`, `weights`, `aug=True`, `target_level=base`), но с моделью `cPhysicsKAN`.
+*   **Сложности:** `light`, `medium`, `heavy` (отдельные конфиги в `MODEL_COMPLEXITY`).
+*   **Ограничения модели:**
+    - поддерживается только `feature_mode='phase_polar'`;
+    - требуется чётное число входных каналов (`[A, φ]` пары);
+    - `BatchNorm` применяется только к амплитудам;
+    - `Dropout` применяется согласованно к комплексной паре (амплитуда и фаза).
+*   **Физические блоки:**
+    - умножение: $A=A_1\cdot A_2$, $\varphi=\varphi_1+\varphi_2$;
+    - деление: $A=A_1/A_2$, $\varphi=\varphi_1-\varphi_2$.
+*   **Реализация:**
+    - новая модель: [osc_tools/ml/models/kan.py](osc_tools/ml/models/kan.py)
+    - регистрация в runner: [osc_tools/ml/runner.py](osc_tools/ml/runner.py)
+    - экспорт модели: [osc_tools/ml/models/__init__.py](osc_tools/ml/models/__init__.py)
+    - эксперимент: [scripts/phase2_experiments/run_phase2_6.py](scripts/phase2_experiments/run_phase2_6.py)
+    - тесты: [tests/unit/test_ml_models_kan.py](tests/unit/test_ml_models_kan.py)
+
+---
+
 ## 📝 Резюме по изменениям кода (To-Do List)
 
 1.  **Dataset:**
@@ -174,5 +196,7 @@
     *   [x] Создать версию моделей `_Depthwise` (для Exp 2.6.2).
     *   [x] Создать класс `HybridModel` (принимает словарь входов: raw и features). — см. `osc_tools/ml/models/hybrid.py`
     *   [x] Исправить `PhysicsKAN` (добавить BatchNorm).
+    *   [x] Добавить `cPhysicsKAN` (комплексная полярная обработка + физические `mul/div`).
 3.  **Runner:**
     *   [x] Адаптировать конфиги под новые типы моделей (добавлена регистрация в Runner).
+    *   [x] Добавить регистрацию `cPhysicsKAN`.

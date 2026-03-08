@@ -9,7 +9,7 @@ from .advanced import (
     HierarchicalSimpleKAN,
     HierarchicalPhysicsKAN
 )
-from .kan import SimpleKAN, ConvKAN, PhysicsKAN, PhysicsKANConditional
+from .kan import SimpleKAN, ConvKAN, PhysicsKAN, PhysicsKANConditional, cPhysicsKAN
 from .autoencoders import AutoEncoder, KANAE
 from .unet import UNet1D
 from .experimental import (
@@ -36,7 +36,7 @@ __all__ = [
     'SimpleMLP', 'SimpleCNN',
     'HierarchicalCNN', 'HierarchicalConvKAN', 'HierarchicalMLP',
     'HierarchicalResNet', 'HierarchicalSimpleKAN', 'HierarchicalPhysicsKAN',
-    'SimpleKAN', 'ConvKAN', 'PhysicsKAN', 'PhysicsKANConditional',
+    'SimpleKAN', 'ConvKAN', 'PhysicsKAN', 'PhysicsKANConditional', 'cPhysicsKAN',
     'AutoEncoder', 'KANAE',
     'UNet1D',
     'CONV_MLP_v2', 'CONV_COMPLEX_v1', 'FFT_MLP', 'FFT_MLP_KAN_v1', 'FFT_MLP_COMPLEX_v1',

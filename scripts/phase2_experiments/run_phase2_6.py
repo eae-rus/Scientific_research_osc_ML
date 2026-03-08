@@ -31,6 +31,7 @@ MODEL_COMPLEXITY = {
         'SimpleKAN': {'hidden_sizes': [64, 32], 'grid_size': 3, 'dropout': 0.1},
         'PhysicsKAN': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
         'PhysicsKANConditional': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
+        'cPhysicsKAN': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
         'ResNet1D':  {'layers': [1, 1, 1, 1], 'base_filters': 16},
         # Иерархические модели (2.6.1, 2.6.2)
         'HierarchicalMLP': {'channels': [64, 32], 'dropout': 0.2, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
@@ -54,6 +55,7 @@ MODEL_COMPLEXITY = {
         'SimpleKAN': {'hidden_sizes': [128, 64, 32], 'grid_size': 5, 'dropout': 0.2},
         'PhysicsKAN': {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5},
         'PhysicsKANConditional': {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5},
+        'cPhysicsKAN': {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5},
         'ResNet1D':  {'layers': [2, 2, 2, 2], 'base_filters': 32},
         # Иерархические модели (2.6.1, 2.6.2)
         'HierarchicalMLP': {'channels': [256, 128, 64], 'dropout': 0.3, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
@@ -77,6 +79,7 @@ MODEL_COMPLEXITY = {
         'SimpleKAN': {'hidden_sizes': [256, 128, 64, 32], 'grid_size': 5, 'dropout': 0.3},
         'PhysicsKAN': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8},
         'PhysicsKANConditional': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8},
+        'cPhysicsKAN': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8},
         'ResNet1D':  {'layers': [3, 4, 6, 3], 'base_filters': 64},
         # Иерархические модели (2.6.1, 2.6.2)
         'HierarchicalMLP': {'channels': [512, 256, 128, 64], 'dropout': 0.4, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
@@ -150,6 +153,13 @@ def run_single_experiment(
         else:
             effective_feature_mode = ['raw', feature_mode]
             features_mode_for_hybrid = feature_mode
+
+    if model_name == 'cPhysicsKAN':
+        modes = effective_feature_mode if isinstance(effective_feature_mode, list) else [effective_feature_mode]
+        if modes != ['phase_polar']:
+            raise ValueError(
+                f"cPhysicsKAN поддерживает только feature_mode='phase_polar', получено: {effective_feature_mode}"
+            )
 
     def get_features_tail_len(mode: str) -> int:
         """Определяет длину хвоста для features-ветки гибридов."""
@@ -255,7 +265,7 @@ def run_single_experiment(
     if is_harmonic_mode and num_harmonics >= 3:
         val_batch_size = 2048
 
-    if is_harmonic_mode and complexity == 'heavy' and model_name in ['PhysicsKAN', 'PhysicsKANConditional', 'ConvKAN', 'ResNet1D', 'HierarchicalPhysicsKAN', 'HierarchicalConvKAN', 'HierarchicalResNet']:
+    if is_harmonic_mode and complexity == 'heavy' and model_name in ['PhysicsKAN', 'PhysicsKANConditional', 'cPhysicsKAN', 'ConvKAN', 'ResNet1D', 'HierarchicalPhysicsKAN', 'HierarchicalConvKAN', 'HierarchicalResNet']:
         val_batch_size = 1024
 
     train_loader = torch.utils.data.DataLoader(train_ds, batch_size=base_batch_size, shuffle=True, num_workers=0)
@@ -277,7 +287,7 @@ def run_single_experiment(
     if model_name in ['SimpleMLP', 'SimpleKAN']:
         model_params.pop('in_channels', None)
 
-    if model_name in ['PhysicsKAN', 'HierarchicalPhysicsKAN'] and sampling_strategy == 'snapshot':
+    if model_name in ['PhysicsKAN', 'HierarchicalPhysicsKAN', 'cPhysicsKAN'] and sampling_strategy == 'snapshot':
         model_params['use_mlp'] = True
         model_params['input_size'] = in_channels * seq_len
 
@@ -426,9 +436,6 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         "2.6.1_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights", "target_level": "base"},
         "2.6.1_global_stride": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "aug": True, "balancing": "global", "target_level": "base"},
 
-        # === Эксперимент 2.6.8: Метка по всему окну (сдвиг вправо) ===
-        "2.6.8_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights", "target_level": "base", "target_window": "any_in_window"},
-        
         # === Эксперимент 2.6.2: Иерархические модели ===
         "2.6.2_stride":   {"feature_mode": "phase_polar", "sampling": "stride",   "stride": 16, "aug": True, "balancing": "weights", "target_level": "base"},
         "2.6.2_snapshot": {"feature_mode": "phase_polar", "sampling": "snapshot", "stride": 32, "aug": True, "balancing": "weights", "target_level": "base"},
@@ -449,28 +456,14 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         "2.6.4_hier_global_stride": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "aug": True, "balancing": "global", "target_level": "full_by_levels"},
 
         # === Эксперимент 2.6.7: Финальный тест (200 эпох) ===
-        "2.6.7_baseline_200": {
-            "feature_mode": "phase_polar",
-            "sampling": "stride",
-            "stride": 16,
-            "aug": True,
-            "balancing": "weights",
-            "target_level": "base",
-            "epochs": 200,
-            "models_override": ["PhysicsKAN"],
-            "complexities_override": ["heavy"],
-        },
-        "2.6.7_conditional_200": {
-            "feature_mode": "phase_polar",
-            "sampling": "stride",
-            "stride": 16,
-            "aug": True,
-            "balancing": "weights",
-            "target_level": "base_sequential",
-            "epochs": 200,
-            "models_override": ["PhysicsKANConditional"],
-            "complexities_override": ["heavy"]
-        }
+        "2.6.7_baseline_200": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "aug": True, "balancing": "weights", "target_level": "base", "epochs": 200, "models_override": ["PhysicsKAN"], "complexities_override": ["heavy"],},
+        "2.6.7_conditional_200": { "feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "aug": True, "balancing": "weights", "target_level": "base_sequential", "epochs": 200, "models_override": ["PhysicsKANConditional"], "complexities_override": ["heavy"]},
+
+        # === Эксперимент 2.6.8: Метка по всему окну (сдвиг вправо) ===
+        "2.6.8_stride":   {"feature_mode": "phase_polar", "sampling": "stride",  "stride": 16, "aug": True, "balancing": "weights", "target_level": "base", "target_window": "any_in_window"},
+
+        # === Эксперимент 2.6.9: Комплексная PhysicsKAN (cPhysicsKAN) ===
+        "2.6.9_stride": {"feature_mode": "phase_polar", "sampling": "stride", "stride": 16, "aug": True, "balancing": "weights", "target_level": "base", "models_override": ["cPhysicsKAN"]}
     }
 
     if target_exp not in exp_params:
@@ -669,6 +662,7 @@ if __name__ == "__main__":
     # 2.6.3 - гибридные модели
     # 2.6.4 - гранулярность меток (full, full_by_levels)
     # 2.6.7 - финальный тест (200 эпох, conditional heads)
+    # 2.6.9 - комплексная PhysicsKAN (cPhysicsKAN)
     EXPS = [
         # === Эксперимент 2.6.1: Калибровка базовых моделей ===
         #"2.6.1_stride", "2.6.1_snapshot", "2.6.1_global_stride",
@@ -690,7 +684,10 @@ if __name__ == "__main__":
         # "2.6.7_baseline_200", 
 
         # === Эксперимент 2.6.8: Метка по всему окну (сдвиг вправо) ===
-        "2.6.8_stride",
+        # "2.6.8_stride",
+        
+        # === Эксперимент 2.6.9: Комплексная PhysicsKAN (cPhysicsKAN) ===
+        "2.6.9_stride"
     ]
     
     # Тип модели ('all' - выберет автоматически подходящие для группы)
@@ -703,7 +700,7 @@ if __name__ == "__main__":
     SAMPLES_PER_FILE = 12
     
     # Эпохи
-    EPOCHS = 30
+    EPOCHS = 60
     
     # Пропускать ли уже обученные модели (наличие final_model.pt)
     SKIP_EXISTING = True

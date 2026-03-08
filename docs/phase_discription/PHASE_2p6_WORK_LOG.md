@@ -1,5 +1,38 @@
 # Лог работ по Фазе 2.6 (Архитектурные улучшения)
 
+## [2026-03-07] cPhysicsKAN (комплексная полярная версия) + Exp 2.6.9
+
+### Выполненные работы
+
+1. Реализована новая модель `cPhysicsKAN`
+   - Добавлен класс `cPhysicsKAN` в [osc_tools/ml/models/kan.py](osc_tools/ml/models/kan.py)
+   - Добавлены вспомогательные блоки:
+     - `ComplexPairDropout` — согласованный dropout для пары `[A, φ]`
+     - `ComplexPhysicsKANBlock` — KAN-обработка амплитуды и фазы с комплексным residual-сложением
+   - Реализованы физические операции в полярной форме:
+     - умножение: $A=A_1\cdot A_2$, $\varphi=\varphi_1+\varphi_2$
+     - деление: $A=A_1/A_2$, $\varphi=\varphi_1-\varphi_2$
+
+2. Добавлены ограничения и инварианты модели
+   - Модель принимает только чётное число каналов (пары амплитуда/фаза)
+   - На уровне эксперимента зафиксировано использование только `feature_mode='phase_polar'`
+   - Нормализация применяется только к амплитудам
+
+3. Интеграция в пайплайн обучения
+   - Экспорт модели добавлен в [osc_tools/ml/models/__init__.py](osc_tools/ml/models/__init__.py)
+   - Регистрация в раннере добавлена в [osc_tools/ml/runner.py](osc_tools/ml/runner.py)
+
+4. Добавлен эксперимент `2.6.9_stride`
+   - Конфигурация добавлена в [scripts/phase2_experiments/run_phase2_6.py](scripts/phase2_experiments/run_phase2_6.py)
+   - Параметры данных и обучения аналогичны `2.6.1_stride`
+   - Для `light/medium/heavy` добавлены отдельные профили сложности `cPhysicsKAN`
+
+5. Тестирование
+   - Обновлены unit-тесты в [tests/unit/test_ml_models_kan.py](tests/unit/test_ml_models_kan.py):
+     - smoke test `forward` для `cPhysicsKAN`
+     - проверка инварианта чётности каналов
+     - контрактные проверки формул `mul/div` в полярной форме
+
 ## [2026-02-10] Exp 2.6.8 и обновление визуализации уверенности
 
 ### Выполненные работы

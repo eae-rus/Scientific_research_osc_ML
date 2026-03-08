@@ -249,9 +249,9 @@ def benchmark_model_cpu(exp_dir: Path, config: Dict[str, Any], iterations: int =
                 elif model_name == 'ResNet1D':
                     from osc_tools.ml.models.resnet import ResNet1D
                     models_map = {'ResNet1D': ResNet1D}
-                elif model_name in ['SimpleKAN', 'ConvKAN', 'PhysicsKAN']:
-                    from osc_tools.ml.models.kan import SimpleKAN, ConvKAN, PhysicsKAN
-                    models_map = {'SimpleKAN': SimpleKAN, 'ConvKAN': ConvKAN, 'PhysicsKAN': PhysicsKAN}
+                elif model_name in ['SimpleKAN', 'ConvKAN', 'PhysicsKAN', 'cPhysicsKAN']:
+                    from osc_tools.ml.models.kan import SimpleKAN, ConvKAN, PhysicsKAN, cPhysicsKAN
+                    models_map = {'SimpleKAN': SimpleKAN, 'ConvKAN': ConvKAN, 'PhysicsKAN': PhysicsKAN, 'cPhysicsKAN': cPhysicsKAN}
                 elif model_name.startswith('Hierarchical'):
                     from osc_tools.ml.models.advanced import (
                         HierarchicalCNN, HierarchicalConvKAN, HierarchicalMLP,
@@ -466,12 +466,13 @@ def _create_model_from_config(config: Dict[str, Any]) -> Optional[nn.Module]:
             elif model_name == 'ResNet1D':
                 from osc_tools.ml.models.resnet import ResNet1D
                 model_cls = ResNet1D
-            elif model_name in ['SimpleKAN', 'ConvKAN', 'PhysicsKAN', 'PhysicsKANConditional']:
-                from osc_tools.ml.models.kan import SimpleKAN, ConvKAN, PhysicsKAN, PhysicsKANConditional
+            elif model_name in ['SimpleKAN', 'ConvKAN', 'PhysicsKAN', 'cPhysicsKAN', 'PhysicsKANConditional']:
+                from osc_tools.ml.models.kan import SimpleKAN, ConvKAN, PhysicsKAN, cPhysicsKAN, PhysicsKANConditional
                 models_map = {
                     'SimpleKAN': SimpleKAN,
                     'ConvKAN': ConvKAN,
                     'PhysicsKAN': PhysicsKAN,
+                    'cPhysicsKAN': cPhysicsKAN,
                     'PhysicsKANConditional': PhysicsKANConditional
                 }
                 model_cls = models_map.get(model_name)
@@ -1492,6 +1493,7 @@ def parse_experiment_info(folder_name: str) -> Dict[str, str]:
     models_map = {
         'SimpleMLP': 'MLP',
         'SimpleCNN': 'CNN',
+        'cPhysicsKAN': 'cPhysicsKAN',
         'ConvKAN': 'ConvKAN',
         'SimpleKAN': 'SimpleKAN',
         'PhysicsKAN': 'PhysicsKAN',
@@ -1500,11 +1502,18 @@ def parse_experiment_info(folder_name: str) -> Dict[str, str]:
     
     # Сначала ищем полное соответствие в имени
     found_model = False
-    for pattern, clean_name in models_map.items():
-        if pattern in folder_name:
-            info["model_family"] = clean_name
-            found_model = True
-            break
+    
+    # Сначала проверяем cPhysicsKAN, так как PhysicsKAN является подстрокой
+    if 'cPhysicsKAN' in folder_name:
+        info["model_family"] = "cPhysicsKAN"
+        found_model = True
+    
+    if not found_model:
+        for pattern, clean_name in models_map.items():
+            if pattern in folder_name:
+                info["model_family"] = clean_name
+                found_model = True
+                break
             
     # Если это иерархическая или гибридная модель и мы не нашли семейство явно
     if not found_model and info["arch_type"] in ("Hierarchical", "Hybrid"):
@@ -1603,6 +1612,7 @@ class ReportVisualizer:
             'SimpleKAN': '#e67e22',
             'ConvKAN': '#e74c3c',
             'PhysicsKAN': '#9b59b6',
+            'cPhysicsKAN': '#f1c40f',  # Желтый/Золотой для комплексной модели
             'Unknown': '#34495e'
         }
 
@@ -1662,7 +1672,7 @@ class ReportVisualizer:
 
         # Создаем колонку для отображения: CNN (H)
         df_plot['DisplayModel'] = df_plot.apply(
-            lambda x: f"{x['Model']} ({x['arch_type'][0]})" if 'arch_type' in x else x['Model'], axis=1
+            lambda x: f"{x['Model']} ({x['arch_type'][0]})" if 'arch_type' in x and x['arch_type'] != 'Base' else x['Model'], axis=1
         )
 
         sns.scatterplot(
@@ -1670,6 +1680,7 @@ class ReportVisualizer:
             x='CPU Inf (ms)', 
             y='Val F1', 
             hue='Model', 
+            palette=self.color_map,
             style='Complexity',
             s=120, 
             alpha=0.8
@@ -2128,7 +2139,8 @@ if __name__ == "__main__":
     if MANUAL_RUN or len(sys.argv) <= 1 or args.root is None:
         # === MANUAL CONFIG ===
         # ROOT_DIR: Папка, где лежат результаты ваших экспериментов (metrics.jsonl, config.json).
-        ROOT_DIR = "experiments/phase2_5" #_новые опыты/Exp_2.5.1/Exp_2.5.1.0_ConvKAN_light_raw_none_base" # пока сюда скопировал часть 2.6
+        # ROOT_DIR = "experiments/phase2_5" #_новые опыты/Exp_2.5.1/Exp_2.5.1.0_ConvKAN_light_raw_none_base" # пока сюда скопировал часть 2.6
+        ROOT_DIR = "experiments/Для_запуска_стат"
         # OUTPUT_DIR: Папка, куда сохранять ВСЕ отчёты / файлы / картинки
         OUTPUT_DIR = "reports/Exp_2_5_and_start_Exp_2_6"
         # GENERATE_PLOTS: Если True, для каждого эксперимента будут построены графики обучения.

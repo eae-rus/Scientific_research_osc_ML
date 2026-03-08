@@ -21,12 +21,12 @@ from osc_tools.ml.dataset import OscillogramDataset
 from osc_tools.ml.labels import get_target_columns, prepare_labels_for_experiment
 
 # Переиспользуем проверенные функции создания модели и загрузки весов
-from scripts.evaluation.aggregate_reports import _create_model_from_config, _load_state_dict_safe
+from scripts.evaluation.aggregate_reports import _create_model_from_config, _load_state_dict_safe, parse_experiment_info
 
 
 def _find_experiment_dir(exp_name: str) -> Path:
     """Ищет директорию эксперимента по имени в папке experiments."""
-    exp_root = ROOT_DIR / "experiments"
+    exp_root = ROOT_DIR / "experiments" / "Для_запуска_стат"
     if not exp_root.exists():
         raise FileNotFoundError(f"Не найдена папка experiments: {exp_root}")
 
@@ -442,9 +442,9 @@ def generate_marking_plots_for_model(
     if model is None:
         raise ValueError("Не удалось создать модель из config.json")
 
-    ckpt_path = exp_dir / "best_model.pt"
+    ckpt_path = exp_dir / "final_model.pt"
     if not ckpt_path.exists():
-        ckpt_path = exp_dir / "final_model.pt"
+        ckpt_path = exp_dir / "best_model.pt"
     if not ckpt_path.exists():
         raise FileNotFoundError(f"Не найден чекпоинт модели (best/final) в {exp_dir}")
 
@@ -575,7 +575,9 @@ def generate_marking_plots_for_model(
             pred_labels = {k: v[mask] for k, v in pred_labels.items()}
             pred_probs = {k: v[mask] for k, v in pred_probs.items()}
 
-        title = f"{exp_name} | {file_name}"
+        info = parse_experiment_info(exp_name)
+        model_family = info.get("model_family", "Model")
+        title = f"{model_family} | {exp_name} | {file_name}"
         name_hash = hashlib.md5(f"{file_name}|{exp_name}".encode('utf-8')).hexdigest()[:12]
         out_name = f"mark_{name_hash}.png"
         out_path = out_dir / out_name
@@ -632,12 +634,12 @@ if __name__ == "__main__":
 
     if MANUAL_RUN or args.exp is None:
         # EXP_NAME = "Exp_2.6.1_PhysicsKAN_medium_phase_polar_stride_base_weights_aug"
-        EXP_NAME = "Exp_2.6.8_PhysicsKAN_medium_phase_polar_stride_base_win_any_weights_aug"
+        EXP_NAME = "Exp_2.6.9_cPhysicsKAN_heavy_phase_polar_stride_base_weights_aug"
         OUTPUT_DIR = "reports/Exp_2_5_and_start_Exp_2_6"
         DATA_DIR = "data/ml_datasets"
         INCLUDE_ZERO_CURRENT = True
         INCLUDE_ZERO_VOLTAGE = True
-        SPLIT = 'test'  # 'train' или 'test'
+        SPLIT = 'train'  # 'train' или 'test'
         PLOT_MODE = 'confidence'  # 'discrete' или 'confidence'
         THRESHOLD = 0.5
 
