@@ -252,21 +252,40 @@ def _plot_marking(
     labels = list(real_labels.keys())
     amplitudes = np.arange(1, len(labels) + 1)
 
+    # Стандартная раскраска: Желтый (A), Зеленый (B), Красный (C), Синий (N)
+    PHASE_COLORS = {
+        'A': '#FFD700', 'B': '#228B22', 'C': '#FF4500', 'N': '#1E90FF',
+        'IA': '#FFD700', 'IB': '#228B22', 'IC': '#FF4500', 'IN': '#1E90FF',
+        'UA': '#FFD700', 'UB': '#228B22', 'UC': '#FF4500', 'UN': '#1E90FF'
+    }
+
+    def get_color(name: str, idx: int) -> str:
+        name_uc = str(name).upper()
+        # Поиск по ключам IA/UA и т.д.
+        for key in ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']:
+            if key in name_uc: return PHASE_COLORS[key]
+        # Поиск по суффиксам/вхождениям фаз
+        if ' A' in name_uc or name_uc.endswith(' A') or name_uc.endswith('(A)'): return PHASE_COLORS['A']
+        if ' B' in name_uc or name_uc.endswith(' B') or name_uc.endswith('(B)'): return PHASE_COLORS['B']
+        if ' C' in name_uc or name_uc.endswith(' C') or name_uc.endswith('(C)'): return PHASE_COLORS['C']
+        if ' N' in name_uc or name_uc.endswith(' N') or name_uc.endswith('(N)'): return PHASE_COLORS['N']
+        return f"C{idx % 10}"
+
     if plot_mode == 'confidence':
         height_ratios = [1.1, 1.1, 0.8] + [0.6] * len(labels)
         fig = plt.figure(figsize=(16, 10 + 1.2 * len(labels)))
         gs = fig.add_gridspec(nrows=3 + len(labels), ncols=1, height_ratios=height_ratios)
 
         ax_curr = fig.add_subplot(gs[0, 0])
-        for name, data in currents.items():
-            ax_curr.plot(time_axis, data, label=name, linewidth=1.2)
+        for i, (name, data) in enumerate(currents.items()):
+            ax_curr.plot(time_axis, data, label=name, color=get_color(name, i), linewidth=1.2)
         ax_curr.set_ylabel("Токи")
         ax_curr.legend(loc='upper right')
         ax_curr.grid(True, alpha=0.3, linestyle=':')
 
         ax_volt = fig.add_subplot(gs[1, 0], sharex=ax_curr)
-        for name, data in voltages.items():
-            ax_volt.plot(time_axis, data, label=name, linewidth=1.2)
+        for i, (name, data) in enumerate(voltages.items()):
+            ax_volt.plot(time_axis, data, label=name, color=get_color(name, i), linewidth=1.2)
         ax_volt.set_ylabel("Напряжения")
         ax_volt.legend(loc='upper right')
         ax_volt.grid(True, alpha=0.3, linestyle=':')
@@ -274,13 +293,13 @@ def _plot_marking(
         ax_disc = fig.add_subplot(gs[2, 0], sharex=ax_curr)
         # Реальные метки — в плюс
         for i, label_name in enumerate(labels):
-            color = f"C{i % 10}"
+            color = get_color(label_name, i)
             real_positions = [amplitudes[i] if v else np.nan for v in real_labels[label_name]]
             ax_disc.scatter(time_axis, real_positions, marker='o', s=16, alpha=0.8, color=color, label=f"GT: {label_name}")
 
         # Предсказания — в минус
         for i, label_name in enumerate(labels):
-            color = f"C{i % 10}"
+            color = get_color(label_name, i)
             pred_positions = [-amplitudes[i] if v else np.nan for v in pred_labels[label_name]]
             ax_disc.scatter(time_axis, pred_positions, marker='s', s=14, alpha=0.6, color=color, label=f"Pred: {label_name}")
 
@@ -299,7 +318,7 @@ def _plot_marking(
 
         for i, label_name in enumerate(labels):
             ax_conf = fig.add_subplot(gs[3 + i, 0], sharex=ax_curr)
-            color = f"C{i % 10}"
+            color = get_color(label_name, i)
             probs = pred_probs.get(label_name, np.zeros_like(time_axis)) if pred_probs else np.zeros_like(time_axis)
 
             ax_conf.plot(time_axis, probs, color=color, linewidth=1.2, alpha=0.6)
@@ -324,15 +343,15 @@ def _plot_marking(
     plt.figure(figsize=(16, 10))
 
     ax_curr = plt.subplot(3, 1, 1)
-    for name, data in currents.items():
-        ax_curr.plot(time_axis, data, label=name, linewidth=1.2)
+    for i, (name, data) in enumerate(currents.items()):
+        ax_curr.plot(time_axis, data, label=name, color=get_color(name, i), linewidth=1.2)
     ax_curr.set_ylabel("Токи")
     ax_curr.legend(loc='upper right')
     ax_curr.grid(True, alpha=0.3, linestyle=':')
 
     ax_volt = plt.subplot(3, 1, 2)
-    for name, data in voltages.items():
-        ax_volt.plot(time_axis, data, label=name, linewidth=1.2)
+    for i, (name, data) in enumerate(voltages.items()):
+        ax_volt.plot(time_axis, data, label=name, color=get_color(name, i), linewidth=1.2)
     ax_volt.set_ylabel("Напряжения")
     ax_volt.legend(loc='upper right')
     ax_volt.grid(True, alpha=0.3, linestyle=':')
@@ -341,13 +360,13 @@ def _plot_marking(
 
     # Реальные метки — в плюс
     for i, label_name in enumerate(labels):
-        color = f"C{i % 10}"
+        color = get_color(label_name, i)
         real_positions = [amplitudes[i] if v else np.nan for v in real_labels[label_name]]
         ax_disc.scatter(time_axis, real_positions, marker='o', s=16, alpha=0.8, color=color, label=f"GT: {label_name}")
 
     # Предсказания — в минус
     for i, label_name in enumerate(labels):
-        color = f"C{i % 10}"
+        color = get_color(label_name, i)
         pred_positions = [-amplitudes[i] if v else np.nan for v in pred_labels[label_name]]
         ax_disc.scatter(time_axis, pred_positions, marker='s', s=14, alpha=0.6, color=color, label=f"Pred: {label_name}")
 
@@ -369,6 +388,7 @@ def _plot_marking(
     plt.tight_layout()
     plt.savefig(out_path, dpi=150)
     plt.close()
+
 
 
 def generate_marking_plots_for_model(
