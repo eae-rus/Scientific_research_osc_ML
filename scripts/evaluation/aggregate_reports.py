@@ -11,7 +11,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 import time
 import numpy as np
-from sklearn.metrics import accuracy_score, f1_score, balanced_accuracy_score, roc_auc_score
+from sklearn.metrics import accuracy_score, f1_score, balanced_accuracy_score, roc_auc_score, confusion_matrix
 from tqdm import tqdm
 import re
 import logging
@@ -23,9 +23,48 @@ sys.path.append(str(ROOT_DIR_PROJECT))
 # Глобальный логгер (инициализируется в aggregate_reports)
 _eval_logger: Optional[logging.Logger] = None
 
+# =============================================================================
+# КОНСТАНТЫ ИНЖЕНЕРНОЙ ВИЗУАЛИЗАЦИИ
+# =============================================================================
+
+ENGINEERING_CLASS_MAP: Dict[int, str] = {
+    0: 'Норма',
+    1: 'Коммутация',
+    2: 'Аномалия',
+    3: 'Авария'
+}
+
+# Тонкая настройка: любые отдельные графики можно отключать через этот словарь.
+PLOT_SWITCHES_DEFAULT: Dict[str, bool] = {
+    'engineering_bars_per_model_absolute': True,
+    'engineering_bars_per_model_relative': True,
+    'engineering_bars_combined_absolute': True,
+    'engineering_bars_combined_relative': True,
+    'custom_cm_per_model_absolute': True,
+    'custom_cm_per_model_relative': True
+}
+
+ENGINEERING_PLOTS_SUBDIR_DEFAULT = 'engineering_plots'
+MAX_MODELS_FOR_COMBINED_DEFAULT = 10
+
+# Частые шаблоны названий файлов с предсказаниями.
+PREDICTION_FILE_PATTERNS: Dict[str, List[str]] = {
+    'best': [
+        'test_predictions_best.csv',
+        'predictions_best.csv',
+        'best_predictions.csv',
+        'best_test_predictions.csv'
+    ],
+    'final': [
+        'test_predictions_final.csv',
+        'predictions_final.csv',
+        'final_predictions.csv',
+        'final_test_predictions.csv'
+    ]
+}
+
 from osc_tools.data_management.dataset_manager import DatasetManager
 from osc_tools.ml.precomputed_dataset import PrecomputedDataset
-from osc_tools.ml.dataset import OscillogramDataset
 from osc_tools.ml.labels import get_target_columns, prepare_labels_for_experiment
 
 # Импорт расширенного визуализатора
@@ -777,8 +816,6 @@ def evaluate_model_full(
     all_preds = []
     all_targets = []
     all_probs = []  # Сырые вероятности для ROC-AUC
-    all_targets_ml23 = []
-    all_preds_ml23 = []
     
     try:
         with torch.no_grad():
@@ -814,8 +851,6 @@ def evaluate_model_full(
                     all_preds.extend(pred_binary)
                     all_targets.extend(y[:, :4].cpu().numpy())
                     all_probs.extend(probs.cpu().numpy())
-                    all_preds_ml23.extend([])
-                    all_targets_ml23.extend([])
                 else:
                     raise ValueError(f"Unknown mode: {mode}")
     except Exception as e:
@@ -924,8 +959,38 @@ def evaluate_model_full(
         'per_class_f1': per_class_f1,
         'per_class_support': per_class_support,
         'roc_auc': roc_auc,
-        'per_class_roc_auc': per_class_roc_auc
+        'per_class_roc_auc': per_class_roc_auc,
+        'y_true': all_targets,
+        'y_pred': all_preds
     }
+
+
+def _save_predictions_csv(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    save_path: Path
+) -> None:
+    """
+    Сохраняет предсказания (y_true, y_pred) в CSV для дальнейшего анализа.
+    Для multilabel: сохраняет argmax-классы (4 макро-класса РЗА).
+    """
+    try:
+        y_true_arr = np.asarray(y_true)
+        y_pred_arr = np.asarray(y_pred)
+
+        # Multilabel → argmax (по 4 макро-классам)
+        if y_true_arr.ndim == 2:
+            y_true_cls = y_true_arr.argmax(axis=1)
+            y_pred_cls = y_pred_arr.argmax(axis=1)
+        else:
+            y_true_cls = y_true_arr.ravel()
+            y_pred_cls = y_pred_arr.ravel()
+
+        df_out = pd.DataFrame({'y_true': y_true_cls, 'y_pred': y_pred_cls})
+        df_out.to_csv(save_path, index=False)
+    except Exception as exc:
+        if _eval_logger:
+            _eval_logger.warning(f"Не удалось сохранить предсказания в {save_path}: {exc}")
 
 
 def evaluate_full_test_dataset(
@@ -953,6 +1018,9 @@ def evaluate_full_test_dataset(
     Returns:
         Словарь с метриками для best и final моделей
     """
+    # Флаг: сохранять ли CSV с предсказаниями (для инженерных графиков)
+    save_predictions = True
+
     results = {
         'full_best_acc': 0.0,
         'full_best_f1': 0.0,
@@ -981,8 +1049,6 @@ def evaluate_full_test_dataset(
         'full_per_class_support_count': 0
     }
 
-    config_path = exp_dir / "config.json"
-    
     try:
         # Определяем устройство
         if use_gpu and torch.cuda.is_available():
@@ -1306,6 +1372,12 @@ def evaluate_full_test_dataset(
                     if best_support and len(best_support) == len(target_cols):
                         results['full_best_per_class_support_map'] = dict(zip(target_cols, best_support))
                         results['full_per_class_support_count'] = len(best_support)
+                    # Сохраняем CSV с предсказаниями Best для инженерных графиков
+                    if save_predictions and 'y_true' in best_metrics and 'y_pred' in best_metrics:
+                        _save_predictions_csv(
+                            best_metrics['y_true'], best_metrics['y_pred'],
+                            exp_dir / 'test_predictions_best.csv'
+                        )
                 if used_device.type != device.type:
                     device = used_device
 
@@ -1370,6 +1442,12 @@ def evaluate_full_test_dataset(
                         results['full_per_class_support_count'] = max(
                             results.get('full_per_class_support_count', 0),
                             len(final_support)
+                        )
+                    # Сохраняем CSV с предсказаниями Final для инженерных графиков
+                    if save_predictions and 'y_true' in final_metrics and 'y_pred' in final_metrics:
+                        _save_predictions_csv(
+                            final_metrics['y_true'], final_metrics['y_pred'],
+                            exp_dir / 'test_predictions_final.csv'
                         )
                 if used_device.type != device.type:
                     device = used_device
@@ -1563,6 +1641,569 @@ def extract_base_exp_id(text: str) -> str:
         return match.group(1)
     return "Unknown"
 
+
+# =============================================================================
+# BEST VS FINAL + ИНЖЕНЕРНЫЕ ГРАФИКИ
+# =============================================================================
+
+def _normalize_prediction_columns(df_pred: pd.DataFrame) -> pd.DataFrame:
+    """
+    Приводит таблицу предсказаний к колонкам y_true / y_pred.
+    """
+    candidate_true = ['y_true', 'true', 'target', 'label_true', 'gt']
+    candidate_pred = ['y_pred', 'pred', 'prediction', 'label_pred']
+
+    result = df_pred.copy()
+    true_col = next((c for c in candidate_true if c in result.columns), None)
+    pred_col = next((c for c in candidate_pred if c in result.columns), None)
+
+    if true_col is None or pred_col is None:
+        raise ValueError("В таблице предсказаний не найдены колонки y_true/y_pred")
+
+    if true_col != 'y_true':
+        result = result.rename(columns={true_col: 'y_true'})
+    if pred_col != 'y_pred':
+        result = result.rename(columns={pred_col: 'y_pred'})
+
+    result = result.dropna(subset=['y_true', 'y_pred']).copy()
+    result['y_true'] = pd.to_numeric(result['y_true'], errors='coerce')
+    result['y_pred'] = pd.to_numeric(result['y_pred'], errors='coerce')
+    result = result.dropna(subset=['y_true', 'y_pred']).copy()
+    result['y_true'] = result['y_true'].astype(int)
+    result['y_pred'] = result['y_pred'].astype(int)
+    return result
+
+
+def _load_prediction_file_safe(file_path: Path) -> Optional[pd.DataFrame]:
+    """
+    Безопасная загрузка CSV с предсказаниями.
+    """
+    if not file_path.exists():
+        return None
+    try:
+        df = pd.read_csv(file_path)
+        return _normalize_prediction_columns(df)
+    except Exception as exc:
+        if _eval_logger:
+            _eval_logger.warning(f"Не удалось прочитать {file_path}: {exc}")
+        return None
+
+
+def load_best_final_predictions(exp_dir: Path) -> Dict[str, Optional[pd.DataFrame]]:
+    """
+    Ищет файлы предсказаний Best/Final в каталоге эксперимента.
+    """
+    loaded: Dict[str, Optional[pd.DataFrame]] = {'best': None, 'final': None}
+    for version in ('best', 'final'):
+        for pattern in PREDICTION_FILE_PATTERNS[version]:
+            candidate = exp_dir / pattern
+            df_pred = _load_prediction_file_safe(candidate)
+            if df_pred is not None:
+                loaded[version] = df_pred
+                break
+    return loaded
+
+
+def select_best_final_by_test_f1(
+    df_best: Optional[pd.DataFrame],
+    df_final: Optional[pd.DataFrame]
+) -> Dict[str, Any]:
+    """
+    Выбирает версию весов по максимальному F1-macro на тесте.
+    """
+    f1_best = np.nan
+    f1_final = np.nan
+
+    if df_best is not None and not df_best.empty:
+        f1_best = f1_score(df_best['y_true'], df_best['y_pred'], average='macro', zero_division=0)
+    if df_final is not None and not df_final.empty:
+        f1_final = f1_score(df_final['y_true'], df_final['y_pred'], average='macro', zero_division=0)
+
+    if np.isnan(f1_best) and np.isnan(f1_final):
+        return {
+            'selected_version': 'N/A',
+            'selected_f1': np.nan,
+            'best_f1': np.nan,
+            'final_f1': np.nan,
+            'selected_df': None
+        }
+
+    if np.isnan(f1_final) or (not np.isnan(f1_best) and f1_best >= f1_final):
+        return {
+            'selected_version': 'Best',
+            'selected_f1': float(f1_best),
+            'best_f1': float(f1_best),
+            'final_f1': float(f1_final) if not np.isnan(f1_final) else np.nan,
+            'selected_df': df_best
+        }
+
+    return {
+        'selected_version': 'Final',
+        'selected_f1': float(f1_final),
+        'best_f1': float(f1_best) if not np.isnan(f1_best) else np.nan,
+        'final_f1': float(f1_final),
+        'selected_df': df_final
+    }
+
+
+def add_best_final_selection_columns(summary_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Добавляет в сводную таблицу колонки выбора версии весов (Best/Final).
+    """
+    df = summary_df.copy()
+    if 'Full Best F1' not in df.columns or 'Full Final F1' not in df.columns:
+        return df
+
+    best_vals = pd.to_numeric(df['Full Best F1'], errors='coerce').fillna(-1.0)
+    final_vals = pd.to_numeric(df['Full Final F1'], errors='coerce').fillna(-1.0)
+
+    df['Selected Weights'] = np.where(best_vals >= final_vals, 'Best', 'Final')
+    df['Selected Test F1'] = np.where(best_vals >= final_vals, best_vals, final_vals)
+    return df
+
+
+def build_engineering_stats(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    class_map: Dict[int, str]
+) -> pd.DataFrame:
+    """
+    Считает инженерные метрики по классам: TP, FP, FN, ошибки и размер GT.
+    """
+    rows: List[Dict[str, Any]] = []
+    for class_id, class_name in class_map.items():
+        true_mask = (y_true == class_id)
+        pred_mask = (y_pred == class_id)
+
+        tp = int(np.sum(true_mask & pred_mask))
+        fp = int(np.sum(~true_mask & pred_mask))
+        fn = int(np.sum(true_mask & ~pred_mask))
+        gt = int(np.sum(true_mask))
+        err = fp + fn
+
+        rows.append({
+            'class_id': class_id,
+            'class_name': class_name,
+            'tp': tp,
+            'fp': fp,
+            'fn': fn,
+            'errors': err,
+            'gt': gt
+        })
+
+    return pd.DataFrame(rows)
+
+
+def plot_engineering_bidirectional_bars(
+    stats_df: pd.DataFrame,
+    title: str,
+    save_path: Path,
+    relative: bool = False,
+    show_fp_fn_split: bool = True
+) -> None:
+    """
+    Двунаправленные инженерные столбцы:
+    вверх TP (зелёный), вниз ошибки (красный, опционально split FP/FN),
+    плюс контурный столбец GT.
+    """
+    plot_df = stats_df.copy()
+    if relative:
+        gt_safe = plot_df['gt'].replace(0, np.nan)
+        plot_df['tp_v'] = (plot_df['tp'] / gt_safe * 100.0).fillna(0.0)
+        plot_df['fp_v'] = (plot_df['fp'] / gt_safe * 100.0).fillna(0.0)
+        plot_df['fn_v'] = (plot_df['fn'] / gt_safe * 100.0).fillna(0.0)
+        plot_df['err_v'] = (plot_df['errors'] / gt_safe * 100.0).fillna(0.0)
+        plot_df['gt_v'] = 100.0
+        y_label = 'Доля от GT класса, %'
+    else:
+        plot_df['tp_v'] = plot_df['tp']
+        plot_df['fp_v'] = plot_df['fp']
+        plot_df['fn_v'] = plot_df['fn']
+        plot_df['err_v'] = plot_df['errors']
+        plot_df['gt_v'] = plot_df['gt']
+        y_label = 'Количество окон'
+
+    x = np.arange(len(plot_df))
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Контур GT: визуально показывает реальный объём класса.
+    ax.bar(
+        x,
+        plot_df['gt_v'].to_numpy(),
+        width=0.72,
+        fill=False,
+        edgecolor='black',
+        linewidth=1.3,
+        linestyle='--',
+        alpha=0.7,
+        label='Ground Truth'
+    )
+
+    ax.bar(x, plot_df['tp_v'].to_numpy(), width=0.55, color='#2ca02c', alpha=0.85, label='TP')
+
+    if show_fp_fn_split:
+        ax.bar(x, -plot_df['fp_v'].to_numpy(), width=0.55, color='#ff7f0e', alpha=0.85, label='FP')
+        ax.bar(
+            x,
+            -plot_df['fn_v'].to_numpy(),
+            width=0.55,
+            bottom=-plot_df['fp_v'].to_numpy(),
+            color='#d62728',
+            alpha=0.85,
+            label='FN'
+        )
+    else:
+        ax.bar(x, -plot_df['err_v'].to_numpy(), width=0.55, color='#d62728', alpha=0.85, label='Ошибки (FP+FN)')
+
+    ax.axhline(0, color='black', linewidth=1.0)
+    ax.set_xticks(x)
+    ax.set_xticklabels(plot_df['class_name'].tolist(), rotation=0)
+    ax.set_ylabel(y_label)
+    ax.set_title(title)
+    ax.grid(True, axis='y', alpha=0.25)
+    ax.legend(loc='upper right')
+
+    fig.tight_layout()
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(save_path, dpi=180)
+    plt.close(fig)
+
+
+def build_error_severity_matrix(class_ids: List[int]) -> np.ndarray:
+    """
+    Матрица важности ошибок для РЗА.
+    Повышаем вес фатальной путаницы Коммутация->Авария (1->3).
+    """
+    n = len(class_ids)
+    severity = np.ones((n, n), dtype=float)
+    np.fill_diagonal(severity, 0.0)
+
+    id_to_idx = {cid: i for i, cid in enumerate(class_ids)}
+
+    if 1 in id_to_idx and 3 in id_to_idx:
+        severity[id_to_idx[1], id_to_idx[3]] = 1.8
+    if 3 in id_to_idx and 2 in id_to_idx:
+        severity[id_to_idx[3], id_to_idx[2]] = 1.2
+
+    return severity
+
+
+def plot_custom_confusion_matrix(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    class_map: Dict[int, str],
+    title: str,
+    save_path: Path,
+    relative: bool = False,
+    severity_matrix: Optional[np.ndarray] = None
+) -> None:
+    """
+    Кастомная матрица ошибок:
+    - диагональ: зелёный слой (правильные ответы),
+    - вне диагонали: красно-жёлтый слой (ошибки) с возможным усилением severity.
+    """
+    class_ids = list(class_map.keys())
+    labels = [class_map[i] for i in class_ids]
+    cm = confusion_matrix(y_true, y_pred, labels=class_ids).astype(float)
+
+    if relative:
+        row_sum = cm.sum(axis=1, keepdims=True)
+        cm = np.divide(cm, row_sum, out=np.zeros_like(cm), where=row_sum > 0) * 100.0
+
+    if severity_matrix is None:
+        severity_matrix = build_error_severity_matrix(class_ids)
+
+    cm_diag = np.zeros_like(cm)
+    cm_off = cm.copy()
+    for i in range(cm.shape[0]):
+        cm_diag[i, i] = cm[i, i]
+        cm_off[i, i] = 0.0
+
+    cm_off_weighted = cm_off * severity_matrix
+
+    fig, ax = plt.subplots(figsize=(8.2, 6.8))
+
+    sns.heatmap(
+        cm_off_weighted,
+        cmap='YlOrRd',
+        annot=False,
+        cbar=True,
+        xticklabels=labels,
+        yticklabels=labels,
+        linewidths=0.7,
+        linecolor='white',
+        ax=ax
+    )
+
+    sns.heatmap(
+        cm_diag,
+        cmap='Greens',
+        annot=False,
+        cbar=False,
+        xticklabels=labels,
+        yticklabels=labels,
+        mask=(cm_diag == 0),
+        linewidths=0.7,
+        linecolor='white',
+        ax=ax
+    )
+
+    # Явная подпись значений по реальной матрице (до severity-взвешивания).
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            val = cm[i, j]
+            txt = f"{val:.1f}%" if relative else f"{int(val)}"
+            ax.text(j + 0.5, i + 0.5, txt, ha='center', va='center', color='black', fontsize=9)
+
+    ax.set_title(title)
+    ax.set_xlabel('Predicted class')
+    ax.set_ylabel('True class')
+    fig.tight_layout()
+
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(save_path, dpi=180)
+    plt.close(fig)
+
+
+def plot_engineering_bars_combined(
+    selected_by_model: Dict[str, pd.DataFrame],
+    class_map: Dict[int, str],
+    save_path: Path,
+    relative: bool = False
+) -> None:
+    """
+    Обобщённый график по нескольким моделям: для каждого класса
+    показываем TP вверх и ошибки вниз по цветам моделей.
+    """
+    if not selected_by_model:
+        return
+
+    model_names = list(selected_by_model.keys())
+    class_ids = list(class_map.keys())
+    class_labels = [class_map[c] for c in class_ids]
+
+    per_model_stats: Dict[str, pd.DataFrame] = {}
+    for model_name, pred_df in selected_by_model.items():
+        per_model_stats[model_name] = build_engineering_stats(
+            pred_df['y_true'].to_numpy(),
+            pred_df['y_pred'].to_numpy(),
+            class_map
+        )
+
+    n_models = len(model_names)
+    x = np.arange(len(class_ids))
+    width = 0.78 / max(n_models, 1)
+    cmap = plt.get_cmap('tab10')
+
+    fig, ax = plt.subplots(figsize=(max(11, 1.8 * len(class_ids) + n_models), 6.6))
+
+    for idx, model_name in enumerate(model_names):
+        st = per_model_stats[model_name].copy()
+        if relative:
+            gt_safe = st['gt'].replace(0, np.nan)
+            tp_vals = (st['tp'] / gt_safe * 100.0).fillna(0.0).to_numpy()
+            err_vals = (st['errors'] / gt_safe * 100.0).fillna(0.0).to_numpy()
+        else:
+            tp_vals = st['tp'].to_numpy()
+            err_vals = st['errors'].to_numpy()
+
+        offset = (idx - (n_models - 1) / 2.0) * width
+        color = cmap(idx % 10)
+
+        ax.bar(x + offset, tp_vals, width=width * 0.95, color=color, alpha=0.82)
+        ax.bar(x + offset, -err_vals, width=width * 0.95, color=color, alpha=0.35)
+
+    # Ground Truth рисуем отдельными горизонтальными полками по каждому классу.
+    # Это убирает визуальный шум наклонных линий между соседними классами.
+    first_stats = next(iter(per_model_stats.values())).copy()
+    if relative:
+        gt_reference = np.full(len(class_ids), 100.0)
+    else:
+        gt_reference = first_stats['gt'].to_numpy(dtype=float)
+
+    cluster_half = (n_models * width) / 2.0
+    for i, gt_val in enumerate(gt_reference):
+        x_left = x[i] - cluster_half
+        x_right = x[i] + cluster_half
+        ax.hlines(
+            y=gt_val,
+            xmin=x_left,
+            xmax=x_right,
+            colors='black',
+            linestyles='--',
+            linewidth=2.3,
+            alpha=0.9,
+            zorder=6
+        )
+        ax.scatter(
+            x[i],
+            gt_val,
+            s=36,
+            color='black',
+            alpha=0.95,
+            zorder=7
+        )
+
+    # Легенду строим вручную, чтобы не дублировать объекты.
+    legend_handles = [
+        plt.Line2D([0], [0], color='black', lw=1.3, linestyle='--', label='Ground Truth'),
+        plt.Rectangle((0, 0), 1, 1, facecolor='#2ca02c', alpha=0.8, label='TP (вверх)'),
+        plt.Rectangle((0, 0), 1, 1, facecolor='#d62728', alpha=0.35, label='Ошибки (вниз)')
+    ]
+    for idx, model_name in enumerate(model_names):
+        legend_handles.append(
+            plt.Line2D([0], [0], color=cmap(idx % 10), lw=5, label=model_name)
+        )
+
+    ax.axhline(0, color='black', linewidth=1.0)
+    ax.set_xticks(x)
+    ax.set_xticklabels(class_labels)
+    ax.set_title('Обобщённые инженерные столбцы по выбранным моделям')
+    ax.set_ylabel('Доля от GT, %' if relative else 'Количество окон')
+    ax.grid(True, axis='y', alpha=0.25)
+    ax.legend(handles=legend_handles, bbox_to_anchor=(1.02, 1), loc='upper left')
+
+    fig.tight_layout()
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(save_path, dpi=190)
+    plt.close(fig)
+
+
+def choose_selected_predictions_per_experiment(
+    exp_predictions: Dict[str, Dict[str, Optional[pd.DataFrame]]]
+) -> Tuple[pd.DataFrame, Dict[str, pd.DataFrame]]:
+    """
+    Для каждого эксперимента выбирает Best/Final по максимальному F1-macro.
+    """
+    selection_rows: List[Dict[str, Any]] = []
+    selected: Dict[str, pd.DataFrame] = {}
+
+    for exp_name, versions in exp_predictions.items():
+        picked = select_best_final_by_test_f1(versions.get('best'), versions.get('final'))
+        selection_rows.append({
+            'Experiment': exp_name,
+            'Best Test F1': picked['best_f1'],
+            'Final Test F1': picked['final_f1'],
+            'Selected Weights': picked['selected_version'],
+            'Selected Test F1': picked['selected_f1']
+        })
+        if picked['selected_df'] is not None:
+            selected[exp_name] = picked['selected_df']
+
+    return pd.DataFrame(selection_rows), selected
+
+
+def collapse_selected_to_model_level(
+    selected_by_experiment: Dict[str, pd.DataFrame],
+    selection_df: pd.DataFrame,
+    summary_df: pd.DataFrame
+) -> Dict[str, pd.DataFrame]:
+    """
+    Переход от уровня эксперимента к уровню типа модели.
+    Для каждой модели берётся лучший (по Selected Test F1) эксперимент.
+    """
+    if selection_df.empty or not selected_by_experiment:
+        return {}
+
+    merged = selection_df.merge(
+        summary_df[['Experiment', 'Model']].drop_duplicates(),
+        how='left',
+        on='Experiment'
+    )
+    merged = merged.sort_values('Selected Test F1', ascending=False)
+
+    selected_model_level: Dict[str, pd.DataFrame] = {}
+    for _, row in merged.iterrows():
+        model_name = str(row.get('Model', 'Unknown'))
+        exp_name = str(row['Experiment'])
+        if model_name in selected_model_level:
+            continue
+        if exp_name in selected_by_experiment:
+            selected_model_level[model_name] = selected_by_experiment[exp_name]
+    return selected_model_level
+
+
+def generate_engineering_plot_pack(
+    selected_by_model: Dict[str, pd.DataFrame],
+    output_dir: Path,
+    plot_switches: Dict[str, bool],
+    class_map: Dict[int, str],
+    max_models_for_combined: int
+) -> None:
+    """
+    Генерирует пакет инженерных графиков по выбранным моделям.
+    """
+    if not selected_by_model:
+        return
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Всегда строим независимые графики для каждой модели.
+    for model_name, pred_df in selected_by_model.items():
+        stats_df = build_engineering_stats(
+            pred_df['y_true'].to_numpy(),
+            pred_df['y_pred'].to_numpy(),
+            class_map
+        )
+
+        model_slug = re.sub(r'[^a-zA-Z0-9._-]+', '_', model_name)
+
+        if plot_switches.get('engineering_bars_per_model_absolute', True):
+            plot_engineering_bidirectional_bars(
+                stats_df,
+                title=f"{model_name}: инженерные столбцы (абсолютные)",
+                save_path=output_dir / f"bars_{model_slug}_abs.png",
+                relative=False,
+                show_fp_fn_split=True
+            )
+
+        if plot_switches.get('engineering_bars_per_model_relative', True):
+            plot_engineering_bidirectional_bars(
+                stats_df,
+                title=f"{model_name}: инженерные столбцы (относительные)",
+                save_path=output_dir / f"bars_{model_slug}_rel.png",
+                relative=True,
+                show_fp_fn_split=True
+            )
+
+        if plot_switches.get('custom_cm_per_model_absolute', True):
+            plot_custom_confusion_matrix(
+                pred_df['y_true'].to_numpy(),
+                pred_df['y_pred'].to_numpy(),
+                class_map=class_map,
+                title=f"{model_name}: кастомная матрица ошибок (абсолютные)",
+                save_path=output_dir / f"cm_{model_slug}_abs.png",
+                relative=False
+            )
+
+        if plot_switches.get('custom_cm_per_model_relative', True):
+            plot_custom_confusion_matrix(
+                pred_df['y_true'].to_numpy(),
+                pred_df['y_pred'].to_numpy(),
+                class_map=class_map,
+                title=f"{model_name}: кастомная матрица ошибок (% по строкам)",
+                save_path=output_dir / f"cm_{model_slug}_rel.png",
+                relative=True
+            )
+
+    # Общий график строим только если моделей не слишком много.
+    if len(selected_by_model) <= max_models_for_combined:
+        if plot_switches.get('engineering_bars_combined_absolute', True):
+            plot_engineering_bars_combined(
+                selected_by_model=selected_by_model,
+                class_map=class_map,
+                save_path=output_dir / 'bars_combined_abs.png',
+                relative=False
+            )
+        if plot_switches.get('engineering_bars_combined_relative', True):
+            plot_engineering_bars_combined(
+                selected_by_model=selected_by_model,
+                class_map=class_map,
+                save_path=output_dir / 'bars_combined_rel.png',
+                relative=True
+            )
+
+
 # =============================================================================
 # ВИЗУАЛИЗАЦИЯ
 # =============================================================================
@@ -1705,7 +2346,10 @@ def aggregate_reports(
     full_eval: bool = False, 
     data_dir: str = None, 
     lang: str = 'ru',
-    advanced_plots: bool = False
+    advanced_plots: bool = False,
+    plot_switches: Optional[Dict[str, bool]] = None,
+    engineering_subdir: str = ENGINEERING_PLOTS_SUBDIR_DEFAULT,
+    max_models_for_combined: int = MAX_MODELS_FOR_COMBINED_DEFAULT
 ):
     """
     Агрегирует отчеты обучения из всех поддиректорий.
@@ -1719,6 +2363,9 @@ def aggregate_reports(
         data_dir: Путь к директории с датасетами (для full_eval).
         lang: Язык графиков ('ru' или 'en').
         advanced_plots: Генерировать ли расширенные графики (Парето, heatmaps и др.).
+        plot_switches: Словарь включения/выключения инженерных графиков.
+        engineering_subdir: Подпапка в report для инженерных графиков.
+        max_models_for_combined: Порог количества моделей для единого общего графика.
     
     Оптимизация:
         - Загружает существующий summary_report.csv для пропуска уже посчитанных моделей
@@ -1728,6 +2375,12 @@ def aggregate_reports(
     root_path = Path(root_dir)
     experiments = []
     all_histories = {}
+    effective_plot_switches = PLOT_SWITCHES_DEFAULT.copy()
+    if plot_switches:
+        effective_plot_switches.update(plot_switches)
+
+    # Здесь храним найденные предсказания для выбора Best/Final по тесту.
+    exp_predictions: Dict[str, Dict[str, Optional[pd.DataFrame]]] = {}
     
     # Подготовка путей вывода
     if output_dir:
@@ -1803,6 +2456,9 @@ def aggregate_reports(
             # Загрузка данных
             metrics = load_metrics(metrics_file)
             config = load_config(config_file) if config_file.exists() else {}
+
+            # Пробуем заранее прочитать предсказания Best/Final (если файлы присутствуют).
+            exp_predictions[exp_dir.name] = load_best_final_predictions(exp_dir)
             
             if not metrics:
                 continue
@@ -2027,6 +2683,57 @@ def aggregate_reports(
 
     # Создать DataFrame и заполнить пропуски
     df = pd.DataFrame(experiments).fillna(0)
+
+    # Добавляем выбор между Best/Final на уровне агрегированных full_eval метрик.
+    df = add_best_final_selection_columns(df)
+
+    # Перезагружаем предсказания: CSV-файлы могли появиться после full_eval в этом прогоне.
+    for exp_dir in all_exp_dirs:
+        fresh = load_best_final_predictions(exp_dir)
+        if fresh.get('best') is not None or fresh.get('final') is not None:
+            exp_predictions[exp_dir.name] = fresh
+
+    # Если доступны файлы предсказаний, выбираем победителя по фактическому F1 на тесте.
+    prediction_selection_df, selected_by_experiment = choose_selected_predictions_per_experiment(exp_predictions)
+    if not prediction_selection_df.empty:
+        df = df.merge(prediction_selection_df, how='left', on='Experiment', suffixes=('', '_pred'))
+
+        # Если есть оба источника, оставляем приоритет за выбором по реальным предсказаниям.
+        if 'Selected Weights_pred' in df.columns:
+            df['Selected Weights'] = df['Selected Weights_pred'].where(
+                df['Selected Weights_pred'].notna(),
+                df.get('Selected Weights', 'N/A')
+            )
+            df = df.drop(columns=['Selected Weights_pred'])
+        if 'Selected Test F1_pred' in df.columns:
+            df['Selected Test F1'] = df['Selected Test F1_pred'].where(
+                df['Selected Test F1_pred'].notna(),
+                df.get('Selected Test F1', np.nan)
+            )
+            df = df.drop(columns=['Selected Test F1_pred'])
+
+    # Генерация инженерных графиков (в отдельной подпапке report), если есть валидные предсказания.
+    if out_path and selected_by_experiment:
+        selected_by_model = collapse_selected_to_model_level(
+            selected_by_experiment=selected_by_experiment,
+            selection_df=prediction_selection_df,
+            summary_df=df
+        )
+        if selected_by_model:
+            eng_dir = out_path / engineering_subdir
+            print(f"\n=== Генерация инженерных графиков ({len(selected_by_model)} моделей) → {eng_dir} ===")
+            generate_engineering_plot_pack(
+                selected_by_model=selected_by_model,
+                output_dir=eng_dir,
+                plot_switches=effective_plot_switches,
+                class_map=ENGINEERING_CLASS_MAP,
+                max_models_for_combined=max_models_for_combined
+            )
+        else:
+            print("[!] Не удалось сопоставить предсказания с моделями для инженерных графиков.")
+    elif out_path:
+        print("[!] CSV-файлы предсказаний (test_predictions_best/final.csv) не найдены.")
+        print("    Запустите с --full-eval чтобы пересчитать и создать файлы предсказаний.")
     
     # --- ВИЗУАЛИЗАЦИЯ (Report Engine 2.0) ---
     if plot:
@@ -2076,7 +2783,9 @@ def aggregate_reports(
         viz.plot_pareto(df)
 
     # Сортировка
-    if full_eval and 'Full Best F1' in df.columns:
+    if 'Selected Test F1' in df.columns:
+        df = df.sort_values(['ExpID', 'Selected Test F1'], ascending=[True, False])
+    elif full_eval and 'Full Best F1' in df.columns:
         df = df.sort_values(['ExpID', 'Full Best F1'], ascending=[True, False])
     else:
         df = df.sort_values(['ExpID', 'Val F1'], ascending=[True, False])
@@ -2084,6 +2793,8 @@ def aggregate_reports(
     # Отобразить топ-результаты
     print("\nАгрегированный отчет (Топ-20):")
     cols_to_show = ['ExpID', 'Model', 'Complexity', 'Val F1', 'CPU Inf (ms)']
+    if 'Selected Weights' in df.columns:
+        cols_to_show.extend(['Selected Weights', 'Selected Test F1'])
     if full_eval: cols_to_show.extend(['Full Best F1', 'Full Best ROC-AUC'])
     cols_to_show = [c for c in cols_to_show if c in df.columns]
     print(df[cols_to_show].head(20).to_markdown(index=False, floatfmt=".4f"))
@@ -2092,6 +2803,11 @@ def aggregate_reports(
     if out_path:
         df.to_csv(csv_path, index=False)
         print(f"\nCSV-отчет сохранен: {csv_path}")
+
+        if not prediction_selection_df.empty:
+            pred_select_path = out_path / 'selected_best_final_by_predictions.csv'
+            prediction_selection_df.to_csv(pred_select_path, index=False)
+            print(f"Таблица выбора Best/Final по предсказаниям сохранена: {pred_select_path}")
         
         combine_training_histories(root_path, history_path)
         print(f"История обучения объединена: {history_path}")
@@ -2154,6 +2870,19 @@ if __name__ == "__main__":
         ADVANCED_PLOTS = True
         # LANG: Язык графиков ('ru' или 'en').
         LANG = "ru"
+        # Подпапка для инженерных графиков (Task 1/2).
+        ENGINEERING_SUBDIR = ENGINEERING_PLOTS_SUBDIR_DEFAULT
+        # Если моделей больше порога, общий график не строим (строим только отдельные).
+        MAX_MODELS_FOR_COMBINED = MAX_MODELS_FOR_COMBINED_DEFAULT
+        # Тонкая настройка: отключайте отдельные графики при необходимости.
+        PLOT_SWITCHES = {
+            'engineering_bars_per_model_absolute': True,
+            'engineering_bars_per_model_relative': True,
+            'engineering_bars_combined_absolute': True,
+            'engineering_bars_combined_relative': True,
+            'custom_cm_per_model_absolute': True,
+            'custom_cm_per_model_relative': True
+        }
         
         print(f"[!] Запуск в ручном режиме (MANUAL_RUN)")
     else:
@@ -2165,6 +2894,9 @@ if __name__ == "__main__":
         RUN_FULL_EVAL = args.full_eval
         ADVANCED_PLOTS = args.advanced_plots
         LANG = args.lang
+        ENGINEERING_SUBDIR = ENGINEERING_PLOTS_SUBDIR_DEFAULT
+        MAX_MODELS_FOR_COMBINED = MAX_MODELS_FOR_COMBINED_DEFAULT
+        PLOT_SWITCHES = PLOT_SWITCHES_DEFAULT.copy()
 
     if ROOT_DIR:
         aggregate_reports(
@@ -2175,4 +2907,7 @@ if __name__ == "__main__":
             full_eval=RUN_FULL_EVAL,
             lang=LANG,
             data_dir=args.data_dir,
-            advanced_plots=ADVANCED_PLOTS)
+            advanced_plots=ADVANCED_PLOTS,
+            plot_switches=PLOT_SWITCHES,
+            engineering_subdir=ENGINEERING_SUBDIR,
+            max_models_for_combined=MAX_MODELS_FOR_COMBINED)
