@@ -19,7 +19,11 @@ sys.path.append(str(ROOT_DIR))
 from osc_tools.data_management.dataset_manager import DatasetManager
 from osc_tools.ml.dataset import OscillogramDataset
 from osc_tools.ml.labels import get_target_columns, prepare_labels_for_experiment
-from osc_tools.analysis.ozz_physics import predict_ozz_physics, u0_threshold_raw_to_normalized
+from osc_tools.analysis.ozz_physics import (
+    precompute_ozz_features,
+    classify_window_from_features,
+    u0_threshold_raw_to_normalized,
+)
 
 # Переиспользуем проверенные функции создания модели и загрузки весов
 from scripts.evaluation._core.model_utils import _create_model_from_config, _load_state_dict_safe
@@ -427,7 +431,7 @@ def generate_marking_plots_for_model(
         plot_mode: 'discrete' (как раньше) или 'confidence' (уверенность по классам).
         threshold: Порог для подсветки уверенности.
         inference_backend: 'auto' | 'nn' | 'physics'.
-            'physics' — использовать формульный алгоритм predict_ozz_physics.
+            'physics' — использовать физический алгоритм классификации.
         selected_files: Ограничить список файлов конкретным набором.
         file_time_ranges_ms: Диапазоны времени по файлам (мс) для обрезки графиков.
     """
@@ -458,6 +462,10 @@ def generate_marking_plots_for_model(
 
     # Подготовка данных
     dm = DatasetManager(str(data_dir))
+    # Для physics backend на train split нужна отдельная нормализация,
+    # потому что load_train_df() возвращает сырые (ненормализованные) данные,
+    # а precomputed=True для train не предусмотрен.
+    _norm_df = None  # lazy-загрузка при необходимости
     if split == 'train':
         data_df = dm.load_train_df() # precomputed=False
         split_label = 'train'
@@ -550,28 +558,38 @@ def generate_marking_plots_for_model(
             signal_cols = current_cols + voltage_cols
             signal_arr = file_df.select(signal_cols).to_numpy().astype(np.float64)
 
+            # Нормализация для train split (test данные уже нормализованы через precomputed)
+            if split == 'train':
+                if _norm_df is None:
+                    _norm_coef_path = dm._get_norm_coef_path()
+                    if _norm_coef_path.exists():
+                        _norm_df = pl.read_csv(_norm_coef_path, infer_schema_length=0)
+                if _norm_df is not None:
+                    signal_arr = dm._apply_normalization(signal_arr, file_name, _norm_df)
+
             model_params = config.get('model', {}).get('params', {})
             u0_thr_norm = float(model_params.get('u0_threshold', u0_threshold_raw_to_normalized(10.0)))
             delay_samples = int(model_params.get('operate_delay_samples', 32))
             delay_periods = float(model_params.get('operate_delay_periods', 0.0))
 
+            # Предрассчёт фич один раз на файл
+            features = precompute_ozz_features(signal_arr, fs=sampling_rate)
+
             for start_idx in indices:
                 end_idx = start_idx + window_size
-                window = signal_arr[start_idx:end_idx, :]
-                pred_class = predict_ozz_physics(
-                    window,
-                    fs=sampling_rate,
+                pred_result = classify_window_from_features(
+                    features, start=start_idx, end=end_idx,
                     u0_threshold=u0_thr_norm,
                     operate_delay_samples=delay_samples,
                     operate_delay_periods=delay_periods,
                 )
 
                 prob_vec = np.zeros(len(target_cols), dtype=np.float32)
-                if pred_class is not None:
+                if pred_result is not None:
                     prob_vec[0] = 1.0
-                    if pred_class == 1 and len(target_cols) > 1:
+                    if 1 in pred_result and len(target_cols) > 1:
                         prob_vec[1] = 1.0
-                    elif pred_class == 2 and len(target_cols) > 2:
+                    if 2 in pred_result and len(target_cols) > 2:
                         prob_vec[2] = 1.0
 
                 end_cover = min(start_idx + window_size, n_points)

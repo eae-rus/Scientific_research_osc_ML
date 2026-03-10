@@ -19,10 +19,12 @@ from typing import Dict, List, Any
 ROOT_DIR = Path(__file__).parent.parent.parent
 sys.path.append(str(ROOT_DIR))
 
-from osc_tools.analysis.ozz_physics import predict_ozz_physics
+from osc_tools.analysis.ozz_physics import (
+    precompute_ozz_features,
+    classify_window_from_features,
+)
 from osc_tools.data_management.dataset_manager import DatasetManager
 from osc_tools.data_management.ozz_split import add_ozz_target_columns, OZZ_TARGET_COLS
-from osc_tools.ml.labels import clean_labels
 
 
 def _get_signal_cols(df: pl.DataFrame) -> List[str]:
@@ -93,27 +95,32 @@ def evaluate_physics_on_files(
                     win_any[:window_size - 1] = 0
                 target_data[col] = win_any
 
+        # Предрассчёт фич один раз на весь файл
+        features = precompute_ozz_features(signals, fs=fs)
+
         for start_idx in range(0, n - window_size + 1):
-            window = signals[start_idx:start_idx + window_size, :]  # (T, 8)
-            pred_class = predict_ozz_physics(window, fs=fs, **physics_kwargs)
+            end_idx = start_idx + window_size
+            pred_result = classify_window_from_features(
+                features, start=start_idx, end=end_idx,
+                **physics_kwargs,
+            )
 
             # Формируем вектор предсказания (3 класса: OZZ, decay, dpozz)
-            # Классы НЕ взаимоисключающие: ДПОЗЗ и затухающее → тоже ОЗЗ
+            # classify_window_from_features возвращает set или None (multi-label)
             pred_vec = np.zeros(len(target_cols), dtype=np.int8)
             prob_vec = np.zeros(len(target_cols), dtype=np.float32)
-            if pred_class is not None:
-                # Любой ненулевой класс → ОЗЗ (Target_OZZ = 1)
+            if pred_result is not None:
                 pred_vec[0] = 1     # Target_OZZ
                 prob_vec[0] = 1.0
-                if pred_class == 1:     # Затухающее
+                if 1 in pred_result:    # Затухающее
                     pred_vec[1] = 1
                     prob_vec[1] = 1.0
-                elif pred_class == 2:   # ДПОЗЗ
+                if 2 in pred_result:    # ДПОЗЗ
                     pred_vec[2] = 1
                     prob_vec[2] = 1.0
 
             # Целевая метка: point (конец окна) или any_in_window (уже вычислено)
-            target_idx = start_idx + window_size - 1
+            target_idx = end_idx - 1
             target_vec = np.array(
                 [target_data[col][target_idx] for col in target_cols],
                 dtype=np.int8
@@ -270,9 +277,8 @@ def main():
     dm = DatasetManager(str(DATA_DIR), norm_coef_path=str(NORM_COEF_PATH))
     dm.ensure_train_test_split()
 
-    print("Загрузка тестовых данных...")
-    test_df = dm.load_test_df(precomputed=False)
-    test_df = clean_labels(test_df)
+    print("Загрузка тестовых данных (precomputed — нормализованные)...")
+    test_df = dm.load_test_df(precomputed=True)
     test_df = add_ozz_target_columns(test_df)
 
     print(f"Тестовая выборка: {len(test_df):,} точек")
@@ -291,23 +297,6 @@ def main():
 
     # Сохраняем как эксперимент
     save_as_experiment(results)
-
-    # Также на train для полноты
-    print("\nОценка на обучающей выборке...")
-    train_df = dm.load_train_df()
-    train_df = clean_labels(train_df)
-    train_df = add_ozz_target_columns(train_df)
-
-    results_train = evaluate_physics_on_files(
-        train_df,
-        window_size=320,
-        fs=1600,
-        target_window_mode='any_in_window'
-    )
-
-    print(f"\nTrain F1 Macro: {results_train['f1_macro']:.4f}")
-    save_as_experiment(results_train, experiment_name="PhysicsBaseline_OZZ_train")
-
 
 if __name__ == "__main__":
     main()

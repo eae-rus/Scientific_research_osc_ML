@@ -24,7 +24,7 @@
 
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple, Set
 from scipy.signal import hilbert, find_peaks
 
 
@@ -89,7 +89,6 @@ def _rms_fundamental_sliding(signal: np.ndarray, fs: int = 1600, f0: float = 50.
     return rms_arr
 
 
-
 def _envelope(signal: np.ndarray) -> np.ndarray:
     """
     Огибающая амплитуды сигнала через преобразование Гильберта.
@@ -103,9 +102,101 @@ def _envelope(signal: np.ndarray) -> np.ndarray:
     return np.abs(analytic).astype(np.float64)
 
 
-def predict_ozz_physics(
-    window_data: np.ndarray,
+# ---------------------------------------------------------------------------
+#  Предрассчёт фич для всего файла (один раз)
+# ---------------------------------------------------------------------------
+
+class OzzPrecomputedFeatures:
+    """Предрассчитанные фичи для физического алгоритма ОЗЗ на весь файл.
+
+    Позволяет избежать повторных вычислений при скольжении окна 320 точек.
+
+    Attributes:
+        u0_3: Массив 3U0(t) длины T.
+        u0_rms_arr: Массив RMS первой гармоники за каждый период.
+                    Длина (T - n_period + 1). rms[i] → окно [i, i+n_period).
+        du0: Производная 3U0 длины (T - 1).
+        envelope: Огибающая 3U0 длины T.
+        n_period: Число отсчётов в 1 периоде (fs/f0).
+        fs: Частота дискретизации.
+    """
+
+    __slots__ = ('u0_3', 'u0_rms_arr', 'du0', 'envelope', 'n_period', 'fs')
+
+    def __init__(self, u0_3: np.ndarray, u0_rms_arr: np.ndarray,
+                 du0: np.ndarray, envelope: np.ndarray,
+                 n_period: int, fs: int):
+        self.u0_3 = u0_3
+        self.u0_rms_arr = u0_rms_arr
+        self.du0 = du0
+        self.envelope = envelope
+        self.n_period = n_period
+        self.fs = fs
+
+
+def precompute_ozz_features(
+    signals: np.ndarray,
     fs: int = 1600,
+    f0: float = 50.0,
+) -> OzzPrecomputedFeatures:
+    """Предрассчёт всех фич для файла целиком (один раз).
+
+    Args:
+        signals: Массив формы (T, 8) — [IA, IB, IC, IN, UA, UB, UC, UN].
+                 Или (8, T) — автоматически транспонируется.
+        fs: Частота дискретизации, Гц.
+        f0: Номинальная частота сети, Гц.
+
+    Returns:
+        OzzPrecomputedFeatures с готовыми массивами.
+    """
+    data = np.asarray(signals, dtype=np.float64)
+    # Если форма (8, T) — транспонируем в (T, 8)
+    if data.ndim == 2 and data.shape[0] == 8 and data.shape[1] != 8:
+        data = data.T
+
+    ua = data[:, 4]
+    ub = data[:, 5]
+    uc = data[:, 6]
+    u0_3 = ua + ub + uc
+
+    u0_rms_arr = _rms_fundamental_sliding(u0_3, fs=fs, f0=f0)
+
+    dt = 1.0 / fs
+    du0 = np.diff(u0_3) / dt
+
+    env = _envelope(u0_3)
+
+    n_period = int(round(fs / f0))
+
+    return OzzPrecomputedFeatures(
+        u0_3=u0_3,
+        u0_rms_arr=u0_rms_arr,
+        du0=du0,
+        envelope=env,
+        n_period=n_period,
+        fs=fs,
+    )
+
+
+def _max_consecutive_run(mask: np.ndarray) -> int:
+    """Максимальная длина подряд идущих True в булевом массиве."""
+    if len(mask) == 0:
+        return 0
+    # diff между 0 и 1: группируем серии единиц
+    padded = np.concatenate(([0], mask.astype(np.int8), [0]))
+    diffs = np.diff(padded)
+    starts = np.where(diffs == 1)[0]
+    ends = np.where(diffs == -1)[0]
+    if len(starts) == 0:
+        return 0
+    return int(np.max(ends - starts))
+
+
+def classify_window_from_features(
+    features: OzzPrecomputedFeatures,
+    start: int,
+    end: int,
     u0_threshold: float = DEFAULT_U0_THRESHOLD_NORM,
     deriv_peak_sigma: float = 5.0,
     min_dpozz_peaks: int = 3,
@@ -113,133 +204,96 @@ def predict_ozz_physics(
     envelope_tail_fraction: float = 0.25,
     operate_delay_samples: int = 32,
     operate_delay_periods: float = 1.0,
-) -> Optional[int]:
-    """
-    Физический (детерминированный) алгоритм классификации ОЗЗ по окну данных.
+) -> Optional[Set[int]]:
+    """Классифицирует окно [start, end) по предрассчитанным фичам.
 
-    Алгоритм работает по напряжениям фаз: 3U0 = UA + UB + UC.
-    Последовательно проверяет критерии ДПОЗЗ, затухающего ОЗЗ и устойчивого ОЗЗ.
+    Возвращает НАБОР активных классов (multi-label), т.к. ДПОЗЗ и затухающее
+    ОЗЗ могут наблюдаться одновременно в одном окне 320 точек.
+    Без базового факта ОЗЗ (класс 0) остальные классы не проверяются.
 
     Args:
-        window_data: Массив формы (T, 8) — 8 нормализованных каналов
-                     [IA, IB, IC, IN, UA, UB, UC, UN].
-                     Или (8, T) — автоматически транспонируется.
-        fs: Частота дискретизации, Гц (по умолчанию 1600).
-        u0_threshold: Порог RMS первой гармоники 3U0 (в нормализованных единицах).
-                  По умолчанию соответствует 10В вторичных при Ub_base=100В:
-                  u0_threshold = 10 / (3*100) ≈ 0.0333.
-                      Ниже этого значения — нормальный режим.
+        features: Предрассчитанные фичи файла (OzzPrecomputedFeatures).
+        start: Начало окна (индекс отсчёта, включительно).
+        end: Конец окна (индекс отсчёта, исключительно). end - start = window_size.
+        u0_threshold: Порог RMS первой гармоники 3U0. Ниже — нормальный режим.
         deriv_peak_sigma: Порог пиков производной в единицах СКО.
-                          Пик считается значимым, если |dU0/dt| > deriv_peak_sigma * std(dU0).
         min_dpozz_peaks: Минимальное число значимых пиков производной для ДПОЗЗ.
         decay_ratio: Если огибающая в конце окна < decay_ratio * max(огибающая),
                      считаем режим затухающим.
         envelope_tail_fraction: Доля конца окна для оценки затухания (0..1).
-        operate_delay_samples: Выдержка времени в отсчётах.
-            Если событие обнаружено слишком близко к концу окна и не успевает
-            отработать заданную выдержку, возвращается None.
+        operate_delay_samples: Выдержка времени: число ПОДРЯД идущих отсчётов
+            с RMS выше порога. Используется если operate_delay_periods <= 0.
         operate_delay_periods: Выдержка времени в периодах сети 50 Гц.
             Преобразуется в отсчёты: periods * fs / 50.
             Если > 0, имеет приоритет над operate_delay_samples.
 
     Returns:
-        0 — ОЗЗ (любое, включая подтипы)
-        1 — Затухающее ОЗЗ (подтип → ОЗЗ тоже = 1)
-        2 — ДПОЗЗ (подтип → ОЗЗ тоже = 1)
-        None — Нормальный режим (нет ОЗЗ)
-
-    Примечание:
-        Функция возвращает НАИБОЛЕЕ СПЕЦИФИЧНЫЙ класс.
-        При формировании multi-label вектора (Target_OZZ, Target_OZZ_decay,
-        Target_OZZ_dpozz) вызывающий код должен учитывать, что классы 1 и 2
-        являются подтипами класса 0 (ОЗЗ).
+        set({0})       — устойчивое ОЗЗ
+        set({0, 1})    — затухающее ОЗЗ
+        set({0, 2})    — ДПОЗЗ
+        set({0, 1, 2}) — ДПОЗЗ + затухающее одновременно
+        None           — нормальный режим (нет ОЗЗ)
     """
-    # --- Валидация и нормализация формы ---
-    data = np.asarray(window_data, dtype=np.float64)
-    if data.ndim != 2:
-        return None
-    # Если форма (8, T) — транспонируем в (T, 8)
-    if data.shape[0] == 8 and data.shape[1] != 8:
-        data = data.T
-    if data.shape[1] < 8:
-        return None
-
-    T = data.shape[0]
+    T = end - start
     if T < 2:
         return None
+    fs = features.fs
+    n_period = features.n_period
 
-    # --- Шаг 1: Вычисление 3U0 ---
-    # Каналы: [IA(0), IB(1), IC(2), IN(3), UA(4), UB(5), UC(6), UN(7)]
-    ua = data[:, 4]
-    ub = data[:, 5]
-    uc = data[:, 6]
-    u0_3 = ua + ub + uc  # 3U0(t)
-
-    # --- Шаг 2: Базовый критерий — скользящее RMS первой гармоники 3U0 ---
-    # Окно = 1 период сети (fs/f0 = 32 отсчёта для 1600 Гц / 50 Гц).
-    # Для каждой позиции: БПФ 32 точки → амплитуда f0 → RMS.
-    n_period = int(round(fs / 50.0))  # 32 отсчёта
-    u0_rms_arr = _rms_fundamental_sliding(u0_3, fs=fs)
-    if len(u0_rms_arr) == 0 or np.max(u0_rms_arr) < u0_threshold:
+    # --- Шаг 2: Срез скользящего RMS для текущего окна ---
+    # u0_rms_arr[i] соответствует периоду signal[i:i+n_period].
+    # Для окна [start, end) нужны позиции от start до (end - n_period).
+    rms_start = start
+    rms_end = end - n_period + 1
+    if rms_end <= rms_start or rms_end > len(features.u0_rms_arr):
+        return None
+    rms_slice = features.u0_rms_arr[rms_start:rms_end]
+    if len(rms_slice) == 0 or np.max(rms_slice) < u0_threshold:
         return None  # Нормальный режим
 
-    # --- Шаг 2.1: Выдержка времени (не-мгновенная отстройка) ---
+    # --- Шаг 2.1: Выдержка времени (подряд идущие отсчёты выше порога) ---
     if operate_delay_periods > 0:
         delay_samples = int(round(operate_delay_periods * fs / 50.0))
     else:
         delay_samples = int(max(0, operate_delay_samples))
 
     if delay_samples > 0:
-        # Находим первый отсчёт, где RMS (за период) превысил порог
-        above_idx = np.where(u0_rms_arr >= u0_threshold)[0]
-        if len(above_idx) == 0:
-            return None
-        # above_idx[0] — позиция в массиве u0_rms_arr,
-        # реальный отсчёт конца первого периода с превышением:
-        first_event_sample = int(above_idx[0]) + n_period - 1
-        # Если до конца окна меньше выдержки — считаем, что уставка не отработала.
-        if (T - 1 - first_event_sample) < delay_samples:
+        above_mask = rms_slice >= u0_threshold
+        max_run = _max_consecutive_run(above_mask)
+        if max_run < delay_samples:
             return None
 
-    # --- Шаг 3: Производная 3U0 ---
-    dt = 1.0 / fs
-    du0 = np.diff(u0_3) / dt
-    du0_std = np.std(du0)
+    # --- Базовый ОЗЗ подтверждён, собираем набор активных классов ---
+    active_classes: Set[int] = {0}
 
-    # --- Шаг 4: Критерий ДПОЗЗ (Класс 2) ---
-    # ДПОЗЗ: ступенчатая 3U0, множество резких всплесков dU0/dt
+    # --- Шаг 3-4: Производная 3U0 → критерий ДПОЗЗ ---
+    # du0 имеет длину (T_total - 1). Для окна [start, end) берём [start, end-1).
+    du0_slice = features.du0[start:end - 1]
+    du0_std = np.std(du0_slice)
+
+    env_slice = features.envelope[start:end]
+    tail_len = max(int(T * envelope_tail_fraction), 1)
+    env_tail_mean = np.mean(env_slice[-tail_len:])
+    env_max = np.max(env_slice)
+
     if du0_std > 1e-9:
         threshold_abs = deriv_peak_sigma * du0_std
-        # Минимальное расстояние между пиками — примерно полпериода (fs/f0/2)
         min_distance = max(int(fs / 50.0 / 2), 1)
-        peaks, _ = find_peaks(np.abs(du0), height=threshold_abs, distance=min_distance)
+        peaks, _ = find_peaks(np.abs(du0_slice), height=threshold_abs, distance=min_distance)
 
-        # Проверяем наличие «запертого заряда»: 3U0 не спадает до нуля
-        env = _envelope(u0_3)
-        tail_len = max(int(T * envelope_tail_fraction), 1)
-        env_tail_mean = np.mean(env[-tail_len:])
-        env_max = np.max(env)
         has_trapped_charge = (env_max > 1e-9) and (env_tail_mean > decay_ratio * env_max)
 
         if len(peaks) >= min_dpozz_peaks and has_trapped_charge:
-            return 2  # ДПОЗЗ
+            active_classes.add(2)  # ДПОЗЗ
 
-    # --- Шаг 5: Критерий затухающего ОЗЗ (Класс 1) ---
-    env = _envelope(u0_3)
-    env_max = np.max(env)
+    # --- Шаг 5: Критерий затухающего ОЗЗ ---
     if env_max > 1e-9:
-        tail_len = max(int(T * envelope_tail_fraction), 1)
-        env_tail_mean = np.mean(env[-tail_len:])
-        # Если конец окна значительно ниже пика — затухание
         if env_tail_mean < decay_ratio * env_max:
-            # Дополнительно: проверяем, что максимум ближе к началу (пробой в начале)
-            peak_pos = np.argmax(env)
+            peak_pos = np.argmax(env_slice)
             if peak_pos < T * 0.7:
-                return 1  # Затухающее ОЗЗ
+                active_classes.add(1)  # Затухающее ОЗЗ
 
-    # --- Шаг 6: Устойчивое ОЗЗ (Класс 0) ---
-    # Если 3U0 выше порога, не ДПОЗЗ и не затухает — устойчивое
-    return 0
+    return active_classes
 
 
 def predict_ozz_physics_batch(
@@ -248,23 +302,32 @@ def predict_ozz_physics_batch(
     **kwargs
 ) -> np.ndarray:
     """
-    Батчевый вариант predict_ozz_physics.
+    Батчевый вариант классификации ОЗЗ (multi-label).
 
     Args:
         windows: Массив формы (B, T, 8) или (B, 8, T).
         fs: Частота дискретизации.
-        **kwargs: Дополнительные параметры для predict_ozz_physics.
+        **kwargs: Дополнительные параметры для классификации.
 
     Returns:
-        Массив предсказаний (B,) dtype=int.
-        -1 означает «Норма» (None в одиночном варианте).
+        Массив предсказаний (B, 3) dtype=int8.
+        Колонки: [OZZ, Decay, DPOZZ]. 1 = активен, 0 = нет.
     """
     B = windows.shape[0]
-    results = np.full(B, -1, dtype=np.int32)
+    results = np.zeros((B, 3), dtype=np.int8)
     for i in range(B):
-        pred = predict_ozz_physics(windows[i], fs=fs, **kwargs)
-        if pred is not None:
-            results[i] = pred
+        data = np.asarray(windows[i], dtype=np.float64)
+        if data.ndim == 2:
+            if data.shape[0] == 8 and data.shape[1] != 8:
+                data = data.T
+            features = precompute_ozz_features(data, fs=fs)
+            pred = classify_window_from_features(features, 0, data.shape[0], **kwargs)
+            if pred is not None:
+                results[i, 0] = 1  # OZZ
+                if 1 in pred:
+                    results[i, 1] = 1  # Decay
+                if 2 in pred:
+                    results[i, 2] = 1  # DPOZZ
     return results
 
 
@@ -279,7 +342,7 @@ def evaluate_physics_baseline(
     """
     Оценивает физическую модель на DataFrame с осциллограммами.
 
-    Проходит по DataFrame скользящим окном, вызывает predict_ozz_physics
+    Проходит по DataFrame скользящим окном, выполняет классификацию
     и сравнивает с реальными метками.
 
     Args:
@@ -318,24 +381,28 @@ def evaluate_physics_baseline(
     # Извлекаем массивы
     signal_data = dataframe.select(signal_cols).to_numpy().astype(np.float64)
 
+    # Предрассчёт фич один раз на весь массив
+    features = precompute_ozz_features(signal_data, fs=fs)
+
     all_preds = []
     all_targets = []
 
     n_samples = len(dataframe)
     for start in range(0, n_samples - window_size + 1, stride):
         end = start + window_size
-        window = signal_data[start:end, :]  # (T, 8)
-        pred_class = predict_ozz_physics(window, fs=fs, **kwargs)
+        pred_result = classify_window_from_features(
+            features, start=start, end=end, **kwargs,
+        )
 
         # Формируем вектор предсказания (multi-label):
-        # ДПОЗЗ/затухающее также активируют общий класс ОЗЗ.
+        # classify_window_from_features возвращает set или None.
         pred_vec = np.zeros(len(target_cols), dtype=np.int8)
-        if pred_class is not None:
-            pred_vec[0] = 1  # Target_OZZ
-            if pred_class == 1 and len(target_cols) > 1:
-                pred_vec[1] = 1
-            elif pred_class == 2 and len(target_cols) > 2:
-                pred_vec[2] = 1
+        if pred_result is not None:
+            pred_vec[0] = 1  # Target_OZZ (класс 0 всегда в set)
+            if 1 in pred_result and len(target_cols) > 1:
+                pred_vec[1] = 1  # Target_OZZ_decay
+            if 2 in pred_result and len(target_cols) > 2:
+                pred_vec[2] = 1  # Target_OZZ_dpozz
 
         # Реальные метки (берём по последней точке окна — point mode)
         target_idx = end - 1

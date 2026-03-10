@@ -2,7 +2,7 @@
 Тесты для физической модели ОЗЗ/ДПОЗЗ и утилит разбиения.
 
 Покрытие:
-- predict_ozz_physics: синтетические сигналы для каждого класса
+- классификация ОЗЗ: синтетические сигналы для каждого класса
 - add_ozz_target_columns: корректность формирования целевых колонок
 - stratified_ozz_split: гарантия представительства классов
 """
@@ -12,8 +12,8 @@ import polars as pl
 import pytest
 
 from osc_tools.analysis.ozz_physics import (
-    predict_ozz_physics,
-    _rms_fundamental,
+    precompute_ozz_features,
+    classify_window_from_features,
     _rms_fundamental_sliding,
     _envelope,
     u0_threshold_raw_to_normalized,
@@ -44,7 +44,7 @@ def _make_window(fs=1600, duration_ms=200, ua=None, ub=None, uc=None):
 
 
 class TestPredictOzzPhysics:
-    """Тесты для predict_ozz_physics."""
+    """Тесты для классификации ОЗЗ."""
 
     def test_normal_mode_low_u0(self):
         """Если 3U0 ~ 0, должен вернуть None (норма)."""
@@ -55,7 +55,8 @@ class TestPredictOzzPhysics:
             ub=lambda t: 100 * np.sin(2 * np.pi * f * t - 2 * np.pi / 3),
             uc=lambda t: 100 * np.sin(2 * np.pi * f * t + 2 * np.pi / 3),
         )
-        result = predict_ozz_physics(window, fs=1600, u0_threshold=3.0)
+        features = precompute_ozz_features(window, fs=1600)
+        result = classify_window_from_features(features, 0, len(window), u0_threshold=3.0)
         assert result is None, f"Ожидалось None (норма), получено {result}"
 
     def test_stable_ozz(self):
@@ -68,8 +69,9 @@ class TestPredictOzzPhysics:
             ub=lambda t: A * np.sin(2 * np.pi * f * t),
             uc=lambda t: A * np.sin(2 * np.pi * f * t),
         )
-        result = predict_ozz_physics(window, fs=1600)
-        assert result == 0, f"Ожидалось 0 (устойчивое ОЗЗ), получено {result}"
+        features = precompute_ozz_features(window, fs=1600)
+        result = classify_window_from_features(features, 0, len(window))
+        assert result == {0}, f"Ожидалось {{0}} (устойчивое ОЗЗ), получено {result}"
 
     def test_decaying_ozz(self):
         """Затухающее ОЗЗ: экспоненциальный спад 3U0."""
@@ -80,8 +82,9 @@ class TestPredictOzzPhysics:
             ub=lambda t: 20.0 * np.exp(-15 * t) * np.sin(2 * np.pi * f * t),
             uc=lambda t: 20.0 * np.exp(-15 * t) * np.sin(2 * np.pi * f * t),
         )
-        result = predict_ozz_physics(window, fs=1600)
-        assert result == 1, f"Ожидалось 1 (затухающее ОЗЗ), получено {result}"
+        features = precompute_ozz_features(window, fs=1600)
+        result = classify_window_from_features(features, 0, len(window))
+        assert 0 in result and 1 in result, f"Ожидалось {{0, 1}} (затухающее ОЗЗ), получено {result}"
 
     def test_dpozz(self):
         """ДПОЗЗ: ступенчатое нарастание 3U0 с «запертым зарядом».
@@ -115,8 +118,9 @@ class TestPredictOzzPhysics:
         data[:, 5] = u0 / 3
         data[:, 6] = u0 / 3
 
-        result = predict_ozz_physics(data, fs=fs)
-        assert result == 2, f"Ожидалось 2 (ДПОЗЗ), получено {result}"
+        features = precompute_ozz_features(data, fs=fs)
+        result = classify_window_from_features(features, 0, T)
+        assert 0 in result and 2 in result, f"Ожидалось {{0, 2}} (ДПОЗЗ), получено {result}"
 
     def test_input_shape_transpose(self):
         """Проверка, что (8, T) автоматически транспонируется в (T, 8)."""
@@ -128,14 +132,25 @@ class TestPredictOzzPhysics:
             uc=lambda t: A * np.sin(2 * np.pi * f * t),
         )
         # Транспонируем в (8, T)
-        result = predict_ozz_physics(window.T, fs=1600)
-        assert result == 0, f"Ожидалось 0 после авто-транспонирования, получено {result}"
+        data = window.T
+        features = precompute_ozz_features(data, fs=1600)
+        # В features.u0_3 данные уже должны быть в (T,)
+        result = classify_window_from_features(features, 0, data.shape[1], operate_delay_periods=0.0)
+        assert result == {0}, f"Ожидалось {{0}} после авто-транспонирования, получено {result}"
 
     def test_empty_or_short_input(self):
         """Короткий или пустой вход → None."""
-        assert predict_ozz_physics(np.zeros((1, 8))) is None
-        assert predict_ozz_physics(np.zeros((0, 8))) is None
-        assert predict_ozz_physics(np.array([[1, 2, 3]])) is None  # < 8 каналов
+        # Для precompute_features и classify_window_from_features
+        def sub_test(d):
+            try:
+                f = precompute_ozz_features(d)
+                return classify_window_from_features(f, 0, d.shape[0] if d.ndim==2 else len(d))
+            except:
+                return None
+
+        assert sub_test(np.zeros((1, 8))) is None
+        assert sub_test(np.zeros((0, 8))) is None
+        assert sub_test(np.array([[1, 2, 3]])) is None  # < 8 каналов
 
     def test_raw_threshold_conversion_10v(self):
         """Проверка пересчёта уставки 10В в нормализованные единицы."""
@@ -151,11 +166,12 @@ class TestPredictOzzPhysics:
             uc=lambda t: 10.0 * np.sin(2 * np.pi * f * t),
         )
 
+        features = precompute_ozz_features(window, fs=1600)
         # Без выдержки — ОЗЗ детектируется.
-        assert predict_ozz_physics(window, fs=1600) == 0
+        assert classify_window_from_features(features, 0, len(window), operate_delay_samples=0, operate_delay_periods=0.0) == {0}
 
         # С выдержкой 500 отсчётов (> длины окна 320) — не успевает отработать.
-        assert predict_ozz_physics(window, fs=1600, operate_delay_samples=500) is None
+        assert classify_window_from_features(features, 0, len(window), operate_delay_samples=500, operate_delay_periods=0.0) is None
 
     def test_operate_delay_periods(self):
         """Выдержка в периодах эквивалентна выдержке в отсчётах."""
@@ -166,8 +182,70 @@ class TestPredictOzzPhysics:
             uc=lambda t: 10.0 * np.sin(2 * np.pi * f * t),
         )
 
+        features = precompute_ozz_features(window, fs=1600)
         # 1 период при fs=1600 и 50Гц -> 32 отсчёта, событие должно пройти.
-        assert predict_ozz_physics(window, fs=1600, operate_delay_periods=1.0) == 0
+        assert classify_window_from_features(features, 0, len(window), operate_delay_periods=1.0) == {0}
+
+
+class TestPrecomputeAndClassify:
+    """Тесты для двухэтапного API: precompute_ozz_features + classify_window_from_features."""
+
+    def test_precompute_shapes(self):
+        """Проверяем формы предрассчитанных массивов."""
+        T = 320
+        data = np.zeros((T, 8), dtype=np.float64)
+        features = precompute_ozz_features(data, fs=1600)
+        assert features.u0_3.shape == (T,)
+        assert features.du0.shape == (T - 1,)
+        assert features.envelope.shape == (T,)
+        assert features.n_period == 32
+        assert len(features.u0_rms_arr) == T - 32 + 1
+
+    def test_classify_matches_predict(self):
+        """classify_window_from_features должна давать корректный результат."""
+        f = 50
+        # Устойчивое ОЗЗ
+        window = _make_window(
+            ua=lambda t: 10.0 * np.sin(2 * np.pi * f * t),
+            ub=lambda t: 10.0 * np.sin(2 * np.pi * f * t),
+            uc=lambda t: 10.0 * np.sin(2 * np.pi * f * t),
+        )
+        features = precompute_ozz_features(window, fs=1600)
+        via_features = classify_window_from_features(features, start=0, end=320)
+        assert via_features == {0}
+
+    def test_classify_normal_matches(self):
+        """Для симметричной системы возвращается None."""
+        f = 50
+        window = _make_window(
+            ua=lambda t: 100 * np.sin(2 * np.pi * f * t),
+            ub=lambda t: 100 * np.sin(2 * np.pi * f * t - 2 * np.pi / 3),
+            uc=lambda t: 100 * np.sin(2 * np.pi * f * t + 2 * np.pi / 3),
+        )
+        features = precompute_ozz_features(window, fs=1600)
+        via_features = classify_window_from_features(features, start=0, end=320, u0_threshold=3.0)
+        assert via_features is None
+
+    def test_classify_subwindow(self):
+        """Классификация подокна длинного файла работает корректно."""
+        # Файл = 640 точек: первая половина — норма, вторая — ОЗЗ
+        T = 640
+        f = 50
+        data = np.zeros((T, 8), dtype=np.float64)
+        t = np.arange(T) / 1600
+        # Вторая половина: синфазные → 3U0 > 0
+        for ch in [4, 5, 6]:
+            data[320:, ch] = 10.0 * np.sin(2 * np.pi * f * t[320:])
+
+        features = precompute_ozz_features(data, fs=1600)
+
+        # Первое окно (0..320) — норма
+        result_first = classify_window_from_features(features, start=0, end=320)
+        assert result_first is None
+
+        # Второе окно (320..640) — ОЗЗ
+        result_second = classify_window_from_features(features, start=320, end=640)
+        assert result_second == {0}
 
 
 class TestRmsAndEnvelope:

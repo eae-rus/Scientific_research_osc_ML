@@ -192,12 +192,12 @@
     - Класс 0: Устойчивое ОЗЗ (ML_2_1 ∨ ML_2_1_1)
     - Класс 1: Затухающее ОЗЗ (ML_2_1_2)
     - Класс 2: ДПОЗЗ (ML_2_1_3)
-*   **Физическая Baseline-модель:** Детерминированный алгоритм `predict_ozz_physics()`:
+*   **Физическая Baseline-модель:** Детерминированный алгоритм классификации:
     - Расчёт $3U_0 = U_A + U_B + U_C$, RMS первой гармоники
     - ДПОЗЗ: пики производной + запертый заряд (Гильберт)
     - Затухающее: огибающая спадает ниже 30% от максимума
     - Устойчивое: стабильная $3U_0$ выше порога
-    - Реализация: [osc_tools/analysis/ozz_physics.py](osc_tools/analysis/ozz_physics.py)
+    - Реализация (`precompute_ozz_features`, `classify_window_from_features`): [osc_tools/analysis/ozz_physics.py](osc_tools/analysis/ozz_physics.py)
 *   **Нейросетевая модель:** `cPhysicsKAN` (комплексная полярная PhysicsKAN).
 *   **Конфигурации:**
     - `2.6.11_global_stride`: cPhysicsKAN + Global Balancing (light/medium/heavy)
