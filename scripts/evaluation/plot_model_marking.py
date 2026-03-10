@@ -22,7 +22,8 @@ from osc_tools.ml.labels import get_target_columns, prepare_labels_for_experimen
 from osc_tools.analysis.ozz_physics import predict_ozz_physics, u0_threshold_raw_to_normalized
 
 # Переиспользуем проверенные функции создания модели и загрузки весов
-from scripts.evaluation.aggregate_reports import _create_model_from_config, _load_state_dict_safe, parse_experiment_info
+from scripts.evaluation._core.model_utils import _create_model_from_config, _load_state_dict_safe
+from scripts.evaluation._core.config_resolvers import parse_experiment_info
 
 
 def _find_experiment_dir(exp_name: str) -> Path:
