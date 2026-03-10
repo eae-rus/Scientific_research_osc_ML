@@ -23,6 +23,7 @@
 """
 
 import numpy as np
+from numpy.lib.stride_tricks import sliding_window_view
 from typing import Optional, Dict, Any
 from scipy.signal import hilbert, find_peaks
 
@@ -50,34 +51,43 @@ def u0_threshold_raw_to_normalized(
 DEFAULT_U0_THRESHOLD_NORM = u0_threshold_raw_to_normalized()
 
 
-def _rms(signal: np.ndarray) -> float:
-    """Действующее значение (RMS) сигнала."""
-    if len(signal) == 0:
-        return 0.0
-    return float(np.sqrt(np.mean(signal ** 2)))
-
-
-def _rms_fundamental(signal: np.ndarray, fs: int = 1600, f0: float = 50.0) -> float:
+def _rms_fundamental_sliding(signal: np.ndarray, fs: int = 1600, f0: float = 50.0) -> np.ndarray:
     """
-    RMS первой гармоники (f0) через БПФ.
+    Массив RMS первой гармоники (f0) через скользящее БПФ с окном в 1 период.
+
+    Скользит окном N_period = round(fs/f0) точек по сигналу.
+    Для каждой позиции i вычисляет БПФ окна signal[i:i+N_period] и
+    извлекает амплитуду первой гармоники (бин 1).
+
+    При окне длиной N_period = fs/f0 разрешение по частоте = f0,
+    поэтому первая гармоника (f0) попадает ровно в бин с индексом 1.
 
     Args:
-        signal: временной ряд
+        signal: временной ряд длины T
         fs: частота дискретизации, Гц
         f0: номинальная частота, Гц
 
     Returns:
-        Действующее значение первой гармоники
+        Массив RMS значений длины (T - N_period + 1).
+        rms[i] соответствует окну signal[i:i+N_period].
     """
-    n = len(signal)
-    if n < 2:
-        return 0.0
-    spectrum = np.fft.rfft(signal)
-    freqs = np.fft.rfftfreq(n, d=1.0 / fs)
-    # Ищем индекс ближайший к f0
-    idx = int(np.argmin(np.abs(freqs - f0)))
-    magnitude = np.abs(spectrum[idx]) * 2.0 / n  # амплитуда
-    return float(magnitude / np.sqrt(2))  # RMS = A / sqrt(2)
+    n_period = int(round(fs / f0))  # 32 отсчёта для 1600/50
+    T = len(signal)
+    if T < n_period or n_period < 2:
+        return np.array([], dtype=np.float64)
+
+    # sliding_window_view создаёт view без копирования данных
+    windows = sliding_window_view(signal, n_period)  # (T - n_period + 1, n_period)
+
+    # Батчевое БПФ по всем окнам
+    spectra = np.fft.rfft(windows, axis=1)  # (n_windows, n_period//2 + 1)
+
+    # Бин 1 = частота f0 (разрешение = fs/n_period = f0)
+    magnitudes = np.abs(spectra[:, 1]) * 2.0 / n_period  # амплитуды
+    rms_arr = magnitudes / np.sqrt(2)  # RMS = A / sqrt(2)
+
+    return rms_arr
+
 
 
 def _envelope(signal: np.ndarray) -> np.ndarray:
@@ -102,7 +112,7 @@ def predict_ozz_physics(
     decay_ratio: float = 0.30,
     envelope_tail_fraction: float = 0.25,
     operate_delay_samples: int = 32,
-    operate_delay_periods: float = 0.0,
+    operate_delay_periods: float = 1.0,
 ) -> Optional[int]:
     """
     Физический (детерминированный) алгоритм классификации ОЗЗ по окну данных.
@@ -165,9 +175,12 @@ def predict_ozz_physics(
     uc = data[:, 6]
     u0_3 = ua + ub + uc  # 3U0(t)
 
-    # --- Шаг 2: Базовый критерий — RMS первой гармоники 3U0 ---
-    u0_rms = _rms_fundamental(u0_3, fs=fs)
-    if u0_rms < u0_threshold:
+    # --- Шаг 2: Базовый критерий — скользящее RMS первой гармоники 3U0 ---
+    # Окно = 1 период сети (fs/f0 = 32 отсчёта для 1600 Гц / 50 Гц).
+    # Для каждой позиции: БПФ 32 точки → амплитуда f0 → RMS.
+    n_period = int(round(fs / 50.0))  # 32 отсчёта
+    u0_rms_arr = _rms_fundamental_sliding(u0_3, fs=fs)
+    if len(u0_rms_arr) == 0 or np.max(u0_rms_arr) < u0_threshold:
         return None  # Нормальный режим
 
     # --- Шаг 2.1: Выдержка времени (не-мгновенная отстройка) ---
@@ -177,13 +190,15 @@ def predict_ozz_physics(
         delay_samples = int(max(0, operate_delay_samples))
 
     if delay_samples > 0:
-        amp_threshold = float(u0_threshold) * np.sqrt(2.0)
-        above_idx = np.where(np.abs(u0_3) >= amp_threshold)[0]
+        # Находим первый отсчёт, где RMS (за период) превысил порог
+        above_idx = np.where(u0_rms_arr >= u0_threshold)[0]
         if len(above_idx) == 0:
             return None
-        first_event_idx = int(above_idx[0])
+        # above_idx[0] — позиция в массиве u0_rms_arr,
+        # реальный отсчёт конца первого периода с превышением:
+        first_event_sample = int(above_idx[0]) + n_period - 1
         # Если до конца окна меньше выдержки — считаем, что уставка не отработала.
-        if (T - 1 - first_event_idx) < delay_samples:
+        if (T - 1 - first_event_sample) < delay_samples:
             return None
 
     # --- Шаг 3: Производная 3U0 ---

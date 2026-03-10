@@ -14,6 +14,7 @@ import pytest
 from osc_tools.analysis.ozz_physics import (
     predict_ozz_physics,
     _rms_fundamental,
+    _rms_fundamental_sliding,
     _envelope,
     u0_threshold_raw_to_normalized,
 )
@@ -172,15 +173,37 @@ class TestPredictOzzPhysics:
 class TestRmsAndEnvelope:
     """Тесты вспомогательных функций."""
 
-    def test_rms_fundamental(self):
-        """RMS синусоиды 50 Гц должно быть ~ A/sqrt(2)."""
+    def test_rms_fundamental_sliding_shape(self):
+        """Скользящее RMS должно вернуть массив длины T - N_period + 1."""
+        fs = 1600
+        n_period = 32  # fs / 50
+        signal = np.sin(2 * np.pi * 50 * np.arange(320) / fs)
+        rms_arr = _rms_fundamental_sliding(signal, fs=fs)
+        assert rms_arr.shape == (320 - n_period + 1,)
+
+    def test_rms_fundamental_sliding_sinusoid(self):
+        """Для чистой синусоиды каждый отсчёт RMS ≈ A/sqrt(2)."""
         fs = 1600
         A = 10.0
-        t = np.arange(320) / fs
-        signal = A * np.sin(2 * np.pi * 50 * t)
-        rms = _rms_fundamental(signal, fs=fs)
+        signal = A * np.sin(2 * np.pi * 50 * np.arange(320) / fs)
+        rms_arr = _rms_fundamental_sliding(signal, fs=fs)
         expected = A / np.sqrt(2)
-        assert abs(rms - expected) < 0.5, f"RMS = {rms:.2f}, ожидалось ~{expected:.2f}"
+        # Все значения должны быть близки к ожидаемому
+        assert np.all(np.abs(rms_arr - expected) < 0.5)
+
+    def test_rms_fundamental_sliding_decay(self):
+        """Для затухающего сигнала RMS должно убывать."""
+        fs = 1600
+        t = np.arange(320) / fs
+        signal = 20.0 * np.exp(-15 * t) * np.sin(2 * np.pi * 50 * t)
+        rms_arr = _rms_fundamental_sliding(signal, fs=fs)
+        # RMS в начале должно быть больше, чем в конце
+        assert rms_arr[0] > rms_arr[-1] * 2
+
+    def test_rms_fundamental_sliding_short_signal(self):
+        """Короткий сигнал (< 1 периода) → пустой массив."""
+        rms_arr = _rms_fundamental_sliding(np.zeros(10), fs=1600)
+        assert len(rms_arr) == 0
 
     def test_envelope_constant(self):
         """Огибающая синусоиды должна быть ~A."""
