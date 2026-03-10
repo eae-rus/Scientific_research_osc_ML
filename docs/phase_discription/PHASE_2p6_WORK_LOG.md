@@ -1,5 +1,54 @@
 # Лог работ по Фазе 2.6 (Архитектурные улучшения)
 
+## [2026-03-08] Exp 2.6.11: Детектирование ОЗЗ/ДПОЗЗ + Физическая Baseline
+
+### Выполненные работы
+
+1. **Физическая baseline-модель** (`predict_ozz_physics`)
+   - Создан модуль [osc_tools/analysis/ozz_physics.py](osc_tools/analysis/ozz_physics.py)
+   - Реализован детерминированный алгоритм классификации ОЗЗ:
+     - Вычисление $3U_0 = U_A + U_B + U_C$
+     - Базовый критерий: RMS первой гармоники $3U_0$ > порог (3В)
+     - Критерий ДПОЗЗ: кол-во пиков производной + наличие запертого заряда
+     - Критерий затухающего ОЗЗ: огибающая (Гильберт) + проверка спада амплитуды
+     - Критерий устойчивого ОЗЗ: стабильная $3U_0$ без затухания и без переходных процессов
+   - Добавлены функции батчевого применения и оценки на DataFrame
+
+2. **Стратифицированное разбиение данных**
+   - Создан модуль [osc_tools/data_management/ozz_split.py](osc_tools/data_management/ozz_split.py)
+   - Разбиение на уровне файлов с иерархической приоритизацией (ДПОЗЗ > Затухающее > Устойчивое)
+   - Гарантированное представительство каждого класса в тестовой выборке
+   - Добавлена функция `add_ozz_target_columns(df)` для формирования 3-классовых меток:
+     - `Target_OZZ_stable` (ML_2_1 ∨ ML_2_1_1, без decay/dpozz)
+     - `Target_OZZ_decay` (ML_2_1_2)
+     - `Target_OZZ_dpozz` (ML_2_1_3)
+
+3. **Новый target_level='ozz' в системе меток**
+   - Обновлён [osc_tools/ml/labels.py](osc_tools/ml/labels.py): поддержка `get_target_columns('ozz')` и `prepare_labels_for_experiment(df, 'ozz')`
+
+4. **Эксперименты 2.6.11** в [scripts/phase2_experiments/run_phase2_6.py](scripts/phase2_experiments/run_phase2_6.py)
+   - `2.6.11_global_stride`: cPhysicsKAN + Global Balancing (light/medium/heavy)
+   - `2.6.11_weights_stride`: cPhysicsKAN + Weighted Loss (light/medium/heavy)
+   - `2.6.11_baselines_stride`: 6 базовых моделей (heavy) для сравнения
+   - Все 3 конфигурации: `phase_polar + stride + any_in_window + aug`
+
+5. **Скрипт оценки физической модели**
+   - Создан [scripts/evaluation/evaluate_physics_baseline.py](scripts/evaluation/evaluate_physics_baseline.py)
+   - Результаты сохраняются в формате эксперимента (config.json + history.json)
+   - Интеграция с отчётной системой через стандартный формат
+
+6. **Сглаживание предсказаний в plot_model_marking.py**
+   - Обновлён [scripts/evaluation/plot_model_marking.py](scripts/evaluation/plot_model_marking.py)
+   - Новая логика: каждое окно вносит свой вклад во все покрываемые точки
+   - Итоговая вероятность = среднее по всем покрытиям (weighted averaging)
+   - Устраняет артефакты «точечного» предсказания на единственную последнюю точку окна
+
+7. **Тестирование**
+   - Созданы unit-тесты в [tests/unit/test_ozz_physics.py](tests/unit/test_ozz_physics.py):
+     - Базовая работа `predict_ozz_physics` на синтетических данных
+     - Корректность `add_ozz_target_columns`
+     - Стратифицированное разбиение `stratified_ozz_split`
+
 ## [2026-03-07] cPhysicsKAN (комплексная полярная версия) + Exp 2.6.9
 
 ### Выполненные работы

@@ -494,7 +494,22 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
                 "ConvKAN"
             ],
             "complexities_override": ["heavy"]
-        }
+        },
+
+        # === Эксперимент 2.6.11: Детектирование ОЗЗ/ДПОЗЗ (cPhysicsKAN) ===
+        # Целевые 3 колонки (multi-label): OZZ, OZZ_decay, OZZ_dpozz
+        # Взвешенная балансировка (ДПОЗЗ крайне редкий класс)
+        "2.6.11_weights_stride": {
+            "feature_mode": "phase_polar",
+            "sampling": "stride",
+            "stride": 16,
+            "aug": True,
+            "balancing": "weights",
+            "target_level": "ozz",
+            "target_window": "any_in_window",
+            "models_override": ["cPhysicsKAN", "SimpleMLP", "SimpleCNN", "ConvKAN", "SimpleKAN", "PhysicsKAN", "ResNet1D"],
+            "complexities_override": ["heavy"]
+        },
     }
 
     if target_exp not in exp_params:
@@ -572,7 +587,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         df = df.with_row_index("row_nr")
         
         # Подготовка меток в зависимости от target_level
-        if exp_target_level in ('full', 'full_by_levels', 'base_sequential'):
+        if exp_target_level in ('full', 'full_by_levels', 'base_sequential', 'ozz'):
             print(f"  [Подготовка меток для уровня: {exp_target_level}]")
             df = prepare_labels_for_experiment(df, exp_target_level)
         
@@ -587,7 +602,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
         test_df = test_df.with_row_index("row_nr")
         
         # Подготовка меток для валидации
-        if exp_target_level in ('full', 'full_by_levels', 'base_sequential'):
+        if exp_target_level in ('full', 'full_by_levels', 'base_sequential', 'ozz'):
             test_df = prepare_labels_for_experiment(test_df, exp_target_level)
         
         # Создаём индексы для валидации с шагом 4 (полная валидация как в aggregate_reports)
@@ -721,8 +736,11 @@ if __name__ == "__main__":
         # "2.6.9_stride",
         
         # === Эксперимент 2.6.10: Глобальная балансировка, только тяжёлые базовые модели ===
-        #"2.6.10_global_stride",
-        "2.6.10_weights_stride"
+        # "2.6.10_global_stride",
+        # "2.6.10_weights_stride",
+        
+        # === Эксперимент 2.6.11: Детектирование ОЗЗ/ДПОЗЗ ===
+        "2.6.11_weights_stride",
     ]
     
     # Тип модели ('all' - выберет автоматически подходящие для группы)

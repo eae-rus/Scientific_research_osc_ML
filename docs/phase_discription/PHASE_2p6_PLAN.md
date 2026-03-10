@@ -185,6 +185,31 @@
 
 ---
 
+### [] Exp 2.6.11: Детектирование ОЗЗ/ДПОЗЗ (Раздел 5 статьи)
+**Зачем:** Создать специализированную модель для классификации подтипов однофазных замыканий на землю — ключевая задача для статьи. Сравнение детерминированного алгоритма (физика) с нейросетью (cPhysicsKAN).
+
+*   **Целевая задача:** 3-классовая классификация:
+    - Класс 0: Устойчивое ОЗЗ (ML_2_1 ∨ ML_2_1_1)
+    - Класс 1: Затухающее ОЗЗ (ML_2_1_2)
+    - Класс 2: ДПОЗЗ (ML_2_1_3)
+*   **Физическая Baseline-модель:** Детерминированный алгоритм `predict_ozz_physics()`:
+    - Расчёт $3U_0 = U_A + U_B + U_C$, RMS первой гармоники
+    - ДПОЗЗ: пики производной + запертый заряд (Гильберт)
+    - Затухающее: огибающая спадает ниже 30% от максимума
+    - Устойчивое: стабильная $3U_0$ выше порога
+    - Реализация: [osc_tools/analysis/ozz_physics.py](osc_tools/analysis/ozz_physics.py)
+*   **Нейросетевая модель:** `cPhysicsKAN` (комплексная полярная PhysicsKAN).
+*   **Конфигурации:**
+    - `2.6.11_global_stride`: cPhysicsKAN + Global Balancing (light/medium/heavy)
+    - `2.6.11_weights_stride`: cPhysicsKAN + Weighted Loss (light/medium/heavy)
+    - `2.6.11_baselines_stride`: 6 базовых моделей (heavy) для сравнения
+*   **Данные:** `phase_polar + stride + any_in_window + aug`, ДПОЗЗ-стратифицированный split
+*   **Стратифицированный split:** [osc_tools/data_management/ozz_split.py](osc_tools/data_management/ozz_split.py)
+*   **Оценка PhysicsBaseline:** [scripts/evaluation/evaluate_physics_baseline.py](scripts/evaluation/evaluate_physics_baseline.py)
+*   **Сглаженные предсказания:** Обновлён [scripts/evaluation/plot_model_marking.py](scripts/evaluation/plot_model_marking.py) — взвешенное усреднение по окнам
+
+---
+
 ## 📝 Резюме по изменениям кода (To-Do List)
 
 1.  **Dataset:**

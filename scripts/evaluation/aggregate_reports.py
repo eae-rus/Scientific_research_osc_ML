@@ -34,6 +34,25 @@ ENGINEERING_CLASS_MAP: Dict[int, str] = {
     3: 'Авария'
 }
 
+ENGINEERING_CLASS_MAP_OZZ: Dict[int, str] = {
+    0: 'ОЗЗ (обнаружение)',
+    1: 'Затухающее ОЗЗ',
+    2: 'ДПОЗЗ'
+}
+
+# Столбцы multilabel CSV для OZZ (3 GT + 3 pred)
+OZZ_MULTILABEL_TRUE_COLS = ['y_true_ozz', 'y_true_decay', 'y_true_dpozz']
+OZZ_MULTILABEL_PRED_COLS = ['y_pred_ozz', 'y_pred_decay', 'y_pred_dpozz']
+OZZ_MULTILABEL_ALL_COLS = OZZ_MULTILABEL_TRUE_COLS + OZZ_MULTILABEL_PRED_COLS
+
+
+def get_engineering_class_map(target_level: str, y_values: Optional[np.ndarray] = None) -> Dict[int, str]:
+    """Выбирает карту классов для инженерных графиков по target_level."""
+    level = str(target_level or 'base').lower()
+    if level == 'ozz':
+        return ENGINEERING_CLASS_MAP_OZZ
+    return ENGINEERING_CLASS_MAP
+
 # Тонкая настройка: любые отдельные графики можно отключать через этот словарь.
 PLOT_SWITCHES_DEFAULT: Dict[str, bool] = {
     'engineering_bars_per_model_absolute': True,
@@ -194,6 +213,38 @@ def load_metrics(metrics_path: Path) -> List[Dict[str, Any]]:
     except Exception as e:
         print(f"Ошибка чтения {metrics_path}: {e}", file=sys.stderr)
     return metrics
+
+
+def load_history_as_metrics(history_path: Path) -> List[Dict[str, Any]]:
+    """Преобразует history.json в формат списка эпох (как metrics.jsonl)."""
+    if not history_path.exists():
+        return []
+    try:
+        with open(history_path, 'r', encoding='utf-8') as f:
+            history = json.load(f)
+
+        def _last_float(key: str, default: float = 0.0) -> float:
+            value = history.get(key, default)
+            if isinstance(value, list):
+                value = value[-1] if value else default
+            try:
+                return float(value)
+            except Exception:
+                return float(default)
+
+        return [{
+            'epoch': 1,
+            'train_loss': _last_float('train_loss', 0.0),
+            'val_loss': _last_float('val_loss', 0.0),
+            'val_f1': _last_float('val_f1_macro', 0.0),
+            'val_acc': _last_float('val_precision_macro', 0.0),
+            'val_f1_per_class': history.get('val_f1_per_class', {}),
+            'cpu_inf_time_ms': 0.0,
+            'num_params': 0,
+        }]
+    except Exception as e:
+        print(f"Ошибка чтения {history_path}: {e}", file=sys.stderr)
+        return []
 
 def load_config(config_path: Path) -> Dict[str, Any]:
     """Загрузка конфигурации из файла json."""
@@ -965,28 +1016,46 @@ def evaluate_model_full(
     }
 
 
+def _is_multilabel_pred_df(df: pd.DataFrame) -> bool:
+    """Проверяет, содержит ли pred_df multilabel OZZ столбцы."""
+    return 'y_true_ozz' in df.columns
+
+
 def _save_predictions_csv(
     y_true: np.ndarray,
     y_pred: np.ndarray,
-    save_path: Path
+    save_path: Path,
+    target_level: str = 'base',
+    target_cols: Optional[List[str]] = None
 ) -> None:
     """
-    Сохраняет предсказания (y_true, y_pred) в CSV для дальнейшего анализа.
-    Для multilabel: сохраняет argmax-классы (4 макро-класса РЗА).
+    Сохраняет предсказания в CSV.
+    Для OZZ multilabel сохраняет 6 столбцов (3 GT + 3 pred) без потери информации.
     """
     try:
         y_true_arr = np.asarray(y_true)
         y_pred_arr = np.asarray(y_pred)
 
-        # Multilabel → argmax (по 4 макро-классам)
-        if y_true_arr.ndim == 2:
-            y_true_cls = y_true_arr.argmax(axis=1)
-            y_pred_cls = y_pred_arr.argmax(axis=1)
+        if str(target_level).lower() == 'ozz' and y_true_arr.ndim == 2 and y_true_arr.shape[1] >= 3:
+            # Сохраняем все 3 бинарных таргета напрямую — без сворачивания в один класс.
+            df_out = pd.DataFrame({
+                'y_true_ozz': y_true_arr[:, 0].astype(int),
+                'y_true_decay': y_true_arr[:, 1].astype(int),
+                'y_true_dpozz': y_true_arr[:, 2].astype(int),
+                'y_pred_ozz': y_pred_arr[:, 0].astype(int),
+                'y_pred_decay': y_pred_arr[:, 1].astype(int),
+                'y_pred_dpozz': y_pred_arr[:, 2].astype(int),
+            })
         else:
-            y_true_cls = y_true_arr.ravel()
-            y_pred_cls = y_pred_arr.ravel()
+            # Общий fallback: multilabel → argmax.
+            if y_true_arr.ndim == 2:
+                y_true_cls = y_true_arr.argmax(axis=1)
+                y_pred_cls = y_pred_arr.argmax(axis=1)
+            else:
+                y_true_cls = y_true_arr.ravel()
+                y_pred_cls = y_pred_arr.ravel()
+            df_out = pd.DataFrame({'y_true': y_true_cls, 'y_pred': y_pred_cls})
 
-        df_out = pd.DataFrame({'y_true': y_true_cls, 'y_pred': y_pred_cls})
         df_out.to_csv(save_path, index=False)
     except Exception as exc:
         if _eval_logger:
@@ -1248,10 +1317,14 @@ def evaluate_full_test_dataset(
         elif in_channels and spectral_base_ch > 0 and in_channels % spectral_base_ch == 0:
             num_harmonics = max(1, in_channels // spectral_base_ch)
         
-        # Определяем target_level из имени эксперимента
-        # Примеры: 2.6.4_full_stride → full, 2.6.4_hier_stride → full_by_levels
-        if 'base_sequential' in exp_name:
+        # Определяем target_level: сначала по config, затем по имени эксперимента.
+        cfg_target_level = str(config.get('data', {}).get('target_level', '')).strip().lower()
+        if cfg_target_level:
+            target_level = cfg_target_level
+        elif 'base_sequential' in exp_name:
             target_level = 'base_sequential'
+        elif 'ozz' in exp_name or '2.6.11' in exp_name:
+            target_level = 'ozz'
         elif 'full_by_levels' in exp_name or ('hier_' in exp_name and '2.6.4' in exp_name):
             target_level = 'full_by_levels'
         elif '2.6.4' in exp_name and 'full' in exp_name:
@@ -1375,8 +1448,11 @@ def evaluate_full_test_dataset(
                     # Сохраняем CSV с предсказаниями Best для инженерных графиков
                     if save_predictions and 'y_true' in best_metrics and 'y_pred' in best_metrics:
                         _save_predictions_csv(
-                            best_metrics['y_true'], best_metrics['y_pred'],
-                            exp_dir / 'test_predictions_best.csv'
+                            best_metrics['y_true'],
+                            best_metrics['y_pred'],
+                            exp_dir / 'test_predictions_best.csv',
+                            target_level=target_level,
+                            target_cols=target_cols
                         )
                 if used_device.type != device.type:
                     device = used_device
@@ -1446,8 +1522,11 @@ def evaluate_full_test_dataset(
                     # Сохраняем CSV с предсказаниями Final для инженерных графиков
                     if save_predictions and 'y_true' in final_metrics and 'y_pred' in final_metrics:
                         _save_predictions_csv(
-                            final_metrics['y_true'], final_metrics['y_pred'],
-                            exp_dir / 'test_predictions_final.csv'
+                            final_metrics['y_true'],
+                            final_metrics['y_pred'],
+                            exp_dir / 'test_predictions_final.csv',
+                            target_level=target_level,
+                            target_cols=target_cols
                         )
                 if used_device.type != device.type:
                     device = used_device
@@ -1492,6 +1571,30 @@ def evaluate_full_test_dataset(
             torch.cuda.empty_cache()
     
     return results
+
+
+def _coerce_per_class_f1_values(raw_value: Any) -> List[float]:
+    """Нормализует val_f1_per_class из history/metrics в список float."""
+    values: List[float] = []
+    if isinstance(raw_value, dict):
+        for _, val in raw_value.items():
+            if isinstance(val, list):
+                cur = val[-1] if val else 0.0
+            else:
+                cur = val
+            try:
+                values.append(float(cur))
+            except Exception:
+                values.append(0.0)
+        return values
+
+    if isinstance(raw_value, list):
+        for val in raw_value:
+            try:
+                values.append(float(val))
+            except Exception:
+                values.append(0.0)
+    return values
 
 
 def combine_training_histories(experiments_dir: Path, output_path: Path):
@@ -1559,6 +1662,8 @@ def parse_experiment_info(folder_name: str) -> Dict[str, str]:
     # Примеры: full_stride, full_snapshot, hier_stride (full_by_levels)
     if 'base_sequential' in folder_name.lower():
         info["target_level"] = "base_sequential"
+    elif 'ozz' in folder_name.lower() or '2.6.11' in folder_name:
+        info["target_level"] = "ozz"
     elif 'full_by_levels' in folder_name or ('hier_' in folder_name.lower() and '2.6.4' in folder_name):
         info["target_level"] = "full_by_levels"
     elif 'full' in folder_name.lower() and '2.6.4' in folder_name:
@@ -1575,6 +1680,7 @@ def parse_experiment_info(folder_name: str) -> Dict[str, str]:
         'ConvKAN': 'ConvKAN',
         'SimpleKAN': 'SimpleKAN',
         'PhysicsKAN': 'PhysicsKAN',
+        'PhysicsBaseline': 'PhysicsBaseline',
         'ResNet1D': 'ResNet',
     }
     
@@ -1646,10 +1752,46 @@ def extract_base_exp_id(text: str) -> str:
 # BEST VS FINAL + ИНЖЕНЕРНЫЕ ГРАФИКИ
 # =============================================================================
 
+def _ensure_multilabel_ozz(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Конвертирует OZZ single-class предсказания (-1/0/1/2) в multilabel формат.
+
+    Маппинг (иерархия ОЗЗ):
+      -1 → [0, 0, 0]  (нет ОЗЗ)
+       0 → [1, 0, 0]  (устойчивое ОЗЗ)
+       1 → [1, 1, 0]  (затухающее ОЗЗ, является ОЗЗ)
+       2 → [1, 0, 1]  (ДПОЗЗ, является ОЗЗ)
+
+    Если уже multilabel — возвращает как есть.
+    """
+    if _is_multilabel_pred_df(df):
+        return df
+
+    result = pd.DataFrame(index=df.index)
+    for prefix, src_col in [('y_true', 'y_true'), ('y_pred', 'y_pred')]:
+        vals = df[src_col].to_numpy(dtype=int)
+        result[f'{prefix}_ozz'] = (vals >= 0).astype(int)
+        result[f'{prefix}_decay'] = (vals == 1).astype(int)
+        result[f'{prefix}_dpozz'] = (vals == 2).astype(int)
+
+    return result
+
+
 def _normalize_prediction_columns(df_pred: pd.DataFrame) -> pd.DataFrame:
     """
-    Приводит таблицу предсказаний к колонкам y_true / y_pred.
+    Приводит таблицу предсказаний к стандартному формату.
+    Для OZZ multilabel (6 столбцов) — возвращает как есть.
+    Для OZZ single-class (-1/0/1/2) — автоматически конвертирует в multilabel.
+    Для single-class base — нормализует к y_true / y_pred.
     """
+    # Multilabel OZZ формат (6 столбцов)
+    if 'y_true_ozz' in df_pred.columns:
+        result = df_pred[OZZ_MULTILABEL_ALL_COLS].copy()
+        for col in result.columns:
+            result[col] = pd.to_numeric(result[col], errors='coerce').fillna(0).astype(int)
+        return result
+
+    # Single-class формат
     candidate_true = ['y_true', 'true', 'target', 'label_true', 'gt']
     candidate_pred = ['y_pred', 'pred', 'prediction', 'label_pred']
 
@@ -1671,6 +1813,12 @@ def _normalize_prediction_columns(df_pred: pd.DataFrame) -> pd.DataFrame:
     result = result.dropna(subset=['y_true', 'y_pred']).copy()
     result['y_true'] = result['y_true'].astype(int)
     result['y_pred'] = result['y_pred'].astype(int)
+
+    # Авто-конвертация OZZ single-class → multilabel.
+    # Класс -1 существует ТОЛЬКО в OZZ-экспериментах (base использует 0,1,2,3).
+    if result['y_true'].min() == -1:
+        return _ensure_multilabel_ozz(result)
+
     return result
 
 
@@ -1704,6 +1852,16 @@ def load_best_final_predictions(exp_dir: Path) -> Dict[str, Optional[pd.DataFram
     return loaded
 
 
+def _compute_f1_for_pred_df(df: pd.DataFrame) -> float:
+    """Универсальный расчёт macro F1 для pred_df (single-class или multilabel)."""
+    if _is_multilabel_pred_df(df):
+        f1_vals = []
+        for tc, pc in zip(OZZ_MULTILABEL_TRUE_COLS, OZZ_MULTILABEL_PRED_COLS):
+            f1_vals.append(f1_score(df[tc], df[pc], zero_division=0))
+        return float(np.mean(f1_vals))
+    return float(f1_score(df['y_true'], df['y_pred'], average='macro', zero_division=0))
+
+
 def select_best_final_by_test_f1(
     df_best: Optional[pd.DataFrame],
     df_final: Optional[pd.DataFrame]
@@ -1715,9 +1873,9 @@ def select_best_final_by_test_f1(
     f1_final = np.nan
 
     if df_best is not None and not df_best.empty:
-        f1_best = f1_score(df_best['y_true'], df_best['y_pred'], average='macro', zero_division=0)
+        f1_best = _compute_f1_for_pred_df(df_best)
     if df_final is not None and not df_final.empty:
-        f1_final = f1_score(df_final['y_true'], df_final['y_pred'], average='macro', zero_division=0)
+        f1_final = _compute_f1_for_pred_df(df_final)
 
     if np.isnan(f1_best) and np.isnan(f1_final):
         return {
@@ -1769,6 +1927,7 @@ def build_engineering_stats(
 ) -> pd.DataFrame:
     """
     Считает инженерные метрики по классам: TP, FP, FN, ошибки и размер GT.
+    Используется для single-class (base) экспериментов.
     """
     rows: List[Dict[str, Any]] = []
     for class_id, class_name in class_map.items():
@@ -1788,6 +1947,42 @@ def build_engineering_stats(
             'fp': fp,
             'fn': fn,
             'errors': err,
+            'gt': gt
+        })
+
+    return pd.DataFrame(rows)
+
+
+def build_engineering_stats_multilabel(
+    pred_df: pd.DataFrame,
+    class_map: Dict[int, str]
+) -> pd.DataFrame:
+    """
+    Считает инженерные метрики для OZZ multilabel: каждый таргет
+    оценивается как независимый бинарный классификатор.
+
+    class_map: {0: 'ОЗЗ (обнаружение)', 1: 'Затухающее ОЗЗ', 2: 'ДПОЗЗ'}
+    Индекс в class_map соответствует позиции в OZZ_MULTILABEL_TRUE/PRED_COLS.
+    """
+    rows: List[Dict[str, Any]] = []
+    for class_id, class_name in class_map.items():
+        tc = OZZ_MULTILABEL_TRUE_COLS[class_id]
+        pc = OZZ_MULTILABEL_PRED_COLS[class_id]
+        gt_col = pred_df[tc].to_numpy()
+        pred_col = pred_df[pc].to_numpy()
+
+        tp = int(np.sum((gt_col > 0) & (pred_col > 0)))
+        fp = int(np.sum((gt_col == 0) & (pred_col > 0)))
+        fn = int(np.sum((gt_col > 0) & (pred_col == 0)))
+        gt = int(np.sum(gt_col > 0))
+
+        rows.append({
+            'class_id': class_id,
+            'class_name': class_name,
+            'tp': tp,
+            'fp': fp,
+            'fn': fn,
+            'errors': fp + fn,
             'gt': gt
         })
 
@@ -1965,6 +2160,54 @@ def plot_custom_confusion_matrix(
     plt.close(fig)
 
 
+def plot_multilabel_confusion_matrices(
+    pred_df: pd.DataFrame,
+    class_map: Dict[int, str],
+    title_prefix: str,
+    save_path: Path,
+    relative: bool = False
+) -> None:
+    """
+    Строит 3 отдельные бинарные матрицы ошибок (2×2) для OZZ multilabel.
+    Каждый таргет оценивается независимо: «Нет» vs «Да».
+    """
+    n_targets = len(class_map)
+    fig, axes = plt.subplots(1, n_targets, figsize=(5.5 * n_targets, 5))
+    if n_targets == 1:
+        axes = [axes]
+
+    for idx, (class_id, class_name) in enumerate(class_map.items()):
+        ax = axes[idx]
+        tc = OZZ_MULTILABEL_TRUE_COLS[class_id]
+        pc = OZZ_MULTILABEL_PRED_COLS[class_id]
+        y_t = pred_df[tc].to_numpy()
+        y_p = pred_df[pc].to_numpy()
+
+        cm = confusion_matrix(y_t, y_p, labels=[0, 1]).astype(float)
+        if relative:
+            row_sum = cm.sum(axis=1, keepdims=True)
+            cm = np.divide(cm, row_sum, out=np.zeros_like(cm), where=row_sum > 0) * 100.0
+
+        labels = ['Нет', 'Да']
+        sns.heatmap(
+            cm, annot=True,
+            fmt='.1f' if relative else '.0f',
+            cmap='Blues',
+            xticklabels=labels, yticklabels=labels,
+            linewidths=0.7, linecolor='white',
+            ax=ax
+        )
+        ax.set_title(class_name)
+        ax.set_xlabel('Predicted')
+        ax.set_ylabel('True')
+
+    fig.suptitle(title_prefix, fontsize=13, y=1.02)
+    fig.tight_layout()
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(save_path, dpi=180, bbox_inches='tight')
+    plt.close(fig)
+
+
 def plot_engineering_bars_combined(
     selected_by_model: Dict[str, pd.DataFrame],
     class_map: Dict[int, str],
@@ -1984,11 +2227,14 @@ def plot_engineering_bars_combined(
 
     per_model_stats: Dict[str, pd.DataFrame] = {}
     for model_name, pred_df in selected_by_model.items():
-        per_model_stats[model_name] = build_engineering_stats(
-            pred_df['y_true'].to_numpy(),
-            pred_df['y_pred'].to_numpy(),
-            class_map
-        )
+        if _is_multilabel_pred_df(pred_df):
+            per_model_stats[model_name] = build_engineering_stats_multilabel(pred_df, class_map)
+        else:
+            per_model_stats[model_name] = build_engineering_stats(
+                pred_df['y_true'].to_numpy(),
+                pred_df['y_pred'].to_numpy(),
+                class_map
+            )
 
     n_models = len(model_names)
     x = np.arange(len(class_ids))
@@ -2097,7 +2343,7 @@ def collapse_selected_to_model_level(
     selected_by_experiment: Dict[str, pd.DataFrame],
     selection_df: pd.DataFrame,
     summary_df: pd.DataFrame
-) -> Dict[str, pd.DataFrame]:
+) -> Dict[str, Dict[str, Any]]:
     """
     Переход от уровня эксперимента к уровню типа модели.
     Для каждой модели берётся лучший (по Selected Test F1) эксперимент.
@@ -2112,26 +2358,34 @@ def collapse_selected_to_model_level(
     )
     merged = merged.sort_values('Selected Test F1', ascending=False)
 
-    selected_model_level: Dict[str, pd.DataFrame] = {}
+    selected_model_level: Dict[str, Dict[str, Any]] = {}
     for _, row in merged.iterrows():
         model_name = str(row.get('Model', 'Unknown'))
         exp_name = str(row['Experiment'])
         if model_name in selected_model_level:
             continue
         if exp_name in selected_by_experiment:
-            selected_model_level[model_name] = selected_by_experiment[exp_name]
+            target_level = 'base'
+            matched = summary_df[summary_df['Experiment'] == exp_name]
+            if not matched.empty and 'TargetLevel' in matched.columns:
+                target_level = str(matched.iloc[0].get('TargetLevel', 'base'))
+            selected_model_level[model_name] = {
+                'pred_df': selected_by_experiment[exp_name],
+                'target_level': target_level,
+                'experiment': exp_name,
+            }
     return selected_model_level
 
 
 def generate_engineering_plot_pack(
-    selected_by_model: Dict[str, pd.DataFrame],
+    selected_by_model: Dict[str, Dict[str, Any]],
     output_dir: Path,
     plot_switches: Dict[str, bool],
-    class_map: Dict[int, str],
     max_models_for_combined: int
 ) -> None:
     """
     Генерирует пакет инженерных графиков по выбранным моделям.
+    Для OZZ multilabel: каждый таргет оценивается как бинарный классификатор.
     """
     if not selected_by_model:
         return
@@ -2139,12 +2393,20 @@ def generate_engineering_plot_pack(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Всегда строим независимые графики для каждой модели.
-    for model_name, pred_df in selected_by_model.items():
-        stats_df = build_engineering_stats(
-            pred_df['y_true'].to_numpy(),
-            pred_df['y_pred'].to_numpy(),
-            class_map
-        )
+    for model_name, model_info in selected_by_model.items():
+        pred_df = model_info['pred_df']
+        target_level = model_info.get('target_level', 'base')
+        class_map = get_engineering_class_map(target_level)
+        is_ml = _is_multilabel_pred_df(pred_df)
+
+        if is_ml:
+            stats_df = build_engineering_stats_multilabel(pred_df, class_map)
+        else:
+            stats_df = build_engineering_stats(
+                pred_df['y_true'].to_numpy(),
+                pred_df['y_pred'].to_numpy(),
+                class_map
+            )
 
         model_slug = re.sub(r'[^a-zA-Z0-9._-]+', '_', model_name)
 
@@ -2166,42 +2428,68 @@ def generate_engineering_plot_pack(
                 show_fp_fn_split=True
             )
 
-        if plot_switches.get('custom_cm_per_model_absolute', True):
-            plot_custom_confusion_matrix(
-                pred_df['y_true'].to_numpy(),
-                pred_df['y_pred'].to_numpy(),
-                class_map=class_map,
-                title=f"{model_name}: кастомная матрица ошибок (абсолютные)",
-                save_path=output_dir / f"cm_{model_slug}_abs.png",
-                relative=False
-            )
-
-        if plot_switches.get('custom_cm_per_model_relative', True):
-            plot_custom_confusion_matrix(
-                pred_df['y_true'].to_numpy(),
-                pred_df['y_pred'].to_numpy(),
-                class_map=class_map,
-                title=f"{model_name}: кастомная матрица ошибок (% по строкам)",
-                save_path=output_dir / f"cm_{model_slug}_rel.png",
-                relative=True
-            )
+        # Матрицы ошибок: multilabel → 3 бинарные 2×2, single-class → стандартная NxN
+        if is_ml:
+            if plot_switches.get('custom_cm_per_model_absolute', True):
+                plot_multilabel_confusion_matrices(
+                    pred_df, class_map,
+                    title_prefix=f"{model_name}: матрицы ошибок (абсолютные)",
+                    save_path=output_dir / f"cm_{model_slug}_abs.png",
+                    relative=False
+                )
+            if plot_switches.get('custom_cm_per_model_relative', True):
+                plot_multilabel_confusion_matrices(
+                    pred_df, class_map,
+                    title_prefix=f"{model_name}: матрицы ошибок (% по строкам)",
+                    save_path=output_dir / f"cm_{model_slug}_rel.png",
+                    relative=True
+                )
+        else:
+            if plot_switches.get('custom_cm_per_model_absolute', True):
+                plot_custom_confusion_matrix(
+                    pred_df['y_true'].to_numpy(),
+                    pred_df['y_pred'].to_numpy(),
+                    class_map=class_map,
+                    title=f"{model_name}: кастомная матрица ошибок (абсолютные)",
+                    save_path=output_dir / f"cm_{model_slug}_abs.png",
+                    relative=False
+                )
+            if plot_switches.get('custom_cm_per_model_relative', True):
+                plot_custom_confusion_matrix(
+                    pred_df['y_true'].to_numpy(),
+                    pred_df['y_pred'].to_numpy(),
+                    class_map=class_map,
+                    title=f"{model_name}: кастомная матрица ошибок (% по строкам)",
+                    save_path=output_dir / f"cm_{model_slug}_rel.png",
+                    relative=True
+                )
 
     # Общий график строим только если моделей не слишком много.
     if len(selected_by_model) <= max_models_for_combined:
-        if plot_switches.get('engineering_bars_combined_absolute', True):
-            plot_engineering_bars_combined(
-                selected_by_model=selected_by_model,
-                class_map=class_map,
-                save_path=output_dir / 'bars_combined_abs.png',
-                relative=False
-            )
-        if plot_switches.get('engineering_bars_combined_relative', True):
-            plot_engineering_bars_combined(
-                selected_by_model=selected_by_model,
-                class_map=class_map,
-                save_path=output_dir / 'bars_combined_rel.png',
-                relative=True
-            )
+        # Сводные графики строим по группам target_level, чтобы подписи классов были корректны.
+        by_target_level: Dict[str, Dict[str, pd.DataFrame]] = {}
+        for model_name, model_info in selected_by_model.items():
+            t_level = str(model_info.get('target_level', 'base')).lower()
+            by_target_level.setdefault(t_level, {})[model_name] = model_info['pred_df']
+
+        for t_level, model_group in by_target_level.items():
+            class_map = get_engineering_class_map(t_level)
+            suffix = '' if len(by_target_level) == 1 else f'_{t_level}'
+
+            if plot_switches.get('engineering_bars_combined_absolute', True):
+                plot_engineering_bars_combined(
+                    selected_by_model=model_group,
+                    class_map=class_map,
+                    save_path=output_dir / f'bars_combined_abs{suffix}.png',
+                    relative=False
+                )
+            if plot_switches.get('engineering_bars_combined_relative', True):
+                plot_engineering_bars_combined(
+                    selected_by_model=model_group,
+                    class_map=class_map,
+                    save_path=output_dir / f'bars_combined_rel{suffix}.png',
+                    relative=True
+                )
 
 
 # =============================================================================
@@ -2349,7 +2637,8 @@ def aggregate_reports(
     advanced_plots: bool = False,
     plot_switches: Optional[Dict[str, bool]] = None,
     engineering_subdir: str = ENGINEERING_PLOTS_SUBDIR_DEFAULT,
-    max_models_for_combined: int = MAX_MODELS_FOR_COMBINED_DEFAULT
+    max_models_for_combined: int = MAX_MODELS_FOR_COMBINED_DEFAULT,
+    extra_experiment_roots: Optional[List[str]] = None
 ):
     """
     Агрегирует отчеты обучения из всех поддиректорий.
@@ -2393,9 +2682,15 @@ def aggregate_reports(
         eval_log_path = out_path / "eval_log.txt"
         # Очищаем логи при новом запуске
         if error_log_path.exists():
-            error_log_path.unlink()
+            try:
+                error_log_path.unlink()
+            except PermissionError:
+                print(f"[!] Не удалось очистить {error_log_path} (файл занят). Продолжаем без очистки.")
         if eval_log_path.exists():
-            eval_log_path.unlink()
+            try:
+                eval_log_path.unlink()
+            except PermissionError:
+                print(f"[!] Не удалось очистить {eval_log_path} (файл занят). Продолжаем без очистки.")
     else:
         out_path = None
         figures_path = root_path / "figures"
@@ -2438,12 +2733,33 @@ def aggregate_reports(
         'plots_generated': 0
     }
 
-    print(f"Сканирование {root_path} (Язык: {lang})...")
+    all_roots: List[Path] = [root_path]
+    if extra_experiment_roots:
+        for extra_root in extra_experiment_roots:
+            if not extra_root:
+                continue
+            extra_path = Path(extra_root)
+            if extra_path.exists():
+                all_roots.append(extra_path)
+            else:
+                print(f"[!] Дополнительная директория не найдена и будет пропущена: {extra_path}")
+
+    # Удаляем дубликаты путей с сохранением порядка.
+    all_roots = list(dict.fromkeys(all_roots))
+    roots_str = ", ".join(str(p) for p in all_roots)
+    print(f"Сканирование: {roots_str} (Язык: {lang})...")
     
-    # Сначала собираем все эксперименты
-    all_exp_dirs = []
-    for metrics_file in root_path.rglob("metrics.jsonl"):
-        all_exp_dirs.append(metrics_file.parent)
+    # Сначала собираем все эксперименты:
+    # - обычные с metrics.jsonl
+    # - baseline/внешние с history.json (даже без metrics.jsonl)
+    all_exp_dirs_set = set()
+    for scan_root in all_roots:
+        for metrics_file in scan_root.rglob("metrics.jsonl"):
+            all_exp_dirs_set.add(metrics_file.parent)
+        for history_file in scan_root.rglob("history.json"):
+            if (history_file.parent / "config.json").exists():
+                all_exp_dirs_set.add(history_file.parent)
+    all_exp_dirs = sorted(all_exp_dirs_set)
     
     print(f"Найдено {len(all_exp_dirs)} экспериментов")
 
@@ -2451,10 +2767,13 @@ def aggregate_reports(
     for exp_idx, exp_dir in enumerate(tqdm(all_exp_dirs, desc="Сбор логов")):
         try:
             metrics_file = exp_dir / "metrics.jsonl"
+            history_file = exp_dir / "history.json"
             config_file = exp_dir / "config.json"
             
             # Загрузка данных
             metrics = load_metrics(metrics_file)
+            if not metrics:
+                metrics = load_history_as_metrics(history_file)
             config = load_config(config_file) if config_file.exists() else {}
 
             # Пробуем заранее прочитать предсказания Best/Final (если файлы присутствуют).
@@ -2554,11 +2873,45 @@ def aggregate_reports(
             if 'data' in config:
                 exp_data['Window'] = config['data'].get('window_size')
                 exp_data['Batch'] = config['data'].get('batch_size')
+
+            # Проброс per-class F1 из history (если есть) в unified-формат Class_i_F1.
+            # Это позволяет строить radar и сводные графики даже для PhysicsBaseline
+            # без повторной full_eval-переоценки.
+            per_class_vals = _coerce_per_class_f1_values(best_epoch.get('val_f1_per_class', {}))
+            for idx_cls, cls_f1 in enumerate(per_class_vals):
+                exp_data[f'Class_{idx_cls}_F1'] = cls_f1
             
             # Полная оценка на тестовом датасете (GPU)
             if full_eval:
                 require_hier = current_target_level in ('full', 'full_by_levels')
-                if needs_full_eval_recalc(existing_row, require_hierarchical=require_hier):
+                model_name_cfg = str(config.get('model', {}).get('name', ''))
+                is_physics_baseline = (model_name_cfg == 'PhysicsBaseline')
+
+                if is_physics_baseline:
+                    # Для формульной модели не запускаем evaluate_full_test_dataset:
+                    # чекпоинтов нет, метрики уже записаны при evaluate_physics_baseline.py.
+                    if existing_row is not None:
+                        exp_data['Full Best Acc'] = existing_row.get('Full Best Acc', 0.0)
+                        exp_data['Full Best F1'] = existing_row.get('Full Best F1', 0.0)
+                        exp_data['Full Final Acc'] = existing_row.get('Full Final Acc', 0.0)
+                        exp_data['Full Final F1'] = existing_row.get('Full Final F1', 0.0)
+                        exp_data['Full Best ROC-AUC'] = existing_row.get('Full Best ROC-AUC', 0.0)
+                        exp_data['Full Final ROC-AUC'] = existing_row.get('Full Final ROC-AUC', 0.0)
+                        exp_data['Full Eval Time (s)'] = existing_row.get('Full Eval Time (s)', 0.0)
+                        exp_data['Full Eval Samples'] = existing_row.get('Full Eval Samples', 0)
+                        exp_data['Num Classes'] = existing_row.get('Num Classes', config.get('model', {}).get('params', {}).get('num_classes', 0))
+                    else:
+                        exp_data['Full Best Acc'] = float(best_epoch.get('val_acc', 0.0))
+                        exp_data['Full Best F1'] = float(best_epoch.get('val_f1', 0.0))
+                        exp_data['Full Final Acc'] = float(best_epoch.get('val_acc', 0.0))
+                        exp_data['Full Final F1'] = float(best_epoch.get('val_f1', 0.0))
+                        exp_data['Full Best ROC-AUC'] = 0.0
+                        exp_data['Full Final ROC-AUC'] = 0.0
+                        exp_data['Full Eval Time (s)'] = 0.0
+                        exp_data['Full Eval Samples'] = 0
+                        exp_data['Num Classes'] = config.get('model', {}).get('params', {}).get('num_classes', 0)
+                    skip_stats['full_eval_skipped'] += 1
+                elif needs_full_eval_recalc(existing_row, require_hierarchical=require_hier):
                     # Нужен пересчёт
                     full_metrics = evaluate_full_test_dataset(exp_dir, config, data_dir)
                     exp_data['Full Best Acc'] = full_metrics['full_best_acc']
@@ -2597,22 +2950,15 @@ def aggregate_reports(
                         for cls_name, val in final_sup_map.items():
                             exp_data[f"Full Support {cls_name} (Final)"] = val
                     
-                    # Per-class F1 для radar charts
-                    # Берём лучшие per_class метрики (от best модели)
+                    # Per-class F1 для radar charts (поддержка произвольного числа классов)
                     best_per_class = full_metrics.get('full_best_per_class_f1', [])
-                    if best_per_class and len(best_per_class) >= 4:
-                        exp_data['Class_0_F1'] = best_per_class[0]  # Normal
-                        exp_data['Class_1_F1'] = best_per_class[1]  # Switching
-                        exp_data['Class_2_F1'] = best_per_class[2]  # Abnormal
-                        exp_data['Class_3_F1'] = best_per_class[3]  # Fault
+                    for idx_cls, val in enumerate(best_per_class):
+                        exp_data[f'Class_{idx_cls}_F1'] = val
                     
                     # Per-class ROC-AUC для детального анализа
                     best_per_class_auc = full_metrics.get('full_best_per_class_roc_auc', [])
-                    if best_per_class_auc and len(best_per_class_auc) >= 4:
-                        exp_data['Class_0_ROC-AUC'] = best_per_class_auc[0]  # Normal
-                        exp_data['Class_1_ROC-AUC'] = best_per_class_auc[1]  # Switching
-                        exp_data['Class_2_ROC-AUC'] = best_per_class_auc[2]  # Abnormal
-                        exp_data['Class_3_ROC-AUC'] = best_per_class_auc[3]  # Fault
+                    for idx_cls, val in enumerate(best_per_class_auc):
+                        exp_data[f'Class_{idx_cls}_ROC-AUC'] = val
                     
                     skip_stats['full_eval_recalc'] += 1
                 else:
@@ -2643,17 +2989,10 @@ def aggregate_reports(
                             if col_name.startswith('Full F1 ') or col_name.startswith('Full Support '):
                                 exp_data[col_name] = existing_row.get(col_name, 0)
                     
-                    # Per-class F1 из кэша (если есть)
-                    for i in range(4):
-                        col = f'Class_{i}_F1'
-                        if col in existing_row.index:
-                            exp_data[col] = existing_row.get(col, None)
-                    
-                    # Per-class ROC-AUC из кэша (если есть)
-                    for i in range(4):
-                        col = f'Class_{i}_ROC-AUC'
-                        if col in existing_row.index:
-                            exp_data[col] = existing_row.get(col, None)
+                    # Per-class F1/ROC-AUC из кэша (если есть), без жёсткой фиксации на 4 класса
+                    for col_name in existing_row.index:
+                        if re.match(r'^Class_\d+_F1$', str(col_name)) or re.match(r'^Class_\d+_ROC-AUC$', str(col_name)):
+                            exp_data[col_name] = existing_row.get(col_name, None)
                     
                     skip_stats['full_eval_skipped'] += 1
             
@@ -2721,12 +3060,11 @@ def aggregate_reports(
         )
         if selected_by_model:
             eng_dir = out_path / engineering_subdir
-            print(f"\n=== Генерация инженерных графиков ({len(selected_by_model)} моделей) → {eng_dir} ===")
+            print(f"\n=== Генерация инженерных графиков ({len(selected_by_model)} моделей) -> {eng_dir} ===")
             generate_engineering_plot_pack(
                 selected_by_model=selected_by_model,
                 output_dir=eng_dir,
                 plot_switches=effective_plot_switches,
-                class_map=ENGINEERING_CLASS_MAP,
                 max_models_for_combined=max_models_for_combined
             )
         else:
@@ -2833,6 +3171,19 @@ def aggregate_reports(
     if plot:
         print(f"  Графики: сгенерировано {skip_stats['plots_generated']}, пропущено {skip_stats['plots_skipped']}")
 
+
+def run_physics_baseline_if_enabled(enabled: bool) -> None:
+    """Опционально запускает deterministic PhysicsBaseline_OZZ перед агрегацией."""
+    if not enabled:
+        return
+    try:
+        print("[PhysicsBaseline] Запуск детерминированной baseline-модели...")
+        from scripts.evaluation.evaluate_physics_baseline import main as physics_baseline_main
+        physics_baseline_main()
+        print("[PhysicsBaseline] Готово: результаты baseline обновлены.")
+    except Exception as exc:
+        print(f"[!] Ошибка запуска PhysicsBaseline: {exc}")
+
 if __name__ == "__main__":
     # Сначала проверяем CLI, если нет аргументов - MANUAL_RUN
     parser = argparse.ArgumentParser(description="Агрегация отчетов экспериментов.")
@@ -2843,6 +3194,8 @@ if __name__ == "__main__":
     parser.add_argument("--full-eval", action="store_true", help="Выполнить полную оценку на тестовом датасете (GPU)")
     parser.add_argument("--advanced-plots", action="store_true", help="Генерировать расширенные графики (Парето, heatmaps)")
     parser.add_argument("--data-dir", type=str, default=None, help="Путь к директории с датасетами")
+    parser.add_argument("--extra-root", action="append", default=None, help="Дополнительная директория с экспериментами (можно указывать несколько раз)")
+    parser.add_argument("--run-physics-baseline", action="store_true", help="Перед агрегацией запустить deterministic PhysicsBaseline_OZZ")
     parser.add_argument("--lang", type=str, default="ru", choices=["ru", "en"], help="Язык графиков (ru/en)")
     
     args, unknown = parser.parse_known_args()
@@ -2874,6 +3227,11 @@ if __name__ == "__main__":
         ENGINEERING_SUBDIR = ENGINEERING_PLOTS_SUBDIR_DEFAULT
         # Если моделей больше порога, общий график не строим (строим только отдельные).
         MAX_MODELS_FOR_COMBINED = MAX_MODELS_FOR_COMBINED_DEFAULT
+        # Добавочные корни экспериментов для включения baseline/внешних прогонов в единый отчёт.
+        ENABLE_PHYSICS_BASELINE = True
+        ADDITIONAL_EXPERIMENT_ROOTS = [
+            "experiments/phase2_6/PhysicsBaseline_OZZ"
+        ]
         # Тонкая настройка: отключайте отдельные графики при необходимости.
         PLOT_SWITCHES = {
             'engineering_bars_per_model_absolute': True,
@@ -2896,9 +3254,12 @@ if __name__ == "__main__":
         LANG = args.lang
         ENGINEERING_SUBDIR = ENGINEERING_PLOTS_SUBDIR_DEFAULT
         MAX_MODELS_FOR_COMBINED = MAX_MODELS_FOR_COMBINED_DEFAULT
+        ENABLE_PHYSICS_BASELINE = bool(args.run_physics_baseline)
+        ADDITIONAL_EXPERIMENT_ROOTS = args.extra_root or []
         PLOT_SWITCHES = PLOT_SWITCHES_DEFAULT.copy()
 
     if ROOT_DIR:
+        run_physics_baseline_if_enabled(ENABLE_PHYSICS_BASELINE)
         aggregate_reports(
             ROOT_DIR, 
             OUTPUT_DIR, 
@@ -2910,4 +3271,5 @@ if __name__ == "__main__":
             advanced_plots=ADVANCED_PLOTS,
             plot_switches=PLOT_SWITCHES,
             engineering_subdir=ENGINEERING_SUBDIR,
-            max_models_for_combined=MAX_MODELS_FOR_COMBINED)
+            max_models_for_combined=MAX_MODELS_FOR_COMBINED,
+            extra_experiment_roots=ADDITIONAL_EXPERIMENT_ROOTS)
