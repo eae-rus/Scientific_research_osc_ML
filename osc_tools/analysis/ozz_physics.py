@@ -25,7 +25,7 @@
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 from typing import Optional, Dict, Any, Tuple, Set
-from scipy.signal import hilbert, find_peaks
+from scipy.signal import find_peaks
 
 
 DEFAULT_U0_RAW_THRESHOLD_VOLTS = 10.0
@@ -51,13 +51,14 @@ def u0_threshold_raw_to_normalized(
 DEFAULT_U0_THRESHOLD_NORM = u0_threshold_raw_to_normalized()
 
 
-def _rms_fundamental_sliding(signal: np.ndarray, fs: int = 1600, f0: float = 50.0) -> np.ndarray:
+def _rms_fundamental_sliding(
+    signal: np.ndarray, fs: int = 1600, f0: float = 50.0
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Массив RMS первой гармоники (f0) через скользящее БПФ с окном в 1 период.
+    Скользящее БПФ: RMS первой гармоники, RMS высших гармоник и THD.
 
     Скользит окном N_period = round(fs/f0) точек по сигналу.
-    Для каждой позиции i вычисляет БПФ окна signal[i:i+N_period] и
-    извлекает амплитуду первой гармоники (бин 1).
+    Для каждой позиции i вычисляет БПФ окна signal[i:i+N_period].
 
     При окне длиной N_period = fs/f0 разрешение по частоте = f0,
     поэтому первая гармоника (f0) попадает ровно в бин с индексом 1.
@@ -68,38 +69,41 @@ def _rms_fundamental_sliding(signal: np.ndarray, fs: int = 1600, f0: float = 50.
         f0: номинальная частота, Гц
 
     Returns:
-        Массив RMS значений длины (T - N_period + 1).
-        rms[i] соответствует окну signal[i:i+N_period].
+        (rms_fundamental, rms_harmonics, thd_arr) — три массива длины
+        (T - N_period + 1).
+        - rms_fundamental: RMS первой гармоники (бин 1).
+        - rms_harmonics: суммарное RMS высших гармоник (бины 2..Nyquist).
+        - thd_arr: THD = rms_harmonics / (rms_fundamental + ε).
     """
     n_period = int(round(fs / f0))  # 32 отсчёта для 1600/50
     T = len(signal)
+    empty = np.array([], dtype=np.float64)
     if T < n_period or n_period < 2:
-        return np.array([], dtype=np.float64)
+        return empty, empty, empty
 
     # sliding_window_view создаёт view без копирования данных
-    windows = sliding_window_view(signal, n_period)  # (T - n_period + 1, n_period)
+    windows = sliding_window_view(signal, n_period)  # (n_win, n_period)
 
     # Батчевое БПФ по всем окнам
-    spectra = np.fft.rfft(windows, axis=1)  # (n_windows, n_period//2 + 1)
+    spectra = np.fft.rfft(windows, axis=1)  # (n_win, n_period//2 + 1)
 
-    # Бин 1 = частота f0 (разрешение = fs/n_period = f0)
-    magnitudes = np.abs(spectra[:, 1]) * 2.0 / n_period  # амплитуды
-    rms_arr = magnitudes / np.sqrt(2)  # RMS = A / sqrt(2)
+    # Амплитуды каждого бина (двусторонний спектр → *2/N)
+    all_mag = np.abs(spectra) * 2.0 / n_period  # (n_win, n_bins)
 
-    return rms_arr
+    # Бин 0 — постоянная составляющая, бин 1 — f0, бины 2+ — высшие
+    mag_fund = all_mag[:, 1]                          # первая гармоника
+    # Суммарная амплитуда высших гармоник (корень из суммы квадратов)
+    mag_harmonics = np.sqrt(np.sum(all_mag[:, 2:] ** 2, axis=1))
+
+    rms_fund = mag_fund / np.sqrt(2)
+    rms_harm = mag_harmonics / np.sqrt(2)
+    thd_arr = rms_harm / (rms_fund + 1e-9)
+
+    return rms_fund, rms_harm, thd_arr
 
 
-def _envelope(signal: np.ndarray) -> np.ndarray:
-    """
-    Огибающая амплитуды сигнала через преобразование Гильберта.
-
-    Returns:
-        Массив огибающей той же длины, что и сигнал
-    """
-    if len(signal) < 4:
-        return np.abs(signal)
-    analytic = hilbert(signal)
-    return np.abs(analytic).astype(np.float64)
+# _envelope удалена: преобразование Гильберта заменено на анализ тренда
+# скользящего RMS (более устойчив на краях окна и при скачках).
 
 
 # ---------------------------------------------------------------------------
@@ -113,23 +117,25 @@ class OzzPrecomputedFeatures:
 
     Attributes:
         u0_3: Массив 3U0(t) длины T.
-        u0_rms_arr: Массив RMS первой гармоники за каждый период.
+        u0_rms_arr: Массив RMS первой гармоники 3U0 за каждый период.
                     Длина (T - n_period + 1). rms[i] → окно [i, i+n_period).
+        thd_arr: Массив THD (Total Harmonic Distortion) 3U0.
+                 THD[i] = RMS_harmonics[i] / (RMS_fundamental[i] + ε).
+                 Та же длина, что и u0_rms_arr.
         du0: Производная 3U0 длины (T - 1).
-        envelope: Огибающая 3U0 длины T.
         n_period: Число отсчётов в 1 периоде (fs/f0).
         fs: Частота дискретизации.
     """
 
-    __slots__ = ('u0_3', 'u0_rms_arr', 'du0', 'envelope', 'n_period', 'fs')
+    __slots__ = ('u0_3', 'u0_rms_arr', 'thd_arr', 'du0', 'n_period', 'fs')
 
     def __init__(self, u0_3: np.ndarray, u0_rms_arr: np.ndarray,
-                 du0: np.ndarray, envelope: np.ndarray,
+                 thd_arr: np.ndarray, du0: np.ndarray,
                  n_period: int, fs: int):
         self.u0_3 = u0_3
         self.u0_rms_arr = u0_rms_arr
+        self.thd_arr = thd_arr
         self.du0 = du0
-        self.envelope = envelope
         self.n_period = n_period
         self.fs = fs
 
@@ -160,20 +166,18 @@ def precompute_ozz_features(
     uc = data[:, 6]
     u0_3 = ua + ub + uc
 
-    u0_rms_arr = _rms_fundamental_sliding(u0_3, fs=fs, f0=f0)
+    rms_fund, _rms_harm, thd_arr = _rms_fundamental_sliding(u0_3, fs=fs, f0=f0)
 
     dt = 1.0 / fs
     du0 = np.diff(u0_3) / dt
-
-    env = _envelope(u0_3)
 
     n_period = int(round(fs / f0))
 
     return OzzPrecomputedFeatures(
         u0_3=u0_3,
-        u0_rms_arr=u0_rms_arr,
+        u0_rms_arr=rms_fund,
+        thd_arr=thd_arr,
         du0=du0,
-        envelope=env,
         n_period=n_period,
         fs=fs,
     )
@@ -200,8 +204,9 @@ def classify_window_from_features(
     u0_threshold: float = DEFAULT_U0_THRESHOLD_NORM,
     deriv_peak_sigma: float = 5.0,
     min_dpozz_peaks: int = 3,
+    thd_threshold: float = 0.15,
     decay_ratio: float = 0.30,
-    envelope_tail_fraction: float = 0.25,
+    rms_tail_fraction: float = 0.20,
     operate_delay_samples: int = 32,
     operate_delay_periods: float = 1.0,
 ) -> Optional[Set[int]]:
@@ -211,20 +216,32 @@ def classify_window_from_features(
     ОЗЗ могут наблюдаться одновременно в одном окне 320 точек.
     Без базового факта ОЗЗ (класс 0) остальные классы не проверяются.
 
+    Критерий ДПОЗЗ (класс 2):
+        Дуговые перемежающиеся замыкания порождают ступенчатую 3U0 с огромным
+        содержанием высших гармоник. Используются два условия (логическое ИЛИ):
+        a) THD(3U0) на активном участке > thd_threshold (спектральный критерий);
+        b) >= min_dpozz_peaks резких скачков dU0/dt > deriv_peak_sigma * σ,
+           при условии что RMS в хвосте окна НЕ спадает (запертый заряд).
+
+    Критерий затухающего ОЗЗ (класс 1):
+        Амплитуда 3U0 экспоненциально спадает. Оценивается по тренду
+        скользящего RMS первой гармоники: если RMS в хвосте окна
+        < decay_ratio * max(RMS), то режим затухающий.
+
     Args:
         features: Предрассчитанные фичи файла (OzzPrecomputedFeatures).
         start: Начало окна (индекс отсчёта, включительно).
         end: Конец окна (индекс отсчёта, исключительно). end - start = window_size.
         u0_threshold: Порог RMS первой гармоники 3U0. Ниже — нормальный режим.
-        deriv_peak_sigma: Порог пиков производной в единицах СКО.
-        min_dpozz_peaks: Минимальное число значимых пиков производной для ДПОЗЗ.
-        decay_ratio: Если огибающая в конце окна < decay_ratio * max(огибающая),
-                     считаем режим затухающим.
-        envelope_tail_fraction: Доля конца окна для оценки затухания (0..1).
+        deriv_peak_sigma: Порог пиков производной в единицах СКО (fallback ДПОЗЗ).
+        min_dpozz_peaks: Минимальное число пиков производной для ДПОЗЗ (fallback).
+        thd_threshold: Порог THD для детектирования ДПОЗЗ (0.15 = 15%).
+        decay_ratio: Если RMS в хвосте окна < decay_ratio * max(RMS),
+                     режим считается затухающим.
+        rms_tail_fraction: Доля конца окна для оценки хвоста RMS (0..1).
         operate_delay_samples: Выдержка времени: число ПОДРЯД идущих отсчётов
             с RMS выше порога. Используется если operate_delay_periods <= 0.
         operate_delay_periods: Выдержка времени в периодах сети 50 Гц.
-            Преобразуется в отсчёты: periods * fs / 50.
             Если > 0, имеет приоритет над operate_delay_samples.
 
     Returns:
@@ -240,9 +257,7 @@ def classify_window_from_features(
     fs = features.fs
     n_period = features.n_period
 
-    # --- Шаг 2: Срез скользящего RMS для текущего окна ---
-    # u0_rms_arr[i] соответствует периоду signal[i:i+n_period].
-    # Для окна [start, end) нужны позиции от start до (end - n_period).
+    # --- Шаг 1: Срез скользящего RMS для текущего окна ---
     rms_start = start
     rms_end = end - n_period + 1
     if rms_end <= rms_start or rms_end > len(features.u0_rms_arr):
@@ -251,46 +266,64 @@ def classify_window_from_features(
     if len(rms_slice) == 0 or np.max(rms_slice) < u0_threshold:
         return None  # Нормальный режим
 
-    # --- Шаг 2.1: Выдержка времени (подряд идущие отсчёты выше порога) ---
+    # --- Шаг 1.1: Выдержка времени (подряд идущие отсчёты выше порога) ---
     if operate_delay_periods > 0:
         delay_samples = int(round(operate_delay_periods * fs / 50.0))
     else:
         delay_samples = int(max(0, operate_delay_samples))
 
+    above_mask = rms_slice >= u0_threshold
     if delay_samples > 0:
-        above_mask = rms_slice >= u0_threshold
         max_run = _max_consecutive_run(above_mask)
         if max_run < delay_samples:
             return None
 
-    # --- Базовый ОЗЗ подтверждён, собираем набор активных классов ---
+    # --- Базовый ОЗЗ подтверждён ---
     active_classes: Set[int] = {0}
 
-    # --- Шаг 3-4: Производная 3U0 → критерий ДПОЗЗ ---
-    # du0 имеет длину (T_total - 1). Для окна [start, end) берём [start, end-1).
+    # --- Шаг 2: Критерий ДПОЗЗ (THD + fallback на пики производной) ---
+    thd_slice = features.thd_arr[rms_start:rms_end]
+
+    # Условие (a): THD на активном участке (где RMS выше порога)
+    thd_on_active = thd_slice[above_mask]
+    thd_detected = False
+    if len(thd_on_active) > 0:
+        # 90-й перцентиль THD на активных точках
+        thd_p90 = np.percentile(thd_on_active, 90)
+        if thd_p90 > thd_threshold:
+            thd_detected = True
+
+    # Условие (b) — fallback: пики производной + запертый заряд
+    peaks_detected = False
     du0_slice = features.du0[start:end - 1]
     du0_std = np.std(du0_slice)
-
-    env_slice = features.envelope[start:end]
-    tail_len = max(int(T * envelope_tail_fraction), 1)
-    env_tail_mean = np.mean(env_slice[-tail_len:])
-    env_max = np.max(env_slice)
-
     if du0_std > 1e-9:
         threshold_abs = deriv_peak_sigma * du0_std
         min_distance = max(int(fs / 50.0 / 2), 1)
         peaks, _ = find_peaks(np.abs(du0_slice), height=threshold_abs, distance=min_distance)
 
-        has_trapped_charge = (env_max > 1e-9) and (env_tail_mean > decay_ratio * env_max)
+        # Запертый заряд: RMS в хвосте окна не спадает
+        tail_len = max(int(len(rms_slice) * rms_tail_fraction), 1)
+        tail_rms = np.mean(rms_slice[-tail_len:])
+        rms_max = np.max(rms_slice)
+        has_trapped_charge = (rms_max > 1e-9) and (tail_rms > decay_ratio * rms_max)
 
         if len(peaks) >= min_dpozz_peaks and has_trapped_charge:
-            active_classes.add(2)  # ДПОЗЗ
+            peaks_detected = True
 
-    # --- Шаг 5: Критерий затухающего ОЗЗ ---
-    if env_max > 1e-9:
-        if env_tail_mean < decay_ratio * env_max:
-            peak_pos = np.argmax(env_slice)
-            if peak_pos < T * 0.7:
+    if thd_detected or peaks_detected:
+        active_classes.add(2)  # ДПОЗЗ
+
+    # --- Шаг 3: Критерий затухающего ОЗЗ (тренд RMS) ---
+    rms_max = np.max(rms_slice)
+    idx_max = int(np.argmax(rms_slice))
+    tail_len = max(int(len(rms_slice) * rms_tail_fraction), 1)
+    tail_rms = np.mean(rms_slice[-tail_len:])
+
+    if rms_max > 1e-9:
+        # Пик не в самом конце окна — есть время оценить затухание
+        if idx_max < 0.7 * len(rms_slice):
+            if tail_rms < decay_ratio * rms_max:
                 active_classes.add(1)  # Затухающее ОЗЗ
 
     return active_classes

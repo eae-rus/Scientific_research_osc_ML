@@ -741,7 +741,7 @@ if __name__ == "__main__":
 
     if MANUAL_RUN or args.exp is None:
         # EXP_NAME = "Exp_2.6.1_PhysicsKAN_medium_phase_polar_stride_base_weights_aug"
-        EXP_NAME = "Exp_2.6.9_cPhysicsKAN_heavy_phase_polar_stride_base_weights_aug"
+        EXP_NAME = "Exp_2.6.11_cPhysicsKAN_heavy_phase_polar_stride_ozz_win_any_weights_aug"
         OUTPUT_DIR = "reports/Exp_2_5_and_start_Exp_2_6"
         DATA_DIR = "data/ml_datasets"
         INCLUDE_ZERO_CURRENT = True

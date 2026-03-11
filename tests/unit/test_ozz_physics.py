@@ -15,7 +15,6 @@ from osc_tools.analysis.ozz_physics import (
     precompute_ozz_features,
     classify_window_from_features,
     _rms_fundamental_sliding,
-    _envelope,
     u0_threshold_raw_to_normalized,
 )
 from osc_tools.data_management.ozz_split import (
@@ -197,7 +196,7 @@ class TestPrecomputeAndClassify:
         features = precompute_ozz_features(data, fs=1600)
         assert features.u0_3.shape == (T,)
         assert features.du0.shape == (T - 1,)
-        assert features.envelope.shape == (T,)
+        assert features.thd_arr.shape == (T - 32 + 1,)
         assert features.n_period == 32
         assert len(features.u0_rms_arr) == T - 32 + 1
 
@@ -248,50 +247,66 @@ class TestPrecomputeAndClassify:
         assert result_second == {0}
 
 
-class TestRmsAndEnvelope:
+class TestRmsAndThd:
     """Тесты вспомогательных функций."""
 
     def test_rms_fundamental_sliding_shape(self):
-        """Скользящее RMS должно вернуть массив длины T - N_period + 1."""
+        """Скользящее RMS должно вернуть тройку массивов длины T - N_period + 1."""
         fs = 1600
         n_period = 32  # fs / 50
         signal = np.sin(2 * np.pi * 50 * np.arange(320) / fs)
-        rms_arr = _rms_fundamental_sliding(signal, fs=fs)
-        assert rms_arr.shape == (320 - n_period + 1,)
+        rms_fund, rms_harm, thd_arr = _rms_fundamental_sliding(signal, fs=fs)
+        expected_len = 320 - n_period + 1
+        assert rms_fund.shape == (expected_len,)
+        assert rms_harm.shape == (expected_len,)
+        assert thd_arr.shape == (expected_len,)
 
     def test_rms_fundamental_sliding_sinusoid(self):
         """Для чистой синусоиды каждый отсчёт RMS ≈ A/sqrt(2)."""
         fs = 1600
         A = 10.0
         signal = A * np.sin(2 * np.pi * 50 * np.arange(320) / fs)
-        rms_arr = _rms_fundamental_sliding(signal, fs=fs)
+        rms_fund, rms_harm, thd_arr = _rms_fundamental_sliding(signal, fs=fs)
         expected = A / np.sqrt(2)
         # Все значения должны быть близки к ожидаемому
-        assert np.all(np.abs(rms_arr - expected) < 0.5)
+        assert np.all(np.abs(rms_fund - expected) < 0.5)
 
     def test_rms_fundamental_sliding_decay(self):
         """Для затухающего сигнала RMS должно убывать."""
         fs = 1600
         t = np.arange(320) / fs
         signal = 20.0 * np.exp(-15 * t) * np.sin(2 * np.pi * 50 * t)
-        rms_arr = _rms_fundamental_sliding(signal, fs=fs)
+        rms_fund, _, _ = _rms_fundamental_sliding(signal, fs=fs)
         # RMS в начале должно быть больше, чем в конце
-        assert rms_arr[0] > rms_arr[-1] * 2
+        assert rms_fund[0] > rms_fund[-1] * 2
 
     def test_rms_fundamental_sliding_short_signal(self):
-        """Короткий сигнал (< 1 периода) → пустой массив."""
-        rms_arr = _rms_fundamental_sliding(np.zeros(10), fs=1600)
-        assert len(rms_arr) == 0
+        """Короткий сигнал (< 1 периода) → пустые массивы."""
+        rms_fund, rms_harm, thd_arr = _rms_fundamental_sliding(np.zeros(10), fs=1600)
+        assert len(rms_fund) == 0
+        assert len(rms_harm) == 0
+        assert len(thd_arr) == 0
 
-    def test_envelope_constant(self):
-        """Огибающая синусоиды должна быть ~A."""
+    def test_thd_pure_sinusoid_low(self):
+        """Для чистой синусоиды THD должен быть мал (нет высших гармоник)."""
         fs = 1600
         A = 10.0
         t = np.arange(320) / fs
         signal = A * np.sin(2 * np.pi * 50 * t)
-        env = _envelope(signal)
-        # Огибающая должна быть примерно A (с точностью до ~10%)
-        assert np.mean(env[32:]) > A * 0.85
+        _, _, thd_arr = _rms_fundamental_sliding(signal, fs=fs)
+        # THD чистой синусоиды должен быть < 5%
+        assert np.max(thd_arr) < 0.05
+
+    def test_thd_square_wave_high(self):
+        """Для прямоугольного сигнала THD должен быть высоким."""
+        fs = 1600
+        n_period = 32
+        t = np.arange(320) / fs
+        # Прямоугольный сигнал 50 Гц — много гармоник
+        signal = 10.0 * np.sign(np.sin(2 * np.pi * 50 * t))
+        _, _, thd_arr = _rms_fundamental_sliding(signal, fs=fs)
+        # THD прямоугольника ≈ 48%, должен быть > 15%
+        assert np.mean(thd_arr) > 0.15
 
 
 class TestAddOzzTargetColumns:
