@@ -50,6 +50,11 @@ PLOT_SWITCHES_DEFAULT: Dict[str, bool] = {
 ENGINEERING_PLOTS_SUBDIR_DEFAULT = 'engineering_plots'
 MAX_MODELS_FOR_COMBINED_DEFAULT = 10
 
+# Сплит для полной оценки в aggregate_reports:
+# - 'test'  -> стандартный сценарий (по умолчанию)
+# - 'train' -> диагностика переобучения и сравнение train/test метрик
+FULL_EVAL_SPLIT_DEFAULT = 'test'
+
 # Частые шаблоны названий файлов с предсказаниями.
 PREDICTION_FILE_PATTERNS: Dict[str, List[str]] = {
     'best': [
@@ -65,3 +70,31 @@ PREDICTION_FILE_PATTERNS: Dict[str, List[str]] = {
         'final_test_predictions.csv'
     ]
 }
+
+
+def get_prediction_file_patterns(eval_split: str = 'test') -> Dict[str, List[str]]:
+    """
+    Возвращает приоритетные шаблоны файлов предсказаний для выбранного сплита.
+
+    Сначала ищем split-специфичные имена (например, train_predictions_best.csv),
+    затем fallback на исторические нейтральные варианты.
+    """
+    split = str(eval_split or 'test').strip().lower()
+    return {
+        'best': [
+            f'{split}_predictions_best.csv',
+            'predictions_best.csv',
+            'best_predictions.csv',
+            f'best_{split}_predictions.csv',
+            'test_predictions_best.csv',
+            'best_test_predictions.csv',
+        ],
+        'final': [
+            f'{split}_predictions_final.csv',
+            'predictions_final.csv',
+            'final_predictions.csv',
+            f'final_{split}_predictions.csv',
+            'test_predictions_final.csv',
+            'final_test_predictions.csv',
+        ]
+    }

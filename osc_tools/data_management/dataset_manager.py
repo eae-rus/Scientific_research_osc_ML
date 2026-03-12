@@ -42,6 +42,7 @@ class DatasetManager:
     MAIN_CSV = "labeled_2025_12_03.csv"
     TRAIN_CSV = "train.csv"
     TEST_CSV = "test.csv"
+    PRECOMPUTED_TRAIN_CSV = "train_precomputed.csv"
     PRECOMPUTED_TEST_CSV = "test_precomputed.csv"
     NORM_COEF_CSV = "norm_coef_all_v1.4.csv"
     
@@ -209,6 +210,7 @@ class DatasetManager:
         force: bool = False,
         num_harmonics: int = 9,
         output_filename: Optional[str] = None,
+        source_split: str = 'test',
         phase_polar_h1_angle_only: bool = False,
     ) -> Path:
         """
@@ -231,13 +233,19 @@ class DatasetManager:
         Args:
             force: Принудительно пересоздать файл
             num_harmonics: Количество гармоник для предрасчёта
-            output_filename: Имя выходного precomputed файла (по умолчанию test_precomputed.csv)
+            output_filename: Имя выходного precomputed файла
+            source_split: Исходный split для предрасчёта ('train' или 'test')
             phase_polar_h1_angle_only: Если True, для phase_polar сохраняет угол только 1-й гармоники
             
         Returns:
             Путь к созданному файлу
         """
-        output_name = output_filename or self.PRECOMPUTED_TEST_CSV
+        split = str(source_split or 'test').strip().lower()
+        if split not in ('train', 'test'):
+            raise ValueError(f"Неподдерживаемый source_split: {source_split}. Ожидается 'train' или 'test'.")
+
+        default_output = self.PRECOMPUTED_TEST_CSV if split == 'test' else self.PRECOMPUTED_TRAIN_CSV
+        output_name = output_filename or default_output
         output_path = self.data_dir / output_name
         
         if output_path.exists() and not force:
@@ -245,13 +253,14 @@ class DatasetManager:
             return output_path
         
         num_harmonics = max(1, int(num_harmonics))
-        print(f"[DatasetManager] Создание предрассчитанного тестового датасета (гармоники={num_harmonics})...")
+        print(f"[DatasetManager] Создание предрассчитанного {split}-датасета (гармоники={num_harmonics})...")
         
         # Убеждаемся что train/test разделение существует
-        _, test_path = self.ensure_train_test_split()
+        train_path, test_path = self.ensure_train_test_split()
+        source_path = test_path if split == 'test' else train_path
         
         # Загружаем тестовые данные
-        test_df = pl.read_csv(test_path, infer_schema_length=50000, null_values=["NA", "nan", "null", ""])
+        test_df = pl.read_csv(source_path, infer_schema_length=50000, null_values=["NA", "nan", "null", ""])
         test_df = clean_labels(test_df)
         test_df = add_base_labels(test_df)
         
@@ -606,9 +615,23 @@ class DatasetManager:
         else:
             raise ValueError(f"Неизвестный feature_mode: {feature_mode}")
     
-    def load_train_df(self) -> pl.DataFrame:
-        """Загружает и подготавливает тренировочный DataFrame."""
+    def load_train_df(self, precomputed: bool = False, precomputed_filename: Optional[str] = None) -> pl.DataFrame:
+        """
+        Загружает и подготавливает тренировочный DataFrame.
+
+        Args:
+            precomputed: Если True, загружает предрассчитанный train-файл
+            precomputed_filename: Имя precomputed CSV (по умолчанию train_precomputed.csv)
+        """
         self.ensure_train_test_split()
+
+        if precomputed:
+            precomputed_name = precomputed_filename or self.PRECOMPUTED_TRAIN_CSV
+            precomputed_path = self.data_dir / precomputed_name
+            if not precomputed_path.exists():
+                self.create_precomputed_test_csv(output_filename=precomputed_name, source_split='train')
+            return pl.read_csv(precomputed_path, infer_schema_length=50000)
+
         train_path = self.data_dir / self.TRAIN_CSV
         df = pl.read_csv(train_path, infer_schema_length=50000, null_values=["NA", "nan", "null", ""])
         df = clean_labels(df)

@@ -170,6 +170,7 @@ def save_as_experiment(
     results: Dict[str, Any],
     experiment_name: str = "PhysicsBaseline_OZZ",
     save_dir: Path = None,
+    eval_split: str = 'test',
 ) -> Path:
     """
     Сохраняет результаты физической модели в формате эксперимента,
@@ -249,6 +250,10 @@ def save_as_experiment(
     y_true_arr = np.asarray(results.get('targets', []))
     y_pred_arr = np.asarray(results.get('predictions', []))
 
+    split = str(eval_split or 'test').strip().lower()
+    if split not in ('train', 'test'):
+        raise ValueError(f"Неподдерживаемый eval_split: {eval_split}. Ожидается 'train' или 'test'.")
+
     if y_true_arr.ndim == 2 and y_true_arr.shape[1] >= 3:
         pred_df = pd.DataFrame({
             'y_true_ozz': y_true_arr[:, 0].astype(int),
@@ -258,28 +263,34 @@ def save_as_experiment(
             'y_pred_decay': y_pred_arr[:, 1].astype(int),
             'y_pred_dpozz': y_pred_arr[:, 2].astype(int),
         })
-        pred_df.to_csv(exp_dir / 'test_predictions_best.csv', index=False)
-        pred_df.to_csv(exp_dir / 'test_predictions_final.csv', index=False)
+        pred_df.to_csv(exp_dir / f'{split}_predictions_best.csv', index=False)
+        pred_df.to_csv(exp_dir / f'{split}_predictions_final.csv', index=False)
 
     print(f"[PhysicsBaseline] Результаты сохранены в {exp_dir}")
     return exp_dir
 
 
-def main():
-    """Запуск оценки физической baseline модели на тестовых данных."""
+def main(eval_split: str = 'test'):
+    """Запуск оценки физической baseline модели на выбранном split данных."""
     DATA_DIR = ROOT_DIR / 'data' / 'ml_datasets'
     NORM_COEF_PATH = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
+    split = str(eval_split or 'test').strip().lower()
+    if split not in ('train', 'test'):
+        raise ValueError(f"Неподдерживаемый eval_split: {eval_split}. Ожидается 'train' или 'test'.")
 
     print("=" * 60)
-    print("Оценка физической baseline-модели (ОЗЗ/ДПОЗЗ)")
+    print(f"Оценка физической baseline-модели (ОЗЗ/ДПОЗЗ), split='{split}'")
     print("=" * 60)
 
     dm = DatasetManager(str(DATA_DIR), norm_coef_path=str(NORM_COEF_PATH))
     dm.ensure_train_test_split()
 
-    print("Загрузка тестовых данных (precomputed — нормализованные)...")
-    test_df = dm.load_test_df(precomputed=True)
-    test_df = add_ozz_target_columns(test_df)
+    print(f"Загрузка данных split='{split}'...")
+    if split == 'train':
+        eval_df = dm.load_train_df(precomputed=False)
+    else:
+        eval_df = dm.load_test_df(precomputed=True)
+    test_df = add_ozz_target_columns(eval_df)
 
     print(f"Тестовая выборка: {len(test_df):,} точек")
 
@@ -296,7 +307,7 @@ def main():
     print(f"Время: {results['elapsed_seconds']:.1f} с")
 
     # Сохраняем как эксперимент
-    save_as_experiment(results)
+    save_as_experiment(results, eval_split=split)
 
 if __name__ == "__main__":
     main()

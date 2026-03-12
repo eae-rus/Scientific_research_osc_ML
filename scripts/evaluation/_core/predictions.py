@@ -16,6 +16,7 @@ from scripts.evaluation._core.constants import (
     OZZ_MULTILABEL_PRED_COLS,
     OZZ_MULTILABEL_ALL_COLS,
     PREDICTION_FILE_PATTERNS,
+    get_prediction_file_patterns,
 )
 from scripts.evaluation._core.model_utils import get_eval_logger
 
@@ -108,11 +109,13 @@ def _load_prediction_file_safe(file_path: Path) -> Optional[pd.DataFrame]:
         return None
 
 
-def load_best_final_predictions(exp_dir: Path) -> Dict[str, Optional[pd.DataFrame]]:
-    """Ищет файлы предсказаний Best/Final в каталоге эксперимента."""
+def load_best_final_predictions(exp_dir: Path, eval_split: str = 'test') -> Dict[str, Optional[pd.DataFrame]]:
+    """Ищет файлы предсказаний Best/Final в каталоге эксперимента для заданного split."""
     loaded: Dict[str, Optional[pd.DataFrame]] = {'best': None, 'final': None}
+    file_patterns = get_prediction_file_patterns(eval_split)
     for version in ('best', 'final'):
-        for pattern in PREDICTION_FILE_PATTERNS[version]:
+        # Сначала split-специфичные шаблоны, затем исторические fallback-имена.
+        for pattern in file_patterns.get(version, PREDICTION_FILE_PATTERNS[version]):
             candidate = exp_dir / pattern
             df_pred = _load_prediction_file_safe(candidate)
             if df_pred is not None:

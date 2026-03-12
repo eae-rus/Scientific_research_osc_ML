@@ -445,6 +445,9 @@ def generate_marking_plots_for_model(
     # Параметры модели/данных
     window_size = config.get('data', {}).get('window_size', 320)
     sampling_rate = config.get('data', {}).get('sampling_rate', 1600)
+    target_position = int(config.get('data', {}).get('target_position', window_size - 1))
+    if target_position < 0 or target_position >= window_size:
+        raise ValueError(f"Некорректный target_position={target_position} для window_size={window_size}")
     input_size = config.get('model', {}).get('params', {}).get('input_size', 0)
     in_channels = config.get('model', {}).get('params', {}).get('in_channels')
 
@@ -537,9 +540,9 @@ def generate_marking_plots_for_model(
         # Индексы скользящих окон
         indices = list(range(0, len(file_df) - window_size + 1))
 
-        # Предсказания по всем окнам — со сглаживанием через аккумуляцию
-        # Каждое окно покрывает точки [start_idx ... start_idx + window_size - 1].
-        # Для каждой точки накапливаем сумму вероятностей и число покрытий.
+        # Предсказания по всем окнам.
+        # any_in_window: накапливаем по всем точкам покрытия окна.
+        # point: записываем только в target_position внутри окна (обычно конец окна).
         n_points = len(file_df)
         pred_prob_accum = {col: np.zeros(n_points, dtype=np.float64) for col in target_cols}
         pred_count = np.zeros(n_points, dtype=np.int32)
@@ -592,10 +595,17 @@ def generate_marking_plots_for_model(
                     if 2 in pred_result and len(target_cols) > 2:
                         prob_vec[2] = 1.0
 
-                end_cover = min(start_idx + window_size, n_points)
-                pred_count[start_idx:end_cover] += 1
-                for k, col in enumerate(target_cols):
-                    pred_prob_accum[col][start_idx:end_cover] += float(prob_vec[k])
+                if target_window_mode == 'any_in_window':
+                    end_cover = min(start_idx + window_size, n_points)
+                    pred_count[start_idx:end_cover] += 1
+                    for k, col in enumerate(target_cols):
+                        pred_prob_accum[col][start_idx:end_cover] += float(prob_vec[k])
+                else:
+                    target_idx = start_idx + target_position
+                    if 0 <= target_idx < n_points:
+                        pred_count[target_idx] += 1
+                        for k, col in enumerate(target_cols):
+                            pred_prob_accum[col][target_idx] += float(prob_vec[k])
         else:
             ds = OscillogramDataset(
                 dataframe=file_df,
@@ -656,10 +666,17 @@ def generate_marking_plots_for_model(
                     prob_matrix = probs
 
                 for j, start_idx in enumerate(batch_indices):
-                    end_cover = min(start_idx + window_size, n_points)
-                    pred_count[start_idx:end_cover] += 1
-                    for k, col in enumerate(target_cols):
-                        pred_prob_accum[col][start_idx:end_cover] += float(prob_matrix[j, k])
+                    if target_window_mode == 'any_in_window':
+                        end_cover = min(start_idx + window_size, n_points)
+                        pred_count[start_idx:end_cover] += 1
+                        for k, col in enumerate(target_cols):
+                            pred_prob_accum[col][start_idx:end_cover] += float(prob_matrix[j, k])
+                    else:
+                        target_idx = start_idx + target_position
+                        if 0 <= target_idx < n_points:
+                            pred_count[target_idx] += 1
+                            for k, col in enumerate(target_cols):
+                                pred_prob_accum[col][target_idx] += float(prob_matrix[j, k])
 
         # Сглаживание: средняя вероятность = сумма / количество покрытий
         for col in target_cols:
@@ -741,12 +758,12 @@ if __name__ == "__main__":
 
     if MANUAL_RUN or args.exp is None:
         # EXP_NAME = "Exp_2.6.1_PhysicsKAN_medium_phase_polar_stride_base_weights_aug"
-        EXP_NAME = "Exp_2.6.11_cPhysicsKAN_heavy_phase_polar_stride_ozz_win_any_weights_aug"
+        EXP_NAME = "Exp_2.6.11_ConvKAN_heavy_phase_polar_stride_ozz_weights_aug"
         OUTPUT_DIR = "reports/Exp_2_5_and_start_Exp_2_6"
         DATA_DIR = "data/ml_datasets"
         INCLUDE_ZERO_CURRENT = True
         INCLUDE_ZERO_VOLTAGE = True
-        SPLIT = 'train'  # 'train' или 'test'
+        SPLIT = 'test'  # 'train' или 'test'
         PLOT_MODE = 'confidence'  # 'discrete' или 'confidence'
         THRESHOLD = 0.5
         INFERENCE_BACKEND = 'auto'  # 'auto' | 'nn' | 'physics'

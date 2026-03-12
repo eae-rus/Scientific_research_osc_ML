@@ -27,7 +27,11 @@ def load_existing_summary(csv_path: Path) -> Optional[pd.DataFrame]:
     return None
 
 
-def needs_full_eval_recalc(existing_row: Optional[pd.Series], require_hierarchical: bool = False) -> bool:
+def needs_full_eval_recalc(
+    existing_row: Optional[pd.Series],
+    require_hierarchical: bool = False,
+    eval_split: str = 'test'
+) -> bool:
     """
     Проверяет, нужен ли пересчёт full_eval для данной модели.
     
@@ -39,6 +43,12 @@ def needs_full_eval_recalc(existing_row: Optional[pd.Series], require_hierarchic
     - (Опционально) отсутствуют метрики Hierarchical Accuracy
     """
     if existing_row is None:
+        return True
+
+    # Если ранее метрики считались на другом split, нужен полный пересчёт.
+    row_split = str(existing_row.get('Full Eval Split', 'test')).strip().lower()
+    req_split = str(eval_split or 'test').strip().lower()
+    if row_split != req_split:
         return True
     
     # Проверяем ключевые метрики на 0

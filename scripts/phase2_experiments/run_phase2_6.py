@@ -506,7 +506,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
             "aug": True,
             "balancing": "weights",
             "target_level": "ozz",
-            "target_window": "any_in_window",
+            #"target_window": "any_in_window",
             "models_override": ["cPhysicsKAN", "SimpleMLP", "SimpleCNN", "ConvKAN", "SimpleKAN", "PhysicsKAN", "ResNet1D"],
             "complexities_override": ["heavy"]
         },

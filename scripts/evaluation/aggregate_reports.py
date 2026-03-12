@@ -44,6 +44,7 @@ from scripts.evaluation._core.constants import (
     ENGINEERING_PLOTS_SUBDIR_DEFAULT,
     MAX_MODELS_FOR_COMBINED_DEFAULT,
     PREDICTION_FILE_PATTERNS,
+    FULL_EVAL_SPLIT_DEFAULT,
 )
 
 from scripts.evaluation._core.cache_and_data import (
@@ -139,7 +140,8 @@ def aggregate_reports(
     plot_switches: Optional[Dict[str, bool]] = None,
     engineering_subdir: str = ENGINEERING_PLOTS_SUBDIR_DEFAULT,
     max_models_for_combined: int = MAX_MODELS_FOR_COMBINED_DEFAULT,
-    extra_experiment_roots: Optional[List[str]] = None
+    extra_experiment_roots: Optional[List[str]] = None,
+    full_eval_split: str = FULL_EVAL_SPLIT_DEFAULT,
 ):
     """
     Агрегирует отчеты обучения из всех поддиректорий.
@@ -156,8 +158,13 @@ def aggregate_reports(
         plot_switches: Словарь включения/выключения инженерных графиков.
         engineering_subdir: Подпапка в report для инженерных графиков.
         max_models_for_combined: Порог количества моделей для единого общего графика.
+        full_eval_split: На каком split выполнять full_eval ('test' или 'train').
     """
     root_path = Path(root_dir)
+    full_eval_split = str(full_eval_split or FULL_EVAL_SPLIT_DEFAULT).strip().lower()
+    if full_eval_split not in ('test', 'train'):
+        raise ValueError(f"Неподдерживаемый full_eval_split: {full_eval_split}. Ожидается 'test' или 'train'.")
+
     experiments = []
     all_histories = {}
     effective_plot_switches = PLOT_SWITCHES_DEFAULT.copy()
@@ -233,7 +240,7 @@ def aggregate_reports(
                 print(f"[!] Дополнительная директория не найдена и будет пропущена: {extra_path}")
     all_roots = list(dict.fromkeys(all_roots))
     roots_str = ", ".join(str(p) for p in all_roots)
-    print(f"Сканирование: {roots_str} (Язык: {lang})...")
+    print(f"Сканирование: {roots_str} (Язык: {lang}, full_eval_split: {full_eval_split})...")
     
     # Собираем все эксперименты
     all_exp_dirs_set = set()
@@ -258,7 +265,7 @@ def aggregate_reports(
                 metrics = load_history_as_metrics(history_file)
             config = load_config(config_file) if config_file.exists() else {}
 
-            exp_predictions[exp_dir.name] = load_best_final_predictions(exp_dir)
+            exp_predictions[exp_dir.name] = load_best_final_predictions(exp_dir, eval_split=full_eval_split)
             
             if not metrics:
                 continue
@@ -340,7 +347,8 @@ def aggregate_reports(
 
                 if is_physics_baseline:
                     # Для формульной модели: чекпоинтов нет, метрики уже записаны
-                    if existing_row is not None:
+                    row_split = str(existing_row.get('Full Eval Split', 'test')).strip().lower() if existing_row is not None else ''
+                    if existing_row is not None and row_split == full_eval_split:
                         for k in ('Full Best Acc', 'Full Best F1', 'Full Final Acc',
                                   'Full Final F1', 'Full Best ROC-AUC', 'Full Final ROC-AUC',
                                   'Full Eval Time (s)'):
@@ -360,10 +368,11 @@ def aggregate_reports(
                         exp_data['Full Eval Time (s)'] = 0.0
                         exp_data['Full Eval Samples'] = 0
                         exp_data['Num Classes'] = config.get('model', {}).get('params', {}).get('num_classes', 0)
+                    exp_data['Full Eval Split'] = full_eval_split
                     skip_stats['full_eval_skipped'] += 1
 
-                elif needs_full_eval_recalc(existing_row, require_hierarchical=require_hier):
-                    full_metrics = evaluate_full_test_dataset(exp_dir, config, data_dir)
+                elif needs_full_eval_recalc(existing_row, require_hierarchical=require_hier, eval_split=full_eval_split):
+                    full_metrics = evaluate_full_test_dataset(exp_dir, config, data_dir, eval_split=full_eval_split)
                     exp_data['Full Best Acc'] = full_metrics['full_best_acc']
                     exp_data['Full Best F1'] = full_metrics['full_best_f1']
                     exp_data['Full Final Acc'] = full_metrics['full_final_acc']
@@ -372,6 +381,7 @@ def aggregate_reports(
                     exp_data['Full Final ROC-AUC'] = full_metrics.get('full_final_roc_auc', 0.0)
                     exp_data['Full Eval Time (s)'] = full_metrics['full_eval_time_s']
                     exp_data['Full Eval Samples'] = full_metrics['full_eval_samples']
+                    exp_data['Full Eval Split'] = full_eval_split
                     exp_data['Num Classes'] = full_metrics.get('num_classes', 0)
                     exp_data['Full Per Class F1 Count'] = full_metrics.get('full_per_class_f1_count', 0)
                     exp_data['Full Per Class Support Count'] = full_metrics.get('full_per_class_support_count', 0)
@@ -409,6 +419,7 @@ def aggregate_reports(
                               'Full Eval Time (s)'):
                         exp_data[k] = existing_row.get(k, 0.0)
                     exp_data['Full Eval Samples'] = existing_row.get('Full Eval Samples', 0)
+                    exp_data['Full Eval Split'] = full_eval_split
                     exp_data['Num Classes'] = existing_row.get('Num Classes', 0)
                     exp_data['Full Per Class F1 Count'] = existing_row.get('Full Per Class F1 Count', 0)
                     exp_data['Full Per Class Support Count'] = existing_row.get('Full Per Class Support Count', 0)
@@ -454,7 +465,7 @@ def aggregate_reports(
 
     # Перезагружаем предсказания (CSV могли появиться после full_eval)
     for exp_dir in all_exp_dirs:
-        fresh = load_best_final_predictions(exp_dir)
+        fresh = load_best_final_predictions(exp_dir, eval_split=full_eval_split)
         if fresh.get('best') is not None or fresh.get('final') is not None:
             exp_predictions[exp_dir.name] = fresh
 
@@ -490,7 +501,7 @@ def aggregate_reports(
         else:
             print("[!] Не удалось сопоставить предсказания с моделями для инженерных графиков.")
     elif out_path:
-        print("[!] CSV-файлы предсказаний (test_predictions_best/final.csv) не найдены.")
+        print(f"[!] CSV-файлы предсказаний ({full_eval_split}_predictions_best/final.csv) не найдены.")
         print("    Запустите с --full-eval чтобы пересчитать и создать файлы предсказаний.")
 
     # --- ВИЗУАЛИЗАЦИЯ (Report Engine 2.0) ---
@@ -586,14 +597,14 @@ def aggregate_reports(
         print(f"  Графики: сгенерировано {skip_stats['plots_generated']}, пропущено {skip_stats['plots_skipped']}")
 
 
-def run_physics_baseline_if_enabled(enabled: bool) -> None:
+def run_physics_baseline_if_enabled(enabled: bool, eval_split: str = FULL_EVAL_SPLIT_DEFAULT) -> None:
     """Опционально запускает deterministic PhysicsBaseline_OZZ перед агрегацией."""
     if not enabled:
         return
     try:
-        print("[PhysicsBaseline] Запуск детерминированной baseline-модели...")
+        print(f"[PhysicsBaseline] Запуск детерминированной baseline-модели (split='{eval_split}')...")
         from scripts.evaluation.evaluate_physics_baseline import main as physics_baseline_main
-        physics_baseline_main()
+        physics_baseline_main(eval_split=eval_split)
         print("[PhysicsBaseline] Готово: результаты baseline обновлены.")
     except Exception as exc:
         print(f"[!] Ошибка запуска PhysicsBaseline: {exc}")
@@ -617,19 +628,33 @@ if __name__ == "__main__":
     MANUAL_RUN = True
     
     if MANUAL_RUN or len(sys.argv) <= 1 or args.root is None:
+        # Корневая директория, где ищем эксперименты для агрегации.
         ROOT_DIR = "experiments/Для_запуска_стат"
+        # Папка, куда сохраняются сводный CSV, графики и служебные логи.
         OUTPUT_DIR = "reports/Exp_2_5_and_start_Exp_2_6"
+        # Генерировать базовые графики обучения и сравнительные фигуры.
         GENERATE_PLOTS = True
+        # Пересчитывать CPU benchmark инференса (если не закэширован).
         RUN_BENCHMARK = True
+        # Запускать полную оценку (best/final) на выбранном сплите.
         RUN_FULL_EVAL = True
+        # Выбранный сплит для full_eval: 'test' (по умолчанию) или 'train'.
+        FULL_EVAL_SPLIT = "test"
+        # Строить расширенные графики (heatmap, Pareto и т.д.).
         ADVANCED_PLOTS = True
+        # Язык подписей на графиках и в визуализациях.
         LANG = "ru"
+        # Подпапка инженерных графиков внутри OUTPUT_DIR.
         ENGINEERING_SUBDIR = ENGINEERING_PLOTS_SUBDIR_DEFAULT
+        # Ограничение на число моделей в объединённых инженерных графиках.
         MAX_MODELS_FOR_COMBINED = MAX_MODELS_FOR_COMBINED_DEFAULT
+        # Перед агрегацией запустить формульный PhysicsBaseline.
         ENABLE_PHYSICS_BASELINE = True
+        # Дополнительные папки экспериментов, которые надо включить в сканирование.
         ADDITIONAL_EXPERIMENT_ROOTS = [
             "experiments/phase2_6/PhysicsBaseline_OZZ"
         ]
+        # Тонкая настройка инженерных графиков (можно отключать отдельные виды).
         PLOT_SWITCHES = {
             'engineering_bars_per_model_absolute': True,
             'engineering_bars_per_model_relative': True,
@@ -645,6 +670,7 @@ if __name__ == "__main__":
         GENERATE_PLOTS = args.plot
         RUN_BENCHMARK = args.benchmark
         RUN_FULL_EVAL = args.full_eval
+        FULL_EVAL_SPLIT = 'test'
         ADVANCED_PLOTS = args.advanced_plots
         LANG = args.lang
         ENGINEERING_SUBDIR = ENGINEERING_PLOTS_SUBDIR_DEFAULT
@@ -654,7 +680,7 @@ if __name__ == "__main__":
         PLOT_SWITCHES = PLOT_SWITCHES_DEFAULT.copy()
 
     if ROOT_DIR:
-        run_physics_baseline_if_enabled(ENABLE_PHYSICS_BASELINE)
+        run_physics_baseline_if_enabled(ENABLE_PHYSICS_BASELINE, eval_split=FULL_EVAL_SPLIT)
         aggregate_reports(
             ROOT_DIR, 
             OUTPUT_DIR, 
@@ -668,4 +694,5 @@ if __name__ == "__main__":
             engineering_subdir=ENGINEERING_SUBDIR,
             max_models_for_combined=MAX_MODELS_FOR_COMBINED,
             extra_experiment_roots=ADDITIONAL_EXPERIMENT_ROOTS,
+            full_eval_split=FULL_EVAL_SPLIT,
         )

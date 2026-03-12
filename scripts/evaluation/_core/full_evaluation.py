@@ -41,10 +41,11 @@ def _get_test_data_cached(
     window_size: int = 320,
     eval_stride: int = 1,
     norm_coef_path: Optional[str] = None,
-    target_level: str = 'base'
+    target_level: str = 'base',
+    eval_split: str = 'test'
 ) -> Tuple[Any, List[int], List[str]]:
     """
-    Возвращает кэшированные данные тестового датасета (PrecomputedDataset).
+    Возвращает кэшированные данные датасета для выбранного split (PrecomputedDataset).
     
     Args:
         data_dir: Путь к директории с данными
@@ -52,35 +53,44 @@ def _get_test_data_cached(
         eval_stride: Stride между окнами (1 = все точки, default)
         norm_coef_path: Путь к файлу нормализации
         target_level: Уровень детализации меток ('base', 'full', 'full_by_levels')
+        eval_split: Сплит для оценки ('test' или 'train')
     
     Returns:
-        (test_df, indices, target_cols)
+        (eval_df, indices, target_cols)
     """
     import polars as pl
     
-    cache_key = f"{data_dir}_{window_size}_{eval_stride}_{norm_coef_path}_{target_level}"
+    split = str(eval_split or 'test').strip().lower()
+    if split not in ('test', 'train'):
+        raise ValueError(f"Неподдерживаемый eval_split: {eval_split}. Ожидается 'test' или 'train'.")
+
+    cache_key = f"{data_dir}_{window_size}_{eval_stride}_{norm_coef_path}_{target_level}_{split}"
     
     if cache_key not in _test_data_cache:
         dm = DatasetManager(data_dir, norm_coef_path=norm_coef_path)
         
-        print(f"[Full Eval] Загрузка тестового датасета (target_level={target_level})...")
-        dm.create_precomputed_test_csv()
-        
-        test_df = dm.load_test_df(precomputed=True)
-        test_df = test_df.with_row_index("row_nr")
-        
-        test_df = prepare_labels_for_experiment(test_df, target_level)
-        target_cols = get_target_columns(target_level, test_df)
+        print(f"[Full Eval] Загрузка {split}-датасета (target_level={target_level})...")
+        if split == 'test':
+            dm.create_precomputed_test_csv(source_split='test')
+            eval_df = dm.load_test_df(precomputed=True)
+        else:
+            dm.create_precomputed_test_csv(source_split='train')
+            eval_df = dm.load_train_df(precomputed=True)
+
+        eval_df = eval_df.with_row_index("row_nr")
+
+        eval_df = prepare_labels_for_experiment(eval_df, target_level)
+        target_cols = get_target_columns(target_level, eval_df)
         
         indices = PrecomputedDataset.create_indices(
-            test_df,
+            eval_df,
             window_size=window_size,
             mode='val',
             stride=eval_stride
         )
-        print(f"[Full Eval] Загружено {len(indices):,} точек (stride={eval_stride}, {len(target_cols)} классов)")
+        print(f"[Full Eval] Загружено {len(indices):,} точек для split='{split}' (stride={eval_stride}, {len(target_cols)} классов)")
         
-        _test_data_cache[cache_key] = (test_df, indices, target_cols)
+        _test_data_cache[cache_key] = (eval_df, indices, target_cols)
     
     return _test_data_cache[cache_key]
 
@@ -365,10 +375,11 @@ def evaluate_full_test_dataset(
     config: Dict[str, Any],
     data_dir: str,
     batch_size: int = 8192,
-    use_gpu: bool = True
+    use_gpu: bool = True,
+    eval_split: str = 'test'
 ) -> Dict[str, Any]:
     """
-    Полная оценка моделей (best и final) на всём тестовом датасете.
+    Полная оценка моделей (best и final) на всём датасете выбранного split.
     
     Стратегия оптимизации:
     - stride=1: перебираем ВСЕ возможные окна (полное покрытие)
@@ -579,7 +590,7 @@ def evaluate_full_test_dataset(
         norm_coef_path = config.get('data', {}).get('norm_coef_path')
         test_df, all_indices, target_cols = _get_test_data_cached(
             data_dir, window_size, eval_stride=1, norm_coef_path=norm_coef_path,
-            target_level=target_level
+            target_level=target_level, eval_split=eval_split
         )
 
         results['num_classes'] = len(target_cols)
@@ -679,7 +690,7 @@ def evaluate_full_test_dataset(
                         _save_predictions_csv(
                             best_metrics['y_true'],
                             best_metrics['y_pred'],
-                            exp_dir / 'test_predictions_best.csv',
+                            exp_dir / f'{str(eval_split).lower()}_predictions_best.csv',
                             target_level=target_level,
                             target_cols=target_cols
                         )
@@ -750,7 +761,7 @@ def evaluate_full_test_dataset(
                         _save_predictions_csv(
                             final_metrics['y_true'],
                             final_metrics['y_pred'],
-                            exp_dir / 'test_predictions_final.csv',
+                            exp_dir / f'{str(eval_split).lower()}_predictions_final.csv',
                             target_level=target_level,
                             target_cols=target_cols
                         )
