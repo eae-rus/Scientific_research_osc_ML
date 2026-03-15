@@ -25,6 +25,7 @@ from osc_tools.ml.layers.transformer_blocks import (
     DataSanitizer,
     KANFeedForward,
     MLPFeedForward,
+    PhysicalKANFeedForward,
     PhysicalStem,
     SinusoidalPositionalEncoding,
     TransformerEncoderBlock,
@@ -37,10 +38,9 @@ class PhysicalKANTransformer(BaseModel):
     Архитектура (из TRANSFORMER_RESEARCH.md):
     1. Sanitizer → PhysicalStem (rPhysicsKAN) → Linear Projection → d_model
     2. + Positional Encoding
-    3. N × TransformerEncoderBlock (Attention + KAN-FFN)
-       FIXME: Рассмотреть добавление ComplexInteractionBlock внутрь
-       Transformer-блоков (rPhysicsKAN не только в Stem, но и в FFN).
-       Это потребует расширения TransformerEncoderBlock — отдельный эксперимент.
+    3. N × TransformerEncoderBlock (Attention + PhysicalKANFeedForward)
+       В каждом блоке: KAN-FFN + малый ComplexInteractionBlock (комплексные
+       умножения/деления) — физические операции доступны не только в Stem.
     4. SSL Head (реконструкция) или Classification Head (fine-tuning)
 
     Args:
@@ -56,6 +56,10 @@ class PhysicalKANTransformer(BaseModel):
         kan_grid_size: размер RBF-сетки в FastKAN
         noise_threshold_current: порог шума токов
         noise_threshold_voltage: порог шума напряжений
+        num_stem_interaction_pairs: число пар в ComplexInteractionBlock Stem (16)
+        num_ffn_interaction_pairs: число пар в ComplexInteractionBlock FFN (4)
+        use_physical_ffn: True → PhysicalKANFeedForward (с комплексным блоком),
+            False → KANFeedForward (обычный KAN-FFN, для абляции)
         dropout: dropout для всех слоёв
         max_seq_len: максимальная длина последовательности для PE
     """
@@ -74,6 +78,9 @@ class PhysicalKANTransformer(BaseModel):
         kan_grid_size: int = 5,
         noise_threshold_current: float = 1.0 / 2000,
         noise_threshold_voltage: float = 1.0 / 300,
+        num_stem_interaction_pairs: int = 16,
+        num_ffn_interaction_pairs: int = 4,
+        use_physical_ffn: bool = True,
         dropout: float = 0.1,
         max_seq_len: int = 64,
     ) -> None:
@@ -92,6 +99,7 @@ class PhysicalKANTransformer(BaseModel):
             num_input_channels=num_input_channels,
             d_model=d_model,
             num_current_pairs=num_current_pairs,
+            num_interaction_pairs=num_stem_interaction_pairs,
             noise_threshold_current=noise_threshold_current,
             noise_threshold_voltage=noise_threshold_voltage,
             kan_grid_size=kan_grid_size,
@@ -103,15 +111,24 @@ class PhysicalKANTransformer(BaseModel):
             d_model=d_model, max_len=max_seq_len, dropout=dropout
         )
 
-        # --- 4. Transformer Encoder (KAN-FFN) ---
+        # --- 4. Transformer Encoder (Physical KAN-FFN или KAN-FFN) ---
         self.encoder_blocks = nn.ModuleList()
         for _ in range(num_layers):
-            ffn = KANFeedForward(
-                d_model=d_model,
-                d_ff=d_ff,
-                kan_grid_size=kan_grid_size,
-                dropout=dropout,
-            )
+            if use_physical_ffn:
+                ffn = PhysicalKANFeedForward(
+                    d_model=d_model,
+                    d_ff=d_ff,
+                    num_interaction_pairs=num_ffn_interaction_pairs,
+                    kan_grid_size=kan_grid_size,
+                    dropout=dropout,
+                )
+            else:
+                ffn = KANFeedForward(
+                    d_model=d_model,
+                    d_ff=d_ff,
+                    kan_grid_size=kan_grid_size,
+                    dropout=dropout,
+                )
             block = TransformerEncoderBlock(
                 d_model=d_model,
                 num_heads=num_heads,

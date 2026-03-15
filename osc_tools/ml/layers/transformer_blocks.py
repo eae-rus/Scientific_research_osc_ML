@@ -2,12 +2,14 @@
 Строительные блоки Physical KAN-Transformer (Фаза 4).
 
 Содержит:
-- DataSanitizer: замена -1 на 0 + создание маски пропусков + learnable MissingToken
-- PhysicalStem: физические операции (P, Q, Z) + KAN-кодирование + раздельная обработка
-  амплитуд и углов (rPhysicsKAN-стиль) → итоговый embedding для Transformer
-- PositionalEncoding: синусоидальное 1D позиционное кодирование
-- KANFeedForward: замена MLP-FFN в Transformer на Fast-KAN
-- TransformerEncoderBlock: один блок Encoder (Attention + KAN-FFN + LayerNorm)
+- DataSanitizer: обработка отсутствующих каналов (NaN/-1) + learnable MissingToken
+- ComplexInteractionBlock: обучаемое комплексное умнож./деление через 4-группную схему
+- PhysicalStem: rPhysicsKAN-кодирование + ComplexInteractionBlock → embedding
+- SinusoidalPositionalEncoding: позиционное кодирование
+- KANFeedForward: FastKAN-FFN для Transformer (без физических блоков)
+- PhysicalKANFeedForward: KAN-FFN + малый ComplexInteractionBlock в каждом слое
+- MLPFeedForward: стандартный MLP-FFN для baseline
+- TransformerEncoderBlock: один блок Encoder (Pre-LN Attention + FFN)
 """
 
 from __future__ import annotations
@@ -99,21 +101,21 @@ class DataSanitizer(nn.Module):
 class ComplexInteractionBlock(nn.Module):
     """Обучаемый блок комплексных взаимодействий (умножение + деление).
 
-    Вместо жёстко заданных P=U*I, Z=U/I — модель сама выбирает, какие пары
-    сигналов умножать и делить, через обучаемые линейные веса-селекторы.
-
-    Принцип работы:
-    1. Входные пары (A, φ) проходят через линейный селектор по амплитудам
-       (углы не трогаются на этом этапе — сохраняем физический смысл).
-    2. Выходные пары делятся на две половины:
-       - Первая половина → попарное комплексное умножение (A₁·A₂, φ₁+φ₂)
-       - Вторая половина → попарное комплексное деление (A₁/A₂, φ₁-φ₂)
-    3. На выходе — num_interaction_pairs сигналов в полярной форме.
+    Работает полностью в комплексном пространстве:
+    1. Входные сигналы — комплексные тензоры (z = A·exp(jφ) или re+j·im)
+    2. Вещественная линейная комбинация: y_k = Σ_i(w_ki · z_i).
+       Веса w_ki — вещественные скаляры, масштабирующие амплитуды.
+       Углы (фазы) НЕ искажаются отдельным слоем — они сохраняются
+       через комплексное векторное сложение.
+    3. Промежуточные Y сигналов делятся на 4 группы по Y/4:
+       - Группы 1 × 2 → попарное комплексное умножение
+       - Группы 3 × 4 → попарное комплексное деление
+    4. Итого num_interaction_pairs выходных комплексных сигналов.
 
     Args:
-        num_input_pairs: число входных (A, φ) пар
-        num_interaction_pairs: число выходных пар после взаимодействий
-        division_epsilon: минимум знаменателя при делении
+        num_input_pairs: число входных комплексных сигналов
+        num_interaction_pairs: число выходных сигналов (должно быть чётным)
+        division_epsilon: минимальный квадрат модуля знаменателя при делении
     """
 
     def __init__(
@@ -123,67 +125,60 @@ class ComplexInteractionBlock(nn.Module):
         division_epsilon: float = 1e-6,
     ) -> None:
         super().__init__()
+        assert num_interaction_pairs % 2 == 0, (
+            f"num_interaction_pairs должно быть чётным, получено {num_interaction_pairs}"
+        )
+
         self.num_input_pairs = num_input_pairs
         self.num_interaction_pairs = num_interaction_pairs
         self.division_epsilon = division_epsilon
 
-        # Число пар для внутреннего попарного сопоставления:
-        # нужно 2 * num_interaction_pairs входов для спаривания
-        # (первая половина пар → умножение, вторая → деление)
-        num_selector_outputs = num_interaction_pairs * 2
+        # Каждая пара операций (mul/div) требует 2 операнда → 4 группы по group_size
+        # group_size = n/2, Y_intermediate = 4 * group_size = 2n
+        self.group_size = num_interaction_pairs // 2
+        num_intermediate = 4 * self.group_size  # = 2 * num_interaction_pairs
 
-        # Линейный селектор: выбирает комбинации амплитуд
-        # Из num_input_pairs амплитуд формирует num_selector_outputs амплитуд
-        self.amp_selector = nn.Linear(num_input_pairs, num_selector_outputs)
-        # Аналогичный для углов
-        # TODO: Подожди, зачем тут линейное для угла? Давай сделаем иначе:
-        # прост все входные сигналы продублируем размножим, и вот как раз первая
-        # пара идёт на умножение - вторая на деление. А там уже у них на амплитуды свои множители.
-        # т.е. не обязательно новые коэффициент прям здесь обучать, когда мы их множим.
-        # Ну или идею чуть иначе... Я к тому, чтобы углы вообще не трогались и шло из серии
-        # "Вот для этого сигнала ток умножаем на коэффициент и берём его исходный угол".
-        self.angle_selector = nn.Linear(num_input_pairs, num_selector_outputs)
+        # Вещественная линейная комбинация для комплексных входов:
+        # y = W @ z, где W ∈ R^{Y×X}, z ∈ C^{X} → y ∈ C^{Y}
+        # Эквивалентно: y_k = Σ_i(w_ki · A_i · exp(jφ_i)) — масштабирование амплитуд
+        # с сохранением фаз через комплексное сложение.
+        self.selector = nn.Linear(num_input_pairs, num_intermediate, bias=False)
+        nn.init.xavier_uniform_(self.selector.weight)
 
     def forward(
-        self,
-        amplitudes: torch.Tensor,
-        angles: torch.Tensor,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
+        self, z: torch.Tensor
+    ) -> torch.Tensor:
         """
         Args:
-            amplitudes: (B*T, num_input_pairs) — амплитуды
-            angles: (B*T, num_input_pairs) — углы
+            z: (B*T, num_input_pairs) complex64 — входные комплексные сигналы
 
         Returns:
-            result_amp: (B*T, num_interaction_pairs) — выходные амплитуды
-            result_angle: (B*T, num_interaction_pairs) — выходные углы
+            z_out: (B*T, num_interaction_pairs) complex64 — результат взаимодействий
         """
-        n = self.num_interaction_pairs
+        # Вещественная линейная комбинация комплексных входов:
+        # W @ z = W @ re(z) + j · W @ im(z)
+        w = self.selector.weight  # (num_intermediate, num_input_pairs), вещественный
+        re_combined = F.linear(z.real, w)  # (B*T, num_intermediate)
+        im_combined = F.linear(z.imag, w)  # (B*T, num_intermediate)
+        z_combined = torch.complex(re_combined, im_combined)
 
-        # Селектор комбинирует входные сигналы (обрезаем амплитуды снизу softplus)
-        selected_amp = F.softplus(self.amp_selector(amplitudes))  # (B*T, 2*n), неотрицательные
-        selected_angle = self.angle_selector(angles)               # (B*T, 2*n)
+        # Разделяем на 4 группы
+        gs = self.group_size
+        g1 = z_combined[:, 0*gs : 1*gs]
+        g2 = z_combined[:, 1*gs : 2*gs]
+        g3 = z_combined[:, 2*gs : 3*gs]
+        g4 = z_combined[:, 3*gs : 4*gs]
 
-        # Разделяем на «левый» и «правый» операнды
-        amp_left = selected_amp[:, :n]       # (B*T, n)
-        amp_right = selected_amp[:, n:]      # (B*T, n)
-        angle_left = selected_angle[:, :n]
-        angle_right = selected_angle[:, n:]
+        # Комплексное умножение: g1 · g2
+        z_mul = g1 * g2
 
-        # Половина пар → умножение: A₁·A₂, φ₁+φ₂
-        half = n // 2
-        mul_amp = amp_left[:, :half] * amp_right[:, :half]
-        mul_angle = angle_left[:, :half] + angle_right[:, :half]
+        # Комплексное деление: g3 / g4 (безопасное)
+        # z/w = z·conj(w) / |w|², с clamp на |w|² для защиты от деления на ≈0
+        g4_mag_sq = g4.real ** 2 + g4.imag ** 2
+        g4_mag_sq_safe = g4_mag_sq.clamp(min=self.division_epsilon ** 2)
+        z_div = (g3 * g4.conj()) / g4_mag_sq_safe
 
-        # Другая половина → деление: A₁/A₂, φ₁-φ₂
-        safe_denom = amp_right[:, half:].clamp(min=self.division_epsilon)
-        div_amp = amp_left[:, half:] / safe_denom
-        div_angle = angle_left[:, half:] - angle_right[:, half:]
-
-        result_amp = torch.cat([mul_amp, div_amp], dim=-1)      # (B*T, n)
-        result_angle = torch.cat([mul_angle, div_angle], dim=-1)  # (B*T, n)
-
-        return result_amp, result_angle
+        return torch.cat([z_mul, z_div], dim=-1)
 
 
 # ---------------------------------------------------------------------------
@@ -327,8 +322,12 @@ class PhysicalStem(nn.Module):
         ang_flat = angles.permute(0, 2, 1).reshape(B * T, -1)      # (B*T, num_pairs)
 
         # 3. Обучаемый комплексный блок: модель сама решает что с чем умножать/делить
-        inter_amp, inter_angle = self.interaction(amp_flat, ang_flat)
-        # Собираем в чередующийся формат (amp, angle, amp, angle, ...)
+        #    Конвертируем в комплексные числа: z = A·exp(jφ)
+        z_input = torch.polar(amp_flat, ang_flat)  # (B*T, num_pairs) complex64
+        z_inter = self.interaction(z_input)         # (B*T, num_interaction_pairs) complex64
+        # Обратно в полярную форму (amp, angle) для конкатенации с остальными фичами
+        inter_amp = z_inter.abs()
+        inter_angle = z_inter.angle()
         inter_features = torch.stack([inter_amp, inter_angle], dim=-1)  # (B*T, n, 2)
         inter_features = inter_features.reshape(B * T, -1)  # (B*T, n*2)
 
@@ -443,18 +442,124 @@ class KANFeedForward(nn.Module):
         """
         B, T, D = x.shape
         # FastKANLayer ожидает 2D → reshape
-        # Примечание: KAN-FFN работает в абстрактном d_model пространстве.
-        # Физические комплексные операции (умножение/деление сигналов) реализованы
-        # в PhysicalStem через ComplexInteractionBlock. Переключение между
-        # типами FFN уже возможно: KANFeedForward / MLPFeedForward.
-        # Если потребуется физический FFN внутри Transformer-блоков —
-        # можно будет добавить ComplexInteractionBlock и здесь (см. TODO в transformer.py).
         x_flat = x.reshape(B * T, D)
         h = self.kan1(x_flat)
         h = self.dropout(h)
         h = self.kan2(h)
         h = self.dropout(h)
         return h.view(B, T, D)
+
+
+# ---------------------------------------------------------------------------
+# PhysicalKANFeedForward: KAN-FFN + ComplexInteractionBlock
+# ---------------------------------------------------------------------------
+
+class PhysicalKANFeedForward(nn.Module):
+    """KAN-FFN с встроенным ComplexInteractionBlock для физических операций.
+
+    Параллельно с основным KAN-путём (d_model → d_ff → d_model) работает
+    малый блок комплексных взаимодействий. Это позволяет модели выполнять
+    умножение/деление в комплексной плоскости на КАЖДОМ слое Transformer,
+    а не только в Stem.
+
+    Мотивация: физические комбинации сигналов (мощности, импедансы и т.д.)
+    могут требовать нескольких последовательных операций, и одного Stem
+    недостаточно для подготовки всех нужных признаков.
+
+    Архитектура:
+    - KAN путь: d_model → d_ff → d_model (основная нелинейность)
+    - Комплексный путь: d_model/2 complex → interaction → project → d_model
+    - Гейтированное сложение: KAN + gate * interaction → d_model
+
+    Размерность d_model сохраняется для residual-соединений.
+
+    Args:
+        d_model: размерность входа/выхода
+        d_ff: размерность скрытого слоя KAN (по умолчанию 4 * d_model)
+        num_interaction_pairs: число выходных пар ComplexInteractionBlock
+            (обычно 4-8, меньше чем в Stem)
+        kan_grid_size: число узлов RBF-сетки FastKAN
+        dropout: dropout
+    """
+
+    def __init__(
+        self,
+        d_model: int,
+        d_ff: int | None = None,
+        num_interaction_pairs: int = 4,
+        kan_grid_size: int = 5,
+        dropout: float = 0.1,
+    ) -> None:
+        super().__init__()
+        assert d_model % 2 == 0, f"d_model должен быть чётным, получено {d_model}"
+
+        if d_ff is None:
+            d_ff = d_model * 4
+
+        # TODO: Но эти числа тоже комплексные, т.е. там амплитуда и угол. Да, может
+        # блок внимания как-то не так на это влияет и мешает... Не знаю вот так сходу,
+        # надо обдумать, но в целом это тоже комплексные числа и их надо обрабатывать так же,
+        # Как мы обрабатывали входные сигналы, ведь исходно там амплитуда и угол. 
+        # --- KAN путь (основной) ---
+        self.kan1 = FastKANLayer(
+            input_dim=d_model,
+            output_dim=d_ff,
+            num_grids=kan_grid_size,
+            use_base_update=True,
+            use_layernorm=False,
+        )
+        self.kan2 = FastKANLayer(
+            input_dim=d_ff,
+            output_dim=d_model,
+            num_grids=kan_grid_size,
+            use_base_update=True,
+            use_layernorm=False,
+        )
+        self.dropout = nn.Dropout(dropout)
+
+        # --- Комплексный путь (малый) ---
+        # d_model/2 фичей = real-часть, d_model/2 = imag-часть → d_model/2 комплексных
+        num_complex_inputs = d_model // 2
+        self.interaction = ComplexInteractionBlock(
+            num_input_pairs=num_complex_inputs,
+            num_interaction_pairs=num_interaction_pairs,
+        )
+        # Проекция: (num_interaction_pairs * 2 вещественных) → d_model
+        self.interaction_proj = nn.Linear(num_interaction_pairs * 2, d_model)
+        # Гейт: sigmoid(-2) ≈ 0.12 на старте — комплексный путь включается мягко
+        self.interaction_gate = nn.Parameter(torch.tensor(-2.0))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            x: (B, T, d_model)
+        Returns:
+            (B, T, d_model)
+        """
+        B, T, D = x.shape
+        x_flat = x.reshape(B * T, D)
+
+        # KAN путь
+        h = self.kan1(x_flat)
+        h = self.dropout(h)
+        h = self.kan2(h)
+        h = self.dropout(h)  # (B*T, d_model)
+
+        # Комплексный путь: интерпретируем d_model как (re, im) пары
+        half = D // 2
+        z_in = torch.complex(x_flat[:, :half], x_flat[:, half:])  # (B*T, d_model/2)
+        z_out = self.interaction(z_in)  # (B*T, num_interaction_pairs) complex
+
+        # Обратно в вещественные: [re₁, im₁, re₂, im₂, ...]
+        inter_real = torch.stack([z_out.real, z_out.imag], dim=-1)
+        inter_flat = inter_real.reshape(B * T, -1)  # (B*T, num_interaction_pairs * 2)
+        inter_proj = self.interaction_proj(inter_flat)  # (B*T, d_model)
+
+        # Гейтированное сложение
+        gate = torch.sigmoid(self.interaction_gate)
+        combined = h + gate * inter_proj
+
+        return combined.view(B, T, D)
 
 
 # ---------------------------------------------------------------------------

@@ -23,6 +23,7 @@ from osc_tools.ml.layers.transformer_blocks import (
     DataSanitizer,
     KANFeedForward,
     MLPFeedForward,
+    PhysicalKANFeedForward,
     PhysicalStem,
     SinusoidalPositionalEncoding,
     TransformerEncoderBlock,
@@ -97,7 +98,7 @@ class TestDataSanitizer:
 # ============================================================
 
 class TestComplexInteractionBlock:
-    """Тесты обучаемого комплексного блока взаимодействий."""
+    """Тесты обучаемого комплексного блока взаимодействий (complex-интерфейс)."""
 
     def test_instantiation(self):
         block = ComplexInteractionBlock(num_input_pairs=8, num_interaction_pairs=16)
@@ -105,28 +106,71 @@ class TestComplexInteractionBlock:
 
     def test_forward_shape(self):
         block = ComplexInteractionBlock(num_input_pairs=8, num_interaction_pairs=16)
-        amp = torch.randn(20, 8).abs()  # (B*T, num_input_pairs)
-        ang = torch.randn(20, 8)
-        out_amp, out_ang = block(amp, ang)
-        assert out_amp.shape == (20, 16)
-        assert out_ang.shape == (20, 16)
+        z = torch.randn(20, 8) + 1j * torch.randn(20, 8)  # complex input
+        z_out = block(z)
+        assert z_out.shape == (20, 16)
+        assert z_out.is_complex()
 
-    def test_output_amp_non_negative(self):
-        """Амплитуды после умножения должны быть неотрицательными."""
+    def test_polar_roundtrip(self):
+        """Проверка работы с полярными входами (как в PhysicalStem)."""
         block = ComplexInteractionBlock(num_input_pairs=8, num_interaction_pairs=16)
         amp = torch.randn(10, 8).abs()
         ang = torch.randn(10, 8)
-        out_amp, _ = block(amp, ang)
-        # Половина — умножение (точно >= 0), половина — деление (тоже >= 0 с clamp)
-        assert (out_amp >= 0).all()
+        z = torch.polar(amp, ang)
+        z_out = block(z)
+        # Выходные амплитуды неотрицательны
+        assert (z_out.abs() >= 0).all()
 
     def test_no_nan_with_zeros(self):
         block = ComplexInteractionBlock(num_input_pairs=4, num_interaction_pairs=8)
-        amp = torch.zeros(5, 4)
-        ang = torch.zeros(5, 4)
-        out_amp, out_ang = block(amp, ang)
-        assert not torch.isnan(out_amp).any()
-        assert not torch.isnan(out_ang).any()
+        z = torch.zeros(5, 4, dtype=torch.complex64)
+        z_out = block(z)
+        assert not torch.isnan(z_out.real).any()
+        assert not torch.isnan(z_out.imag).any()
+
+    def test_even_pairs_required(self):
+        """Нечётное num_interaction_pairs должно вызвать AssertionError."""
+        with pytest.raises(AssertionError):
+            ComplexInteractionBlock(num_input_pairs=8, num_interaction_pairs=7)
+
+
+# ============================================================
+# PhysicalKANFeedForward
+# ============================================================
+
+class TestPhysicalKANFeedForward:
+    """Тесты PhysicalKANFeedForward (KAN + ComplexInteractionBlock в FFN)."""
+
+    def test_instantiation(self):
+        ffn = PhysicalKANFeedForward(d_model=32, kan_grid_size=3)
+        assert isinstance(ffn, nn.Module)
+
+    def test_forward_shape(self):
+        ffn = PhysicalKANFeedForward(d_model=32, d_ff=64, kan_grid_size=3)
+        x = torch.randn(2, 10, 32)
+        out = ffn(x)
+        assert out.shape == (2, 10, 32)
+
+    def test_no_nan(self):
+        ffn = PhysicalKANFeedForward(d_model=32, kan_grid_size=3, dropout=0.0)
+        x = torch.randn(4, 8, 32)
+        out = ffn(x)
+        assert not torch.isnan(out).any()
+
+    def test_interaction_gate_exists(self):
+        """Проверяем что гейт есть и начинается с малого значения."""
+        ffn = PhysicalKANFeedForward(d_model=32, kan_grid_size=3)
+        gate_val = torch.sigmoid(ffn.interaction_gate).item()
+        assert gate_val < 0.2  # sigmoid(-2) ≈ 0.12
+
+    def test_backward(self):
+        ffn = PhysicalKANFeedForward(d_model=32, kan_grid_size=3, dropout=0.0)
+        x = torch.randn(2, 5, 32)
+        out = ffn(x)
+        out.sum().backward()
+        has_grad = any(p.grad is not None and p.grad.abs().sum() > 0
+                       for p in ffn.parameters() if p.requires_grad)
+        assert has_grad
 
 
 # ============================================================
