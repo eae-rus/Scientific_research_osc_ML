@@ -42,8 +42,8 @@ def parse_experiment_name(exp_name: str) -> Dict[str, str]:
         return result
     
     # Model name extraction
-    # Модели: SimpleMLP, SimpleCNN, SimpleKAN, ConvKAN, PhysicsKAN, ResNet1D, Hierarchical*
-    model_pattern = r'(SimpleMLP|SimpleCNN|SimpleKAN|ConvKAN|PhysicsKAN|ResNet1D|HierarchicalMLP|HierarchicalCNN|HierarchicalConvKAN|HierarchicalPhysicsKAN|HierarchicalSimpleKAN|HierarchicalResNet)'
+    # Модели: SimpleMLP, SimpleCNN, SimpleKAN, ConvKAN, PhysicsKAN, cPhysicsKAN, rPhysicsKAN, ResNet1D, Hierarchical*
+    model_pattern = r'(SimpleMLP|SimpleCNN|SimpleKAN|ConvKAN|PhysicsKAN|cPhysicsKAN|rPhysicsKAN|ResNet1D|HierarchicalMLP|HierarchicalCNN|HierarchicalConvKAN|HierarchicalPhysicsKAN|HierarchicalSimpleKAN|HierarchicalResNet)'
     match = re.search(model_pattern, exp_name)
     if match:
         result['model'] = match.group(1)

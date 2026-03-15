@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from osc_tools.ml.models.base import BaseModel
 from osc_tools.ml.layers.kan_layers import KANLinear, KANConv1d
 from osc_tools.ml.kan_conv.arithmetic import MultiplicationLayer, DivisionLayer
@@ -149,6 +150,63 @@ class SafeMaxPool1d(nn.Module):
         if x.shape[-1] < self.pool.kernel_size:
             return x
         return self.pool(x)
+
+
+class RelayKANBranch(nn.Module):
+    """KAN-ветка для раздельной обработки амплитуды, фазы или relay-маски."""
+
+    def __init__(
+        self,
+        in_channels: int,
+        channels: list,
+        kernel_size: int = 3,
+        stride: int = 1,
+        grid_size: int = 5,
+        spline_order: int = 3,
+        dropout: float = 0.2,
+        pool_every: int = 1,
+        base_activation=torch.nn.SiLU,
+        allow_pooling: bool = True,
+    ):
+        super().__init__()
+
+        if not channels:
+            raise ValueError("RelayKANBranch требует непустой список channels")
+
+        layers = []
+        curr_channels = in_channels
+
+        for i, out_channels in enumerate(channels):
+            curr_grid = grid_size[i] if isinstance(grid_size, list) else grid_size
+            curr_stride = stride if i == 0 else 1
+
+            layers.append(
+                KANConv1d(
+                    curr_channels,
+                    out_channels,
+                    kernel_size=kernel_size,
+                    stride=curr_stride,
+                    padding=kernel_size // 2,
+                    grid_size=curr_grid,
+                    spline_order=spline_order,
+                    base_activation=base_activation,
+                )
+            )
+            layers.append(nn.BatchNorm1d(out_channels))
+
+            if allow_pooling and pool_every > 0 and (i + 1) % pool_every == 0:
+                layers.append(SafeMaxPool1d(2))
+
+            if dropout > 0:
+                layers.append(nn.Dropout(dropout))
+
+            curr_channels = out_channels
+
+        self.net = nn.Sequential(*layers)
+        self.out_channels = curr_channels
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
 
 class ConvKAN(BaseModel):
     """
@@ -603,3 +661,189 @@ class cPhysicsKAN(BaseModel):
 
         x_combined = torch.cat([x, s, z], dim=1)
         return self.processing_net(x_combined)
+
+
+class rPhysicsKAN(BaseModel):
+    """
+    Релейная версия PhysicsKAN в полярной форме.
+
+    Пайплайн:
+    1. Создаёт дополнительные комплексные признаки через умножение и деление.
+    2. Разделяет амплитуды и фазы на отдельные KAN-ветки.
+    3. Формирует дополнительную relay-ветку из фаз, которая маскирует амплитуды значением в диапазоне [0, 1].
+    4. Объединяет gated-амплитуды и обработанные фазы перед классификацией.
+    """
+
+    def __init__(
+        self,
+        in_channels: int,
+        num_classes: int,
+        channels: list = [8, 16, 32],
+        kernel_size: int = 3,
+        stride: int = 1,
+        grid_size: int = 5,
+        spline_order: int = 3,
+        dropout: float = 0.2,
+        pool_every: int = 1,
+        base_activation=torch.nn.SiLU,
+        use_mlp: bool = False,
+        input_size: int = 64,
+        phase_bias_b: float = 0.0,
+        epsilon: float = 1e-6,
+        kan_backend: str = 'baseline',
+    ):
+        super().__init__()
+
+        if in_channels % 2 != 0:
+            raise ValueError(
+                f"rPhysicsKAN требует чётное число входных каналов (амплитуда/фаза), получено {in_channels}"
+            )
+
+        if in_channels % 4 != 0:
+            raise ValueError(
+                f"rPhysicsKAN требует число каналов кратное 4: [амплитуда/фаза] и пары I/U, получено {in_channels}"
+            )
+
+        self.phase_bias_b = float(phase_bias_b)
+        self.epsilon = float(epsilon)
+        self.kan_backend = kan_backend
+        self.use_mlp = use_mlp
+        self.dropout = ComplexPairDropout(dropout)
+
+        self.mult = ComplexMultiplicationLayer(phase_bias_b=phase_bias_b)
+        self.div = ComplexDivisionLayer(epsilon=epsilon, phase_bias_b=phase_bias_b)
+
+        proc_in_channels = in_channels + (in_channels // 2) * 2
+        relay_in_channels = proc_in_channels // 2
+        allow_pooling = not use_mlp
+
+        self.amp_input_bn = nn.BatchNorm1d(relay_in_channels)
+        self.phase_input_bn = nn.BatchNorm1d(relay_in_channels)
+
+        self.amp_branch = RelayKANBranch(
+            in_channels=relay_in_channels,
+            channels=channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            grid_size=grid_size,
+            spline_order=spline_order,
+            dropout=dropout,
+            pool_every=pool_every,
+            base_activation=base_activation,
+            allow_pooling=allow_pooling,
+        )
+        self.phase_branch = RelayKANBranch(
+            in_channels=relay_in_channels,
+            channels=channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            grid_size=grid_size,
+            spline_order=spline_order,
+            dropout=dropout,
+            pool_every=pool_every,
+            base_activation=base_activation,
+            allow_pooling=allow_pooling,
+        )
+        self.gate_branch = RelayKANBranch(
+            in_channels=relay_in_channels,
+            channels=channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            grid_size=grid_size,
+            spline_order=spline_order,
+            dropout=dropout,
+            pool_every=pool_every,
+            base_activation=base_activation,
+            allow_pooling=allow_pooling,
+        )
+
+        relay_out_channels = self.amp_branch.out_channels
+        grid_head = grid_size[0] if isinstance(grid_size, list) else grid_size
+
+        if self.use_mlp:
+            pts = input_size // in_channels
+            mlp_input_size = relay_out_channels * 2 * pts
+            hidden_sizes = [h * 4 for h in channels]
+            self.processing_net = SimpleKAN(
+                input_size=mlp_input_size,
+                hidden_sizes=hidden_sizes,
+                output_size=num_classes,
+                grid_size=grid_size,
+                spline_order=spline_order,
+                dropout=dropout,
+                base_activation=base_activation,
+            )
+        else:
+            head_input_size = relay_out_channels * 2
+            head_hidden = max(4, head_input_size // 2)
+            self.pool = nn.AdaptiveAvgPool1d(1)
+            self.processing_net = nn.Sequential(
+                build_kan_linear(
+                    backend=self.kan_backend,
+                    in_features=head_input_size,
+                    out_features=head_hidden,
+                    grid_size=grid_head,
+                    spline_order=spline_order,
+                    base_activation=base_activation,
+                ),
+                build_kan_linear(
+                    backend=self.kan_backend,
+                    in_features=head_hidden,
+                    out_features=num_classes,
+                    grid_size=grid_head,
+                    spline_order=spline_order,
+                    base_activation=base_activation,
+                ),
+            )
+
+    @staticmethod
+    def _split_amp_phase(x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        amp = x[:, 0::2, :]
+        phase = x[:, 1::2, :]
+        return amp, phase
+
+    @staticmethod
+    def _stack_amp_phase(amp: torch.Tensor, phase: torch.Tensor) -> torch.Tensor:
+        batch, channels, length = amp.shape
+        out = torch.empty(batch, channels * 2, length, device=amp.device, dtype=amp.dtype)
+        out[:, 0::2, :] = amp
+        out[:, 1::2, :] = phase
+        return out
+
+    @staticmethod
+    def _apply_phase_relay(amp: torch.Tensor, gate_logits: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        amp_safe = F.softplus(amp)
+        gate = torch.sigmoid(gate_logits)
+        return amp_safe * gate, gate
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if x.dim() != 3:
+            raise ValueError(f"rPhysicsKAN ожидает вход размерности [B, C, T], получено {tuple(x.shape)}")
+
+        if x.shape[1] % 4 != 0:
+            raise ValueError(f"rPhysicsKAN ожидает число каналов кратное 4, получено {x.shape[1]}")
+
+        # Физические признаки строятся до KAN-веток и служат дополнительным источником информации.
+        s = self.mult(x)
+        z = self.div(x)
+
+        x_features = torch.cat([x, s, z], dim=1)
+        amp, phase = self._split_amp_phase(x_features)
+
+        amp = F.softplus(self.amp_input_bn(amp))
+        phase = self.phase_input_bn(phase)
+
+        amp_features = self.amp_branch(amp)
+        phase_features = self.phase_branch(phase)
+        gate_logits = self.gate_branch(phase)
+
+        gated_amp, _ = self._apply_phase_relay(amp_features, gate_logits)
+        gated_amp, phase_features = self.dropout(gated_amp, phase_features)
+
+        relay_features = self._stack_amp_phase(gated_amp, phase_features)
+
+        if self.use_mlp:
+            return self.processing_net(relay_features)
+
+        relay_features = self.pool(relay_features).flatten(1)
+        return self.processing_net(relay_features)

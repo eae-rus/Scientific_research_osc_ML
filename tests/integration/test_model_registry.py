@@ -27,7 +27,7 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from osc_tools.ml.models import (
-    SimpleMLP, SimpleCNN, SimpleKAN, ConvKAN, PhysicsKAN, ResNet1D,
+    SimpleMLP, SimpleCNN, SimpleKAN, ConvKAN, PhysicsKAN, ResNet1D, rPhysicsKAN,
     HierarchicalMLP, HierarchicalCNN, HierarchicalConvKAN,
     HierarchicalPhysicsKAN, HierarchicalSimpleKAN, HierarchicalResNet
 )
@@ -142,6 +142,7 @@ def get_model_class(model_name: str):
         'SimpleKAN': SimpleKAN,
         'ConvKAN': ConvKAN,
         'PhysicsKAN': PhysicsKAN,
+        'rPhysicsKAN': rPhysicsKAN,
         'ResNet1D': ResNet1D,
         'HierarchicalMLP': HierarchicalMLP,
         'HierarchicalCNN': HierarchicalCNN,

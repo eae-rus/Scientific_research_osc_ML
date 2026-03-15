@@ -145,6 +145,7 @@ class ReportVisualizer:
             'ConvKAN': '#e74c3c',
             'PhysicsKAN': '#9b59b6',
             'cPhysicsKAN': '#f1c40f',
+            'rPhysicsKAN': '#d4ac0d',
             'Unknown': '#34495e'
         }
 

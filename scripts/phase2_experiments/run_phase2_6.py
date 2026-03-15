@@ -32,6 +32,7 @@ MODEL_COMPLEXITY = {
         'PhysicsKAN': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
         'PhysicsKANConditional': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
         'cPhysicsKAN': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
+        'rPhysicsKAN': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
         'ResNet1D':  {'layers': [1, 1, 1, 1], 'base_filters': 16},
         # Иерархические модели (2.6.1, 2.6.2)
         'HierarchicalMLP': {'channels': [64, 32], 'dropout': 0.2, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
@@ -56,6 +57,7 @@ MODEL_COMPLEXITY = {
         'PhysicsKAN': {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5},
         'PhysicsKANConditional': {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5},
         'cPhysicsKAN': {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5},
+        'rPhysicsKAN': {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5},
         'ResNet1D':  {'layers': [2, 2, 2, 2], 'base_filters': 32},
         # Иерархические модели (2.6.1, 2.6.2)
         'HierarchicalMLP': {'channels': [256, 128, 64], 'dropout': 0.3, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
@@ -80,6 +82,7 @@ MODEL_COMPLEXITY = {
         'PhysicsKAN': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8},
         'PhysicsKANConditional': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8},
         'cPhysicsKAN': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8},
+        'rPhysicsKAN': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8},
         'ResNet1D':  {'layers': [3, 4, 6, 3], 'base_filters': 64},
         # Иерархические модели (2.6.1, 2.6.2)
         'HierarchicalMLP': {'channels': [512, 256, 128, 64], 'dropout': 0.4, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
@@ -154,11 +157,11 @@ def run_single_experiment(
             effective_feature_mode = ['raw', feature_mode]
             features_mode_for_hybrid = feature_mode
 
-    if model_name == 'cPhysicsKAN':
+    if model_name in ['cPhysicsKAN', 'rPhysicsKAN']:
         modes = effective_feature_mode if isinstance(effective_feature_mode, list) else [effective_feature_mode]
         if modes != ['phase_polar']:
             raise ValueError(
-                f"cPhysicsKAN поддерживает только feature_mode='phase_polar', получено: {effective_feature_mode}"
+                f"{model_name} поддерживает только feature_mode='phase_polar', получено: {effective_feature_mode}"
             )
 
     def get_features_tail_len(mode: str) -> int:
@@ -265,7 +268,7 @@ def run_single_experiment(
     if is_harmonic_mode and num_harmonics >= 3:
         val_batch_size = 2048
 
-    if is_harmonic_mode and complexity == 'heavy' and model_name in ['PhysicsKAN', 'PhysicsKANConditional', 'cPhysicsKAN', 'ConvKAN', 'ResNet1D', 'HierarchicalPhysicsKAN', 'HierarchicalConvKAN', 'HierarchicalResNet']:
+    if is_harmonic_mode and complexity == 'heavy' and model_name in ['PhysicsKAN', 'PhysicsKANConditional', 'cPhysicsKAN', 'rPhysicsKAN', 'ConvKAN', 'ResNet1D', 'HierarchicalPhysicsKAN', 'HierarchicalConvKAN', 'HierarchicalResNet']:
         val_batch_size = 1024
 
     train_loader = torch.utils.data.DataLoader(train_ds, batch_size=base_batch_size, shuffle=True, num_workers=0)
@@ -287,7 +290,7 @@ def run_single_experiment(
     if model_name in ['SimpleMLP', 'SimpleKAN']:
         model_params.pop('in_channels', None)
 
-    if model_name in ['PhysicsKAN', 'HierarchicalPhysicsKAN', 'cPhysicsKAN'] and sampling_strategy == 'snapshot':
+    if model_name in ['PhysicsKAN', 'HierarchicalPhysicsKAN', 'cPhysicsKAN', 'rPhysicsKAN'] and sampling_strategy == 'snapshot':
         model_params['use_mlp'] = True
         model_params['input_size'] = in_channels * seq_len
 

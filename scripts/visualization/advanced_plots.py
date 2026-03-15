@@ -60,6 +60,7 @@ class AdvancedVisualizer:
         'ConvKAN': '#e74c3c',
         'PhysicsKAN': '#9b59b6',
         'cPhysicsKAN': '#f1c40f',
+        'rPhysicsKAN': '#d4ac0d',
         'PhysicsBaseline': '#16a085',
         # Гибридные модели (те же цвета, слегка темнее)
         'HybridMLP': '#7f8c8d',
@@ -313,7 +314,7 @@ class AdvancedVisualizer:
         plt.figure(figsize=(12, 8))
         
         # Фиксированный порядок моделей и сложностей для согласованности между графиками
-        model_order = ['MLP', 'CNN', 'ResNet', 'SimpleKAN', 'ConvKAN', 'PhysicsKAN', 'cPhysicsKAN', 'PhysicsBaseline', 'Unknown']
+        model_order = ['MLP', 'CNN', 'ResNet', 'SimpleKAN', 'ConvKAN', 'PhysicsKAN', 'cPhysicsKAN', 'rPhysicsKAN', 'PhysicsBaseline', 'Unknown']
         complexity_order = ['Light', 'Medium', 'Heavy', 'Unknown']
         
         # Scatter plot с разными маркерами для сложности

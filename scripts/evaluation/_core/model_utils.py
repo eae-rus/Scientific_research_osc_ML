@@ -59,13 +59,14 @@ def _create_model_from_config(config: Dict[str, Any]) -> Optional[nn.Module]:
             elif model_name == 'ResNet1D':
                 from osc_tools.ml.models.resnet import ResNet1D
                 model_cls = ResNet1D
-            elif model_name in ['SimpleKAN', 'ConvKAN', 'PhysicsKAN', 'cPhysicsKAN', 'PhysicsKANConditional']:
-                from osc_tools.ml.models.kan import SimpleKAN, ConvKAN, PhysicsKAN, cPhysicsKAN, PhysicsKANConditional
+            elif model_name in ['SimpleKAN', 'ConvKAN', 'PhysicsKAN', 'cPhysicsKAN', 'rPhysicsKAN', 'PhysicsKANConditional']:
+                from osc_tools.ml.models.kan import SimpleKAN, ConvKAN, PhysicsKAN, cPhysicsKAN, rPhysicsKAN, PhysicsKANConditional
                 models_map = {
                     'SimpleKAN': SimpleKAN,
                     'ConvKAN': ConvKAN,
                     'PhysicsKAN': PhysicsKAN,
                     'cPhysicsKAN': cPhysicsKAN,
+                    'rPhysicsKAN': rPhysicsKAN,
                     'PhysicsKANConditional': PhysicsKANConditional
                 }
                 model_cls = models_map.get(model_name)

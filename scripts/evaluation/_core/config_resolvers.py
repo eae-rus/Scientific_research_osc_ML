@@ -54,6 +54,7 @@ def parse_experiment_info(folder_name: str) -> Dict[str, str]:
     models_map = {
         'SimpleMLP': 'MLP',
         'SimpleCNN': 'CNN',
+        'rPhysicsKAN': 'rPhysicsKAN',
         'cPhysicsKAN': 'cPhysicsKAN',
         'ConvKAN': 'ConvKAN',
         'SimpleKAN': 'SimpleKAN',
@@ -64,10 +65,12 @@ def parse_experiment_info(folder_name: str) -> Dict[str, str]:
     
     found_model = False
     
-    # Сначала проверяем cPhysicsKAN, так как PhysicsKAN является подстрокой
-    if 'cPhysicsKAN' in folder_name:
-        info["model_family"] = "cPhysicsKAN"
-        found_model = True
+    # Сначала проверяем специализированные варианты, так как PhysicsKAN является подстрокой
+    for special_model in ('rPhysicsKAN', 'cPhysicsKAN'):
+        if special_model in folder_name:
+            info["model_family"] = special_model
+            found_model = True
+            break
     
     if not found_model:
         for pattern, clean_name in models_map.items():
