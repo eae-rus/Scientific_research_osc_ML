@@ -68,6 +68,16 @@ class PrecomputedDataset(Dataset):
                     cols.extend([f'{ch}{suffix}_mag', f'{ch}{suffix}_angle'])
             return cols
 
+        if feature_mode == 'phase_polar_h1_angle':
+            cols = []
+            for ch in cls.ANALOG_CHANNELS:
+                for h in range(1, num_harmonics + 1):
+                    suffix = cls._harmonic_suffix(h)
+                    cols.append(f'{ch}{suffix}_mag')
+                    if h == 1:
+                        cols.append(f'{ch}{suffix}_angle')
+            return cols
+
         if feature_mode == 'phase_complex':
             cols = []
             for ch in cls.ANALOG_CHANNELS:
@@ -122,7 +132,7 @@ class PrecomputedDataset(Dataset):
             dataframe: Предрассчитанный DataFrame (из test_precomputed.csv)
             indices: Список индексов начал окон (int) или кортежей (start, length)
             window_size: Размер окна
-            feature_mode: Режим признаков ('raw', 'phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex', 'power', 'alpha_beta')
+            feature_mode: Режим признаков ('raw', 'phase_polar', 'phase_polar_h1_angle', 'symmetric', 'symmetric_polar', 'phase_complex', 'power', 'alpha_beta')
             target_columns: Колонки меток (если None, используется target_level)
             target_level: 'base' (4 класса) или указанный список
             sampling_strategy: 'none', 'stride', 'snapshot'

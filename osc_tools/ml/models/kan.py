@@ -3,6 +3,98 @@ import torch.nn as nn
 from osc_tools.ml.models.base import BaseModel
 from osc_tools.ml.layers.kan_layers import KANLinear, KANConv1d
 from osc_tools.ml.kan_conv.arithmetic import MultiplicationLayer, DivisionLayer
+from osc_tools.ml.kan_conv.modern_wrappers import build_kan_linear
+
+
+class ComplexPairDropout(nn.Module):
+    """Dropout для представления [амплитуда, фаза], применяемый согласованно к обеим компонентам."""
+
+    def __init__(self, p: float = 0.0):
+        super().__init__()
+        self.p = float(p)
+
+    def forward(self, amp: torch.Tensor, phase: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        if self.p <= 0.0 or not self.training:
+            return amp, phase
+
+        keep_prob = 1.0 - self.p
+        mask = (torch.rand_like(amp) < keep_prob).to(amp.dtype) / keep_prob
+        return amp * mask, phase * mask
+
+
+class ComplexMultiplicationLayer(nn.Module):
+    """Умножение комплексных величин в полярной форме по паре [A, φ]."""
+
+    def __init__(self, phase_bias_b: float = 0.0):
+        super().__init__()
+        self.phase_bias_b = float(phase_bias_b)
+
+    @staticmethod
+    def _split_amp_phase(x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        return x[:, 0::2, ...], x[:, 1::2, ...]
+
+    @staticmethod
+    def _stack_amp_phase(amp: torch.Tensor, phase: torch.Tensor) -> torch.Tensor:
+        out_shape = list(amp.shape)
+        out_shape[1] = amp.shape[1] * 2
+        out = torch.empty(out_shape, device=amp.device, dtype=amp.dtype)
+        out[:, 0::2, ...] = amp
+        out[:, 1::2, ...] = phase
+        return out
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        c = x.shape[1]
+        if c % 4 != 0:
+            raise ValueError(f"ComplexMultiplicationLayer ожидает число каналов кратное 4, получено {c}")
+
+        amp, phase = self._split_amp_phase(x)
+        n_complex = amp.shape[1]
+        half = n_complex // 2
+
+        amp_i, amp_u = amp[:, :half, ...], amp[:, half:, ...]
+        phase_i, phase_u = phase[:, :half, ...], phase[:, half:, ...]
+
+        amp_out = amp_i * amp_u
+        phase_out = phase_i + phase_u + self.phase_bias_b
+        return self._stack_amp_phase(amp_out, phase_out)
+
+
+class ComplexDivisionLayer(nn.Module):
+    """Деление комплексных величин в полярной форме по паре [A, φ]."""
+
+    def __init__(self, epsilon: float = 1e-6, phase_bias_b: float = 0.0):
+        super().__init__()
+        self.epsilon = float(epsilon)
+        self.phase_bias_b = float(phase_bias_b)
+
+    @staticmethod
+    def _split_amp_phase(x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        return x[:, 0::2, ...], x[:, 1::2, ...]
+
+    @staticmethod
+    def _stack_amp_phase(amp: torch.Tensor, phase: torch.Tensor) -> torch.Tensor:
+        out_shape = list(amp.shape)
+        out_shape[1] = amp.shape[1] * 2
+        out = torch.empty(out_shape, device=amp.device, dtype=amp.dtype)
+        out[:, 0::2, ...] = amp
+        out[:, 1::2, ...] = phase
+        return out
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        c = x.shape[1]
+        if c % 4 != 0:
+            raise ValueError(f"ComplexDivisionLayer ожидает число каналов кратное 4, получено {c}")
+
+        amp, phase = self._split_amp_phase(x)
+        n_complex = amp.shape[1]
+        half = n_complex // 2
+
+        amp_i, amp_u = amp[:, :half, ...], amp[:, half:, ...]
+        phase_i, phase_u = phase[:, :half, ...], phase[:, half:, ...]
+
+        amp_out = amp_i / amp_u.clamp_min(self.epsilon)
+        phase_out = phase_i - phase_u + self.phase_bias_b
+        return self._stack_amp_phase(amp_out, phase_out)
 
 class SimpleKAN(BaseModel):
     """
@@ -226,7 +318,8 @@ class PhysicsKANConditional(BaseModel):
         pool_every: int = 1,
         base_activation=torch.nn.SiLU,
         use_mlp: bool = False,
-        input_size: int = 64
+        input_size: int = 64,
+        kan_backend: str = 'baseline'
     ):
         super().__init__()
 
@@ -238,6 +331,8 @@ class PhysicsKANConditional(BaseModel):
 
         if use_mlp:
             raise ValueError("PhysicsKANConditional пока не поддерживает use_mlp=True (snapshot режим)")
+
+        self.kan_backend = kan_backend
 
         self.mult = MultiplicationLayer()
         self.div = DivisionLayer()
@@ -284,26 +379,82 @@ class PhysicsKANConditional(BaseModel):
 
         # Голова 1: Target_Normal
         self.head_normal = nn.Sequential(
-            KANLinear(feat_dim, head_hidden, grid_size=grid_head, base_activation=base_activation),
-            KANLinear(head_hidden, 1, grid_size=grid_head, base_activation=base_activation)
+            build_kan_linear(
+                backend=self.kan_backend,
+                in_features=feat_dim,
+                out_features=head_hidden,
+                grid_size=grid_head,
+                spline_order=spline_order,
+                base_activation=base_activation,
+            ),
+            build_kan_linear(
+                backend=self.kan_backend,
+                in_features=head_hidden,
+                out_features=1,
+                grid_size=grid_head,
+                spline_order=spline_order,
+                base_activation=base_activation,
+            )
         )
 
         # Головы 2 и 3: получают +1 признак от головы 1
         head_in_dim = feat_dim + 1
         self.head_ml1 = nn.Sequential(
-            KANLinear(head_in_dim, head_hidden, grid_size=grid_head, base_activation=base_activation),
-            KANLinear(head_hidden, 1, grid_size=grid_head, base_activation=base_activation)
+            build_kan_linear(
+                backend=self.kan_backend,
+                in_features=head_in_dim,
+                out_features=head_hidden,
+                grid_size=grid_head,
+                spline_order=spline_order,
+                base_activation=base_activation,
+            ),
+            build_kan_linear(
+                backend=self.kan_backend,
+                in_features=head_hidden,
+                out_features=1,
+                grid_size=grid_head,
+                spline_order=spline_order,
+                base_activation=base_activation,
+            )
         )
         self.head_ml3 = nn.Sequential(
-            KANLinear(head_in_dim, head_hidden, grid_size=grid_head, base_activation=base_activation),
-            KANLinear(head_hidden, 1, grid_size=grid_head, base_activation=base_activation)
+            build_kan_linear(
+                backend=self.kan_backend,
+                in_features=head_in_dim,
+                out_features=head_hidden,
+                grid_size=grid_head,
+                spline_order=spline_order,
+                base_activation=base_activation,
+            ),
+            build_kan_linear(
+                backend=self.kan_backend,
+                in_features=head_hidden,
+                out_features=1,
+                grid_size=grid_head,
+                spline_order=spline_order,
+                base_activation=base_activation,
+            )
         )
 
         # Голова 4: получает +2 признака (Normal + ML_3)
         head_in_dim_ml2 = feat_dim + 2
         self.head_ml2 = nn.Sequential(
-            KANLinear(head_in_dim_ml2, head_hidden, grid_size=grid_head, base_activation=base_activation),
-            KANLinear(head_hidden, 1, grid_size=grid_head, base_activation=base_activation)
+            build_kan_linear(
+                backend=self.kan_backend,
+                in_features=head_in_dim_ml2,
+                out_features=head_hidden,
+                grid_size=grid_head,
+                spline_order=spline_order,
+                base_activation=base_activation,
+            ),
+            build_kan_linear(
+                backend=self.kan_backend,
+                in_features=head_hidden,
+                out_features=1,
+                grid_size=grid_head,
+                spline_order=spline_order,
+                base_activation=base_activation,
+            )
         )
 
     def forward(self, x):
@@ -333,3 +484,122 @@ class PhysicsKANConditional(BaseModel):
 
         # Возвращаем 4 выхода: normal, ml1, ml2, ml3
         return torch.stack([normal_logit, ml1_logit, ml2_logit, ml3_logit], dim=1)
+
+
+class cPhysicsKAN(BaseModel):
+    """
+    Комплексная PhysicsKAN в полярной форме.
+
+    Ожидает вход с чётным числом каналов, где:
+    - чётные индексы (0, 2, 4, ...) — амплитуды;
+    - нечётные индексы (1, 3, 5, ...) — фазы.
+    """
+
+    def __init__(
+        self,
+        in_channels: int,
+        num_classes: int,
+        channels: list = [8, 16, 32],
+        kernel_size: int = 3,
+        stride: int = 1,
+        grid_size: int = 5,
+        spline_order: int = 3,
+        dropout: float = 0.2,
+        pool_every: int = 1,
+        base_activation=torch.nn.SiLU,
+        use_mlp: bool = False,
+        input_size: int = 64,
+        phase_bias_b: float = 0.0,
+        epsilon: float = 1e-6,
+        kan_backend: str = 'baseline',
+    ):
+        super().__init__()
+
+        if in_channels % 2 != 0:
+            raise ValueError(
+                f"cPhysicsKAN требует чётное число входных каналов (амплитуда/фаза), получено {in_channels}"
+            )
+
+        if in_channels % 4 != 0:
+            raise ValueError(
+                f"cPhysicsKAN требует число каналов кратное 4: [амплитуда/фаза] и пары I/U, получено {in_channels}"
+            )
+
+        self.epsilon = float(epsilon)
+        self.phase_bias_b = float(phase_bias_b)
+        self.kan_backend = kan_backend
+        self.use_mlp = use_mlp
+        self.dropout = ComplexPairDropout(dropout)
+
+        self.mult = ComplexMultiplicationLayer(phase_bias_b=phase_bias_b)
+        self.div = ComplexDivisionLayer(epsilon=epsilon, phase_bias_b=phase_bias_b)
+
+        # s и z имеют C/2 каналов, из них амплитудных C/4
+        self.bn_mult_amp = nn.BatchNorm1d(in_channels // 4)
+        self.bn_div_amp = nn.BatchNorm1d(in_channels // 4)
+
+        # Вход для ConvKAN/SimpleKAN: Original (C) + Mult (C/2) + Div (C/2) = 2 * C
+        proc_in_channels = in_channels + (in_channels // 2) * 2
+
+        if self.use_mlp:
+            pts = input_size // in_channels
+            mlp_input_size = proc_in_channels * pts
+            hidden_sizes = [h * 4 for h in channels]
+            self.processing_net = SimpleKAN(
+                input_size=mlp_input_size,
+                hidden_sizes=hidden_sizes,
+                output_size=num_classes,
+                grid_size=grid_size,
+                spline_order=spline_order,
+                dropout=dropout,
+                base_activation=base_activation
+            )
+        else:
+            self.processing_net = ConvKAN(
+                in_channels=proc_in_channels,
+                num_classes=num_classes,
+                channels=channels,
+                kernel_size=kernel_size,
+                stride=stride,
+                grid_size=grid_size,
+                spline_order=spline_order,
+                dropout=dropout,
+                pool_every=pool_every,
+                base_activation=base_activation
+            )
+
+    @staticmethod
+    def _split_amp_phase(x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        amp = x[:, 0::2, :]
+        phase = x[:, 1::2, :]
+        return amp, phase
+
+    @staticmethod
+    def _stack_amp_phase(amp: torch.Tensor, phase: torch.Tensor) -> torch.Tensor:
+        batch, channels, length = amp.shape
+        out = torch.empty(batch, channels * 2, length, device=amp.device, dtype=amp.dtype)
+        out[:, 0::2, :] = amp
+        out[:, 1::2, :] = phase
+        return out
+
+    def _amp_norm_only(self, x: torch.Tensor, bn: nn.BatchNorm1d) -> torch.Tensor:
+        amp, phase = self._split_amp_phase(x)
+        amp = bn(amp)
+        amp, phase = self.dropout(amp, phase)
+        return self._stack_amp_phase(amp, phase)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if x.dim() != 3:
+            raise ValueError(f"cPhysicsKAN ожидает вход размерности [B, C, T], получено {tuple(x.shape)}")
+
+        if x.shape[1] % 4 != 0:
+            raise ValueError(f"cPhysicsKAN ожидает число каналов кратное 4, получено {x.shape[1]}")
+
+        s = self.mult(x)
+        s = self._amp_norm_only(s, self.bn_mult_amp)
+
+        z = self.div(x)
+        z = self._amp_norm_only(z, self.bn_div_amp)
+
+        x_combined = torch.cat([x, s, z], dim=1)
+        return self.processing_net(x_combined)

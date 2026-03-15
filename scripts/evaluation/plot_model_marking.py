@@ -19,9 +19,15 @@ sys.path.append(str(ROOT_DIR))
 from osc_tools.data_management.dataset_manager import DatasetManager
 from osc_tools.ml.dataset import OscillogramDataset
 from osc_tools.ml.labels import get_target_columns, prepare_labels_for_experiment
+from osc_tools.analysis.ozz_physics import (
+    precompute_ozz_features,
+    classify_window_from_features,
+    u0_threshold_raw_to_normalized,
+)
 
 # Переиспользуем проверенные функции создания модели и загрузки весов
-from scripts.evaluation.aggregate_reports import _create_model_from_config, _load_state_dict_safe
+from scripts.evaluation._core.model_utils import _create_model_from_config, _load_state_dict_safe
+from scripts.evaluation._core.config_resolvers import parse_experiment_info
 
 
 def _find_experiment_dir(exp_name: str) -> Path:
@@ -44,11 +50,19 @@ def _find_experiment_dir(exp_name: str) -> Path:
     return candidates[0]
 
 
-def _resolve_target_level(exp_name: str) -> str:
-    """Определяем target_level по имени эксперимента."""
+def _resolve_target_level(exp_name: str, config: Optional[Dict[str, Any]] = None) -> str:
+    """Определяем target_level по config (приоритетно) или имени эксперимента."""
+    cfg_level = None
+    if config is not None:
+        cfg_level = str(config.get('data', {}).get('target_level', '')).strip().lower()
+    if cfg_level:
+        return cfg_level
+
     name = exp_name.lower()
     if 'base_sequential' in name:
         return 'base_sequential'
+    if 'ozz' in name or '2.6.11' in name:
+        return 'ozz'
     if 'full_by_levels' in name or ('hier_' in name and '2.6.4' in name):
         return 'full_by_levels'
     if '2.6.4' in name and 'full' in name:
@@ -252,21 +266,40 @@ def _plot_marking(
     labels = list(real_labels.keys())
     amplitudes = np.arange(1, len(labels) + 1)
 
+    # Стандартная раскраска: Желтый (A), Зеленый (B), Красный (C), Синий (N)
+    PHASE_COLORS = {
+        'A': '#FFD700', 'B': '#228B22', 'C': '#FF4500', 'N': '#1E90FF',
+        'IA': '#FFD700', 'IB': '#228B22', 'IC': '#FF4500', 'IN': '#1E90FF',
+        'UA': '#FFD700', 'UB': '#228B22', 'UC': '#FF4500', 'UN': '#1E90FF'
+    }
+
+    def get_color(name: str, idx: int) -> str:
+        name_uc = str(name).upper()
+        # Поиск по ключам IA/UA и т.д.
+        for key in ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']:
+            if key in name_uc: return PHASE_COLORS[key]
+        # Поиск по суффиксам/вхождениям фаз
+        if ' A' in name_uc or name_uc.endswith(' A') or name_uc.endswith('(A)'): return PHASE_COLORS['A']
+        if ' B' in name_uc or name_uc.endswith(' B') or name_uc.endswith('(B)'): return PHASE_COLORS['B']
+        if ' C' in name_uc or name_uc.endswith(' C') or name_uc.endswith('(C)'): return PHASE_COLORS['C']
+        if ' N' in name_uc or name_uc.endswith(' N') or name_uc.endswith('(N)'): return PHASE_COLORS['N']
+        return f"C{idx % 10}"
+
     if plot_mode == 'confidence':
         height_ratios = [1.1, 1.1, 0.8] + [0.6] * len(labels)
         fig = plt.figure(figsize=(16, 10 + 1.2 * len(labels)))
         gs = fig.add_gridspec(nrows=3 + len(labels), ncols=1, height_ratios=height_ratios)
 
         ax_curr = fig.add_subplot(gs[0, 0])
-        for name, data in currents.items():
-            ax_curr.plot(time_axis, data, label=name, linewidth=1.2)
+        for i, (name, data) in enumerate(currents.items()):
+            ax_curr.plot(time_axis, data, label=name, color=get_color(name, i), linewidth=1.2)
         ax_curr.set_ylabel("Токи")
         ax_curr.legend(loc='upper right')
         ax_curr.grid(True, alpha=0.3, linestyle=':')
 
         ax_volt = fig.add_subplot(gs[1, 0], sharex=ax_curr)
-        for name, data in voltages.items():
-            ax_volt.plot(time_axis, data, label=name, linewidth=1.2)
+        for i, (name, data) in enumerate(voltages.items()):
+            ax_volt.plot(time_axis, data, label=name, color=get_color(name, i), linewidth=1.2)
         ax_volt.set_ylabel("Напряжения")
         ax_volt.legend(loc='upper right')
         ax_volt.grid(True, alpha=0.3, linestyle=':')
@@ -274,13 +307,13 @@ def _plot_marking(
         ax_disc = fig.add_subplot(gs[2, 0], sharex=ax_curr)
         # Реальные метки — в плюс
         for i, label_name in enumerate(labels):
-            color = f"C{i % 10}"
+            color = get_color(label_name, i)
             real_positions = [amplitudes[i] if v else np.nan for v in real_labels[label_name]]
             ax_disc.scatter(time_axis, real_positions, marker='o', s=16, alpha=0.8, color=color, label=f"GT: {label_name}")
 
         # Предсказания — в минус
         for i, label_name in enumerate(labels):
-            color = f"C{i % 10}"
+            color = get_color(label_name, i)
             pred_positions = [-amplitudes[i] if v else np.nan for v in pred_labels[label_name]]
             ax_disc.scatter(time_axis, pred_positions, marker='s', s=14, alpha=0.6, color=color, label=f"Pred: {label_name}")
 
@@ -299,7 +332,7 @@ def _plot_marking(
 
         for i, label_name in enumerate(labels):
             ax_conf = fig.add_subplot(gs[3 + i, 0], sharex=ax_curr)
-            color = f"C{i % 10}"
+            color = get_color(label_name, i)
             probs = pred_probs.get(label_name, np.zeros_like(time_axis)) if pred_probs else np.zeros_like(time_axis)
 
             ax_conf.plot(time_axis, probs, color=color, linewidth=1.2, alpha=0.6)
@@ -324,15 +357,15 @@ def _plot_marking(
     plt.figure(figsize=(16, 10))
 
     ax_curr = plt.subplot(3, 1, 1)
-    for name, data in currents.items():
-        ax_curr.plot(time_axis, data, label=name, linewidth=1.2)
+    for i, (name, data) in enumerate(currents.items()):
+        ax_curr.plot(time_axis, data, label=name, color=get_color(name, i), linewidth=1.2)
     ax_curr.set_ylabel("Токи")
     ax_curr.legend(loc='upper right')
     ax_curr.grid(True, alpha=0.3, linestyle=':')
 
     ax_volt = plt.subplot(3, 1, 2)
-    for name, data in voltages.items():
-        ax_volt.plot(time_axis, data, label=name, linewidth=1.2)
+    for i, (name, data) in enumerate(voltages.items()):
+        ax_volt.plot(time_axis, data, label=name, color=get_color(name, i), linewidth=1.2)
     ax_volt.set_ylabel("Напряжения")
     ax_volt.legend(loc='upper right')
     ax_volt.grid(True, alpha=0.3, linestyle=':')
@@ -341,13 +374,13 @@ def _plot_marking(
 
     # Реальные метки — в плюс
     for i, label_name in enumerate(labels):
-        color = f"C{i % 10}"
+        color = get_color(label_name, i)
         real_positions = [amplitudes[i] if v else np.nan for v in real_labels[label_name]]
         ax_disc.scatter(time_axis, real_positions, marker='o', s=16, alpha=0.8, color=color, label=f"GT: {label_name}")
 
     # Предсказания — в минус
     for i, label_name in enumerate(labels):
-        color = f"C{i % 10}"
+        color = get_color(label_name, i)
         pred_positions = [-amplitudes[i] if v else np.nan for v in pred_labels[label_name]]
         ax_disc.scatter(time_axis, pred_positions, marker='s', s=14, alpha=0.6, color=color, label=f"Pred: {label_name}")
 
@@ -371,6 +404,7 @@ def _plot_marking(
     plt.close()
 
 
+
 def generate_marking_plots_for_model(
     exp_name: str,
     output_dir: Path,
@@ -380,6 +414,7 @@ def generate_marking_plots_for_model(
     split: str = 'test',
     plot_mode: str = 'discrete',
     threshold: float = 0.5,
+    inference_backend: str = 'auto',
     selected_files: Optional[List[str]] = None,
     file_time_ranges_ms: Optional[Dict[str, Tuple[float, float]]] = None
 ) -> None:
@@ -395,6 +430,8 @@ def generate_marking_plots_for_model(
         split: Какие данные использовать — 'test' или 'train'.
         plot_mode: 'discrete' (как раньше) или 'confidence' (уверенность по классам).
         threshold: Порог для подсветки уверенности.
+        inference_backend: 'auto' | 'nn' | 'physics'.
+            'physics' — использовать физический алгоритм классификации.
         selected_files: Ограничить список файлов конкретным набором.
         file_time_ranges_ms: Диапазоны времени по файлам (мс) для обрезки графиков.
     """
@@ -408,6 +445,9 @@ def generate_marking_plots_for_model(
     # Параметры модели/данных
     window_size = config.get('data', {}).get('window_size', 320)
     sampling_rate = config.get('data', {}).get('sampling_rate', 1600)
+    target_position = int(config.get('data', {}).get('target_position', window_size - 1))
+    if target_position < 0 or target_position >= window_size:
+        raise ValueError(f"Некорректный target_position={target_position} для window_size={window_size}")
     input_size = config.get('model', {}).get('params', {}).get('input_size', 0)
     in_channels = config.get('model', {}).get('params', {}).get('in_channels')
 
@@ -420,11 +460,15 @@ def generate_marking_plots_for_model(
         feature_mode, sampling_strategy, downsampling_stride, window_size, in_channels, input_size
     )
 
-    target_level = _resolve_target_level(exp_name)
+    target_level = _resolve_target_level(exp_name, config)
     target_window_mode = _resolve_target_window_mode(config, exp_name)
 
     # Подготовка данных
     dm = DatasetManager(str(data_dir))
+    # Для physics backend на train split нужна отдельная нормализация,
+    # потому что load_train_df() возвращает сырые (ненормализованные) данные,
+    # а precomputed=True для train не предусмотрен.
+    _norm_df = None  # lazy-загрузка при необходимости
     if split == 'train':
         data_df = dm.load_train_df() # precomputed=False
         split_label = 'train'
@@ -437,22 +481,33 @@ def generate_marking_plots_for_model(
 
     target_cols = get_target_columns(target_level, data_df)
 
-    # Модель
-    model = _create_model_from_config(config)
-    if model is None:
-        raise ValueError("Не удалось создать модель из config.json")
+    model_name_cfg = str(config.get('model', {}).get('name', '')).strip()
+    backend = inference_backend.strip().lower()
+    if backend not in ('auto', 'nn', 'physics'):
+        raise ValueError("inference_backend должен быть 'auto', 'nn' или 'physics'")
 
-    ckpt_path = exp_dir / "best_model.pt"
-    if not ckpt_path.exists():
-        ckpt_path = exp_dir / "final_model.pt"
-    if not ckpt_path.exists():
-        raise FileNotFoundError(f"Не найден чекпоинт модели (best/final) в {exp_dir}")
+    use_physics = (backend == 'physics') or (
+        backend == 'auto' and model_name_cfg.lower() == 'physicsbaseline'
+    )
 
+    model = None
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    checkpoint = torch.load(ckpt_path, map_location='cpu', weights_only=False)
-    _load_state_dict_safe(model, checkpoint, exp_dir.name, 'marking')
-    model = model.to(device)
-    model.eval()
+
+    if not use_physics:
+        model = _create_model_from_config(config)
+        if model is None:
+            raise ValueError("Не удалось создать модель из config.json")
+
+        ckpt_path = exp_dir / "final_model.pt"
+        if not ckpt_path.exists():
+            ckpt_path = exp_dir / "best_model.pt"
+        if not ckpt_path.exists():
+            raise FileNotFoundError(f"Не найден чекпоинт модели (best/final) в {exp_dir}")
+
+        checkpoint = torch.load(ckpt_path, map_location='cpu', weights_only=False)
+        _load_state_dict_safe(model, checkpoint, exp_dir.name, 'marking')
+        model = model.to(device)
+        model.eval()
 
     # Добавляем суффикс split к папке вывода для разделения train/test
     out_dir = output_dir / "marking_plots" / f"{exp_name}_{split_label}"
@@ -482,85 +537,152 @@ def generate_marking_plots_for_model(
         if include_zero_voltage and len(voltage_cols) > 3:
             voltages[voltage_cols[3]] = file_df[voltage_cols[3]].to_numpy()
 
-        # Датасет для предсказаний
+        # Индексы скользящих окон
         indices = list(range(0, len(file_df) - window_size + 1))
-        ds = OscillogramDataset(
-            dataframe=file_df,
-            indices=indices,
-            window_size=window_size,
-            mode='classification',
-            feature_mode=feature_mode,
-            sampling_strategy=sampling_strategy,
-            downsampling_stride=downsampling_stride,
-            target_columns=target_cols,
-            target_level=target_level if target_level != 'base' else 'base_labels',
-            target_window_mode=target_window_mode,
-            physical_normalization=True,
-            norm_coef_path=config.get('data', {}).get('norm_coef_path'),
-            num_harmonics=num_harmonics,
-            augment=False
-        )
 
-        # Предсказания по всем окнам
-        pred_labels = {col: np.zeros(len(file_df), dtype=np.int8) for col in target_cols}
-        pred_probs = {col: np.zeros(len(file_df), dtype=np.float32) for col in target_cols}
+        # Предсказания по всем окнам.
+        # any_in_window: накапливаем по всем точкам покрытия окна.
+        # point: записываем только в target_position внутри окна (обычно конец окна).
+        n_points = len(file_df)
+        pred_prob_accum = {col: np.zeros(n_points, dtype=np.float64) for col in target_cols}
+        pred_count = np.zeros(n_points, dtype=np.int32)
+        pred_labels = {col: np.zeros(n_points, dtype=np.int8) for col in target_cols}
+        pred_probs = {col: np.zeros(n_points, dtype=np.float32) for col in target_cols}
 
         if target_window_mode == 'any_in_window':
             real_labels = _build_window_any_labels(file_df, target_cols, window_size)
         else:
             real_labels = {col: file_df[col].to_numpy().astype(np.int8) for col in target_cols}
 
-        data_mode = config.get('data', {}).get('mode', 'multilabel')
-        model_name = model.__class__.__name__
-        is_conditional_model = 'conditional' in model_name.lower() or 'conditional' in exp_name.lower()
-        if target_level == 'base_sequential' and data_mode == 'multilabel':
-            # Фикс: для последовательных голов ожидаем multitask_conditional
-            data_mode = 'multitask_conditional'
+        if use_physics:
+            if target_level != 'ozz':
+                raise ValueError("Формульный backend поддерживается только для target_level='ozz'")
 
-        batch_size = 64
-        for batch_start in range(0, len(indices), batch_size):
-            batch_indices = indices[batch_start:batch_start + batch_size]
-            x_batch = []
-            for start_idx in batch_indices:
-                x, _ = ds[start_idx]
-                x_batch.append(x)
+            signal_cols = current_cols + voltage_cols
+            signal_arr = file_df.select(signal_cols).to_numpy().astype(np.float64)
 
-            x_tensor = torch.stack(x_batch).to(device)
-            with torch.no_grad():
-                outputs = model(x_tensor)
+            # Нормализация для train split (test данные уже нормализованы через precomputed)
+            if split == 'train':
+                if _norm_df is None:
+                    _norm_coef_path = dm._get_norm_coef_path()
+                    if _norm_coef_path.exists():
+                        _norm_df = pl.read_csv(_norm_coef_path, infer_schema_length=0)
+                if _norm_df is not None:
+                    signal_arr = dm._apply_normalization(signal_arr, file_name, _norm_df)
 
-            if data_mode == 'classification':
-                probs = torch.softmax(outputs, dim=1).cpu().numpy()
-                preds = np.argmax(probs, axis=1)
-                pred_matrix = np.zeros((len(preds), len(target_cols)), dtype=np.int8)
-                pred_matrix[np.arange(len(preds)), preds] = 1
-                prob_matrix = probs
-            elif data_mode == 'multitask_conditional' or is_conditional_model or target_level == 'base_sequential':
-                probs = torch.sigmoid(outputs[:, :4]).cpu().numpy()
-                pred_matrix = (probs > threshold).astype(np.int8)
-                prob_matrix = probs.copy()
+            model_params = config.get('model', {}).get('params', {})
+            u0_thr_norm = float(model_params.get('u0_threshold', u0_threshold_raw_to_normalized(10.0)))
+            delay_samples = int(model_params.get('operate_delay_samples', 32))
+            delay_periods = float(model_params.get('operate_delay_periods', 0.0))
 
-                # Ограничение: если Normal=1, то остальные = 0
-                normal_mask = pred_matrix[:, 0:1] == 1
-                pred_matrix[:, 1:] = np.where(normal_mask, 0, pred_matrix[:, 1:])
-                prob_matrix[:, 1:] = np.where(normal_mask, 0.0, prob_matrix[:, 1:])
+            # Предрассчёт фич один раз на файл
+            features = precompute_ozz_features(signal_arr, fs=sampling_rate)
 
-                # Ограничение: если ML_3=1, то ML_2=0
-                ml3_mask = pred_matrix[:, 3] == 1
-                pred_matrix[:, 2] = np.where(ml3_mask, 0, pred_matrix[:, 2])
-                prob_matrix[:, 2] = np.where(ml3_mask, 0.0, prob_matrix[:, 2])
-            else:
-                probs = torch.sigmoid(outputs).cpu().numpy()
-                pred_matrix = (probs > threshold).astype(np.int8)
-                prob_matrix = probs
+            for start_idx in indices:
+                end_idx = start_idx + window_size
+                pred_result = classify_window_from_features(
+                    features, start=start_idx, end=end_idx,
+                    u0_threshold=u0_thr_norm,
+                    operate_delay_samples=delay_samples,
+                    operate_delay_periods=delay_periods,
+                )
 
-            for j, start_idx in enumerate(batch_indices):
-                target_idx = start_idx + (window_size - 1)
-                if target_idx >= len(file_df):
-                    continue
-                for k, col in enumerate(target_cols):
-                    pred_labels[col][target_idx] = pred_matrix[j, k]
-                    pred_probs[col][target_idx] = prob_matrix[j, k]
+                prob_vec = np.zeros(len(target_cols), dtype=np.float32)
+                if pred_result is not None:
+                    prob_vec[0] = 1.0
+                    if 1 in pred_result and len(target_cols) > 1:
+                        prob_vec[1] = 1.0
+                    if 2 in pred_result and len(target_cols) > 2:
+                        prob_vec[2] = 1.0
+
+                if target_window_mode == 'any_in_window':
+                    end_cover = min(start_idx + window_size, n_points)
+                    pred_count[start_idx:end_cover] += 1
+                    for k, col in enumerate(target_cols):
+                        pred_prob_accum[col][start_idx:end_cover] += float(prob_vec[k])
+                else:
+                    target_idx = start_idx + target_position
+                    if 0 <= target_idx < n_points:
+                        pred_count[target_idx] += 1
+                        for k, col in enumerate(target_cols):
+                            pred_prob_accum[col][target_idx] += float(prob_vec[k])
+        else:
+            ds = OscillogramDataset(
+                dataframe=file_df,
+                indices=indices,
+                window_size=window_size,
+                mode='classification',
+                feature_mode=feature_mode,
+                sampling_strategy=sampling_strategy,
+                downsampling_stride=downsampling_stride,
+                target_columns=target_cols,
+                target_level=target_level if target_level != 'base' else 'base_labels',
+                target_window_mode=target_window_mode,
+                physical_normalization=True,
+                norm_coef_path=config.get('data', {}).get('norm_coef_path'),
+                num_harmonics=num_harmonics,
+                augment=False
+            )
+
+            data_mode = config.get('data', {}).get('mode', 'multilabel')
+            model_name = model.__class__.__name__
+            is_conditional_model = 'conditional' in model_name.lower() or 'conditional' in exp_name.lower()
+            if target_level == 'base_sequential' and data_mode == 'multilabel':
+                data_mode = 'multitask_conditional'
+
+            batch_size = 64
+            for batch_start in range(0, len(indices), batch_size):
+                batch_indices = indices[batch_start:batch_start + batch_size]
+                x_batch = []
+                for start_idx in batch_indices:
+                    x, _ = ds[start_idx]
+                    x_batch.append(x)
+
+                x_tensor = torch.stack(x_batch).to(device)
+                with torch.no_grad():
+                    outputs = model(x_tensor)
+
+                if data_mode == 'classification':
+                    probs = torch.softmax(outputs, dim=1).cpu().numpy()
+                    preds = np.argmax(probs, axis=1)
+                    pred_matrix = np.zeros((len(preds), len(target_cols)), dtype=np.int8)
+                    pred_matrix[np.arange(len(preds)), preds] = 1
+                    prob_matrix = probs
+                elif data_mode == 'multitask_conditional' or is_conditional_model or target_level == 'base_sequential':
+                    probs = torch.sigmoid(outputs[:, :4]).cpu().numpy()
+                    pred_matrix = (probs > threshold).astype(np.int8)
+                    prob_matrix = probs.copy()
+
+                    normal_mask = pred_matrix[:, 0:1] == 1
+                    pred_matrix[:, 1:] = np.where(normal_mask, 0, pred_matrix[:, 1:])
+                    prob_matrix[:, 1:] = np.where(normal_mask, 0.0, prob_matrix[:, 1:])
+
+                    ml3_mask = pred_matrix[:, 3] == 1
+                    pred_matrix[:, 2] = np.where(ml3_mask, 0, pred_matrix[:, 2])
+                    prob_matrix[:, 2] = np.where(ml3_mask, 0.0, prob_matrix[:, 2])
+                else:
+                    probs = torch.sigmoid(outputs).cpu().numpy()
+                    pred_matrix = (probs > threshold).astype(np.int8)
+                    prob_matrix = probs
+
+                for j, start_idx in enumerate(batch_indices):
+                    if target_window_mode == 'any_in_window':
+                        end_cover = min(start_idx + window_size, n_points)
+                        pred_count[start_idx:end_cover] += 1
+                        for k, col in enumerate(target_cols):
+                            pred_prob_accum[col][start_idx:end_cover] += float(prob_matrix[j, k])
+                    else:
+                        target_idx = start_idx + target_position
+                        if 0 <= target_idx < n_points:
+                            pred_count[target_idx] += 1
+                            for k, col in enumerate(target_cols):
+                                pred_prob_accum[col][target_idx] += float(prob_matrix[j, k])
+
+        # Сглаживание: средняя вероятность = сумма / количество покрытий
+        for col in target_cols:
+            mask = pred_count > 0
+            pred_probs[col][mask] = (pred_prob_accum[col][mask] / pred_count[mask]).astype(np.float32)
+            pred_labels[col] = (pred_probs[col] >= threshold).astype(np.int8)
 
         # Ось времени
         time_axis = np.arange(len(file_df)) * 1000 / sampling_rate
@@ -575,7 +697,9 @@ def generate_marking_plots_for_model(
             pred_labels = {k: v[mask] for k, v in pred_labels.items()}
             pred_probs = {k: v[mask] for k, v in pred_probs.items()}
 
-        title = f"{exp_name} | {file_name}"
+        info = parse_experiment_info(exp_name)
+        model_family = info.get("model_family", "Model")
+        title = f"{model_family} | {exp_name} | {file_name}"
         name_hash = hashlib.md5(f"{file_name}|{exp_name}".encode('utf-8')).hexdigest()[:12]
         out_name = f"mark_{name_hash}.png"
         out_path = out_dir / out_name
@@ -620,6 +744,8 @@ if __name__ == "__main__":
                         help="Режим графика: дискреты или уверенность")
     parser.add_argument("--threshold", type=float, default=0.5,
                         help="Порог для уверенности модели")
+    parser.add_argument("--backend", type=str, default='auto', choices=['auto', 'nn', 'physics'],
+                        help="Бэкенд инференса: нейро-сеть или формульный алгоритм")
     parser.add_argument("--files", type=str, default=None,
                         help="Список файлов через запятую для построения")
     parser.add_argument("--time-ranges-json", type=str, default=None,
@@ -628,11 +754,11 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
 
     # === РУЧНОЙ РЕЖИМ (как в других скриптах) ===
-    MANUAL_RUN = True
+    MANUAL_RUN = False
 
     if MANUAL_RUN or args.exp is None:
         # EXP_NAME = "Exp_2.6.1_PhysicsKAN_medium_phase_polar_stride_base_weights_aug"
-        EXP_NAME = "Exp_2.6.8_PhysicsKAN_medium_phase_polar_stride_base_win_any_weights_aug"
+        EXP_NAME = "Exp_2.6.11_ConvKAN_heavy_phase_polar_stride_ozz_weights_aug"
         OUTPUT_DIR = "reports/Exp_2_5_and_start_Exp_2_6"
         DATA_DIR = "data/ml_datasets"
         INCLUDE_ZERO_CURRENT = True
@@ -640,6 +766,7 @@ if __name__ == "__main__":
         SPLIT = 'test'  # 'train' или 'test'
         PLOT_MODE = 'confidence'  # 'discrete' или 'confidence'
         THRESHOLD = 0.5
+        INFERENCE_BACKEND = 'auto'  # 'auto' | 'nn' | 'physics'
 
         # Пример выбора файлов и диапазонов времени (мс)
         # SELECTED_FILES = ["file_001.cfg", "file_002.cfg"]
@@ -658,6 +785,7 @@ if __name__ == "__main__":
         SPLIT = args.split
         PLOT_MODE = args.plot_mode
         THRESHOLD = args.threshold
+        INFERENCE_BACKEND = args.backend
         SELECTED_FILES = args.files.split(',') if args.files else None
         FILE_TIME_RANGES_MS = None
         if args.time_ranges_json:
@@ -673,6 +801,7 @@ if __name__ == "__main__":
         split=SPLIT,
         plot_mode=PLOT_MODE,
         threshold=THRESHOLD,
+        inference_backend=INFERENCE_BACKEND,
         selected_files=SELECTED_FILES,
         file_time_ranges_ms=FILE_TIME_RANGES_MS
     )

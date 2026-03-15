@@ -163,6 +163,53 @@
 
 ---
 
+### [x] Exp 2.6.9: Комплексная PhysicsKAN (cPhysicsKAN)
+**Зачем:** Проверить гипотезу комплексной обработки признаков в полярной форме (амплитуда/фаза) с физическими операциями в комплексной плоскости.
+
+*   **Конфигурация:** Полная копия `2.6.1_stride` по данным и обучению (`phase_polar + stride`, `weights`, `aug=True`, `target_level=base`), но с моделью `cPhysicsKAN`.
+*   **Сложности:** `light`, `medium`, `heavy` (отдельные конфиги в `MODEL_COMPLEXITY`).
+*   **Ограничения модели:**
+    - поддерживается только `feature_mode='phase_polar'`;
+    - требуется чётное число входных каналов (`[A, φ]` пары);
+    - `BatchNorm` применяется только к амплитудам;
+    - `Dropout` применяется согласованно к комплексной паре (амплитуда и фаза).
+*   **Физические блоки:**
+    - умножение: $A=A_1\cdot A_2$, $\varphi=\varphi_1+\varphi_2$;
+    - деление: $A=A_1/A_2$, $\varphi=\varphi_1-\varphi_2$.
+*   **Реализация:**
+    - новая модель: [osc_tools/ml/models/kan.py](osc_tools/ml/models/kan.py)
+    - регистрация в runner: [osc_tools/ml/runner.py](osc_tools/ml/runner.py)
+    - экспорт модели: [osc_tools/ml/models/__init__.py](osc_tools/ml/models/__init__.py)
+    - эксперимент: [scripts/phase2_experiments/run_phase2_6.py](scripts/phase2_experiments/run_phase2_6.py)
+    - тесты: [tests/unit/test_ml_models_kan.py](tests/unit/test_ml_models_kan.py)
+
+---
+
+### [] Exp 2.6.11: Детектирование ОЗЗ/ДПОЗЗ (Раздел 5 статьи)
+**Зачем:** Создать специализированную модель для классификации подтипов однофазных замыканий на землю — ключевая задача для статьи. Сравнение детерминированного алгоритма (физика) с нейросетью (cPhysicsKAN).
+
+*   **Целевая задача:** 3-классовая классификация:
+    - Класс 0: Устойчивое ОЗЗ (ML_2_1 ∨ ML_2_1_1)
+    - Класс 1: Затухающее ОЗЗ (ML_2_1_2)
+    - Класс 2: ДПОЗЗ (ML_2_1_3)
+*   **Физическая Baseline-модель:** Детерминированный алгоритм классификации:
+    - Расчёт $3U_0 = U_A + U_B + U_C$, RMS первой гармоники
+    - ДПОЗЗ: пики производной + запертый заряд (Гильберт)
+    - Затухающее: огибающая спадает ниже 30% от максимума
+    - Устойчивое: стабильная $3U_0$ выше порога
+    - Реализация (`precompute_ozz_features`, `classify_window_from_features`): [osc_tools/analysis/ozz_physics.py](osc_tools/analysis/ozz_physics.py)
+*   **Нейросетевая модель:** `cPhysicsKAN` (комплексная полярная PhysicsKAN).
+*   **Конфигурации:**
+    - `2.6.11_global_stride`: cPhysicsKAN + Global Balancing (light/medium/heavy)
+    - `2.6.11_weights_stride`: cPhysicsKAN + Weighted Loss (light/medium/heavy)
+    - `2.6.11_baselines_stride`: 6 базовых моделей (heavy) для сравнения
+*   **Данные:** `phase_polar + stride + any_in_window + aug`, ДПОЗЗ-стратифицированный split
+*   **Стратифицированный split:** [osc_tools/data_management/ozz_split.py](osc_tools/data_management/ozz_split.py)
+*   **Оценка PhysicsBaseline:** [scripts/evaluation/evaluate_physics_baseline.py](scripts/evaluation/evaluate_physics_baseline.py)
+*   **Сглаженные предсказания:** Обновлён [scripts/evaluation/plot_model_marking.py](scripts/evaluation/plot_model_marking.py) — взвешенное усреднение по окнам
+
+---
+
 ## 📝 Резюме по изменениям кода (To-Do List)
 
 1.  **Dataset:**
@@ -174,5 +221,7 @@
     *   [x] Создать версию моделей `_Depthwise` (для Exp 2.6.2).
     *   [x] Создать класс `HybridModel` (принимает словарь входов: raw и features). — см. `osc_tools/ml/models/hybrid.py`
     *   [x] Исправить `PhysicsKAN` (добавить BatchNorm).
+    *   [x] Добавить `cPhysicsKAN` (комплексная полярная обработка + физические `mul/div`).
 3.  **Runner:**
     *   [x] Адаптировать конфиги под новые типы моделей (добавлена регистрация в Runner).
+    *   [x] Добавить регистрацию `cPhysicsKAN`.

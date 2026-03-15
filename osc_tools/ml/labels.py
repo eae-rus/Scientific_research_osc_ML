@@ -235,8 +235,12 @@ def get_target_columns(level: str = 'base', df: Optional[pl.DataFrame] = None) -
             raise ValueError("Для уровня 'level2' необходимо передать DataFrame")
         return [c for c in get_ml_columns(df) if c.count('_') == 2]
     
+    elif level == 'ozz':
+        # 3 целевых класса задачи ОЗЗ/ДПОЗЗ (multi-label)
+        return ["Target_OZZ", "Target_OZZ_decay", "Target_OZZ_dpozz"]
+    
     else:
-        raise ValueError(f"Неизвестный уровень: {level}. Допустимые: 'base', 'base_labels', 'full', 'full_by_levels', 'level1', 'level2'")
+        raise ValueError(f"Неизвестный уровень: {level}. Допустимые: 'base', 'base_labels', 'full', 'full_by_levels', 'level1', 'level2', 'ozz'")
 
 
 def prepare_labels_for_experiment(
@@ -273,6 +277,11 @@ def prepare_labels_for_experiment(
         # Просто используем все ML_* как есть
         # Но добавляем базовые для Hierarchical Accuracy
         df = add_base_labels(df)
+    
+    elif target_level == 'ozz':
+        # Специализированные метки для задачи ОЗЗ/ДПОЗЗ (3 класса)
+        from osc_tools.data_management.ozz_split import add_ozz_target_columns
+        df = add_ozz_target_columns(df)
         
     return df
 

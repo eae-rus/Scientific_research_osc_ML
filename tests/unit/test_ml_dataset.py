@@ -195,3 +195,21 @@ class TestOscillogramDatasetFeatures:
         # Всего: 12 каналов
         # Shape: (Channels, Time) -> (12, 32)
         assert x.shape == (12, 32)
+
+    def test_phase_polar_h1_angle_feature_mode(self, physics_data, indices):
+        num_harmonics = 3
+        ds = OscillogramDataset(
+            dataframe=physics_data,
+            indices=indices,
+            window_size=64,
+            mode='classification',
+            feature_mode='phase_polar_h1_angle',
+            sampling_rate=1600,
+            num_harmonics=num_harmonics,
+        )
+
+        x, _ = ds[0]
+
+        # 8 каналов, для каждого: модули всех гармоник + угол только h1
+        expected_channels = 8 * (num_harmonics + 1)
+        assert x.shape == (expected_channels, 64)

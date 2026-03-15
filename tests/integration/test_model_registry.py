@@ -120,7 +120,7 @@ class ModelRegistry:
         """Загружает реестр моделей."""
         if cls._registry is None:
             if not cls._registry_path.exists():
-                pytest.skip(f"Реестр моделей не найден: {cls._registry_path}")
+                pytest.skip(f"Реестр моделей не найден: {cls._registry_path}", allow_module_level=True)
             
             with open(cls._registry_path, 'r', encoding='utf-8') as f:
                 cls._registry = json.load(f)

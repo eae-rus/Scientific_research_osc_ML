@@ -59,6 +59,8 @@ class AdvancedVisualizer:
         'SimpleKAN': '#e67e22',
         'ConvKAN': '#e74c3c',
         'PhysicsKAN': '#9b59b6',
+        'cPhysicsKAN': '#f1c40f',
+        'PhysicsBaseline': '#16a085',
         # Гибридные модели (те же цвета, слегка темнее)
         'HybridMLP': '#7f8c8d',
         'HybridCNN': '#2980b9',
@@ -311,7 +313,7 @@ class AdvancedVisualizer:
         plt.figure(figsize=(12, 8))
         
         # Фиксированный порядок моделей и сложностей для согласованности между графиками
-        model_order = ['MLP', 'CNN', 'ResNet', 'SimpleKAN', 'ConvKAN', 'PhysicsKAN', 'Unknown']
+        model_order = ['MLP', 'CNN', 'ResNet', 'SimpleKAN', 'ConvKAN', 'PhysicsKAN', 'cPhysicsKAN', 'PhysicsBaseline', 'Unknown']
         complexity_order = ['Light', 'Medium', 'Heavy', 'Unknown']
         
         # Scatter plot с разными маркерами для сложности
@@ -738,11 +740,34 @@ class AdvancedVisualizer:
     # ЧАСТЬ 4: ДОПОЛНИТЕЛЬНЫЕ ВИЗУАЛИЗАЦИИ
     # =========================================================================
     
-    # Названия классов для radar charts
+    # Названия классов по target_level для radar charts
     CLASS_NAMES = {
         'ru': ['Норма', 'Коммутации', 'Аномалии', 'Аварии'],
         'en': ['Normal', 'Switching', 'Abnormal', 'Fault']
     }
+
+    CLASS_NAMES_OZZ = {
+        'ru': ['ОЗЗ', 'Затухающее ОЗЗ', 'ДПОЗЗ'],
+        'en': ['SEF', 'Decaying SEF', 'Intermittent Arc SEF']
+    }
+
+    def _get_per_class_columns(self, df: pd.DataFrame) -> List[str]:
+        """Возвращает список колонок Class_*_F1 в порядке индексов."""
+        cols = [c for c in df.columns if re.match(r'^Class_\d+_F1$', str(c))]
+        cols = sorted(cols, key=lambda c: int(c.split('_')[1]))
+        return cols
+
+    def _get_radar_class_names(self, target_level: str, num_classes: int) -> List[str]:
+        """Подбирает подписи классов для radar-графика."""
+        level = str(target_level or 'base').lower()
+        if level == 'ozz' and num_classes == 3:
+            return self.CLASS_NAMES_OZZ[self.lang]
+
+        base_names = self.CLASS_NAMES[self.lang]
+        if num_classes <= len(base_names):
+            return base_names[:num_classes]
+
+        return [f"Class {i}" for i in range(num_classes)]
     
     def plot_additional_visualizations(self, df: pd.DataFrame):
         """
@@ -843,38 +868,46 @@ class AdvancedVisualizer:
         """
         Строит radar charts для сравнения моделей по классам.
         
-        Требует наличия колонок: Class_0_F1, Class_1_F1, Class_2_F1, Class_3_F1
+        Поддерживает произвольное число классов: Class_0_F1 ... Class_N_F1.
         """
-        # Проверяем наличие per-class метрик
-        per_class_cols = ['Class_0_F1', 'Class_1_F1', 'Class_2_F1', 'Class_3_F1']
-        if not all(col in df.columns for col in per_class_cols):
+        all_per_class_cols = self._get_per_class_columns(df)
+        if not all_per_class_cols:
             print("  [Radar] Пропуск: нет per-class метрик в данных")
             return
-        
-        # Фильтруем модели с валидными данными
-        df_valid = df[df[per_class_cols].notna().all(axis=1)]
-        if df_valid.empty:
-            print("  [Radar] Пропуск: нет моделей с валидными per-class метриками")
-            return
-        
-        # Выбираем топ-5 моделей по общей F1
-        top_models = df_valid.nlargest(5, 'Best Full F1')
-        
-        # Radar chart
-        self._plot_radar_top_models(top_models, per_class_cols)
 
-        # Radar charts: топ-3 внутри каждой модели
-        self._plot_radar_top3_per_model(df_valid, per_class_cols)
-        
-        # Сравнение по типам моделей (усреднённое)
-        self._plot_radar_by_model_type(df_valid, per_class_cols)
-        
-        print(f"  [Radar] Сохранены radar charts в {self.output_root / 'additional/radar'}")
+        if 'TargetLevel' in df.columns and not df['TargetLevel'].isna().all():
+            groups = [(str(level), part.copy()) for level, part in df.groupby('TargetLevel')]
+        else:
+            groups = [('base', df.copy())]
+
+        generated_any = False
+        for target_level, part_df in groups:
+            # Для каждой группы берём только те class-колонки, где есть значения.
+            per_class_cols = [c for c in all_per_class_cols if c in part_df.columns and not part_df[c].isna().all()]
+            if not per_class_cols:
+                continue
+
+            df_valid = part_df[part_df[per_class_cols].notna().all(axis=1)]
+            if df_valid.empty:
+                continue
+
+            class_names = self._get_radar_class_names(target_level, len(per_class_cols))
+            suffix = '' if len(groups) == 1 else f"_{str(target_level).lower()}"
+
+            top_models = df_valid.nlargest(5, 'Best Full F1')
+            self._plot_radar_top_models(top_models, per_class_cols, class_names, suffix=suffix)
+            self._plot_radar_top3_per_model(df_valid, per_class_cols, class_names, suffix=suffix)
+            self._plot_radar_by_model_type(df_valid, per_class_cols, class_names, suffix=suffix)
+            generated_any = True
+
+        if generated_any:
+            print(f"  [Radar] Сохранены radar charts в {self.output_root / 'additional/radar'}")
+        else:
+            print("  [Radar] Пропуск: нет моделей с валидными per-class метриками")
     
-    def _plot_radar_top_models(self, df: pd.DataFrame, class_cols: List[str]):
+    def _plot_radar_top_models(self, df: pd.DataFrame, class_cols: List[str], class_names: List[str], suffix: str = ''):
         """Radar chart для топ-5 моделей."""
-        class_names = self.CLASS_NAMES[self.lang]
-        
+
         # Количество осей
         num_vars = len(class_names)
         angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
@@ -908,12 +941,11 @@ class AdvancedVisualizer:
         )
         
         plt.tight_layout()
-        plt.savefig(self.output_root / 'additional/radar' / 'radar_top5_models.png', dpi=150, bbox_inches='tight')
+        plt.savefig(self.output_root / 'additional/radar' / f'radar_top5_models{suffix}.png', dpi=150, bbox_inches='tight')
         plt.close()
 
-    def _plot_radar_top3_per_model(self, df: pd.DataFrame, class_cols: List[str]):
+    def _plot_radar_top3_per_model(self, df: pd.DataFrame, class_cols: List[str], class_names: List[str], suffix: str = ''):
         """Radar chart: топ-3 конфигурации внутри каждой модели."""
-        class_names = self.CLASS_NAMES[self.lang]
 
         # Группируем по типу модели
         grouped = df.groupby('Model')
@@ -960,15 +992,14 @@ class AdvancedVisualizer:
             )
 
             safe_name = re.sub(r'[^a-zA-Z0-9._-]+', '_', str(model_name))
-            out_path = self.output_root / 'additional/radar' / f"radar_top3_{safe_name}.png"
+            out_path = self.output_root / 'additional/radar' / f"radar_top3_{safe_name}{suffix}.png"
             plt.tight_layout()
             plt.savefig(out_path, dpi=150, bbox_inches='tight')
             plt.close()
     
-    def _plot_radar_by_model_type(self, df: pd.DataFrame, class_cols: List[str]):
+    def _plot_radar_by_model_type(self, df: pd.DataFrame, class_cols: List[str], class_names: List[str], suffix: str = ''):
         """Radar chart: усреднённые значения по типам моделей."""
-        class_names = self.CLASS_NAMES[self.lang]
-        
+
         # Группируем по типу модели
         grouped = df.groupby('Model')[class_cols].mean()
         
@@ -1004,7 +1035,7 @@ class AdvancedVisualizer:
         )
         
         plt.tight_layout()
-        plt.savefig(self.output_root / 'additional/radar' / 'radar_by_model_type.png', dpi=150, bbox_inches='tight')
+        plt.savefig(self.output_root / 'additional/radar' / f'radar_by_model_type{suffix}.png', dpi=150, bbox_inches='tight')
         plt.close()
     
     def _plot_boxplot_f1_by_model(self, df: pd.DataFrame):
@@ -1013,9 +1044,16 @@ class AdvancedVisualizer:
         
         order = df.groupby('Model')['Best Full F1'].median().sort_values(ascending=False).index
         
+        # Динамически дополняем палитру недостающими моделями
+        palette = dict(self.MODEL_COLORS)
+        cmap = plt.get_cmap('tab10')
+        for idx, m in enumerate(order):
+            if m not in palette:
+                palette[m] = cmap(idx % 10)
+        
         sns.boxplot(
             data=df, x='Model', y='Best Full F1',
-            order=order, palette=self.MODEL_COLORS
+            order=order, palette=palette
         )
         sns.stripplot(
             data=df, x='Model', y='Best Full F1',

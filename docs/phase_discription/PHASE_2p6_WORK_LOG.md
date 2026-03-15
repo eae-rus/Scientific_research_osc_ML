@@ -1,5 +1,111 @@
 # Лог работ по Фазе 2.6 (Архитектурные улучшения)
 
+## [2026-03-10] Обновление физической baseline-модели (THD + RMS Trend)
+
+### Модификация алгоритма [ozz_physics.py](osc_tools/analysis/ozz_physics.py)
+
+1. **Спектральный анализ (THD):**
+   - Переписан `_rms_fundamental_sliding`: теперь возвращает кортеж `(rms_fund, rms_harm, thd_arr)`.
+   - Добавлен расчет скользящего **THD** (Total Harmonic Distortion) на окне в 1 период (32 отсчета) через RFFT.
+   - Внедрен критерий ДПОЗЗ по 90-му перцентилю THD на активном участке окна (порог `thd_threshold=0.15`).
+
+2. **Анализ тренда (RMS Decay):**
+   - Полностью удалена логика на базе **преобразования Гильберта** (`scipy.signal.hilbert`) и огибающей. Это устранило краевые артефакты и повысило стабильность.
+   - Реализовано детектирование затухания через анализ тренда `u0_rms_arr`: сравнение максимума с "хвостом" окна (последние 15%) и проверка позиции пика (`peak_pos < 0.7 * Window`).
+
+3. **Логика классификации:**
+   - Обновлен `OzzPrecomputedFeatures`: поле `envelope` заменено на `thd_arr`.
+   - Реорганизован `classify_window_from_features`:
+     - Основной канал ДПОЗЗ — спектральный (THD).
+     - Резервный канал ДПОЗЗ — пики производной (сохранен для коротких пробоев).
+     - Переход на multi-label классификацию с возвратом `Set[int]`.
+
+4. **Документация и тесты:**
+   - Актуализировано описание алгоритма в [OZZ_PHYSICS_ALGORITHM.md](docs/OZZ_PHYSICS_ALGORITHM.md) (обновлены шаги, параметры и блок-схема).
+   - Обновлены unit-тесты в [test_ozz_physics.py](tests/unit/test_ozz_physics.py): добавлены проверки на THD (синус vs меандр) и адаптированы существующие сценарии под новый API.
+
+## [2026-03-08] Exp 2.6.11: Детектирование ОЗЗ/ДПОЗЗ + Физическая Baseline
+
+### Выполненные работы
+
+1. **Физическая baseline-модель** (`predict_ozz_physics`)
+   - Создан модуль [osc_tools/analysis/ozz_physics.py](osc_tools/analysis/ozz_physics.py)
+   - Реализован детерминированный алгоритм классификации ОЗЗ:
+     - Вычисление $3U_0 = U_A + U_B + U_C$
+     - Базовый критерий: RMS первой гармоники $3U_0$ > порог (3В)
+     - Критерий ДПОЗЗ: кол-во пиков производной + наличие запертого заряда
+     - Критерий затухающего ОЗЗ: огибающая (Гильберт) + проверка спада амплитуды
+     - Критерий устойчивого ОЗЗ: стабильная $3U_0$ без затухания и без переходных процессов
+   - Добавлены функции батчевого применения и оценки на DataFrame
+
+2. **Стратифицированное разбиение данных**
+   - Создан модуль [osc_tools/data_management/ozz_split.py](osc_tools/data_management/ozz_split.py)
+   - Разбиение на уровне файлов с иерархической приоритизацией (ДПОЗЗ > Затухающее > Устойчивое)
+   - Гарантированное представительство каждого класса в тестовой выборке
+   - Добавлена функция `add_ozz_target_columns(df)` для формирования 3-классовых меток:
+     - `Target_OZZ_stable` (ML_2_1 ∨ ML_2_1_1, без decay/dpozz)
+     - `Target_OZZ_decay` (ML_2_1_2)
+     - `Target_OZZ_dpozz` (ML_2_1_3)
+
+3. **Новый target_level='ozz' в системе меток**
+   - Обновлён [osc_tools/ml/labels.py](osc_tools/ml/labels.py): поддержка `get_target_columns('ozz')` и `prepare_labels_for_experiment(df, 'ozz')`
+
+4. **Эксперименты 2.6.11** в [scripts/phase2_experiments/run_phase2_6.py](scripts/phase2_experiments/run_phase2_6.py)
+   - `2.6.11_global_stride`: cPhysicsKAN + Global Balancing (light/medium/heavy)
+   - `2.6.11_weights_stride`: cPhysicsKAN + Weighted Loss (light/medium/heavy)
+   - `2.6.11_baselines_stride`: 6 базовых моделей (heavy) для сравнения
+   - Все 3 конфигурации: `phase_polar + stride + any_in_window + aug`
+
+5. **Скрипт оценки физической модели**
+   - Создан [scripts/evaluation/evaluate_physics_baseline.py](scripts/evaluation/evaluate_physics_baseline.py)
+   - Результаты сохраняются в формате эксперимента (config.json + history.json)
+   - Интеграция с отчётной системой через стандартный формат
+
+6. **Сглаживание предсказаний в plot_model_marking.py**
+   - Обновлён [scripts/evaluation/plot_model_marking.py](scripts/evaluation/plot_model_marking.py)
+   - Новая логика: каждое окно вносит свой вклад во все покрываемые точки
+   - Итоговая вероятность = среднее по всем покрытиям (weighted averaging)
+   - Устраняет артефакты «точечного» предсказания на единственную последнюю точку окна
+
+7. **Тестирование**
+   - Созданы unit-тесты в [tests/unit/test_ozz_physics.py](tests/unit/test_ozz_physics.py):
+     - Базовая работа `predict_ozz_physics` на синтетических данных
+     - Корректность `add_ozz_target_columns`
+     - Стратифицированное разбиение `stratified_ozz_split`
+
+## [2026-03-07] cPhysicsKAN (комплексная полярная версия) + Exp 2.6.9
+
+### Выполненные работы
+
+1. Реализована новая модель `cPhysicsKAN`
+   - Добавлен класс `cPhysicsKAN` в [osc_tools/ml/models/kan.py](osc_tools/ml/models/kan.py)
+   - Добавлены вспомогательные блоки:
+     - `ComplexPairDropout` — согласованный dropout для пары `[A, φ]`
+     - `ComplexPhysicsKANBlock` — KAN-обработка амплитуды и фазы с комплексным residual-сложением
+   - Реализованы физические операции в полярной форме:
+     - умножение: $A=A_1\cdot A_2$, $\varphi=\varphi_1+\varphi_2$
+     - деление: $A=A_1/A_2$, $\varphi=\varphi_1-\varphi_2$
+
+2. Добавлены ограничения и инварианты модели
+   - Модель принимает только чётное число каналов (пары амплитуда/фаза)
+   - На уровне эксперимента зафиксировано использование только `feature_mode='phase_polar'`
+   - Нормализация применяется только к амплитудам
+
+3. Интеграция в пайплайн обучения
+   - Экспорт модели добавлен в [osc_tools/ml/models/__init__.py](osc_tools/ml/models/__init__.py)
+   - Регистрация в раннере добавлена в [osc_tools/ml/runner.py](osc_tools/ml/runner.py)
+
+4. Добавлен эксперимент `2.6.9_stride`
+   - Конфигурация добавлена в [scripts/phase2_experiments/run_phase2_6.py](scripts/phase2_experiments/run_phase2_6.py)
+   - Параметры данных и обучения аналогичны `2.6.1_stride`
+   - Для `light/medium/heavy` добавлены отдельные профили сложности `cPhysicsKAN`
+
+5. Тестирование
+   - Обновлены unit-тесты в [tests/unit/test_ml_models_kan.py](tests/unit/test_ml_models_kan.py):
+     - smoke test `forward` для `cPhysicsKAN`
+     - проверка инварианта чётности каналов
+     - контрактные проверки формул `mul/div` в полярной форме
+
 ## [2026-02-10] Exp 2.6.8 и обновление визуализации уверенности
 
 ### Выполненные работы
