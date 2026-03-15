@@ -356,14 +356,14 @@ class TestComplexMultiheadAttention:
         assert out.shape == (2, 8, 32)
         assert not torch.isnan(out).any()
 
-    def test_re_im_separation(self):
-        """Проверяем что re и im обрабатываются раздельно (не смешиваются)."""
+    def test_amp_angle_separation(self):
+        """Проверяем что amp и angle обрабатываются раздельно (не смешиваются)."""
         attn = ComplexMultiheadAttention(d_model=32, num_heads=2, dropout=0.0)
         x = torch.randn(1, 5, 32)
         out, _ = attn(x, x, x)
-        # Выход должен иметь ту же структуру (re | im)
+        # Выход должен иметь ту же структуру (amp | angle)
         assert out.shape == (1, 5, 32)
-        # Проверяем что re и im части не идентичны (разные проекции)
+        # Проверяем что amp и angle части не идентичны (разные проекции)
         assert not torch.allclose(out[:, :, :16], out[:, :, 16:])
 
     def test_backward(self):

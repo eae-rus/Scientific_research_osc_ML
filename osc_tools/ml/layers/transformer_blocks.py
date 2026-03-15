@@ -1,13 +1,20 @@
 """
 Строительные блоки Physical KAN-Transformer (Фаза 4).
 
+Представление d_model — полярное (amp | angle): первая половина вектора
+содержит амплитудные признаки, вторая — фазовые (угловые). Конвертация
+в комплексные числа (re + j·im) происходит ТОЛЬКО внутри
+ComplexInteractionBlock для умножения/деления, после чего результат
+возвращается в полярную форму (.abs(), .angle()).
+
 Содержит:
 - DataSanitizer: обработка отсутствующих каналов (NaN/-1) + learnable MissingToken
-- ComplexInteractionBlock: обучаемое комплексное умнож./деление через 4-группную схему
-- PhysicalStem: rPhysicsKAN-кодирование + ComplexInteractionBlock → embedding
+- ComplexInteractionBlock: обучаемое комплексное умнож./деление через 4-групповую схему
+- ComplexMultiheadAttention: MHA с раздельными проекциями для amp/angle
+- PhysicalStem: rPhysicsKAN-кодирование + ComplexInteractionBlock → (amp|angle) embedding
 - SinusoidalPositionalEncoding: позиционное кодирование
 - KANFeedForward: FastKAN-FFN для Transformer (без физических блоков)
-- PhysicalKANFeedForward: KAN-FFN + малый ComplexInteractionBlock в каждом слое
+- PhysicalKANFeedForward: KAN-FFN + малый ComplexInteractionBlock (полярная обработка)
 - MLPFeedForward: стандартный MLP-FFN для baseline
 - TransformerEncoderBlock: один блок Encoder (Pre-LN Attention + FFN)
 """
@@ -186,25 +193,19 @@ class ComplexInteractionBlock(nn.Module):
 # ---------------------------------------------------------------------------
 
 class ComplexMultiheadAttention(nn.Module):
-    """Multi-Head Attention для комплексно-структурированных представлений.
+    """Multi-Head Attention для полярно-структурированных (amp/angle) представлений.
 
-    Вектор d_model структурирован как (re, im): первая половина — вещественная,
-    вторая — мнимая часть. Каждая пара (re_k, im_k) = одно комплексное число.
+    Вектор d_model структурирован как (amp | angle): первая половина —
+    амплитудные признаки, вторая — фазовые (угловые).
 
-    Attention score вычисляется как Re(Q · conj(K)):
+    Attention score = Σ_k (Q_amp·K_amp + Q_angle·K_angle):
+    Раздельные проекции для amp и angle не смешивают эти две половины.
+    Score высокий, когда и амплитудные, и фазовые паттерны похожи.
 
-        score_{t,s} = Σ_k (Q_re_{t,k} · K_re_{s,k} + Q_im_{t,k} · K_im_{s,k})
+    Одинаковые веса attention применяются к V_amp и V_angle, гарантируя
+    согласованную обработку обеих компонент.
 
-    Это эквивалентно скалярному произведению в комплексном пространстве, которое
-    учитывает и амплитудное, и фазовое сходство. Стандартное вещественное скалярное
-    произведение может дать высокий score для противофазных сигналов, что физически
-    некорректно.
-
-    Веса attention (softmax scores) — одинаковые для re и im, что гарантирует
-    согласованную обработку обеих компонент: если шаг t «смотрит» на шаг s,
-    он берёт и re, и im информацию из s одинаково.
-
-    Параметры: 8 линейных слоёв по d_complex × d_complex (Q/K/V/out × re/im).
+    Параметры: 8 линейных слоёв по d_complex × d_complex (Q/K/V/out × amp/angle).
     При d_model=64 это ~8×16² = 32K params vs ~4×64² = 64K для стандартного MHA.
 
     Args:
@@ -226,7 +227,7 @@ class ComplexMultiheadAttention(nn.Module):
         )
         d_head = d_model // num_heads
         assert d_head % 2 == 0, (
-            f"d_head={d_head} должен быть чётным (re + im в каждой голове)"
+            f"d_head={d_head} должен быть чётным (amp + angle в каждой голове)"
         )
 
         self.d_model = d_model
@@ -234,20 +235,21 @@ class ComplexMultiheadAttention(nn.Module):
         self.num_heads = num_heads
         self.d_head_complex = self.d_complex // num_heads
 
-        # Раздельные проекции Q, K, V для re и im компонент
-        self.W_Q_re = nn.Linear(self.d_complex, self.d_complex, bias=False)
-        self.W_Q_im = nn.Linear(self.d_complex, self.d_complex, bias=False)
-        self.W_K_re = nn.Linear(self.d_complex, self.d_complex, bias=False)
-        self.W_K_im = nn.Linear(self.d_complex, self.d_complex, bias=False)
-        self.W_V_re = nn.Linear(self.d_complex, self.d_complex, bias=False)
-        self.W_V_im = nn.Linear(self.d_complex, self.d_complex, bias=False)
+        # Раздельные проекции Q, K, V для amp и angle компонент
+        self.W_Q_amp = nn.Linear(self.d_complex, self.d_complex, bias=False)
+        self.W_Q_angle = nn.Linear(self.d_complex, self.d_complex, bias=False)
+        self.W_K_amp = nn.Linear(self.d_complex, self.d_complex, bias=False)
+        self.W_K_angle = nn.Linear(self.d_complex, self.d_complex, bias=False)
+        self.W_V_amp = nn.Linear(self.d_complex, self.d_complex, bias=False)
+        self.W_V_angle = nn.Linear(self.d_complex, self.d_complex, bias=False)
 
         # Выходная проекция (раздельно)
-        self.out_proj_re = nn.Linear(self.d_complex, self.d_complex, bias=False)
-        self.out_proj_im = nn.Linear(self.d_complex, self.d_complex, bias=False)
+        self.out_proj_amp = nn.Linear(self.d_complex, self.d_complex, bias=False)
+        self.out_proj_angle = nn.Linear(self.d_complex, self.d_complex, bias=False)
 
         self.dropout = nn.Dropout(dropout)
-        self.scale = self.d_head_complex ** -0.5
+        # Score суммирует 2 * d_head_complex слагаемых → масштаб 1/sqrt(d_head)
+        self.scale = (self.d_head_complex * 2) ** -0.5
 
     def forward(
         self,
@@ -260,13 +262,13 @@ class ComplexMultiheadAttention(nn.Module):
     ) -> tuple[torch.Tensor, Optional[torch.Tensor]]:
         """
         Args:
-            query, key, value: (B, T, d_model) — первая половина re, вторая im
+            query, key, value: (B, T, d_model) — первая половина amp, вторая angle
             key_padding_mask: (B, T) — True для игнорируемых позиций
             need_weights: возвращать ли веса attention
             attn_mask: дополнительная маска (для совместимости)
 
         Returns:
-            output: (B, T, d_model) — структурированный как (re | im)
+            output: (B, T, d_model) — структурированный как (amp | angle)
             attn_weights: (B, num_heads, T, T) или None
         """
         B, T, _ = query.shape
@@ -274,25 +276,25 @@ class ComplexMultiheadAttention(nn.Module):
         nh = self.num_heads
         dhc = self.d_head_complex
 
-        # Разделяем на re / im
-        q_re, q_im = query[:, :, :dc], query[:, :, dc:]
-        k_re, k_im = key[:, :, :dc], key[:, :, dc:]
-        v_re, v_im = value[:, :, :dc], value[:, :, dc:]
+        # Разделяем на amp / angle
+        q_amp, q_angle = query[:, :, :dc], query[:, :, dc:]
+        k_amp, k_angle = key[:, :, :dc], key[:, :, dc:]
+        v_amp, v_angle = value[:, :, :dc], value[:, :, dc:]
 
         # Проекции Q, K, V → (B, num_heads, T, d_head_complex)
         def to_heads(x: torch.Tensor) -> torch.Tensor:
             return x.view(B, T, nh, dhc).transpose(1, 2)
 
-        Q_re = to_heads(self.W_Q_re(q_re))
-        Q_im = to_heads(self.W_Q_im(q_im))
-        K_re = to_heads(self.W_K_re(k_re))
-        K_im = to_heads(self.W_K_im(k_im))
-        V_re = to_heads(self.W_V_re(v_re))
-        V_im = to_heads(self.W_V_im(v_im))
+        Q_amp = to_heads(self.W_Q_amp(q_amp))
+        Q_angle = to_heads(self.W_Q_angle(q_angle))
+        K_amp = to_heads(self.W_K_amp(k_amp))
+        K_angle = to_heads(self.W_K_angle(k_angle))
+        V_amp = to_heads(self.W_V_amp(v_amp))
+        V_angle = to_heads(self.W_V_angle(v_angle))
 
-        # Score = Re(Q · conj(K)) = Q_re · K_re^T + Q_im · K_im^T
+        # Score = Σ(Q_amp·K_amp + Q_angle·K_angle) — раздельное скалярное произведение
         score = (
-            Q_re @ K_re.transpose(-2, -1) + Q_im @ K_im.transpose(-2, -1)
+            Q_amp @ K_amp.transpose(-2, -1) + Q_angle @ K_angle.transpose(-2, -1)
         ) * self.scale  # (B, num_heads, T, T)
 
         # Маски
@@ -307,15 +309,15 @@ class ComplexMultiheadAttention(nn.Module):
         attn_weights = torch.softmax(score, dim=-1)
         attn_weights = self.dropout(attn_weights)
 
-        # Одинаковые веса для re и im → согласованная обработка компонент
-        out_re = (attn_weights @ V_re).transpose(1, 2).reshape(B, T, dc)
-        out_im = (attn_weights @ V_im).transpose(1, 2).reshape(B, T, dc)
+        # Одинаковые веса для amp и angle → согласованная обработка компонент
+        out_amp = (attn_weights @ V_amp).transpose(1, 2).reshape(B, T, dc)
+        out_angle = (attn_weights @ V_angle).transpose(1, 2).reshape(B, T, dc)
 
-        # Выходная проекция (раздельно для re и im)
-        out_re = self.out_proj_re(out_re)
-        out_im = self.out_proj_im(out_im)
+        # Выходная проекция (раздельно для amp и angle)
+        out_amp = self.out_proj_amp(out_amp)
+        out_angle = self.out_proj_angle(out_angle)
 
-        output = torch.cat([out_re, out_im], dim=-1)
+        output = torch.cat([out_amp, out_angle], dim=-1)
 
         if need_weights:
             return output, attn_weights
@@ -421,11 +423,11 @@ class PhysicalStem(nn.Module):
             use_layernorm=True,
         )
 
-        # Раздельная проекция в (re, im) компоненты structured d_model
+        # Раздельная проекция в (amp, angle) компоненты structured d_model
         d_complex = d_model // 2
         fusion_dim = half_d + half_d + num_interaction_features
-        self.proj_re = nn.Linear(fusion_dim, d_complex)
-        self.proj_im = nn.Linear(fusion_dim, d_complex)
+        self.proj_amp = nn.Linear(fusion_dim, d_complex)
+        self.proj_angle = nn.Linear(fusion_dim, d_complex)
         self.layer_norm = nn.LayerNorm(d_model)
         self.dropout = nn.Dropout(dropout)
 
@@ -481,11 +483,11 @@ class PhysicalStem(nn.Module):
 
         h_angle = self.kan_angle(ang_flat)       # (B*T, half_d)
 
-        # 5. Объединение и раздельная проекция в (re, im)
+        # 5. Объединение и раздельная проекция в (amp, angle)
         fused = torch.cat([h_modulated, h_angle, inter_features], dim=-1)
-        emb_re = self.proj_re(fused)     # (B*T, d_complex)
-        emb_im = self.proj_im(fused)     # (B*T, d_complex)
-        embedding = torch.cat([emb_re, emb_im], dim=-1)  # (B*T, d_model = re|im)
+        emb_amp = self.proj_amp(fused)       # (B*T, d_complex)
+        emb_angle = self.proj_angle(fused)   # (B*T, d_complex)
+        embedding = torch.cat([emb_amp, emb_angle], dim=-1)  # (B*T, d_model = amp|angle)
         embedding = self.layer_norm(embedding)
         embedding = self.dropout(embedding)
 
@@ -600,16 +602,17 @@ class KANFeedForward(nn.Module):
 # ---------------------------------------------------------------------------
 
 class PhysicalKANFeedForward(nn.Module):
-    """KAN-FFN с комплексно-структурированной обработкой.
+    """KAN-FFN с полярно-структурированной обработкой (amp/angle).
 
-    d_model структурирован как (re, im): первая половина — вещественная часть
-    (amplitude-like), вторая — мнимая (phase-like). Операции не смешивают
-    re и im, как и в PhysicalStem:
+    d_model структурирован как (amp | angle): первая половина — амплитудные
+    признаки, вторая — фазовые (угловые). Операции не смешивают
+    amp и angle, как и в PhysicalStem:
 
-    1. KAN_re: d_complex → d_ff/2 → d_complex (обработка вещественной части)
-    2. KAN_im: d_complex → d_ff/2 → d_complex (обработка мнимой части)
-    3. Гейтирование: im модулирует re (как angle gates amplitude в Stem)
-    4. ComplexInteractionBlock: малый блок умножения/деления
+    1. KAN_amp: d_complex → d_ff/2 → d_complex (обработка амплитудных признаков)
+    2. KAN_angle: d_complex → d_ff/2 → d_complex (обработка фазовых признаков)
+    3. Гейтирование: angle модулирует amp (как в PhysicalStem)
+    4. ComplexInteractionBlock: малый блок комплексного умножения/деления
+       Конвертация в комплексные числа (torch.polar) → операции → обратно в полярные
     5. Гейтированное сложение: KAN-результат + gate * interaction → d_model
 
     Параметры: ~50% от обычного KAN-FFN (за счёт разделения на два пути по d_complex).
@@ -617,7 +620,7 @@ class PhysicalKANFeedForward(nn.Module):
     Args:
         d_model: размерность входа/выхода (должен быть чётным)
         d_ff: размерность скрытого слоя KAN (по умолчанию 4 * d_model).
-            Каждый путь (re, im) получает d_ff // 2.
+            Каждый путь (amp, angle) получает d_ff // 2.
         num_interaction_pairs: число выходных пар ComplexInteractionBlock
         kan_grid_size: число узлов RBF-сетки FastKAN
         dropout: dropout
@@ -642,46 +645,46 @@ class PhysicalKANFeedForward(nn.Module):
         self.d_model = d_model
         self.d_complex = d_complex
 
-        # --- KAN для re-компоненты (amplitude-like) ---
-        self.kan_re1 = FastKANLayer(
+        # --- KAN для амплитудных признаков ---
+        self.kan_amp1 = FastKANLayer(
             input_dim=d_complex, output_dim=d_ff_half,
             num_grids=kan_grid_size, use_base_update=True, use_layernorm=False,
         )
-        self.kan_re2 = FastKANLayer(
+        self.kan_amp2 = FastKANLayer(
             input_dim=d_ff_half, output_dim=d_complex,
             num_grids=kan_grid_size, use_base_update=True, use_layernorm=False,
         )
 
-        # --- KAN для im-компоненты (phase-like) ---
-        self.kan_im1 = FastKANLayer(
+        # --- KAN для фазовых (угловых) признаков ---
+        self.kan_angle1 = FastKANLayer(
             input_dim=d_complex, output_dim=d_ff_half,
             num_grids=kan_grid_size, use_base_update=True, use_layernorm=False,
         )
-        self.kan_im2 = FastKANLayer(
+        self.kan_angle2 = FastKANLayer(
             input_dim=d_ff_half, output_dim=d_complex,
             num_grids=kan_grid_size, use_base_update=True, use_layernorm=False,
         )
 
         self.dropout = nn.Dropout(dropout)
 
-        # --- Гейтирование: im → gate для re (angle управляет amplitude) ---
-        self.im_gate = nn.Linear(d_complex, d_complex)
+        # --- Гейтирование: angle → gate для amp (угол управляет амплитудой) ---
+        self.angle_gate = nn.Linear(d_complex, d_complex)
 
         # --- Комплексный путь (малый) ---
         self.interaction = ComplexInteractionBlock(
             num_input_pairs=d_complex,
             num_interaction_pairs=num_interaction_pairs,
         )
-        # Раздельная проекция interaction → (re, im)
-        self.interaction_proj_re = nn.Linear(num_interaction_pairs, d_complex)
-        self.interaction_proj_im = nn.Linear(num_interaction_pairs, d_complex)
+        # Раздельная проекция interaction → (amp, angle)
+        self.interaction_proj_amp = nn.Linear(num_interaction_pairs, d_complex)
+        self.interaction_proj_angle = nn.Linear(num_interaction_pairs, d_complex)
         # Гейт: sigmoid(-2) ≈ 0.12 на старте — комплексный путь включается мягко
         self.interaction_gate = nn.Parameter(torch.tensor(-2.0))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Args:
-            x: (B, T, d_model) — первая половина: re, вторая: im
+            x: (B, T, d_model) — первая половина: amp, вторая: angle
         Returns:
             (B, T, d_model)
         """
@@ -689,35 +692,35 @@ class PhysicalKANFeedForward(nn.Module):
         dc = self.d_complex
         x_flat = x.reshape(B * T, D)
 
-        x_re = x_flat[:, :dc]   # (B*T, d_complex)
-        x_im = x_flat[:, dc:]   # (B*T, d_complex)
+        x_amp = x_flat[:, :dc]     # (B*T, d_complex) — амплитудные признаки
+        x_angle = x_flat[:, dc:]   # (B*T, d_complex) — фазовые признаки
 
-        # KAN для re-компоненты
-        h_re = self.kan_re1(x_re)
-        h_re = self.dropout(h_re)
-        h_re = self.kan_re2(h_re)
-        h_re = self.dropout(h_re)  # (B*T, d_complex)
+        # KAN для амплитудных признаков
+        h_amp = self.kan_amp1(x_amp)
+        h_amp = self.dropout(h_amp)
+        h_amp = self.kan_amp2(h_amp)
+        h_amp = self.dropout(h_amp)  # (B*T, d_complex)
 
-        # KAN для im-компоненты
-        h_im = self.kan_im1(x_im)
-        h_im = self.dropout(h_im)
-        h_im = self.kan_im2(h_im)
-        h_im = self.dropout(h_im)  # (B*T, d_complex)
+        # KAN для фазовых признаков
+        h_angle = self.kan_angle1(x_angle)
+        h_angle = self.dropout(h_angle)
+        h_angle = self.kan_angle2(h_angle)
+        h_angle = self.dropout(h_angle)  # (B*T, d_complex)
 
-        # Гейтирование: im модулирует re (как angle gates amplitude в Stem)
-        gate = torch.sigmoid(self.im_gate(x_im))  # (B*T, d_complex)
-        h_re = h_re * gate
+        # Гейтирование: angle модулирует amp (как в PhysicalStem)
+        gate = torch.sigmoid(self.angle_gate(x_angle))  # (B*T, d_complex)
+        h_amp = h_amp * gate
 
-        h_kan = torch.cat([h_re, h_im], dim=-1)  # (B*T, d_model)
+        h_kan = torch.cat([h_amp, h_angle], dim=-1)  # (B*T, d_model)
 
-        # Комплексный путь: ComplexInteractionBlock
-        z_in = torch.complex(x_re, x_im)  # (B*T, d_complex) complex
-        z_out = self.interaction(z_in)     # (B*T, num_interaction_pairs) complex
+        # Комплексный путь: amp/angle → polar complex → interaction → обратно
+        z_in = torch.polar(x_amp, x_angle)  # A·exp(jφ) — (B*T, d_complex) complex
+        z_out = self.interaction(z_in)       # (B*T, num_interaction_pairs) complex
 
-        # Раздельная проекция interaction в (re, im)
-        inter_proj_re = self.interaction_proj_re(z_out.real)  # (B*T, d_complex)
-        inter_proj_im = self.interaction_proj_im(z_out.imag)  # (B*T, d_complex)
-        inter_proj = torch.cat([inter_proj_re, inter_proj_im], dim=-1)  # (B*T, d_model)
+        # Обратно в полярные координаты (amp, angle)
+        inter_proj_amp = self.interaction_proj_amp(z_out.abs())      # (B*T, d_complex)
+        inter_proj_angle = self.interaction_proj_angle(z_out.angle())  # (B*T, d_complex)
+        inter_proj = torch.cat([inter_proj_amp, inter_proj_angle], dim=-1)  # (B*T, d_model)
 
         # Гейтированное сложение
         gate_inter = torch.sigmoid(self.interaction_gate)
