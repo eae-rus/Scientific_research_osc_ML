@@ -37,7 +37,10 @@ def get_default_config(mode: str = 'smoke') -> dict:
         # Данные
         'window_size': 320,
         'downsampling_stride': 16,
-        'feature_mode': 'phase_polar', # TODO: тут он более хитрый так-то...И их больше, см. примечания в "ssl_dataset.py" и исходную инструкцию (надеюсь оттуда не удалилось)
+        # PrecomputedDataset поддерживает мульти-режим: list[str], напр. ['phase_polar', 'symmetric_polar'].
+        # Сейчас используем только phase_polar (144 канала = 8×9×2).
+        # При добавлении режимов нужно пересчитать num_input_channels.
+        'feature_mode': 'phase_polar',
         'num_harmonics': 9,
         'future_periods': 2,
         'mask_ratio': 0.25,

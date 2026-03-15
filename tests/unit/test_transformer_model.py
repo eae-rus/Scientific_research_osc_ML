@@ -19,6 +19,7 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from osc_tools.ml.layers.transformer_blocks import (
+    ComplexInteractionBlock,
     DataSanitizer,
     KANFeedForward,
     MLPFeedForward,
@@ -38,11 +39,15 @@ from osc_tools.ml.losses import ComplexMSELoss, SpectralReconstructionLoss
 # ============================================================
 
 class TestDataSanitizer:
-    """Тесты Sanitizer для обработки -1."""
+    """Тесты Sanitizer для обработки отсутствующих каналов."""
 
     def test_instantiation(self):
         sanitizer = DataSanitizer(num_channels=16)
         assert isinstance(sanitizer, nn.Module)
+
+    def test_instantiation_with_marker(self):
+        sanitizer = DataSanitizer(num_channels=16, missing_marker=-1.0)
+        assert sanitizer.missing_marker == -1.0
 
     def test_forward_shape(self):
         sanitizer = DataSanitizer(num_channels=16)
@@ -51,30 +56,77 @@ class TestDataSanitizer:
         assert x_safe.shape == x.shape
         assert mask.shape == x.shape
 
-    def test_missing_replaced(self):
-        """Проверяем что -1 заменяется и маска корректна."""
+    def test_nan_default_marker(self):
+        """По умолчанию детектируются NaN-значения."""
         sanitizer = DataSanitizer(num_channels=8)
+        x = torch.randn(1, 8, 5)
+        x[0, 0, 0] = float('nan')
+        x[0, 3, 2] = float('nan')
+
+        x_safe, mask = sanitizer(x)
+
+        assert mask[0, 0, 0].item() is True
+        assert mask[0, 3, 2].item() is True
+        assert mask[0, 1, 0].item() is False
+        assert not torch.isnan(x_safe).any()
+
+    def test_numeric_marker(self):
+        """Числовой маркер (-1) детектируется при передаче missing_marker=-1.0."""
+        sanitizer = DataSanitizer(num_channels=8, missing_marker=-1.0)
         x = torch.randn(1, 8, 5)
         x[0, 0, 0] = -1.0
         x[0, 3, 2] = -1.0
 
         x_safe, mask = sanitizer(x)
 
-        # Маска должна быть True в позициях -1
         assert mask[0, 0, 0].item() is True
         assert mask[0, 3, 2].item() is True
-        # Те позиции что были нормальные — False
         assert mask[0, 1, 0].item() is False
-
-        # Значение -1 должно быть заменено (не ровно -1)
         assert x_safe[0, 0, 0].item() != -1.0
 
     def test_no_nan(self):
-        sanitizer = DataSanitizer(num_channels=16)
+        sanitizer = DataSanitizer(num_channels=16, missing_marker=-1.0)
         x = torch.randn(4, 16, 20)
         x[:, :4, :5] = -1.0
         x_safe, mask = sanitizer(x)
         assert not torch.isnan(x_safe).any()
+
+
+# ============================================================
+# ComplexInteractionBlock
+# ============================================================
+
+class TestComplexInteractionBlock:
+    """Тесты обучаемого комплексного блока взаимодействий."""
+
+    def test_instantiation(self):
+        block = ComplexInteractionBlock(num_input_pairs=8, num_interaction_pairs=16)
+        assert isinstance(block, nn.Module)
+
+    def test_forward_shape(self):
+        block = ComplexInteractionBlock(num_input_pairs=8, num_interaction_pairs=16)
+        amp = torch.randn(20, 8).abs()  # (B*T, num_input_pairs)
+        ang = torch.randn(20, 8)
+        out_amp, out_ang = block(amp, ang)
+        assert out_amp.shape == (20, 16)
+        assert out_ang.shape == (20, 16)
+
+    def test_output_amp_non_negative(self):
+        """Амплитуды после умножения должны быть неотрицательными."""
+        block = ComplexInteractionBlock(num_input_pairs=8, num_interaction_pairs=16)
+        amp = torch.randn(10, 8).abs()
+        ang = torch.randn(10, 8)
+        out_amp, _ = block(amp, ang)
+        # Половина — умножение (точно >= 0), половина — деление (тоже >= 0 с clamp)
+        assert (out_amp >= 0).all()
+
+    def test_no_nan_with_zeros(self):
+        block = ComplexInteractionBlock(num_input_pairs=4, num_interaction_pairs=8)
+        amp = torch.zeros(5, 4)
+        ang = torch.zeros(5, 4)
+        out_amp, out_ang = block(amp, ang)
+        assert not torch.isnan(out_amp).any()
+        assert not torch.isnan(out_ang).any()
 
 
 # ============================================================
@@ -281,9 +333,9 @@ class TestPhysicalKANTransformer:
         assert out['classify'].shape == (2, 5, 4)
 
     def test_with_missing_channels(self, model):
-        """Проверяем обработку -1 (отсутствующих каналов)."""
+        """Проверяем обработку NaN (отсутствующих каналов)."""
         x = torch.randn(2, 16, 20)
-        x[0, :4, :] = -1.0
+        x[0, :4, :] = float('nan')
         out = model(x, mode='ssl')
         assert not torch.isnan(out['ssl']).any()
         assert not torch.isnan(out['features']).any()

@@ -93,6 +93,10 @@ class SpectralReconstructionLoss(nn.Module):
         noise_threshold_current: порог шума для токов (1/2000)
         noise_threshold_voltage: порог шума для напряжений (1/300)
         num_current_channels: число каналов амплитуд токов
+        channel_groups: список списков индексов — каналы, принадлежащие одному
+            физическому сигналу (например, все гармоники IA). Если задан,
+            max_amp нормализуется по группе (максимум из всех гармоник сигнала).
+            Если None — каждый канал нормализуется сам по себе.
         weight_current_window: вес для текущих 10 периодов
         weight_future_window: вес для предсказываемых 2 периодов
         min_signal_weight: минимальный вес для слабых сигналов
@@ -103,6 +107,7 @@ class SpectralReconstructionLoss(nn.Module):
         noise_threshold_current: float = 1.0 / 2000,
         noise_threshold_voltage: float = 1.0 / 300,
         num_current_channels: int | None = None,
+        channel_groups: list[list[int]] | None = None,
         weight_current_window: float = 1.0,
         weight_future_window: float = 0.1,
         min_signal_weight: float = 0.1,
@@ -111,6 +116,7 @@ class SpectralReconstructionLoss(nn.Module):
         self.noise_threshold_I = noise_threshold_current
         self.noise_threshold_U = noise_threshold_voltage
         self.num_current_channels = num_current_channels
+        self.channel_groups = channel_groups
         self.weight_current = weight_current_window
         self.weight_future = weight_future_window
         self.min_signal_weight = min_signal_weight
@@ -150,10 +156,11 @@ class SpectralReconstructionLoss(nn.Module):
         )
 
         # Шаг 2: Относительная нормализация
-        # Максимальная амплитуда по времени для каждого канала
-        # TODO: стоит проверить / обудмать, как будут определяеться эти "каналы",
-        # ведь речь во многом о том, что это "ТОК фазы А", и не важно какая гармоника - а их много.
-        max_amp_per_channel = true_amp.amax(dim=-1, keepdim=True)  # (B, C, 1)
+        # Максимальная амплитуда для нормировки.
+        # Если заданы channel_groups — берём максимум по ВСЕМ гармоникам физического
+        # сигнала (например, все 9 гармоник IA нормируются на max среди них).
+        # Если channel_groups не задан — каждый канал нормируется сам по себе.
+        max_amp_per_channel = self._compute_group_max_amp(true_amp)  # (B, C, 1)
 
         # Шаг 3: Пороги шума (минимальный нормировочный делитель)
         noise_thresholds = self._get_noise_thresholds(C, pred_amp.device)
@@ -199,3 +206,58 @@ class SpectralReconstructionLoss(nn.Module):
         if self.num_current_channels is not None:
             thresholds[:, :self.num_current_channels, :] = self.noise_threshold_I
         return thresholds
+
+    def _compute_group_max_amp(self, true_amp: torch.Tensor) -> torch.Tensor:
+        """Максимальная амплитуда с учётом группировки по физическим сигналам.
+
+        Если channel_groups задан — для каждого канала берётся максимум
+        из всех каналов его группы (все гармоники одного физического сигнала).
+        Если не задан — просто max по времени для каждого канала.
+
+        Args:
+            true_amp: (B, C, T)
+        Returns:
+            (B, C, 1) — максимум для нормализации каждого канала
+        """
+        # Базовый максимум по времени
+        per_channel_max = true_amp.amax(dim=-1, keepdim=True)  # (B, C, 1)
+
+        if self.channel_groups is None:
+            return per_channel_max
+
+        # Для каждой группы берём max по всем каналам группы
+        result = per_channel_max.clone()
+        for group in self.channel_groups:
+            if len(group) <= 1:
+                continue
+            # Максимум из всех каналов группы → одно значение для всей группы
+            group_max = per_channel_max[:, group, :].amax(dim=1, keepdim=True)  # (B, 1, 1)
+            for ch_idx in group:
+                result[:, ch_idx:ch_idx + 1, :] = group_max
+
+        return result
+
+
+def build_channel_groups_phase_polar(
+    num_signals: int = 8,
+    num_harmonics: int = 9,
+) -> list[list[int]]:
+    """Построить группы каналов для формата phase_polar.
+
+    В phase_polar каналы идут: [IA_h1_mag, IA_h1_angle, IA_h2_mag, IA_h2_angle, ...]
+    для каждого из 8 аналоговых сигналов (IA, IB, IC, IN, UA, UB, UC, UN).
+
+    Группа = все каналы-АМПЛИТУДЫ одного физического сигнала (например IA_h1..h9_mag).
+    Углы не включаем в группы — они нормализуются отдельно.
+
+    Returns:
+        Список из num_signals групп. Каждая группа — индексы каналов амплитуд.
+    """
+    channels_per_signal = num_harmonics * 2  # mag+angle для каждой гармоники
+    groups = []
+    for sig_idx in range(num_signals):
+        base = sig_idx * channels_per_signal
+        # Индексы амплитуд — чётные внутри блока сигнала
+        amp_indices = [base + h * 2 for h in range(num_harmonics)]
+        groups.append(amp_indices)
+    return groups

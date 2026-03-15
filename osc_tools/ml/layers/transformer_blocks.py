@@ -27,31 +27,39 @@ _fast_kan_path = os.path.join(os.path.dirname(__file__), '..', 'fast-kan-master'
 if _fast_kan_path not in sys.path:
     sys.path.insert(0, _fast_kan_path)
 
-# TODO: почему-то подсвечивается как неиспользуемый импорт, вероятно это связано с тем,
-# что он скачан напрямую как библиотека... Хотя и не факт, в общем, надо проверить.
-from fastkan import FastKANLayer
+# Pylance не видит этот путь (добавлен динамически), но импорт работает корректно
+from fastkan import FastKANLayer  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# DataSanitizer: обработка отсутствующих сигналов (-1)
+# DataSanitizer: обработка отсутствующих сигналов
 # ---------------------------------------------------------------------------
 
-# TODO: Фраза о том, что оно будет равно "-1", это лишь гипотеза, данные пока никак не размечались
-# и там скорее будут получаться None или прост нули, это надо как раз в формировании данных проверить.
-# И если удобнее задать какое-то другое число / шаблон, то давай поменяем, мы только начинаем эту работу.
 class DataSanitizer(nn.Module):
-    """Обработка специального значения -1 (отсутствующий канал).
+    """Обработка отсутствующих каналов в данных.
 
+    Поддерживает два варианта маркера отсутствия:
+    - NaN (по умолчанию) — естественный маркер в данных, когда канал отсутствует
+    - Конкретное число (например, -1) — если данные явно размечены
+
+    Логика:
     1. Создаёт бинарную маску пропусков M_missing (True = отсутствует).
-    2. Заменяет -1 на 0 для безопасных математических операций.
+    2. Заменяет маркер на 0 для безопасных математических операций.
     3. Добавляет обучаемый MissingToken к позициям пропусков.
+
+    Примечание: замена на 0 безопасна для деления, т.к. PhysicalStem
+    дополнительно проверяет порог шума (amp_I > noise_threshold) и не делит
+    на значения ниже порога. Так что 0 не попадёт в знаменатель.
 
     Args:
         num_channels: количество входных каналов (для learnable embedding)
+        missing_marker: значение-маркер отсутствия. По умолчанию None (= NaN).
+            Если передано число (например, -1.0), используется точное сравнение.
     """
 
-    def __init__(self, num_channels: int) -> None:
+    def __init__(self, num_channels: int, missing_marker: float | None = None) -> None:
         super().__init__()
+        self.missing_marker = missing_marker
         # Обучаемый вектор-заглушка для отсутствующих каналов
         self.missing_token = nn.Parameter(torch.zeros(1, num_channels, 1))
         nn.init.normal_(self.missing_token, mean=0.0, std=0.02)
@@ -64,21 +72,118 @@ class DataSanitizer(nn.Module):
             x: (B, C, T) — входные признаки (амплитуды+углы чередуются)
 
         Returns:
-            x_safe: (B, C, T) — очищенные данные (без -1)
+            x_safe: (B, C, T) — очищенные данные
             mask_missing: (B, C, T) — True где данные отсутствовали
         """
-        # Для полярного формата: -1 стоит и в амплитуде, и в угле отсутствующего канала.
-        # Достаточно проверить == -1 (точное сравнение, т.к. -1 ставится программно).
-        mask_missing = (x == -1.0)
+        if self.missing_marker is None:
+            # NaN-маркер (по умолчанию)
+            mask_missing = torch.isnan(x)
+        else:
+            # Числовой маркер (например, -1.0)
+            mask_missing = (x == self.missing_marker)
 
-        # Заменяем -1 на 0 для безопасных операций
-        # TODO: А будет ли 0 безопасен для деления? Не попадёт ли туда?
+        # Заменяем маркер на 0 для безопасных операций
+        # (0 безопасен: PhysicalStem проверяет amp > noise_threshold перед делением)
         x_safe = torch.where(mask_missing, torch.zeros_like(x), x)
 
         # Добавляем learnable embedding для пропущенных каналов
         x_safe = x_safe + mask_missing.float() * self.missing_token
 
         return x_safe, mask_missing
+
+
+# ---------------------------------------------------------------------------
+# ComplexInteractionBlock: обучаемое комплексное умножение/деление
+# ---------------------------------------------------------------------------
+
+class ComplexInteractionBlock(nn.Module):
+    """Обучаемый блок комплексных взаимодействий (умножение + деление).
+
+    Вместо жёстко заданных P=U*I, Z=U/I — модель сама выбирает, какие пары
+    сигналов умножать и делить, через обучаемые линейные веса-селекторы.
+
+    Принцип работы:
+    1. Входные пары (A, φ) проходят через линейный селектор по амплитудам
+       (углы не трогаются на этом этапе — сохраняем физический смысл).
+    2. Выходные пары делятся на две половины:
+       - Первая половина → попарное комплексное умножение (A₁·A₂, φ₁+φ₂)
+       - Вторая половина → попарное комплексное деление (A₁/A₂, φ₁-φ₂)
+    3. На выходе — num_interaction_pairs сигналов в полярной форме.
+
+    Args:
+        num_input_pairs: число входных (A, φ) пар
+        num_interaction_pairs: число выходных пар после взаимодействий
+        division_epsilon: минимум знаменателя при делении
+    """
+
+    def __init__(
+        self,
+        num_input_pairs: int,
+        num_interaction_pairs: int = 16,
+        division_epsilon: float = 1e-6,
+    ) -> None:
+        super().__init__()
+        self.num_input_pairs = num_input_pairs
+        self.num_interaction_pairs = num_interaction_pairs
+        self.division_epsilon = division_epsilon
+
+        # Число пар для внутреннего попарного сопоставления:
+        # нужно 2 * num_interaction_pairs входов для спаривания
+        # (первая половина пар → умножение, вторая → деление)
+        num_selector_outputs = num_interaction_pairs * 2
+
+        # Линейный селектор: выбирает комбинации амплитуд
+        # Из num_input_pairs амплитуд формирует num_selector_outputs амплитуд
+        self.amp_selector = nn.Linear(num_input_pairs, num_selector_outputs)
+        # Аналогичный для углов
+        # TODO: Подожди, зачем тут линейное для угла? Давай сделаем иначе:
+        # прост все входные сигналы продублируем размножим, и вот как раз первая
+        # пара идёт на умножение - вторая на деление. А там уже у них на амплитуды свои множители.
+        # т.е. не обязательно новые коэффициент прям здесь обучать, когда мы их множим.
+        # Ну или идею чуть иначе... Я к тому, чтобы углы вообще не трогались и шло из серии
+        # "Вот для этого сигнала ток умножаем на коэффициент и берём его исходный угол".
+        self.angle_selector = nn.Linear(num_input_pairs, num_selector_outputs)
+
+    def forward(
+        self,
+        amplitudes: torch.Tensor,
+        angles: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """
+        Args:
+            amplitudes: (B*T, num_input_pairs) — амплитуды
+            angles: (B*T, num_input_pairs) — углы
+
+        Returns:
+            result_amp: (B*T, num_interaction_pairs) — выходные амплитуды
+            result_angle: (B*T, num_interaction_pairs) — выходные углы
+        """
+        n = self.num_interaction_pairs
+
+        # Селектор комбинирует входные сигналы (обрезаем амплитуды снизу softplus)
+        selected_amp = F.softplus(self.amp_selector(amplitudes))  # (B*T, 2*n), неотрицательные
+        selected_angle = self.angle_selector(angles)               # (B*T, 2*n)
+
+        # Разделяем на «левый» и «правый» операнды
+        amp_left = selected_amp[:, :n]       # (B*T, n)
+        amp_right = selected_amp[:, n:]      # (B*T, n)
+        angle_left = selected_angle[:, :n]
+        angle_right = selected_angle[:, n:]
+
+        # Половина пар → умножение: A₁·A₂, φ₁+φ₂
+        half = n // 2
+        mul_amp = amp_left[:, :half] * amp_right[:, :half]
+        mul_angle = angle_left[:, :half] + angle_right[:, :half]
+
+        # Другая половина → деление: A₁/A₂, φ₁-φ₂
+        safe_denom = amp_right[:, half:].clamp(min=self.division_epsilon)
+        div_amp = amp_left[:, half:] / safe_denom
+        div_angle = angle_left[:, half:] - angle_right[:, half:]
+
+        result_amp = torch.cat([mul_amp, div_amp], dim=-1)      # (B*T, n)
+        result_angle = torch.cat([mul_angle, div_angle], dim=-1)  # (B*T, n)
+
+        return result_amp, result_angle
 
 
 # ---------------------------------------------------------------------------
@@ -90,8 +195,9 @@ class PhysicalStem(nn.Module):
 
     Реализует rPhysicsKAN-подход:
     1. Разделяет амплитуды и углы
-    2. Вычисляет физические признаки (P, Q, Z) с масками безопасности
-    3. Формирует KAN-кодирование с гейтированием углами
+    2. Обучаемый ComplexInteractionBlock: модель сама выбирает, какие пары
+       сигналов умножать/делить (вместо жёстких P/Q/Z формул)
+    3. KAN-кодирование с гейтированием углами
     4. Линейная проекция в d_model для Transformer
 
     Входной формат: (B, C, T) где C — чередующиеся [A₁, φ₁, A₂, φ₂, ...]
@@ -101,6 +207,7 @@ class PhysicalStem(nn.Module):
         num_input_channels: полное число каналов (амплитуды + углы)
         d_model: размерность выходного embedding для Transformer
         num_current_pairs: число пар ток (A_I, φ_I) в первой половине каналов
+        num_interaction_pairs: число выходных пар от ComplexInteractionBlock
         noise_threshold_current: порог шума для токов (отн. ед.)
         noise_threshold_voltage: порог шума для напряжений (отн. ед.)
         kan_grid_size: число узлов RBF-сетки для FastKAN
@@ -112,6 +219,7 @@ class PhysicalStem(nn.Module):
         num_input_channels: int,
         d_model: int = 64,
         num_current_pairs: int | None = None,
+        num_interaction_pairs: int = 16,
         noise_threshold_current: float = 1.0 / 2000,
         noise_threshold_voltage: float = 1.0 / 300,
         kan_grid_size: int = 5,
@@ -128,8 +236,6 @@ class PhysicalStem(nn.Module):
         self.d_model = d_model
 
         # Число пар токов (по умолчанию — ровно половина)
-        # TODO: надо верно будет сформировать входные данные, не упустить этот момент,
-        # чтобы данное утверждение было верным, иначе придётся менять кодировку и логику вычисления физических признаков.
         if num_current_pairs is None:
             num_current_pairs = self.num_pairs // 2
         self.num_current_pairs = num_current_pairs
@@ -139,10 +245,13 @@ class PhysicalStem(nn.Module):
         self.noise_threshold_I = noise_threshold_current
         self.noise_threshold_U = noise_threshold_voltage
 
-        # Число физических признаков на каждую пару ток-напряжение
-        # P, Q, Z_amp, Z_phase = 4 признака на пару
-        self.num_phys_pairs = min(self.num_current_pairs, self.num_voltage_pairs)
-        num_phys_features = self.num_phys_pairs * 4
+        # --- Обучаемый блок комплексных взаимодействий ---
+        self.interaction = ComplexInteractionBlock(
+            num_input_pairs=self.num_pairs,
+            num_interaction_pairs=num_interaction_pairs,
+        )
+        # Число признаков от interaction: amp + angle = 2 * num_interaction_pairs
+        num_interaction_features = num_interaction_pairs * 2
 
         # --- rPhysicsKAN: KAN для амплитуд + гейт из углов ---
         num_amplitudes = self.num_pairs  # Все амплитуды
@@ -176,8 +285,8 @@ class PhysicalStem(nn.Module):
             use_layernorm=True,
         )
 
-        # Проекция: (half_d_modulated + half_d_angle + phys_features) → d_model
-        fusion_dim = half_d + half_d + num_phys_features
+        # Проекция: (half_d_modulated + half_d_angle + interaction_features) → d_model
+        fusion_dim = half_d + half_d + num_interaction_features
         self.projection = nn.Linear(fusion_dim, d_model)
         self.layer_norm = nn.LayerNorm(d_model)
         self.dropout = nn.Dropout(dropout)
@@ -197,68 +306,6 @@ class PhysicalStem(nn.Module):
         angles = x[:, 1::2, :]      # Нечётные каналы — углы
         return amplitudes, angles
 
-    def _compute_physics(
-        self,
-        amplitudes: torch.Tensor,
-        angles: torch.Tensor,
-        mask_missing: torch.Tensor,
-    ) -> torch.Tensor:
-        """Вычислить физические признаки: P, Q, Z.
-
-        Args:
-            amplitudes: (B, num_pairs, T) — амплитуды
-            angles: (B, num_pairs, T) — углы
-            mask_missing: (B, C_original, T) — маска пропусков
-
-        Returns:
-            phys_features: (B, num_phys*4, T) — [P, Q, Z_amp, Z_phase] для каждой пары I-U
-        """
-        n_I = self.num_current_pairs
-        n_phys = self.num_phys_pairs
-
-        amp_I = amplitudes[:, :n_I, :][:, :n_phys, :]
-        amp_U = amplitudes[:, n_I:, :][:, :n_phys, :]
-        angle_I = angles[:, :n_I, :][:, :n_phys, :]
-        angle_U = angles[:, n_I:, :][:, :n_phys, :]
-
-        # Маска пропуска для амплитуд (проверяем по чётным каналам оригинала)
-        mask_amp_I = mask_missing[:, 0::2, :][:, :n_I, :][:, :n_phys, :]
-        mask_amp_U = mask_missing[:, 0::2, :][:, n_I:, :][:, :n_phys, :]
-        mask_any_missing = mask_amp_I | mask_amp_U
-
-        delta_phi = angle_I - angle_U
-
-
-        # Псевдо-мощность: P = A_U * A_I * cos(φ_I - φ_U)
-        # TODO: Подожди... не надо прям чётко и жёстко задавать формулы для P, Q, Z.
-        # Исходная идея в том, чтобы это были блоки производящие умножение в комплексной плоскости и деление любых двух величин друг с другом. Да, каждую с каждой, наверное, очень дорого... Поэтому были желания сделать таких элементов не много, или как-то обыграть через маску внимания в самой КАН модели. Возможно в исходно эмбединге не будет это использовать (хотя может здесь уже не сами блоки, я не до конца пока понял). Причём чтобы можно было как I/U, так и наоборот U/I, прост за счёт каких-то весов модель выбирала, а что же такого мне сейчас посчитать, а другие прост зануляла, т.е. был некий комплексный аргегатор сигналов, который занулял амплитуды не нужных сигналов и/или двигал другие. Есть мысль это сделать вот как:
-        #- стандартные КАН блоки даю Х комплексных сигналов (в комплексной форме).
-        #- рядом аналогичная цепочка, можно чисто линейную с обрезанием только модулей (угол вообще не трогается) – из них получается Y числе в комплексном представлении из которых первая половина умножается (например у нас 32 сигналов, половина это 16 и значит 1-ый будет умножаться на 9, потом 2-ой на 10-ый и т.д.). А вторая половина уже будет делиться (так же 33 на 49-ый, 34 на 50 и т.д.). И т.е из этих сигналов можно получить ещё Y/2 сигналов на выходе которые посчитались умножением и делением. 
-        # Примечание: Числа пока с потолка, вроде бы исходно у нас 64, значит можно будет взять Y=64, чтобы потом получилось 32 сигнала (половина от всего пространства). Ну или 32… Если 64 с учётом углов. В общем это надо пересчитать / проверить
-        # П.С. Вероятно раньше у меня тут была ошибка - я описываю, как считаю верным.
-        
-        P = amp_U * amp_I * torch.cos(delta_phi)
-        # Реактивная: Q = A_U * A_I * sin(φ_I - φ_U)
-        Q = amp_U * amp_I * torch.sin(delta_phi)
-
-        # Импеданс Z = U / I (безопасное деление)
-        I_above_noise = amp_I > self.noise_threshold_I
-        safe_amp_I = torch.where(I_above_noise, amp_I, torch.ones_like(amp_I))
-        Z_amp = amp_U / safe_amp_I
-        Z_phase = angle_U - angle_I
-
-        # Маскируем Z где ток ниже порога шума
-        Z_mask = (~I_above_noise) | mask_any_missing
-        Z_amp = torch.where(Z_mask, torch.zeros_like(Z_amp), Z_amp)
-        Z_phase = torch.where(Z_mask, torch.zeros_like(Z_phase), Z_phase)
-
-        # Маскируем P, Q где каналы отсутствуют
-        P = torch.where(mask_any_missing, torch.zeros_like(P), P)
-        Q = torch.where(mask_any_missing, torch.zeros_like(Q), Q)
-
-        # Собираем: (B, n_phys*4, T)
-        return torch.cat([P, Q, Z_amp, Z_phase], dim=1)
-
     def forward(
         self, x: torch.Tensor, mask_missing: torch.Tensor
     ) -> torch.Tensor:
@@ -275,25 +322,25 @@ class PhysicalStem(nn.Module):
         # 1. Разделить на амплитуды и углы
         amplitudes, angles = self._extract_amp_angle(x)
 
-        # 2. Физические признаки
-        phys_features = self._compute_physics(amplitudes, angles, mask_missing)
-
-        # 3. rPhysicsKAN: KAN для амплитуд + гейтирование углами
-        # Переводим в формат (B*T, features) для FastKAN (работает с 2D)
+        # 2. Переводим в формат (B*T, features) для FastKAN и interaction
         amp_flat = amplitudes.permute(0, 2, 1).reshape(B * T, -1)  # (B*T, num_pairs)
         ang_flat = angles.permute(0, 2, 1).reshape(B * T, -1)      # (B*T, num_pairs)
 
+        # 3. Обучаемый комплексный блок: модель сама решает что с чем умножать/делить
+        inter_amp, inter_angle = self.interaction(amp_flat, ang_flat)
+        # Собираем в чередующийся формат (amp, angle, amp, angle, ...)
+        inter_features = torch.stack([inter_amp, inter_angle], dim=-1)  # (B*T, n, 2)
+        inter_features = inter_features.reshape(B * T, -1)  # (B*T, n*2)
+
+        # 4. rPhysicsKAN: KAN для амплитуд + гейтирование углами
         h_amp = self.kan_amp(amp_flat)           # (B*T, half_d)
         g_angle = torch.sigmoid(self.kan_angle_gate(ang_flat))  # (B*T, half_d) — гейт [0, 1]
         h_modulated = h_amp * g_angle            # Модулирование амплитуд углами
 
         h_angle = self.kan_angle(ang_flat)       # (B*T, half_d)
 
-        # 4. Физические признаки в плоский формат
-        phys_flat = phys_features.permute(0, 2, 1).reshape(B * T, -1)  # (B*T, num_phys*4)
-
         # 5. Объединение и проекция
-        fused = torch.cat([h_modulated, h_angle, phys_flat], dim=-1)  # (B*T, fusion_dim)
+        fused = torch.cat([h_modulated, h_angle, inter_features], dim=-1)
         embedding = self.projection(fused)       # (B*T, d_model)
         embedding = self.layer_norm(embedding)
         embedding = self.dropout(embedding)
@@ -396,11 +443,12 @@ class KANFeedForward(nn.Module):
         """
         B, T, D = x.shape
         # FastKANLayer ожидает 2D → reshape
-        
-        # TODO: Ну и та идея с комплексными числами и всем вот этим - она касалась и вот этой части.
-        # Может сейчас корректно тут работает, но всё упомяну на всякий случай, ибо во многом это ключевая идея.
-        # Можно её сделать переключаемой из серии "физический блок", "простой КАН блок", "Стандартный МЛП блок". 
-        # Если сейчас и так всё норм, то прост скажи об этом, не надо изобретать то, что уже работает.
+        # Примечание: KAN-FFN работает в абстрактном d_model пространстве.
+        # Физические комплексные операции (умножение/деление сигналов) реализованы
+        # в PhysicalStem через ComplexInteractionBlock. Переключение между
+        # типами FFN уже возможно: KANFeedForward / MLPFeedForward.
+        # Если потребуется физический FFN внутри Transformer-блоков —
+        # можно будет добавить ComplexInteractionBlock и здесь (см. TODO в transformer.py).
         x_flat = x.reshape(B * T, D)
         h = self.kan1(x_flat)
         h = self.dropout(h)

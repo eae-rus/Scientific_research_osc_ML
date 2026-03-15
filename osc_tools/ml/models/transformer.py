@@ -37,7 +37,10 @@ class PhysicalKANTransformer(BaseModel):
     Архитектура (из TRANSFORMER_RESEARCH.md):
     1. Sanitizer → PhysicalStem (rPhysicsKAN) → Linear Projection → d_model
     2. + Positional Encoding
-    3. N × TransformerEncoderBlock (Attention + KAN-FFN) # TODO: вот тут можно бы ту идею с rPhysicsKAN, а не только в эмбединге.
+    3. N × TransformerEncoderBlock (Attention + KAN-FFN)
+       FIXME: Рассмотреть добавление ComplexInteractionBlock внутрь
+       Transformer-блоков (rPhysicsKAN не только в Stem, но и в FFN).
+       Это потребует расширения TransformerEncoderBlock — отдельный эксперимент.
     4. SSL Head (реконструкция) или Classification Head (fine-tuning)
 
     Args:
@@ -175,9 +178,9 @@ class PhysicalKANTransformer(BaseModel):
             result['ssl'] = ssl_out
 
         elif mode == 'classify' and self.cls_head is not None:
-            # TODO: Ну... зональность, вероятно, будет сформирована на уровне подачи данных / их разметки.
-            # А тут в точности совпадать с временным шагом модели. Так что скорее всего надо будет прост проверить.
             # Зональная классификация: усреднение по зонам
+            # Примечание: zone_size должен совпадать с downsampling_stride данных.
+            # При stride=16 (полпериода) каждый временной шаг = одна зона.
             B, T, D = h.shape
             num_zones = T // self.zone_size
             if num_zones > 0:

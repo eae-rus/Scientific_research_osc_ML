@@ -31,12 +31,14 @@ from torch.utils.data import Dataset
 
 from osc_tools.ml.precomputed_dataset import PrecomputedDataset
 
-# TODO: А здесь считаются низшие гармоники? Понятное дело с 1 по 9, а другое? Там рассматривался более широкий спектр,
-# Причём он размечался особым образом.
-# Плюс были симметричные составляющие, посмотри это внимательно и проверь. Может тут и нормально всё.
-# Плюс в модели писал вопросы о том, как определять верно ВЕСЬ канал, то есть ток фазы А и посчитанные по нему
-# гармоники, т.к. потом максимальную амплитуду надо считать из ВСЕХ гармоник этого сигнала. Вероятно этот
-# апект надо как-то правильно здесь учесть и передавать туда уже какую-то полезную информацию / структуру.
+# Заметки по расширению спектральных признаков (Étape 1):
+# 1. Низшие гармоники (периоды 2, 4, 6, 10) — пока НЕ предрассчитаны в pipeline.
+#    Потребуется расширение FFT-калькулятора для вычисления интергармоник.
+# 2. Симметричные составляющие — УЖЕ поддерживаются через feature_mode='symmetric_polar'.
+#    PrecomputedDataset принимает list[str], например ['phase_polar', 'symmetric_polar'].
+# 3. Группировка каналов по физическим сигналам для нормализации Loss —
+#    реализована в losses.py через build_channel_groups_phase_polar().
+#    SSLSpectralDataset предоставляет метод get_channel_groups() для передачи в Loss.
 class SSLSpectralDataset(Dataset):
     """Dataset для self-supervised обучения Transformer на спектральных данных.
 
@@ -114,6 +116,27 @@ class SSLSpectralDataset(Dataset):
         self.num_steps_current = max(1, valid_len_current // downsampling_stride)
 
         self.num_channels = len(self._base_dataset.feature_columns)
+        self._num_harmonics = num_harmonics
+
+    def get_channel_groups(self) -> list[list[int]] | None:
+        """Возвращает группировку каналов по физическим сигналам.
+
+        Используется для нормализации Loss: макс. амплитуда считается
+        по ВСЕМ гармоникам одного физ. сигнала (например, IA).
+
+        Returns:
+            Список групп (каждая — список индексов каналов) для phase_polar,
+            None для неподдерживаемых режимов.
+        """
+        from osc_tools.ml.losses import build_channel_groups_phase_polar
+
+        # phase_polar: 8 сигналов × num_harmonics гармоник × 2 (mag+angle)
+        feature_modes = self._base_dataset.feature_mode
+        if 'phase_polar' in feature_modes:
+            return build_channel_groups_phase_polar(
+                num_signals=8, num_harmonics=self._num_harmonics
+            )
+        return None
 
     def __len__(self) -> int:
         return len(self._base_dataset)
@@ -155,8 +178,11 @@ class SSLSpectralDataset(Dataset):
         X_masked[mask_input] = self.mask_value
 
         # --- Маска для Loss ---
-        # В полном окне: Loss НЕ считается для изначально отсутствующих данных (-1)
-        mask_loss = (X_full == -1.0)
+        # В полном окне: Loss НЕ считается для отсутствующих данных (NaN).
+        # Примечание: PrecomputedDataset сейчас заменяет NaN→0 в _preload_data,
+        # поэтому mask_loss будет all-False. Если в будущем потребуется подддержка
+        # пропущенных каналов, нужно сохранять NaN через PrecomputedDataset.
+        mask_loss = torch.isnan(X_full)
         # Если будущих данных не хватило (padding нулями), не считаем Loss и там
         if T_actual < self.num_steps_full:
             pad_mask = torch.ones(
