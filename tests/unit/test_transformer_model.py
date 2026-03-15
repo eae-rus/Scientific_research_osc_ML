@@ -20,6 +20,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from osc_tools.ml.layers.transformer_blocks import (
     ComplexInteractionBlock,
+    ComplexMultiheadAttention,
     DataSanitizer,
     KANFeedForward,
     MLPFeedForward,
@@ -317,6 +318,67 @@ class TestTransformerEncoderBlock:
         x = torch.randn(2, 10, 32)
         out = block(x)
         assert out.shape == (2, 10, 32)
+
+    def test_with_complex_attention(self):
+        """Блок с ComplexMultiheadAttention вместо стандартного MHA."""
+        ffn = MLPFeedForward(d_model=32)
+        attn = ComplexMultiheadAttention(d_model=32, num_heads=2, dropout=0.0)
+        block = TransformerEncoderBlock(d_model=32, num_heads=2, ffn=ffn, attn=attn)
+        x = torch.randn(2, 10, 32)
+        out = block(x)
+        assert out.shape == (2, 10, 32)
+        assert not torch.isnan(out).any()
+
+
+# ============================================================
+# ComplexMultiheadAttention
+# ============================================================
+
+class TestComplexMultiheadAttention:
+    """Тесты комплексного Multi-Head Attention."""
+
+    def test_instantiation(self):
+        attn = ComplexMultiheadAttention(d_model=32, num_heads=2)
+        assert isinstance(attn, nn.Module)
+
+    def test_forward_shape(self):
+        attn = ComplexMultiheadAttention(d_model=32, num_heads=2, dropout=0.0)
+        x = torch.randn(4, 10, 32)
+        out, _ = attn(x, x, x)
+        assert out.shape == (4, 10, 32)
+
+    def test_with_padding_mask(self):
+        attn = ComplexMultiheadAttention(d_model=32, num_heads=2, dropout=0.0)
+        x = torch.randn(2, 8, 32)
+        mask = torch.zeros(2, 8, dtype=torch.bool)
+        mask[0, 6:] = True
+        out, _ = attn(x, x, x, key_padding_mask=mask)
+        assert out.shape == (2, 8, 32)
+        assert not torch.isnan(out).any()
+
+    def test_re_im_separation(self):
+        """Проверяем что re и im обрабатываются раздельно (не смешиваются)."""
+        attn = ComplexMultiheadAttention(d_model=32, num_heads=2, dropout=0.0)
+        x = torch.randn(1, 5, 32)
+        out, _ = attn(x, x, x)
+        # Выход должен иметь ту же структуру (re | im)
+        assert out.shape == (1, 5, 32)
+        # Проверяем что re и im части не идентичны (разные проекции)
+        assert not torch.allclose(out[:, :, :16], out[:, :, 16:])
+
+    def test_backward(self):
+        attn = ComplexMultiheadAttention(d_model=32, num_heads=2, dropout=0.0)
+        x = torch.randn(2, 5, 32)
+        out, _ = attn(x, x, x)
+        out.sum().backward()
+        has_grad = any(p.grad is not None and p.grad.abs().sum() > 0
+                       for p in attn.parameters() if p.requires_grad)
+        assert has_grad
+
+    def test_d_head_must_be_even(self):
+        """d_model=32, num_heads=8 → d_head=4, d_head_complex=2 — OK."""
+        attn = ComplexMultiheadAttention(d_model=32, num_heads=8)
+        assert attn.d_head_complex == 2
 
 
 # ============================================================

@@ -22,6 +22,7 @@ import torch.nn as nn
 
 from osc_tools.ml.models.base import BaseModel
 from osc_tools.ml.layers.transformer_blocks import (
+    ComplexMultiheadAttention,
     DataSanitizer,
     KANFeedForward,
     MLPFeedForward,
@@ -111,9 +112,15 @@ class PhysicalKANTransformer(BaseModel):
             d_model=d_model, max_len=max_seq_len, dropout=dropout
         )
 
-        # --- 4. Transformer Encoder (Physical KAN-FFN или KAN-FFN) ---
+        # --- 4. Transformer Encoder (Physical KAN-FFN + ComplexMHA) ---
         self.encoder_blocks = nn.ModuleList()
         for _ in range(num_layers):
+            # Комплексный attention: сохраняет (re, im) структуру d_model
+            complex_attn = ComplexMultiheadAttention(
+                d_model=d_model,
+                num_heads=num_heads,
+                dropout=dropout,
+            )
             if use_physical_ffn:
                 ffn = PhysicalKANFeedForward(
                     d_model=d_model,
@@ -133,6 +140,7 @@ class PhysicalKANTransformer(BaseModel):
                 d_model=d_model,
                 num_heads=num_heads,
                 ffn=ffn,
+                attn=complex_attn,
                 dropout=dropout,
             )
             self.encoder_blocks.append(block)
