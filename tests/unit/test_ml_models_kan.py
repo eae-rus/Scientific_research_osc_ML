@@ -5,6 +5,7 @@ from osc_tools.ml.models.kan import (
     ConvKAN,
     PhysicsKANConditional,
     cPhysicsKAN,
+    rPhysicsKAN,
     ComplexMultiplicationLayer,
     ComplexDivisionLayer,
 )
@@ -81,6 +82,40 @@ class TestKANModels:
         """cPhysicsKAN должен требовать чётное число каналов (амплитуда/фаза)."""
         with pytest.raises(ValueError, match="чётное число входных каналов"):
             cPhysicsKAN(in_channels=7, num_classes=4)
+
+    def test_rphysics_kan_forward(self):
+        """Smoke test для rPhysicsKAN (проверка формы выхода)."""
+        batch_size = 2
+        in_channels = 8
+        seq_len = 128
+        num_classes = 4
+
+        model = rPhysicsKAN(in_channels=in_channels, num_classes=num_classes, channels=[4, 8])
+        x = torch.randn(batch_size, in_channels, seq_len)
+        x[:, 0::2, :] = x[:, 0::2, :].abs()
+
+        y = model(x)
+
+        assert y.shape == (batch_size, num_classes)
+        assert not torch.isnan(y).any()
+
+    def test_rphysics_kan_requires_even_channels(self):
+        """rPhysicsKAN должен требовать чётное число каналов (амплитуда/фаза)."""
+        with pytest.raises(ValueError, match="чётное число входных каналов"):
+            rPhysicsKAN(in_channels=7, num_classes=4)
+
+    def test_rphysics_kan_phase_relay_contract(self):
+        """Relay-маска должна ограничивать амплитуду диапазоном [0, 1] по gate-ветке."""
+        amp = torch.tensor([[[2.0, 2.0]]])
+        gate_logits = torch.tensor([[[-20.0, 20.0]]])
+
+        gated_amp, gate = rPhysicsKAN._apply_phase_relay(amp, gate_logits)
+
+        assert torch.all(gate >= 0.0)
+        assert torch.all(gate <= 1.0)
+        assert gated_amp[0, 0, 0] < 1e-6
+        assert gated_amp[0, 0, 1] > 2.0
+        assert torch.all(gated_amp >= 0.0)
 
     def test_cphysics_kan_complex_mul_div_contract(self):
         """Проверка контракта комплексных операций в полярной форме."""
