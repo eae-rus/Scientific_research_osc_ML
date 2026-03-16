@@ -9,6 +9,7 @@
 Примеры:
   python scripts/phase4_experiments/run_phase4_pretrain.py --mode smoke
   python scripts/phase4_experiments/run_phase4_pretrain.py --mode pretrain --epochs 50
+  python scripts/phase4_experiments/run_phase4_pretrain.py --mode pretrain --resume experiments/phase4/latest_checkpoint.pt
 """
 
 from __future__ import annotations
@@ -18,17 +19,30 @@ import json
 import os
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 
+import numpy as np
+import polars as pl
 import torch
+from torch.utils.data import DataLoader
 
 # Добавляем корень проекта в PATH
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from osc_tools.ml.models.transformer import PhysicalKANTransformer, BaselineTransformer
-from osc_tools.ml.losses import ComplexMSELoss, SpectralReconstructionLoss
+from osc_tools.ml.losses import (
+    SpectralReconstructionLoss,
+    build_channel_groups_phase_polar,
+)
+from osc_tools.ml.ssl_dataset import SSLSpectralDataset
+from osc_tools.ml.precomputed_dataset import PrecomputedDataset
 
+
+# ---------------------------------------------------------------------------
+# Конфигурация
+# ---------------------------------------------------------------------------
 
 def get_default_config(mode: str = 'smoke') -> dict:
     """Конфигурация по умолчанию для разных режимов."""
@@ -45,6 +59,9 @@ def get_default_config(mode: str = 'smoke') -> dict:
         'future_periods': 2,
         'mask_ratio': 0.25,
         'batch_size': 32,
+        'val_batch_size': 64,
+        'num_workers': 0,  # 0 = без multiprocessing (Windows-безопасно)
+        'val_split': 0.2,  # 20% файлов на валидацию
 
         # Модель
         'model_type': 'PhysicalKANTransformer',
@@ -59,23 +76,32 @@ def get_default_config(mode: str = 'smoke') -> dict:
         'epochs': 50,
         'learning_rate': 1e-4,
         'weight_decay': 1e-5,
-        'lr_scheduler': 'cosine',
-        'use_amp': True,  # Mixed precision для 8 ГБ VRAM
+        'lr_scheduler': 'cosine',   # 'cosine' или 'plateau'
+        'warmup_epochs': 3,         # Линейный warmup перед cosine
+        'use_amp': True,            # Mixed precision для 8 ГБ VRAM
+        'grad_clip': 1.0,           # Gradient clipping
 
         # Сохранение
         'save_dir': str(PROJECT_ROOT / 'experiments' / 'phase4'),
-        'checkpoint_frequency': 5,
+        'checkpoint_frequency': 5,  # Сохранять каждые N эпох
         'seed': 42,
+
+        # Данные (путь)
+        'data_dir': str(PROJECT_ROOT / 'data' / 'ml_datasets'),
+        'precomputed_file': 'test_precomputed.csv',
     }
 
     if mode == 'smoke':
         base.update({
             'epochs': 2,
             'batch_size': 4,
+            'val_batch_size': 4,
             'd_model': 32,
             'num_layers': 2,
             'num_heads': 2,
             'use_amp': False,
+            'warmup_epochs': 0,
+            'checkpoint_frequency': 1,
         })
     elif mode == 'pretrain':
         pass  # Базовые параметры
@@ -83,10 +109,15 @@ def get_default_config(mode: str = 'smoke') -> dict:
         base.update({
             'epochs': 30,
             'learning_rate': 5e-5,
+            'warmup_epochs': 1,
         })
 
     return base
 
+
+# ---------------------------------------------------------------------------
+# Создание модели
+# ---------------------------------------------------------------------------
 
 def create_model(config: dict) -> torch.nn.Module:
     """Создаёт модель по конфигурации."""
@@ -100,7 +131,7 @@ def create_model(config: dict) -> torch.nn.Module:
             num_layers=config['num_layers'],
             kan_grid_size=config['kan_grid_size'],
             dropout=config['dropout'],
-            max_seq_len=64,  # Достаточно для stride=16, window=320+64
+            max_seq_len=64,
         )
     elif model_type == 'BaselineTransformer':
         model = BaselineTransformer(
@@ -116,6 +147,503 @@ def create_model(config: dict) -> torch.nn.Module:
 
     return model
 
+
+# ---------------------------------------------------------------------------
+# Подготовка данных
+# ---------------------------------------------------------------------------
+
+def _split_files_train_val(
+    df: pl.DataFrame, val_split: float, seed: int
+) -> tuple[list[str], list[str]]:
+    """Разделяет уникальные file_name на train/val (детерминированно)."""
+    files = sorted(df['file_name'].unique().to_list())
+    rng = np.random.RandomState(seed)
+    rng.shuffle(files)
+    n_val = max(1, int(len(files) * val_split))
+    val_files = set(files[:n_val])
+    train_files = [f for f in files if f not in val_files]
+    return train_files, list(val_files)
+
+
+def prepare_dataloaders(
+    config: dict,
+) -> tuple[DataLoader, DataLoader, list[list[int]] | None]:
+    """Создаёт train/val DataLoader-ы на основе precomputed CSV.
+
+    Для SSL pre-training: используем test_precomputed.csv,
+    делим по file_name на 80% train / 20% val.
+
+    Returns:
+        (train_loader, val_loader, channel_groups)
+    """
+    data_path = Path(config['data_dir']) / config['precomputed_file']
+    print(f"Загрузка данных: {data_path}")
+    df = pl.read_csv(str(data_path))
+    print(f"  Строк: {df.height:,}, Колонок: {df.width}")
+
+    # Разделяем файлы на train / val
+    train_files, val_files = _split_files_train_val(
+        df, config['val_split'], config['seed']
+    )
+    print(f"  Файлов: train={len(train_files)}, val={len(val_files)}")
+
+    # Фильтруем DF
+    train_df = df.filter(pl.col('file_name').is_in(train_files))
+    val_df = df.filter(pl.col('file_name').is_in(val_files))
+    print(f"  Строк: train={train_df.height:,}, val={val_df.height:,}")
+
+    # Размер окна с будущими периодами (для SSLSpectralDataset)
+    full_window = config['window_size'] + config['future_periods'] * 32
+
+    # Создаём индексы (скользящее окно)
+    train_indices = PrecomputedDataset.create_indices(
+        train_df, window_size=full_window, mode='val', stride=config['downsampling_stride']
+    )
+    val_indices = PrecomputedDataset.create_indices(
+        val_df, window_size=full_window, mode='val', stride=config['downsampling_stride']
+    )
+    print(f"  Окон: train={len(train_indices):,}, val={len(val_indices):,}")
+
+    # SSL Datasets
+    train_ds = SSLSpectralDataset(
+        dataframe=train_df,
+        indices=train_indices,
+        window_size=config['window_size'],
+        feature_mode=config['feature_mode'],
+        num_harmonics=config['num_harmonics'],
+        downsampling_stride=config['downsampling_stride'],
+        future_periods=config['future_periods'],
+        mask_ratio=config['mask_ratio'],
+    )
+    val_ds = SSLSpectralDataset(
+        dataframe=val_df,
+        indices=val_indices,
+        window_size=config['window_size'],
+        feature_mode=config['feature_mode'],
+        num_harmonics=config['num_harmonics'],
+        downsampling_stride=config['downsampling_stride'],
+        future_periods=config['future_periods'],
+        mask_ratio=0.0,  # Валидация без маскирования
+    )
+
+    channel_groups = train_ds.get_channel_groups()
+
+    train_loader = DataLoader(
+        train_ds,
+        batch_size=config['batch_size'],
+        shuffle=True,
+        num_workers=config['num_workers'],
+        pin_memory=True,
+        drop_last=True,
+    )
+    val_loader = DataLoader(
+        val_ds,
+        batch_size=config['val_batch_size'],
+        shuffle=False,
+        num_workers=config['num_workers'],
+        pin_memory=True,
+    )
+
+    return train_loader, val_loader, channel_groups
+
+
+# ---------------------------------------------------------------------------
+# Цикл обучения и валидации
+# ---------------------------------------------------------------------------
+
+def _split_amp_angle(x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    """Разделяет чередующийся тензор [amp, angle, amp, angle, ...] на два.
+
+    Args:
+        x: (B, C, T) где C = num_pairs * 2
+
+    Returns:
+        amp: (B, C//2, T), angle: (B, C//2, T)
+    """
+    amp = x[:, 0::2, :]
+    angle = x[:, 1::2, :]
+    return amp, angle
+
+
+def train_one_epoch(
+    model: torch.nn.Module,
+    loader: DataLoader,
+    loss_fn: SpectralReconstructionLoss,
+    optimizer: torch.optim.Optimizer,
+    device: torch.device,
+    scaler: torch.amp.GradScaler | None,
+    grad_clip: float,
+) -> dict[str, float]:
+    """Одна эпоха обучения.
+
+    Returns:
+        dict с 'loss', 'time_sec'
+    """
+    model.train()
+    total_loss = 0.0
+    num_batches = 0
+    t0 = time.perf_counter()
+
+    for batch in loader:
+        x_input = batch['input'].to(device)       # (B, C, T_current)
+        x_target = batch['target'].to(device)      # (B, C, T_full)
+        mask_loss = batch['mask_loss'].to(device)   # (B, C, T_full)
+        current_len = batch['current_len'][0].item()
+
+        optimizer.zero_grad(set_to_none=True)
+
+        # Forward pass через модель (SSL: реконструкция)
+        use_amp = scaler is not None
+        with torch.amp.autocast('cuda', enabled=use_amp):
+            out = model(x_input, mode='ssl')
+            pred = out['ssl']  # (B, C, T_current)
+
+            # Модель реконструирует только текущее окно (T_current шагов).
+            # Target уже содержит и текущее, и будущее. Обрезаем target до T_current
+            # (предсказание будущего будет добавлено позже, когда модель станет seq2seq).
+            T_pred = pred.shape[2]
+            target_trimmed = x_target[:, :, :T_pred]
+            mask_trimmed = mask_loss[:, :, :T_pred]
+
+            # Разделяем на амплитуды и углы
+            pred_amp, pred_angle = _split_amp_angle(pred)
+            true_amp, true_angle = _split_amp_angle(target_trimmed)
+            mask_amp = mask_trimmed[:, 0::2, :]  # Маска для амплитуд (same для углов)
+
+            loss = loss_fn(
+                pred_amp, pred_angle, true_amp, true_angle,
+                mask=mask_amp, current_len=current_len,
+            )
+
+        # Backward
+        if scaler is not None:
+            scaler.scale(loss).backward()
+            scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+            optimizer.step()
+
+        total_loss += loss.item()
+        num_batches += 1
+
+    elapsed = time.perf_counter() - t0
+    avg_loss = total_loss / max(num_batches, 1)
+    return {'loss': avg_loss, 'time_sec': elapsed}
+
+
+@torch.no_grad()
+def validate(
+    model: torch.nn.Module,
+    loader: DataLoader,
+    loss_fn: SpectralReconstructionLoss,
+    device: torch.device,
+) -> dict[str, float]:
+    """Валидация.
+
+    Returns:
+        dict с 'loss', 'time_sec'
+    """
+    model.eval()
+    total_loss = 0.0
+    num_batches = 0
+    t0 = time.perf_counter()
+
+    for batch in loader:
+        x_input = batch['input'].to(device)
+        x_target = batch['target'].to(device)
+        mask_loss = batch['mask_loss'].to(device)
+        current_len = batch['current_len'][0].item()
+
+        out = model(x_input, mode='ssl')
+        pred = out['ssl']
+
+        T_pred = pred.shape[2]
+        target_trimmed = x_target[:, :, :T_pred]
+        mask_trimmed = mask_loss[:, :, :T_pred]
+
+        pred_amp, pred_angle = _split_amp_angle(pred)
+        true_amp, true_angle = _split_amp_angle(target_trimmed)
+        mask_amp = mask_trimmed[:, 0::2, :]
+
+        loss = loss_fn(
+            pred_amp, pred_angle, true_amp, true_angle,
+            mask=mask_amp, current_len=current_len,
+        )
+        total_loss += loss.item()
+        num_batches += 1
+
+    elapsed = time.perf_counter() - t0
+    avg_loss = total_loss / max(num_batches, 1)
+    return {'loss': avg_loss, 'time_sec': elapsed}
+
+
+# ---------------------------------------------------------------------------
+# Checkpointing
+# ---------------------------------------------------------------------------
+
+def save_checkpoint(
+    path: Path,
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    scheduler: object,
+    scaler: torch.amp.GradScaler | None,
+    epoch: int,
+    best_val_loss: float,
+    config: dict,
+) -> None:
+    """Сохраняет checkpoint (модель, оптимизатор, scheduler, scaler, эпоха)."""
+    state = {
+        'epoch': epoch,
+        'best_val_loss': best_val_loss,
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'config': config,
+    }
+    if scheduler is not None:
+        state['scheduler_state_dict'] = scheduler.state_dict()
+    if scaler is not None:
+        state['scaler_state_dict'] = scaler.state_dict()
+
+    torch.save(state, path)
+
+
+def load_checkpoint(
+    path: Path,
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer | None = None,
+    scheduler: object | None = None,
+    scaler: torch.amp.GradScaler | None = None,
+) -> dict:
+    """Загружает checkpoint. Возвращает мета-информацию (epoch, best_val_loss)."""
+    ckpt = torch.load(path, map_location='cpu', weights_only=False)
+    model.load_state_dict(ckpt['model_state_dict'])
+    if optimizer is not None and 'optimizer_state_dict' in ckpt:
+        optimizer.load_state_dict(ckpt['optimizer_state_dict'])
+    if scheduler is not None and 'scheduler_state_dict' in ckpt:
+        scheduler.load_state_dict(ckpt['scheduler_state_dict'])
+    if scaler is not None and 'scaler_state_dict' in ckpt:
+        scaler.load_state_dict(ckpt['scaler_state_dict'])
+    return {
+        'epoch': ckpt.get('epoch', 0),
+        'best_val_loss': ckpt.get('best_val_loss', float('inf')),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Основной цикл pre-training
+# ---------------------------------------------------------------------------
+
+def pretrain(config: dict, resume_path: str | None = None) -> None:
+    """Self-supervised pre-training на спектральных данных.
+
+    1. Загружает test_precomputed.csv, делит по file_name на train/val
+    2. Создаёт SSLSpectralDataset + DataLoader
+    3. Обучает модель реконструировать спектральные признаки
+    4. Сохраняет checkpoints и лучшую модель
+    """
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    save_dir = Path(config['save_dir']) / f"pretrain_{config['model_type']}_{timestamp}"
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    # Сохраняем конфиг
+    with open(save_dir / 'config.json', 'w', encoding='utf-8') as f:
+        json.dump(config, f, indent=2, ensure_ascii=False)
+
+    print("=" * 60)
+    print(f"PRE-TRAINING — {config['model_type']}")
+    print(f"Сохранение: {save_dir}")
+    print("=" * 60)
+
+    # Устройство
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Device: {device}")
+    if device.type == 'cuda':
+        print(f"GPU: {torch.cuda.get_device_name(0)}")
+        print(f"VRAM: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} ГБ")
+
+    # Фиксация seed
+    torch.manual_seed(config['seed'])
+    np.random.seed(config['seed'])
+
+    # --- Данные ---
+    train_loader, val_loader, channel_groups = prepare_dataloaders(config)
+
+    # --- Модель ---
+    model = create_model(config).to(device)
+    n_params = model.num_parameters()
+    print(f"Параметры модели: {n_params:,}")
+
+    # --- Loss ---
+    # Число каналов амплитуд тока: 4 сигнала (IA, IB, IC, IN) × 9 гармоник = 36
+    num_current_amp_channels = 4 * config['num_harmonics']
+    # channel_groups для amp-only тензора (после split amp/angle → 72 канала)
+    separated_groups = build_channel_groups_phase_polar(
+        num_signals=8, num_harmonics=config['num_harmonics'], separated=True,
+    )
+    loss_fn = SpectralReconstructionLoss(
+        num_current_channels=num_current_amp_channels,
+        channel_groups=separated_groups,
+    )
+
+    # --- Оптимизатор ---
+    optimizer = torch.optim.AdamW(
+        model.parameters(),
+        lr=config['learning_rate'],
+        weight_decay=config['weight_decay'],
+    )
+
+    # --- LR Scheduler ---
+    warmup_epochs = config.get('warmup_epochs', 0)
+    total_epochs = config['epochs']
+
+    if config['lr_scheduler'] == 'cosine':
+        # CosineAnnealing после warmup
+        cosine_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer,
+            T_max=max(1, total_epochs - warmup_epochs),
+            eta_min=1e-6,
+        )
+    elif config['lr_scheduler'] == 'plateau':
+        cosine_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode='min',
+            factor=0.5,
+            patience=5,
+            min_lr=1e-6,
+        )
+    else:
+        cosine_scheduler = None
+
+    # --- Mixed Precision ---
+    scaler = None
+    if config['use_amp'] and device.type == 'cuda':
+        scaler = torch.amp.GradScaler('cuda')
+        print("Mixed precision: включён (AMP)")
+
+    # --- Resume ---
+    start_epoch = 0
+    best_val_loss = float('inf')
+
+    if resume_path is not None:
+        resume_p = Path(resume_path)
+        if resume_p.exists():
+            print(f"Восстановление из чекпоинта: {resume_p}")
+            meta = load_checkpoint(resume_p, model, optimizer, cosine_scheduler, scaler)
+            start_epoch = meta['epoch'] + 1
+            best_val_loss = meta['best_val_loss']
+            print(f"  Продолжаем с эпохи {start_epoch}, best_val_loss={best_val_loss:.6f}")
+        else:
+            print(f"ПРЕДУПРЕЖДЕНИЕ: чекпоинт не найден: {resume_p}")
+
+    # --- Лог обучения ---
+    history: list[dict] = []
+    log_path = save_dir / 'training_log.jsonl'
+
+    print(f"\nНачало обучения: {total_epochs} эпох, batch_size={config['batch_size']}")
+    print(f"LR scheduler: {config['lr_scheduler']}, warmup: {warmup_epochs} эпох")
+    print("-" * 60)
+
+    for epoch in range(start_epoch, total_epochs):
+        # --- Warmup LR ---
+        if epoch < warmup_epochs:
+            warmup_lr = config['learning_rate'] * (epoch + 1) / warmup_epochs
+            for pg in optimizer.param_groups:
+                pg['lr'] = warmup_lr
+
+        current_lr = optimizer.param_groups[0]['lr']
+
+        # --- Train ---
+        train_metrics = train_one_epoch(
+            model, train_loader, loss_fn, optimizer, device,
+            scaler, config.get('grad_clip', 1.0),
+        )
+
+        # --- Val ---
+        val_metrics = validate(model, val_loader, loss_fn, device)
+
+        # --- LR Step ---
+        if epoch >= warmup_epochs and cosine_scheduler is not None:
+            if config['lr_scheduler'] == 'cosine':
+                cosine_scheduler.step()
+            elif config['lr_scheduler'] == 'plateau':
+                cosine_scheduler.step(val_metrics['loss'])
+
+        # --- Логирование ---
+        is_best = val_metrics['loss'] < best_val_loss
+        if is_best:
+            best_val_loss = val_metrics['loss']
+
+        vram_mb = 0.0
+        if device.type == 'cuda':
+            vram_mb = torch.cuda.max_memory_allocated() / 1024**2
+
+        record = {
+            'epoch': epoch,
+            'train_loss': train_metrics['loss'],
+            'val_loss': val_metrics['loss'],
+            'lr': current_lr,
+            'train_time': train_metrics['time_sec'],
+            'val_time': val_metrics['time_sec'],
+            'vram_mb': vram_mb,
+            'is_best': is_best,
+        }
+        history.append(record)
+
+        # Запись в JSONL (побатчно, не теряется при крэше)
+        with open(log_path, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(record, ensure_ascii=False) + '\n')
+
+        marker = ' ★' if is_best else ''
+        print(
+            f"Epoch {epoch:3d}/{total_epochs} | "
+            f"train_loss={train_metrics['loss']:.6f} | "
+            f"val_loss={val_metrics['loss']:.6f}{marker} | "
+            f"lr={current_lr:.2e} | "
+            f"time={train_metrics['time_sec'] + val_metrics['time_sec']:.1f}s"
+        )
+
+        # --- Checkpointing ---
+        # Всегда сохраняем последнюю эпоху
+        save_checkpoint(
+            save_dir / 'latest_checkpoint.pt',
+            model, optimizer, cosine_scheduler, scaler,
+            epoch, best_val_loss, config,
+        )
+
+        # Лучшая модель
+        if is_best:
+            save_checkpoint(
+                save_dir / 'best_model.pt',
+                model, optimizer, cosine_scheduler, scaler,
+                epoch, best_val_loss, config,
+            )
+
+        # Периодический snapshot
+        if (epoch + 1) % config['checkpoint_frequency'] == 0:
+            save_checkpoint(
+                save_dir / f'checkpoint_epoch_{epoch:03d}.pt',
+                model, optimizer, cosine_scheduler, scaler,
+                epoch, best_val_loss, config,
+            )
+
+    # --- Итоги ---
+    print("\n" + "=" * 60)
+    print("ОБУЧЕНИЕ ЗАВЕРШЕНО")
+    print(f"  Лучшая val_loss: {best_val_loss:.6f}")
+    if history:
+        best_epoch = min(history, key=lambda r: r['val_loss'])['epoch']
+        print(f"  Лучшая эпоха: {best_epoch}")
+    print(f"  Чекпоинты: {save_dir}")
+    print("=" * 60)
+
+
+# ---------------------------------------------------------------------------
+# Smoke Test (синтетические данные)
+# ---------------------------------------------------------------------------
 
 def smoke_test(config: dict) -> None:
     """Быстрый smoke-test: проверяет forward pass и Memory без реальных данных."""
@@ -154,7 +682,6 @@ def smoke_test(config: dict) -> None:
         print(f"  Features:   {out['features'].shape}")
 
         # Forward pass (classify) — если бы были num_classes
-        config_cls = {**config, 'model_type': model_type}
         if model_type == 'PhysicalKANTransformer':
             model_cls = PhysicalKANTransformer(
                 num_input_channels=C, d_model=config['d_model'],
@@ -183,23 +710,43 @@ def smoke_test(config: dict) -> None:
         torch.cuda.empty_cache() if device.type == 'cuda' else None
 
     # Проверяем Loss функцию
-    print("\n--- ComplexMSE Loss ---")
-    B, C_half, T = 4, 72, 18  # C_half = num_pairs * num_harmonics
+    print("\n--- SpectralReconstruction Loss ---")
+    B, C_half, T = 4, 72, 18
     pred_amp = torch.randn(B, C_half, T, device=device)
     pred_phase = torch.randn(B, C_half, T, device=device)
     true_amp = torch.randn(B, C_half, T, device=device).abs()
     true_phase = torch.randn(B, C_half, T, device=device)
 
-    loss_fn = ComplexMSELoss()
-    loss = loss_fn(pred_amp, pred_phase, true_amp, true_phase)
-    print(f"  ComplexMSE: {loss.item():.4f}")
-
     spectral_loss_fn = SpectralReconstructionLoss(num_current_channels=36)
     loss_s = spectral_loss_fn(pred_amp, pred_phase, true_amp, true_phase, current_len=14)
     print(f"  SpectralRecon: {loss_s.item():.4f}")
 
+    # Проверяем pipeline на реальных данных (если доступны)
+    print("\n--- Проверка pipeline на реальных данных ---")
+    data_path = Path(config['data_dir']) / config['precomputed_file']
+    if data_path.exists():
+        try:
+            train_loader, val_loader, channel_groups = prepare_dataloaders(config)
+            batch = next(iter(train_loader))
+            print(f"  input:      {batch['input'].shape}")
+            print(f"  target:     {batch['target'].shape}")
+            print(f"  mask_input: {batch['mask_input'].shape}")
+            print(f"  mask_loss:  {batch['mask_loss'].shape}")
+            print(f"  current_len: {batch['current_len'][0].item()}")
+            if channel_groups:
+                print(f"  channel_groups: {len(channel_groups)} групп")
+            print("  ✓ Pipeline данных работает")
+        except Exception as e:
+            print(f"  ✗ Ошибка pipeline: {e}")
+    else:
+        print(f"  Файл не найден: {data_path} — пропуск")
+
     print("\n✓ Smoke test пройден успешно!")
 
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='Phase 4: Physical KAN-Transformer')
@@ -211,6 +758,7 @@ def parse_args() -> argparse.Namespace:
                         default='PhysicalKANTransformer', help='Тип модели')
     parser.add_argument('--d-model', type=int, default=None, help='d_model (override)')
     parser.add_argument('--resume', type=str, default=None, help='Путь к чекпоинту для продолжения')
+    parser.add_argument('--lr', type=float, default=None, help='Learning rate (override)')
     return parser.parse_args()
 
 
@@ -225,15 +773,17 @@ def main() -> None:
         config['batch_size'] = args.batch_size
     if args.d_model is not None:
         config['d_model'] = args.d_model
+    if args.lr is not None:
+        config['learning_rate'] = args.lr
     config['model_type'] = args.model
 
     if args.mode == 'smoke':
         smoke_test(config)
     elif args.mode == 'pretrain':
-        print("Pre-training пока не реализован — требуется подготовка датасета (Этап 1).")
-        print("Используйте --mode smoke для проверки архитектуры.")
+        pretrain(config, resume_path=args.resume)
     elif args.mode == 'finetune':
         print("Fine-tuning будет доступен после pre-training.")
+        print("Используйте --mode pretrain для запуска pre-training.")
 
 
 if __name__ == '__main__':

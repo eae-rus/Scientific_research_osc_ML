@@ -115,7 +115,7 @@ class PhysicalKANTransformer(BaseModel):
         # --- 4. Transformer Encoder (Physical KAN-FFN + ComplexMHA) ---
         self.encoder_blocks = nn.ModuleList()
         for _ in range(num_layers):
-            # Комплексный attention: сохраняет (re, im) структуру d_model
+            # Структурированный attention: сохраняет полярную структуру (amp | angle)
             complex_attn = ComplexMultiheadAttention(
                 d_model=d_model,
                 num_heads=num_heads,

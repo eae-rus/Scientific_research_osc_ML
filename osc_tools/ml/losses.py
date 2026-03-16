@@ -241,6 +241,7 @@ class SpectralReconstructionLoss(nn.Module):
 def build_channel_groups_phase_polar(
     num_signals: int = 8,
     num_harmonics: int = 9,
+    separated: bool = False,
 ) -> list[list[int]]:
     """Построить группы каналов для формата phase_polar.
 
@@ -250,9 +251,27 @@ def build_channel_groups_phase_polar(
     Группа = все каналы-АМПЛИТУДЫ одного физического сигнала (например IA_h1..h9_mag).
     Углы не включаем в группы — они нормализуются отдельно.
 
+    Args:
+        num_signals: число аналоговых сигналов (8)
+        num_harmonics: число гармоник (9)
+        separated: если True — индексы для уже разделённого тензора амплитуд
+            (после amp = x[:, 0::2, :]), где каналы идут подряд:
+            [IA_h1, IA_h2, ..., IA_h9, IB_h1, ..., UN_h9] (72 канала).
+            Если False — индексы для interleaved [mag, angle, mag, angle, ...] (144 канала).
+
     Returns:
         Список из num_signals групп. Каждая группа — индексы каналов амплитуд.
     """
+    if separated:
+        # Амплитуды уже разделены — каждый сигнал занимает num_harmonics подряд
+        groups = []
+        for sig_idx in range(num_signals):
+            base = sig_idx * num_harmonics
+            amp_indices = list(range(base, base + num_harmonics))
+            groups.append(amp_indices)
+        return groups
+
+    # Interleaved формат: [mag, angle, mag, angle, ...] для каждого сигнала
     channels_per_signal = num_harmonics * 2  # mag+angle для каждой гармоники
     groups = []
     for sig_idx in range(num_signals):

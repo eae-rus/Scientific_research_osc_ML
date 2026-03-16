@@ -162,12 +162,13 @@ class ComplexInteractionBlock(nn.Module):
         Returns:
             z_out: (B*T, num_interaction_pairs) complex64 — результат взаимодействий
         """
-        # Вещественная линейная комбинация комплексных входов:
-        # W @ z = W @ re(z) + j · W @ im(z)
-        w = self.selector.weight  # (num_intermediate, num_input_pairs), вещественный
-        re_combined = F.linear(z.real, w)  # (B*T, num_intermediate)
-        im_combined = F.linear(z.imag, w)  # (B*T, num_intermediate)
-        z_combined = torch.complex(re_combined, im_combined)
+        # Полностью отключаем AMP — ComplexHalf не поддерживается
+        with torch.amp.autocast('cuda', enabled=False):
+            z = z.to(torch.complex64) if z.is_complex() else z
+            w = self.selector.weight.float()  # (num_intermediate, num_input_pairs)
+            re_combined = F.linear(z.real.float(), w)  # (B*T, num_intermediate)
+            im_combined = F.linear(z.imag.float(), w)  # (B*T, num_intermediate)
+            z_combined = torch.complex(re_combined, im_combined)
 
         # Разделяем на 4 группы
         gs = self.group_size
@@ -457,44 +458,43 @@ class PhysicalStem(nn.Module):
         Returns:
             embedding: (B, T, d_model) — готовый для Transformer вход
         """
-        B, C, T = x.shape
+        # Отключаем AMP для всего Stem — внутри комплексные операции (не FP16)
+        with torch.amp.autocast('cuda', enabled=False):
+            x = x.float()
+            B, C, T = x.shape
 
-        # 1. Разделить на амплитуды и углы
-        amplitudes, angles = self._extract_amp_angle(x)
+            # 1. Разделить на амплитуды и углы
+            amplitudes, angles = self._extract_amp_angle(x)
 
-        # 2. Переводим в формат (B*T, features) для FastKAN и interaction
-        amp_flat = amplitudes.permute(0, 2, 1).reshape(B * T, -1)  # (B*T, num_pairs)
-        ang_flat = angles.permute(0, 2, 1).reshape(B * T, -1)      # (B*T, num_pairs)
+            # 2. Переводим в формат (B*T, features) для FastKAN и interaction
+            amp_flat = amplitudes.permute(0, 2, 1).reshape(B * T, -1)
+            ang_flat = angles.permute(0, 2, 1).reshape(B * T, -1)
 
-        # 3. Обучаемый комплексный блок: модель сама решает что с чем умножать/делить
-        #    Конвертируем в комплексные числа: z = A·exp(jφ)
-        z_input = torch.polar(amp_flat, ang_flat)  # (B*T, num_pairs) complex64
-        z_inter = self.interaction(z_input)         # (B*T, num_interaction_pairs) complex64
-        # Обратно в полярную форму (amp, angle) для конкатенации с остальными фичами
-        inter_amp = z_inter.abs()
-        inter_angle = z_inter.angle()
-        inter_features = torch.stack([inter_amp, inter_angle], dim=-1)  # (B*T, n, 2)
-        inter_features = inter_features.reshape(B * T, -1)  # (B*T, n*2)
+            # 3. Обучаемый комплексный блок: z = A·exp(jφ)
+            z_input = torch.polar(amp_flat, ang_flat)  # complex64
+            z_inter = self.interaction(z_input)
+            inter_amp = z_inter.abs()
+            inter_angle = z_inter.angle()
+            inter_features = torch.stack([inter_amp, inter_angle], dim=-1)
+            inter_features = inter_features.reshape(B * T, -1)
 
-        # 4. rPhysicsKAN: KAN для амплитуд + гейтирование углами
-        h_amp = self.kan_amp(amp_flat)           # (B*T, half_d)
-        g_angle = torch.sigmoid(self.kan_angle_gate(ang_flat))  # (B*T, half_d) — гейт [0, 1]
-        h_modulated = h_amp * g_angle            # Модулирование амплитуд углами
+            # 4. rPhysicsKAN: KAN для амплитуд + гейтирование углами
+            h_amp = self.kan_amp(amp_flat)
+            g_angle = torch.sigmoid(self.kan_angle_gate(ang_flat))
+            h_modulated = h_amp * g_angle
 
-        h_angle = self.kan_angle(ang_flat)       # (B*T, half_d)
+            h_angle = self.kan_angle(ang_flat)
 
-        # 5. Объединение и раздельная проекция в (amp, angle)
-        fused = torch.cat([h_modulated, h_angle, inter_features], dim=-1)
-        emb_amp = self.proj_amp(fused)       # (B*T, d_complex)
-        emb_angle = self.proj_angle(fused)   # (B*T, d_complex)
-        embedding = torch.cat([emb_amp, emb_angle], dim=-1)  # (B*T, d_model = amp|angle)
-        embedding = self.layer_norm(embedding)
-        embedding = self.dropout(embedding)
+            # 5. Объединение и раздельная проекция в (amp, angle)
+            fused = torch.cat([h_modulated, h_angle, inter_features], dim=-1)
+            emb_amp = self.proj_amp(fused)
+            emb_angle = self.proj_angle(fused)
+            embedding = torch.cat([emb_amp, emb_angle], dim=-1)
+            embedding = self.layer_norm(embedding)
+            embedding = self.dropout(embedding)
 
-        # Обратно в (B, T, d_model)
-        embedding = embedding.view(B, T, self.d_model)
-        return embedding
-
+            embedding = embedding.view(B, T, self.d_model)
+            return embedding
 
 # ---------------------------------------------------------------------------
 # Positional Encoding (синусоидальное)
@@ -688,45 +688,47 @@ class PhysicalKANFeedForward(nn.Module):
         Returns:
             (B, T, d_model)
         """
-        B, T, D = x.shape
-        dc = self.d_complex
-        x_flat = x.reshape(B * T, D)
+        # Отключаем AMP — комплексные операции не поддерживают FP16
+        with torch.amp.autocast('cuda', enabled=False):
+            x = x.float()
+            B, T, D = x.shape
+            dc = self.d_complex
+            x_flat = x.reshape(B * T, D)
 
-        x_amp = x_flat[:, :dc]     # (B*T, d_complex) — амплитудные признаки
-        x_angle = x_flat[:, dc:]   # (B*T, d_complex) — фазовые признаки
+            x_amp = x_flat[:, :dc]
+            x_angle = x_flat[:, dc:]
 
-        # KAN для амплитудных признаков
-        h_amp = self.kan_amp1(x_amp)
-        h_amp = self.dropout(h_amp)
-        h_amp = self.kan_amp2(h_amp)
-        h_amp = self.dropout(h_amp)  # (B*T, d_complex)
+            # KAN для амплитудных признаков
+            h_amp = self.kan_amp1(x_amp)
+            h_amp = self.dropout(h_amp)
+            h_amp = self.kan_amp2(h_amp)
+            h_amp = self.dropout(h_amp)
 
-        # KAN для фазовых признаков
-        h_angle = self.kan_angle1(x_angle)
-        h_angle = self.dropout(h_angle)
-        h_angle = self.kan_angle2(h_angle)
-        h_angle = self.dropout(h_angle)  # (B*T, d_complex)
+            # KAN для фазовых признаков
+            h_angle = self.kan_angle1(x_angle)
+            h_angle = self.dropout(h_angle)
+            h_angle = self.kan_angle2(h_angle)
+            h_angle = self.dropout(h_angle)
 
-        # Гейтирование: angle модулирует amp (как в PhysicalStem)
-        gate = torch.sigmoid(self.angle_gate(x_angle))  # (B*T, d_complex)
-        h_amp = h_amp * gate
+            # Гейтирование: angle модулирует amp
+            gate = torch.sigmoid(self.angle_gate(x_angle))
+            h_amp = h_amp * gate
 
-        h_kan = torch.cat([h_amp, h_angle], dim=-1)  # (B*T, d_model)
+            h_kan = torch.cat([h_amp, h_angle], dim=-1)
 
-        # Комплексный путь: amp/angle → polar complex → interaction → обратно
-        z_in = torch.polar(x_amp, x_angle)  # A·exp(jφ) — (B*T, d_complex) complex
-        z_out = self.interaction(z_in)       # (B*T, num_interaction_pairs) complex
+            # Комплексный путь: amp/angle → polar complex → interaction → обратно
+            z_in = torch.polar(x_amp, x_angle)
+            z_out = self.interaction(z_in)
 
-        # Обратно в полярные координаты (amp, angle)
-        inter_proj_amp = self.interaction_proj_amp(z_out.abs())      # (B*T, d_complex)
-        inter_proj_angle = self.interaction_proj_angle(z_out.angle())  # (B*T, d_complex)
-        inter_proj = torch.cat([inter_proj_amp, inter_proj_angle], dim=-1)  # (B*T, d_model)
+            inter_proj_amp = self.interaction_proj_amp(z_out.abs())
+            inter_proj_angle = self.interaction_proj_angle(z_out.angle())
+            inter_proj = torch.cat([inter_proj_amp, inter_proj_angle], dim=-1)
 
-        # Гейтированное сложение
-        gate_inter = torch.sigmoid(self.interaction_gate)
-        combined = h_kan + gate_inter * inter_proj
+            # Гейтированное сложение
+            gate_inter = torch.sigmoid(self.interaction_gate)
+            combined = h_kan + gate_inter * inter_proj
 
-        return combined.view(B, T, D)
+            return combined.view(B, T, D)
 
 
 # ---------------------------------------------------------------------------
