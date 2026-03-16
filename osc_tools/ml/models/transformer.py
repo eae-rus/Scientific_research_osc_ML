@@ -92,8 +92,10 @@ class PhysicalKANTransformer(BaseModel):
         self.num_classes = num_classes
         self.zone_size = zone_size
 
-        # --- 1. Sanitizer ---
-        self.sanitizer = DataSanitizer(num_channels=num_input_channels)
+        # --- 1. Sanitizer (маркер -1 для отсутствующих каналов) ---
+        self.sanitizer = DataSanitizer(
+            num_channels=num_input_channels, missing_marker=-1.0
+        )
 
         # --- 2. Physical Stem → (B, T, d_model) ---
         self.stem = PhysicalStem(
@@ -264,8 +266,10 @@ class BaselineTransformer(BaseModel):
         self.num_classes = num_classes
         self.zone_size = zone_size
 
-        # --- Sanitizer (тоже нужен — формат данных общий) ---
-        self.sanitizer = DataSanitizer(num_channels=num_input_channels)
+        # --- Sanitizer (маркер -1 для отсутствующих каналов) ---
+        self.sanitizer = DataSanitizer(
+            num_channels=num_input_channels, missing_marker=-1.0
+        )
 
         # --- MLP Stem: простая линейная проекция каждого временного шага ---
         self.stem = nn.Sequential(

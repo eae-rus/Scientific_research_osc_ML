@@ -668,7 +668,12 @@ class PhysicalKANFeedForward(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
         # --- Гейтирование: angle → gate для amp (угол управляет амплитудой) ---
-        self.angle_gate = nn.Linear(d_complex, d_complex)
+        # KAN-гейт (как в PhysicalStem) — может ловить нелинейные пороги
+        # (например, «угол > 5° ИЛИ угол < -5°»), чего Linear не умеет
+        self.angle_gate = FastKANLayer(
+            input_dim=d_complex, output_dim=d_complex,
+            num_grids=kan_grid_size, use_base_update=True, use_layernorm=False,
+        )
 
         # --- Комплексный путь (малый) ---
         self.interaction = ComplexInteractionBlock(

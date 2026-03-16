@@ -439,9 +439,9 @@ class TestPhysicalKANTransformer:
         assert out['classify'].shape == (2, 5, 4)
 
     def test_with_missing_channels(self, model):
-        """Проверяем обработку NaN (отсутствующих каналов)."""
+        """Проверяем обработку отсутствующих каналов (маркер -1)."""
         x = torch.randn(2, 16, 20)
-        x[0, :4, :] = float('nan')
+        x[0, :4, :] = -1.0  # Маркер отсутствующего канала
         out = model(x, mode='ssl')
         assert not torch.isnan(out['ssl']).any()
         assert not torch.isnan(out['features']).any()

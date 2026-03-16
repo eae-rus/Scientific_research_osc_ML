@@ -87,22 +87,21 @@ class PrecomputedDataset(Dataset):
             return cols
 
         if feature_mode == 'symmetric':
+            # Только h1 — высшие гармоники симм. составляющих избыточны,
+            # физический смысл несёт преимущественно первая гармоника
             cols = []
             for comp in cls.SYMMETRIC_COMPONENTS:
-                for h in range(1, num_harmonics + 1):
-                    suffix = cls._harmonic_suffix(h)
-                    if legacy_symmetric:
-                        cols.extend([f'{comp}{suffix}_mag', f'{comp}{suffix}_angle'])
-                    else:
-                        cols.extend([f'{comp}{suffix}_re', f'{comp}{suffix}_im'])
+                if legacy_symmetric:
+                    cols.extend([f'{comp}_mag', f'{comp}_angle'])
+                else:
+                    cols.extend([f'{comp}_re', f'{comp}_im'])
             return cols
 
         if feature_mode == 'symmetric_polar':
+            # Только h1 — высшие гармоники симм. составляющих избыточны
             cols = []
             for comp in cls.SYMMETRIC_COMPONENTS:
-                for h in range(1, num_harmonics + 1):
-                    suffix = cls._harmonic_suffix(h)
-                    cols.extend([f'{comp}{suffix}_mag', f'{comp}{suffix}_angle'])
+                cols.extend([f'{comp}_mag', f'{comp}_angle'])
             return cols
 
         if feature_mode == 'power':

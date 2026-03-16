@@ -32,8 +32,9 @@ def calculate_polar_features(
              # Fallback broadcasting
              angle = angle - ref_angle
              
-    # Нормализация угла в диапазон [-pi, pi]
-    angle = (angle + np.pi) % (2 * np.pi) - np.pi
+    # Нормализация угла в диапазон [0, 2π].
+    # Это позволяет однозначно использовать -1 как маркер отсутствующего канала.
+    angle = angle % (2 * np.pi)
     
     # Объединение Magnitude и Angle
     # (Time, Channels) -> (Time, Channels, 2) -> (Time, Channels * 2)
