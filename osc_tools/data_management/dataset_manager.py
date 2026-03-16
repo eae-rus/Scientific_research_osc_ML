@@ -354,11 +354,11 @@ class DatasetManager:
             phase_polar = calculate_polar_features(complex_features_flat, ref_phasor)
             phase_polar = np.nan_to_num(phase_polar, nan=0.0, posinf=0.0, neginf=0.0)
 
-            # Маркируем отсутствующие каналы в phase_polar значением -1
+            # Маркируем отсутствующие каналы в phase_polar значением NaN
             _H = num_harmonics
             for _ch in range(8):
                 if missing_ch[_ch]:
-                    phase_polar[:, _ch * 2 * _H : (_ch + 1) * 2 * _H] = -1.0
+                    phase_polar[:, _ch * 2 * _H : (_ch + 1) * 2 * _H] = np.nan
 
             if phase_polar_h1_angle_only:
                 phase_polar_reduced_list: List[np.ndarray] = []
@@ -384,7 +384,7 @@ class DatasetManager:
             # Маркируем отсутствующие каналы в phase_complex
             for _ch in range(8):
                 if missing_ch[_ch]:
-                    phase_complex[:, _ch * 2 * _H : (_ch + 1) * 2 * _H] = -1.0
+                    phase_complex[:, _ch * 2 * _H : (_ch + 1) * 2 * _H] = np.nan
             
             # Symmetric Components (комплексные значения)
             i1, i2, i0 = calculate_symmetrical_components(phasors[0], phasors[1], phasors[2])
@@ -409,9 +409,9 @@ class DatasetManager:
             # Маркируем симм. составляющие: I1/I2/I0 зависят от 3 фаз тока,
             # U1/U2/U0 — от 3 фаз напряжения
             if i_phases_missing:
-                symmetric_rect[:, :3 * 2 * _H] = -1.0
+                symmetric_rect[:, :3 * 2 * _H] = np.nan
             if u_phases_missing:
-                symmetric_rect[:, 3 * 2 * _H:] = -1.0
+                symmetric_rect[:, 3 * 2 * _H:] = np.nan
             
             # Symmetric Polar (Mag/Angle)
             symmetric_complex = np.stack(components, axis=1)  # (Time, 6, H)
@@ -421,9 +421,9 @@ class DatasetManager:
 
             # Маркируем симм. составляющие (полярные)
             if i_phases_missing:
-                symmetric_polar[:, :3 * 2 * _H] = -1.0
+                symmetric_polar[:, :3 * 2 * _H] = np.nan
             if u_phases_missing:
-                symmetric_polar[:, 3 * 2 * _H:] = -1.0
+                symmetric_polar[:, 3 * 2 * _H:] = np.nan
 
             # Power (P/Q) для пар IA/UA, IB/UB, IC/UC, IN/UN
             power_features = []
@@ -438,7 +438,7 @@ class DatasetManager:
             # Маркируем мощности для отсутствующих каналов
             for _pair, (_i, _u) in enumerate(zip(range(4), range(4, 8))):
                 if missing_ch[_i] or missing_ch[_u]:
-                    power_data[:, _pair * 2 : _pair * 2 + 2] = -1.0
+                    power_data[:, _pair * 2 : _pair * 2 + 2] = np.nan
 
             # Alpha-Beta (для токов и напряжений)
             a_i, b_i, c_i = raw_values[:, 0], raw_values[:, 1], raw_values[:, 2]
@@ -456,9 +456,9 @@ class DatasetManager:
             
             # Маркируем alpha-beta для отсутствующих фаз
             if i_phases_missing:
-                alpha_beta[:, :3] = -1.0
+                alpha_beta[:, :3] = np.nan
             if u_phases_missing:
-                alpha_beta[:, 3:] = -1.0
+                alpha_beta[:, 3:] = np.nan
             
             # Извлекаем метки
             labels = file_data.select(target_cols + ml_cols).to_numpy()

@@ -2,7 +2,7 @@
 Physical KAN-Transformer для Фазы 4.
 
 Единая модель, объединяющая:
-- DataSanitizer: обработка отсутствующих каналов (-1)
+- DataSanitizer: обработка отсутствующих каналов (NaN)
 - PhysicalStem: физический индуктивный сдвиг (rPhysicsKAN) → embedding
 - SinusoidalPositionalEncoding: позиционное кодирование
 - TransformerEncoder: стек блоков с KAN-FFN или MLP-FFN
@@ -92,10 +92,8 @@ class PhysicalKANTransformer(BaseModel):
         self.num_classes = num_classes
         self.zone_size = zone_size
 
-        # --- 1. Sanitizer (маркер -1 для отсутствующих каналов) ---
-        self.sanitizer = DataSanitizer(
-            num_channels=num_input_channels, missing_marker=-1.0
-        )
+        # --- 1. Sanitizer (NaN маркер отсутствующих каналов) ---
+        self.sanitizer = DataSanitizer(num_channels=num_input_channels)
 
         # --- 2. Physical Stem → (B, T, d_model) ---
         self.stem = PhysicalStem(
@@ -176,7 +174,7 @@ class PhysicalKANTransformer(BaseModel):
                 'classify': (B, num_zones, num_classes) — классификация по зонам
                 'features': (B, T, d_model) — latent представление (всегда)
         """
-        # 1. Sanitizer: обработка -1
+        # 1. Sanitizer: обработка NaN (отсутствующие каналы)
         x_safe, mask_missing = self.sanitizer(x)
 
         # 2. Physical Stem → (B, T, d_model)
@@ -266,10 +264,8 @@ class BaselineTransformer(BaseModel):
         self.num_classes = num_classes
         self.zone_size = zone_size
 
-        # --- Sanitizer (маркер -1 для отсутствующих каналов) ---
-        self.sanitizer = DataSanitizer(
-            num_channels=num_input_channels, missing_marker=-1.0
-        )
+        # --- Sanitizer (NaN маркер отсутствующих каналов) ---
+        self.sanitizer = DataSanitizer(num_channels=num_input_channels)
 
         # --- MLP Stem: простая линейная проекция каждого временного шага ---
         self.stem = nn.Sequential(
