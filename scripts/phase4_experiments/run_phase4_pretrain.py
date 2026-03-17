@@ -25,7 +25,7 @@ from pathlib import Path
 import numpy as np
 import polars as pl
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, SubsetRandomSampler
 from tqdm.auto import tqdm
 
 # Добавляем корень проекта в PATH
@@ -76,6 +76,8 @@ def get_default_config(mode: str = 'smoke') -> dict:
         'include_symmetric': True,        # Симметричные составляющие (I1,I2,I0,U1,U2,U0)
         'future_periods': 2,
         'mask_ratio': 0.25,
+        'train_batches_per_epoch': 64,  # Сколько batch-ов случайно брать за эпоху
+        'val_stride_multiplier': 4,      # Во сколько раз реже брать окна на валидации
         'batch_size': 32,
         'val_batch_size': 64,
         'num_workers': 0,  # 0 = без multiprocessing (Windows-безопасно)
@@ -261,14 +263,19 @@ def _prepare_augmented_dataloaders(
     # Размер окна с будущими периодами
     full_window = config['window_size'] + config['future_periods'] * 32
 
+    val_stride = max(
+        config['downsampling_stride'],
+        config['downsampling_stride'] * config.get('val_stride_multiplier', 4),
+    )
+
     # Индексы (скользящее окно)
     train_indices = PrecomputedDataset.create_indices(
         train_df, window_size=full_window, mode='val', stride=config['downsampling_stride'],
     )
     val_indices = PrecomputedDataset.create_indices(
-        val_df, window_size=full_window, mode='val', stride=config['downsampling_stride'],
+        val_df, window_size=full_window, mode='val', stride=val_stride,
     )
-    print(f"  Окон: train={len(train_indices):,}, val={len(val_indices):,}")
+    print(f"  Окон: train={len(train_indices):,}, val={len(val_indices):,} (val_stride={val_stride})")
 
     # Datasets
     train_ds = AugmentedSpectralDataset(
@@ -302,14 +309,7 @@ def _prepare_augmented_dataloaders(
 
     channel_groups = train_ds.get_channel_groups(separated=True)
 
-    train_loader = DataLoader(
-        train_ds,
-        batch_size=config['batch_size'],
-        shuffle=True,
-        num_workers=config['num_workers'],
-        pin_memory=True,
-        drop_last=True,
-    )
+    train_loader = _build_train_epoch_loader(train_ds, config, epoch=0)
     val_loader = DataLoader(
         val_ds,
         batch_size=config['val_batch_size'],
@@ -331,14 +331,19 @@ def _prepare_legacy_dataloaders(
     # Размер окна с будущими периодами (для SSLSpectralDataset)
     full_window = config['window_size'] + config['future_periods'] * 32
 
+    val_stride = max(
+        config['downsampling_stride'],
+        config['downsampling_stride'] * config.get('val_stride_multiplier', 4),
+    )
+
     # Создаём индексы (скользящее окно)
     train_indices = PrecomputedDataset.create_indices(
         train_df, window_size=full_window, mode='val', stride=config['downsampling_stride']
     )
     val_indices = PrecomputedDataset.create_indices(
-        val_df, window_size=full_window, mode='val', stride=config['downsampling_stride']
+        val_df, window_size=full_window, mode='val', stride=val_stride
     )
-    print(f"  Окон: train={len(train_indices):,}, val={len(val_indices):,}")
+    print(f"  Окон: train={len(train_indices):,}, val={len(val_indices):,} (val_stride={val_stride})")
 
     # SSL Datasets
     train_ds = SSLSpectralDataset(
@@ -364,14 +369,7 @@ def _prepare_legacy_dataloaders(
 
     channel_groups = train_ds.get_channel_groups()
 
-    train_loader = DataLoader(
-        train_ds,
-        batch_size=config['batch_size'],
-        shuffle=True,
-        num_workers=config['num_workers'],
-        pin_memory=True,
-        drop_last=True,
-    )
+    train_loader = _build_train_epoch_loader(train_ds, config, epoch=0)
     val_loader = DataLoader(
         val_ds,
         batch_size=config['val_batch_size'],
@@ -386,6 +384,48 @@ def _prepare_legacy_dataloaders(
 # ---------------------------------------------------------------------------
 # Цикл обучения и валидации
 # ---------------------------------------------------------------------------
+
+def _build_train_epoch_loader(
+    train_ds: torch.utils.data.Dataset,
+    config: dict,
+    epoch: int,
+) -> DataLoader:
+    """Строит train DataLoader с фиксированной случайной подвыборкой на эпоху."""
+    batches_per_epoch = config.get('train_batches_per_epoch')
+    if batches_per_epoch is None:
+        return DataLoader(
+            train_ds,
+            batch_size=config['batch_size'],
+            shuffle=True,
+            num_workers=config['num_workers'],
+            pin_memory=True,
+            drop_last=True,
+        )
+
+    target_samples = int(batches_per_epoch) * config['batch_size']
+    total_samples = len(train_ds)
+    if target_samples <= 0 or target_samples >= total_samples:
+        return DataLoader(
+            train_ds,
+            batch_size=config['batch_size'],
+            shuffle=True,
+            num_workers=config['num_workers'],
+            pin_memory=True,
+            drop_last=True,
+        )
+
+    rng = np.random.default_rng(config.get('seed', 42) + epoch)
+    sampled_indices = rng.choice(total_samples, size=target_samples, replace=False).tolist()
+    sampler = SubsetRandomSampler(sampled_indices)
+    return DataLoader(
+        train_ds,
+        batch_size=config['batch_size'],
+        sampler=sampler,
+        shuffle=False,
+        num_workers=config['num_workers'],
+        pin_memory=True,
+        drop_last=True,
+    )
 
 def _split_amp_angle(x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     """Разделяет чередующийся тензор [amp, angle, amp, angle, ...] на два.
@@ -726,9 +766,13 @@ def pretrain(config: dict, resume_path: str | None = None) -> None:
     print(f"LR scheduler: {config['lr_scheduler']}, warmup: {warmup_epochs} эпох")
     accum = config.get('accumulation_steps', 1)
     print(f"Gradient accumulation: {accum} шагов → effective batch = {config['batch_size'] * accum}")
+    if config.get('train_batches_per_epoch') is not None:
+        print(f"Train batches per epoch: {config['train_batches_per_epoch']} (случайная подвыборка)")
     print("-" * 60)
 
     for epoch in range(start_epoch, total_epochs):
+        train_loader = _build_train_epoch_loader(train_loader.dataset, config, epoch)
+
         # --- Warmup LR ---
         if epoch < warmup_epochs:
             warmup_lr = config['learning_rate'] * (epoch + 1) / warmup_epochs
@@ -1023,6 +1067,8 @@ if __name__ == '__main__':
 
     # --- Stride (доля периода: 2 = полпериода=16, 4 = четверть=8) ---
     STRIDE_FRACTION = 2
+    VAL_STRIDE_MULTIPLIER = 4               # Валидация реже, чем обучение
+    TRAIN_BATCHES_PER_EPOCH = 64           # Случайных batch-ов за эпоху
 
     # --- Gradient accumulation ---
     ACCUMULATION_STEPS = 8                  # effective batch = batch_size × ACCUMULATION_STEPS
@@ -1046,6 +1092,8 @@ if __name__ == '__main__':
     config['accumulation_steps'] = ACCUMULATION_STEPS
     config['checkpoint_frequency'] = CHECKPOINT_FREQUENCY
     config['stride_fraction'] = STRIDE_FRACTION
+    config['val_stride_multiplier'] = VAL_STRIDE_MULTIPLIER
+    config['train_batches_per_epoch'] = TRAIN_BATCHES_PER_EPOCH
 
     if RUN_MODE != 'smoke':
         level = COMPLEXITY_LEVELS[SELECTED_COMPLEXITY]

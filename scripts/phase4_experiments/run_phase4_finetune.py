@@ -27,7 +27,7 @@ import numpy as np
 import polars as pl
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, SubsetRandomSampler
 from tqdm.auto import tqdm
 
 # Добавляем корень проекта в PATH
@@ -76,6 +76,8 @@ def get_finetune_config() -> dict:
         'include_symmetric': True,         # Симметричные составляющие (I1,I2,I0,U1,U2,U0)
         'future_periods': 2,               # Будущие периоды для расширенной метки
         'zone_target_aggregation': 'max',  # Агрегация меток внутри зоны: 'max' | 'mean'
+        'train_batches_per_epoch': 64,    # Сколько batch-ов случайно брать за эпоху
+        'val_stride_multiplier': 4,        # Во сколько раз реже брать окна на валидации
         'batch_size': 32,
         'val_batch_size': 64,
         'num_workers': 0,
@@ -240,6 +242,7 @@ def prepare_finetune_dataloaders(
     stride_frac = config.get('stride_fraction', 2)
     stride = compute_stride(SAMPLES_PER_PERIOD, stride_frac)
     config['downsampling_stride'] = stride
+    val_stride = max(stride, stride * config.get('val_stride_multiplier', 4))
     window_size = config['window_size']
 
     use_augmented = config.get('use_augmentation', False) or config.get('use_low_harmonics', False)
@@ -264,9 +267,9 @@ def prepare_finetune_dataloaders(
             train_df, window_size=full_window, mode='val', stride=stride,
         )
         val_indices = PrecomputedDataset.create_indices(
-            val_df, window_size=full_window, mode='val', stride=stride,
+            val_df, window_size=full_window, mode='val', stride=val_stride,
         )
-        print(f"  Окон: train={len(train_indices):,}, val={len(val_indices):,}")
+        print(f"  Окон: train={len(train_indices):,}, val={len(val_indices):,} (val_stride={val_stride})")
 
         train_boundaries = AugmentedSpectralDataset.compute_file_boundaries(train_df)
         val_boundaries = AugmentedSpectralDataset.compute_file_boundaries(val_df)
@@ -311,9 +314,9 @@ def prepare_finetune_dataloaders(
             train_df, window_size=window_size, mode='val', stride=stride,
         )
         val_indices = PrecomputedDataset.create_indices(
-            val_df, window_size=window_size, mode='val', stride=stride,
+            val_df, window_size=window_size, mode='val', stride=val_stride,
         )
-        print(f"  Окон: train={len(train_indices):,}, val={len(val_indices):,}")
+        print(f"  Окон: train={len(train_indices):,}, val={len(val_indices):,} (val_stride={val_stride})")
 
         train_ds = PrecomputedDataset(
             dataframe=train_df,
@@ -340,11 +343,7 @@ def prepare_finetune_dataloaders(
             num_harmonics=config['num_harmonics'],
         )
 
-    train_loader = DataLoader(
-        train_ds, batch_size=config['batch_size'],
-        shuffle=True, num_workers=config['num_workers'],
-        pin_memory=True, drop_last=True,
-    )
+    train_loader = _build_train_epoch_loader(train_ds, config, epoch=0)
     val_loader = DataLoader(
         val_ds, batch_size=config['val_batch_size'],
         shuffle=False, num_workers=config['num_workers'],
@@ -357,6 +356,48 @@ def prepare_finetune_dataloaders(
 # ---------------------------------------------------------------------------
 # Обучение и валидация
 # ---------------------------------------------------------------------------
+
+def _build_train_epoch_loader(
+    train_ds: torch.utils.data.Dataset,
+    config: dict,
+    epoch: int,
+) -> DataLoader:
+    """Строит train DataLoader с фиксированной случайной подвыборкой на эпоху."""
+    batches_per_epoch = config.get('train_batches_per_epoch')
+    if batches_per_epoch is None:
+        return DataLoader(
+            train_ds,
+            batch_size=config['batch_size'],
+            shuffle=True,
+            num_workers=config['num_workers'],
+            pin_memory=True,
+            drop_last=True,
+        )
+
+    target_samples = int(batches_per_epoch) * config['batch_size']
+    total_samples = len(train_ds)
+    if target_samples <= 0 or target_samples >= total_samples:
+        return DataLoader(
+            train_ds,
+            batch_size=config['batch_size'],
+            shuffle=True,
+            num_workers=config['num_workers'],
+            pin_memory=True,
+            drop_last=True,
+        )
+
+    rng = np.random.default_rng(config.get('seed', 42) + epoch)
+    sampled_indices = rng.choice(total_samples, size=target_samples, replace=False).tolist()
+    sampler = SubsetRandomSampler(sampled_indices)
+    return DataLoader(
+        train_ds,
+        batch_size=config['batch_size'],
+        sampler=sampler,
+        shuffle=False,
+        num_workers=config['num_workers'],
+        pin_memory=True,
+        drop_last=True,
+    )
 
 def train_one_epoch(
     model: nn.Module,
@@ -691,9 +732,13 @@ def finetune(config: dict, ssl_checkpoint: str | None = None) -> Path:
     print(f"Целевые классы: {target_columns}")
     accum = config.get('accumulation_steps', 1)
     print(f"Gradient accumulation: {accum} шагов → effective batch = {config['batch_size'] * accum}")
+    if config.get('train_batches_per_epoch') is not None:
+        print(f"Train batches per epoch: {config['train_batches_per_epoch']} (случайная подвыборка)")
     print("-" * 70)
 
     for epoch in range(total_epochs):
+        train_loader = _build_train_epoch_loader(train_loader.dataset, config, epoch)
+
         # Warmup LR (линейный от 0 до target)
         if epoch < warmup_epochs:
             frac = (epoch + 1) / warmup_epochs
@@ -927,6 +972,8 @@ if __name__ == '__main__':
 
     # --- Stride (доля периода: 2 = полпериода=16, 4 = четверть=8) ---
     STRIDE_FRACTION = 2
+    VAL_STRIDE_MULTIPLIER = 4               # Валидация реже, чем обучение
+    TRAIN_BATCHES_PER_EPOCH = 64           # Случайных batch-ов за эпоху
 
     # --- Gradient accumulation ---
     ACCUMULATION_STEPS = 8
@@ -947,6 +994,8 @@ if __name__ == '__main__':
     config['accumulation_steps'] = ACCUMULATION_STEPS
     config['checkpoint_frequency'] = CHECKPOINT_FREQUENCY
     config['stride_fraction'] = STRIDE_FRACTION
+    config['val_stride_multiplier'] = VAL_STRIDE_MULTIPLIER
+    config['train_batches_per_epoch'] = TRAIN_BATCHES_PER_EPOCH
 
     level = COMPLEXITY_LEVELS[SELECTED_COMPLEXITY]
     config.update(level)
