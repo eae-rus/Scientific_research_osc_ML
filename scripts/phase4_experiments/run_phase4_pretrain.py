@@ -632,10 +632,19 @@ def load_checkpoint(
     optimizer: torch.optim.Optimizer | None = None,
     scheduler: object | None = None,
     scaler: torch.amp.GradScaler | None = None,
+    reset_optimizer: bool = False,
 ) -> dict:
     """Загружает checkpoint. Возвращает мета-информацию (epoch, best_val_loss)."""
     ckpt = torch.load(path, map_location='cpu', weights_only=False)
     model.load_state_dict(ckpt['model_state_dict'])
+
+    if reset_optimizer:
+        print("  [!] Optimizer, scheduler and epoch state will be reset (starting from 0).")
+        return {
+            'epoch': -1,
+            'best_val_loss': float('inf'),
+        }
+
     if optimizer is not None and 'optimizer_state_dict' in ckpt:
         optimizer.load_state_dict(ckpt['optimizer_state_dict'])
     if scheduler is not None and 'scheduler_state_dict' in ckpt:
@@ -652,7 +661,7 @@ def load_checkpoint(
 # Основной цикл pre-training
 # ---------------------------------------------------------------------------
 
-def pretrain(config: dict, resume_path: str | None = None) -> None:
+def pretrain(config: dict, resume_path: str | None = None, reset_optimizer: bool = False) -> None:
     """Self-supervised pre-training на спектральных данных.
 
     1. Загружает test_precomputed.csv, делит по file_name на train/val
@@ -751,10 +760,14 @@ def pretrain(config: dict, resume_path: str | None = None) -> None:
         resume_p = Path(resume_path)
         if resume_p.exists():
             print(f"Восстановление из чекпоинта: {resume_p}")
-            meta = load_checkpoint(resume_p, model, optimizer, cosine_scheduler, scaler)
+            meta = load_checkpoint(
+                resume_p, model, optimizer, cosine_scheduler, scaler,
+                reset_optimizer=reset_optimizer,
+            )
             start_epoch = meta['epoch'] + 1
             best_val_loss = meta['best_val_loss']
-            print(f"  Продолжаем с эпохи {start_epoch}, best_val_loss={best_val_loss:.6f}")
+            if not reset_optimizer:
+                print(f"  Продолжаем с эпохи {start_epoch}, best_val_loss={best_val_loss:.6f}")
         else:
             print(f"ПРЕДУПРЕЖДЕНИЕ: чекпоинт не найден: {resume_p}")
 
@@ -999,6 +1012,8 @@ def parse_args() -> argparse.Namespace:
                         help='Отключить низшие гармоники')
     parser.add_argument('--accumulation-steps', type=int, default=None,
                         help='Шаги gradient accumulation (override)')
+    parser.add_argument('--reset-optimizer', action='store_true',
+                        help='Сбросить оптимизатор и начать с 0 эпохи (использовать веса из resume)')
     return parser.parse_args()
 
 
@@ -1035,7 +1050,7 @@ def main() -> None:
     if args.mode == 'smoke':
         smoke_test(config)
     elif args.mode == 'pretrain':
-        pretrain(config, resume_path=args.resume)
+        pretrain(config, resume_path=args.resume, reset_optimizer=args.reset_optimizer)
     elif args.mode == 'finetune':
         print("Fine-tuning будет доступен после pre-training.")
         print("Используйте --mode pretrain для запуска pre-training.")
@@ -1077,8 +1092,9 @@ if __name__ == '__main__':
     CHECKPOINT_FREQUENCY = 5
 
     # --- Продолжение обучения (None или путь к чекпоинту) ---
-    RESUME_PATH = None
-    # RESUME_PATH = 'experiments/phase4/pretrain_.../latest_checkpoint.pt'
+    # RESUME_PATH = None
+    RESUME_PATH = 'experiments/phase4/pretrain_PhysicalKANTransformer_20260317_180611/best_model.pt'
+    RESET_OPTIMIZER = True  # True, если нужно сбросить оптимизатор и начать с 0 эпохи
 
     # =================================================================
 
@@ -1109,4 +1125,4 @@ if __name__ == '__main__':
     if RUN_MODE == 'smoke':
         smoke_test(config)
     else:
-        pretrain(config, resume_path=RESUME_PATH)
+        pretrain(config, resume_path=RESUME_PATH, reset_optimizer=RESET_OPTIMIZER)

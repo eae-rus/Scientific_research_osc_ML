@@ -637,11 +637,47 @@ def save_checkpoint(
     torch.save(state, path)
 
 
+def load_checkpoint(
+    path: Path,
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer | None = None,
+    scheduler: object | None = None,
+    scaler: torch.amp.GradScaler | None = None,
+    reset_optimizer: bool = False,
+) -> dict:
+    """Загружает checkpoint. Возвращает мета-информацию (epoch, best_val_f1)."""
+    ckpt = torch.load(path, map_location='cpu', weights_only=False)
+    model.load_state_dict(ckpt['model_state_dict'])
+
+    if reset_optimizer:
+        print("  [!] Optimizer, scheduler and epoch state will be reset (starting from 0).")
+        return {
+            'epoch': -1,
+            'best_val_f1': 0.0,
+        }
+
+    if optimizer is not None and 'optimizer_state_dict' in ckpt:
+        optimizer.load_state_dict(ckpt['optimizer_state_dict'])
+    if scheduler is not None and 'scheduler_state_dict' in ckpt:
+        scheduler.load_state_dict(ckpt['scheduler_state_dict'])
+    if scaler is not None and 'scaler_state_dict' in ckpt:
+        scaler.load_state_dict(ckpt['scaler_state_dict'])
+    return {
+        'epoch': ckpt.get('epoch', 0),
+        'best_val_f1': ckpt.get('best_val_f1', 0.0),
+    }
+
+
 # ---------------------------------------------------------------------------
 # Основной цикл fine-tuning
 # ---------------------------------------------------------------------------
 
-def finetune(config: dict, ssl_checkpoint: str | None = None) -> Path:
+def finetune(
+    config: dict,
+    ssl_checkpoint: str | None = None,
+    resume_path: str | None = None,
+    reset_optimizer: bool = False,
+) -> Path:
     """Supervised fine-tuning на задачу классификации.
 
     1. Загружает данные с метками
@@ -662,7 +698,10 @@ def finetune(config: dict, ssl_checkpoint: str | None = None) -> Path:
 
     print("=" * 60)
     print(f"FINE-TUNING — {config['model_type']}")
-    print(f"SSL чекпоинт: {ssl_checkpoint or 'НЕТ (random init)'}")
+    if resume_path:
+        print(f"ПРОДОЛЖЕНИЕ ОБУЧЕНИЯ: {resume_path}")
+    else:
+        print(f"SSL чекпоинт: {ssl_checkpoint or 'НЕТ (random init)'}")
     print(f"Сохранение: {save_dir}")
     print("=" * 60)
 
@@ -723,10 +762,27 @@ def finetune(config: dict, ssl_checkpoint: str | None = None) -> Path:
         scaler = torch.amp.GradScaler('cuda')
         print("Mixed precision: включён (AMP)")
 
+    # --- Resume/SSL Start ---
+    start_epoch = 0
+    best_val_f1 = 0.0
+
+    if resume_path is not None:
+        resume_p = Path(resume_path)
+        if resume_p.exists():
+            print(f"Восстановление из чекпоинта: {resume_p}")
+            meta = load_checkpoint(
+                resume_p, model, optimizer, cosine_scheduler, scaler,
+                reset_optimizer=reset_optimizer,
+            )
+            start_epoch = meta['epoch'] + 1
+            best_val_f1 = meta['best_val_f1']
+            if not reset_optimizer:
+                print(f"  Продолжаем с эпохи {start_epoch}, best_val_f1={best_val_f1:.4f}")
+        else:
+            print(f"ПРЕДУПРЕЖДЕНИЕ: чекпоинт не найден: {resume_p}")
     # --- Лог ---
     history = []
     log_path = save_dir / 'training_log.jsonl'
-    best_val_f1 = 0.0
 
     print(f"\nНачало fine-tuning: {total_epochs} эпох, batch_size={config['batch_size']}")
     print(f"Целевые классы: {target_columns}")
@@ -736,7 +792,7 @@ def finetune(config: dict, ssl_checkpoint: str | None = None) -> Path:
         print(f"Train batches per epoch: {config['train_batches_per_epoch']} (случайная подвыборка)")
     print("-" * 70)
 
-    for epoch in range(total_epochs):
+    for epoch in range(start_epoch, total_epochs):
         train_loader = _build_train_epoch_loader(train_loader.dataset, config, epoch)
 
         # Warmup LR (линейный от 0 до target)
@@ -905,6 +961,10 @@ def parse_args() -> argparse.Namespace:
                         help='Отключить низшие гармоники')
     parser.add_argument('--accumulation-steps', type=int, default=None,
                         help='Шаги gradient accumulation (override)')
+    parser.add_argument('--resume', type=str, default=None,
+                        help='Путь к finetune-чекпоинту для продолжения')
+    parser.add_argument('--reset-optimizer', action='store_true',
+                        help='Сбросить оптимизатор и начать с 0 эпохи (использовать веса из resume)')
     return parser.parse_args()
 
 
@@ -940,7 +1000,12 @@ def main() -> None:
         config['accumulation_steps'] = 1
         config['future_periods'] = 0
 
-    finetune(config, ssl_checkpoint=args.checkpoint)
+    finetune(
+        config,
+        ssl_checkpoint=args.checkpoint,
+        resume_path=args.resume,
+        reset_optimizer=args.reset_optimizer,
+    )
 
 
 if __name__ == '__main__':
@@ -957,11 +1022,15 @@ if __name__ == '__main__':
     SELECTED_COMPLEXITY = 'light'           # 'light' | 'medium' | 'heavy'
 
     # --- Путь к SSL-чекпоинту (None = random init) ---
-    SSL_CHECKPOINT = None
-    # SSL_CHECKPOINT = 'experiments/phase4/pretrain_.../best_model.pt'
+    # SSL_CHECKPOINT = None
+    SSL_CHECKPOINT = 'experiments/phase4/pretrain_PhysicalKANTransformer_20260317_185155/best_model.pt'
+
+    # --- Продолжение fine-tuning ---
+    RESUME_PATH = None      # Путь к чекпоинту finetune (latest_checkpoint.pt)
+    RESET_OPTIMIZER = False # True, если нужно сбросить оптимизатор и начать с 0 эпохи
 
     # --- Эпохи ---
-    EPOCHS = 50
+    EPOCHS = 100
 
     # --- Аугментация и признаки ---
     USE_AUGMENTATION = True
@@ -1008,4 +1077,9 @@ if __name__ == '__main__':
     if not USE_LOW_HARMONICS and not INCLUDE_SYMMETRIC:
         config['num_input_channels'] = 144
 
-    finetune(config, ssl_checkpoint=SSL_CHECKPOINT)
+    finetune(
+        config,
+        ssl_checkpoint=SSL_CHECKPOINT,
+        resume_path=RESUME_PATH,
+        reset_optimizer=RESET_OPTIMIZER,
+    )
