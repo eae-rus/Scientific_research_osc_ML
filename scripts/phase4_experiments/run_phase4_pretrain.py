@@ -38,7 +38,9 @@ from osc_tools.ml.losses import (
 )
 from osc_tools.ml.ssl_dataset import SSLSpectralDataset
 from osc_tools.ml.precomputed_dataset import PrecomputedDataset
-from osc_tools.ml.augmented_dataset import AugmentedSpectralDataset, compute_num_channels
+from osc_tools.ml.augmented_dataset import (
+    AugmentedSpectralDataset, compute_num_channels, compute_stride, SAMPLES_PER_PERIOD,
+)
 from osc_tools.ml.augmentation import TimeSeriesAugmenter
 
 
@@ -63,7 +65,8 @@ def get_default_config(mode: str = 'smoke') -> dict:
     base = {
         # Данные
         'window_size': 320,
-        'downsampling_stride': 16,
+        'downsampling_stride': 16,     # Вычисляется автоматически из stride_fraction
+        'stride_fraction': 2,             # Доля периода: 2 = полпериода (16), 4 = четверть (8)
         'feature_mode': 'phase_polar',
         'num_harmonics': 9,
         'sub_periods': [2, 4, 6, 10],   # Низшие гармоники (периоды в ед. промышленной частоты)
@@ -234,6 +237,11 @@ def _prepare_augmented_dataloaders(
 
     sub_periods = config.get('sub_periods', [2, 4, 6, 10]) if config.get('use_low_harmonics') else []
     include_symmetric = config.get('include_symmetric', True)
+
+    # Stride из доли периода
+    stride_frac = config.get('stride_fraction', 2)
+    stride = compute_stride(SAMPLES_PER_PERIOD, stride_frac)
+    config['downsampling_stride'] = stride
 
     # Аугментатор для обучения
     augmenter = TimeSeriesAugmenter() if config.get('use_augmentation') else None
@@ -974,12 +982,15 @@ if __name__ == '__main__':
     SELECTED_COMPLEXITY = 'light'           # 'light' | 'medium' | 'heavy'
 
     # --- Эпохи ---
-    EPOCHS = 50
+    EPOCHS = 100
 
     # --- Аугментация и признаки ---
     USE_AUGMENTATION = True
     USE_LOW_HARMONICS = True
     INCLUDE_SYMMETRIC = True                # Симметричные составляющие (I1,I2,I0,U1,U2,U0)
+
+    # --- Stride (доля периода: 2 = полпериода=16, 4 = четверть=8) ---
+    STRIDE_FRACTION = 2
 
     # --- Gradient accumulation ---
     ACCUMULATION_STEPS = 8                  # effective batch = batch_size × ACCUMULATION_STEPS
@@ -1002,6 +1013,7 @@ if __name__ == '__main__':
     config['include_symmetric'] = INCLUDE_SYMMETRIC
     config['accumulation_steps'] = ACCUMULATION_STEPS
     config['checkpoint_frequency'] = CHECKPOINT_FREQUENCY
+    config['stride_fraction'] = STRIDE_FRACTION
 
     if RUN_MODE != 'smoke':
         level = COMPLEXITY_LEVELS[SELECTED_COMPLEXITY]

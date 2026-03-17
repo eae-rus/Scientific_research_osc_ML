@@ -35,7 +35,9 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from osc_tools.ml.models.transformer import PhysicalKANTransformer, BaselineTransformer
 from osc_tools.ml.precomputed_dataset import PrecomputedDataset
-from osc_tools.ml.augmented_dataset import AugmentedSpectralDataset, compute_num_channels
+from osc_tools.ml.augmented_dataset import (
+    AugmentedSpectralDataset, compute_num_channels, compute_stride, SAMPLES_PER_PERIOD,
+)
 from osc_tools.ml.augmentation import TimeSeriesAugmenter
 from osc_tools.ml.labels import get_target_columns
 from osc_tools.ml.class_weights import compute_pos_weight_from_loader
@@ -63,7 +65,8 @@ def get_finetune_config() -> dict:
     return {
         # Данные
         'window_size': 320,
-        'downsampling_stride': 16,
+        'downsampling_stride': 16,     # Вычисляется автоматически из stride_fraction
+        'stride_fraction': 2,             # Доля периода: 2 = полпериода (16), 4 = четверть (8)
         'feature_mode': 'phase_polar',
         'num_harmonics': 9,
         'sub_periods': [2, 4, 6, 10],
@@ -71,6 +74,7 @@ def get_finetune_config() -> dict:
         'use_low_harmonics': True,
         'include_symmetric': True,         # Симметричные составляющие (I1,I2,I0,U1,U2,U0)
         'future_periods': 2,               # Будущие периоды для расширенной метки
+        'zone_target_aggregation': 'max',  # Агрегация меток внутри зоны: 'max' | 'mean'
         'batch_size': 32,
         'val_batch_size': 64,
         'num_workers': 0,
@@ -231,9 +235,11 @@ def prepare_finetune_dataloaders(
     print(f"  Файлов: train={len(train_files)}, val={len(val_files)}")
     print(f"  Строк: train={train_df.height:,}, val={val_df.height:,}")
 
-    # Индексы создаются ниже (в зависимости от режима)
+    # Stride из доли периода
+    stride_frac = config.get('stride_fraction', 2)
+    stride = compute_stride(SAMPLES_PER_PERIOD, stride_frac)
+    config['downsampling_stride'] = stride
     window_size = config['window_size']
-    stride = config['downsampling_stride']
 
     use_augmented = config.get('use_augmentation', False) or config.get('use_low_harmonics', False)
 
@@ -242,6 +248,7 @@ def prepare_finetune_dataloaders(
         include_symmetric = config.get('include_symmetric', True)
         augmenter = TimeSeriesAugmenter() if config.get('use_augmentation') else None
         future_periods = config.get('future_periods', 2)
+        zone_target_aggregation = config.get('zone_target_aggregation', 'max')
 
         # Пересчёт num_input_channels
         num_lh = len(sub_periods)
@@ -278,6 +285,7 @@ def prepare_finetune_dataloaders(
             target_columns=target_columns,
             mode='classify',
             target_window_mode='any_in_window',
+            zone_target_aggregation=zone_target_aggregation,
         )
         val_ds = AugmentedSpectralDataset(
             dataframe=val_df,
@@ -294,6 +302,7 @@ def prepare_finetune_dataloaders(
             target_columns=target_columns,
             mode='classify',
             target_window_mode='any_in_window',
+            zone_target_aggregation=zone_target_aggregation,
         )
     else:
         # Legacy: PrecomputedDataset
@@ -360,8 +369,8 @@ def train_one_epoch(
 ) -> dict[str, float]:
     """Одна эпоха fine-tuning с gradient accumulation.
 
-    Модель выдаёт (B, num_zones, num_classes). Для loss используем
-    последнюю зону (соответствует метке последней точки окна).
+    Модель выдаёт (B, num_zones, num_classes). Loss считается
+    по всем зонам: каждая зона (полпериода) имеет свою метку.
     """
     model.train()
     total_loss = 0.0
@@ -374,18 +383,18 @@ def train_one_epoch(
 
     for step, (x, y) in enumerate(loader):
         x = x.to(device)       # (B, C, T)
-        y = y.to(device)       # (B, num_classes)
+        y = y.to(device)       # (B, T_zones, num_classes) — позонные метки
 
         use_amp = scaler is not None
         with torch.amp.autocast('cuda', enabled=use_amp):
             out = model(x, mode='classify')
             logits = out['classify']  # (B, num_zones, num_classes)
-            # Берём последнюю зону для сравнения с window-level label
-            logits_last = logits[:, -1, :]  # (B, num_classes)
 
-        # Loss вычисляем в float32: BCEWithLogitsLoss c pos_weight
-        # может переполниться в float16 (log(1+exp(x)) при x > 11)
-        loss = loss_fn(logits_last.float(), y)
+        # Loss по всем зонам: flatten → (B*T, C)
+        B, T_z, C_cls = logits.shape
+        logits_flat = logits.reshape(B * T_z, C_cls).float()
+        y_flat = y.reshape(B * T_z, C_cls)
+        loss = loss_fn(logits_flat, y_flat)
 
         if accumulation_steps > 1:
             loss = loss / accumulation_steps
@@ -411,16 +420,18 @@ def train_one_epoch(
             total_loss += loss_val
             num_batches += 1
 
-        # Сохраняем предсказания для метрик
+        # Метрики: среднее по зонам для каждого окна (как при инференсе)
         with torch.no_grad():
-            probs = torch.sigmoid(logits_last.float()).cpu().numpy()
-            all_preds.append(probs)
-            all_targets.append(y.cpu().numpy())
+            probs = torch.sigmoid(logits.float()).cpu().numpy()  # (B, T_z, C)
+            # Среднее по зонам → window-level предсказание
+            probs_mean = probs.mean(axis=1)  # (B, C)
+            y_mean = y.cpu().numpy().max(axis=1)  # (B, C) — any_in_window
+            all_preds.append(probs_mean)
+            all_targets.append(y_mean)
 
     elapsed = time.perf_counter() - t0
     avg_loss = total_loss / max(num_batches, 1)
 
-    # Вычисляем метрики
     all_preds = np.concatenate(all_preds, axis=0)
     all_targets = np.concatenate(all_targets, axis=0)
     metrics = _compute_metrics(all_preds, all_targets)
@@ -437,7 +448,7 @@ def validate(
     loss_fn: nn.Module,
     device: torch.device,
 ) -> dict[str, float]:
-    """Валидация."""
+    """Валидация по всем зонам."""
     model.eval()
     total_loss = 0.0
     all_preds = []
@@ -446,18 +457,25 @@ def validate(
     t0 = time.perf_counter()
 
     for x, y in loader:
-        x = x.to(device)
-        y = y.to(device)
+        x = x.to(device)       # (B, C, T)
+        y = y.to(device)       # (B, T_zones, num_classes)
 
         out = model(x, mode='classify')
-        logits = out['classify']
-        logits_last = logits[:, -1, :]
-        loss = loss_fn(logits_last, y)
+        logits = out['classify']  # (B, num_zones, num_classes)
+
+        B, T_z, C_cls = logits.shape
+        logits_flat = logits.reshape(B * T_z, C_cls)
+        y_flat = y.reshape(B * T_z, C_cls)
+        loss = loss_fn(logits_flat, y_flat)
 
         total_loss += loss.item()
         num_batches += 1
 
-        probs = torch.sigmoid(logits_last).cpu().numpy()
+        probs = torch.sigmoid(logits.float()).cpu().numpy()  # (B, T_z, C)
+        probs_mean = probs.mean(axis=1)  # (B, C)
+        y_mean = y.cpu().numpy().max(axis=1)  # (B, C)
+        all_preds.append(probs_mean)
+        all_targets.append(y_mean)
         all_preds.append(probs)
         all_targets.append(y.cpu().numpy())
 
@@ -769,10 +787,14 @@ def _print_class_distribution(loader: DataLoader, target_columns: list[str]) -> 
     total = 0
     pos_counts = None
     for _, y in loader:
+        # y может быть (B, C) или (B, T_zones, C)
+        y_flat = y.float()
+        if y_flat.dim() == 3:
+            y_flat = y_flat.reshape(-1, y_flat.shape[-1])
         if pos_counts is None:
-            pos_counts = torch.zeros(y.shape[1], dtype=torch.float64)
-        pos_counts += y.float().sum(dim=0).double()
-        total += y.shape[0]
+            pos_counts = torch.zeros(y_flat.shape[-1], dtype=torch.float64)
+        pos_counts += y_flat.sum(dim=0).double()
+        total += y_flat.shape[0]
 
     if pos_counts is None:
         return
@@ -869,6 +891,10 @@ if __name__ == '__main__':
     USE_LOW_HARMONICS = True
     INCLUDE_SYMMETRIC = True                # Симметричные составляющие
     FUTURE_PERIODS = 2                      # Будущие периоды (расширяет метки)
+    ZONE_TARGET_AGGREGATION = 'max'         # 'max' | 'mean'
+
+    # --- Stride (доля периода: 2 = полпериода=16, 4 = четверть=8) ---
+    STRIDE_FRACTION = 2
 
     # --- Gradient accumulation ---
     ACCUMULATION_STEPS = 8
@@ -885,8 +911,10 @@ if __name__ == '__main__':
     config['use_low_harmonics'] = USE_LOW_HARMONICS
     config['include_symmetric'] = INCLUDE_SYMMETRIC
     config['future_periods'] = FUTURE_PERIODS
+    config['zone_target_aggregation'] = ZONE_TARGET_AGGREGATION
     config['accumulation_steps'] = ACCUMULATION_STEPS
     config['checkpoint_frequency'] = CHECKPOINT_FREQUENCY
+    config['stride_fraction'] = STRIDE_FRACTION
 
     level = COMPLEXITY_LEVELS[SELECTED_COMPLEXITY]
     config.update(level)

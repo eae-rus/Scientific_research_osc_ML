@@ -2,11 +2,14 @@
 AugmentedSpectralDataset — Dataset с аугментацией на сырых данных и on-the-fly FFT.
 
 Pipeline (простой и прямолинейный):
-1. Берёт окно сырых 8-канальных данных IA..UN (с контекстом для низших гармоник)
+1. Берёт окно сырых 8-канальных данных IA..UN (с контекстом слева, если есть; иначе NaN)
 2. Аугментация на сырых данных (через TimeSeriesAugmenter)
-3. Вычисляет FFT → phase_polar + низшие гармоники + симметричные составляющие
-4. Stride прореживание
-5. Возврат в формате SSL (dict) или classify (X, Y)
+3. FFT на всех точках → stride комплексных фазоров → polar + symmetric только в нужных точках
+4. Возврат: SSL (dict) или classify (X, Y с позонными дробными метками)
+
+Stride задаётся как доля периода (напр. 1/2 = 16, 1/4 = 8 при 1600/50=32).
+Контекст для низших гармоник: если есть данные слева — берём;
+если нет — заполняем NaN (модель научится не смотреть на них).
 
 Каналы:
   - 8 сигналов × (9 гармоник + 4 низших) × 2 (mag+angle) = 208  (phase_polar)
@@ -52,6 +55,22 @@ DEFAULT_SUB_PERIODS = [2, 4, 6, 10]
 NUM_SYMMETRIC = 6          # I1, I2, I0, U1, U2, U0
 
 
+def compute_stride(samples_per_period: int = SAMPLES_PER_PERIOD,
+                   period_fraction: int = 2) -> int:
+    """Вычисляет stride как долю периода.
+
+    Args:
+        samples_per_period: отсчётов в периоде (32 при 1600/50)
+        period_fraction: делитель (2 = полпериода, 4 = четверть)
+
+    Returns:
+        stride в отсчётах (минимум 1)
+    """
+    raw = samples_per_period / period_fraction
+    stride = int(round(raw))
+    return max(1, stride)
+
+
 def compute_num_channels(num_harmonics: int = 9,
                          num_sub_periods: int = 4,
                          include_symmetric: bool = True) -> int:
@@ -75,55 +94,67 @@ def compute_spectral_from_raw(
     num_harmonics: int = 9,
     sub_periods: Optional[List[int]] = None,
     include_symmetric: bool = True,
+    stride: Optional[int] = None,
+    warmup: int = 0,
 ) -> np.ndarray:
-    """Вычисляет все спектральные признаки из сырых 8-канальных данных.
+    """Вычисляет спектральные признаки из сырых 8-канальных данных.
 
-    Вход: (T, 8) — сырые отсчёты (IA, IB, IC, IN, UA, UB, UC, UN).
-    Выход: (T, C) — phase_polar + symmetric_polar.
-
-    Эту функцию можно вызывать откуда угодно — она не зависит от Dataset.
+    Алгоритм:
+    1. FFT на всех точках (быстро, numpy vectorized)
+    2. Если stride задан — отбираем комплексные фазоры только в нужных позициях
+    3. Polar conversion + симметричные только на отобранных позициях
 
     Args:
         raw: (T, 8) сырые данные
         num_harmonics: число стандартных гармоник (9)
         sub_periods: суб-периоды низших гармоник [2,4,6,10]
         include_symmetric: добавить ли симметричные составляющие
+        stride: если задан — polar/symmetric считаются только в позициях
+                [warmup, warmup+stride, warmup+2*stride, ...]
+        warmup: пропускаемые начальные позиции (FFT warmup)
 
     Returns:
-        (T, C) float32 массив в формате phase_polar (+ symmetric_polar)
+        (T_out, C) float32 массив. T_out = T если stride=None,
+        иначе len(arange(warmup, T, stride)).
     """
     if sub_periods is None:
         sub_periods = DEFAULT_SUB_PERIODS
 
     n_time = raw.shape[0]
 
-    # --- Стандартные гармоники (forward-looking) ---
+    # --- 1. FFT на всех точках (быстро, numpy) ---
     phasors = []  # 8 массивов (T, H) complex
     for ch in range(NUM_RAW):
         p = sliding_window_fft(raw[:, ch], FFT_WINDOW, num_harmonics)
         p = np.nan_to_num(p, nan=0.0, posinf=0.0, neginf=0.0).astype(np.complex64)
         phasors.append(p)
 
-    # --- Низшие гармоники (backward-looking) ---
     low_phasors = []  # 8 массивов (T, LH) complex
     for ch in range(NUM_RAW):
         lh = compute_low_harmonics_fft(raw[:, ch], SAMPLES_PER_PERIOD, sub_periods)
         lh = np.nan_to_num(lh, nan=0.0, posinf=0.0, neginf=0.0).astype(np.complex64)
         low_phasors.append(lh)
 
-    # Объединяем per-signal: [h1..h9, lh2..lh10] → (T, 8, H+LH)
+    # --- 2. Отбор позиций (stride) ---
+    if stride is not None:
+        sel = np.arange(warmup, n_time, stride)
+    else:
+        sel = np.arange(n_time)
+    n_out = len(sel)
+
+    # Собираем complex только в выбранных позициях: (n_out, 8, H+LH)
     total_h = num_harmonics + len(sub_periods)
-    complex_all = np.zeros((n_time, NUM_RAW, total_h), dtype=np.complex64)
+    complex_all = np.zeros((n_out, NUM_RAW, total_h), dtype=np.complex64)
     for ch in range(NUM_RAW):
-        complex_all[:, ch, :num_harmonics] = phasors[ch]
-        complex_all[:, ch, num_harmonics:] = low_phasors[ch]
+        complex_all[:, ch, :num_harmonics] = phasors[ch][sel]
+        complex_all[:, ch, num_harmonics:] = low_phasors[ch][sel]
 
-    # Flatten: (T, 8*(H+LH))
-    complex_flat = complex_all.reshape(n_time, NUM_RAW * total_h)
+    # --- 3. Polar + symmetric только на отобранных позициях ---
+    complex_flat = complex_all.reshape(n_out, NUM_RAW * total_h)
 
-    # Опорный фазор: UA h1
-    ua_h1 = phasors[4][:, 0]
-    ia_h1 = phasors[0][:, 0]
+    # Опорный фазор: UA h1 на отобранных позициях
+    ua_h1 = complex_all[:, 4, 0]
+    ia_h1 = complex_all[:, 0, 0]
     ua_mag = np.nanmean(np.abs(ua_h1))
     if ua_mag > 1e-4:
         ref_phasor = ua_h1
@@ -131,30 +162,24 @@ def compute_spectral_from_raw(
         ia_mag = np.nanmean(np.abs(ia_h1))
         ref_phasor = ia_h1 if ia_mag > 1e-4 else None
 
-    # Phase polar: (T, 8*(H+LH)*2), чередование [mag, angle, mag, angle, ...]
     polar = calculate_polar_features(complex_flat, ref_phasor)
     polar = np.nan_to_num(polar, nan=0.0, posinf=0.0, neginf=0.0)
 
     if not include_symmetric:
-        return polar
+        return polar.astype(np.float32)
 
-    # --- Симметричные составляющие (только h1) ---
-    # Токи: IA(h1), IB(h1), IC(h1) → I1, I2, I0
+    # Симметричные составляющие (h1, уже на отобранных позициях)
     i1, i2, i0 = calculate_symmetrical_components(
-        phasors[0][:, 0], phasors[1][:, 0], phasors[2][:, 0],
+        complex_all[:, 0, 0], complex_all[:, 1, 0], complex_all[:, 2, 0],
     )
-    # Напряжения: UA(h1), UB(h1), UC(h1) → U1, U2, U0
     u1, u2, u0 = calculate_symmetrical_components(
-        phasors[4][:, 0], phasors[5][:, 0], phasors[6][:, 0],
+        complex_all[:, 4, 0], complex_all[:, 5, 0], complex_all[:, 6, 0],
     )
-
-    # Собираем (T, 6) complex и конвертируем в polar
-    sym_complex = np.stack([i1, i2, i0, u1, u2, u0], axis=1)  # (T, 6)
+    sym_complex = np.stack([i1, i2, i0, u1, u2, u0], axis=1)
     sym_polar = calculate_polar_features(sym_complex, ref_phasor)
     sym_polar = np.nan_to_num(sym_polar, nan=0.0, posinf=0.0, neginf=0.0)
 
-    # Конкатенация: [phase_polar | symmetric_polar]
-    result = np.concatenate([polar, sym_polar], axis=1)  # (T, 208+12=220)
+    result = np.concatenate([polar, sym_polar], axis=1)
     return result.astype(np.float32)
 
 
@@ -179,7 +204,8 @@ class AugmentedSpectralDataset(Dataset):
         num_harmonics: int = 9,
         sub_periods: Optional[List[int]] = None,
         include_symmetric: bool = True,
-        downsampling_stride: int = 16,
+        downsampling_stride: Optional[int] = None,
+        stride_fraction: int = 2,
         future_periods: int = 2,
         mask_ratio: float = 0.25,
         mask_value: float = 0.0,
@@ -188,6 +214,7 @@ class AugmentedSpectralDataset(Dataset):
         target_level: str = 'base',
         mode: str = 'ssl',
         target_window_mode: str = 'any_in_window',
+        zone_target_aggregation: str = 'max',
     ) -> None:
         """
         Args:
@@ -198,7 +225,8 @@ class AugmentedSpectralDataset(Dataset):
             num_harmonics: стандартных гармоник (9)
             sub_periods: суб-периоды низших гармоник [2,4,6,10]
             include_symmetric: добавить симметричные составляющие (I1,I2,I0,U1,U2,U0)
-            downsampling_stride: шаг прореживания (16 = полпериода)
+            downsampling_stride: явный stride в отсчётах (если задан — игнорирует stride_fraction)
+            stride_fraction: доля периода (2 = полпериода=16, 4 = четверть=8)
             future_periods: будущих периодов (2 для SSL, >0 для расширенного classify)
             mask_ratio: доля маскируемых шагов (0.0 для val)
             mask_value: значение замены
@@ -207,6 +235,7 @@ class AugmentedSpectralDataset(Dataset):
             target_level: 'base' (4 класса)
             mode: 'ssl' или 'classify'
             target_window_mode: 'point' или 'any_in_window'
+            zone_target_aggregation: агрегация меток внутри зоны ('max' или 'mean')
         """
         super().__init__()
 
@@ -217,31 +246,41 @@ class AugmentedSpectralDataset(Dataset):
         self.num_harmonics = num_harmonics
         self.sub_periods = sub_periods if sub_periods is not None else DEFAULT_SUB_PERIODS
         self.include_symmetric = include_symmetric
-        self.downsampling_stride = downsampling_stride
         self.future_periods = future_periods
         self.mask_ratio = mask_ratio
         self.mask_value = mask_value
         self.augmenter = augmenter
         self.mode = mode
         self.target_window_mode = target_window_mode
+        self.zone_target_aggregation = zone_target_aggregation.lower()
+        if self.zone_target_aggregation not in {'max', 'mean'}:
+            raise ValueError(
+                f"zone_target_aggregation must be 'max' or 'mean', got {zone_target_aggregation!r}",
+            )
+
+        # Stride: явный или из доли периода
+        if downsampling_stride is not None:
+            self.downsampling_stride = downsampling_stride
+        else:
+            self.downsampling_stride = compute_stride(SAMPLES_PER_PERIOD, stride_fraction)
 
         # Будущие шаги
         self.future_raw_steps = future_periods * SAMPLES_PER_PERIOD
         self.full_window_raw = window_size + self.future_raw_steps
 
-        # Контекст для backward-looking низших гармоник
+        # Контекст слева для backward-looking низших гармоник
         max_lh_window = max(self.sub_periods) * SAMPLES_PER_PERIOD
-        self._context_before = max_lh_window - 1  # 319 при период=10
+        self._context_before = max_lh_window  # 320 при период=10
 
         # Число выходных каналов
         self.num_output_channels = compute_num_channels(
             num_harmonics, len(self.sub_periods), include_symmetric,
         )
 
-        # Число шагов после stride
+        # Число шагов после stride (warmup = FFT_WINDOW пропускается)
         warmup = FFT_WINDOW
-        self.num_steps_full = max(1, (self.full_window_raw - warmup) // downsampling_stride)
-        self.num_steps_current = max(1, (window_size - warmup) // downsampling_stride)
+        self.num_steps_full = max(1, (self.full_window_raw - warmup) // self.downsampling_stride)
+        self.num_steps_current = max(1, (window_size - warmup) // self.downsampling_stride)
 
         # --- Предзагрузка ---
         self._raw_np = dataframe.select(RAW_CHANNELS).to_numpy().astype(np.float32)
@@ -258,10 +297,12 @@ class AugmentedSpectralDataset(Dataset):
 
         print(f"    [AugmentedSpectralDataset] mode={mode}, "
               f"indices={len(indices):,}, channels={self.num_output_channels}, "
+              f"stride={self.downsampling_stride} (1/{SAMPLES_PER_PERIOD // self.downsampling_stride} периода), "
               f"h={num_harmonics}+{len(self.sub_periods)}lh"
               f"{'+sym' if include_symmetric else ''}, "
+              f"yagg={self.zone_target_aggregation}, "
               f"aug={'ON' if augmenter else 'OFF'}, "
-              f"future={future_periods}p")
+              f"future={future_periods}p, ctx={self._context_before}")
 
     # ----- Загрузка сырых данных -----
 
@@ -272,38 +313,45 @@ class AugmentedSpectralDataset(Dataset):
                 return fstart, fend
         return 0, len(self._raw_np)
 
-    def _load_raw_window(self, start_idx: int) -> Tuple[np.ndarray, int]:
-        """Загружает raw окно с контекстом для низших гармоник.
+    def _load_raw_window(self, start_idx: int) -> np.ndarray:
+        """Загружает raw окно с контекстом слева для низших гармоник.
+
+        Если данные слева есть — берём.
+        Если нет (начало файла) — заполняем NaN,
+        чтобы модель научилась не смотреть на них.
 
         Args:
             start_idx: начало основного окна в DataFrame
 
         Returns:
-            (raw_data, context_offset) — (T_ext, 8), смещение основного окна
+            (context + full_window_raw, 8) — сырые данные с контекстом
         """
         file_start, file_end = self._find_file_range(start_idx)
-        needed = self._context_before + self.full_window_raw
 
-        ctx_start = start_idx - self._context_before
+        # Контекст слева для backward-looking низших гармоник
+        ctx = self._context_before
+        ctx_start = start_idx - ctx
         raw_end = min(start_idx + self.full_window_raw, file_end)
 
         if ctx_start >= file_start:
+            # Контекст полностью внутри файла
             raw = self._raw_np[ctx_start:raw_end].copy()
         else:
-            # Padding — дублируем первую строку файла
-            pad_len = file_start - ctx_start
+            # Не хватает данных слева — заполняем NaN
+            nan_len = file_start - ctx_start
             raw_part = self._raw_np[file_start:raw_end].copy()
-            pad = np.repeat(self._raw_np[file_start:file_start + 1], pad_len, axis=0)
-            raw = np.concatenate([pad, raw_part], axis=0)
+            nan_pad = np.full((nan_len, NUM_RAW), np.nan, dtype=np.float32)
+            raw = np.concatenate([nan_pad, raw_part], axis=0)
 
-        # Если короче — дополняем нулями
+        # Дополняем NaN справа, если короче
+        needed = ctx + self.full_window_raw
         if len(raw) < needed:
             raw = np.concatenate([
                 raw,
-                np.zeros((needed - len(raw), NUM_RAW), dtype=np.float32),
+                np.full((needed - len(raw), NUM_RAW), np.nan, dtype=np.float32),
             ], axis=0)
 
-        return raw, self._context_before
+        return raw
 
     # ----- Dataset протокол -----
 
@@ -313,30 +361,26 @@ class AugmentedSpectralDataset(Dataset):
     def __getitem__(self, idx: int) -> Union[dict, Tuple[torch.Tensor, torch.Tensor]]:
         start_idx = self.indices[idx]
 
-        # 1. Загрузить raw с контекстом
-        raw_ext, ctx_offset = self._load_raw_window(start_idx)
+        # 1. Загрузить raw окно (с контекстом слева / NaN если нет)
+        raw = self._load_raw_window(start_idx)
 
         # 2. Аугментация на сырых данных (до FFT)
         if self.augmenter is not None:
-            raw_ext = self.augmenter(raw_ext)
-            if isinstance(raw_ext, torch.Tensor):
-                raw_ext = raw_ext.numpy()
-            raw_ext = np.asarray(raw_ext, dtype=np.float32)
+            raw = self.augmenter(raw)
+            if isinstance(raw, torch.Tensor):
+                raw = raw.numpy()
+            raw = np.asarray(raw, dtype=np.float32)
 
-        # 3. Спектральная обработка (всё через compute_spectral_from_raw)
+        # 3. FFT → stride комплексных фазоров → polar/symmetric только в нужных точках
+        # warmup смещён на контекст: первый stride-отсчёт начинается
+        # с позиции _context_before + FFT_WINDOW в расширенном окне
         spectral = compute_spectral_from_raw(
-            raw_ext, self.num_harmonics, self.sub_periods, self.include_symmetric,
-        )
+            raw, self.num_harmonics, self.sub_periods, self.include_symmetric,
+            stride=self.downsampling_stride,
+            warmup=self._context_before + FFT_WINDOW,
+        )  # (T_strided, C) — уже прорежено
 
-        # 4. Обрезаем до нужного окна (убираем контекст)
-        spectral = spectral[ctx_offset: ctx_offset + self.full_window_raw]
-
-        # 5. Stride: пропустить warmup + прореживание
-        if spectral.shape[0] > FFT_WINDOW:
-            spectral = spectral[FFT_WINDOW:]
-        spectral = spectral[::self.downsampling_stride]
-
-        # 6. Тензор (C, T)
+        # 4. Тензор (C, T)
         X_full = torch.from_numpy(spectral.T.copy())
         T_actual = X_full.shape[1]
 
@@ -384,24 +428,33 @@ class AugmentedSpectralDataset(Dataset):
     def _format_classify(
         self, X_full: torch.Tensor, start_idx: int,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Возвращает (X, Y).
+        """Возвращает (X, Y) с позонной агрегацией меток.
 
-        X включает и основное окно, и будущие периоды (если future_periods > 0).
-        Метка берётся по ПОЛНОМУ окну (основное + будущее).
+        Каждая зона = downsampling_stride raw отсчётов.
+        Y[z, c] агрегируется по точкам внутри зоны согласно zone_target_aggregation.
         """
-        # Используем все шаги (текущее + будущее)
         T_use = min(self.num_steps_full, X_full.shape[1])
         X = X_full[:, :T_use]
 
-        # Метка: max по полному окну (основное + будущее)
-        label_end = min(start_idx + self.full_window_raw, len(self._targets_np))
-        if self.target_window_mode == 'any_in_window':
-            y = np.max(self._targets_np[start_idx:label_end], axis=0)
-        else:
-            pos = min(label_end - 1, len(self._targets_np) - 1)
-            y = self._targets_np[pos]
+        num_targets = len(self.target_columns)
+        Y = np.zeros((T_use, num_targets), dtype=np.float32)
 
-        return X, torch.from_numpy(y.astype(np.float32))
+        for z in range(T_use):
+            # Зона z → raw позиции: [warmup + z*stride, warmup + (z+1)*stride)
+            z_raw_start = start_idx + FFT_WINDOW + z * self.downsampling_stride
+            z_raw_end = z_raw_start + self.downsampling_stride
+            z_raw_end = min(z_raw_end, len(self._targets_np))
+            z_raw_start = min(z_raw_start, len(self._targets_np) - 1)
+            if z_raw_start < z_raw_end:
+                zone_targets = self._targets_np[z_raw_start:z_raw_end]
+                if self.zone_target_aggregation == 'mean':
+                    Y[z] = np.mean(zone_targets, axis=0)
+                else:
+                    Y[z] = np.max(zone_targets, axis=0)
+            else:
+                Y[z] = self._targets_np[z_raw_start]
+
+        return X, torch.from_numpy(Y)
 
     # ----- Утилиты -----
 

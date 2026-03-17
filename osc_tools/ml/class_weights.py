@@ -26,14 +26,18 @@ def compute_pos_weight_from_loader(loader: DataLoader, device: Optional[torch.de
         # Приводим к float
         y = y.float()
         if pos_counts is None:
-            # Поддержка как векторных меток (batch, C) или (batch,) для single-label
+            # Поддержка: (batch, C), (batch,) или (batch, T_zones, C)
             if y.dim() == 1:
-                # Сделаем колонку
                 y = y.unsqueeze(1)
-            pos_counts = torch.zeros(y.shape[1], dtype=torch.float64)
+            elif y.dim() == 3:
+                # Позонные метки (B, T, C) → flatten (B*T, C)
+                y = y.reshape(-1, y.shape[-1])
+            pos_counts = torch.zeros(y.shape[-1], dtype=torch.float64)
 
         if y.dim() == 1:
             y = y.unsqueeze(1)
+        elif y.dim() == 3:
+            y = y.reshape(-1, y.shape[-1])
 
         pos_counts += y.sum(dim=0).double()
         total += y.shape[0]

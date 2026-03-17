@@ -144,8 +144,11 @@ def run_inference(
 ) -> tuple[np.ndarray, np.ndarray, float]:
     """Выполняет inference на всём DataLoader.
 
+    Метки теперь позонные (B, T_zones, C). Для window-level метрик
+    усредняем вероятности по зонам, метки — max по зонам.
+
     Returns:
-        (all_preds, all_targets, time_sec) — вероятности и метки
+        (all_preds, all_targets, time_sec) — window-level вероятности и метки
     """
     model.eval()
     all_preds, all_targets = [], []
@@ -154,10 +157,17 @@ def run_inference(
     for x, y in loader:
         x = x.to(device)
         out = model(x, mode='classify')
-        logits = out['classify'][:, -1, :]  # Последняя зона
+        logits = out['classify']  # (B, num_zones, num_classes)
         probs = torch.sigmoid(logits.float()).cpu().numpy()
-        all_preds.append(probs)
-        all_targets.append(y.numpy())
+
+        # Window-level: среднее по зонам / max по зонам
+        probs_mean = probs.mean(axis=1)  # (B, C)
+        all_preds.append(probs_mean)
+
+        y_np = y.numpy()
+        if y_np.ndim == 3:
+            y_np = y_np.max(axis=1)  # (B, C)
+        all_targets.append(y_np)
 
     elapsed = time.perf_counter() - t0
     return np.concatenate(all_preds), np.concatenate(all_targets), elapsed
@@ -208,9 +218,8 @@ def mark_oscillogram(
 
     Алгоритм:
     1. Скользящее окно шагом step=32 (1 период) по raw_data
-    2. Для каждого окна: спектральная обработка → inference → вероятности
-    3. Пообразцовое усреднение: для каждой точки осциллограммы берём
-       среднее от всех окон, покрывающих эту точку.
+    2. Для каждого окна: FFT → stride фазоров → polar/symmetric → inference
+    3. Пообразцовое усреднение: для каждой точки — среднее от всех покрывающих окон.
 
     Args:
         model: fine-tuned модель в eval mode
@@ -231,16 +240,11 @@ def mark_oscillogram(
     stride = config.get('downsampling_stride', 16)
     num_classes = config.get('num_classes', 4)
 
-    # Контекст для низших гармоник (backward-looking)
-    max_lh_window = max(sub_periods) * 32 if sub_periods else 0
-    context_before = max(0, max_lh_window - 1)
+    fft_window = 32
 
     # Аккумуляторы: сумма вероятностей и число покрытий
     prob_sum = np.zeros((N, num_classes), dtype=np.float64)
     coverage = np.zeros(N, dtype=np.int32)
-
-    fft_window = 32
-    warmup = fft_window
 
     # Скользящее окно
     starts = list(range(0, max(1, N - window_size + 1), step))
@@ -248,51 +252,36 @@ def mark_oscillogram(
 
     for win_start in starts:
         win_end = min(win_start + window_size, N)
+        raw_win = raw_data[win_start:win_end].copy()
 
-        # Расширяем контекстом для низших гармоник
-        ctx_start = max(0, win_start - context_before)
-        raw_ext = raw_data[ctx_start:win_end].copy()
-        ctx_offset = win_start - ctx_start
+        # Дополняем нулями если короче
+        if len(raw_win) < window_size:
+            raw_win = np.concatenate([
+                raw_win,
+                np.zeros((window_size - len(raw_win), 8), dtype=np.float32),
+            ], axis=0)
 
-        # Padding при нехватке контекста
-        if ctx_start == 0 and win_start < context_before:
-            pad_len = context_before - win_start
-            pad = np.repeat(raw_data[0:1], pad_len, axis=0)
-            raw_ext = np.concatenate([pad, raw_ext], axis=0)
-            ctx_offset = context_before
-
-        # Спектральная обработка
+        # FFT → stride комплексных фазоров → polar/symmetric (уже прорежено)
         spectral = compute_spectral_from_raw(
-            raw_ext, num_harmonics, sub_periods if sub_periods else None, include_symmetric,
-        )
-
-        # Обрезаем до окна
-        spectral = spectral[ctx_offset: ctx_offset + window_size]
-
-        # Warmup + stride
-        if spectral.shape[0] > warmup:
-            spectral = spectral[warmup:]
-        spectral = spectral[::stride]
+            raw_win, num_harmonics, sub_periods if sub_periods else None,
+            include_symmetric, stride=stride, warmup=fft_window,
+        )  # (T_strided, C)
 
         # Inference
-        X = torch.from_numpy(spectral.T.copy()).unsqueeze(0).to(device)  # (1, C, T)
+        X = torch.from_numpy(spectral.T.copy()).unsqueeze(0).to(device)
         out = model(X, mode='classify')
         logits = out['classify']  # (1, num_zones, num_classes)
-        probs = torch.sigmoid(logits.float()).squeeze(0).cpu().numpy()  # (num_zones, num_classes)
+        probs = torch.sigmoid(logits.float()).squeeze(0).cpu().numpy()
 
         # Маппинг зон обратно на raw отсчёты
-        # Зоны начинаются с warmup, шаг = stride
         n_zones = probs.shape[0]
         for z in range(n_zones):
-            # Абсолютная позиция центра зоны
-            raw_pos = win_start + warmup + z * stride
-            # Зона покрывает [raw_pos, raw_pos + stride)
-            z_start = raw_pos
+            raw_pos = win_start + fft_window + z * stride
             z_end = min(raw_pos + stride, N)
-            if z_start >= N:
+            if raw_pos >= N:
                 break
-            prob_sum[z_start:z_end] += probs[z]
-            coverage[z_start:z_end] += 1
+            prob_sum[raw_pos:z_end] += probs[z]
+            coverage[raw_pos:z_end] += 1
 
     # Усреднение
     mask_covered = coverage > 0
@@ -386,6 +375,7 @@ def prepare_val_dataloader(
     include_symmetric = config.get('include_symmetric', True)
     sub_periods = config.get('sub_periods', [2, 4, 6, 10]) if use_low_harmonics else []
     future_periods = config.get('future_periods', 0)
+    zone_target_aggregation = config.get('zone_target_aggregation', 'max')
 
     # Правильное окно для индексации (с учётом будущих периодов)
     full_window = window_size + future_periods * 32
@@ -410,6 +400,7 @@ def prepare_val_dataloader(
             target_columns=target_columns,
             mode='classify',
             target_window_mode='any_in_window',
+            zone_target_aggregation=zone_target_aggregation,
         )
     else:
         val_indices = PrecomputedDataset.create_indices(
