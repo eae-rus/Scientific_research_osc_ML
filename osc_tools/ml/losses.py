@@ -56,6 +56,12 @@ class ComplexMSELoss(nn.Module):
             scalar loss (если reduction='mean' или 'sum')
             или (B, C, T) тензор (если reduction='none')
         """
+        # Очистка NaN перед вычислениями (NaN * 0 = NaN в IEEE 754)
+        pred_amp = torch.nan_to_num(pred_amp, nan=0.0)
+        pred_phase = torch.nan_to_num(pred_phase, nan=0.0)
+        true_amp = torch.nan_to_num(true_amp, nan=0.0)
+        true_phase = torch.nan_to_num(true_phase, nan=0.0)
+
         # Перевод в комплексную плоскость
         z_pred_re = pred_amp * torch.cos(pred_phase)
         z_pred_im = pred_amp * torch.sin(pred_phase)
@@ -143,6 +149,14 @@ class SpectralReconstructionLoss(nn.Module):
             scalar loss
         """
         B, C, T = pred_amp.shape
+
+        # Очистка NaN: отсутствующие каналы содержат NaN, который нужно обнулить
+        # ПЕРЕД любыми вычислениями, т.к. NaN * 0 = NaN в IEEE 754.
+        # Маска уже гарантирует, что эти позиции не попадут в Loss.
+        pred_amp = torch.nan_to_num(pred_amp, nan=0.0)
+        pred_phase = torch.nan_to_num(pred_phase, nan=0.0)
+        true_amp = torch.nan_to_num(true_amp, nan=0.0)
+        true_phase = torch.nan_to_num(true_phase, nan=0.0)
 
         # Шаг 1: Векторная разность (модуль разности комплексных векторов)
         z_pred_re = pred_amp * torch.cos(pred_phase)
