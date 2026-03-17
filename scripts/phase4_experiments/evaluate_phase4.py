@@ -37,7 +37,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from osc_tools.ml.models.transformer import PhysicalKANTransformer, BaselineTransformer
 from osc_tools.ml.precomputed_dataset import PrecomputedDataset
-from osc_tools.ml.augmented_dataset import AugmentedSpectralDataset
+from osc_tools.ml.augmented_dataset import AugmentedSpectralDataset, compute_num_channels, compute_spectral_from_raw
 from osc_tools.ml.labels import get_target_columns
 
 
@@ -193,6 +193,122 @@ def measure_inference_latency(
 
 
 # ---------------------------------------------------------------------------
+# Разметка осциллограммы скользящим окном с усреднением
+# ---------------------------------------------------------------------------
+
+@torch.no_grad()
+def mark_oscillogram(
+    model: nn.Module,
+    raw_data: np.ndarray,
+    config: dict,
+    device: torch.device,
+    step: int = 32,
+) -> np.ndarray:
+    """Разметка осциллограммы скользящим окном с усреднением перекрывающихся предсказаний.
+
+    Алгоритм:
+    1. Скользящее окно шагом step=32 (1 период) по raw_data
+    2. Для каждого окна: спектральная обработка → inference → вероятности
+    3. Пообразцовое усреднение: для каждой точки осциллограммы берём
+       среднее от всех окон, покрывающих эту точку.
+
+    Args:
+        model: fine-tuned модель в eval mode
+        raw_data: (N, 8) сырая осциллограмма (IA, IB, IC, IN, UA, UB, UC, UN)
+        config: конфиг модели (window_size, num_harmonics, sub_periods, ...)
+        device: torch device
+        step: шаг скользящего окна в отсчётах (32 = 1 период)
+
+    Returns:
+        (N, num_classes) усреднённые вероятности для каждого отсчёта
+    """
+    model.eval()
+    N = raw_data.shape[0]
+    window_size = config.get('window_size', 320)
+    num_harmonics = config.get('num_harmonics', 9)
+    sub_periods = config.get('sub_periods', [2, 4, 6, 10]) if config.get('use_low_harmonics', True) else []
+    include_symmetric = config.get('include_symmetric', True)
+    stride = config.get('downsampling_stride', 16)
+    num_classes = config.get('num_classes', 4)
+
+    # Контекст для низших гармоник (backward-looking)
+    max_lh_window = max(sub_periods) * 32 if sub_periods else 0
+    context_before = max(0, max_lh_window - 1)
+
+    # Аккумуляторы: сумма вероятностей и число покрытий
+    prob_sum = np.zeros((N, num_classes), dtype=np.float64)
+    coverage = np.zeros(N, dtype=np.int32)
+
+    fft_window = 32
+    warmup = fft_window
+
+    # Скользящее окно
+    starts = list(range(0, max(1, N - window_size + 1), step))
+    print(f"  Разметка: {len(starts)} окон, шаг={step}, window={window_size}")
+
+    for win_start in starts:
+        win_end = min(win_start + window_size, N)
+
+        # Расширяем контекстом для низших гармоник
+        ctx_start = max(0, win_start - context_before)
+        raw_ext = raw_data[ctx_start:win_end].copy()
+        ctx_offset = win_start - ctx_start
+
+        # Padding при нехватке контекста
+        if ctx_start == 0 and win_start < context_before:
+            pad_len = context_before - win_start
+            pad = np.repeat(raw_data[0:1], pad_len, axis=0)
+            raw_ext = np.concatenate([pad, raw_ext], axis=0)
+            ctx_offset = context_before
+
+        # Спектральная обработка
+        spectral = compute_spectral_from_raw(
+            raw_ext, num_harmonics, sub_periods if sub_periods else None, include_symmetric,
+        )
+
+        # Обрезаем до окна
+        spectral = spectral[ctx_offset: ctx_offset + window_size]
+
+        # Warmup + stride
+        if spectral.shape[0] > warmup:
+            spectral = spectral[warmup:]
+        spectral = spectral[::stride]
+
+        # Inference
+        X = torch.from_numpy(spectral.T.copy()).unsqueeze(0).to(device)  # (1, C, T)
+        out = model(X, mode='classify')
+        logits = out['classify']  # (1, num_zones, num_classes)
+        probs = torch.sigmoid(logits.float()).squeeze(0).cpu().numpy()  # (num_zones, num_classes)
+
+        # Маппинг зон обратно на raw отсчёты
+        # Зоны начинаются с warmup, шаг = stride
+        n_zones = probs.shape[0]
+        for z in range(n_zones):
+            # Абсолютная позиция центра зоны
+            raw_pos = win_start + warmup + z * stride
+            # Зона покрывает [raw_pos, raw_pos + stride)
+            z_start = raw_pos
+            z_end = min(raw_pos + stride, N)
+            if z_start >= N:
+                break
+            prob_sum[z_start:z_end] += probs[z]
+            coverage[z_start:z_end] += 1
+
+    # Усреднение
+    mask_covered = coverage > 0
+    result = np.zeros((N, num_classes), dtype=np.float32)
+    result[mask_covered] = (prob_sum[mask_covered] / coverage[mask_covered, np.newaxis]).astype(np.float32)
+
+    # Непокрытые точки (начало осциллограммы) — берём ближайшее предсказание
+    if not mask_covered.all():
+        first_covered = np.argmax(mask_covered)
+        if first_covered > 0:
+            result[:first_covered] = result[first_covered]
+
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Загрузка и создание модели
 # ---------------------------------------------------------------------------
 
@@ -266,15 +382,19 @@ def prepare_val_dataloader(
     window_size = config['window_size']
     stride = config.get('downsampling_stride', 16)
 
-    val_indices = PrecomputedDataset.create_indices(
-        val_df, window_size=window_size, mode='val', stride=stride,
-    )
-
     use_low_harmonics = config.get('use_low_harmonics', False)
+    include_symmetric = config.get('include_symmetric', True)
     sub_periods = config.get('sub_periods', [2, 4, 6, 10]) if use_low_harmonics else []
+    future_periods = config.get('future_periods', 0)
+
+    # Правильное окно для индексации (с учётом будущих периодов)
+    full_window = window_size + future_periods * 32
 
     if use_low_harmonics:
         val_boundaries = AugmentedSpectralDataset.compute_file_boundaries(val_df)
+        val_indices = PrecomputedDataset.create_indices(
+            val_df, window_size=full_window, mode='val', stride=stride,
+        )
         val_ds = AugmentedSpectralDataset(
             dataframe=val_df,
             file_boundaries=val_boundaries,
@@ -282,8 +402,9 @@ def prepare_val_dataloader(
             window_size=window_size,
             num_harmonics=config.get('num_harmonics', 9),
             sub_periods=sub_periods if sub_periods else None,
+            include_symmetric=include_symmetric,
             downsampling_stride=stride,
-            future_periods=0,
+            future_periods=future_periods,
             mask_ratio=0.0,
             augmenter=None,
             target_columns=target_columns,
@@ -291,6 +412,9 @@ def prepare_val_dataloader(
             target_window_mode='any_in_window',
         )
     else:
+        val_indices = PrecomputedDataset.create_indices(
+            val_df, window_size=window_size, mode='val', stride=stride,
+        )
         val_ds = PrecomputedDataset(
             dataframe=val_df,
             indices=val_indices,
@@ -485,6 +609,10 @@ def parse_args() -> argparse.Namespace:
                         help='Путь к fine-tuning чекпоинту')
     parser.add_argument('--compare-dir', type=str, default=None,
                         help='Директория для сравнения всех экспериментов')
+    parser.add_argument('--mark', type=str, default=None,
+                        help='Путь к CSV-файлу осциллограммы для разметки (sliding window)')
+    parser.add_argument('--mark-step', type=int, default=32,
+                        help='Шаг скользящего окна при разметке (отсчёты, default=32=1 период)')
     parser.add_argument('--no-save', action='store_true',
                         help='Не сохранять отчёт')
     return parser.parse_args()
@@ -493,7 +621,28 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
 
-    if args.compare_dir:
+    if args.mark and args.checkpoint:
+        # Режим разметки осциллограммы
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        model, config = load_model_from_checkpoint(Path(args.checkpoint), device)
+
+        mark_path = Path(args.mark)
+        print(f"Разметка осциллограммы: {mark_path}")
+        raw_df = pl.read_csv(str(mark_path))
+
+        raw_channels = ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']
+        raw_data = raw_df.select(raw_channels).to_numpy().astype(np.float32)
+
+        probs = mark_oscillogram(model, raw_data, config, device, step=args.mark_step)
+
+        # Сохраняем результат
+        target_cols = get_target_columns(config.get('target_level', 'base'))
+        out_df = pl.DataFrame({col: probs[:, i] for i, col in enumerate(target_cols)})
+        out_path = mark_path.with_suffix('.marking.csv')
+        out_df.write_csv(str(out_path))
+        print(f"Разметка сохранена: {out_path} ({probs.shape[0]} отсчётов, {probs.shape[1]} классов)")
+
+    elif args.compare_dir:
         compare_experiments(args.compare_dir)
     elif args.checkpoint:
         evaluate_checkpoint(args.checkpoint, save_report=not args.no_save)

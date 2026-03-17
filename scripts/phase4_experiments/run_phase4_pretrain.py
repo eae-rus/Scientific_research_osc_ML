@@ -38,7 +38,7 @@ from osc_tools.ml.losses import (
 )
 from osc_tools.ml.ssl_dataset import SSLSpectralDataset
 from osc_tools.ml.precomputed_dataset import PrecomputedDataset
-from osc_tools.ml.augmented_dataset import AugmentedSpectralDataset
+from osc_tools.ml.augmented_dataset import AugmentedSpectralDataset, compute_num_channels
 from osc_tools.ml.augmentation import TimeSeriesAugmenter
 
 
@@ -69,6 +69,7 @@ def get_default_config(mode: str = 'smoke') -> dict:
         'sub_periods': [2, 4, 6, 10],   # Низшие гармоники (периоды в ед. промышленной частоты)
         'use_augmentation': True,         # Аугментация на сырых данных до FFT
         'use_low_harmonics': True,        # Добавить низшие гармоники
+        'include_symmetric': True,        # Симметричные составляющие (I1,I2,I0,U1,U2,U0)
         'future_periods': 2,
         'mask_ratio': 0.25,
         'batch_size': 32,
@@ -78,7 +79,7 @@ def get_default_config(mode: str = 'smoke') -> dict:
 
         # Модель (значения по умолчанию = light, переопределяются через --complexity)
         'model_type': 'PhysicalKANTransformer',
-        'num_input_channels': 208,  # 8 каналов × (9 + 4 низших) гармоник × 2 = 208
+        'num_input_channels': 220,  # 8 × (9+4) × 2 = 208 (phase_polar) + 6 × 2 = 12 (symmetric) = 220
         'd_model': 48,
         'num_heads': 4,
         'num_layers': 6,
@@ -118,11 +119,16 @@ def get_default_config(mode: str = 'smoke') -> dict:
             'checkpoint_frequency': 1,
             'use_augmentation': False,
             'use_low_harmonics': False,
-            'num_input_channels': 144,  # Без низших гармоник
+            'include_symmetric': False,
+            'num_input_channels': 144,  # 8 × 9 × 2 = 144 (без low harmonics и symmetric)
             'accumulation_steps': 1,
         })
     elif mode == 'pretrain':
-        pass  # Базовые параметры
+        # Пересчитываем каналы для pretrain
+        num_lh = len(base.get('sub_periods', []))
+        base['num_input_channels'] = compute_num_channels(
+            base['num_harmonics'], num_lh, base.get('include_symmetric', True),
+        )
     elif mode == 'finetune':
         base.update({
             'epochs': 30,
@@ -227,9 +233,17 @@ def _prepare_augmented_dataloaders(
     """DataLoader-ы через AugmentedSpectralDataset (on-the-fly FFT)."""
 
     sub_periods = config.get('sub_periods', [2, 4, 6, 10]) if config.get('use_low_harmonics') else []
+    include_symmetric = config.get('include_symmetric', True)
 
     # Аугментатор для обучения
     augmenter = TimeSeriesAugmenter() if config.get('use_augmentation') else None
+
+    # Пересчёт num_input_channels (чтобы совпадало с реальным dataset)
+    num_lh = len(sub_periods)
+    actual_channels = compute_num_channels(config['num_harmonics'], num_lh, include_symmetric)
+    if config.get('num_input_channels') != actual_channels:
+        print(f"  [!] Корректировка num_input_channels: {config['num_input_channels']} → {actual_channels}")
+        config['num_input_channels'] = actual_channels
 
     # Вычисляем границы файлов
     train_boundaries = AugmentedSpectralDataset.compute_file_boundaries(train_df)
@@ -255,6 +269,7 @@ def _prepare_augmented_dataloaders(
         window_size=config['window_size'],
         num_harmonics=config['num_harmonics'],
         sub_periods=sub_periods if sub_periods else None,
+        include_symmetric=include_symmetric,
         downsampling_stride=config['downsampling_stride'],
         future_periods=config['future_periods'],
         mask_ratio=config['mask_ratio'],
@@ -268,6 +283,7 @@ def _prepare_augmented_dataloaders(
         window_size=config['window_size'],
         num_harmonics=config['num_harmonics'],
         sub_periods=sub_periods if sub_periods else None,
+        include_symmetric=include_symmetric,
         downsampling_stride=config['downsampling_stride'],
         future_periods=config['future_periods'],
         mask_ratio=0.0,  # Валидация без маскирования
@@ -929,6 +945,7 @@ def main() -> None:
         config['use_augmentation'] = False
     if args.no_low_harmonics:
         config['use_low_harmonics'] = False
+        config['include_symmetric'] = False
         config['num_input_channels'] = 144  # 8 × 9 × 2
 
     if args.mode == 'smoke':
@@ -941,4 +958,63 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    main()
+    # =================================================================
+    # РЕЖИМ РУЧНОГО ЗАПУСКА ЧЕРЕЗ КОНСТАНТЫ
+    # Раскомментируйте нужный блок и запустите файл напрямую.
+    # Для CLI: python run_phase4_pretrain.py --mode pretrain --complexity light
+    # =================================================================
+
+    # --- Режим: 'smoke' | 'pretrain' ---
+    RUN_MODE = 'pretrain'
+
+    # --- Тип модели ---
+    MODEL_TYPE = 'PhysicalKANTransformer'   # 'PhysicalKANTransformer' | 'BaselineTransformer'
+
+    # --- Сложность ---
+    SELECTED_COMPLEXITY = 'light'           # 'light' | 'medium' | 'heavy'
+
+    # --- Эпохи ---
+    EPOCHS = 50
+
+    # --- Аугментация и признаки ---
+    USE_AUGMENTATION = True
+    USE_LOW_HARMONICS = True
+    INCLUDE_SYMMETRIC = True                # Симметричные составляющие (I1,I2,I0,U1,U2,U0)
+
+    # --- Gradient accumulation ---
+    ACCUMULATION_STEPS = 8                  # effective batch = batch_size × ACCUMULATION_STEPS
+
+    # --- Частота чекпоинтов ---
+    CHECKPOINT_FREQUENCY = 5
+
+    # --- Продолжение обучения (None или путь к чекпоинту) ---
+    RESUME_PATH = None
+    # RESUME_PATH = 'experiments/phase4/pretrain_.../latest_checkpoint.pt'
+
+    # =================================================================
+
+    # Собираем конфиг
+    config = get_default_config(RUN_MODE)
+    config['model_type'] = MODEL_TYPE
+    config['epochs'] = EPOCHS
+    config['use_augmentation'] = USE_AUGMENTATION
+    config['use_low_harmonics'] = USE_LOW_HARMONICS
+    config['include_symmetric'] = INCLUDE_SYMMETRIC
+    config['accumulation_steps'] = ACCUMULATION_STEPS
+    config['checkpoint_frequency'] = CHECKPOINT_FREQUENCY
+
+    if RUN_MODE != 'smoke':
+        level = COMPLEXITY_LEVELS[SELECTED_COMPLEXITY]
+        config.update(level)
+        # Пересчитываем каналы
+        num_lh = len(config['sub_periods']) if USE_LOW_HARMONICS else 0
+        config['num_input_channels'] = compute_num_channels(
+            config['num_harmonics'], num_lh, INCLUDE_SYMMETRIC,
+        )
+        if not USE_LOW_HARMONICS and not INCLUDE_SYMMETRIC:
+            config['num_input_channels'] = 144
+
+    if RUN_MODE == 'smoke':
+        smoke_test(config)
+    else:
+        pretrain(config, resume_path=RESUME_PATH)

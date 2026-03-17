@@ -35,7 +35,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from osc_tools.ml.models.transformer import PhysicalKANTransformer, BaselineTransformer
 from osc_tools.ml.precomputed_dataset import PrecomputedDataset
-from osc_tools.ml.augmented_dataset import AugmentedSpectralDataset
+from osc_tools.ml.augmented_dataset import AugmentedSpectralDataset, compute_num_channels
 from osc_tools.ml.augmentation import TimeSeriesAugmenter
 from osc_tools.ml.labels import get_target_columns
 from osc_tools.ml.class_weights import compute_pos_weight_from_loader
@@ -69,6 +69,8 @@ def get_finetune_config() -> dict:
         'sub_periods': [2, 4, 6, 10],
         'use_augmentation': True,
         'use_low_harmonics': True,
+        'include_symmetric': True,         # Симметричные составляющие (I1,I2,I0,U1,U2,U0)
+        'future_periods': 2,               # Будущие периоды для расширенной метки
         'batch_size': 32,
         'val_batch_size': 64,
         'num_workers': 0,
@@ -77,7 +79,7 @@ def get_finetune_config() -> dict:
 
         # Модель (должно совпадать с pretrain; по умолчанию = light)
         'model_type': 'PhysicalKANTransformer',
-        'num_input_channels': 208,  # 8 × (9 + 4) × 2 = 208
+        'num_input_channels': 220,  # 8 × (9+4) × 2 = 208 + 6 × 2 = 12 = 220
         'd_model': 48,
         'num_heads': 4,
         'num_layers': 6,
@@ -229,22 +231,34 @@ def prepare_finetune_dataloaders(
     print(f"  Файлов: train={len(train_files)}, val={len(val_files)}")
     print(f"  Строк: train={train_df.height:,}, val={val_df.height:,}")
 
-    # Индексы
+    # Индексы создаются ниже (в зависимости от режима)
     window_size = config['window_size']
     stride = config['downsampling_stride']
-    train_indices = PrecomputedDataset.create_indices(
-        train_df, window_size=window_size, mode='val', stride=stride,
-    )
-    val_indices = PrecomputedDataset.create_indices(
-        val_df, window_size=window_size, mode='val', stride=stride,
-    )
-    print(f"  Окон: train={len(train_indices):,}, val={len(val_indices):,}")
 
     use_augmented = config.get('use_augmentation', False) or config.get('use_low_harmonics', False)
 
     if use_augmented:
         sub_periods = config.get('sub_periods', [2, 4, 6, 10]) if config.get('use_low_harmonics') else []
+        include_symmetric = config.get('include_symmetric', True)
         augmenter = TimeSeriesAugmenter() if config.get('use_augmentation') else None
+        future_periods = config.get('future_periods', 2)
+
+        # Пересчёт num_input_channels
+        num_lh = len(sub_periods)
+        actual_channels = compute_num_channels(config.get('num_harmonics', 9), num_lh, include_symmetric)
+        if config.get('num_input_channels') != actual_channels:
+            print(f"  [!] Корректировка num_input_channels: {config['num_input_channels']} → {actual_channels}")
+            config['num_input_channels'] = actual_channels
+
+        # Индексы: учитываем будущие периоды
+        full_window = window_size + future_periods * 32
+        train_indices = PrecomputedDataset.create_indices(
+            train_df, window_size=full_window, mode='val', stride=stride,
+        )
+        val_indices = PrecomputedDataset.create_indices(
+            val_df, window_size=full_window, mode='val', stride=stride,
+        )
+        print(f"  Окон: train={len(train_indices):,}, val={len(val_indices):,}")
 
         train_boundaries = AugmentedSpectralDataset.compute_file_boundaries(train_df)
         val_boundaries = AugmentedSpectralDataset.compute_file_boundaries(val_df)
@@ -256,8 +270,9 @@ def prepare_finetune_dataloaders(
             window_size=window_size,
             num_harmonics=config['num_harmonics'],
             sub_periods=sub_periods if sub_periods else None,
+            include_symmetric=include_symmetric,
             downsampling_stride=stride,
-            future_periods=0,       # Нет предсказания будущего при finetune
+            future_periods=future_periods,
             mask_ratio=0.0,         # Нет маскирования при finetune
             augmenter=augmenter,
             target_columns=target_columns,
@@ -271,8 +286,9 @@ def prepare_finetune_dataloaders(
             window_size=window_size,
             num_harmonics=config['num_harmonics'],
             sub_periods=sub_periods if sub_periods else None,
+            include_symmetric=include_symmetric,
             downsampling_stride=stride,
-            future_periods=0,
+            future_periods=future_periods,
             mask_ratio=0.0,
             augmenter=None,
             target_columns=target_columns,
@@ -281,6 +297,14 @@ def prepare_finetune_dataloaders(
         )
     else:
         # Legacy: PrecomputedDataset
+        train_indices = PrecomputedDataset.create_indices(
+            train_df, window_size=window_size, mode='val', stride=stride,
+        )
+        val_indices = PrecomputedDataset.create_indices(
+            val_df, window_size=window_size, mode='val', stride=stride,
+        )
+        print(f"  Окон: train={len(train_indices):,}, val={len(val_indices):,}")
+
         train_ds = PrecomputedDataset(
             dataframe=train_df,
             indices=train_indices,
@@ -804,6 +828,7 @@ def main() -> None:
         config['use_augmentation'] = False
     if args.no_low_harmonics:
         config['use_low_harmonics'] = False
+        config['include_symmetric'] = False
         config['num_input_channels'] = 144
     if args.smoke:
         config['epochs'] = 2
@@ -811,11 +836,67 @@ def main() -> None:
         config['val_batch_size'] = 4
         config['use_augmentation'] = False
         config['use_low_harmonics'] = False
+        config['include_symmetric'] = False
         config['num_input_channels'] = 144
         config['accumulation_steps'] = 1
+        config['future_periods'] = 0
 
     finetune(config, ssl_checkpoint=args.checkpoint)
 
 
 if __name__ == '__main__':
-    main()
+    # =================================================================
+    # РЕЖИМ РУЧНОГО ЗАПУСКА ЧЕРЕЗ КОНСТАНТЫ
+    # Раскомментируйте нужный блок и запустите файл напрямую.
+    # Для CLI: python run_phase4_finetune.py --checkpoint path/to/best_model.pt
+    # =================================================================
+
+    # --- Тип модели (должен совпадать с pretrain) ---
+    MODEL_TYPE = 'PhysicalKANTransformer'   # 'PhysicalKANTransformer' | 'BaselineTransformer'
+
+    # --- Сложность (должна совпадать с pretrain) ---
+    SELECTED_COMPLEXITY = 'light'           # 'light' | 'medium' | 'heavy'
+
+    # --- Путь к SSL-чекпоинту (None = random init) ---
+    SSL_CHECKPOINT = None
+    # SSL_CHECKPOINT = 'experiments/phase4/pretrain_.../best_model.pt'
+
+    # --- Эпохи ---
+    EPOCHS = 50
+
+    # --- Аугментация и признаки ---
+    USE_AUGMENTATION = True
+    USE_LOW_HARMONICS = True
+    INCLUDE_SYMMETRIC = True                # Симметричные составляющие
+    FUTURE_PERIODS = 2                      # Будущие периоды (расширяет метки)
+
+    # --- Gradient accumulation ---
+    ACCUMULATION_STEPS = 8
+
+    # --- Частота чекпоинтов ---
+    CHECKPOINT_FREQUENCY = 5
+
+    # =================================================================
+
+    config = get_finetune_config()
+    config['model_type'] = MODEL_TYPE
+    config['epochs'] = EPOCHS
+    config['use_augmentation'] = USE_AUGMENTATION
+    config['use_low_harmonics'] = USE_LOW_HARMONICS
+    config['include_symmetric'] = INCLUDE_SYMMETRIC
+    config['future_periods'] = FUTURE_PERIODS
+    config['accumulation_steps'] = ACCUMULATION_STEPS
+    config['checkpoint_frequency'] = CHECKPOINT_FREQUENCY
+
+    level = COMPLEXITY_LEVELS[SELECTED_COMPLEXITY]
+    config.update(level)
+
+    # Пересчёт каналов
+    num_lh = len(config['sub_periods']) if USE_LOW_HARMONICS else 0
+    config['num_input_channels'] = compute_num_channels(
+        config['num_harmonics'], num_lh, INCLUDE_SYMMETRIC,
+    )
+    if not USE_LOW_HARMONICS and not INCLUDE_SYMMETRIC:
+        config['num_input_channels'] = 144
+
+    finetune(config, ssl_checkpoint=SSL_CHECKPOINT)
