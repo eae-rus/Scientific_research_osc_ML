@@ -41,7 +41,6 @@ from osc_tools.ml.augmented_dataset import (
 )
 from osc_tools.ml.augmentation import TimeSeriesAugmenter
 from osc_tools.ml.labels import get_target_columns, prepare_labels_for_experiment
-from osc_tools.ml.class_weights import compute_pos_weight_from_loader
 
 
 # ---------------------------------------------------------------------------
@@ -93,15 +92,17 @@ def get_finetune_config() -> dict:
         'num_layers': 6,
         'kan_grid_size': 5,
         'dropout': 0.1,
+        'cls_head_type': 'complex_gated_kan',
 
         # Fine-tuning специфика
         'num_classes': NUM_BASE_CLASSES,
         'zone_size': 1,  # Каждый временной шаг = отдельная зона
+        'supervision_mode': 'zone',  # 'zone' | 'window' | 'last_zone'
 
         # Обучение
         'epochs': 50,
-        'lr_backbone': 1e-5,     # Низкий LR для backbone (уже обучен SSL)
-        'lr_head': 5e-4,          # Высокий LR для новой головы
+        'lr_backbone': 5e-5,     # Низкий LR для backbone (уже обучен SSL)
+        'lr_head': 1e-4,         # Высокий LR для новой головы
         'weight_decay': 1e-5,
         'warmup_epochs': 2,
         'use_amp': True,
@@ -149,6 +150,7 @@ def create_model_for_finetune(
             num_classes=config['num_classes'],
             zone_size=config['zone_size'],
             kan_grid_size=config['kan_grid_size'],
+            cls_head_type=config.get('cls_head_type', 'complex_gated_kan'),
             dropout=config['dropout'],
             max_seq_len=64,
         )
@@ -160,6 +162,7 @@ def create_model_for_finetune(
             num_layers=config['num_layers'],
             num_classes=config['num_classes'],
             zone_size=config['zone_size'],
+            cls_head_type=config.get('cls_head_type', 'linear'),
             dropout=config['dropout'],
             max_seq_len=64,
         )
@@ -410,6 +413,62 @@ def _build_train_epoch_loader(
         pin_memory=True,
         drop_last=True,
     )
+def _reduce_logits_targets(
+    logits: torch.Tensor,
+    targets: torch.Tensor,
+    supervision_mode: str,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Приводит logits/targets к форме для loss и метрик.
+
+    `zone`: обучаем настоящее зонирование, как token classification / 1D-segmentation.
+    `window`: одно решение на всё окно.
+    `last_zone`: решение только по последней зоне окна.
+    """
+    if supervision_mode == 'zone':
+        B, T_z, C_cls = logits.shape
+        return logits.reshape(B * T_z, C_cls).float(), targets.reshape(B * T_z, C_cls).float()
+    if supervision_mode == 'window':
+        return logits.mean(dim=1).float(), targets.max(dim=1).values.float()
+    if supervision_mode == 'last_zone':
+        return logits[:, -1, :].float(), targets[:, -1, :].float()
+    raise ValueError(f"Неизвестный supervision_mode: {supervision_mode}")
+
+
+def _compute_supervision_pos_weight(
+    loader: DataLoader,
+    supervision_mode: str,
+    device: torch.device | None = None,
+) -> torch.Tensor:
+    """pos_weight в той же редукции, в которой считается loss."""
+    total = 0
+    pos_counts = None
+    for _, y in loader:
+        y = y.float()
+        if y.dim() == 2:
+            y_used = y
+        elif supervision_mode == 'zone':
+            y_used = y.reshape(-1, y.shape[-1])
+        elif supervision_mode == 'window':
+            y_used = y.max(dim=1).values
+        elif supervision_mode == 'last_zone':
+            y_used = y[:, -1, :]
+        else:
+            raise ValueError(f"Неизвестный supervision_mode: {supervision_mode}")
+
+        if pos_counts is None:
+            pos_counts = torch.zeros(y_used.shape[-1], dtype=torch.float64)
+        pos_counts += y_used.sum(dim=0).double()
+        total += y_used.shape[0]
+
+    if pos_counts is None:
+        raise ValueError("Нет данных для вычисления pos_weight")
+
+    neg_counts = total - pos_counts
+    pos_safe = pos_counts.clone()
+    pos_safe[pos_safe == 0] = 1.0
+    weights = neg_counts / pos_safe
+    return weights.float().to(device)
+
 
 def train_one_epoch(
     model: nn.Module,
@@ -434,6 +493,7 @@ def train_one_epoch(
     all_targets = []
     num_batches = 0
     t0 = time.perf_counter()
+    supervision_mode = getattr(loader.dataset, 'supervision_mode', 'zone')
 
     optimizer.zero_grad(set_to_none=True)
     progress = tqdm(
@@ -453,11 +513,8 @@ def train_one_epoch(
             out = model(x, mode='classify')
             logits = out['classify']  # (B, num_zones, num_classes)
 
-        # Loss по всем зонам: flatten → (B*T, C)
-        B, T_z, C_cls = logits.shape
-        logits_flat = logits.reshape(B * T_z, C_cls).float()
-        y_flat = y.reshape(B * T_z, C_cls)
-        loss = loss_fn(logits_flat, y_flat)
+        logits_used, targets_used = _reduce_logits_targets(logits, y, supervision_mode)
+        loss = loss_fn(logits_used, targets_used)
 
         if accumulation_steps > 1:
             loss = loss / accumulation_steps
@@ -483,14 +540,12 @@ def train_one_epoch(
             total_loss += loss_val
             num_batches += 1
 
-        # Метрики: среднее по зонам для каждого окна (как при инференсе)
+        # Метрики: в той же постановке, что и loss
         with torch.no_grad():
-            probs = torch.sigmoid(logits.float()).cpu().numpy()  # (B, T_z, C)
-            # Среднее по зонам → window-level предсказание
-            probs_mean = probs.mean(axis=1)  # (B, C)
-            y_mean = y.cpu().numpy().max(axis=1)  # (B, C) — any_in_window
-            all_preds.append(probs_mean)
-            all_targets.append(y_mean)
+            probs_used = torch.sigmoid(logits_used).cpu().numpy()
+            targets_np = targets_used.cpu().numpy()
+            all_preds.append(probs_used)
+            all_targets.append(targets_np)
         progress.set_postfix(loss=f"{total_loss / max(num_batches, 1):.4f}")
 
     progress.close()
@@ -523,6 +578,7 @@ def validate(
     all_targets = []
     num_batches = 0
     t0 = time.perf_counter()
+    supervision_mode = getattr(loader.dataset, 'supervision_mode', 'zone')
 
     progress = tqdm(
         loader,
@@ -539,19 +595,16 @@ def validate(
         out = model(x, mode='classify')
         logits = out['classify']  # (B, num_zones, num_classes)
 
-        B, T_z, C_cls = logits.shape
-        logits_flat = logits.reshape(B * T_z, C_cls)
-        y_flat = y.reshape(B * T_z, C_cls)
-        loss = loss_fn(logits_flat, y_flat)
+        logits_used, targets_used = _reduce_logits_targets(logits, y, supervision_mode)
+        loss = loss_fn(logits_used, targets_used)
 
         total_loss += loss.item()
         num_batches += 1
 
-        probs = torch.sigmoid(logits.float()).cpu().numpy()  # (B, T_z, C)
-        probs_mean = probs.mean(axis=1)  # (B, C)
-        y_mean = y.cpu().numpy().max(axis=1)  # (B, C)
-        all_preds.append(probs_mean)
-        all_targets.append(y_mean)
+        probs_used = torch.sigmoid(logits_used).cpu().numpy()
+        targets_np = targets_used.cpu().numpy()
+        all_preds.append(probs_used)
+        all_targets.append(targets_np)
         progress.set_postfix(loss=f"{total_loss / max(num_batches, 1):.4f}")
 
     progress.close()
@@ -571,20 +624,26 @@ def validate(
 def _compute_metrics(
     preds: np.ndarray,
     targets: np.ndarray,
-    threshold: float = 0.7,
+    threshold: float = 0.5,
 ) -> dict[str, float]:
     """Вычисляет Macro-F1, ROC-AUC, Accuracy.
 
     Args:
         preds: (N, C) вероятности после sigmoid
         targets: (N, C) бинарные метки
+        threshold: порог бинаризации (0.5 — стандартный для sigmoid)
     """
-    from sklearn.metrics import f1_score, roc_auc_score, accuracy_score
+    from sklearn.metrics import f1_score, roc_auc_score
 
     preds_bin = (preds >= threshold).astype(np.int32)
     targets_int = targets.astype(np.int32)
 
     metrics = {}
+
+    # Средние вероятности по классам (для диагностики)
+    metrics['mean_prob'] = float(preds.mean())
+    for c in range(preds.shape[1]):
+        metrics[f'mean_prob_cls_{c}'] = float(preds[:, c].mean())
 
     # Macro-F1
     metrics['macro_f1'] = float(f1_score(
@@ -735,9 +794,19 @@ def finetune(
     n_params = model.num_parameters()
     print(f"Параметры модели: {n_params:,}")
 
-    # --- Loss: BCEWithLogitsLoss с pos_weight для балансировки ---
-    pos_weight = compute_pos_weight_from_loader(train_loader, device=device)
-    print(f"pos_weight: {pos_weight.cpu().numpy()}")
+    supervision_mode = config.get('supervision_mode', 'zone')
+    train_loader.dataset.supervision_mode = supervision_mode
+    val_loader.dataset.supervision_mode = supervision_mode
+
+    # --- Loss: BCEWithLogitsLoss с pos_weight в той же постановке, что и supervision ---
+    pos_weight = _compute_supervision_pos_weight(
+        train_loader,
+        supervision_mode=supervision_mode,
+        device=device,
+    )
+    print(f"supervision_mode: {supervision_mode}")
+    print(f"cls_head_type: {config.get('cls_head_type', 'complex_gated_kan')}")
+    print(f"pos_weight ({supervision_mode}): {pos_weight.cpu().numpy()}")
     loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 
     # --- Оптимизатор: раздельный LR ---
@@ -864,13 +933,22 @@ def finetune(
             f.write(json.dumps(record, ensure_ascii=False) + '\n')
 
         marker = ' ★' if is_best else ''
+        lr_bb = optimizer.param_groups[0]['lr']
+        lr_hd = optimizer.param_groups[1]['lr']
         print(
             f"Epoch {epoch:3d}/{total_epochs} | "
             f"loss={train_metrics['loss']:.4f}/{val_metrics['loss']:.4f} | "
             f"F1={train_metrics['macro_f1']:.4f}/{val_metrics['macro_f1']:.4f}{marker} | "
             f"AUC={val_metrics.get('roc_auc', 0):.4f} | "
+            f"lr={lr_bb:.1e}/{lr_hd:.1e} | "
+            f"p̄={val_metrics.get('mean_prob', 0):.3f} | "
             f"time={train_metrics['time_sec'] + val_metrics['time_sec']:.1f}s"
         )
+        # Per-class F1 (каждые 10 эпох для удобства)
+        if epoch % 10 == 0 or is_best:
+            cls_f1s = [f"{val_metrics.get(f'f1_class_{i}', 0):.3f}" for i in range(len(target_columns))]
+            cls_probs = [f"{val_metrics.get(f'mean_prob_cls_{i}', 0):.3f}" for i in range(len(target_columns))]
+            print(f"         Per-class F1: {cls_f1s}  |  mean_prob: {cls_probs}")
 
         # Checkpointing
         save_checkpoint(
@@ -926,27 +1004,39 @@ def finetune(
 
 
 def _print_class_distribution(loader: DataLoader, target_columns: list[str]) -> None:
-    """Печатает распределение классов в данных."""
-    total = 0
-    pos_counts = None
+    """Печатает распределение классов на уровне зон и на уровне окон."""
+    total_zones = 0
+    total_windows = 0
+    zone_pos = None
+    win_pos = None
     for _, y in loader:
-        # y может быть (B, C) или (B, T_zones, C)
-        y_flat = y.float()
-        if y_flat.dim() == 3:
-            y_flat = y_flat.reshape(-1, y_flat.shape[-1])
-        if pos_counts is None:
-            pos_counts = torch.zeros(y_flat.shape[-1], dtype=torch.float64)
-        pos_counts += y_flat.sum(dim=0).double()
-        total += y_flat.shape[0]
+        y_f = y.float()
+        # Window-level: any_in_window
+        if y_f.dim() == 3:
+            y_win = y_f.max(dim=1).values  # (B, C)
+            y_zone = y_f.reshape(-1, y_f.shape[-1])  # (B*T, C)
+        else:
+            y_win = y_f
+            y_zone = y_f
 
-    if pos_counts is None:
+        if zone_pos is None:
+            zone_pos = torch.zeros(y_zone.shape[-1], dtype=torch.float64)
+            win_pos = torch.zeros(y_win.shape[-1], dtype=torch.float64)
+        zone_pos += y_zone.sum(dim=0).double()
+        win_pos += y_win.sum(dim=0).double()
+        total_zones += y_zone.shape[0]
+        total_windows += y_win.shape[0]
+
+    if zone_pos is None:
         return
 
-    print(f"\n  Распределение классов (N={total}):")
+    print(f"\n  Распределение классов (зон={total_zones}, окон={total_windows}):")
     for i, col in enumerate(target_columns):
-        n_pos = int(pos_counts[i].item())
-        pct = 100.0 * n_pos / total if total > 0 else 0
-        print(f"    {col}: {n_pos} ({pct:.1f}%)")
+        z_n = int(zone_pos[i].item())
+        z_pct = 100.0 * z_n / total_zones if total_zones > 0 else 0
+        w_n = int(win_pos[i].item())
+        w_pct = 100.0 * w_n / total_windows if total_windows > 0 else 0
+        print(f"    {col}: зон {z_n} ({z_pct:.1f}%), окон {w_n} ({w_pct:.1f}%)")
     print()
 
 
@@ -966,6 +1056,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--batch-size', type=int, default=None, help='Batch size')
     parser.add_argument('--target-level', choices=['base', 'ozz', 'base_sequential'],
                         default=None, help='Задача классификации: base (4 класса), ozz (3 класса ОЗЗ)')
+    parser.add_argument('--cls-head-type',
+                        choices=['complex_gated_kan', 'kan', 'mlp', 'linear'],
+                        default=None,
+                        help='Тип классификационной головы')
+    parser.add_argument('--supervision-mode',
+                        choices=['zone', 'window', 'last_zone'],
+                        default=None,
+                        help='Как считать loss: по всем зонам, по окну или только по последней зоне')
     parser.add_argument('--smoke', action='store_true', help='Smoke-test (2 эпохи)')
     parser.add_argument('--no-augmentation', action='store_true',
                         help='Отключить аугментацию на сырых данных')
@@ -987,6 +1085,10 @@ def main() -> None:
     config['model_type'] = args.model
     if args.target_level is not None:
         config['target_level'] = args.target_level
+    if args.cls_head_type is not None:
+        config['cls_head_type'] = args.cls_head_type
+    if args.supervision_mode is not None:
+        config['supervision_mode'] = args.supervision_mode
     if args.complexity:
         level = COMPLEXITY_LEVELS[args.complexity]
         config.update(level)
@@ -1050,6 +1152,8 @@ if __name__ == '__main__':
     # 'base' — 4 класса (Normal, ML_1, ML_2, ML_3)
     # 'ozz'  — 3 класса ОЗЗ (Target_OZZ, Target_OZZ_decay, Target_OZZ_dpozz)
     TARGET_LEVEL = 'base'
+    CLS_HEAD_TYPE = 'complex_gated_kan'   # 'complex_gated_kan' | 'kan' | 'mlp' | 'linear'
+    SUPERVISION_MODE = 'last_zone'             # 'zone' | 'window' | 'last_zone'
 
     # --- Аугментация и признаки ---
     USE_AUGMENTATION = True
@@ -1074,6 +1178,8 @@ if __name__ == '__main__':
     config = get_finetune_config()
     config['model_type'] = MODEL_TYPE
     config['target_level'] = TARGET_LEVEL
+    config['cls_head_type'] = CLS_HEAD_TYPE
+    config['supervision_mode'] = SUPERVISION_MODE
     config['epochs'] = EPOCHS
     config['use_augmentation'] = USE_AUGMENTATION
     config['use_low_harmonics'] = USE_LOW_HARMONICS

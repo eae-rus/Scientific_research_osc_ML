@@ -63,7 +63,7 @@ class KANClassificationHead(nn.Module):
             output_dim=d_hidden,
             num_grids=kan_grid_size,
             use_base_update=True,
-            use_layernorm=True,
+            use_layernorm=False,  # False: final_norm уже нормализует вход
         )
         # Финальная линейная проекция на классы (без нелинейности — logits)
         self.proj = nn.Linear(d_hidden, num_classes)
@@ -75,6 +75,122 @@ class KANClassificationHead(nn.Module):
         h = self.kan(x_flat)               # (N, d_hidden)
         out = self.proj(h)                 # (N, num_classes)
         return out.view(*shape[:-1], -1)   # восстанавливаем форму
+
+
+class MLPClassificationHead(nn.Module):
+    """Простая MLP-голова для абляции."""
+
+    def __init__(
+        self,
+        d_model: int,
+        num_classes: int,
+        d_hidden: int | None = None,
+        dropout: float = 0.1,
+    ) -> None:
+        super().__init__()
+        if d_hidden is None:
+            d_hidden = d_model * 2
+        self.net = nn.Sequential(
+            nn.Linear(d_model, d_hidden),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_hidden, num_classes),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+
+class ComplexGatedKANClassificationHead(nn.Module):
+    """Комплексно-ориентированная голова для полярного латентного пространства.
+
+    Идея:
+    - амплитудная ветвь несёт основную диагностическую информацию;
+    - угловая ветвь не предсказывает класс напрямую, а управляет амплитудной;
+    - итоговые logits получаются из модулированного амплитудного представления.
+    """
+
+    def __init__(
+        self,
+        d_model: int,
+        num_classes: int,
+        kan_grid_size: int = 5,
+        d_hidden: int | None = None,
+        dropout: float = 0.1,
+    ) -> None:
+        super().__init__()
+        if d_model % 2 != 0:
+            raise ValueError(
+                f"ComplexGatedKANClassificationHead ожидает чётный d_model, получено {d_model}"
+            )
+        self.pair_dim = d_model // 2
+        if d_hidden is None:
+            d_hidden = d_model
+
+        self.amp_kan = FastKANLayer(
+            input_dim=self.pair_dim,
+            output_dim=d_hidden,
+            num_grids=kan_grid_size,
+            use_base_update=True,
+            use_layernorm=False,
+        )
+        self.angle_gate = FastKANLayer(
+            input_dim=self.pair_dim,
+            output_dim=d_hidden,
+            num_grids=kan_grid_size,
+            use_base_update=True,
+            use_layernorm=False,
+        )
+        self.amp_residual = nn.Linear(self.pair_dim, d_hidden, bias=False)
+        self.out_proj = nn.Sequential(
+            nn.LayerNorm(d_hidden),
+            nn.Dropout(dropout),
+            nn.Linear(d_hidden, num_classes),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        shape = x.shape
+        x_flat = x.reshape(-1, shape[-1])
+        amp = x_flat[:, 0::2]
+        angle = x_flat[:, 1::2]
+
+        amp_feat = self.amp_kan(amp) + self.amp_residual(amp)
+        gate = torch.sigmoid(self.angle_gate(angle))
+        fused = amp_feat * gate
+        out = self.out_proj(fused)
+        return out.view(*shape[:-1], -1)
+
+
+def _build_cls_head(
+    cls_head_type: str,
+    d_model: int,
+    num_classes: int,
+    kan_grid_size: int,
+    dropout: float,
+) -> nn.Module:
+    """Фабрика классификационных голов для абляций и подбора архитектуры."""
+    if cls_head_type == 'linear':
+        return nn.Linear(d_model, num_classes)
+    if cls_head_type == 'mlp':
+        return MLPClassificationHead(
+            d_model=d_model,
+            num_classes=num_classes,
+            dropout=dropout,
+        )
+    if cls_head_type == 'kan':
+        return KANClassificationHead(
+            d_model=d_model,
+            num_classes=num_classes,
+            kan_grid_size=kan_grid_size,
+        )
+    if cls_head_type == 'complex_gated_kan':
+        return ComplexGatedKANClassificationHead(
+            d_model=d_model,
+            num_classes=num_classes,
+            kan_grid_size=kan_grid_size,
+            dropout=dropout,
+        )
+    raise ValueError(f"Неизвестный cls_head_type: {cls_head_type}")
 
 
 class PhysicalKANTransformer(BaseModel):
@@ -126,6 +242,7 @@ class PhysicalKANTransformer(BaseModel):
         num_stem_interaction_pairs: int = 16,
         num_ffn_interaction_pairs: int = 4,
         use_physical_ffn: bool = True,
+        cls_head_type: str = 'complex_gated_kan',
         dropout: float = 0.1,
         max_seq_len: int = 64,
     ) -> None:
@@ -200,10 +317,12 @@ class PhysicalKANTransformer(BaseModel):
         # Classification Head (KAN-based, для fine-tuning, если num_classes задан)
         self.cls_head: nn.Module | None = None
         if num_classes is not None:
-            self.cls_head = KANClassificationHead(
+            self.cls_head = _build_cls_head(
+                cls_head_type=cls_head_type,
                 d_model=d_model,
                 num_classes=num_classes,
                 kan_grid_size=kan_grid_size,
+                dropout=dropout,
             )
 
     def forward(
@@ -302,6 +421,7 @@ class BaselineTransformer(BaseModel):
         num_classes: int | None = None,
         ssl_output_channels: int | None = None,
         zone_size: int = 16,
+        cls_head_type: str = 'linear',
         dropout: float = 0.1,
         max_seq_len: int = 64,
     ) -> None:
@@ -348,7 +468,13 @@ class BaselineTransformer(BaseModel):
 
         self.cls_head: nn.Module | None = None
         if num_classes is not None:
-            self.cls_head = nn.Linear(d_model, num_classes)
+            self.cls_head = _build_cls_head(
+                cls_head_type=cls_head_type,
+                d_model=d_model,
+                num_classes=num_classes,
+                kan_grid_size=5,
+                dropout=dropout,
+            )
 
     def forward(
         self,
