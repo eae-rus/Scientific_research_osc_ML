@@ -26,6 +26,7 @@ import numpy as np
 import polars as pl
 import torch
 from torch.utils.data import DataLoader
+from tqdm.auto import tqdm
 
 # Добавляем корень проекта в PATH
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -409,6 +410,8 @@ def train_one_epoch(
     scaler: torch.amp.GradScaler | None,
     grad_clip: float,
     accumulation_steps: int = 1,
+    epoch_idx: int = 0,
+    total_epochs: int = 1,
 ) -> dict[str, float]:
     """Одна эпоха обучения с gradient accumulation.
 
@@ -425,8 +428,15 @@ def train_one_epoch(
     t0 = time.perf_counter()
 
     optimizer.zero_grad(set_to_none=True)
+    progress = tqdm(
+        loader,
+        total=len(loader),
+        desc=f"Train {epoch_idx + 1}/{total_epochs}",
+        leave=False,
+        dynamic_ncols=True,
+    )
 
-    for step, batch in enumerate(loader):
+    for step, batch in enumerate(progress):
         x_input = batch['input'].to(device)       # (B, C, T_current)
         x_target = batch['target'].to(device)      # (B, C, T_full)
         mask_loss = batch['mask_loss'].to(device)   # (B, C, T_full)
@@ -478,6 +488,9 @@ def train_one_epoch(
         # Восстанавливаем реальное значение loss для логирования
         total_loss += loss.item() * (accumulation_steps if accumulation_steps > 1 else 1)
         num_batches += 1
+        progress.set_postfix(loss=f"{total_loss / max(num_batches, 1):.4f}")
+
+    progress.close()
 
     elapsed = time.perf_counter() - t0
     avg_loss = total_loss / max(num_batches, 1)
@@ -490,6 +503,8 @@ def validate(
     loader: DataLoader,
     loss_fn: SpectralReconstructionLoss,
     device: torch.device,
+    epoch_idx: int = 0,
+    total_epochs: int = 1,
 ) -> dict[str, float]:
     """Валидация.
 
@@ -501,7 +516,15 @@ def validate(
     num_batches = 0
     t0 = time.perf_counter()
 
-    for batch in loader:
+    progress = tqdm(
+        loader,
+        total=len(loader),
+        desc=f"Val   {epoch_idx + 1}/{total_epochs}",
+        leave=False,
+        dynamic_ncols=True,
+    )
+
+    for batch in progress:
         x_input = batch['input'].to(device)
         x_target = batch['target'].to(device)
         mask_loss = batch['mask_loss'].to(device)
@@ -524,6 +547,9 @@ def validate(
         )
         total_loss += loss.item()
         num_batches += 1
+        progress.set_postfix(loss=f"{total_loss / max(num_batches, 1):.4f}")
+
+    progress.close()
 
     elapsed = time.perf_counter() - t0
     avg_loss = total_loss / max(num_batches, 1)
@@ -716,10 +742,16 @@ def pretrain(config: dict, resume_path: str | None = None) -> None:
             model, train_loader, loss_fn, optimizer, device,
             scaler, config.get('grad_clip', 1.0),
             accumulation_steps=accum,
+            epoch_idx=epoch,
+            total_epochs=total_epochs,
         )
 
         # --- Val ---
-        val_metrics = validate(model, val_loader, loss_fn, device)
+        val_metrics = validate(
+            model, val_loader, loss_fn, device,
+            epoch_idx=epoch,
+            total_epochs=total_epochs,
+        )
 
         # --- LR Step ---
         if epoch >= warmup_epochs and cosine_scheduler is not None:
