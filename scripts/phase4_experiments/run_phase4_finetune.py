@@ -540,8 +540,6 @@ def validate(
         y_mean = y.cpu().numpy().max(axis=1)  # (B, C)
         all_preds.append(probs_mean)
         all_targets.append(y_mean)
-        all_preds.append(probs)
-        all_targets.append(y.cpu().numpy())
         progress.set_postfix(loss=f"{total_loss / max(num_batches, 1):.4f}")
 
     progress.close()
