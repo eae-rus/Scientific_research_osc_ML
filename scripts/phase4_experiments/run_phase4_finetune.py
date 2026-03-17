@@ -40,7 +40,7 @@ from osc_tools.ml.augmented_dataset import (
     AugmentedSpectralDataset, compute_num_channels, compute_stride, SAMPLES_PER_PERIOD,
 )
 from osc_tools.ml.augmentation import TimeSeriesAugmenter
-from osc_tools.ml.labels import get_target_columns
+from osc_tools.ml.labels import get_target_columns, prepare_labels_for_experiment
 from osc_tools.ml.class_weights import compute_pos_weight_from_loader
 
 
@@ -60,6 +60,7 @@ COMPLEXITY_LEVELS = {
 # ---------------------------------------------------------------------------
 
 NUM_BASE_CLASSES = 4  # Target_Normal, Target_ML_1, Target_ML_2, Target_ML_3
+NUM_OZZ_CLASSES = 3   # Target_OZZ, Target_OZZ_decay, Target_OZZ_dpozz
 
 def get_finetune_config() -> dict:
     """Конфигурация fine-tuning."""
@@ -225,9 +226,20 @@ def prepare_finetune_dataloaders(
     df = pl.read_csv(str(data_path))
     print(f"  Строк: {df.height:,}, Колонок: {df.width}")
 
+    # Подготовка меток (нужна для base_sequential, ozz и др.)
+    target_level = config['target_level']
+    if target_level in ('base_sequential', 'ozz', 'full', 'full_by_levels'):
+        print(f"  [Подготовка меток для уровня: {target_level}]")
+        df = prepare_labels_for_experiment(df, target_level)
+
     # Целевые колонки
-    target_columns = get_target_columns(config['target_level'], df)
-    print(f"  Целевые колонки ({config['target_level']}): {target_columns}")
+    target_columns = get_target_columns(target_level, df)
+    print(f"  Целевые колонки ({target_level}): {target_columns}")
+
+    # Автоматическая коррекция num_classes в config
+    if config.get('num_classes') != len(target_columns):
+        print(f"  [!] Корректировка num_classes: {config.get('num_classes')} → {len(target_columns)}")
+        config['num_classes'] = len(target_columns)
 
     # Разделяем файлы
     train_files, val_files = _split_files_train_val(
@@ -952,6 +964,8 @@ def parse_args() -> argparse.Namespace:
                         default=None, help='Уровень сложности модели')
     parser.add_argument('--epochs', type=int, default=None, help='Число эпох')
     parser.add_argument('--batch-size', type=int, default=None, help='Batch size')
+    parser.add_argument('--target-level', choices=['base', 'ozz', 'base_sequential'],
+                        default=None, help='Задача классификации: base (4 класса), ozz (3 класса ОЗЗ)')
     parser.add_argument('--smoke', action='store_true', help='Smoke-test (2 эпохи)')
     parser.add_argument('--no-augmentation', action='store_true',
                         help='Отключить аугментацию на сырых данных')
@@ -971,6 +985,8 @@ def main() -> None:
     config = get_finetune_config()
 
     config['model_type'] = args.model
+    if args.target_level is not None:
+        config['target_level'] = args.target_level
     if args.complexity:
         level = COMPLEXITY_LEVELS[args.complexity]
         config.update(level)
@@ -1030,6 +1046,11 @@ if __name__ == '__main__':
     # --- Эпохи ---
     EPOCHS = 100
 
+    # --- Задача классификации ---
+    # 'base' — 4 класса (Normal, ML_1, ML_2, ML_3)
+    # 'ozz'  — 3 класса ОЗЗ (Target_OZZ, Target_OZZ_decay, Target_OZZ_dpozz)
+    TARGET_LEVEL = 'base'
+
     # --- Аугментация и признаки ---
     USE_AUGMENTATION = True
     USE_LOW_HARMONICS = True
@@ -1052,6 +1073,7 @@ if __name__ == '__main__':
 
     config = get_finetune_config()
     config['model_type'] = MODEL_TYPE
+    config['target_level'] = TARGET_LEVEL
     config['epochs'] = EPOCHS
     config['use_augmentation'] = USE_AUGMENTATION
     config['use_low_harmonics'] = USE_LOW_HARMONICS

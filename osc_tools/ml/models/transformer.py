@@ -32,6 +32,50 @@ from osc_tools.ml.layers.transformer_blocks import (
     TransformerEncoderBlock,
 )
 
+# FastKAN для классификационной головы
+import sys as _sys
+import os as _os
+_fast_kan_path = _os.path.join(_os.path.dirname(__file__), '..', 'fast-kan-master')
+if _fast_kan_path not in _sys.path:
+    _sys.path.insert(0, _fast_kan_path)
+from fastkan import FastKANLayer  # noqa: E402
+
+
+class KANClassificationHead(nn.Module):
+    """Классификационная голова на основе FastKAN.
+
+    Заменяет nn.Linear: d_model → d_hidden (KAN) → num_classes (Linear).
+    Обеспечивает интерпретируемость за счёт сплайновых активаций.
+    """
+
+    def __init__(
+        self,
+        d_model: int,
+        num_classes: int,
+        kan_grid_size: int = 5,
+        d_hidden: int | None = None,
+    ) -> None:
+        super().__init__()
+        if d_hidden is None:
+            d_hidden = d_model * 2
+        self.kan = FastKANLayer(
+            input_dim=d_model,
+            output_dim=d_hidden,
+            num_grids=kan_grid_size,
+            use_base_update=True,
+            use_layernorm=True,
+        )
+        # Финальная линейная проекция на классы (без нелинейности — logits)
+        self.proj = nn.Linear(d_hidden, num_classes)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """(B, ..., d_model) → (B, ..., num_classes). Поддерживает 2D и 3D вход."""
+        shape = x.shape
+        x_flat = x.reshape(-1, shape[-1])  # (N, d_model)
+        h = self.kan(x_flat)               # (N, d_hidden)
+        out = self.proj(h)                 # (N, num_classes)
+        return out.view(*shape[:-1], -1)   # восстанавливаем форму
+
 
 class PhysicalKANTransformer(BaseModel):
     """Physical KAN-Transformer с физическим Stem и KAN-FFN.
@@ -153,10 +197,14 @@ class PhysicalKANTransformer(BaseModel):
         ssl_out = ssl_output_channels if ssl_output_channels else num_input_channels
         self.ssl_head = nn.Linear(d_model, ssl_out)
 
-        # Classification Head (для fine-tuning, если num_classes задан)
+        # Classification Head (KAN-based, для fine-tuning, если num_classes задан)
         self.cls_head: nn.Module | None = None
         if num_classes is not None:
-            self.cls_head = nn.Linear(d_model, num_classes)
+            self.cls_head = KANClassificationHead(
+                d_model=d_model,
+                num_classes=num_classes,
+                kan_grid_size=kan_grid_size,
+            )
 
     def forward(
         self,
