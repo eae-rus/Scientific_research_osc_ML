@@ -1,5 +1,52 @@
 # Лог работ по Фазе 4 (Physical KAN-Transformer)
 
+## [2026-03-17] Сессия 4: Низшие гармоники, аугментация, сложность, оценка
+
+### Реализовано: Низшие (суб-)гармоники
+
+1. **`compute_low_harmonics_fft()`** в [osc_tools/preprocessing/filtering.py](osc_tools/preprocessing/filtering.py)
+   - Backward-looking скользящее окно FFT для суб-гармоник с периодами 2, 4, 6, 10
+   - Извлекает бин 1 FFT из окон 64, 128, 192, 320 отсчётов
+   - Начальные точки заполняются первым валидным значением (дублирование)
+   - Увеличение числа каналов: 144 → 208 (8 сигналов × 13 гармоник × 2)
+
+### Реализовано: AugmentedSpectralDataset
+
+2. **`AugmentedSpectralDataset`** в [osc_tools/ml/augmented_dataset.py](osc_tools/ml/augmented_dataset.py)
+   - On-the-fly FFT: загружает raw 8-канальные данные, вычисляет FFT в реальном времени
+   - Аугментация ДО FFT: инверсия, масштабирование, перетасовка фаз на сырых данных
+   - Поддерживает SSL (маскирование + предсказание будущего) и classify режимы
+   - Загружает расширенное окно с контекстом для backward-looking low harmonics
+   - Padding для начала файлов (дублирование первой строки)
+   - Phase polar conversion с опорным фазором UA h1
+
+### Реализовано: Уровни сложности модели + Gradient Accumulation
+
+3. **3 уровня сложности** (d_model < num_input_channels = 208 для SSL bottleneck):
+   - light: d_model=48, 6 layers, 4 heads
+   - medium: d_model=64, 8 layers, 8 heads
+   - heavy: d_model=64, 16 layers, 8 heads
+4. **Gradient Accumulation**: effective_batch = batch_size × accumulation_steps = 32 × 8 = 256
+5. Обновлены скрипты pretrain и finetune:
+   - `--complexity light|medium|heavy`
+   - `--no-augmentation`, `--no-low-harmonics`
+   - `--accumulation-steps N`
+
+### Реализовано: Скрипт оценки Phase 4
+
+6. **[scripts/phase4_experiments/evaluate_phase4.py](scripts/phase4_experiments/evaluate_phase4.py)**
+   - Порог предсказания: 0.7
+   - Полные метрики: Macro-F1, Precision, Recall, ROC-AUC, Confusion Matrix
+   - Measurement inference latency
+   - Сравнение нескольких экспериментов (`--compare-dir`)
+   - Сохраняет `evaluation_report.json` в директорию чекпоинта
+
+### Обновлено: build_channel_groups_phase_polar
+
+7. Поддержка `num_low_harmonics` в [osc_tools/ml/losses.py](osc_tools/ml/losses.py)
+
+---
+
 ## [2026-03-17] Сессия 3: NaN fix, полный pretrain, fine-tuning pipeline
 
 ### Исправления

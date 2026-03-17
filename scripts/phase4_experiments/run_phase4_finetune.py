@@ -35,8 +35,21 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from osc_tools.ml.models.transformer import PhysicalKANTransformer, BaselineTransformer
 from osc_tools.ml.precomputed_dataset import PrecomputedDataset
+from osc_tools.ml.augmented_dataset import AugmentedSpectralDataset
+from osc_tools.ml.augmentation import TimeSeriesAugmenter
 from osc_tools.ml.labels import get_target_columns
 from osc_tools.ml.class_weights import compute_pos_weight_from_loader
+
+
+# ---------------------------------------------------------------------------
+# Уровни сложности модели
+# ---------------------------------------------------------------------------
+
+COMPLEXITY_LEVELS = {
+    'light':  {'d_model': 48,  'num_layers': 6,  'num_heads': 4},
+    'medium': {'d_model': 64,  'num_layers': 8,  'num_heads': 8},
+    'heavy':  {'d_model': 64,  'num_layers': 16, 'num_heads': 8},
+}
 
 
 # ---------------------------------------------------------------------------
@@ -53,24 +66,27 @@ def get_finetune_config() -> dict:
         'downsampling_stride': 16,
         'feature_mode': 'phase_polar',
         'num_harmonics': 9,
+        'sub_periods': [2, 4, 6, 10],
+        'use_augmentation': True,
+        'use_low_harmonics': True,
         'batch_size': 32,
         'val_batch_size': 64,
         'num_workers': 0,
         'val_split': 0.2,
         'target_level': 'base',  # 4 класса
 
-        # Модель (должно совпадать с pretrain)
+        # Модель (должно совпадать с pretrain; по умолчанию = light)
         'model_type': 'PhysicalKANTransformer',
-        'num_input_channels': 144,
-        'd_model': 64,
+        'num_input_channels': 208,  # 8 × (9 + 4) × 2 = 208
+        'd_model': 48,
         'num_heads': 4,
-        'num_layers': 4,
+        'num_layers': 6,
         'kan_grid_size': 5,
         'dropout': 0.1,
 
         # Fine-tuning специфика
         'num_classes': NUM_BASE_CLASSES,
-        'zone_size': 1,  # Каждый временной шаг = отдельная зона (stride=16 ≈ полпериода)
+        'zone_size': 1,  # Каждый временной шаг = отдельная зона
 
         # Обучение
         'epochs': 50,
@@ -80,6 +96,7 @@ def get_finetune_config() -> dict:
         'warmup_epochs': 2,
         'use_amp': True,
         'grad_clip': 1.0,
+        'accumulation_steps': 8,  # effective batch = 32 × 8 = 256
 
         # Сохранение
         'save_dir': str(PROJECT_ROOT / 'experiments' / 'phase4'),
@@ -188,6 +205,9 @@ def prepare_finetune_dataloaders(
 ) -> tuple[DataLoader, DataLoader, list[str]]:
     """Создаёт train/val DataLoader-ы для fine-tuning (с метками).
 
+    Если use_augmentation или use_low_harmonics — AugmentedSpectralDataset (on-the-fly FFT).
+    Иначе — PrecomputedDataset (legacy).
+
     Returns:
         (train_loader, val_loader, target_columns)
     """
@@ -209,10 +229,9 @@ def prepare_finetune_dataloaders(
     print(f"  Файлов: train={len(train_files)}, val={len(val_files)}")
     print(f"  Строк: train={train_df.height:,}, val={val_df.height:,}")
 
-    # Индексы (скользящее окно)
+    # Индексы
     window_size = config['window_size']
     stride = config['downsampling_stride']
-
     train_indices = PrecomputedDataset.create_indices(
         train_df, window_size=window_size, mode='val', stride=stride,
     )
@@ -221,31 +240,71 @@ def prepare_finetune_dataloaders(
     )
     print(f"  Окон: train={len(train_indices):,}, val={len(val_indices):,}")
 
-    # Datasets
-    train_ds = PrecomputedDataset(
-        dataframe=train_df,
-        indices=train_indices,
-        window_size=window_size,
-        feature_mode=config['feature_mode'],
-        target_columns=target_columns,
-        sampling_strategy='stride',
-        downsampling_stride=config['downsampling_stride'],
-        target_position=window_size - 1,  # Метка на последней точке окна
-        target_window_mode='any_in_window',  # Если есть событие ГДЕ-ЛИБО в окне
-        num_harmonics=config['num_harmonics'],
-    )
-    val_ds = PrecomputedDataset(
-        dataframe=val_df,
-        indices=val_indices,
-        window_size=window_size,
-        feature_mode=config['feature_mode'],
-        target_columns=target_columns,
-        sampling_strategy='stride',
-        downsampling_stride=config['downsampling_stride'],
-        target_position=window_size - 1,
-        target_window_mode='any_in_window',
-        num_harmonics=config['num_harmonics'],
-    )
+    use_augmented = config.get('use_augmentation', False) or config.get('use_low_harmonics', False)
+
+    if use_augmented:
+        sub_periods = config.get('sub_periods', [2, 4, 6, 10]) if config.get('use_low_harmonics') else []
+        augmenter = TimeSeriesAugmenter() if config.get('use_augmentation') else None
+
+        train_boundaries = AugmentedSpectralDataset.compute_file_boundaries(train_df)
+        val_boundaries = AugmentedSpectralDataset.compute_file_boundaries(val_df)
+
+        train_ds = AugmentedSpectralDataset(
+            dataframe=train_df,
+            file_boundaries=train_boundaries,
+            indices=train_indices,
+            window_size=window_size,
+            num_harmonics=config['num_harmonics'],
+            sub_periods=sub_periods if sub_periods else None,
+            downsampling_stride=stride,
+            future_periods=0,       # Нет предсказания будущего при finetune
+            mask_ratio=0.0,         # Нет маскирования при finetune
+            augmenter=augmenter,
+            target_columns=target_columns,
+            mode='classify',
+            target_window_mode='any_in_window',
+        )
+        val_ds = AugmentedSpectralDataset(
+            dataframe=val_df,
+            file_boundaries=val_boundaries,
+            indices=val_indices,
+            window_size=window_size,
+            num_harmonics=config['num_harmonics'],
+            sub_periods=sub_periods if sub_periods else None,
+            downsampling_stride=stride,
+            future_periods=0,
+            mask_ratio=0.0,
+            augmenter=None,
+            target_columns=target_columns,
+            mode='classify',
+            target_window_mode='any_in_window',
+        )
+    else:
+        # Legacy: PrecomputedDataset
+        train_ds = PrecomputedDataset(
+            dataframe=train_df,
+            indices=train_indices,
+            window_size=window_size,
+            feature_mode=config['feature_mode'],
+            target_columns=target_columns,
+            sampling_strategy='stride',
+            downsampling_stride=stride,
+            target_position=window_size - 1,
+            target_window_mode='any_in_window',
+            num_harmonics=config['num_harmonics'],
+        )
+        val_ds = PrecomputedDataset(
+            dataframe=val_df,
+            indices=val_indices,
+            window_size=window_size,
+            feature_mode=config['feature_mode'],
+            target_columns=target_columns,
+            sampling_strategy='stride',
+            downsampling_stride=stride,
+            target_position=window_size - 1,
+            target_window_mode='any_in_window',
+            num_harmonics=config['num_harmonics'],
+        )
 
     train_loader = DataLoader(
         train_ds, batch_size=config['batch_size'],
@@ -273,8 +332,9 @@ def train_one_epoch(
     device: torch.device,
     scaler: torch.amp.GradScaler | None,
     grad_clip: float,
+    accumulation_steps: int = 1,
 ) -> dict[str, float]:
-    """Одна эпоха fine-tuning.
+    """Одна эпоха fine-tuning с gradient accumulation.
 
     Модель выдаёт (B, num_zones, num_classes). Для loss используем
     последнюю зону (соответствует метке последней точки окна).
@@ -286,11 +346,11 @@ def train_one_epoch(
     num_batches = 0
     t0 = time.perf_counter()
 
-    for x, y in loader:
+    optimizer.zero_grad(set_to_none=True)
+
+    for step, (x, y) in enumerate(loader):
         x = x.to(device)       # (B, C, T)
         y = y.to(device)       # (B, num_classes)
-
-        optimizer.zero_grad(set_to_none=True)
 
         use_amp = scaler is not None
         with torch.amp.autocast('cuda', enabled=use_amp):
@@ -303,18 +363,26 @@ def train_one_epoch(
         # может переполниться в float16 (log(1+exp(x)) при x > 11)
         loss = loss_fn(logits_last.float(), y)
 
+        if accumulation_steps > 1:
+            loss = loss / accumulation_steps
+
         if scaler is not None:
             scaler.scale(loss).backward()
-            scaler.unscale_(optimizer)
-            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
-            scaler.step(optimizer)
-            scaler.update()
         else:
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
-            optimizer.step()
 
-        loss_val = loss.item()
+        if (step + 1) % accumulation_steps == 0 or (step + 1) == len(loader):
+            if scaler is not None:
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+                optimizer.step()
+            optimizer.zero_grad(set_to_none=True)
+
+        loss_val = loss.item() * (accumulation_steps if accumulation_steps > 1 else 1)
         if not np.isnan(loss_val):
             total_loss += loss_val
             num_batches += 1
@@ -553,6 +621,8 @@ def finetune(config: dict, ssl_checkpoint: str | None = None) -> Path:
 
     print(f"\nНачало fine-tuning: {total_epochs} эпох, batch_size={config['batch_size']}")
     print(f"Целевые классы: {target_columns}")
+    accum = config.get('accumulation_steps', 1)
+    print(f"Gradient accumulation: {accum} шагов → effective batch = {config['batch_size'] * accum}")
     print("-" * 70)
 
     for epoch in range(total_epochs):
@@ -566,6 +636,7 @@ def finetune(config: dict, ssl_checkpoint: str | None = None) -> Path:
         train_metrics = train_one_epoch(
             model, train_loader, loss_fn, optimizer, device,
             scaler, config.get('grad_clip', 1.0),
+            accumulation_steps=accum,
         )
 
         # Val
@@ -700,9 +771,17 @@ def parse_args() -> argparse.Namespace:
                         help='Путь к SSL-чекпоинту для инициализации')
     parser.add_argument('--model', choices=['PhysicalKANTransformer', 'BaselineTransformer'],
                         default='PhysicalKANTransformer', help='Тип модели')
+    parser.add_argument('--complexity', choices=['light', 'medium', 'heavy'],
+                        default=None, help='Уровень сложности модели')
     parser.add_argument('--epochs', type=int, default=None, help='Число эпох')
     parser.add_argument('--batch-size', type=int, default=None, help='Batch size')
     parser.add_argument('--smoke', action='store_true', help='Smoke-test (2 эпохи)')
+    parser.add_argument('--no-augmentation', action='store_true',
+                        help='Отключить аугментацию на сырых данных')
+    parser.add_argument('--no-low-harmonics', action='store_true',
+                        help='Отключить низшие гармоники')
+    parser.add_argument('--accumulation-steps', type=int, default=None,
+                        help='Шаги gradient accumulation (override)')
     return parser.parse_args()
 
 
@@ -711,14 +790,29 @@ def main() -> None:
     config = get_finetune_config()
 
     config['model_type'] = args.model
+    if args.complexity:
+        level = COMPLEXITY_LEVELS[args.complexity]
+        config.update(level)
+        print(f"Сложность: {args.complexity} → {level}")
     if args.epochs is not None:
         config['epochs'] = args.epochs
     if args.batch_size is not None:
         config['batch_size'] = args.batch_size
+    if args.accumulation_steps is not None:
+        config['accumulation_steps'] = args.accumulation_steps
+    if args.no_augmentation:
+        config['use_augmentation'] = False
+    if args.no_low_harmonics:
+        config['use_low_harmonics'] = False
+        config['num_input_channels'] = 144
     if args.smoke:
         config['epochs'] = 2
         config['batch_size'] = 4
         config['val_batch_size'] = 4
+        config['use_augmentation'] = False
+        config['use_low_harmonics'] = False
+        config['num_input_channels'] = 144
+        config['accumulation_steps'] = 1
 
     finetune(config, ssl_checkpoint=args.checkpoint)
 

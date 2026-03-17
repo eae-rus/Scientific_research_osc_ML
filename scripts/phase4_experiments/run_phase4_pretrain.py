@@ -38,6 +38,19 @@ from osc_tools.ml.losses import (
 )
 from osc_tools.ml.ssl_dataset import SSLSpectralDataset
 from osc_tools.ml.precomputed_dataset import PrecomputedDataset
+from osc_tools.ml.augmented_dataset import AugmentedSpectralDataset
+from osc_tools.ml.augmentation import TimeSeriesAugmenter
+
+
+# ---------------------------------------------------------------------------
+# Уровни сложности модели
+# ---------------------------------------------------------------------------
+
+COMPLEXITY_LEVELS = {
+    'light':  {'d_model': 48,  'num_layers': 6,  'num_heads': 4},
+    'medium': {'d_model': 64,  'num_layers': 8,  'num_heads': 8},
+    'heavy':  {'d_model': 64,  'num_layers': 16, 'num_heads': 8},
+}
 
 
 # ---------------------------------------------------------------------------
@@ -51,11 +64,11 @@ def get_default_config(mode: str = 'smoke') -> dict:
         # Данные
         'window_size': 320,
         'downsampling_stride': 16,
-        # PrecomputedDataset поддерживает мульти-режим: list[str], напр. ['phase_polar', 'symmetric_polar'].
-        # Сейчас используем только phase_polar (144 канала = 8×9×2).
-        # При добавлении режимов нужно пересчитать num_input_channels.
         'feature_mode': 'phase_polar',
         'num_harmonics': 9,
+        'sub_periods': [2, 4, 6, 10],   # Низшие гармоники (периоды в ед. промышленной частоты)
+        'use_augmentation': True,         # Аугментация на сырых данных до FFT
+        'use_low_harmonics': True,        # Добавить низшие гармоники
         'future_periods': 2,
         'mask_ratio': 0.25,
         'batch_size': 32,
@@ -63,12 +76,12 @@ def get_default_config(mode: str = 'smoke') -> dict:
         'num_workers': 0,  # 0 = без multiprocessing (Windows-безопасно)
         'val_split': 0.2,  # 20% файлов на валидацию
 
-        # Модель
+        # Модель (значения по умолчанию = light, переопределяются через --complexity)
         'model_type': 'PhysicalKANTransformer',
-        'num_input_channels': 144,  # 8 каналов * 9 гармоник * 2 (mag+angle) = 144
-        'd_model': 64,
+        'num_input_channels': 208,  # 8 каналов × (9 + 4 низших) гармоник × 2 = 208
+        'd_model': 48,
         'num_heads': 4,
-        'num_layers': 4,
+        'num_layers': 6,
         'kan_grid_size': 5,
         'dropout': 0.1,
 
@@ -80,6 +93,7 @@ def get_default_config(mode: str = 'smoke') -> dict:
         'warmup_epochs': 3,         # Линейный warmup перед cosine
         'use_amp': True,            # Mixed precision для 8 ГБ VRAM
         'grad_clip': 1.0,           # Gradient clipping
+        'accumulation_steps': 8,    # Gradient accumulation: effective_batch = 32 × 8 = 256
 
         # Сохранение
         'save_dir': str(PROJECT_ROOT / 'experiments' / 'phase4'),
@@ -102,6 +116,10 @@ def get_default_config(mode: str = 'smoke') -> dict:
             'use_amp': False,
             'warmup_epochs': 0,
             'checkpoint_frequency': 1,
+            'use_augmentation': False,
+            'use_low_harmonics': False,
+            'num_input_channels': 144,  # Без низших гармоник
+            'accumulation_steps': 1,
         })
     elif mode == 'pretrain':
         pass  # Базовые параметры
@@ -170,8 +188,9 @@ def prepare_dataloaders(
 ) -> tuple[DataLoader, DataLoader, list[list[int]] | None]:
     """Создаёт train/val DataLoader-ы на основе precomputed CSV.
 
-    Для SSL pre-training: используем test_precomputed.csv,
-    делим по file_name на 80% train / 20% val.
+    Если use_augmentation=True и use_low_harmonics=True — используется AugmentedSpectralDataset
+    (on-the-fly FFT с низшими гармониками и аугментацией на сырых данных).
+    Иначе — SSLSpectralDataset + PrecomputedDataset (legacy).
 
     Returns:
         (train_loader, val_loader, channel_groups)
@@ -191,6 +210,98 @@ def prepare_dataloaders(
     train_df = df.filter(pl.col('file_name').is_in(train_files))
     val_df = df.filter(pl.col('file_name').is_in(val_files))
     print(f"  Строк: train={train_df.height:,}, val={val_df.height:,}")
+
+    use_augmented = config.get('use_augmentation', False) or config.get('use_low_harmonics', False)
+
+    if use_augmented:
+        return _prepare_augmented_dataloaders(config, train_df, val_df)
+    else:
+        return _prepare_legacy_dataloaders(config, train_df, val_df)
+
+
+def _prepare_augmented_dataloaders(
+    config: dict,
+    train_df: pl.DataFrame,
+    val_df: pl.DataFrame,
+) -> tuple[DataLoader, DataLoader, list[list[int]] | None]:
+    """DataLoader-ы через AugmentedSpectralDataset (on-the-fly FFT)."""
+
+    sub_periods = config.get('sub_periods', [2, 4, 6, 10]) if config.get('use_low_harmonics') else []
+
+    # Аугментатор для обучения
+    augmenter = TimeSeriesAugmenter() if config.get('use_augmentation') else None
+
+    # Вычисляем границы файлов
+    train_boundaries = AugmentedSpectralDataset.compute_file_boundaries(train_df)
+    val_boundaries = AugmentedSpectralDataset.compute_file_boundaries(val_df)
+
+    # Размер окна с будущими периодами
+    full_window = config['window_size'] + config['future_periods'] * 32
+
+    # Индексы (скользящее окно)
+    train_indices = PrecomputedDataset.create_indices(
+        train_df, window_size=full_window, mode='val', stride=config['downsampling_stride'],
+    )
+    val_indices = PrecomputedDataset.create_indices(
+        val_df, window_size=full_window, mode='val', stride=config['downsampling_stride'],
+    )
+    print(f"  Окон: train={len(train_indices):,}, val={len(val_indices):,}")
+
+    # Datasets
+    train_ds = AugmentedSpectralDataset(
+        dataframe=train_df,
+        file_boundaries=train_boundaries,
+        indices=train_indices,
+        window_size=config['window_size'],
+        num_harmonics=config['num_harmonics'],
+        sub_periods=sub_periods if sub_periods else None,
+        downsampling_stride=config['downsampling_stride'],
+        future_periods=config['future_periods'],
+        mask_ratio=config['mask_ratio'],
+        augmenter=augmenter,
+        mode='ssl',
+    )
+    val_ds = AugmentedSpectralDataset(
+        dataframe=val_df,
+        file_boundaries=val_boundaries,
+        indices=val_indices,
+        window_size=config['window_size'],
+        num_harmonics=config['num_harmonics'],
+        sub_periods=sub_periods if sub_periods else None,
+        downsampling_stride=config['downsampling_stride'],
+        future_periods=config['future_periods'],
+        mask_ratio=0.0,  # Валидация без маскирования
+        augmenter=None,   # Валидация без аугментации
+        mode='ssl',
+    )
+
+    channel_groups = train_ds.get_channel_groups(separated=True)
+
+    train_loader = DataLoader(
+        train_ds,
+        batch_size=config['batch_size'],
+        shuffle=True,
+        num_workers=config['num_workers'],
+        pin_memory=True,
+        drop_last=True,
+    )
+    val_loader = DataLoader(
+        val_ds,
+        batch_size=config['val_batch_size'],
+        shuffle=False,
+        num_workers=config['num_workers'],
+        pin_memory=True,
+    )
+
+    return train_loader, val_loader, channel_groups
+
+
+def _prepare_legacy_dataloaders(
+    config: dict,
+    train_df: pl.DataFrame,
+    val_df: pl.DataFrame,
+) -> tuple[DataLoader, DataLoader, list[list[int]] | None]:
+    """DataLoader-ы через SSLSpectralDataset (legacy, precomputed features)."""
 
     # Размер окна с будущими периодами (для SSLSpectralDataset)
     full_window = config['window_size'] + config['future_periods'] * 32
@@ -273,8 +384,13 @@ def train_one_epoch(
     device: torch.device,
     scaler: torch.amp.GradScaler | None,
     grad_clip: float,
+    accumulation_steps: int = 1,
 ) -> dict[str, float]:
-    """Одна эпоха обучения.
+    """Одна эпоха обучения с gradient accumulation.
+
+    Args:
+        accumulation_steps: число шагов накопления градиентов.
+            effective_batch = batch_size × accumulation_steps.
 
     Returns:
         dict с 'loss', 'time_sec'
@@ -284,13 +400,13 @@ def train_one_epoch(
     num_batches = 0
     t0 = time.perf_counter()
 
-    for batch in loader:
+    optimizer.zero_grad(set_to_none=True)
+
+    for step, batch in enumerate(loader):
         x_input = batch['input'].to(device)       # (B, C, T_current)
         x_target = batch['target'].to(device)      # (B, C, T_full)
         mask_loss = batch['mask_loss'].to(device)   # (B, C, T_full)
         current_len = batch['current_len'][0].item()
-
-        optimizer.zero_grad(set_to_none=True)
 
         # Forward pass через модель (SSL: реконструкция)
         use_amp = scaler is not None
@@ -299,8 +415,6 @@ def train_one_epoch(
             pred = out['ssl']  # (B, C, T_current)
 
             # Модель реконструирует только текущее окно (T_current шагов).
-            # Target уже содержит и текущее, и будущее. Обрезаем target до T_current
-            # (предсказание будущего будет добавлено позже, когда модель станет seq2seq).
             T_pred = pred.shape[2]
             target_trimmed = x_target[:, :, :T_pred]
             mask_trimmed = mask_loss[:, :, :T_pred]
@@ -315,19 +429,30 @@ def train_one_epoch(
                 mask=mask_amp, current_len=current_len,
             )
 
+            # Нормализация loss для gradient accumulation
+            if accumulation_steps > 1:
+                loss = loss / accumulation_steps
+
         # Backward
         if scaler is not None:
             scaler.scale(loss).backward()
-            scaler.unscale_(optimizer)
-            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
-            scaler.step(optimizer)
-            scaler.update()
         else:
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
-            optimizer.step()
 
-        total_loss += loss.item()
+        # Optimizer step каждые accumulation_steps (или на последнем батче)
+        if (step + 1) % accumulation_steps == 0 or (step + 1) == len(loader):
+            if scaler is not None:
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+                optimizer.step()
+            optimizer.zero_grad(set_to_none=True)
+
+        # Восстанавливаем реальное значение loss для логирования
+        total_loss += loss.item() * (accumulation_steps if accumulation_steps > 1 else 1)
         num_batches += 1
 
     elapsed = time.perf_counter() - t0
@@ -478,11 +603,15 @@ def pretrain(config: dict, resume_path: str | None = None) -> None:
     print(f"Параметры модели: {n_params:,}")
 
     # --- Loss ---
-    # Число каналов амплитуд тока: 4 сигнала (IA, IB, IC, IN) × 9 гармоник = 36
-    num_current_amp_channels = 4 * config['num_harmonics']
-    # channel_groups для amp-only тензора (после split amp/angle → 72 канала)
+    # Число гармоник с учётом низших
+    num_low_harmonics = len(config.get('sub_periods', [])) if config.get('use_low_harmonics') else 0
+    total_harmonics = config['num_harmonics'] + num_low_harmonics
+    # Число каналов амплитуд тока: 4 сигнала (IA, IB, IC, IN) × total гармоник
+    num_current_amp_channels = 4 * total_harmonics
+    # channel_groups для amp-only тензора (после split amp/angle)
     separated_groups = build_channel_groups_phase_polar(
-        num_signals=8, num_harmonics=config['num_harmonics'], separated=True,
+        num_signals=8, num_harmonics=config['num_harmonics'],
+        separated=True, num_low_harmonics=num_low_harmonics,
     )
     loss_fn = SpectralReconstructionLoss(
         num_current_channels=num_current_amp_channels,
@@ -545,6 +674,8 @@ def pretrain(config: dict, resume_path: str | None = None) -> None:
 
     print(f"\nНачало обучения: {total_epochs} эпох, batch_size={config['batch_size']}")
     print(f"LR scheduler: {config['lr_scheduler']}, warmup: {warmup_epochs} эпох")
+    accum = config.get('accumulation_steps', 1)
+    print(f"Gradient accumulation: {accum} шагов → effective batch = {config['batch_size'] * accum}")
     print("-" * 60)
 
     for epoch in range(start_epoch, total_epochs):
@@ -560,6 +691,7 @@ def pretrain(config: dict, resume_path: str | None = None) -> None:
         train_metrics = train_one_epoch(
             model, train_loader, loss_fn, optimizer, device,
             scaler, config.get('grad_clip', 1.0),
+            accumulation_steps=accum,
         )
 
         # --- Val ---
@@ -752,6 +884,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='Phase 4: Physical KAN-Transformer')
     parser.add_argument('--mode', choices=['smoke', 'pretrain', 'finetune'],
                         default='smoke', help='Режим запуска')
+    parser.add_argument('--complexity', choices=['light', 'medium', 'heavy'],
+                        default=None, help='Уровень сложности модели')
     parser.add_argument('--epochs', type=int, default=None, help='Число эпох (override)')
     parser.add_argument('--batch-size', type=int, default=None, help='Batch size (override)')
     parser.add_argument('--model', choices=['PhysicalKANTransformer', 'BaselineTransformer'],
@@ -759,12 +893,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--d-model', type=int, default=None, help='d_model (override)')
     parser.add_argument('--resume', type=str, default=None, help='Путь к чекпоинту для продолжения')
     parser.add_argument('--lr', type=float, default=None, help='Learning rate (override)')
+    parser.add_argument('--no-augmentation', action='store_true',
+                        help='Отключить аугментацию на сырых данных')
+    parser.add_argument('--no-low-harmonics', action='store_true',
+                        help='Отключить низшие гармоники')
+    parser.add_argument('--accumulation-steps', type=int, default=None,
+                        help='Шаги gradient accumulation (override)')
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
     config = get_default_config(args.mode)
+
+    # Применяем уровень сложности
+    if args.complexity and args.mode != 'smoke':
+        level = COMPLEXITY_LEVELS[args.complexity]
+        config.update(level)
+        print(f"Сложность: {args.complexity} → {level}")
 
     # Overrides
     if args.epochs is not None:
@@ -775,7 +921,15 @@ def main() -> None:
         config['d_model'] = args.d_model
     if args.lr is not None:
         config['learning_rate'] = args.lr
+    if args.accumulation_steps is not None:
+        config['accumulation_steps'] = args.accumulation_steps
     config['model_type'] = args.model
+
+    if args.no_augmentation:
+        config['use_augmentation'] = False
+    if args.no_low_harmonics:
+        config['use_low_harmonics'] = False
+        config['num_input_channels'] = 144  # 8 × 9 × 2
 
     if args.mode == 'smoke':
         smoke_test(config)
