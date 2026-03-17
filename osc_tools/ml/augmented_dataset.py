@@ -4,8 +4,8 @@ AugmentedSpectralDataset — Dataset с аугментацией на сырых
 Pipeline (простой и прямолинейный):
 1. Берёт окно сырых 8-канальных данных IA..UN (с контекстом слева, если есть; иначе NaN)
 2. Аугментация на сырых данных (через TimeSeriesAugmenter)
-3. FFT на всех точках → stride комплексных фазоров → polar + symmetric только в нужных точках
-4. Возврат: SSL (dict) или classify (X, Y с позонными дробными метками)
+3. FFT только в нужных точках → polar + symmetric только в них же
+4. Возврат: SSL (dict) или classify (X, Y с позонной агрегацией меток)
 
 Stride задаётся как доля периода (напр. 1/2 = 16, 1/4 = 8 при 1600/50=32).
 Контекст для низших гармоник: если есть данные слева — берём;
@@ -37,7 +37,6 @@ import polars as pl
 import torch
 from torch.utils.data import Dataset
 
-from osc_tools.preprocessing.filtering import sliding_window_fft, compute_low_harmonics_fft
 from osc_tools.features.polar import calculate_polar_features
 from osc_tools.features.phasor import calculate_symmetrical_components
 from osc_tools.ml.labels import get_target_columns
@@ -85,6 +84,75 @@ def compute_num_channels(num_harmonics: int = 9,
     return ch
 
 
+def _extract_fft_harmonics(windows: np.ndarray, num_harmonics: int) -> np.ndarray:
+    """Извлекает 1..num_harmonics из набора окон FFT."""
+    out = np.full((windows.shape[0], num_harmonics), np.nan + 1j * np.nan, dtype=np.complex64)
+    if windows.shape[0] == 0:
+        return out
+
+    fft_coeffs = np.fft.fft(windows, axis=1) / windows.shape[1]
+    max_h = min(num_harmonics, fft_coeffs.shape[1] - 1)
+    if max_h > 0:
+        out[:, :max_h] = (fft_coeffs[:, 1:max_h + 1] * 2).astype(np.complex64)
+    return out
+
+
+def _compute_fft_selected(
+    signal: np.ndarray,
+    positions: np.ndarray,
+    fft_window_size: int,
+    num_harmonics: int,
+) -> np.ndarray:
+    """Считает FFT только для выбранных стартовых позиций окна."""
+    pos = np.asarray(positions, dtype=np.int64)
+    out = np.full((len(pos), num_harmonics), np.nan + 1j * np.nan, dtype=np.complex64)
+
+    if len(pos) == 0 or len(signal) < fft_window_size:
+        return out
+
+    valid = (pos >= 0) & (pos + fft_window_size <= len(signal))
+    if not np.any(valid):
+        return out
+
+    windows = np.lib.stride_tricks.sliding_window_view(signal, fft_window_size)
+    out[valid] = _extract_fft_harmonics(windows[pos[valid]], num_harmonics)
+    return out
+
+
+def _compute_low_harmonics_selected(
+    signal: np.ndarray,
+    positions: np.ndarray,
+    samples_per_period: int,
+    sub_periods: List[int],
+) -> np.ndarray:
+    """Считает низшие гармоники только в выбранных backward-looking точках."""
+    pos = np.asarray(positions, dtype=np.int64)
+    out = np.full((len(pos), len(sub_periods)), np.nan + 1j * np.nan, dtype=np.complex64)
+
+    if len(pos) == 0:
+        return out
+
+    for j, sub_period in enumerate(sub_periods):
+        window_size = sub_period * samples_per_period
+        if len(signal) < window_size:
+            continue
+
+        start_pos = pos - window_size + 1
+        valid = (start_pos >= 0) & (pos < len(signal))
+
+        first_valid = _extract_fft_harmonics(signal[:window_size][None, :], 1)[0, 0]
+        if np.isfinite(first_valid.real) and np.isfinite(first_valid.imag):
+            out[~valid, j] = first_valid
+
+        if not np.any(valid):
+            continue
+
+        windows = np.lib.stride_tricks.sliding_window_view(signal, window_size)
+        out[valid, j] = _extract_fft_harmonics(windows[start_pos[valid]], 1)[:, 0]
+
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Спектральная обработка одного окна сырых данных
 # ---------------------------------------------------------------------------
@@ -100,17 +168,17 @@ def compute_spectral_from_raw(
     """Вычисляет спектральные признаки из сырых 8-канальных данных.
 
     Алгоритм:
-    1. FFT на всех точках (быстро, numpy vectorized)
-    2. Если stride задан — отбираем комплексные фазоры только в нужных позициях
-    3. Polar conversion + симметричные только на отобранных позициях
+    1. Выбираем нужные позиции по stride
+    2. Считаем FFT только для этих позиций
+    3. Polar conversion + симметричные только на этих позициях
 
     Args:
         raw: (T, 8) сырые данные
         num_harmonics: число стандартных гармоник (9)
         sub_periods: суб-периоды низших гармоник [2,4,6,10]
         include_symmetric: добавить ли симметричные составляющие
-        stride: если задан — polar/symmetric считаются только в позициях
-                [warmup, warmup+stride, warmup+2*stride, ...]
+        stride: если задан — FFT/polar/symmetric считаются только в позициях
+            [warmup, warmup+stride, warmup+2*stride, ...]
         warmup: пропускаемые начальные позиции (FFT warmup)
 
     Returns:
@@ -122,32 +190,25 @@ def compute_spectral_from_raw(
 
     n_time = raw.shape[0]
 
-    # --- 1. FFT на всех точках (быстро, numpy) ---
-    phasors = []  # 8 массивов (T, H) complex
-    for ch in range(NUM_RAW):
-        p = sliding_window_fft(raw[:, ch], FFT_WINDOW, num_harmonics)
-        p = np.nan_to_num(p, nan=0.0, posinf=0.0, neginf=0.0).astype(np.complex64)
-        phasors.append(p)
-
-    low_phasors = []  # 8 массивов (T, LH) complex
-    for ch in range(NUM_RAW):
-        lh = compute_low_harmonics_fft(raw[:, ch], SAMPLES_PER_PERIOD, sub_periods)
-        lh = np.nan_to_num(lh, nan=0.0, posinf=0.0, neginf=0.0).astype(np.complex64)
-        low_phasors.append(lh)
-
-    # --- 2. Отбор позиций (stride) ---
+    # --- 1. Отбор позиций (stride) ---
     if stride is not None:
         sel = np.arange(warmup, n_time, stride)
     else:
         sel = np.arange(n_time)
     n_out = len(sel)
 
-    # Собираем complex только в выбранных позициях: (n_out, 8, H+LH)
+    # --- 2. FFT только в нужных позициях ---
     total_h = num_harmonics + len(sub_periods)
     complex_all = np.zeros((n_out, NUM_RAW, total_h), dtype=np.complex64)
     for ch in range(NUM_RAW):
-        complex_all[:, ch, :num_harmonics] = phasors[ch][sel]
-        complex_all[:, ch, num_harmonics:] = low_phasors[ch][sel]
+        signal = raw[:, ch]
+        phase_phasors = _compute_fft_selected(signal, sel, FFT_WINDOW, num_harmonics)
+        phase_phasors = np.nan_to_num(phase_phasors, nan=0.0, posinf=0.0, neginf=0.0)
+        complex_all[:, ch, :num_harmonics] = phase_phasors
+
+        low_phasors = _compute_low_harmonics_selected(signal, sel, SAMPLES_PER_PERIOD, sub_periods)
+        low_phasors = np.nan_to_num(low_phasors, nan=0.0, posinf=0.0, neginf=0.0)
+        complex_all[:, ch, num_harmonics:] = low_phasors
 
     # --- 3. Polar + symmetric только на отобранных позициях ---
     complex_flat = complex_all.reshape(n_out, NUM_RAW * total_h)
@@ -371,7 +432,7 @@ class AugmentedSpectralDataset(Dataset):
                 raw = raw.numpy()
             raw = np.asarray(raw, dtype=np.float32)
 
-        # 3. FFT → stride комплексных фазоров → polar/symmetric только в нужных точках
+        # 3. FFT только в нужных точках → polar/symmetric только в них же
         # warmup смещён на контекст: первый stride-отсчёт начинается
         # с позиции _context_before + FFT_WINDOW в расширенном окне
         spectral = compute_spectral_from_raw(
