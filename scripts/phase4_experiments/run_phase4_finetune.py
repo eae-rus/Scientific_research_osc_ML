@@ -92,7 +92,9 @@ def get_finetune_config() -> dict:
         'num_layers': 6,
         'kan_grid_size': 5,
         'dropout': 0.1,
-        'cls_head_type': 'complex_gated_kan',
+        'cls_head_type': 'kan',
+        'use_angle_gate': True,           # DirectionalRelayGate (направленный орган)
+        'use_mixed_layer_norm': False,    # False = AmpOnlyLayerNorm (углы не норм.)
 
         # Fine-tuning специфика
         'num_classes': NUM_BASE_CLASSES,
@@ -101,9 +103,9 @@ def get_finetune_config() -> dict:
 
         # Обучение
         'epochs': 50,
-        'lr_backbone': 5e-5,     # Низкий LR для backbone (уже обучен SSL)
+        'lr_backbone': 5e-4,     # Низкий LR для backbone (уже обучен SSL)
         'lr_head': 1e-4,         # Высокий LR для новой головы
-        'weight_decay': 1e-5,
+        'weight_decay': 1e-3,
         'warmup_epochs': 2,
         'use_amp': True,
         'grad_clip': 1.0,
@@ -150,7 +152,9 @@ def create_model_for_finetune(
             num_classes=config['num_classes'],
             zone_size=config['zone_size'],
             kan_grid_size=config['kan_grid_size'],
-            cls_head_type=config.get('cls_head_type', 'complex_gated_kan'),
+            use_angle_gate=config.get('use_angle_gate', True),
+            use_mixed_layer_norm=config.get('use_mixed_layer_norm', False),
+            cls_head_type=config.get('cls_head_type', 'kan'),
             dropout=config['dropout'],
             max_seq_len=64,
         )
@@ -805,7 +809,9 @@ def finetune(
         device=device,
     )
     print(f"supervision_mode: {supervision_mode}")
-    print(f"cls_head_type: {config.get('cls_head_type', 'complex_gated_kan')}")
+    print(f"cls_head_type: {config.get('cls_head_type', 'kan')}")
+    print(f"use_angle_gate: {config.get('use_angle_gate', True)}")
+    print(f"use_mixed_layer_norm: {config.get('use_mixed_layer_norm', False)}")
     print(f"pos_weight ({supervision_mode}): {pos_weight.cpu().numpy()}")
     loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 
@@ -1057,13 +1063,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--target-level', choices=['base', 'ozz', 'base_sequential'],
                         default=None, help='Задача классификации: base (4 класса), ozz (3 класса ОЗЗ)')
     parser.add_argument('--cls-head-type',
-                        choices=['complex_gated_kan', 'kan', 'mlp', 'linear'],
+                        choices=['kan', 'mlp', 'linear'],
                         default=None,
                         help='Тип классификационной головы')
     parser.add_argument('--supervision-mode',
                         choices=['zone', 'window', 'last_zone'],
                         default=None,
                         help='Как считать loss: по всем зонам, по окну или только по последней зоне')
+    parser.add_argument('--no-angle-gate', action='store_true',
+                        help='Отключить DirectionalRelayGate (направленный орган)')
+    parser.add_argument('--mixed-layer-norm', action='store_true',
+                        help='Использовать стандартный LayerNorm на всём векторе (amp+angle)')
     parser.add_argument('--smoke', action='store_true', help='Smoke-test (2 эпохи)')
     parser.add_argument('--no-augmentation', action='store_true',
                         help='Отключить аугментацию на сырых данных')
@@ -1089,6 +1099,10 @@ def main() -> None:
         config['cls_head_type'] = args.cls_head_type
     if args.supervision_mode is not None:
         config['supervision_mode'] = args.supervision_mode
+    if hasattr(args, 'no_angle_gate') and args.no_angle_gate:
+        config['use_angle_gate'] = False
+    if hasattr(args, 'mixed_layer_norm') and args.mixed_layer_norm:
+        config['use_mixed_layer_norm'] = True
     if args.complexity:
         level = COMPLEXITY_LEVELS[args.complexity]
         config.update(level)
@@ -1139,11 +1153,11 @@ if __name__ == '__main__':
 
     # --- Путь к SSL-чекпоинту (None = random init) ---
     # SSL_CHECKPOINT = None
-    SSL_CHECKPOINT = 'experiments/phase4/pretrain_PhysicalKANTransformer_20260317_185155/best_model.pt'
+    SSL_CHECKPOINT = 'experiments/phase4/pretrain_PhysicalKANTransformer_20260319_180046/best_model.pt'
 
     # --- Продолжение fine-tuning ---
     RESUME_PATH = None      # Путь к чекпоинту finetune (latest_checkpoint.pt)
-    RESET_OPTIMIZER = False # True, если нужно сбросить оптимизатор и начать с 0 эпохи
+    RESET_OPTIMIZER = True # True, если нужно сбросить оптимизатор и начать с 0 эпохи
 
     # --- Эпохи ---
     EPOCHS = 100
@@ -1151,9 +1165,11 @@ if __name__ == '__main__':
     # --- Задача классификации ---
     # 'base' — 4 класса (Normal, ML_1, ML_2, ML_3)
     # 'ozz'  — 3 класса ОЗЗ (Target_OZZ, Target_OZZ_decay, Target_OZZ_dpozz)
-    TARGET_LEVEL = 'base'
-    CLS_HEAD_TYPE = 'complex_gated_kan'   # 'complex_gated_kan' | 'kan' | 'mlp' | 'linear'
+    TARGET_LEVEL = 'ozz'
+    CLS_HEAD_TYPE = 'kan'   # 'kan' | 'mlp' | 'linear'
     SUPERVISION_MODE = 'last_zone'             # 'zone' | 'window' | 'last_zone'
+    USE_ANGLE_GATE = True                       # DirectionalRelayGate (направленный орган)
+    USE_MIXED_LAYER_NORM = False                # False = AmpOnlyLayerNorm
 
     # --- Аугментация и признаки ---
     USE_AUGMENTATION = True
@@ -1180,6 +1196,8 @@ if __name__ == '__main__':
     config['target_level'] = TARGET_LEVEL
     config['cls_head_type'] = CLS_HEAD_TYPE
     config['supervision_mode'] = SUPERVISION_MODE
+    config['use_angle_gate'] = USE_ANGLE_GATE
+    config['use_mixed_layer_norm'] = USE_MIXED_LAYER_NORM
     config['epochs'] = EPOCHS
     config['use_augmentation'] = USE_AUGMENTATION
     config['use_low_harmonics'] = USE_LOW_HARMONICS

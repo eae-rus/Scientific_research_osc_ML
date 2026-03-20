@@ -41,6 +41,128 @@ from fastkan import FastKANLayer  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
+# AmpOnlyLayerNorm: LayerNorm только для амплитудной половины вектора
+# ---------------------------------------------------------------------------
+
+class AmpOnlyLayerNorm(nn.Module):
+    """LayerNorm, применяемый только к амплитудной половине полярного вектора.
+
+    Вектор d_model структурирован как (amp | angle). Стандартный LayerNorm
+    вычитает среднее и делит на σ по ВСЕМ компонентам, что уничтожает
+    физический смысл углов (циклических величин от 0 до 2π).
+
+    Решение: нормализуем ТОЛЬКО первую половину (amp), а угловую половину
+    пропускаем без изменений.
+
+    Args:
+        d_model: полная размерность вектора (amp + angle)
+    """
+
+    def __init__(self, d_model: int) -> None:
+        super().__init__()
+        assert d_model % 2 == 0, f"d_model должен быть чётным, получено {d_model}"
+        self.d_half = d_model // 2
+        self.norm_amp = nn.LayerNorm(self.d_half)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """(B, ..., d_model) → (B, ..., d_model). Нормализует только amp-половину."""
+        amp = self.norm_amp(x[..., :self.d_half])
+        angle = x[..., self.d_half:]
+        return torch.cat([amp, angle], dim=-1)
+
+
+# ---------------------------------------------------------------------------
+# DirectionalRelayGate: дифференцируемый направленный орган
+# ---------------------------------------------------------------------------
+
+class DirectionalRelayGate(nn.Module):
+    """Дифференцируемый направленный орган (мягкое реле).
+
+    Реализует угловую зону срабатывания для каждого канала:
+    - В прямой зоне: gate ≈ 1.0 (полная передача амплитуды)
+    - В зоне «за спиной»: gate ≈ back_value (ослабление, по умолч. 0.5)
+    - Плавный переход на границах (параметризован sharpness)
+
+    Математика:
+    1. deviation = angle - mta (отклонение от центра зоны)
+    2. cos_dev = cos(deviation) — циклически корректная «проекция»
+    3. threshold = cos(zone_width) — граница прямой зоны
+    4. raw = sharpness · (cos_dev - threshold)
+    5. smooth = sigmoid(raw)  → 0..1
+    6. gate = back_value + (1 - back_value) · smooth → [back_value, 1.0]
+
+    Все параметры (mta, zone_width, back_value, sharpness) — обучаемые,
+    но с ограничениями через clamp/softplus для физической корректности.
+
+    Args:
+        num_channels: число каналов (per-channel параметры)
+        default_zone_width: половина ширины прямой зоны, рад (по умолч. 5π/6 = 150°)
+        default_back_value: значение gate за спиной (по умолч. 0.5)
+        default_sharpness: резкость перехода на границе (по умолч. 10.0)
+    """
+
+    def __init__(
+        self,
+        num_channels: int,
+        default_zone_width: float = 5 * math.pi / 6,
+        default_back_value: float = 0.5,
+        default_sharpness: float = 10.0,
+    ) -> None:
+        super().__init__()
+        self.num_channels = num_channels
+
+        # Угол максимальной чувствительности (центр зоны), по umolч. 0
+        self.mta = nn.Parameter(torch.zeros(num_channels))
+
+        # Половина ширины зоны (хранится в unconstrained-пространстве для clamp)
+        # zone_width ∈ (0, π) — чтобы не превышать полуокружность
+        self.zone_width_raw = nn.Parameter(
+            torch.full((num_channels,), default_zone_width)
+        )
+
+        # Значение за спиной ∈ (0, 1), хранится через sigmoid⁻¹ (logit)
+        _back_logit = math.log(default_back_value / (1 - default_back_value + 1e-7))
+        self.back_value_logit = nn.Parameter(
+            torch.full((num_channels,), _back_logit)
+        )
+
+        # Резкость перехода ≥ 1 (через softplus)
+        _sharp_raw = math.log(math.exp(default_sharpness) - 1)
+        self.sharpness_raw = nn.Parameter(
+            torch.full((num_channels,), _sharp_raw)
+        )
+
+    def forward(self, angle: torch.Tensor) -> torch.Tensor:
+        """Вычисляет gate-коэффициент для каждого канала.
+
+        Args:
+            angle: (..., num_channels) — углы в радианах
+
+        Returns:
+            gate: (..., num_channels) — значения в [back_value, 1.0]
+        """
+        # Constrained параметры
+        zone_width = self.zone_width_raw.clamp(min=0.01, max=math.pi - 0.01)
+        back_value = torch.sigmoid(self.back_value_logit)
+        sharpness = F.softplus(self.sharpness_raw) + 1.0  # ≥ 1
+
+        # Отклонение от центра зоны
+        deviation = angle - self.mta
+        cos_dev = torch.cos(deviation)
+
+        # Порог: cos(zone_width). В прямой зоне cos_dev > threshold
+        threshold = torch.cos(zone_width)
+
+        # Плавный переход через sigmoid
+        raw = sharpness * (cos_dev - threshold)
+        smooth = torch.sigmoid(raw)  # → 1 внутри зоны, → 0 за спиной
+
+        # gate = back_value + (1 - back_value) · smooth → [back_value, 1.0]
+        gate = back_value + (1 - back_value) * smooth
+        return gate
+
+
+# ---------------------------------------------------------------------------
 # DataSanitizer: обработка отсутствующих сигналов
 # ---------------------------------------------------------------------------
 
@@ -185,6 +307,15 @@ class ComplexInteractionBlock(nn.Module):
         g4_mag_sq = g4.real ** 2 + g4.imag ** 2
         g4_mag_sq_safe = g4_mag_sq.clamp(min=self.division_epsilon ** 2)
         z_div = (g3 * g4.conj()) / g4_mag_sq_safe
+
+        # Сжатие амплитуды результатов деления через tanh.
+        # Деление может давать на порядки бо́льшие значения (Z = U/I при малом I),
+        # что «взрывает» дисперсию и убивает полезные признаки при нормализации.
+        # tanh(|z|) ∈ [0, 1) — сохраняет порядок, но ограничивает выбросы.
+        # Угол при этом сохраняется без изменений.
+        z_div_amp = z_div.abs()
+        z_div_angle = z_div.angle()
+        z_div = torch.polar(torch.tanh(z_div_amp), z_div_angle)
 
         return torch.cat([z_mul, z_div], dim=-1)
 
@@ -332,15 +463,17 @@ class ComplexMultiheadAttention(nn.Module):
 class PhysicalStem(nn.Module):
     """Входной Stem-блок с физическим индуктивным смещением.
 
-    Реализует rPhysicsKAN-подход:
-    1. Разделяет амплитуды и углы
-    2. Обучаемый ComplexInteractionBlock: модель сама выбирает, какие пары
-       сигналов умножать/делить (вместо жёстких P/Q/Z формул)
-    3. KAN-кодирование с гейтированием углами
-    4. Линейная проекция в d_model для Transformer
-
-    Входной формат: (B, C, T) где C — чередующиеся [A₁, φ₁, A₂, φ₂, ...]
-    Каналы идут парами: первая половина пар = токи, вторая = напряжения.
+    Архитектура (переработанная):
+    1. Разделяет амплитуды и углы из чередующегося формата [A₁,φ₁, A₂,φ₂, ...]
+    2. ComplexInteractionBlock: обучаемое комплексное умножение/деление
+       (с tanh-сжатием результатов деления для стабильности)
+    3. KAN для амплитуд (нелинейные уставки по отфильтрованным амплитудам)
+    4. Углы НЕ проходят через KAN/линейные слои — только обучаемый сдвиг
+       phase_shift_b (поворот вектора в комплексной плоскости, аналогично MTA)
+    5. DirectionalRelayGate (опционально): мягкое угловое реле, модулирующее
+       амплитуды в зависимости от зоны срабатывания
+    6. Раздельная проекция в (amp | angle) для d_model
+    7. AmpOnlyLayerNorm (опционально, по умолчанию ВЫКЛ): нормализует только amp
 
     Args:
         num_input_channels: полное число каналов (амплитуды + углы)
@@ -350,6 +483,8 @@ class PhysicalStem(nn.Module):
         noise_threshold_current: порог шума для токов (отн. ед.)
         noise_threshold_voltage: порог шума для напряжений (отн. ед.)
         kan_grid_size: число узлов RBF-сетки для FastKAN
+        use_angle_gate: включить DirectionalRelayGate (по умолч. True)
+        use_layer_norm: включить AmpOnlyLayerNorm на выходе (по умолч. False)
         dropout: вероятность dropout
     """
 
@@ -362,6 +497,8 @@ class PhysicalStem(nn.Module):
         noise_threshold_current: float = 1.0 / 2000,
         noise_threshold_voltage: float = 1.0 / 300,
         kan_grid_size: int = 5,
+        use_angle_gate: bool = True,
+        use_layer_norm: bool = False,
         dropout: float = 0.1,
     ) -> None:
         super().__init__()
@@ -373,6 +510,7 @@ class PhysicalStem(nn.Module):
         self.num_input_channels = num_input_channels
         self.num_pairs = num_input_channels // 2  # Количество (A, φ) пар
         self.d_model = d_model
+        self.use_angle_gate = use_angle_gate
 
         # Число пар токов (по умолчанию — ровно половина)
         if num_current_pairs is None:
@@ -389,47 +527,44 @@ class PhysicalStem(nn.Module):
             num_input_pairs=self.num_pairs,
             num_interaction_pairs=num_interaction_pairs,
         )
-        # Число признаков от interaction: amp + angle = 2 * num_interaction_pairs
-        num_interaction_features = num_interaction_pairs * 2
+        # Число признаков от interaction: только amp (углы идут отдельно)
+        num_interaction_amp_features = num_interaction_pairs
 
-        # --- rPhysicsKAN: KAN для амплитуд + гейт из углов ---
-        num_amplitudes = self.num_pairs  # Все амплитуды
-        num_angles = self.num_pairs  # Все углы
+        # --- Обучаемый сдвиг фазы (поворот вектора) для каждого сигнала ---
+        # phase_shift_b — аналог MTA (Maximum Torque Angle) в релейной защите
+        self.phase_shift_b = nn.Parameter(torch.zeros(self.num_pairs))
 
-        # KAN для амплитуд → половина d_model
+        # --- DirectionalRelayGate (опционально) ---
+        if self.use_angle_gate:
+            self.angle_gate = DirectionalRelayGate(num_channels=self.num_pairs)
+
+        # --- KAN для амплитуд → d_model // 2 ---
         half_d = d_model // 2
+        num_amplitudes = self.num_pairs
         self.kan_amp = FastKANLayer(
             input_dim=num_amplitudes,
             output_dim=half_d,
             num_grids=kan_grid_size,
             use_base_update=True,
-            use_layernorm=True,
+            use_layernorm=False,
         )
 
-        # KAN для углов → гейт (sigmoid) для модулирования амплитуд
-        self.kan_angle_gate = FastKANLayer(
-            input_dim=num_angles,
-            output_dim=half_d,
-            num_grids=kan_grid_size,
-            use_base_update=True,
-            use_layernorm=True,
-        )
-
-        # KAN для углов → вторая половина embedding
-        self.kan_angle = FastKANLayer(
-            input_dim=num_angles,
-            output_dim=half_d,
-            num_grids=kan_grid_size,
-            use_base_update=True,
-            use_layernorm=True,
-        )
-
-        # Раздельная проекция в (amp, angle) компоненты structured d_model
+        # --- Проекция в amp/angle структуру d_model ---
         d_complex = d_model // 2
-        fusion_dim = half_d + half_d + num_interaction_features
-        self.proj_amp = nn.Linear(fusion_dim, d_complex)
-        self.proj_angle = nn.Linear(fusion_dim, d_complex)
-        self.layer_norm = nn.LayerNorm(d_model)
+        # amp-путь: KAN-выход + interaction amps
+        amp_fusion_dim = half_d + num_interaction_amp_features
+        self.proj_amp = nn.Linear(amp_fusion_dim, d_complex)
+        # angle-путь: сырые углы (с phase_shift) + interaction angles
+        angle_fusion_dim = self.num_pairs + num_interaction_pairs
+        self.proj_angle = nn.Linear(angle_fusion_dim, d_complex, bias=False)
+
+        # --- Нормализация (опционально, по умолч. ВЫКЛ) ---
+        self.norm: nn.Module
+        if use_layer_norm:
+            self.norm = AmpOnlyLayerNorm(d_model)
+        else:
+            self.norm = nn.Identity()
+
         self.dropout = nn.Dropout(dropout)
 
     def _extract_amp_angle(
@@ -470,27 +605,34 @@ class PhysicalStem(nn.Module):
             amp_flat = amplitudes.permute(0, 2, 1).reshape(B * T, -1)
             ang_flat = angles.permute(0, 2, 1).reshape(B * T, -1)
 
-            # 3. Обучаемый комплексный блок: z = A·exp(jφ)
-            z_input = torch.polar(amp_flat, ang_flat)  # complex64
+            # 3. Обучаемый сдвиг фазы (поворот вектора = MTA)
+            rotated_angle = ang_flat + self.phase_shift_b
+
+            # 4. DirectionalRelayGate: модулируем амплитуды по углу
+            if self.use_angle_gate:
+                angle_coeff = self.angle_gate(rotated_angle)
+                gated_amp = amp_flat * angle_coeff
+            else:
+                gated_amp = amp_flat
+
+            # 5. Обучаемый комплексный блок: z = A·exp(jφ)
+            z_input = torch.polar(amp_flat, rotated_angle)  # complex64
             z_inter = self.interaction(z_input)
-            inter_amp = z_inter.abs()
-            inter_angle = z_inter.angle()
-            inter_features = torch.stack([inter_amp, inter_angle], dim=-1)
-            inter_features = inter_features.reshape(B * T, -1)
+            inter_amp = z_inter.abs()     # (B*T, num_interaction_pairs)
+            inter_angle = z_inter.angle() # (B*T, num_interaction_pairs)
 
-            # 4. rPhysicsKAN: KAN для амплитуд + гейтирование углами
-            h_amp = self.kan_amp(amp_flat)
-            g_angle = torch.sigmoid(self.kan_angle_gate(ang_flat))
-            h_modulated = h_amp * g_angle
+            # 6. KAN для амплитуд (уже отфильтрованных через gate)
+            h_amp = self.kan_amp(gated_amp)
 
-            h_angle = self.kan_angle(ang_flat)
+            # 7. Объединение и раздельная проекция в (amp, angle)
+            fused_amp = torch.cat([h_amp, inter_amp], dim=-1)
+            fused_angle = torch.cat([rotated_angle, inter_angle], dim=-1)
 
-            # 5. Объединение и раздельная проекция в (amp, angle)
-            fused = torch.cat([h_modulated, h_angle, inter_features], dim=-1)
-            emb_amp = self.proj_amp(fused)
-            emb_angle = self.proj_angle(fused)
+            emb_amp = self.proj_amp(fused_amp)
+            emb_angle = self.proj_angle(fused_angle)
+
             embedding = torch.cat([emb_amp, emb_angle], dim=-1)
-            embedding = self.layer_norm(embedding)
+            embedding = self.norm(embedding)
             embedding = self.dropout(embedding)
 
             embedding = embedding.view(B, T, self.d_model)
@@ -605,24 +747,22 @@ class PhysicalKANFeedForward(nn.Module):
     """KAN-FFN с полярно-структурированной обработкой (amp/angle).
 
     d_model структурирован как (amp | angle): первая половина — амплитудные
-    признаки, вторая — фазовые (угловые). Операции не смешивают
-    amp и angle, как и в PhysicalStem:
+    признаки, вторая — фазовые (угловые).
 
-    1. KAN_amp: d_complex → d_ff/2 → d_complex (обработка амплитудных признаков)
-    2. KAN_angle: d_complex → d_ff/2 → d_complex (обработка фазовых признаков)
-    3. Гейтирование: angle модулирует amp (как в PhysicalStem)
+    Переработанная архитектура:
+    1. KAN_amp: d_complex → d_ff/2 → d_complex (нелинейная обработка амплитуд)
+    2. Угол: НЕ проходит через KAN — только обучаемый сдвиг phase_shift_b
+       (для residual: angle_new = angle_old + phase_shift_b)
+    3. DirectionalRelayGate (опционально): угол управляет амплитудой
     4. ComplexInteractionBlock: малый блок комплексного умножения/деления
-       Конвертация в комплексные числа (torch.polar) → операции → обратно в полярные
-    5. Гейтированное сложение: KAN-результат + gate * interaction → d_model
-
-    Параметры: ~50% от обычного KAN-FFN (за счёт разделения на два пути по d_complex).
+       (вклад в amp-путь через гейтированное сложение)
 
     Args:
         d_model: размерность входа/выхода (должен быть чётным)
         d_ff: размерность скрытого слоя KAN (по умолчанию 4 * d_model).
-            Каждый путь (amp, angle) получает d_ff // 2.
         num_interaction_pairs: число выходных пар ComplexInteractionBlock
         kan_grid_size: число узлов RBF-сетки FastKAN
+        use_angle_gate: включить DirectionalRelayGate (по умолч. True)
         dropout: dropout
     """
 
@@ -632,6 +772,7 @@ class PhysicalKANFeedForward(nn.Module):
         d_ff: int | None = None,
         num_interaction_pairs: int = 4,
         kan_grid_size: int = 5,
+        use_angle_gate: bool = True,
         dropout: float = 0.1,
     ) -> None:
         super().__init__()
@@ -644,6 +785,7 @@ class PhysicalKANFeedForward(nn.Module):
 
         self.d_model = d_model
         self.d_complex = d_complex
+        self.use_angle_gate = use_angle_gate
 
         # --- KAN для амплитудных признаков ---
         self.kan_amp1 = FastKANLayer(
@@ -655,34 +797,22 @@ class PhysicalKANFeedForward(nn.Module):
             num_grids=kan_grid_size, use_base_update=True, use_layernorm=False,
         )
 
-        # --- KAN для фазовых (угловых) признаков ---
-        self.kan_angle1 = FastKANLayer(
-            input_dim=d_complex, output_dim=d_ff_half,
-            num_grids=kan_grid_size, use_base_update=True, use_layernorm=False,
-        )
-        self.kan_angle2 = FastKANLayer(
-            input_dim=d_ff_half, output_dim=d_complex,
-            num_grids=kan_grid_size, use_base_update=True, use_layernorm=False,
-        )
-
         self.dropout = nn.Dropout(dropout)
 
-        # --- Гейтирование: angle → gate для amp (угол управляет амплитудой) ---
-        # KAN-гейт (как в PhysicalStem) — может ловить нелинейные пороги
-        # (например, «угол > 5° ИЛИ угол < -5°»), чего Linear не умеет
-        self.angle_gate = FastKANLayer(
-            input_dim=d_complex, output_dim=d_complex,
-            num_grids=kan_grid_size, use_base_update=True, use_layernorm=False,
-        )
+        # --- Обучаемый сдвиг фазы (поворот, аналог MTA) ---
+        self.phase_shift_b = nn.Parameter(torch.zeros(d_complex))
+
+        # --- DirectionalRelayGate (опционально) ---
+        if self.use_angle_gate:
+            self.angle_gate = DirectionalRelayGate(num_channels=d_complex)
 
         # --- Комплексный путь (малый) ---
         self.interaction = ComplexInteractionBlock(
             num_input_pairs=d_complex,
             num_interaction_pairs=num_interaction_pairs,
         )
-        # Раздельная проекция interaction → (amp, angle)
+        # Проекция interaction amp → d_complex (для amp-пути)
         self.interaction_proj_amp = nn.Linear(num_interaction_pairs, d_complex)
-        self.interaction_proj_angle = nn.Linear(num_interaction_pairs, d_complex)
         # Гейт: sigmoid(-2) ≈ 0.12 на старте — комплексный путь включается мягко
         self.interaction_gate = nn.Parameter(torch.tensor(-2.0))
 
@@ -709,30 +839,25 @@ class PhysicalKANFeedForward(nn.Module):
             h_amp = self.kan_amp2(h_amp)
             h_amp = self.dropout(h_amp)
 
-            # KAN для фазовых признаков
-            h_angle = self.kan_angle1(x_angle)
-            h_angle = self.dropout(h_angle)
-            h_angle = self.kan_angle2(h_angle)
-            h_angle = self.dropout(h_angle)
+            # DirectionalRelayGate: угол модулирует amp
+            if self.use_angle_gate:
+                gate = self.angle_gate(x_angle)
+                h_amp = h_amp * gate
 
-            # Гейтирование: angle модулирует amp
-            gate = torch.sigmoid(self.angle_gate(x_angle))
-            h_amp = h_amp * gate
-
-            h_kan = torch.cat([h_amp, h_angle], dim=-1)
-
-            # Комплексный путь: amp/angle → polar complex → interaction → обратно
+            # Комплексный путь: amp/angle → polar complex → interaction
             z_in = torch.polar(x_amp, x_angle)
             z_out = self.interaction(z_in)
 
             inter_proj_amp = self.interaction_proj_amp(z_out.abs())
-            inter_proj_angle = self.interaction_proj_angle(z_out.angle())
-            inter_proj = torch.cat([inter_proj_amp, inter_proj_angle], dim=-1)
 
-            # Гейтированное сложение
+            # Гейтированное сложение (только для amp)
             gate_inter = torch.sigmoid(self.interaction_gate)
-            combined = h_kan + gate_inter * inter_proj
+            h_amp = h_amp + gate_inter * inter_proj_amp
 
+            # Угловой путь: только обучаемый сдвиг (delta для residual в encoder)
+            h_angle = self.phase_shift_b.unsqueeze(0).expand(B * T, -1)
+
+            combined = torch.cat([h_amp, h_angle], dim=-1)
             return combined.view(B, T, D)
 
 
@@ -778,13 +903,21 @@ class MLPFeedForward(nn.Module):
 class TransformerEncoderBlock(nn.Module):
     """Один блок Transformer Encoder с Pre-LayerNorm.
 
-    Pre-LN: LayerNorm → Attention → residual → LayerNorm → FFN → residual.
+    Pre-LN: Norm → Attention → residual → Norm → FFN → residual.
     Стабильнее Post-LN для глубоких моделей.
+
+    По умолчанию использует AmpOnlyLayerNorm (нормализует только
+    амплитудную половину вектора, углы проходят без изменений).
+    Через параметр use_mixed_layer_norm можно включить стандартный
+    nn.LayerNorm, который нормализует весь вектор (amp+angle).
 
     Args:
         d_model: размерность модели
         num_heads: число голов внимания
         ffn: Feed-Forward модуль (KANFeedForward или MLPFeedForward)
+        attn: модуль Attention (если None — стандартный MHA)
+        use_mixed_layer_norm: True → стандартный nn.LayerNorm на всём d_model
+            False (по умолч.) → AmpOnlyLayerNorm (норм. только amp-половину)
         dropout: dropout для attention
     """
 
@@ -794,11 +927,19 @@ class TransformerEncoderBlock(nn.Module):
         num_heads: int,
         ffn: nn.Module,
         attn: nn.Module | None = None,
+        use_mixed_layer_norm: bool = False,
         dropout: float = 0.1,
     ) -> None:
         super().__init__()
 
-        self.ln1 = nn.LayerNorm(d_model)
+        # Выбор нормализации: AmpOnly (по умолч.) или стандартный LayerNorm
+        if use_mixed_layer_norm:
+            self.ln1 = nn.LayerNorm(d_model)
+            self.ln2 = nn.LayerNorm(d_model)
+        else:
+            self.ln1 = AmpOnlyLayerNorm(d_model)
+            self.ln2 = AmpOnlyLayerNorm(d_model)
+
         if attn is not None:
             self.attn = attn
         else:
@@ -808,7 +949,6 @@ class TransformerEncoderBlock(nn.Module):
                 dropout=dropout,
                 batch_first=True,
             )
-        self.ln2 = nn.LayerNorm(d_model)
         self.ffn = ffn
 
     def forward(

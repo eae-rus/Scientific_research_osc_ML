@@ -91,6 +91,8 @@ def get_default_config(mode: str = 'smoke') -> dict:
         'num_layers': 6,
         'kan_grid_size': 5,
         'dropout': 0.1,
+        'use_angle_gate': True,           # DirectionalRelayGate (направленный орган)
+        'use_mixed_layer_norm': False,    # False = AmpOnlyLayerNorm (углы не норм.)
 
         # Обучение
         'epochs': 50,
@@ -160,6 +162,8 @@ def create_model(config: dict) -> torch.nn.Module:
             num_heads=config['num_heads'],
             num_layers=config['num_layers'],
             kan_grid_size=config['kan_grid_size'],
+            use_angle_gate=config.get('use_angle_gate', True),
+            use_mixed_layer_norm=config.get('use_mixed_layer_norm', False),
             dropout=config['dropout'],
             max_seq_len=64,
         )
@@ -932,6 +936,8 @@ def smoke_test(config: dict) -> None:
                 num_input_channels=C, d_model=config['d_model'],
                 num_heads=config['num_heads'], num_layers=config['num_layers'],
                 num_classes=4, zone_size=16, kan_grid_size=config['kan_grid_size'],
+                use_angle_gate=config.get('use_angle_gate', True),
+                use_mixed_layer_norm=config.get('use_mixed_layer_norm', False),
                 dropout=config['dropout'], max_seq_len=64,
             ).to(device)
         else:
@@ -1073,7 +1079,7 @@ if __name__ == '__main__':
     SELECTED_COMPLEXITY = 'light'           # 'light' | 'medium' | 'heavy'
 
     # --- Эпохи ---
-    EPOCHS = 100
+    EPOCHS = 200
 
     # --- Аугментация и признаки ---
     USE_AUGMENTATION = True
@@ -1093,7 +1099,7 @@ if __name__ == '__main__':
 
     # --- Продолжение обучения (None или путь к чекпоинту) ---
     # RESUME_PATH = None
-    RESUME_PATH = 'experiments/phase4/pretrain_PhysicalKANTransformer_20260317_180611/best_model.pt'
+    RESUME_PATH = 'experiments/phase4/pretrain_PhysicalKANTransformer_20260319_180046/best_model.pt'
     RESET_OPTIMIZER = True  # True, если нужно сбросить оптимизатор и начать с 0 эпохи
 
     # =================================================================

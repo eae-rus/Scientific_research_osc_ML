@@ -22,6 +22,7 @@ import torch.nn as nn
 
 from osc_tools.ml.models.base import BaseModel
 from osc_tools.ml.layers.transformer_blocks import (
+    AmpOnlyLayerNorm,
     ComplexMultiheadAttention,
     DataSanitizer,
     KANFeedForward,
@@ -101,66 +102,6 @@ class MLPClassificationHead(nn.Module):
         return self.net(x)
 
 
-class ComplexGatedKANClassificationHead(nn.Module):
-    """Комплексно-ориентированная голова для полярного латентного пространства.
-
-    Идея:
-    - амплитудная ветвь несёт основную диагностическую информацию;
-    - угловая ветвь не предсказывает класс напрямую, а управляет амплитудной;
-    - итоговые logits получаются из модулированного амплитудного представления.
-    """
-
-    def __init__(
-        self,
-        d_model: int,
-        num_classes: int,
-        kan_grid_size: int = 5,
-        d_hidden: int | None = None,
-        dropout: float = 0.1,
-    ) -> None:
-        super().__init__()
-        if d_model % 2 != 0:
-            raise ValueError(
-                f"ComplexGatedKANClassificationHead ожидает чётный d_model, получено {d_model}"
-            )
-        self.pair_dim = d_model // 2
-        if d_hidden is None:
-            d_hidden = d_model
-
-        self.amp_kan = FastKANLayer(
-            input_dim=self.pair_dim,
-            output_dim=d_hidden,
-            num_grids=kan_grid_size,
-            use_base_update=True,
-            use_layernorm=False,
-        )
-        self.angle_gate = FastKANLayer(
-            input_dim=self.pair_dim,
-            output_dim=d_hidden,
-            num_grids=kan_grid_size,
-            use_base_update=True,
-            use_layernorm=False,
-        )
-        self.amp_residual = nn.Linear(self.pair_dim, d_hidden, bias=False)
-        self.out_proj = nn.Sequential(
-            nn.LayerNorm(d_hidden),
-            nn.Dropout(dropout),
-            nn.Linear(d_hidden, num_classes),
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        shape = x.shape
-        x_flat = x.reshape(-1, shape[-1])
-        amp = x_flat[:, 0::2]
-        angle = x_flat[:, 1::2]
-
-        amp_feat = self.amp_kan(amp) + self.amp_residual(amp)
-        gate = torch.sigmoid(self.angle_gate(angle))
-        fused = amp_feat * gate
-        out = self.out_proj(fused)
-        return out.view(*shape[:-1], -1)
-
-
 def _build_cls_head(
     cls_head_type: str,
     d_model: int,
@@ -183,26 +124,26 @@ def _build_cls_head(
             num_classes=num_classes,
             kan_grid_size=kan_grid_size,
         )
-    if cls_head_type == 'complex_gated_kan':
-        return ComplexGatedKANClassificationHead(
-            d_model=d_model,
-            num_classes=num_classes,
-            kan_grid_size=kan_grid_size,
-            dropout=dropout,
-        )
     raise ValueError(f"Неизвестный cls_head_type: {cls_head_type}")
 
 
 class PhysicalKANTransformer(BaseModel):
     """Physical KAN-Transformer с физическим Stem и KAN-FFN.
 
-    Архитектура (из TRANSFORMER_RESEARCH.md):
-    1. Sanitizer → PhysicalStem (rPhysicsKAN) → Linear Projection → d_model
+    Архитектура:
+    1. Sanitizer → PhysicalStem (rPhysicsKAN + DirectionalRelayGate) → d_model
     2. + Positional Encoding
-    3. N × TransformerEncoderBlock (Attention + PhysicalKANFeedForward)
-       В каждом блоке: KAN-FFN + малый ComplexInteractionBlock (комплексные
-       умножения/деления) — физические операции доступны не только в Stem.
+    3. N × TransformerEncoderBlock (ComplexMHA + PhysicalKANFeedForward)
+       В каждом блоке: KAN-FFN (только для амплитуд) + ComplexInteractionBlock
+       + DirectionalRelayGate (опционально). Углы обрабатываются ТОЛЬКО
+       как обучаемый сдвиг (phase_shift_b), без KAN/линейных преобразований.
     4. SSL Head (реконструкция) или Classification Head (fine-tuning)
+
+    Ключевые принципы (из анализа в Thoughts_on_recycling_AI_transformers.md):
+    - Углы НИКОГДА не проходят через KAN/линейные слои (только сдвиг b)
+    - Углы НИКОГДА не нормализуются (AmpOnlyLayerNorm по умолч.)
+    - Результаты деления сжимаются через tanh для стабильности
+    - DirectionalRelayGate: дифференцируемый направленный орган (мягкое реле)
 
     Args:
         num_input_channels: число входных каналов (чередующихся A, φ пар)
@@ -213,14 +154,16 @@ class PhysicalKANTransformer(BaseModel):
         num_current_pairs: число пар тока в первой половине каналов
         num_classes: число классов для Classification Head (None → SSL-режим)
         ssl_output_channels: число каналов на выходе SSL Head (None → num_input_channels)
-        zone_size: размер зоны для зональной классификации (16 = полпериода)
+        zone_size: размер зоны для зональной классификации
         kan_grid_size: размер RBF-сетки в FastKAN
         noise_threshold_current: порог шума токов
         noise_threshold_voltage: порог шума напряжений
         num_stem_interaction_pairs: число пар в ComplexInteractionBlock Stem (16)
         num_ffn_interaction_pairs: число пар в ComplexInteractionBlock FFN (4)
-        use_physical_ffn: True → PhysicalKANFeedForward (с комплексным блоком),
-            False → KANFeedForward (обычный KAN-FFN, для абляции)
+        use_physical_ffn: True → PhysicalKANFeedForward, False → KANFeedForward
+        use_angle_gate: включить DirectionalRelayGate в Stem и FFN (по умолч. True)
+        use_mixed_layer_norm: True → стандартный LayerNorm, False → AmpOnlyLayerNorm
+        cls_head_type: тип классификационной головы ('kan'|'mlp'|'linear')
         dropout: dropout для всех слоёв
         max_seq_len: максимальная длина последовательности для PE
     """
@@ -242,7 +185,9 @@ class PhysicalKANTransformer(BaseModel):
         num_stem_interaction_pairs: int = 16,
         num_ffn_interaction_pairs: int = 4,
         use_physical_ffn: bool = True,
-        cls_head_type: str = 'complex_gated_kan',
+        use_angle_gate: bool = True,
+        use_mixed_layer_norm: bool = False,
+        cls_head_type: str = 'kan',
         dropout: float = 0.1,
         max_seq_len: int = 64,
     ) -> None:
@@ -265,6 +210,8 @@ class PhysicalKANTransformer(BaseModel):
             noise_threshold_current=noise_threshold_current,
             noise_threshold_voltage=noise_threshold_voltage,
             kan_grid_size=kan_grid_size,
+            use_angle_gate=use_angle_gate,
+            use_layer_norm=use_mixed_layer_norm,
             dropout=dropout,
         )
 
@@ -276,7 +223,6 @@ class PhysicalKANTransformer(BaseModel):
         # --- 4. Transformer Encoder (Physical KAN-FFN + ComplexMHA) ---
         self.encoder_blocks = nn.ModuleList()
         for _ in range(num_layers):
-            # Структурированный attention: сохраняет полярную структуру (amp | angle)
             complex_attn = ComplexMultiheadAttention(
                 d_model=d_model,
                 num_heads=num_heads,
@@ -288,6 +234,7 @@ class PhysicalKANTransformer(BaseModel):
                     d_ff=d_ff,
                     num_interaction_pairs=num_ffn_interaction_pairs,
                     kan_grid_size=kan_grid_size,
+                    use_angle_gate=use_angle_gate,
                     dropout=dropout,
                 )
             else:
@@ -302,19 +249,21 @@ class PhysicalKANTransformer(BaseModel):
                 num_heads=num_heads,
                 ffn=ffn,
                 attn=complex_attn,
+                use_mixed_layer_norm=use_mixed_layer_norm,
                 dropout=dropout,
             )
             self.encoder_blocks.append(block)
 
-        # Финальная нормализация
-        self.final_norm = nn.LayerNorm(d_model)
+        # Финальная нормализация (AmpOnly по умолчанию)
+        if use_mixed_layer_norm:
+            self.final_norm: nn.Module = nn.LayerNorm(d_model)
+        else:
+            self.final_norm = AmpOnlyLayerNorm(d_model)
 
         # --- 5. Heads ---
-        # SSL Head: реконструкция исходных спектральных признаков
         ssl_out = ssl_output_channels if ssl_output_channels else num_input_channels
         self.ssl_head = nn.Linear(d_model, ssl_out)
 
-        # Classification Head (KAN-based, для fine-tuning, если num_classes задан)
         self.cls_head: nn.Module | None = None
         if num_classes is not None:
             self.cls_head = _build_cls_head(
@@ -456,6 +405,7 @@ class BaselineTransformer(BaseModel):
                 d_model=d_model,
                 num_heads=num_heads,
                 ffn=ffn,
+                use_mixed_layer_norm=True,  # Baseline не имеет полярной структуры
                 dropout=dropout,
             )
             self.encoder_blocks.append(block)
