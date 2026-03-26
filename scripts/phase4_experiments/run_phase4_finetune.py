@@ -66,23 +66,23 @@ def get_finetune_config() -> dict:
     return {
         # Данные
         'window_size': 320,
-        'downsampling_stride': 16,     # Вычисляется автоматически из stride_fraction
+        'downsampling_stride': 16,        # Вычисляется автоматически из stride_fraction
         'stride_fraction': 2,             # Доля периода: 2 = полпериода (16), 4 = четверть (8)
         'feature_mode': 'phase_polar',
         'num_harmonics': 9,
         'sub_periods': [2, 4, 6, 10],
         'use_augmentation': True,
         'use_low_harmonics': True,
-        'include_symmetric': True,         # Симметричные составляющие (I1,I2,I0,U1,U2,U0)
-        'future_periods': 2,               # Будущие периоды для расширенной метки
-        'zone_target_aggregation': 'max',  # Агрегация меток внутри зоны: 'max' | 'mean'
+        'include_symmetric': True,        # Симметричные составляющие (I1,I2,I0,U1,U2,U0)
+        'future_periods': 2,              # Будущие периоды для расширенной метки
+        'zone_target_aggregation': 'max', # Агрегация меток внутри зоны: 'max' | 'mean'
         'train_batches_per_epoch': 64,    # Сколько batch-ов случайно брать за эпоху
-        'val_stride_multiplier': 4,        # Во сколько раз реже брать окна на валидации
+        'val_stride_multiplier': 4,       # Во сколько раз реже брать окна на валидации
         'batch_size': 32,
         'val_batch_size': 64,
         'num_workers': 0,
-        'val_split': 0.2,
-        'target_level': 'base',  # 4 класса
+        'val_split': 0.2,                 # Доля файлов для валидации (0.0–1.0), определяет размер валидационного набора
+        'target_level': 'base',           # 4 класса
 
         # Модель (должно совпадать с pretrain; по умолчанию = light)
         'model_type': 'PhysicalKANTransformer',
@@ -95,19 +95,19 @@ def get_finetune_config() -> dict:
         'cls_head_type': 'complex_gated_kan',
 
         # Fine-tuning специфика
-        'num_classes': NUM_BASE_CLASSES,
-        'zone_size': 1,  # Каждый временной шаг = отдельная зона
-        'supervision_mode': 'zone',  # 'zone' | 'window' | 'last_zone'
+        'num_classes': NUM_BASE_CLASSES, # Число выходных классов для головы классификатора (автоматически корректируется по target_columns)
+        'zone_size': 1,                  # Каждый временной шаг = отдельная зона
+        'supervision_mode': 'zone',      # 'zone' | 'window' | 'last_zone'
 
         # Обучение
         'epochs': 50,
         'lr_backbone': 5e-5,     # Низкий LR для backbone (уже обучен SSL)
         'lr_head': 1e-4,         # Высокий LR для новой головы
-        'weight_decay': 1e-5,
-        'warmup_epochs': 2,
-        'use_amp': True,
-        'grad_clip': 1.0,
-        'accumulation_steps': 8,  # effective batch = 32 × 8 = 256
+        'weight_decay': 1e-5,    # L2-регуляризация (weight decay) для AdamW, помогает бороться с переобучением
+        'warmup_epochs': 2,      # Число эпох линейного warmup для LR (0 = без разогрева)
+        'use_amp': True,         # Включить mixed precision (AMP) на CUDA для ускорения и экономии памяти
+        'grad_clip': 1.0,        # Максимальная норма градиентов для clip_grad_norm_ (предотвращает взрыв градиентов)
+        'accumulation_steps': 8, # effective batch = 32 × 8 = 256
 
         # Сохранение
         'save_dir': str(PROJECT_ROOT / 'experiments' / 'phase4'),
