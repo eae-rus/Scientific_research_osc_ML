@@ -206,8 +206,44 @@ def create_model_for_finetune(
 
 def _split_files_train_val(
     df: pl.DataFrame, val_split: float, seed: int,
+    target_level: str = 'base',
 ) -> tuple[list[str], list[str]]:
-    """Разделяет файлы на train/val (детерминированно)."""
+    """Разделяет файлы на train/val (детерминированно).
+
+    Для target_level='ozz' использует стратифицированное разделение,
+    гарантирующее представительство каждого подкласса ОЗЗ в обоих сплитах.
+    """
+    if target_level == 'ozz':
+        from osc_tools.data_management.ozz_split import (
+            stratified_ozz_split, classify_file_ozz,
+        )
+        train_files, val_files, stats = stratified_ozz_split(
+            df, test_size=val_split, random_state=seed, min_test_per_class=1,
+        )
+
+        # Гарантируем представительство в ОБОИХ сплитах:
+        # если train пуст по какому-то классу, а val имеет >= 2 файла → перенести 1 из val в train
+        train_set = set(train_files)
+        val_set = set(val_files)
+        file_classes = {}
+        for fname in train_files + val_files:
+            fdf = df.filter(pl.col('file_name') == fname)
+            file_classes[fname] = classify_file_ozz(fdf)
+
+        for cls in ('dpozz', 'decay', 'stable'):
+            train_cls = [f for f in train_files if file_classes[f] == cls]
+            val_cls = [f for f in val_files if file_classes[f] == cls]
+            if len(train_cls) == 0 and len(val_cls) >= 2:
+                # Переносим первый файл из val в train
+                move_file = val_cls[0]
+                val_files.remove(move_file)
+                train_files.append(move_file)
+                print(f"  [!] Перенос {move_file[:30]}... ({cls}) из val→train для баланса")
+
+        print(f"  [Стратифицированный OZZ split]")
+        print(f"    train: {len(train_files)} файлов, val: {len(val_files)} файлов")
+        return train_files, val_files
+
     files = sorted(df['file_name'].unique().to_list())
     rng = np.random.RandomState(seed)
     rng.shuffle(files)
@@ -251,6 +287,7 @@ def prepare_finetune_dataloaders(
     # Разделяем файлы
     train_files, val_files = _split_files_train_val(
         df, config['val_split'], config['seed'],
+        target_level=target_level,
     )
     train_df = df.filter(pl.col('file_name').is_in(train_files))
     val_df = df.filter(pl.col('file_name').is_in(val_files))
@@ -765,10 +802,6 @@ def finetune(
     save_dir = Path(config['save_dir']) / f"finetune_{config['model_type']}_{timestamp}"
     save_dir.mkdir(parents=True, exist_ok=True)
 
-    # Сохраняем конфиг
-    with open(save_dir / 'config.json', 'w', encoding='utf-8') as f:
-        json.dump(config, f, indent=2, ensure_ascii=False)
-
     print("=" * 60)
     print(f"FINE-TUNING — {config['model_type']}")
     if resume_path:
@@ -786,8 +819,12 @@ def finetune(
     torch.manual_seed(config['seed'])
     np.random.seed(config['seed'])
 
-    # --- Данные ---
+    # --- Данные (ВНИМАНИЕ: может корректировать num_classes в config!) ---
     train_loader, val_loader, target_columns = prepare_finetune_dataloaders(config)
+
+    # Сохраняем конфиг ПОСЛЕ подготовки данных (num_classes уже скорректирован)
+    with open(save_dir / 'config.json', 'w', encoding='utf-8') as f:
+        json.dump(config, f, indent=2, ensure_ascii=False)
 
     # Статистика классов
     _print_class_distribution(train_loader, target_columns)
@@ -1160,12 +1197,12 @@ if __name__ == '__main__':
     RESET_OPTIMIZER = True # True, если нужно сбросить оптимизатор и начать с 0 эпохи
 
     # --- Эпохи ---
-    EPOCHS = 100
+    EPOCHS = 200
 
     # --- Задача классификации ---
     # 'base' — 4 класса (Normal, ML_1, ML_2, ML_3)
     # 'ozz'  — 3 класса ОЗЗ (Target_OZZ, Target_OZZ_decay, Target_OZZ_dpozz)
-    TARGET_LEVEL = 'ozz'
+    TARGET_LEVEL = 'base'
     CLS_HEAD_TYPE = 'kan'   # 'kan' | 'mlp' | 'linear'
     SUPERVISION_MODE = 'last_zone'             # 'zone' | 'window' | 'last_zone'
     USE_ANGLE_GATE = True                       # DirectionalRelayGate (направленный орган)
@@ -1180,8 +1217,8 @@ if __name__ == '__main__':
 
     # --- Stride (доля периода: 2 = полпериода=16, 4 = четверть=8) ---
     STRIDE_FRACTION = 2
-    VAL_STRIDE_MULTIPLIER = 4               # Валидация реже, чем обучение
-    TRAIN_BATCHES_PER_EPOCH = 64           # Случайных batch-ов за эпоху
+    VAL_STRIDE_MULTIPLIER = 1 # 4               # Валидация реже, чем обучение
+    TRAIN_BATCHES_PER_EPOCH = 128 # 64           # Случайных batch-ов за эпоху
 
     # --- Gradient accumulation ---
     ACCUMULATION_STEPS = 8

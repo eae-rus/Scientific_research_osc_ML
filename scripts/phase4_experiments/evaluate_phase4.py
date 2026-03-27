@@ -38,14 +38,14 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from osc_tools.ml.models.transformer import PhysicalKANTransformer, BaselineTransformer
 from osc_tools.ml.precomputed_dataset import PrecomputedDataset
 from osc_tools.ml.augmented_dataset import AugmentedSpectralDataset, compute_num_channels, compute_spectral_from_raw
-from osc_tools.ml.labels import get_target_columns
+from osc_tools.ml.labels import get_target_columns, prepare_labels_for_experiment
 
 
 # ---------------------------------------------------------------------------
 # Метрики
 # ---------------------------------------------------------------------------
 
-PREDICTION_THRESHOLD = 0.7  # Порог для бинарных предсказаний (по запросу)
+PREDICTION_THRESHOLD = 0.5  # Порог для бинарных предсказаний (стандартный для sigmoid)
 
 
 def compute_full_metrics(
@@ -326,6 +326,9 @@ def load_model_from_checkpoint(
             num_classes=num_classes,
             zone_size=zone_size,
             kan_grid_size=config.get('kan_grid_size', 5),
+            use_angle_gate=config.get('use_angle_gate', True),
+            use_mixed_layer_norm=config.get('use_mixed_layer_norm', False),
+            cls_head_type=config.get('cls_head_type', 'kan'),
             dropout=0.0,  # Dropout off при inference
             max_seq_len=64,
         )
@@ -337,6 +340,7 @@ def load_model_from_checkpoint(
             num_layers=config['num_layers'],
             num_classes=num_classes,
             zone_size=zone_size,
+            cls_head_type=config.get('cls_head_type', 'linear'),
             dropout=0.0,
             max_seq_len=64,
         )
@@ -358,14 +362,42 @@ def prepare_val_dataloader(
     data_path = Path(config['data_dir']) / config['precomputed_file']
     df = pl.read_csv(str(data_path))
 
-    target_columns = get_target_columns(config.get('target_level', 'base'), df)
+    # Подготовка меток (нужна для ozz, base_sequential и др.)
+    target_level = config.get('target_level', 'base')
+    if target_level in ('base_sequential', 'ozz', 'full', 'full_by_levels'):
+        df = prepare_labels_for_experiment(df, target_level)
 
-    # Разделение файлов (тот же seed что при обучении)
-    files = sorted(df['file_name'].unique().to_list())
-    rng = np.random.RandomState(config.get('seed', 42))
-    rng.shuffle(files)
-    n_val = max(1, int(len(files) * config.get('val_split', 0.2)))
-    val_files = files[:n_val]
+    target_columns = get_target_columns(target_level, df)
+
+    # Разделение файлов (тот же алгоритм что при обучении)
+    if target_level == 'ozz':
+        from osc_tools.data_management.ozz_split import (
+            stratified_ozz_split, classify_file_ozz,
+        )
+        train_files, val_files, _ = stratified_ozz_split(
+            df,
+            test_size=config.get('val_split', 0.2),
+            random_state=config.get('seed', 42),
+            min_test_per_class=1,
+        )
+        # Перебалансировка: гарантируем представительство в обоих сплитах
+        file_classes = {}
+        for fname in train_files + val_files:
+            fdf = df.filter(pl.col('file_name') == fname)
+            file_classes[fname] = classify_file_ozz(fdf)
+        for cls in ('dpozz', 'decay', 'stable'):
+            train_cls = [f for f in train_files if file_classes[f] == cls]
+            val_cls = [f for f in val_files if file_classes[f] == cls]
+            if len(train_cls) == 0 and len(val_cls) >= 2:
+                move_file = val_cls[0]
+                val_files.remove(move_file)
+                train_files.append(move_file)
+    else:
+        files = sorted(df['file_name'].unique().to_list())
+        rng = np.random.RandomState(config.get('seed', 42))
+        rng.shuffle(files)
+        n_val = max(1, int(len(files) * config.get('val_split', 0.2)))
+        val_files = files[:n_val]
     val_df = df.filter(pl.col('file_name').is_in(val_files))
 
     window_size = config['window_size']
@@ -638,14 +670,58 @@ def main() -> None:
     elif args.checkpoint:
         evaluate_checkpoint(args.checkpoint, save_report=not args.no_save)
     else:
-        # По умолчанию — сравнить все эксперименты
-        default_dir = PROJECT_ROOT / 'experiments' / 'phase4'
-        if default_dir.exists():
-            compare_experiments(str(default_dir))
-        else:
-            print(f"Директория экспериментов не найдена: {default_dir}")
-            print("Используйте --checkpoint или --compare-dir")
+        print("Используйте --checkpoint, --compare-dir или --mark")
+        print("Или запустите файл напрямую (ручной режим в __main__).")
 
 
 if __name__ == '__main__':
-    main()
+    # =================================================================
+    # РЕЖИМ РУЧНОГО ЗАПУСКА ЧЕРЕЗ КОНСТАНТЫ
+    # Для запуска: просто выполните файл (F5 в VS Code или python evaluate_phase4.py)
+    # Для CLI: python evaluate_phase4.py --checkpoint path/to/best_model.pt
+    # =================================================================
+
+    MANUAL_RUN = True
+
+    if MANUAL_RUN:
+        # --- Путь к чекпоинту для оценки ---
+        CHECKPOINT = 'experiments/phase4/finetune_PhysicalKANTransformer_20260319_201650/best_model.pt'
+
+        # --- Или сравнить все эксперименты в директории ---
+        COMPARE_DIR = None  # 'experiments/phase4'
+
+        # --- Режим разметки одного файла ---
+        MARK_FILE = None   # 'data/ml_datasets/some_oscillogram.csv'
+        MARK_STEP = 32     # Шаг скользящего окна (32 = 1 период)
+
+        # --- Сохранять отчёт ---
+        SAVE_REPORT = True
+
+        # =================================================================
+
+        if MARK_FILE and CHECKPOINT:
+            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            model, config = load_model_from_checkpoint(
+                Path(PROJECT_ROOT / CHECKPOINT), device,
+            )
+            mark_path = Path(PROJECT_ROOT / MARK_FILE)
+            raw_df = pl.read_csv(str(mark_path))
+            raw_channels = ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']
+            raw_data = raw_df.select(raw_channels).to_numpy().astype(np.float32)
+            probs = mark_oscillogram(model, raw_data, config, device, step=MARK_STEP)
+            target_cols = get_target_columns(config.get('target_level', 'base'))
+            out_df = pl.DataFrame({col: probs[:, i] for i, col in enumerate(target_cols)})
+            out_path = mark_path.with_suffix('.marking.csv')
+            out_df.write_csv(str(out_path))
+            print(f"Разметка сохранена: {out_path}")
+        elif COMPARE_DIR:
+            compare_experiments(str(PROJECT_ROOT / COMPARE_DIR))
+        elif CHECKPOINT:
+            evaluate_checkpoint(
+                str(PROJECT_ROOT / CHECKPOINT),
+                save_report=SAVE_REPORT,
+            )
+        else:
+            print("Укажите CHECKPOINT или COMPARE_DIR в ручном режиме.")
+    else:
+        main()
