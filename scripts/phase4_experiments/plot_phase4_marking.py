@@ -36,8 +36,11 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from osc_tools.ml.models.transformer import PhysicalKANTransformer, BaselineTransformer
-from osc_tools.ml.augmented_dataset import compute_spectral_from_raw
-from osc_tools.ml.labels import get_target_columns, prepare_labels_for_experiment
+from osc_tools.ml.augmented_dataset import compute_spectral_from_raw, standardize_voltage_columns
+from osc_tools.ml.labels import (
+    get_target_columns, prepare_labels_for_experiment,
+    clean_labels, add_base_labels,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -130,8 +133,12 @@ def mark_oscillogram(
     config: dict,
     device: torch.device,
     step: int = 32,
+    max_batch_mem_gb: float = 6.0,
 ) -> np.ndarray:
-    """Разметка осциллограммы скользящим окном с усреднением перекрытий.
+    """Разметка осциллограммы скользящим окном с батчированным инференсом.
+
+    Все окна сначала предрассчитываются (FFT), затем собираются в батчи
+    и подаются на GPU разом — это на порядок быстрее поштучного прогона.
 
     Args:
         model: модель в eval mode
@@ -139,6 +146,7 @@ def mark_oscillogram(
         config: конфиг модели
         device: torch device
         step: шаг скользящего окна в отсчётах (32 = 1 период при 1600 Гц)
+        max_batch_mem_gb: лимит GPU-памяти для одного батча (по умолчанию 6 ГБ)
 
     Returns:
         (N, num_classes) усреднённые вероятности для каждого отсчёта
@@ -153,12 +161,11 @@ def mark_oscillogram(
     num_classes = config.get('num_classes', 4)
     fft_window = 32
 
-    # Аккумуляторы
-    prob_sum = np.zeros((N, num_classes), dtype=np.float64)
-    coverage = np.zeros(N, dtype=np.int32)
-
     starts = list(range(0, max(1, N - window_size + 1), step))
+    n_windows = len(starts)
 
+    # --- 1. Предрасчёт спектральных признаков для всех окон ---
+    spectral_list: list[np.ndarray] = []
     for win_start in starts:
         win_end = min(win_start + window_size, N)
         raw_win = raw_data[win_start:win_end].copy()
@@ -173,12 +180,35 @@ def mark_oscillogram(
             raw_win, num_harmonics, sub_periods if sub_periods else None,
             include_symmetric, stride=stride, warmup=fft_window,
         )
+        # spectral: (T_out, C)  →  (C, T_out) для модели
+        spectral_list.append(spectral.T.copy())
 
-        X = torch.from_numpy(spectral.T.copy()).unsqueeze(0).to(device)
+    # --- 2. Оценка размера батча по памяти ---
+    sample_shape = spectral_list[0].shape  # (C, T_out)
+    bytes_per_sample = sample_shape[0] * sample_shape[1] * 4  # float32
+    # Учитываем ~4× overhead (веса + промежуточные активации)
+    max_batch_size = max(1, int(max_batch_mem_gb * 1e9 / (bytes_per_sample * 4)))
+    max_batch_size = min(max_batch_size, n_windows)
+
+    # --- 3. Батчированный инференс ---
+    all_probs: list[np.ndarray] = []
+    for batch_start in range(0, n_windows, max_batch_size):
+        batch_end = min(batch_start + max_batch_size, n_windows)
+        batch_np = np.stack(spectral_list[batch_start:batch_end], axis=0)  # (B, C, T_out)
+        X = torch.from_numpy(batch_np).to(device)
         out = model(X, mode='classify')
-        logits = out['classify']
-        probs = torch.sigmoid(logits.float()).squeeze(0).cpu().numpy()
+        logits = out['classify']  # (B, n_zones, num_classes)
+        probs = torch.sigmoid(logits.float()).cpu().numpy()
+        all_probs.append(probs)
 
+    all_probs_np = np.concatenate(all_probs, axis=0)  # (n_windows, n_zones, num_classes)
+
+    # --- 4. Раскладка по пообразцовой сетке ---
+    prob_sum = np.zeros((N, num_classes), dtype=np.float64)
+    coverage = np.zeros(N, dtype=np.int32)
+
+    for i, win_start in enumerate(starts):
+        probs = all_probs_np[i]  # (n_zones, num_classes)
         n_zones = probs.shape[0]
         for z in range(n_zones):
             raw_pos = win_start + fft_window + z * stride
@@ -368,9 +398,19 @@ def generate_marking_plots(
 
     # Данные
     data_path = Path(data_dir) / precomputed_file
-    df = pl.read_csv(str(data_path))
+    print(f"Загрузка данных: {data_path.name}")
+    df = pl.read_csv(str(data_path), infer_schema_length=50000, null_values=["NA", "nan", "null", ""])
 
-    # Подготовка меток
+    # Стандартизация колонок напряжений (UA BB → UA и т.д.)
+    df = standardize_voltage_columns(df)
+
+    # Подготовка меток: если это raw CSV без Target_* — создаём их
+    if 'Target_Normal' not in df.columns:
+        df = clean_labels(df)
+        df = add_base_labels(df)
+        print("  Метки подготовлены из ML_* колонок")
+
+    # Подготовка дополнительных меток
     if target_level in ('base_sequential', 'ozz', 'full', 'full_by_levels'):
         df = prepare_labels_for_experiment(df, target_level)
 
@@ -408,12 +448,15 @@ def generate_marking_plots(
         val_files = files[:n_val]
         train_files = [f for f in files if f not in set(val_files)]
 
+    print(f"Всего уникальных файлов в датасете: {len(train_files) + len(val_files)}")
+    print(f"  train: {len(train_files)}, val: {len(val_files)}")
+
     if split == 'val':
         plot_files = val_files
     elif split == 'train':
         plot_files = train_files
     else:
-        plot_files = files
+        plot_files = train_files + val_files
 
     if selected_files:
         selected_set = set(selected_files)
@@ -564,13 +607,17 @@ if __name__ == '__main__':
     if MANUAL_RUN:
         # --- Путь к чекпоинту finetune ---
         CHECKPOINT = 'experiments/phase4/base_finetune_PhysicalKANTransformer_20260321_154837/latest_checkpoint.pt'
+        # CHECKPOINT = 'experiments/phase4/base_finetune_PhysicalKANTransformer_20260321_154837/best_model.pt'
 
+        
         # --- Папка вывода ---
         OUTPUT_DIR = 'reports/phase4'
 
         # --- Данные ---
+        # Можно указать любой CSV: labeled_2025_12_03.csv (все 990 файлов),
+        # train.csv (792 файла), test_precomputed.csv (198 файлов)
         DATA_DIR = 'data/ml_datasets'
-        PRECOMPUTED_FILE = 'test_precomputed.csv'
+        PRECOMPUTED_FILE = 'labeled_2025_12_03.csv'
 
         # --- Split: 'val' | 'train' | 'all' ---
         SPLIT = 'train'

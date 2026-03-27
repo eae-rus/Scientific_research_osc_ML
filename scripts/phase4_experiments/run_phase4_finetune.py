@@ -38,9 +38,13 @@ from osc_tools.ml.models.transformer import PhysicalKANTransformer, BaselineTran
 from osc_tools.ml.precomputed_dataset import PrecomputedDataset
 from osc_tools.ml.augmented_dataset import (
     AugmentedSpectralDataset, compute_num_channels, compute_stride, SAMPLES_PER_PERIOD,
+    standardize_voltage_columns,
 )
 from osc_tools.ml.augmentation import TimeSeriesAugmenter
-from osc_tools.ml.labels import get_target_columns, prepare_labels_for_experiment
+from osc_tools.ml.labels import (
+    get_target_columns, prepare_labels_for_experiment,
+    clean_labels, add_base_labels,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -118,7 +122,7 @@ def get_finetune_config() -> dict:
 
         # Данные (путь)
         'data_dir': str(PROJECT_ROOT / 'data' / 'ml_datasets'),
-        'precomputed_file': 'test_precomputed.csv',
+        'precomputed_file': 'labeled_2025_12_03.csv',
     }
 
 
@@ -238,7 +242,7 @@ def _split_files_train_val(
                 move_file = val_cls[0]
                 val_files.remove(move_file)
                 train_files.append(move_file)
-                print(f"  [!] Перенос {move_file[:30]}... ({cls}) из val→train для баланса")
+                print(f"  [!] Перенос {move_file[:30]}... ({cls}) из val->train для баланса")
 
         print(f"  [Стратифицированный OZZ split]")
         print(f"    train: {len(train_files)} файлов, val: {len(val_files)} файлов")
@@ -266,8 +270,17 @@ def prepare_finetune_dataloaders(
     """
     data_path = Path(config['data_dir']) / config['precomputed_file']
     print(f"Загрузка данных: {data_path}")
-    df = pl.read_csv(str(data_path))
+    df = pl.read_csv(str(data_path), infer_schema_length=50000, null_values=["NA", "nan", "null", ""])
     print(f"  Строк: {df.height:,}, Колонок: {df.width}")
+
+    # Стандартизация колонок напряжений (если raw CSV с 'UA BB' вместо 'UA')
+    df = standardize_voltage_columns(df)
+
+    # Подготовка меток: если raw CSV без Target_* — создаём их
+    if 'Target_Normal' not in df.columns:
+        df = clean_labels(df)
+        df = add_base_labels(df)
+        print("  Метки подготовлены из ML_* колонок")
 
     # Подготовка меток (нужна для base_sequential, ozz и др.)
     target_level = config['target_level']
@@ -281,7 +294,7 @@ def prepare_finetune_dataloaders(
 
     # Автоматическая коррекция num_classes в config
     if config.get('num_classes') != len(target_columns):
-        print(f"  [!] Корректировка num_classes: {config.get('num_classes')} → {len(target_columns)}")
+        print(f"  [!] Корректировка num_classes: {config.get('num_classes')} -> {len(target_columns)}")
         config['num_classes'] = len(target_columns)
 
     # Разделяем файлы
@@ -314,7 +327,7 @@ def prepare_finetune_dataloaders(
         num_lh = len(sub_periods)
         actual_channels = compute_num_channels(config.get('num_harmonics', 9), num_lh, include_symmetric)
         if config.get('num_input_channels') != actual_channels:
-            print(f"  [!] Корректировка num_input_channels: {config['num_input_channels']} → {actual_channels}")
+            print(f"  [!] Корректировка num_input_channels: {config['num_input_channels']} -> {actual_channels}")
             config['num_input_channels'] = actual_channels
 
         # Индексы: учитываем будущие периоды
@@ -909,7 +922,7 @@ def finetune(
     print(f"\nНачало fine-tuning: {total_epochs} эпох, batch_size={config['batch_size']}")
     print(f"Целевые классы: {target_columns}")
     accum = config.get('accumulation_steps', 1)
-    print(f"Gradient accumulation: {accum} шагов → effective batch = {config['batch_size'] * accum}")
+    print(f"Gradient accumulation: {accum} шагов -> effective batch = {config['batch_size'] * accum}")
     if config.get('train_batches_per_epoch') is not None:
         print(f"Train batches per epoch: {config['train_batches_per_epoch']} (случайная подвыборка)")
     print("-" * 70)
@@ -1143,7 +1156,7 @@ def main() -> None:
     if args.complexity:
         level = COMPLEXITY_LEVELS[args.complexity]
         config.update(level)
-        print(f"Сложность: {args.complexity} → {level}")
+        print(f"Сложность: {args.complexity} -> {level}")
     if args.epochs is not None:
         config['epochs'] = args.epochs
     if args.batch_size is not None:

@@ -54,6 +54,21 @@ DEFAULT_SUB_PERIODS = [2, 4, 6, 10]
 NUM_SYMMETRIC = 6          # I1, I2, I0, U1, U2, U0
 
 
+def standardize_voltage_columns(df: pl.DataFrame) -> pl.DataFrame:
+    """Переименовывает колонки напряжений 'UA BB'→'UA' и т.д. для совместимости с RAW_CHANNELS."""
+    available = set(df.columns)
+    rename_map = {}
+    if 'UA BB' in available and 'UA' not in available:
+        for ph in ('UA', 'UB', 'UC', 'UN'):
+            rename_map[f'{ph} BB'] = ph
+    elif 'UA CL' in available and 'UA' not in available:
+        for ph in ('UA', 'UB', 'UC', 'UN'):
+            rename_map[f'{ph} CL'] = ph
+    if rename_map:
+        df = df.rename(rename_map)
+    return df
+
+
 def compute_stride(samples_per_period: int = SAMPLES_PER_PERIOD,
                    period_fraction: int = 2) -> int:
     """Вычисляет stride как долю периода.
@@ -344,6 +359,7 @@ class AugmentedSpectralDataset(Dataset):
         self.num_steps_current = max(1, (window_size - warmup) // self.downsampling_stride)
 
         # --- Предзагрузка ---
+        dataframe = standardize_voltage_columns(dataframe)
         self._raw_np = dataframe.select(RAW_CHANNELS).to_numpy().astype(np.float32)
 
         if target_columns is not None:

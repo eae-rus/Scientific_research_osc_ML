@@ -41,8 +41,10 @@ from osc_tools.ml.ssl_dataset import SSLSpectralDataset
 from osc_tools.ml.precomputed_dataset import PrecomputedDataset
 from osc_tools.ml.augmented_dataset import (
     AugmentedSpectralDataset, compute_num_channels, compute_stride, SAMPLES_PER_PERIOD,
+    standardize_voltage_columns,
 )
 from osc_tools.ml.augmentation import TimeSeriesAugmenter
+from osc_tools.ml.labels import clean_labels, add_base_labels
 
 
 # ---------------------------------------------------------------------------
@@ -111,7 +113,7 @@ def get_default_config(mode: str = 'smoke') -> dict:
 
         # Данные (путь)
         'data_dir': str(PROJECT_ROOT / 'data' / 'ml_datasets'),
-        'precomputed_file': 'test_precomputed.csv',
+        'precomputed_file': 'labeled_2025_12_03.csv',
     }
 
     if mode == 'smoke':
@@ -211,10 +213,19 @@ def prepare_dataloaders(
     Returns:
         (train_loader, val_loader, channel_groups)
     """
-    data_path = Path(config['data_dir']) / config['precomputed_file']
+    data_path = Path(config['data_dir']) / config['precomputed_file']    
     print(f"Загрузка данных: {data_path}")
-    df = pl.read_csv(str(data_path))
+    df = pl.read_csv(str(data_path), infer_schema_length=50000, null_values=["NA", "nan", "null", ""])
     print(f"  Строк: {df.height:,}, Колонок: {df.width}")
+
+    # Стандартизация колонок напряжений (raw CSV: 'UA BB' → 'UA')
+    df = standardize_voltage_columns(df)
+
+    # Подготовка меток: если raw CSV без Target_* — создаём их
+    if 'Target_Normal' not in df.columns:
+        df = clean_labels(df)
+        df = add_base_labels(df)
+        print("  Метки подготовлены из ML_* колонок")
 
     # Разделяем файлы на train / val
     train_files, val_files = _split_files_train_val(
@@ -257,7 +268,7 @@ def _prepare_augmented_dataloaders(
     num_lh = len(sub_periods)
     actual_channels = compute_num_channels(config['num_harmonics'], num_lh, include_symmetric)
     if config.get('num_input_channels') != actual_channels:
-        print(f"  [!] Корректировка num_input_channels: {config['num_input_channels']} → {actual_channels}")
+        print(f"  [!] Корректировка num_input_channels: {config['num_input_channels']} -> {actual_channels}")
         config['num_input_channels'] = actual_channels
 
     # Вычисляем границы файлов
@@ -782,7 +793,7 @@ def pretrain(config: dict, resume_path: str | None = None, reset_optimizer: bool
     print(f"\nНачало обучения: {total_epochs} эпох, batch_size={config['batch_size']}")
     print(f"LR scheduler: {config['lr_scheduler']}, warmup: {warmup_epochs} эпох")
     accum = config.get('accumulation_steps', 1)
-    print(f"Gradient accumulation: {accum} шагов → effective batch = {config['batch_size'] * accum}")
+    print(f"Gradient accumulation: {accum} шагов -> effective batch = {config['batch_size'] * accum}")
     if config.get('train_batches_per_epoch') is not None:
         print(f"Train batches per epoch: {config['train_batches_per_epoch']} (случайная подвыборка)")
     print("-" * 60)
@@ -1031,7 +1042,7 @@ def main() -> None:
     if args.complexity and args.mode != 'smoke':
         level = COMPLEXITY_LEVELS[args.complexity]
         config.update(level)
-        print(f"Сложность: {args.complexity} → {level}")
+        print(f"Сложность: {args.complexity} -> {level}")
 
     # Overrides
     if args.epochs is not None:
@@ -1079,7 +1090,7 @@ if __name__ == '__main__':
     SELECTED_COMPLEXITY = 'light'           # 'light' | 'medium' | 'heavy'
 
     # --- Эпохи ---
-    EPOCHS = 200
+    EPOCHS = 300
 
     # --- Аугментация и признаки ---
     USE_AUGMENTATION = True
@@ -1088,8 +1099,8 @@ if __name__ == '__main__':
 
     # --- Stride (доля периода: 2 = полпериода=16, 4 = четверть=8) ---
     STRIDE_FRACTION = 2
-    VAL_STRIDE_MULTIPLIER = 4               # Валидация реже, чем обучение
-    TRAIN_BATCHES_PER_EPOCH = 64           # Случайных batch-ов за эпоху
+    VAL_STRIDE_MULTIPLIER = 10              # Валидация реже, чем обучение
+    TRAIN_BATCHES_PER_EPOCH = 128           # Случайных batch-ов за эпоху
 
     # --- Gradient accumulation ---
     ACCUMULATION_STEPS = 8                  # effective batch = batch_size × ACCUMULATION_STEPS
@@ -1098,8 +1109,8 @@ if __name__ == '__main__':
     CHECKPOINT_FREQUENCY = 5
 
     # --- Продолжение обучения (None или путь к чекпоинту) ---
-    # RESUME_PATH = None
-    RESUME_PATH = 'experiments/phase4/pretrain_PhysicalKANTransformer_20260319_180046/best_model.pt'
+    RESUME_PATH = None
+    # RESUME_PATH = 'experiments/phase4/pretrain_PhysicalKANTransformer_20260319_180046/best_model.pt'
     RESET_OPTIMIZER = True  # True, если нужно сбросить оптимизатор и начать с 0 эпохи
 
     # =================================================================
