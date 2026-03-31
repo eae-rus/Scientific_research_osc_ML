@@ -223,13 +223,10 @@ def mark_oscillogram(
     result = np.zeros((N, num_classes), dtype=np.float32)
     result[mask_covered] = (prob_sum[mask_covered] / coverage[mask_covered, np.newaxis]).astype(np.float32)
 
-    # Непокрытые точки — ближайшее предсказание
-    if not mask_covered.all():
-        first_covered = np.argmax(mask_covered)
-        if first_covered > 0:
-            result[:first_covered] = result[first_covered]
+    # Непокрытые точки — NaN (модель не имеет данных)
+    result[~mask_covered] = np.nan
 
-    return result
+    return result, coverage
 
 
 # ---------------------------------------------------------------------------
@@ -245,6 +242,7 @@ def plot_marking(
     pred_probs: dict[str, np.ndarray],
     title: str,
     threshold: float = 0.5,
+    coverage: Optional[np.ndarray] = None,
 ) -> None:
     """Строит комбинированный график: токи, напряжения, дискреты, кривые уверенности.
 
@@ -257,15 +255,20 @@ def plot_marking(
         pred_probs: словарь {класс: массив вероятностей} предсказаний модели
         title: заголовок графика
         threshold: порог бинаризации
+        coverage: (N,) число окон покрывающих каждую точку
     """
     labels = list(real_labels.keys())
     n_classes = len(labels)
     amplitudes = np.arange(1, n_classes + 1)
 
-    # Высоты подграфиков: токи, напряжения, дискреты, N × уверенность
+    # Высоты подграфиков: токи, напряжения, дискреты, N × уверенность, [coverage]
+    has_coverage = coverage is not None
     height_ratios = [1.1, 1.1, 0.8] + [0.6] * n_classes
-    fig = plt.figure(figsize=(16, 10 + 1.2 * n_classes))
-    gs = fig.add_gridspec(nrows=3 + n_classes, ncols=1, height_ratios=height_ratios)
+    if has_coverage:
+        height_ratios.append(0.4)
+    n_rows = len(height_ratios)
+    fig = plt.figure(figsize=(16, 10 + 1.2 * n_classes + (1.0 if has_coverage else 0)))
+    gs = fig.add_gridspec(nrows=n_rows, ncols=1, height_ratios=height_ratios)
 
     def get_phase_color(name: str, idx: int) -> str:
         name_uc = name.upper()
@@ -343,7 +346,24 @@ def plot_marking(
         ax_conf.grid(True, alpha=0.3, linestyle=':')
 
     # Нижняя ось
-    ax_conf.set_xlabel("Время, мс")
+    last_ax = ax_conf
+
+    # --- Coverage: надёжность предсказания ---
+    if has_coverage:
+        ax_cov = fig.add_subplot(gs[3 + n_classes, 0], sharex=ax_curr)
+        ax_cov.fill_between(time_axis, 0, coverage, color='steelblue', alpha=0.4)
+        ax_cov.plot(time_axis, coverage, color='steelblue', linewidth=0.8)
+        # Отметить непокрытую зону
+        uncovered = coverage == 0
+        if np.any(uncovered):
+            ax_cov.fill_between(time_axis, 0, coverage.max(),
+                                where=uncovered, alpha=0.15, color='red')
+        ax_cov.set_ylabel("Coverage", fontsize=8)
+        ax_cov.set_ylim(0, max(1, coverage.max()) * 1.1)
+        ax_cov.grid(True, alpha=0.3, linestyle=':')
+        last_ax = ax_cov
+
+    last_ax.set_xlabel("Время, мс")
     fig.suptitle(title, fontsize=13)
     fig.tight_layout()
     fig.savefig(out_path, dpi=150)
@@ -521,7 +541,7 @@ def generate_marking_plots(
         raw_data = file_df.select(raw_channels).to_numpy().astype(np.float32)
 
         # Пообразцовая разметка скользящим окном
-        probs = mark_oscillogram(model, raw_data, config, device, step=step)
+        probs, file_coverage = mark_oscillogram(model, raw_data, config, device, step=step)
 
         # Формируем словарь вероятностей
         pred_probs = {}
@@ -546,6 +566,7 @@ def generate_marking_plots(
             pred_probs=pred_probs,
             title=title,
             threshold=threshold,
+            coverage=file_coverage,
         )
 
     print(f"\nГотово! Графики сохранены в: {out_dir}")

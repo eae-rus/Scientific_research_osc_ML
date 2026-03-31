@@ -22,6 +22,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import polars as pl
@@ -78,7 +79,7 @@ def get_finetune_config() -> dict:
         'use_augmentation': True,
         'use_low_harmonics': True,
         'include_symmetric': True,        # Симметричные составляющие (I1,I2,I0,U1,U2,U0)
-        'future_periods': 2,              # Будущие периоды для расширенной метки
+        'future_zones': 4,                # Зон вперёд (4 зоны модели, не зависит от частоты дискретизации)
         'zone_target_aggregation': 'max', # Агрегация меток внутри зоны: 'max' | 'mean'
         'train_batches_per_epoch': 64,    # Сколько batch-ов случайно брать за эпоху
         'val_stride_multiplier': 4,       # Во сколько раз реже брать окна на валидации
@@ -352,7 +353,11 @@ def prepare_finetune_dataloaders(
         sub_periods = config.get('sub_periods', [2, 4, 6, 10]) if config.get('use_low_harmonics') else []
         include_symmetric = config.get('include_symmetric', True)
         augmenter = TimeSeriesAugmenter() if config.get('use_augmentation') else None
-        future_periods = config.get('future_periods', 2)
+        future_zones = config.get('future_zones', 0)
+        # Обратная совместимость: если задан future_periods, конвертируем
+        if future_zones == 0 and config.get('future_periods', 0) > 0:
+            future_zones = config['future_periods'] * 32 // stride
+            config['future_zones'] = future_zones
         zone_target_aggregation = config.get('zone_target_aggregation', 'max')
 
         # Пересчёт num_input_channels
@@ -362,8 +367,8 @@ def prepare_finetune_dataloaders(
             print(f"  [!] Корректировка num_input_channels: {config['num_input_channels']} -> {actual_channels}")
             config['num_input_channels'] = actual_channels
 
-        # Индексы: учитываем будущие периоды
-        full_window = window_size + future_periods * 32
+        # Индексы: учитываем будущие зоны (future_raw = future_zones * stride)
+        full_window = window_size + future_zones * stride
         train_indices = PrecomputedDataset.create_indices(
             train_df, window_size=full_window, mode='val', stride=stride,
         )
@@ -384,7 +389,7 @@ def prepare_finetune_dataloaders(
             sub_periods=sub_periods if sub_periods else None,
             include_symmetric=include_symmetric,
             downsampling_stride=stride,
-            future_periods=future_periods,
+            future_zones=future_zones,
             mask_ratio=0.0,         # Нет маскирования при finetune
             augmenter=augmenter,
             target_columns=target_columns,
@@ -401,7 +406,7 @@ def prepare_finetune_dataloaders(
             sub_periods=sub_periods if sub_periods else None,
             include_symmetric=include_symmetric,
             downsampling_stride=stride,
-            future_periods=future_periods,
+            future_zones=future_zones,
             mask_ratio=0.0,
             augmenter=None,
             target_columns=target_columns,
@@ -444,18 +449,22 @@ def prepare_finetune_dataloaders(
             num_harmonics=config['num_harmonics'],
         )
 
-    # Вычисляем num_future_zones для FuturePredictionHead
-    if use_augmented and future_periods > 0:
+    # num_future_zones для FuturePredictionHead — напрямую из future_zones
+    if use_augmented and future_zones > 0:
         zone_size = config.get('zone_size', 1)
-        future_steps = future_periods * 32 // stride  # 32 = SAMPLES_PER_PERIOD TODO: не всегда будет 32, зависит от частот дискретизации
-        num_future_zones = future_steps // zone_size
+        num_future_zones = future_zones // zone_size
         config['num_future_zones'] = num_future_zones
-        print(f"  Future zones: {num_future_zones} (periods={future_periods}, "
+        print(f"  Future zones: {num_future_zones} (future_zones={future_zones}, "
               f"stride={stride}, zone_size={zone_size})")
     else:
         config['num_future_zones'] = 0
 
-    train_loader = _build_train_epoch_loader(train_ds, config, epoch=0)
+    # Балансировка выборки
+    sample_weights = _compute_sample_weights(train_ds, config)
+    # Сохраним для повторного использования при каждой эпохе
+    config['_sample_weights'] = sample_weights
+
+    train_loader = _build_train_epoch_loader(train_ds, config, epoch=0, sample_weights=sample_weights)
     val_loader = DataLoader(
         val_ds, batch_size=config['val_batch_size'],
         shuffle=False, num_workers=config['num_workers'],
@@ -466,6 +475,83 @@ def prepare_finetune_dataloaders(
 
 
 # ---------------------------------------------------------------------------
+# Балансировка выборки
+# ---------------------------------------------------------------------------
+
+def _compute_sample_weights(
+    dataset: torch.utils.data.Dataset,
+    config: dict,
+) -> Optional[np.ndarray]:
+    """Вычисляет веса для WeightedRandomSampler.
+
+    Стратегия combine: для каждого окна определяем «класс» по доминирующей
+    метке, и даём обратный вес пропорционально частоте этого класса.
+    Также лимитируем число окон от одного файла (per-file cap).
+
+    Args:
+        dataset: train dataset с ._targets_np и .indices
+        config: конфиг с 'balanced_sampling' и 'max_windows_per_file'
+
+    Returns:
+        (N,) float weights или None, если балансировка отключена
+    """
+    if not config.get('balanced_sampling', False):
+        return None
+
+    # Нужны: метки для каждого окна и файловая принадлежность
+    has_targets = hasattr(dataset, '_targets_np') and hasattr(dataset, 'indices')
+    if not has_targets:
+        print("  [WARNING] balanced_sampling: dataset не поддерживает — пропускаем")
+        return None
+
+    indices = dataset.indices
+    targets_np = dataset._targets_np
+    window_size = getattr(dataset, 'window_size', config.get('window_size', 320))
+    n_samples = len(indices)
+
+    # 1. Класс каждого окна (по доминирующей метке в окне)
+    labels = np.zeros(n_samples, dtype=np.int32)
+    for i, start_idx in enumerate(indices):
+        end_idx = min(start_idx + window_size, len(targets_np))
+        window_targets = targets_np[start_idx:end_idx]  # (W, C)
+        # Любое событие в окне → кодируем как бинарный multi-label
+        any_event = window_targets.max(axis=0)  # (C,)
+        if any_event.sum() == 0:
+            labels[i] = 0  # Normal
+        else:
+            # Кодируем как номер доминирующего класса (1-indexed)
+            labels[i] = int(any_event.argmax()) + 1
+
+    # 2. Обратные частоты → веса
+    unique_labels, counts = np.unique(labels, return_counts=True)
+    freq = {lbl: cnt for lbl, cnt in zip(unique_labels, counts)}
+    weights = np.array([1.0 / freq[lbl] for lbl in labels], dtype=np.float64)
+
+    # 3. Per-file cap: ограничить вклад одного файла
+    max_per_file = config.get('max_windows_per_file', 0)
+    if max_per_file > 0 and hasattr(dataset, '_file_bounds'):
+        file_counts = {}
+        for i, start_idx in enumerate(indices):
+            for fi, (fstart, fend) in enumerate(dataset._file_bounds):
+                if fstart <= start_idx < fend:
+                    file_counts.setdefault(fi, []).append(i)
+                    break
+        for fi, sample_indices in file_counts.items():
+            if len(sample_indices) > max_per_file:
+                # Уменьшаем вес лишних сэмплов пропорционально
+                scale = max_per_file / len(sample_indices)
+                for si in sample_indices:
+                    weights[si] *= scale
+
+    # Нормализация (сумма = N)
+    weights = weights / weights.sum() * n_samples
+
+    print(f"  [Balanced sampling] classes: {dict(zip(unique_labels.tolist(), counts.tolist()))}, "
+          f"max_per_file={max_per_file}")
+    return weights
+
+
+# ---------------------------------------------------------------------------
 # Обучение и валидация
 # ---------------------------------------------------------------------------
 
@@ -473,9 +559,44 @@ def _build_train_epoch_loader(
     train_ds: torch.utils.data.Dataset,
     config: dict,
     epoch: int,
+    sample_weights: Optional[np.ndarray] = None,
 ) -> DataLoader:
-    """Строит train DataLoader с фиксированной случайной подвыборкой на эпоху."""
+    """Строит train DataLoader с фиксированной случайной подвыборкой на эпоху.
+
+    Если sample_weights задан — использует WeightedRandomSampler.
+    """
+    from torch.utils.data import WeightedRandomSampler
+
     batches_per_epoch = config.get('train_batches_per_epoch')
+    total_samples = len(train_ds)
+
+    # Число элементов в эпохе
+    if batches_per_epoch is not None:
+        target_samples = int(batches_per_epoch) * config['batch_size']
+        if target_samples <= 0 or target_samples >= total_samples:
+            target_samples = total_samples
+    else:
+        target_samples = total_samples
+
+    # Weighted sampler или обычный shuffle/subset
+    if sample_weights is not None:
+        weights_tensor = torch.from_numpy(sample_weights).double()
+        sampler = WeightedRandomSampler(
+            weights=weights_tensor,
+            num_samples=target_samples,
+            replacement=True,  # Для балансировки нужен replacement
+        )
+        return DataLoader(
+            train_ds,
+            batch_size=config['batch_size'],
+            sampler=sampler,
+            shuffle=False,
+            num_workers=config['num_workers'],
+            pin_memory=True,
+            drop_last=True,
+        )
+
+    # Без балансировки — стандартная логика
     if batches_per_epoch is None:
         return DataLoader(
             train_ds,
@@ -1064,7 +1185,10 @@ def finetune(
     print("-" * 70)
 
     for epoch in range(start_epoch, total_epochs):
-        train_loader = _build_train_epoch_loader(train_loader.dataset, config, epoch)
+        train_loader = _build_train_epoch_loader(
+            train_loader.dataset, config, epoch,
+            sample_weights=config.get('_sample_weights'),
+        )
 
         # Warmup LR (линейный от 0 до target)
         if epoch < warmup_epochs:
@@ -1175,6 +1299,14 @@ def finetune(
                 epoch, best_val_f1, config, best_val_loss,
             )
 
+        # Детекция переобучения: N эпох подряд val_loss не улучшается
+        overfit_patience = config.get('overfit_patience', 20)
+        if len(history) >= overfit_patience:
+            recent_losses = [r['val_loss'] for r in history[-overfit_patience:]]
+            if all(recent_losses[i] >= recent_losses[0] for i in range(1, len(recent_losses))):
+                print(f"  ⚠ ВНИМАНИЕ: val_loss не улучшается {overfit_patience} эпох подряд "
+                      f"(возможно переобучение)")
+
     # Итоги
     print("\n" + "=" * 60)
     print("FINE-TUNING ЗАВЕРШЁН")
@@ -1211,6 +1343,17 @@ def finetune(
     }
     with open(save_dir / 'summary.json', 'w', encoding='utf-8') as f:
         json.dump(summary, f, indent=2, ensure_ascii=False)
+
+    # CSV-экспорт кривых обучения — для matplotlib
+    if history:
+        import csv
+        csv_path = save_dir / 'training_curves.csv'
+        fieldnames = list(history[0].keys())
+        with open(csv_path, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(history)
+        print(f"  Кривые обучения: {csv_path}")
 
     return save_dir
 
@@ -1292,7 +1435,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--reset-optimizer', action='store_true',
                         help='Сбросить оптимизатор и начать с 0 эпохи (использовать веса из resume)')
     parser.add_argument('--split-from', type=str, default=None,
-                        help='Путь к директории эксперимента, из которой взять split.json (Q6)')
+                        help='Путь к директории эксперимента, из которой взять split.json')
+    parser.add_argument('--balanced', action='store_true',
+                        help='Включить балансировку выборки по классам')
+    parser.add_argument('--max-windows-per-file', type=int, default=0,
+                        help='Максимум окон от одного файла (0 = без лимита')
     return parser.parse_args()
 
 
@@ -1329,6 +1476,10 @@ def main() -> None:
         config['num_input_channels'] = 144
     if args.split_from:
         config['split_from'] = args.split_from
+    if args.balanced:
+        config['balanced_sampling'] = True
+    if args.max_windows_per_file > 0:
+        config['max_windows_per_file'] = args.max_windows_per_file
     if args.smoke:
         config['epochs'] = 2
         config['batch_size'] = 4
@@ -1338,7 +1489,7 @@ def main() -> None:
         config['include_symmetric'] = False
         config['num_input_channels'] = 144
         config['accumulation_steps'] = 1
-        config['future_periods'] = 0
+        config['future_zones'] = 0
 
     finetune(
         config,
@@ -1385,7 +1536,7 @@ if __name__ == '__main__':
     USE_AUGMENTATION = True
     USE_LOW_HARMONICS = True
     INCLUDE_SYMMETRIC = True                # Симметричные составляющие
-    FUTURE_PERIODS = 2                      # Будущие периоды (расширяет метки)
+    FUTURE_ZONES = 4                        # Зон вперёд (шаги модели, не зависит от частоты дискретизации)
     ZONE_TARGET_AGGREGATION = 'max'         # 'max' | 'mean'
 
     # --- Stride (доля периода: 2 = полпериода=16, 4 = четверть=8) ---
@@ -1412,7 +1563,7 @@ if __name__ == '__main__':
     config['use_augmentation'] = USE_AUGMENTATION
     config['use_low_harmonics'] = USE_LOW_HARMONICS
     config['include_symmetric'] = INCLUDE_SYMMETRIC
-    config['future_periods'] = FUTURE_PERIODS
+    config['future_zones'] = FUTURE_ZONES
     config['zone_target_aggregation'] = ZONE_TARGET_AGGREGATION
     config['accumulation_steps'] = ACCUMULATION_STEPS
     config['checkpoint_frequency'] = CHECKPOINT_FREQUENCY

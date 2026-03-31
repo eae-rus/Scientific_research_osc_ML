@@ -48,6 +48,66 @@ from osc_tools.ml.labels import get_target_columns, prepare_labels_for_experimen
 PREDICTION_THRESHOLD = 0.5  # Порог для бинарных предсказаний (стандартный для sigmoid)
 
 
+def find_optimal_thresholds(
+    preds: np.ndarray,
+    targets: np.ndarray,
+    target_columns: list[str],
+    grid_steps: int = 101,
+) -> dict[str, dict]:
+    """Поиск оптимального порога per-class через grid search по F1.
+
+    Для каждого класса перебираем пороги от 0.01 до 0.99 и выбираем
+    тот, при котором F1 максимален. Также считаем macro-F1 для
+    оптимальных порогов.
+
+    Args:
+        preds: (N, C) вероятности после sigmoid
+        targets: (N, C) бинарные метки
+        target_columns: названия классов
+        grid_steps: число точек сетки порогов
+
+    Returns:
+        dict с ключами 'per_class' (пороги и F1 для каждого класса),
+        'thresholds' (dict class→float), 'macro_f1_optimal'
+    """
+    from sklearn.metrics import f1_score
+
+    thresholds_grid = np.linspace(0.01, 0.99, grid_steps)
+    targets_int = targets.astype(np.int32)
+    num_classes = targets.shape[1]
+
+    result: dict = {'per_class': {}, 'thresholds': {}}
+    best_preds_bin = np.zeros_like(targets_int)
+
+    for i, col in enumerate(target_columns):
+        best_f1 = -1.0
+        best_thr = 0.5
+
+        # Если класс не представлен — оставляем порог 0.5
+        if targets_int[:, i].sum() == 0 or (1 - targets_int[:, i]).sum() == 0:
+            result['per_class'][col] = {'threshold': 0.5, 'f1': 0.0}
+            result['thresholds'][col] = 0.5
+            best_preds_bin[:, i] = (preds[:, i] >= 0.5).astype(np.int32)
+            continue
+
+        for thr in thresholds_grid:
+            pred_bin = (preds[:, i] >= thr).astype(np.int32)
+            f1_val = f1_score(targets_int[:, i], pred_bin, zero_division=0)
+            if f1_val > best_f1:
+                best_f1 = f1_val
+                best_thr = float(thr)
+
+        result['per_class'][col] = {'threshold': best_thr, 'f1': float(best_f1)}
+        result['thresholds'][col] = best_thr
+        best_preds_bin[:, i] = (preds[:, i] >= best_thr).astype(np.int32)
+
+    # Macro-F1 с оптимальными порогами
+    result['macro_f1_optimal'] = float(
+        f1_score(targets_int, best_preds_bin, average='macro', zero_division=0)
+    )
+    return result
+
+
 def compute_full_metrics(
     preds: np.ndarray,
     targets: np.ndarray,
@@ -213,13 +273,18 @@ def mark_oscillogram(
     config: dict,
     device: torch.device,
     step: int = 32,
-) -> np.ndarray:
+) -> tuple[np.ndarray, np.ndarray]:
     """Разметка осциллограммы скользящим окном с усреднением перекрывающихся предсказаний.
 
     Алгоритм:
     1. Скользящее окно шагом step=32 (1 период) по raw_data
     2. Для каждого окна: FFT → stride фазоров → polar/symmetric → inference
     3. Пообразцовое усреднение: для каждой точки — среднее от всех покрывающих окон.
+
+    Edge handling (Q10):
+    - Первые ~(fft_window) отсчётов НЕ покрыты — возвращаются как NaN
+    - coverage[i] показывает число окон, покрывающих i-й отсчёт
+    - Надёжность предсказания растёт с coverage (1 окно < 5 окон)
 
     Args:
         model: fine-tuned модель в eval mode
@@ -229,7 +294,9 @@ def mark_oscillogram(
         step: шаг скользящего окна в отсчётах (32 = 1 период)
 
     Returns:
-        (N, num_classes) усреднённые вероятности для каждого отсчёта
+        (probs, coverage):
+        - probs: (N, num_classes) усреднённые вероятности (NaN для непокрытых точек)
+        - coverage: (N,) число окон, покрывающих каждый отсчёт (0 = нет данных)
     """
     model.eval()
     N = raw_data.shape[0]
@@ -285,16 +352,16 @@ def mark_oscillogram(
 
     # Усреднение
     mask_covered = coverage > 0
-    result = np.zeros((N, num_classes), dtype=np.float32)
+    result = np.full((N, num_classes), np.nan, dtype=np.float32)
     result[mask_covered] = (prob_sum[mask_covered] / coverage[mask_covered, np.newaxis]).astype(np.float32)
 
-    # Непокрытые точки (начало осциллограммы) — берём ближайшее предсказание
-    if not mask_covered.all():
-        first_covered = np.argmax(mask_covered)
-        if first_covered > 0:
-            result[:first_covered] = result[first_covered]
+    # Непокрытые точки остаются NaN — это честный edge handling (Q10).
+    # Вызывающий код должен учитывать coverage при визуализации.
+    n_uncovered = int((~mask_covered).sum())
+    if n_uncovered > 0:
+        print(f"  Edge handling: {n_uncovered} отсчётов без покрытия (первые ~{np.argmax(mask_covered)} точек)")
 
-    return result
+    return result, coverage
 
 
 # ---------------------------------------------------------------------------
@@ -406,11 +473,14 @@ def prepare_val_dataloader(
     use_low_harmonics = config.get('use_low_harmonics', False)
     include_symmetric = config.get('include_symmetric', True)
     sub_periods = config.get('sub_periods', [2, 4, 6, 10]) if use_low_harmonics else []
-    future_periods = config.get('future_periods', 0)
+    future_zones = config.get('future_zones', 0)
+    # Обратная совместимость со старыми конфигами
+    if future_zones == 0 and config.get('future_periods', 0) > 0:
+        future_zones = config['future_periods'] * 32 // stride
     zone_target_aggregation = config.get('zone_target_aggregation', 'max')
 
-    # Правильное окно для индексации (с учётом будущих периодов)
-    full_window = window_size + future_periods * 32
+    # Правильное окно для индексации (с учётом будущих зон)
+    full_window = window_size + future_zones * stride
 
     if use_low_harmonics:
         val_boundaries = AugmentedSpectralDataset.compute_file_boundaries(val_df)
@@ -426,7 +496,7 @@ def prepare_val_dataloader(
             sub_periods=sub_periods if sub_periods else None,
             include_symmetric=include_symmetric,
             downsampling_stride=stride,
-            future_periods=future_periods,
+            future_zones=future_zones,
             mask_ratio=0.0,
             augmenter=None,
             target_columns=target_columns,
@@ -538,8 +608,26 @@ def evaluate_checkpoint(
     preds, targets, inference_time = run_inference(model, val_loader, device)
     print(f"Inference: {preds.shape[0]} samples за {inference_time:.2f} с")
 
-    # Метрики
+    # Метрики с порогом по умолчанию
     metrics = compute_full_metrics(preds, targets, target_columns)
+
+    # Оптимальные пороги per-class
+    opt_thresholds = find_optimal_thresholds(preds, targets, target_columns)
+    metrics['optimal_thresholds'] = opt_thresholds
+    # Метрики с оптимальными порогами
+    metrics_opt = compute_full_metrics(
+        preds, targets, target_columns,
+        threshold=None,  # Не используется — мы подменяем бинаризацию ниже
+    )
+    # Пересчёт с per-class порогами
+    preds_bin_opt = np.zeros_like(preds, dtype=np.int32)
+    for i, col in enumerate(target_columns):
+        thr = opt_thresholds['thresholds'].get(col, 0.5)
+        preds_bin_opt[:, i] = (preds[:, i] >= thr).astype(np.int32)
+    from sklearn.metrics import f1_score as _f1
+    metrics['macro_f1_optimal'] = float(
+        _f1(targets.astype(np.int32), preds_bin_opt, average='macro', zero_division=0)
+    )
 
     # Latency
     num_channels = config['num_input_channels']
@@ -562,6 +650,24 @@ def evaluate_checkpoint(
     # Печать
     print_report(metrics, target_columns, model_info)
 
+    # Таблица оптимальных порогов
+    print("\n--- Оптимальные пороги per-class ---")
+    print(f"  {'Класс':<25s} {'Порог':>8s} {'F1_opt':>8s} {'F1_0.5':>8s}")
+    print("  " + "-" * 55)
+    for col in target_columns:
+        opt = opt_thresholds['per_class'].get(col, {})
+        std = metrics['per_class'].get(col, {})
+        print(
+            f"  {col:<25s} "
+            f"{opt.get('threshold', 0.5):8.3f} "
+            f"{opt.get('f1', 0):8.4f} "
+            f"{std.get('f1', 0):8.4f}"
+        )
+    print(f"\n  Macro-F1 (порог=0.5):      {metrics['macro_f1']:.4f}")
+    print(f"  Macro-F1 (оптимал.):       {metrics['macro_f1_optimal']:.4f}")
+    delta = metrics['macro_f1_optimal'] - metrics['macro_f1']
+    print(f"  Прирост:                   {delta:+.4f}")
+
     # Сохранение
     if save_report:
         report_dir = ckpt_path.parent
@@ -575,6 +681,12 @@ def evaluate_checkpoint(
         with open(report_path, 'w', encoding='utf-8') as f:
             json.dump(report, f, indent=2, ensure_ascii=False, default=str)
         print(f"\nОтчёт сохранён: {report_path}")
+
+        # Отдельно сохраняем оптимальные пороги
+        thr_path = report_dir / 'optimal_thresholds.json'
+        with open(thr_path, 'w', encoding='utf-8') as f:
+            json.dump(opt_thresholds, f, indent=2, ensure_ascii=False)
+        print(f"Пороги сохранены: {thr_path}")
 
     return metrics
 
@@ -656,11 +768,13 @@ def main() -> None:
         raw_channels = ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']
         raw_data = raw_df.select(raw_channels).to_numpy().astype(np.float32)
 
-        probs = mark_oscillogram(model, raw_data, config, device, step=args.mark_step)
+        probs, coverage = mark_oscillogram(model, raw_data, config, device, step=args.mark_step)
 
-        # Сохраняем результат
+        # Сохраняем результат (NaN для непокрытых точек остаются)
         target_cols = get_target_columns(config.get('target_level', 'base'))
-        out_df = pl.DataFrame({col: probs[:, i] for i, col in enumerate(target_cols)})
+        data_dict = {col: probs[:, i] for i, col in enumerate(target_cols)}
+        data_dict['coverage'] = coverage.astype(np.float32)
+        out_df = pl.DataFrame(data_dict)
         out_path = mark_path.with_suffix('.marking.csv')
         out_df.write_csv(str(out_path))
         print(f"Разметка сохранена: {out_path} ({probs.shape[0]} отсчётов, {probs.shape[1]} классов)")
@@ -708,9 +822,11 @@ if __name__ == '__main__':
             raw_df = pl.read_csv(str(mark_path))
             raw_channels = ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']
             raw_data = raw_df.select(raw_channels).to_numpy().astype(np.float32)
-            probs = mark_oscillogram(model, raw_data, config, device, step=MARK_STEP)
+            probs, coverage = mark_oscillogram(model, raw_data, config, device, step=MARK_STEP)
             target_cols = get_target_columns(config.get('target_level', 'base'))
-            out_df = pl.DataFrame({col: probs[:, i] for i, col in enumerate(target_cols)})
+            data_dict = {col: probs[:, i] for i, col in enumerate(target_cols)}
+            data_dict['coverage'] = coverage.astype(np.float32)
+            out_df = pl.DataFrame(data_dict)
             out_path = mark_path.with_suffix('.marking.csv')
             out_df.write_csv(str(out_path))
             print(f"Разметка сохранена: {out_path}")

@@ -282,7 +282,7 @@ class AugmentedSpectralDataset(Dataset):
         include_symmetric: bool = True,
         downsampling_stride: Optional[int] = None,
         stride_fraction: int = 2,
-        future_periods: int = 2,
+        future_zones: int = 0,
         mask_ratio: float = 0.25,
         mask_value: float = 0.0,
         augmenter: Optional[object] = None,
@@ -303,7 +303,9 @@ class AugmentedSpectralDataset(Dataset):
             include_symmetric: добавить симметричные составляющие (I1,I2,I0,U1,U2,U0)
             downsampling_stride: явный stride в отсчётах (если задан — игнорирует stride_fraction)
             stride_fraction: доля периода (2 = полпериода=16, 4 = четверть=8)
-            future_periods: будущих периодов (2 для SSL, >0 для расширенного classify)
+            future_zones: число выходных зон модели для предсказания вперёд.
+                Не зависит от частоты дискретизации — оперирует шагами модели.
+                future_raw_steps = future_zones * downsampling_stride
             mask_ratio: доля маскируемых шагов (0.0 для val)
             mask_value: значение замены
             augmenter: TimeSeriesAugmenter или None
@@ -322,7 +324,7 @@ class AugmentedSpectralDataset(Dataset):
         self.num_harmonics = num_harmonics
         self.sub_periods = sub_periods if sub_periods is not None else DEFAULT_SUB_PERIODS
         self.include_symmetric = include_symmetric
-        self.future_periods = future_periods
+        self.future_zones = future_zones
         self.mask_ratio = mask_ratio
         self.mask_value = mask_value
         self.augmenter = augmenter
@@ -340,8 +342,8 @@ class AugmentedSpectralDataset(Dataset):
         else:
             self.downsampling_stride = compute_stride(SAMPLES_PER_PERIOD, stride_fraction)
 
-        # Будущие шаги
-        self.future_raw_steps = future_periods * SAMPLES_PER_PERIOD
+        # Будущие шаги: определяются числом зон × stride (не зависят от SAMPLES_PER_PERIOD)
+        self.future_raw_steps = future_zones * self.downsampling_stride
         self.full_window_raw = window_size + self.future_raw_steps
 
         # Контекст слева для backward-looking низших гармоник
@@ -355,8 +357,8 @@ class AugmentedSpectralDataset(Dataset):
 
         # Число шагов после stride (warmup = FFT_WINDOW пропускается)
         warmup = FFT_WINDOW
-        self.num_steps_full = max(1, (self.full_window_raw - warmup) // self.downsampling_stride)
         self.num_steps_current = max(1, (window_size - warmup) // self.downsampling_stride)
+        self.num_steps_full = self.num_steps_current + future_zones
 
         # --- Предзагрузка ---
         dataframe = standardize_voltage_columns(dataframe)
@@ -379,7 +381,7 @@ class AugmentedSpectralDataset(Dataset):
               f"{'+sym' if include_symmetric else ''}, "
               f"yagg={self.zone_target_aggregation}, "
               f"aug={'ON' if augmenter else 'OFF'}, "
-              f"future={future_periods}p, ctx={self._context_before}")
+              f"future_zones={future_zones}, ctx={self._context_before}")
 
     # ----- Загрузка сырых данных -----
 
@@ -522,7 +524,7 @@ class AugmentedSpectralDataset(Dataset):
 
         # Y покрывает все зоны: текущие + будущие
         T_full = min(self.num_steps_full, X_full.shape[1])
-        # Если future_periods=0, T_full == T_current
+        # Если future_zones=0, T_full == T_current
         T_y = max(T_full, T_current)
 
         num_targets = len(self.target_columns)

@@ -76,7 +76,7 @@ def get_default_config(mode: str = 'smoke') -> dict:
         'use_augmentation': True,         # Аугментация на сырых данных до FFT
         'use_low_harmonics': True,        # Добавить низшие гармоники
         'include_symmetric': True,        # Симметричные составляющие (I1,I2,I0,U1,U2,U0)
-        'future_periods': 2,
+        'future_zones': 4,
         'mask_ratio': 0.25,
         'train_batches_per_epoch': 64,  # Сколько batch-ов случайно брать за эпоху
         'val_stride_multiplier': 4,      # Во сколько раз реже брать окна на валидации
@@ -276,7 +276,7 @@ def _prepare_augmented_dataloaders(
     val_boundaries = AugmentedSpectralDataset.compute_file_boundaries(val_df)
 
     # Размер окна с будущими периодами
-    full_window = config['window_size'] + config['future_periods'] * 32
+    full_window = config['window_size'] + config.get('future_zones', 0) * config['downsampling_stride']
 
     val_stride = max(
         config['downsampling_stride'],
@@ -302,7 +302,7 @@ def _prepare_augmented_dataloaders(
         sub_periods=sub_periods if sub_periods else None,
         include_symmetric=include_symmetric,
         downsampling_stride=config['downsampling_stride'],
-        future_periods=config['future_periods'],
+        future_zones=config.get('future_zones', 0),
         mask_ratio=config['mask_ratio'],
         augmenter=augmenter,
         mode='ssl',
@@ -316,7 +316,7 @@ def _prepare_augmented_dataloaders(
         sub_periods=sub_periods if sub_periods else None,
         include_symmetric=include_symmetric,
         downsampling_stride=config['downsampling_stride'],
-        future_periods=config['future_periods'],
+        future_zones=config.get('future_zones', 0),
         mask_ratio=0.0,  # Валидация без маскирования
         augmenter=None,   # Валидация без аугментации
         mode='ssl',
@@ -343,32 +343,34 @@ def _prepare_legacy_dataloaders(
 ) -> tuple[DataLoader, DataLoader, list[list[int]] | None]:
     """DataLoader-ы через SSLSpectralDataset (legacy, precomputed features)."""
 
-    # Размер окна с будущими периодами (для SSLSpectralDataset)
-    full_window = config['window_size'] + config['future_periods'] * 32
+    # Размер окна с будущими зонами (для SSLSpectralDataset)
+    future_zones = config.get('future_zones', 0)
+    stride = config['downsampling_stride']
+    full_window = config['window_size'] + future_zones * stride
 
     val_stride = max(
-        config['downsampling_stride'],
-        config['downsampling_stride'] * config.get('val_stride_multiplier', 4),
+        stride,
+        stride * config.get('val_stride_multiplier', 4),
     )
 
     # Создаём индексы (скользящее окно)
     train_indices = PrecomputedDataset.create_indices(
-        train_df, window_size=full_window, mode='val', stride=config['downsampling_stride']
+        train_df, window_size=full_window, mode='val', stride=stride
     )
     val_indices = PrecomputedDataset.create_indices(
         val_df, window_size=full_window, mode='val', stride=val_stride
     )
     print(f"  Окон: train={len(train_indices):,}, val={len(val_indices):,} (val_stride={val_stride})")
 
-    # SSL Datasets
+    # SSL Datasets (legacy: передаём future_zones вместо future_periods)
     train_ds = SSLSpectralDataset(
         dataframe=train_df,
         indices=train_indices,
         window_size=config['window_size'],
         feature_mode=config['feature_mode'],
         num_harmonics=config['num_harmonics'],
-        downsampling_stride=config['downsampling_stride'],
-        future_periods=config['future_periods'],
+        downsampling_stride=stride,
+        future_zones=future_zones,
         mask_ratio=config['mask_ratio'],
     )
     val_ds = SSLSpectralDataset(
@@ -377,8 +379,8 @@ def _prepare_legacy_dataloaders(
         window_size=config['window_size'],
         feature_mode=config['feature_mode'],
         num_harmonics=config['num_harmonics'],
-        downsampling_stride=config['downsampling_stride'],
-        future_periods=config['future_periods'],
+        downsampling_stride=stride,
+        future_zones=future_zones,
         mask_ratio=0.0,  # Валидация без маскирования
     )
 

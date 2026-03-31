@@ -76,7 +76,8 @@ class SSLSpectralDataset(Dataset):
         feature_mode: str = 'phase_polar',
         num_harmonics: int = 9,
         downsampling_stride: int = 16,
-        future_periods: int = 2,
+        future_periods: int = 0,
+        future_zones: int = 0,
         samples_per_period: int = 32,
         mask_ratio: float = 0.25,
         mask_value: float = 0.0,
@@ -85,13 +86,17 @@ class SSLSpectralDataset(Dataset):
 
         self.window_size = window_size
         self.downsampling_stride = downsampling_stride
-        self.future_periods = future_periods
         self.samples_per_period = samples_per_period
         self.mask_ratio = mask_ratio
         self.mask_value = mask_value
 
-        # Будущие шаги в сырых отсчётах
-        self.future_raw_steps = future_periods * samples_per_period
+        # future_zones имеет приоритет; future_periods — для обратной совместимости
+        if future_zones > 0:
+            self.future_zones = future_zones
+            self.future_raw_steps = future_zones * downsampling_stride
+        else:
+            self.future_zones = (future_periods * samples_per_period) // downsampling_stride
+            self.future_raw_steps = future_periods * samples_per_period
         # Полное окно = текущее + будущее
         self.full_window_raw = window_size + self.future_raw_steps
 
