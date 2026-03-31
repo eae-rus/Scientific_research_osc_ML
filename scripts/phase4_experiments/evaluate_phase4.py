@@ -108,6 +108,147 @@ def find_optimal_thresholds(
     return result
 
 
+# ---------------------------------------------------------------------------
+# Метрики границ событий (Smearing / Delay)
+# ---------------------------------------------------------------------------
+
+def compute_boundary_metrics(
+    probs: np.ndarray,
+    targets: np.ndarray,
+    target_columns: list[str],
+    threshold: float = PREDICTION_THRESHOLD,
+    stride_samples: int = 16,
+) -> dict:
+    """Вычисляет метрики точности границ для каждого класса.
+
+    Для каждого файла (осциллограммы) и каждого класса:
+    - **delay** — задержка обнаружения: расстояние от начала реального события
+      до первого предсказанного положительного (в зонах). Положительное = опоздание.
+    - **smearing_onset** — ширина «нарастания» на начале события: число зон
+      между первым и последним переключением 0→1 в окрестности true onset.
+    - **smearing_offset** — ширина «спада» в конце события: число зон между
+      первым и последним переключением 1→0 в окрестности true offset.
+    - **false_alarm_zones** — число зон с pred=1 за пределами любого реального события.
+
+    Args:
+        probs: (N_zones, C) вероятности (позонные, НЕ window-level)
+        targets: (N_zones, C) бинарные метки (позонные)
+        target_columns: названия классов
+        threshold: порог бинаризации
+        stride_samples: число отсчётов в одной зоне (для перевода в мс)
+
+    Returns:
+        dict с метриками per-class и средними
+    """
+    preds_bin = (probs >= threshold).astype(np.int32)
+    targets_bin = targets.astype(np.int32)
+    num_classes = targets.shape[1]
+    result: dict = {'per_class': {}, 'stride_samples': stride_samples}
+
+    for ci, col in enumerate(target_columns):
+        t = targets_bin[:, ci]
+        p = preds_bin[:, ci]
+
+        # Найти все непрерывные сегменты событий в targets
+        events = _find_segments(t)
+        # Найти все предсказанные сегменты
+        pred_events = _find_segments(p)
+
+        delays = []
+        smearing_onsets = []
+        smearing_offsets = []
+        false_zones = 0
+
+        for ev_start, ev_end in events:
+            # delay: расстояние от ev_start до первого p[i]=1 внутри [ev_start, ev_end)
+            first_pred = None
+            for i in range(ev_start, ev_end):
+                if p[i] == 1:
+                    first_pred = i
+                    break
+            if first_pred is not None:
+                delays.append(first_pred - ev_start)
+            else:
+                # Полный промах — событие не обнаружено
+                delays.append(ev_end - ev_start)  # максимальная задержка = длина события
+
+            # smearing_onset: в окрестности ev_start (±5 зон)
+            # подсчёт зон, где предсказание «колеблется»
+            margin = 5
+            onset_region = p[max(0, ev_start - margin):min(len(p), ev_start + margin)]
+            if len(onset_region) > 0:
+                transitions = int(np.sum(np.abs(np.diff(onset_region))))
+                smearing_onsets.append(transitions)
+            else:
+                smearing_onsets.append(0)
+
+            # smearing_offset: в окрестности ev_end
+            offset_region = p[max(0, ev_end - margin):min(len(p), ev_end + margin)]
+            if len(offset_region) > 0:
+                transitions = int(np.sum(np.abs(np.diff(offset_region))))
+                smearing_offsets.append(transitions)
+            else:
+                smearing_offsets.append(0)
+
+        # false_alarm_zones: pred=1 вне любого реального события
+        event_mask = np.zeros(len(t), dtype=bool)
+        for ev_start, ev_end in events:
+            event_mask[ev_start:ev_end] = True
+        false_zones = int(np.sum(p[~event_mask]))
+
+        cls_result = {
+            'num_events': len(events),
+            'num_pred_events': len(pred_events),
+            'delays_zones': delays,
+            'mean_delay_zones': float(np.mean(delays)) if delays else 0.0,
+            'mean_delay_samples': float(np.mean(delays) * stride_samples) if delays else 0.0,
+            'smearing_onset': smearing_onsets,
+            'mean_smearing_onset': float(np.mean(smearing_onsets)) if smearing_onsets else 0.0,
+            'smearing_offset': smearing_offsets,
+            'mean_smearing_offset': float(np.mean(smearing_offsets)) if smearing_offsets else 0.0,
+            'false_alarm_zones': false_zones,
+        }
+        result['per_class'][col] = cls_result
+
+    # Средние по всем классам
+    all_delays = []
+    all_smear_on = []
+    all_smear_off = []
+    for col in target_columns:
+        cr = result['per_class'][col]
+        all_delays.extend(cr['delays_zones'])
+        all_smear_on.extend(cr['smearing_onset'])
+        all_smear_off.extend(cr['smearing_offset'])
+
+    result['mean_delay_zones'] = float(np.mean(all_delays)) if all_delays else 0.0
+    result['mean_delay_samples'] = result['mean_delay_zones'] * stride_samples
+    result['mean_smearing_onset'] = float(np.mean(all_smear_on)) if all_smear_on else 0.0
+    result['mean_smearing_offset'] = float(np.mean(all_smear_off)) if all_smear_off else 0.0
+
+    return result
+
+
+def _find_segments(binary: np.ndarray) -> list[tuple[int, int]]:
+    """Находит непрерывные сегменты единиц в бинарном массиве.
+    
+    Returns:
+        Список (start, end) — полуоткрытые интервалы [start, end)
+    """
+    segments = []
+    in_seg = False
+    start = 0
+    for i, v in enumerate(binary):
+        if v == 1 and not in_seg:
+            start = i
+            in_seg = True
+        elif v == 0 and in_seg:
+            segments.append((start, i))
+            in_seg = False
+    if in_seg:
+        segments.append((start, len(binary)))
+    return segments
+
+
 def compute_full_metrics(
     preds: np.ndarray,
     targets: np.ndarray,
@@ -231,6 +372,43 @@ def run_inference(
 
     elapsed = time.perf_counter() - t0
     return np.concatenate(all_preds), np.concatenate(all_targets), elapsed
+
+
+@torch.no_grad()
+def run_inference_zone_level(
+    model: nn.Module,
+    loader: DataLoader,
+    device: torch.device,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Inference с zone-level выходом (без усреднения по зонам).
+
+    Конкатенирует все зоны всех батчей в один длинный массив.
+    Используется для boundary-метрик (smearing, delay).
+
+    Returns:
+        (zone_preds, zone_targets) — позонные данные, shape (N_total_zones, C)
+    """
+    model.eval()
+    all_preds, all_targets = [], []
+
+    for x, y in loader:
+        x = x.to(device)
+        out = model(x, mode='classify')
+        logits = out['classify']  # (B, T_zones, C)
+        probs = torch.sigmoid(logits.float()).cpu().numpy()
+
+        # Flatten batch: (B, T, C) → (B*T, C)
+        B, T, C = probs.shape
+        all_preds.append(probs.reshape(-1, C))
+
+        y_np = y.numpy()
+        if y_np.ndim == 3:
+            all_targets.append(y_np.reshape(-1, y_np.shape[-1]))
+        else:
+            # Если метки window-level — растянуть на T зон
+            all_targets.append(np.repeat(y_np, T, axis=0))
+
+    return np.concatenate(all_preds), np.concatenate(all_targets)
 
 
 def measure_inference_latency(
@@ -667,6 +845,37 @@ def evaluate_checkpoint(
     print(f"  Macro-F1 (оптимал.):       {metrics['macro_f1_optimal']:.4f}")
     delta = metrics['macro_f1_optimal'] - metrics['macro_f1']
     print(f"  Прирост:                   {delta:+.4f}")
+
+    # --- Boundary-метрики (smearing / delay) ---
+    print("\n--- Метрики границ (zone-level) ---")
+    try:
+        zone_preds, zone_targets = run_inference_zone_level(model, val_loader, device)
+        stride_samples = config.get('downsampling_stride', 16)
+        boundary = compute_boundary_metrics(
+            zone_preds, zone_targets, target_columns,
+            threshold=PREDICTION_THRESHOLD, stride_samples=stride_samples,
+        )
+        metrics['boundary'] = boundary
+
+        print(f"  {'Класс':<25s} {'Событий':>8s} {'Delay(зон)':>11s} {'Delay(отсч)':>12s} {'Smear_on':>9s} {'Smear_off':>10s} {'FP_зон':>7s}")
+        print("  " + "-" * 85)
+        for col in target_columns:
+            bc = boundary['per_class'].get(col, {})
+            print(
+                f"  {col:<25s} "
+                f"{bc.get('num_events', 0):8d} "
+                f"{bc.get('mean_delay_zones', 0):11.2f} "
+                f"{bc.get('mean_delay_samples', 0):12.1f} "
+                f"{bc.get('mean_smearing_onset', 0):9.2f} "
+                f"{bc.get('mean_smearing_offset', 0):10.2f} "
+                f"{bc.get('false_alarm_zones', 0):7d}"
+            )
+        print(f"\n  Среднее: delay={boundary['mean_delay_zones']:.2f} зон "
+              f"({boundary['mean_delay_samples']:.0f} отсч.), "
+              f"smear_on={boundary['mean_smearing_onset']:.2f}, "
+              f"smear_off={boundary['mean_smearing_offset']:.2f}")
+    except Exception as e:
+        print(f"  Не удалось вычислить boundary-метрики: {e}")
 
     # Сохранение
     if save_report:
