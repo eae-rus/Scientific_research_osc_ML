@@ -274,6 +274,14 @@ class PhysicalKANTransformer(BaseModel):
                 dropout=dropout,
             )
 
+    def set_ablation(self, **kwargs) -> None:
+        """Переключает абляционные флаги в PhysicalStem.
+
+        Поддерживаемые kwargs:
+            disable_interaction, disable_kan, disable_phase_shift, disable_angle_gate
+        """
+        self.stem.set_ablation(**kwargs)
+
     def forward(
         self,
         x: torch.Tensor,

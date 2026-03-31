@@ -509,8 +509,15 @@ class AugmentedSpectralDataset(Dataset):
 
         Каждая зона = downsampling_stride raw отсчётов.
         Y[z, c] агрегируется по точкам внутри зоны согласно zone_target_aggregation.
+
+        ВАЖНО: X содержит только текущие шаги (num_steps_current),
+        без future_periods. Модель НЕ видит данные из будущего —
+        это критично для корректной имитации работы РЗА в реальном времени.
+        Future prediction реализуется только в SSL pretrain.
+        TODO: Надо добделать / модернизировать, чтобы и можно было будущее не видя значения.
         """
-        T_use = min(self.num_steps_full, X_full.shape[1])
+        # Модель видит только текущие данные, не будущие
+        T_use = min(self.num_steps_current, X_full.shape[1])
         X = X_full[:, :T_use]
 
         num_targets = len(self.target_columns)

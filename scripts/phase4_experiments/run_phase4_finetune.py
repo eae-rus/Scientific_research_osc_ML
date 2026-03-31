@@ -111,6 +111,10 @@ def get_finetune_config() -> dict:
         'lr_head':       1e-3,      # Высокий LR для новой головы
         'weight_decay': 1e-5,    # L2-регуляризация (weight decay) для AdamW, помогает бороться с переобучением
         'warmup_epochs': 2,      # Число эпох линейного warmup для LR (0 = без разогрева)
+        'scheduler': 'cosine_warm_restarts',  # 'cosine' | 'cosine_warm_restarts'
+        'scheduler_T0': 50,      # Длина первого цикла для WarmRestarts (в эпохах)
+        'scheduler_T_mult': 2,   # Множитель длины следующего цикла (50→100→200...)
+        'scheduler_eta_min': 1e-7,  # Минимальный LR
         'use_amp': True,         # Включить mixed precision (AMP) на CUDA для ускорения и экономии памяти
         'grad_clip': 1.0,        # Максимальная норма градиентов для clip_grad_norm_ (предотвращает взрыв градиентов)
         'accumulation_steps': 8, # effective batch = 32 × 8 = 256
@@ -982,9 +986,24 @@ def finetune(
     # --- LR Scheduler ---
     warmup_epochs = config.get('warmup_epochs', 0)
     total_epochs = config['epochs']
-    cosine_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=max(1, total_epochs - warmup_epochs), eta_min=1e-7,
-    )
+    scheduler_type = config.get('scheduler', 'cosine_warm_restarts')
+    eta_min = config.get('scheduler_eta_min', 1e-7)
+
+    if scheduler_type == 'cosine_warm_restarts':
+        T_0 = config.get('scheduler_T0', 50)
+        T_mult = config.get('scheduler_T_mult', 2)
+        cosine_scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
+            optimizer, T_0=max(1, T_0), T_mult=T_mult, eta_min=eta_min,
+        )
+        print(f"LR Scheduler: CosineAnnealingWarmRestarts "
+              f"(T_0={T_0}, T_mult={T_mult}, eta_min={eta_min})")
+    else:
+        # Классический CosineAnnealing (monotonic decay)
+        cosine_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=max(1, total_epochs - warmup_epochs), eta_min=eta_min,
+        )
+        print(f"LR Scheduler: CosineAnnealingLR "
+              f"(T_max={total_epochs - warmup_epochs}, eta_min={eta_min})")
 
     # --- AMP ---
     scaler = None
@@ -1109,6 +1128,8 @@ def finetune(
         print(f"         Per-class F1: {cls_f1s}  |  mean_prob: {cls_probs}")
 
         # Checkpointing
+        # TODO: рассмотреть взвешенный чекпоинт (weighted: α*F1 + β*(1-loss)),
+        #       чтобы выбирать модель, которая хороша и по F1, и по loss одновременно.
         save_checkpoint(
             save_dir / 'latest_checkpoint.pt',
             model, optimizer, cosine_scheduler, scaler,
