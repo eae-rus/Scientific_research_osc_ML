@@ -198,6 +198,7 @@ def get_target_columns(level: str = 'base', df: Optional[pl.DataFrame] = None) -
     Args:
         level: 
             - 'base' или 'base_labels': 4 обобщённых класса (Target_Normal, Target_ML_1, Target_ML_2, Target_ML_3)
+            - 'base3': 3 класса без Normal (Target_ML_1, Target_ML_2, Target_ML_3). Normal = все выходы ниже порога
             - 'base_sequential': 4 класса (Target_Normal, Target_ML_1, Target_ML_2, Target_ML_3) с ограничением ML_2=0 при ML_3=1
             - 'full': все колонки ML_* (требует df)
             - 'full_by_levels': все ML_* колонки с распространением иерархии (требует df)
@@ -210,6 +211,9 @@ def get_target_columns(level: str = 'base', df: Optional[pl.DataFrame] = None) -
     """
     if level in ('base', 'base_labels'):
         return ["Target_Normal", "Target_ML_1", "Target_ML_2", "Target_ML_3"]
+    elif level == 'base3':
+        # 3 класса без Normal: "Normal" = все выходы ниже порога
+        return ["Target_ML_1", "Target_ML_2", "Target_ML_3"]
     elif level == 'base_sequential':
         return ["Target_Normal", "Target_ML_1", "Target_ML_2", "Target_ML_3"]
     
@@ -240,7 +244,7 @@ def get_target_columns(level: str = 'base', df: Optional[pl.DataFrame] = None) -
         return ["Target_OZZ", "Target_OZZ_decay", "Target_OZZ_dpozz"]
     
     else:
-        raise ValueError(f"Неизвестный уровень: {level}. Допустимые: 'base', 'base_labels', 'full', 'full_by_levels', 'level1', 'level2', 'ozz'")
+        raise ValueError(f"Неизвестный уровень: {level}. Допустимые: 'base', 'base3', 'base_labels', 'full', 'full_by_levels', 'level1', 'level2', 'ozz'")
 
 
 def prepare_labels_for_experiment(

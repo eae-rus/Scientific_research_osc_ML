@@ -62,7 +62,7 @@ COMPLEXITY_LEVELS = {
 # Конфигурация
 # ---------------------------------------------------------------------------
 
-NUM_BASE_CLASSES = 4  # Target_Normal, Target_ML_1, Target_ML_2, Target_ML_3
+NUM_BASE_CLASSES = 3  # Target_ML_1, Target_ML_2, Target_ML_3 (без Normal)
 NUM_OZZ_CLASSES = 3   # Target_OZZ, Target_OZZ_decay, Target_OZZ_dpozz
 
 def get_finetune_config() -> dict:
@@ -86,7 +86,7 @@ def get_finetune_config() -> dict:
         'val_batch_size': 64,
         'num_workers': 0,
         'val_split': 0.2,                 # Доля файлов для валидации (0.0–1.0), определяет размер валидационного набора
-        'target_level': 'base',           # 4 класса
+        'target_level': 'base3',           # 3 класса (Normal = все ниже порога)
 
         # Модель (должно совпадать с pretrain; по умолчанию = light)
         'model_type': 'PhysicalKANTransformer',
@@ -211,12 +211,35 @@ def create_model_for_finetune(
 def _split_files_train_val(
     df: pl.DataFrame, val_split: float, seed: int,
     target_level: str = 'base',
+    split_from: str | None = None,
 ) -> tuple[list[str], list[str]]:
     """Разделяет файлы на train/val (детерминированно).
 
     Для target_level='ozz' использует стратифицированное разделение,
     гарантирующее представительство каждого подкласса ОЗЗ в обоих сплитах.
+
+    Если split_from указан — загружает split из split.json предыдущего эксперимента.
     """
+    # Загрузка фиксированного split из предыдущего эксперимента
+    if split_from:
+        split_path = Path(split_from) / 'split.json'
+        if split_path.exists():
+            with open(split_path, 'r', encoding='utf-8') as f:
+                split_data = json.load(f)
+            train_files = split_data['train_files']
+            val_files = split_data['val_files']
+            # Проверяем, что файлы из split существуют в текущем DataFrame
+            available = set(df['file_name'].unique().to_list())
+            missing = set(train_files + val_files) - available
+            if missing:
+                print(f"  [!] {len(missing)} файлов из split не найдены в данных, пропускаю их")
+                train_files = [f for f in train_files if f in available]
+                val_files = [f for f in val_files if f in available]
+            print(f"  [Q6: Split загружен из {split_path}]")
+            print(f"    train: {len(train_files)} файлов, val: {len(val_files)} файлов")
+            return train_files, val_files
+        else:
+            print(f"  [!] split.json не найден в {split_from}, генерирую новый split")
     if target_level == 'ozz':
         from osc_tools.data_management.ozz_split import (
             stratified_ozz_split, classify_file_ozz,
@@ -301,7 +324,10 @@ def prepare_finetune_dataloaders(
     train_files, val_files = _split_files_train_val(
         df, config['val_split'], config['seed'],
         target_level=target_level,
+        split_from=config.get('split_from'),
     )
+    # Сохраняем split в config для последующей записи в файл
+    config['_split_data'] = {'train_files': train_files, 'val_files': val_files}
     train_df = df.filter(pl.col('file_name').is_in(train_files))
     val_df = df.filter(pl.col('file_name').is_in(val_files))
     print(f"  Файлов: train={len(train_files)}, val={len(val_files)}")
@@ -732,6 +758,56 @@ def _compute_metrics(
 
 
 # ---------------------------------------------------------------------------
+# Confusion matrix
+# ---------------------------------------------------------------------------
+
+def _save_confusion_matrix(
+    model: nn.Module,
+    loader: DataLoader,
+    loss_fn: nn.Module,
+    device: torch.device,
+    target_columns: list[str],
+    save_path: Path,
+    threshold: float = 0.5,
+) -> None:
+    """Вычисляет и сохраняет confusion matrix для каждого класса в текстовый файл."""
+    from sklearn.metrics import confusion_matrix
+
+    model.eval()
+    all_preds = []
+    all_targets = []
+    supervision_mode = getattr(loader.dataset, 'supervision_mode', 'zone')
+
+    with torch.no_grad():
+        for x, y in loader:
+            x = x.to(device)
+            y = y.to(device)
+            out = model(x, mode='classify')
+            logits = out['classify']
+            logits_used, targets_used = _reduce_logits_targets(logits, y, supervision_mode)
+            probs = torch.sigmoid(logits_used).cpu().numpy()
+            all_preds.append(probs)
+            all_targets.append(targets_used.cpu().numpy())
+
+    all_preds = np.concatenate(all_preds, axis=0)
+    all_targets = np.concatenate(all_targets, axis=0)
+    preds_bin = (all_preds >= threshold).astype(np.int32)
+    targets_int = all_targets.astype(np.int32)
+
+    lines = [f"Confusion Matrix (threshold={threshold})", "=" * 50, ""]
+    for i, col in enumerate(target_columns):
+        cm = confusion_matrix(targets_int[:, i], preds_bin[:, i], labels=[0, 1])
+        lines.append(f"--- {col} ---")
+        lines.append(f"  TN={cm[0, 0]:6d}  FP={cm[0, 1]:6d}")
+        lines.append(f"  FN={cm[1, 0]:6d}  TP={cm[1, 1]:6d}")
+        lines.append("")
+
+    text = "\n".join(lines)
+    save_path.write_text(text, encoding='utf-8')
+    print(f"  Confusion matrix сохранена: {save_path}")
+
+
+# ---------------------------------------------------------------------------
 # Checkpointing
 # ---------------------------------------------------------------------------
 
@@ -744,11 +820,13 @@ def save_checkpoint(
     epoch: int,
     best_val_f1: float,
     config: dict,
+    best_val_loss: float = float('inf'),
 ) -> None:
     """Сохраняет fine-tuning checkpoint."""
     state = {
         'epoch': epoch,
         'best_val_f1': best_val_f1,
+        'best_val_loss': best_val_loss,
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
         'config': config,
@@ -777,6 +855,7 @@ def load_checkpoint(
         return {
             'epoch': -1,
             'best_val_f1': 0.0,
+            'best_val_loss': float('inf'),
         }
 
     if optimizer is not None and 'optimizer_state_dict' in ckpt:
@@ -788,6 +867,7 @@ def load_checkpoint(
     return {
         'epoch': ckpt.get('epoch', 0),
         'best_val_f1': ckpt.get('best_val_f1', 0.0),
+        'best_val_loss': ckpt.get('best_val_loss', float('inf')),
     }
 
 
@@ -812,7 +892,14 @@ def finetune(
         Путь к директории с результатами
     """
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    save_dir = Path(config['save_dir']) / f"finetune_{config['model_type']}_{timestamp}"
+    # Информативное именование — включаем target_level в имя директории
+    run_name = config.get('run_name')
+    if run_name:
+        dir_name = run_name
+    else:
+        target_level = config.get('target_level', 'base')
+        dir_name = f"finetune_{config['model_type']}_{target_level}_{timestamp}"
+    save_dir = Path(config['save_dir']) / dir_name
     save_dir.mkdir(parents=True, exist_ok=True)
 
     print("=" * 60)
@@ -836,8 +923,16 @@ def finetune(
     train_loader, val_loader, target_columns = prepare_finetune_dataloaders(config)
 
     # Сохраняем конфиг ПОСЛЕ подготовки данных (num_classes уже скорректирован)
+    # Убираем внутренние данные split из сохраняемого конфига
+    split_data = config.pop('_split_data', None)
     with open(save_dir / 'config.json', 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=2, ensure_ascii=False)
+
+    # Сохраняем split в отдельный файл для воспроизводимости
+    if split_data:
+        with open(save_dir / 'split.json', 'w', encoding='utf-8') as f:
+            json.dump(split_data, f, indent=2, ensure_ascii=False)
+        print(f"  Split сохранён: {save_dir / 'split.json'}")
 
     # Статистика классов
     _print_class_distribution(train_loader, target_columns)
@@ -900,6 +995,7 @@ def finetune(
     # --- Resume/SSL Start ---
     start_epoch = 0
     best_val_f1 = 0.0
+    best_val_loss = float('inf')  # отслеживаем лучший loss отдельно
 
     if resume_path is not None:
         resume_p = Path(resume_path)
@@ -911,8 +1007,9 @@ def finetune(
             )
             start_epoch = meta['epoch'] + 1
             best_val_f1 = meta['best_val_f1']
+            best_val_loss = meta.get('best_val_loss', float('inf'))
             if not reset_optimizer:
-                print(f"  Продолжаем с эпохи {start_epoch}, best_val_f1={best_val_f1:.4f}")
+                print(f"  Продолжаем с эпохи {start_epoch}, best_val_f1={best_val_f1:.4f}, best_val_loss={best_val_loss:.4f}")
         else:
             print(f"ПРЕДУПРЕЖДЕНИЕ: чекпоинт не найден: {resume_p}")
     # --- Лог ---
@@ -961,6 +1058,11 @@ def finetune(
         if is_best:
             best_val_f1 = val_metrics['macro_f1']
 
+        # отслеживаем лучший loss отдельно
+        is_best_loss = val_metrics['loss'] < best_val_loss
+        if is_best_loss:
+            best_val_loss = val_metrics['loss']
+
         vram_mb = 0.0
         if device.type == 'cuda':
             vram_mb = torch.cuda.max_memory_allocated() / 1024**2
@@ -979,6 +1081,7 @@ def finetune(
             'val_time': val_metrics['time_sec'],
             'vram_mb': vram_mb,
             'is_best': is_best,
+            'is_best_loss': is_best_loss,
         }
         # Per-class F1 на валидации
         for i, col in enumerate(target_columns):
@@ -988,7 +1091,7 @@ def finetune(
         with open(log_path, 'a', encoding='utf-8') as f:
             f.write(json.dumps(record, ensure_ascii=False) + '\n')
 
-        marker = ' ★' if is_best else ''
+        marker = ' ★' if is_best else (' ★L' if is_best_loss else '')
         lr_bb = optimizer.param_groups[0]['lr']
         lr_hd = optimizer.param_groups[1]['lr']
         print(
@@ -1000,29 +1103,35 @@ def finetune(
             f"p̄={val_metrics.get('mean_prob', 0):.3f} | "
             f"time={train_metrics['time_sec'] + val_metrics['time_sec']:.1f}s"
         )
-        # Per-class F1 (каждые 10 эпох для удобства)
-        if epoch % 10 == 0 or is_best:
-            cls_f1s = [f"{val_metrics.get(f'f1_class_{i}', 0):.3f}" for i in range(len(target_columns))]
-            cls_probs = [f"{val_metrics.get(f'mean_prob_cls_{i}', 0):.3f}" for i in range(len(target_columns))]
-            print(f"         Per-class F1: {cls_f1s}  |  mean_prob: {cls_probs}")
+        # Per-class F1 (каждую эпоху)
+        cls_f1s = [f"{val_metrics.get(f'f1_class_{i}', 0):.3f}" for i in range(len(target_columns))]
+        cls_probs = [f"{val_metrics.get(f'mean_prob_cls_{i}', 0):.3f}" for i in range(len(target_columns))]
+        print(f"         Per-class F1: {cls_f1s}  |  mean_prob: {cls_probs}")
 
         # Checkpointing
         save_checkpoint(
             save_dir / 'latest_checkpoint.pt',
             model, optimizer, cosine_scheduler, scaler,
-            epoch, best_val_f1, config,
+            epoch, best_val_f1, config, best_val_loss,
         )
         if is_best:
             save_checkpoint(
                 save_dir / 'best_model.pt',
                 model, optimizer, cosine_scheduler, scaler,
-                epoch, best_val_f1, config,
+                epoch, best_val_f1, config, best_val_loss,
+            )
+        # отдельный чекпоинт по лучшему loss
+        if is_best_loss:
+            save_checkpoint(
+                save_dir / 'best_model_loss.pt',
+                model, optimizer, cosine_scheduler, scaler,
+                epoch, best_val_f1, config, best_val_loss,
             )
         if (epoch + 1) % config['checkpoint_frequency'] == 0:
             save_checkpoint(
                 save_dir / f'checkpoint_epoch_{epoch:03d}.pt',
                 model, optimizer, cosine_scheduler, scaler,
-                epoch, best_val_f1, config,
+                epoch, best_val_f1, config, best_val_loss,
             )
 
     # Итоги
@@ -1040,6 +1149,12 @@ def finetune(
             print(f"    {col}: {f1_val:.4f}")
     print(f"  Результаты: {save_dir}")
     print("=" * 60)
+
+    # Confusion matrix на лучшей модели
+    _save_confusion_matrix(
+        model, val_loader, loss_fn, device, target_columns,
+        save_dir / 'confusion_matrix.txt',
+    )
 
     # Сохраняем финальную сводку
     summary = {
@@ -1110,8 +1225,8 @@ def parse_args() -> argparse.Namespace:
                         default=None, help='Уровень сложности модели')
     parser.add_argument('--epochs', type=int, default=None, help='Число эпох')
     parser.add_argument('--batch-size', type=int, default=None, help='Batch size')
-    parser.add_argument('--target-level', choices=['base', 'ozz', 'base_sequential'],
-                        default=None, help='Задача классификации: base (4 класса), ozz (3 класса ОЗЗ)')
+    parser.add_argument('--target-level', choices=['base', 'base3', 'ozz', 'base_sequential'],
+                        default=None, help='Задача классификации: base (4 класса), base3 (3 класса, без Normal), ozz (3 класса ОЗЗ)')
     parser.add_argument('--cls-head-type',
                         choices=['kan', 'mlp', 'linear'],
                         default=None,
@@ -1135,6 +1250,8 @@ def parse_args() -> argparse.Namespace:
                         help='Путь к finetune-чекпоинту для продолжения')
     parser.add_argument('--reset-optimizer', action='store_true',
                         help='Сбросить оптимизатор и начать с 0 эпохи (использовать веса из resume)')
+    parser.add_argument('--split-from', type=str, default=None,
+                        help='Путь к директории эксперимента, из которой взять split.json (Q6)')
     return parser.parse_args()
 
 
@@ -1169,6 +1286,8 @@ def main() -> None:
         config['use_low_harmonics'] = False
         config['include_symmetric'] = False
         config['num_input_channels'] = 144
+    if args.split_from:
+        config['split_from'] = args.split_from
     if args.smoke:
         config['epochs'] = 2
         config['batch_size'] = 4
