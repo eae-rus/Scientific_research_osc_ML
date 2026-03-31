@@ -14,6 +14,10 @@
 Примеры:
   python scripts/phase4_experiments/plot_phase4_marking.py  # ручной режим
   python scripts/phase4_experiments/plot_phase4_marking.py --checkpoint path/to/best_model.pt
+
+Для проверки pretrain (SSL-реконструкция сигнала из спектра)
+используйте отдельный скрипт:
+  python scripts/phase4_experiments/plot_pretrain_reconstruction.py --help
 """
 
 from __future__ import annotations
