@@ -27,6 +27,7 @@ from .hybrid import (
     HybridConvKAN,
     HybridPhysicsKAN
 )
+from .transformer import PhysicalKANTransformer, BaselineTransformer
 from .base import BaseModel
 
 __all__ = [
@@ -41,5 +42,6 @@ __all__ = [
     'UNet1D',
     'CONV_MLP_v2', 'CONV_COMPLEX_v1', 'FFT_MLP', 'FFT_MLP_KAN_v1', 'FFT_MLP_COMPLEX_v1',
     'HybridMLP', 'HybridCNN', 'HybridResNet', 'HybridSimpleKAN', 'HybridConvKAN', 'HybridPhysicsKAN',
+    'PhysicalKANTransformer', 'BaselineTransformer',
 ]
 

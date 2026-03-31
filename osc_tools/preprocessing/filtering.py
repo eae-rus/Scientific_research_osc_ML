@@ -62,6 +62,59 @@ def sliding_window_fft(signal: np.ndarray, fft_window_size: int, num_harmonics: 
     return fft_results
 
 
+def compute_low_harmonics_fft(
+    signal: np.ndarray,
+    samples_per_period: int = 32,
+    sub_periods: Optional[List[int]] = None,
+) -> np.ndarray:
+    """Вычисляет низшие (суб-) гармоники с обратным скользящим окном.
+
+    Для каждого суб-периода k используется окно k × samples_per_period отсчётов.
+    Извлекается бин 1 FFT — частота f_fundamental / k (например, 25 Гц при k=2).
+
+    Окно "смотрит назад": результат на точке t = FFT(signal[t−w+1 : t+1]).
+    Начальные точки (t < w−1) заполняются первым валидным значением.
+
+    Args:
+        signal: одномерный сигнал (n_points,)
+        samples_per_period: отсчётов в одном периоде (32 при 1600 Гц / 50 Гц)
+        sub_periods: список суб-периодов в единицах промышленного периода.
+                     По умолчанию [2, 4, 6, 10].
+
+    Returns:
+        (n_points, len(sub_periods)) комплексный массив фазоров суб-гармоник
+    """
+    if sub_periods is None:
+        sub_periods = [2, 4, 6, 10]
+
+    n = len(signal)
+    num_sp = len(sub_periods)
+    results = np.full((n, num_sp), np.nan + 1j * np.nan, dtype=complex)
+
+    for j, sp in enumerate(sub_periods):
+        window_size = sp * samples_per_period
+
+        if n < window_size:
+            # Сигнал короче окна — оставляем NaN
+            continue
+
+        # Forward-looking FFT: fwd[i] = FFT(signal[i : i+w]), бин 1
+        fwd = sliding_window_fft(signal, window_size, num_harmonics=1)  # (n, 1)
+
+        # Пересчитываем в backward-looking: result[t] = fwd[t − w + 1]
+        # Валидные forward-индексы: 0 .. (n − w)
+        valid_count = n - window_size + 1  # сколько forward-результатов валидны
+        # Backward-индексы: (w−1) .. (n−1)
+        results[window_size - 1: window_size - 1 + valid_count, j] = fwd[:valid_count, 0]
+
+        # Заполняем начальные точки (0 .. w−2) первым валидным значением
+        first_valid = results[window_size - 1, j]
+        if not np.isnan(first_valid):
+            results[:window_size - 1, j] = first_valid
+
+    return results
+
+
 class EmptyOscFilter:    
     def __init__(self,
                  comtrade_root_path: str,

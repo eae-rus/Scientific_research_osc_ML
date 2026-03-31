@@ -87,22 +87,21 @@ class PrecomputedDataset(Dataset):
             return cols
 
         if feature_mode == 'symmetric':
+            # Только h1 — высшие гармоники симм. составляющих избыточны,
+            # физический смысл несёт преимущественно первая гармоника
             cols = []
             for comp in cls.SYMMETRIC_COMPONENTS:
-                for h in range(1, num_harmonics + 1):
-                    suffix = cls._harmonic_suffix(h)
-                    if legacy_symmetric:
-                        cols.extend([f'{comp}{suffix}_mag', f'{comp}{suffix}_angle'])
-                    else:
-                        cols.extend([f'{comp}{suffix}_re', f'{comp}{suffix}_im'])
+                if legacy_symmetric:
+                    cols.extend([f'{comp}_mag', f'{comp}_angle'])
+                else:
+                    cols.extend([f'{comp}_re', f'{comp}_im'])
             return cols
 
         if feature_mode == 'symmetric_polar':
+            # Только h1 — высшие гармоники симм. составляющих избыточны
             cols = []
             for comp in cls.SYMMETRIC_COMPONENTS:
-                for h in range(1, num_harmonics + 1):
-                    suffix = cls._harmonic_suffix(h)
-                    cols.extend([f'{comp}{suffix}_mag', f'{comp}{suffix}_angle'])
+                cols.extend([f'{comp}_mag', f'{comp}_angle'])
             return cols
 
         if feature_mode == 'power':
@@ -202,7 +201,10 @@ class PrecomputedDataset(Dataset):
         
         # Признаки: (N, C) → транспонируем позже при извлечении
         self._features_np = self.data.select(self.feature_columns).to_numpy().astype(np.float32)
-        self._features_np = np.nan_to_num(self._features_np, nan=0.0, posinf=0.0, neginf=0.0)
+        # NaN сохраняем как маркер отсутствующих каналов — DataSanitizer их обработает
+        inf_mask = np.isinf(self._features_np)
+        if inf_mask.any():
+            self._features_np[inf_mask] = 0.0
         
         # Метки: (N, num_classes)
         self._targets_np = self.data.select(self.target_columns).to_numpy().astype(np.float32)
