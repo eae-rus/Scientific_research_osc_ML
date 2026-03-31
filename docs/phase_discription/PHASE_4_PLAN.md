@@ -182,7 +182,7 @@
 1. **Восстановление сигнала из спектра (Q16):**
    - [x] Реализовать обратное преобразование Фурье: `reconstruct_one_period_vectorized()` + overlap-add в `reconstruct_channel_from_polar()`. *(см. `osc_tools/visualization/spectral_reconstruction.py`)*
    - [x] Три линии: (1) оригинал, (2) идеал h1-9 из raw, (3) SSL-модель. `plot_reconstruction()` + `plot_harmonic_comparison()`. *(см. `osc_tools/visualization/spectral_reconstruction.py`)*
-   - [x] 8 каналов на одном графике. Низшие гармоники пока не включены в реконструкцию (только h1-9), т.к. они из окон другого размера. *(см. `reconstruct_channel_from_polar()`: используются только `num_harmonics` стандартных гармоник)*
+   - [x] 8 каналов на одном графике. Низшие гармоники пока не включены в реконструкцию (только h1-9), т.к. они из окон другого размера. *(см. `reconstruct_channel_from_polar()`: используются только `num_harmonics` стандартных гармоник)* TODO: Пометка для исследователя - надо глянуть текущие результаты и подумать о необходимости добавления низших гармоник.
 
 2. **Визуализация разметки pretrain (Q16 доп.):**
    - [x] Отдельный скрипт `plot_pretrain_reconstruction.py` с ручным режимом (MANUAL_RUN) и CLI. Загрузка pretrain-чекпоинта → SSL inference → overlay оригинала и реконструкции. Ссылка из `plot_phase4_marking.py`. *(см. `scripts/phase4_experiments/plot_pretrain_reconstruction.py`)*
