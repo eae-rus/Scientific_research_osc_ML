@@ -606,7 +606,7 @@ if __name__ == '__main__':
 
     if MANUAL_RUN:
         # --- Путь к чекпоинту finetune ---
-        CHECKPOINT = 'experiments/phase4/base_finetune_PhysicalKANTransformer_20260321_154837/latest_checkpoint.pt'
+        CHECKPOINT = 'experiments/phase4/base_finetune_PhysicalKANTransformer_20260328_174815/latest_checkpoint.pt'
         # CHECKPOINT = 'experiments/phase4/base_finetune_PhysicalKANTransformer_20260321_154837/best_model.pt'
 
         
@@ -623,7 +623,7 @@ if __name__ == '__main__':
         SPLIT = 'train'
 
         # --- Параметры визуализации ---
-        STEP = 1           # Шаг скользящего окна (32 = 1 период)
+        STEP = 16           # Шаг скользящего окна (32 = 1 период)
         THRESHOLD = 0.5     # Порог бинаризации
         INCLUDE_ZERO_CURRENT = True
         INCLUDE_ZERO_VOLTAGE = True
