@@ -107,8 +107,8 @@ def get_finetune_config() -> dict:
 
         # Обучение
         'epochs': 50,
-        'lr_backbone': 5e-4,     # Низкий LR для backbone (уже обучен SSL)
-        'lr_head': 1e-4,         # Высокий LR для новой головы
+        'lr_backbone': 0.5e-3,     # Низкий LR для backbone (уже обучен SSL)
+        'lr_head':       1e-3,      # Высокий LR для новой головы
         'weight_decay': 1e-5,    # L2-регуляризация (weight decay) для AdamW, помогает бороться с переобучением
         'warmup_epochs': 2,      # Число эпох линейного warmup для LR (0 = без разогрева)
         'use_amp': True,         # Включить mixed precision (AMP) на CUDA для ускорения и экономии памяти
@@ -1217,7 +1217,7 @@ if __name__ == '__main__':
     # 'ozz'  — 3 класса ОЗЗ (Target_OZZ, Target_OZZ_decay, Target_OZZ_dpozz)
     TARGET_LEVEL = 'base'
     CLS_HEAD_TYPE = 'kan'   # 'kan' | 'mlp' | 'linear'
-    SUPERVISION_MODE = 'last_zone'             # 'zone' | 'window' | 'last_zone'
+    SUPERVISION_MODE = 'zone'             # 'zone' | 'window' | 'last_zone'
     USE_ANGLE_GATE = True                       # DirectionalRelayGate (направленный орган)
     USE_MIXED_LAYER_NORM = False                # False = AmpOnlyLayerNorm
 
@@ -1230,7 +1230,7 @@ if __name__ == '__main__':
 
     # --- Stride (доля периода: 2 = полпериода=16, 4 = четверть=8) ---
     STRIDE_FRACTION = 2
-    VAL_STRIDE_MULTIPLIER = 1 # 4               # Валидация реже, чем обучение
+    VAL_STRIDE_MULTIPLIER = 5 # 4               # Валидация реже, чем обучение
     TRAIN_BATCHES_PER_EPOCH = 128 # 64           # Случайных batch-ов за эпоху
 
     # --- Gradient accumulation ---
