@@ -511,19 +511,24 @@ class AugmentedSpectralDataset(Dataset):
         Y[z, c] агрегируется по точкам внутри зоны согласно zone_target_aggregation.
 
         ВАЖНО: X содержит только текущие шаги (num_steps_current),
-        без future_periods. Модель НЕ видит данные из будущего —
-        это критично для корректной имитации работы РЗА в реальном времени.
-        Future prediction реализуется только в SSL pretrain.
-        TODO: Надо добделать / модернизировать, чтобы и можно было будущее не видя значения.
+        модель НЕ видит данные из будущего — это критично для РЗА.
+        Y содержит num_steps_full зон (текущие + будущие) — модель
+        предсказывает будущие зоны через FuturePredictionHead (cross-attention
+        к encoder output), не имея доступа к будущим признакам.
         """
         # Модель видит только текущие данные, не будущие
-        T_use = min(self.num_steps_current, X_full.shape[1])
-        X = X_full[:, :T_use]
+        T_current = min(self.num_steps_current, X_full.shape[1])
+        X = X_full[:, :T_current]
+
+        # Y покрывает все зоны: текущие + будущие
+        T_full = min(self.num_steps_full, X_full.shape[1])
+        # Если future_periods=0, T_full == T_current
+        T_y = max(T_full, T_current)
 
         num_targets = len(self.target_columns)
-        Y = np.zeros((T_use, num_targets), dtype=np.float32)
+        Y = np.zeros((T_y, num_targets), dtype=np.float32)
 
-        for z in range(T_use):
+        for z in range(T_y):
             # Зона z → raw позиции: [warmup + z*stride, warmup + (z+1)*stride)
             z_raw_start = start_idx + FFT_WINDOW + z * self.downsampling_stride
             z_raw_end = z_raw_start + self.downsampling_stride

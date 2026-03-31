@@ -163,6 +163,7 @@ def create_model_for_finetune(
             use_angle_gate=config.get('use_angle_gate', True),
             use_mixed_layer_norm=config.get('use_mixed_layer_norm', False),
             cls_head_type=config.get('cls_head_type', 'kan'),
+            num_future_zones=config.get('num_future_zones', 0),
             dropout=config['dropout'],
             max_seq_len=64,
         )
@@ -175,6 +176,7 @@ def create_model_for_finetune(
             num_classes=config['num_classes'],
             zone_size=config['zone_size'],
             cls_head_type=config.get('cls_head_type', 'linear'),
+            num_future_zones=config.get('num_future_zones', 0),
             dropout=config['dropout'],
             max_seq_len=64,
         )
@@ -442,6 +444,17 @@ def prepare_finetune_dataloaders(
             num_harmonics=config['num_harmonics'],
         )
 
+    # Вычисляем num_future_zones для FuturePredictionHead
+    if use_augmented and future_periods > 0:
+        zone_size = config.get('zone_size', 1)
+        future_steps = future_periods * 32 // stride  # 32 = SAMPLES_PER_PERIOD TODO: не всегда будет 32, зависит от частот дискретизации
+        num_future_zones = future_steps // zone_size
+        config['num_future_zones'] = num_future_zones
+        print(f"  Future zones: {num_future_zones} (periods={future_periods}, "
+              f"stride={stride}, zone_size={zone_size})")
+    else:
+        config['num_future_zones'] = 0
+
     train_loader = _build_train_epoch_loader(train_ds, config, epoch=0)
     val_loader = DataLoader(
         val_ds, batch_size=config['val_batch_size'],
@@ -510,6 +523,13 @@ def _reduce_logits_targets(
     """
     if supervision_mode == 'zone':
         B, T_z, C_cls = logits.shape
+        T_y = targets.shape[1]
+        # Выравнивание при рассогласовании модели и меток (edge case)
+        if T_z != T_y:
+            T_min = min(T_z, T_y)
+            logits = logits[:, :T_min, :]
+            targets = targets[:, :T_min, :]
+            T_z = T_min
         return logits.reshape(B * T_z, C_cls).float(), targets.reshape(B * T_z, C_cls).float()
     if supervision_mode == 'window':
         return logits.mean(dim=1).float(), targets.max(dim=1).values.float()

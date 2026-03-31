@@ -74,7 +74,7 @@
    - [x] *Задача агенту: Изучить современные методы самообучения трансформеров (например, Masked Modeling, как в BERT/MAE) и предложить/реализовать оптимальный подход скрытия части окна для данной задачи.* (см. `SSLSpectralDataset` в `ssl_dataset.py`: Masked Spectral-Temporal Modeling — маскирование 25% случайных временных шагов + предсказание будущих 2 периодов)
 
    **Верификация режимов предсказания:**
-   - [ ] Проверить поведение `FUTURE_PERIODS > 0` для каждого режима. **Результат (2026-03-31):** Обнаружена и исправлена ошибка — `_format_classify` использовал `num_steps_full` (модель видела будущие FFT). Исправлено: X и Y обрезаны до `num_steps_current`. Future prediction остаётся только в SSL pretrain. *(см. [PHASE_4_TASK_DETAILS.md](../PHASE_4_TASK_DETAILS.md#q3), `augmented_dataset.py`: `_format_classify`)* TODO: Не сделано
+   - [x] Проверить поведение `FUTURE_PERIODS > 0` для каждого режима. **Результат (2026-03-31):** Обнаружена и исправлена ошибка — `_format_classify` использовал `num_steps_full` (модель видела будущие FFT). Исправлено: X = `num_steps_current`, Y = `num_steps_full`. Реализована `FuturePredictionHead` (cross-attention авторегрессионная голова) — модель предсказывает будущие зоны, не видя их данных. *(см. [PHASE_4_TASK_DETAILS.md](../PHASE_4_TASK_DETAILS.md#q3), `FuturePredictionHead` в `transformer.py`, `_format_classify` в `augmented_dataset.py`)*
 
 2. **Кастомная функция потерь (Custom Loss):**
    - [x] *Шаг 1 (Векторная разность):* Вычислять модуль векторной разности между предсказанным и целевым сигналом (использовать модуль и угол вместе, чтобы строго штрафовать разворот на 180 градусов) (см. `ComplexMSELoss` и `SpectralReconstructionLoss` в `osc_tools/ml/losses.py`)
