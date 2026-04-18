@@ -4,7 +4,7 @@ import os
 
 def setup_graph(name, title):
     dot = graphviz.Digraph(name, format='png')
-    dot.attr(rankdir='LR', splines='ortho', nodesep='0.4', ranksep='0.6')
+    dot.attr(rankdir='LR', splines='polyline', nodesep='0.4', ranksep='0.6')
     dot.attr('node', fontname='Helvetica,Arial,sans-serif', shape='box', style='rounded,filled', fillcolor='white', fontsize='10')
     dot.attr('edge', fontname='Helvetica,Arial,sans-serif', fontsize='9')
     dot.attr(label=f'\n{title}', fontname='Helvetica-Bold', fontsize='14')
