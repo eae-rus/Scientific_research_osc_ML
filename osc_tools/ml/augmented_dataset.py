@@ -179,6 +179,8 @@ def compute_spectral_from_raw(
     include_symmetric: bool = True,
     stride: Optional[int] = None,
     warmup: int = 0,
+    fft_window: Optional[int] = None,
+    samples_per_period: Optional[int] = None,
 ) -> np.ndarray:
     """Вычисляет спектральные признаки из сырых 8-канальных данных.
 
@@ -195,6 +197,10 @@ def compute_spectral_from_raw(
         stride: если задан — FFT/polar/symmetric считаются только в позициях
             [warmup, warmup+stride, warmup+2*stride, ...]
         warmup: пропускаемые начальные позиции (FFT warmup)
+        fft_window: размер окна FFT в отсчётах (по умолчанию FFT_WINDOW = 1 период
+            при 1600 Гц). Для других Fs передайте round(Fs / f_network).
+        samples_per_period: отсчётов на период (по умолчанию SAMPLES_PER_PERIOD = 32).
+            Для других Fs передайте round(Fs / f_network).
 
     Returns:
         (T_out, C) float32 массив. T_out = T если stride=None,
@@ -202,6 +208,10 @@ def compute_spectral_from_raw(
     """
     if sub_periods is None:
         sub_periods = DEFAULT_SUB_PERIODS
+    if fft_window is None:
+        fft_window = FFT_WINDOW
+    if samples_per_period is None:
+        samples_per_period = SAMPLES_PER_PERIOD
 
     n_time = raw.shape[0]
 
@@ -217,11 +227,11 @@ def compute_spectral_from_raw(
     complex_all = np.zeros((n_out, NUM_RAW, total_h), dtype=np.complex64)
     for ch in range(NUM_RAW):
         signal = raw[:, ch]
-        phase_phasors = _compute_fft_selected(signal, sel, FFT_WINDOW, num_harmonics)
+        phase_phasors = _compute_fft_selected(signal, sel, fft_window, num_harmonics)
         phase_phasors = np.nan_to_num(phase_phasors, nan=0.0, posinf=0.0, neginf=0.0)
         complex_all[:, ch, :num_harmonics] = phase_phasors
 
-        low_phasors = _compute_low_harmonics_selected(signal, sel, SAMPLES_PER_PERIOD, sub_periods)
+        low_phasors = _compute_low_harmonics_selected(signal, sel, samples_per_period, sub_periods)
         low_phasors = np.nan_to_num(low_phasors, nan=0.0, posinf=0.0, neginf=0.0)
         complex_all[:, ch, num_harmonics:] = low_phasors
 
