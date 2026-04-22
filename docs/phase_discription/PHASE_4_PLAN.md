@@ -160,6 +160,43 @@
 
 ---
 
+### Этап 4.5: Fine-tuning на симулированном датасете `Simulated_OZZ_v1`
+
+> **Цель:** Проверить способность Physical KAN-Transformer распознавать **типы ОЗЗ/ДПОЗЗ** (устойчивое vs три теории перемежающейся дуги) на полностью размеченном RTDS-датасете. Предобучения (SSL) не требуется — стартуем с random init на лёгкой модели.
+
+**Особенности датасета** (см. [docs/Description_OZZ_dataset.md](../Description_OZZ_dataset.md)):
+- Путь: `data/Simulated_OZZ_v1/*.csv` (~20 000 файлов по 0.5 с)
+- Fs ≈ 38.46 кГц (определяется из колонки `Time`), ресэмплируем к 1600 Гц для совместимости со стеком.
+- Шаблон имени: `OZZ_X_R_L_P_T.csv` (X=тип дуги 1–4, R=Ом, L=% длины, P=фаза 1–3, T=мс).
+- Сигналы: `VA/VB/VC` → `UA/UB/UC`; `IA/IB/IC` → как есть; `IN`/`UN` отсутствуют (изолированная нейтраль) → подставляются нулями (DataSanitizer помечает канал как missing).
+- **Ground truth разметка per-timestep** находится в самих CSV: флаги `Stable`, `Petersen`, `Peters_Slepian`, `Beliakov2` = 1 только в моменты горения дуги по соответствующей теории; в одном файле активна ровно одна теория.
+
+**Целевые классы** (4, multi-label с one-hot по файлу):
+- `Target_OZZ_Stable` — устойчивое однократное пробое (ОЗЗ).
+- `Target_OZZ_Petersen` — перемежающаяся дуга по Петерсену (ДПОЗЗ).
+- `Target_OZZ_PetersSlepian` — ДПОЗЗ по Петерсу–Слепяну.
+- `Target_OZZ_Beliakov` — ДПОЗЗ по Белякову.
+- Класс «Normal» — все четыре равны 0.
+
+#### Шаги выполнения
+1. **Загрузчик данных:**
+   - [ ] Реализовать `osc_tools/ml/simulated_ozz_dataset.py`: `load_simulated_ozz_csv(path, target_fs=1600)` (ресэмплирование + переименование + разметка) и `build_simulated_ozz_dataframe(data_dir, ...)` (сборка polars DataFrame для всех файлов с колонкой `file_name`).
+   - [ ] Подстановка `IN=0`, `UN=0` (DataSanitizer отнесёт к missing).
+2. **Разметка и split:**
+   - [ ] Добавить в `osc_tools/ml/labels.py` уровень `target_level='sim_ozz'` (4 целевых колонки).
+   - [ ] Добавить `osc_tools/data_management/sim_ozz_split.py` — стратифицированное разбиение по типу X из имени файла (train 70% / val 15% / test 15%, или 80/20 для MVP). Файлы с `R` / `L` / `T` на экстремумах — в test.
+3. **Скрипт обучения:**
+   - [ ] `scripts/phase4_experiments/run_phase4_finetune_sim_ozz.py` на базе `run_phase4_finetune.py` (ручной запуск через MANUAL_RUN + CLI: `--smoke`, `--resume`, `--model`, `--complexity`, `--max-files`).
+   - [ ] Light-модель по умолчанию (d_model=48, 6 слоёв, 4 головы), batch=32, 50 эпох, CosineAnnealingWarmRestarts.
+   - [ ] Чекпоинт + split.json в `experiments/phase4/sim_ozz_finetune_{model}_{ts}/`.
+4. **Визуализация разметки:**
+   - [ ] Доработать `plot_phase4_marking.py`: CLI-аргумент `--sampling-rate` (по умолчанию 1600 для старых CSV из `data/ml_datasets/`, 38462 для `data/Simulated_OZZ_v1/`), загрузчик raw-файлов Simulated_OZZ.
+   - [ ] Проверить разметку на нескольких тестовых файлах + на одной реальной осциллограмме.
+5. **Smoke-тест:**
+   - [ ] Прогнать 2 эпохи на 5 файлах, убедиться, что loss сходится.
+
+---
+
 ### Этап 5: Инженерный контур и воспроизводимость
 
 1. **Стандартизация запуска:**
