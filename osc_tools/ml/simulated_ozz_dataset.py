@@ -264,11 +264,22 @@ class SimOZZFileIndex:
         data_dir: str | Path,
         max_files: Optional[int] = None,
         verbose: bool = True,
+        use_cache: bool = True,
     ) -> 'SimOZZFileIndex':
-        """Сканирует ``data_dir``, считывает метаданные каждого файла."""
+        """Сканирует ``data_dir``, считывает метаданные каждого файла.
+
+        При ``use_cache=True`` сначала пытается загрузить из JSON-кэша
+        (``_file_index_cache.json``). Если кэша нет — сканирует и сохраняет.
+        """
         data_dir = Path(data_dir)
         if not data_dir.exists():
             raise FileNotFoundError(f"Директория не найдена: {data_dir}")
+
+        # --- Попытка загрузки из кэша ---
+        if use_cache:
+            cached = cls.from_cache(data_dir, max_files=max_files, verbose=verbose)
+            if cached is not None:
+                return cached
 
         csv_paths = sorted(data_dir.glob('OZZ_*.csv'))
         if max_files is not None:
@@ -313,7 +324,15 @@ class SimOZZFileIndex:
                 print(f"  Fs ~ {fs0:.1f} Гц (dt = {infos[0].dt:.2e} с), "
                       f"samples/period ~ {fs0 / DEFAULT_F_NETWORK:.1f}")
 
-        return cls(files=infos)
+        idx = cls(files=infos)
+
+        # Сохраняем кэш для следующих запусков
+        if use_cache and len(infos) > 0:
+            cp = idx.save_cache(data_dir)
+            if verbose:
+                print(f"  Кэш сохранён: {cp}")
+
+        return idx
 
     # ------------------------------------------------------------------
     def paths(self) -> List[Path]:
@@ -329,6 +348,79 @@ class SimOZZFileIndex:
 
     def __len__(self) -> int:
         return len(self.files)
+
+    # ------------------------------------------------------------------
+    # Кэширование индекса в JSON (чтобы не сканировать 19k файлов повторно)
+    # ------------------------------------------------------------------
+
+    _CACHE_FILENAME = '_file_index_cache.json'
+
+    def save_cache(self, data_dir: Path) -> Path:
+        """Сохраняет индекс в JSON-файл рядом с данными."""
+        cache_path = Path(data_dir) / self._CACHE_FILENAME
+        records = []
+        for fi in self.files:
+            records.append({
+                'name': fi.path.name,
+                'n_samples': fi.n_samples,
+                'dt': fi.dt,
+                'meta': fi.meta,
+            })
+        import json
+        with open(cache_path, 'w', encoding='utf-8') as f:
+            json.dump(records, f, ensure_ascii=False)
+        return cache_path
+
+    @classmethod
+    def from_cache(
+        cls,
+        data_dir: str | Path,
+        max_files: Optional[int] = None,
+        verbose: bool = True,
+    ) -> Optional['SimOZZFileIndex']:
+        """Пытается загрузить индекс из кэша. Возвращает None если кэш невалиден."""
+        data_dir = Path(data_dir)
+        cache_path = data_dir / cls._CACHE_FILENAME
+        if not cache_path.exists():
+            return None
+
+        import json
+        try:
+            with open(cache_path, 'r', encoding='utf-8') as f:
+                records = json.load(f)
+        except Exception:
+            return None
+
+        if not records:
+            return None
+
+        # Проверяем, что файлы всё ещё существуют (выборочно — первый и последний)
+        first_path = data_dir / records[0]['name']
+        last_path = data_dir / records[-1]['name']
+        if not first_path.exists() or not last_path.exists():
+            if verbose:
+                print(f"[SimOZZFileIndex] Кэш невалиден (файлы не найдены)")
+            return None
+
+        infos: List[FileInfo] = []
+        for rec in records:
+            p = data_dir / rec['name']
+            infos.append(FileInfo(
+                path=p,
+                meta=rec['meta'],
+                n_samples=rec['n_samples'],
+                dt=rec['dt'],
+                fs=1.0 / rec['dt'],
+            ))
+
+        if max_files is not None:
+            infos = infos[:max_files]
+
+        if verbose:
+            print(f"[SimOZZFileIndex] Загружено из кэша: {len(infos)} файлов "
+                  f"({cache_path.name})")
+
+        return cls(files=infos)
 
 
 # ---------------------------------------------------------------------------

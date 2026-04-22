@@ -75,7 +75,7 @@ from osc_tools.data_management.sim_ozz_split import stratified_sim_ozz_split
 from osc_tools.data_management.no_ozz_filter import get_no_ozz_files, filter_no_ozz_dataframe
 from osc_tools.ml.labels import get_target_columns, clean_labels
 from osc_tools.ml.balanced_dataset import BalancedConcatDataset, BalancedEpochSampler
-from osc_tools.ml.dataset import PrecomputedDataset
+from osc_tools.ml.precomputed_dataset import PrecomputedDataset
 
 
 # ---------------------------------------------------------------------------
@@ -83,6 +83,73 @@ from osc_tools.ml.dataset import PrecomputedDataset
 # ---------------------------------------------------------------------------
 
 NUM_SIM_OZZ_CLASSES = 4   # Stable, Petersen, PetersSlepian, Beliakov
+
+
+# ---------------------------------------------------------------------------
+# Быстрая оценка статистики (без прохода по DataLoader)
+# ---------------------------------------------------------------------------
+
+def _print_sim_ozz_class_stats(config: dict, target_columns: list[str]) -> None:
+    """Печатает статистику классов из метаданных (без итерации по DataLoader).
+
+    Для lazy SimOZZ dataset полный проход по DataLoader занял бы часы,
+    поэтому считаем из split / class_ids.
+    """
+    split_data = config.get('_split_data')
+    train_files = split_data['train_files'] if split_data else []
+    n_train_sim = len(train_files)
+
+    # Считаем файлы по типу дуги из имён файлов
+    from collections import Counter
+    arc_counts = Counter()
+    import re
+    for fname in train_files:
+        m = re.match(r'^OZZ_(\d+)_', fname, re.IGNORECASE)
+        if m:
+            arc_counts[int(m.group(1))] += 1
+
+    print(f"\n  Статистика классов (из метаданных, быстрая оценка):")
+    print(f"    SimOZZ train файлов: {n_train_sim:,}")
+    for x_type in sorted(arc_counts.keys()):
+        name = ARC_TYPES[x_type] if x_type <= len(ARC_TYPES) else f"X={x_type}"
+        print(f"      X={x_type} ({name}): {arc_counts[x_type]:,} файлов")
+
+    if config.get('use_real_no_ozz'):
+        print(f"    + реальные «не ОЗЗ» файлов (Balanced sampler уравняет)")
+    print()
+
+
+def _estimate_pos_weight_from_metadata(
+    config: dict,
+    device: torch.device | None = None,
+) -> torch.Tensor:
+    """Оценивает pos_weight без итерации по DataLoader.
+
+    В SimOZZ каждый файл содержит нормальное начало + ОЗЗ участок.
+    Из разметки файлов ~40-60% зон содержат ОЗЗ (зависит от момента
+    замыкания T). Для balanced dataset с 5 классами (4 ОЗЗ + 1 Normal)
+    каждый класс видит одинаковое число элементов, поэтому pos_weight
+    должен отражать баланс внутри зон.
+
+    Эмпирическая оценка (из ~19k файлов):
+    - Каждый файл ~72 зоны, из них ~30-40 зон с ОЗЗ (в зависимости от T)
+    - С balanced sampler: каждый класс = 1/5 батча
+    - Внутри SimOZZ элемента: ~50% зон с ОЗЗ
+    - Для Normal (реальные): 100% зон с target [0,0,0,0]
+
+    pos_weight = neg_count / pos_count ≈ (0.8*72 + 0.2*72) / (0.8*0.5*72/4)
+    Упрощённо: ~3-5 для каждого класса.
+    Стартуем с pos_weight=4.0 (будет пересчитан после 1-й эпохи если нужно).
+    """
+    n_classes = config.get('num_classes', NUM_SIM_OZZ_CLASSES)
+    # Консервативная оценка: ~25% зон в среднем относятся к данному классу
+    # (из выборки sampler: 4/5 — SimOZZ по ~50% ОЗЗ зон / 4 класса + 1/5 Normal)
+    # pos_rate ≈ (4/5 * 0.5 / 4) = 0.1 → pos_weight ≈ 9
+    # Но с учётом нормализации и balanced: ~4.0 хорошая стартовая оценка
+    pw = torch.full((n_classes,), 4.0, dtype=torch.float32)
+    if device is not None:
+        pw = pw.to(device)
+    return pw
 
 
 def get_sim_ozz_config() -> dict:
@@ -412,13 +479,25 @@ def prepare_sim_ozz_dataloaders(
         combined_train.print_stats()
 
         # Balanced sampler
+        # Ограничиваем размер «эпохи» через train_batches_per_epoch,
+        # иначе полный проход по ~580k lazy-элементам займёт часы.
+        batches_per_epoch = config.get('train_batches_per_epoch', 64)
+        batch_size = config['batch_size']
+        n_classes = len(combined_train.indices_by_class)
+        # samples_per_class: из заданного лимита батчей
+        max_samples_per_class = max(1, (batches_per_epoch * batch_size) // n_classes)
+        # Явно заданный samples_per_class имеет приоритет
+        spc = config.get('samples_per_class') or max_samples_per_class
+        spc = min(spc, max_samples_per_class)
+
         train_sampler = BalancedEpochSampler(
             combined_train,
-            samples_per_class=config.get('samples_per_class'),
+            samples_per_class=spc,
             seed=config['seed'],
         )
         print(f"  BalancedEpochSampler: {len(train_sampler):,} элементов/эпоха "
-              f"({len(train_sampler) // 5:,} на класс)")
+              f"({spc:,} на класс, {n_classes} классов, "
+              f"~{len(train_sampler) // batch_size} батчей)")
 
         train_loader = DataLoader(
             combined_train,
@@ -431,36 +510,56 @@ def prepare_sim_ozz_dataloaders(
         config['_train_sampler'] = train_sampler  # для set_epoch()
     else:
         print("\n  [!] Реальные данные не загружены — обучение только на SimOZZ")
+        # Ограничиваем число элементов в эпохе (lazy dataset медленный)
+        from torch.utils.data import SubsetRandomSampler as _SRS
+        batches_per_epoch = config.get('train_batches_per_epoch', 64)
+        train_n = min(len(train_ds), batches_per_epoch * config['batch_size'])
+        train_indices = np.random.default_rng(config['seed']).choice(
+            len(train_ds), size=train_n, replace=False,
+        )
         train_loader = DataLoader(
             train_ds,
             batch_size=config['batch_size'],
-            shuffle=True,
+            sampler=_SRS(train_indices.tolist()),
             num_workers=config['num_workers'],
             pin_memory=True,
             drop_last=True,
         )
 
-    # Val — просто конкатенация без балансировки
+    # Val — ограниченная подвыборка (lazy-dataset тоже медленный для val)
+    val_batches = config.get('val_batches_per_epoch', 32)
     if real_val_ds is not None and len(real_val_ds) > 0:
-        # Для val: простой ConcatDataset (без балансировки)
-        from torch.utils.data import ConcatDataset as TorchConcatDataset
+        from torch.utils.data import ConcatDataset as TorchConcatDataset, SubsetRandomSampler
         combined_val = TorchConcatDataset([val_ds, real_val_ds])
         combined_val.supervision_mode = config.get('supervision_mode', 'zone')
+        val_n = min(len(combined_val), val_batches * config['val_batch_size'])
+        val_indices = np.random.default_rng(config['seed']).choice(
+            len(combined_val), size=val_n, replace=False,
+        )
         val_loader = DataLoader(
             combined_val,
             batch_size=config['val_batch_size'],
-            shuffle=False,
+            sampler=SubsetRandomSampler(val_indices.tolist()),
             num_workers=config['num_workers'],
             pin_memory=True,
         )
+        print(f"  Val: {val_n:,} элементов (~{val_batches} батчей) "
+              f"из {len(combined_val):,} (SimOZZ + real)")
     else:
+        from torch.utils.data import SubsetRandomSampler
+        val_n = min(len(val_ds), val_batches * config['val_batch_size'])
+        val_indices = np.random.default_rng(config['seed']).choice(
+            len(val_ds), size=val_n, replace=False,
+        )
         val_loader = DataLoader(
             val_ds,
             batch_size=config['val_batch_size'],
-            shuffle=False,
+            sampler=SubsetRandomSampler(val_indices.tolist()),
             num_workers=config['num_workers'],
             pin_memory=True,
         )
+        print(f"  Val: {val_n:,} элементов (~{val_batches} батчей) "
+              f"из {len(val_ds):,}")
 
     return train_loader, val_loader, target_columns
 
@@ -516,8 +615,8 @@ def finetune_sim_ozz(
             json.dump(split_data, f, indent=2, ensure_ascii=False)
         print(f"  Split: {save_dir / 'split.json'}")
 
-    # Статистика классов
-    _print_class_distribution(train_loader, target_columns)
+    # Статистика классов (из метаданных, без прохода по DataLoader)
+    _print_sim_ozz_class_stats(config, target_columns)
 
     # --- Модель (random init) ---
     model, _ = create_model_for_finetune(config, ssl_checkpoint_path=None)
@@ -528,9 +627,10 @@ def finetune_sim_ozz(
     supervision_mode = config.get('supervision_mode', 'zone')
 
     # --- Loss ---
-    pos_weight = _compute_supervision_pos_weight(
-        train_loader, supervision_mode=supervision_mode, device=device,
-    )
+    # Для lazy dataset считаем pos_weight из метаданных (не итерируя DataLoader).
+    # В SimOZZ ~половина зон каждого файла — до начала ОЗЗ (target=0),
+    # остальная — одна из 4 классов. Эмпирическая оценка: ~40% зон с ОЗЗ.
+    pos_weight = _estimate_pos_weight_from_metadata(config, device=device)
     print(f"pos_weight ({supervision_mode}): {pos_weight.cpu().numpy()}")
     loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 
@@ -809,21 +909,50 @@ def main() -> None:
 
 if __name__ == '__main__':
     # =================================================================
-    # РУЧНОЙ ЗАПУСК (раскомментируйте нужное)
+    # РУЧНОЙ ЗАПУСК ИЗ IDE (VS Code, PyCharm и т.д.)
     # =================================================================
+    # Если хотите использовать аргументы командной строки, раскомментируйте:
+    # main()
+    # sys.exit(0)
 
+    # 1. Выбор архитектуры
+    # Доступно: 'PhysicalKANTransformer', 'BaselineTransformer'
     MODEL_TYPE = 'PhysicalKANTransformer'
+
+    # 2. Размер модели (влияет на кол-во параметров и потребление видеопамяти VRAM)
+    # Доступно: 'light' (~100k), 'medium' (~500k), 'heavy' (~2M+)
     SELECTED_COMPLEXITY = 'light'
+
+    # 3. Основные гиперпараметры обучения
+    EPOCHS = 50                 # Общее количество эпох
+    BATCH_SIZE = 32             # Размер батча на 1 шаг (уменьшите, если не хватает VRAM)
+    ACCUMULATION_STEPS = 8      # Накопление градиентов (эфф. батч = 32 * 8 = 256)
+
+    # 4. Ограничения данных (для тестов и отладки)
+    MAX_FILES = None            # int или None. Пример: 500 (чтобы проверить на малой выборке)
+    USE_REAL_NO_OZZ = True      # True = добавлять 5-й класс "Норма" из реальных осциллограмм (~959 файлов)
+
+    # 5. Размер «эпохи» (lazy dataset — полный проход занял бы часы!)
+    # train_batches_per_epoch × batch_size элементов делится поровну на 5 классов.
+    # 128 батчей × 32 = 4096 элементов, ~819 на класс → ~10 мин/эпоха (зависит от диска)
+    TRAIN_BATCHES_PER_EPOCH = 128   # Число батчей обучения за эпоху
+    VAL_BATCHES_PER_EPOCH = 32      # Число батчей валидации за эпоху
+
+    # 6. Продолжение прерванного обучения
+    # Пример: RESUME_PATH = str(PROJECT_ROOT / 'experiments/phase4/.../latest_checkpoint.pt')
     RESUME_PATH = None
-    RESET_OPTIMIZER = False
-    EPOCHS = 50
-    MAX_FILES = None            # None = все файлы
+    RESET_OPTIMIZER = False     # Сбросить шаг оптимизатора и LR scheduler при возобновлении
 
     # =================================================================
 
     config = get_sim_ozz_config()
     config['model_type'] = MODEL_TYPE
     config['epochs'] = EPOCHS
+    config['batch_size'] = BATCH_SIZE
+    config['accumulation_steps'] = ACCUMULATION_STEPS
+    config['use_real_no_ozz'] = USE_REAL_NO_OZZ
+    config['train_batches_per_epoch'] = TRAIN_BATCHES_PER_EPOCH
+    config['val_batches_per_epoch'] = VAL_BATCHES_PER_EPOCH
     if MAX_FILES is not None:
         config['max_files'] = MAX_FILES
 
