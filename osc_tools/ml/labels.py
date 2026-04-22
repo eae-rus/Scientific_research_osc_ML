@@ -242,9 +242,15 @@ def get_target_columns(level: str = 'base', df: Optional[pl.DataFrame] = None) -
     elif level == 'ozz':
         # 3 целевых класса задачи ОЗЗ/ДПОЗЗ (multi-label)
         return ["Target_OZZ", "Target_OZZ_decay", "Target_OZZ_dpozz"]
-    
+
+    elif level == 'sim_ozz':
+        # 4 целевых класса для симулированного датасета Simulated_OZZ_v1:
+        # Stable / Petersen / PetersSlepian / Beliakov. Normal = все 0.
+        from osc_tools.ml.simulated_ozz_dataset import TARGET_COLUMNS as SIM_OZZ_TARGETS
+        return list(SIM_OZZ_TARGETS)
+
     else:
-        raise ValueError(f"Неизвестный уровень: {level}. Допустимые: 'base', 'base3', 'base_labels', 'full', 'full_by_levels', 'level1', 'level2', 'ozz'")
+        raise ValueError(f"Неизвестный уровень: {level}. Допустимые: 'base', 'base3', 'base_labels', 'full', 'full_by_levels', 'level1', 'level2', 'ozz', 'sim_ozz'")
 
 
 def prepare_labels_for_experiment(
@@ -286,7 +292,18 @@ def prepare_labels_for_experiment(
         # Специализированные метки для задачи ОЗЗ/ДПОЗЗ (3 класса)
         from osc_tools.data_management.ozz_split import add_ozz_target_columns
         df = add_ozz_target_columns(df)
-        
+
+    elif target_level == 'sim_ozz':
+        # Симулированный датасет: Target_OZZ_* уже подготовлены в simulated_ozz_dataset.
+        # Здесь только приводим их к Int8 (на случай, если читаем из уже записанного CSV).
+        from osc_tools.ml.simulated_ozz_dataset import TARGET_COLUMNS as SIM_OZZ_TARGETS
+        cast_exprs = [
+            pl.col(c).cast(pl.Float32, strict=False).fill_null(0.0).cast(pl.Int8).alias(c)
+            for c in SIM_OZZ_TARGETS if c in df.columns
+        ]
+        if cast_exprs:
+            df = df.with_columns(cast_exprs)
+
     return df
 
 
