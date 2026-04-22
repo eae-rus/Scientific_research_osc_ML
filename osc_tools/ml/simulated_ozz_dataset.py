@@ -65,6 +65,33 @@ DEFAULT_F_NETWORK = 50.0  # Гц
 ARC_TYPES: List[str] = ['Stable', 'Petersen', 'PetersSlepian', 'Beliakov']
 TARGET_COLUMNS: List[str] = [f'Target_OZZ_{t}' for t in ARC_TYPES]
 
+# ---------------------------------------------------------------------------
+# Номинальные коэффициенты для нормализации Simulated_OZZ_v1 (сеть 10 кВ).
+# Сигналы делятся на эти значения перед FFT, чтобы привести к ~1.0 в нормальном
+# режиме (как физическая нормализация реальных осциллограмм через ТТ/ТН).
+#
+# ВАЖНО: Эти значения нужно уточнить по результатам
+# Номинальные значения для нормализации SimOZZ (данные в кВ / кА).
+# Определены по результатам scan_sim_ozz_statistics.py (19199 файлов).
+# Логика: эмулируем ТТ/ТН реальной подстанции 10 кВ.
+# ---------------------------------------------------------------------------
+SIM_NOMINAL: Dict[str, float] = {
+    # Фазные напряжения: U_лин = 10 кВ → данные в кВ
+    'UA': 10.0,
+    'UB': 10.0,
+    'UC': 10.0,
+    # UN (3U0): утроенное фазное = 3 × 10/√3 ≈ 17.333 кВ
+    'UN': 3.0 * 10.0 / 1.7320508075688772,   # ≈ 17.321 кВ
+    # Фазные токи: ТТ на 200 А → 0.2 кА
+    # (median h1 ≈ 0.038 кА → после нормализации ~0.19)
+    'IA': 0.2,
+    'IB': 0.2,
+    'IC': 0.2,
+    # Ток нулевой последовательности: ТТНП на 30 А → 0.03 кА
+    # (median h1 ≈ 0.009 кА → после нормализации ~0.28)
+    'IN': 0.03,
+}
+
 # Паттерн имени поддерживает два варианта:
 #   OZZ_X_R_L_P_T.csv        (5 числовых параметров: нет угла зажигания I)
 #   OZZ_X_R_L_P_I_T.csv      (6 числовых параметров: с моментом зажигания I)
@@ -131,8 +158,17 @@ def _rename_rtds_columns(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def load_raw_csv(path: str | Path) -> Optional[Dict[str, np.ndarray]]:
+def load_raw_csv(
+    path: str | Path,
+    normalize: bool = True,
+    nominal: Optional[Dict[str, float]] = None,
+) -> Optional[Dict[str, np.ndarray]]:
     """Загружает один CSV и возвращает сырые numpy-массивы БЕЗ ресэмплирования.
+
+    Args:
+        path: путь к CSV.
+        normalize: делить ли каналы на номинальные коэффициенты.
+        nominal: dict канал→делитель (по умолчанию SIM_NOMINAL).
 
     Returns:
         dict с ключами:
@@ -169,6 +205,14 @@ def load_raw_csv(path: str | Path) -> Optional[Dict[str, np.ndarray]]:
     raw = np.empty((n, NUM_RAW), dtype=np.float32)
     for i, ch in enumerate(RAW_CHANNELS):
         raw[:, i] = df[ch].to_numpy().astype(np.float32)
+
+    # Нормализация: делим каждый канал на номинальное значение
+    if normalize:
+        nom = nominal if nominal is not None else SIM_NOMINAL
+        for i, ch in enumerate(RAW_CHANNELS):
+            divisor = nom.get(ch, 1.0)
+            if divisor != 1.0:
+                raw[:, i] /= divisor
 
     # Бинарный флаг OZZ
     ozz = (df['OZZ'].to_numpy() > 0.5).astype(np.int8)

@@ -30,6 +30,7 @@ from pathlib import Path
 from typing import Optional
 
 import numpy as np
+import polars as pl
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -53,7 +54,17 @@ from scripts.phase4_experiments.run_phase4_finetune import (
     _print_class_distribution,
 )
 
-from osc_tools.ml.augmented_dataset import compute_num_channels
+from osc_tools.ml.augmented_dataset import (
+    compute_num_channels,
+    AugmentedSpectralDataset,
+    SAMPLES_PER_PERIOD,
+    FFT_WINDOW,
+)
+from osc_tools.ml.augmentation import (
+    TimeSeriesAugmenter,
+    NeutralChannelDropout,
+    CompositeAugmenter,
+)
 from osc_tools.ml.simulated_ozz_dataset import (
     SimOZZFileIndex,
     SimOZZLazyDataset,
@@ -61,7 +72,10 @@ from osc_tools.ml.simulated_ozz_dataset import (
     TARGET_COLUMNS,
 )
 from osc_tools.data_management.sim_ozz_split import stratified_sim_ozz_split
-from osc_tools.ml.labels import get_target_columns
+from osc_tools.data_management.no_ozz_filter import get_no_ozz_files, filter_no_ozz_dataframe
+from osc_tools.ml.labels import get_target_columns, clean_labels
+from osc_tools.ml.balanced_dataset import BalancedConcatDataset, BalancedEpochSampler
+from osc_tools.ml.dataset import PrecomputedDataset
 
 
 # ---------------------------------------------------------------------------
@@ -82,7 +96,7 @@ def get_sim_ozz_config() -> dict:
         'include_symmetric': True,
         'stride_fraction': 8,              # 1/8 периода (96..100 отсчётов, per-file)
         'num_periods_window': 10,           # 10 периодов ≈ 7690 отсчётов
-        'use_augmentation': False,          # Пока без аугментации (для MVP)
+        'use_augmentation': True,           # Аугментация с dropout IN/UN
         'zone_target_aggregation': 'max',
         'val_split': 0.2,                  # 80/20
         'train_batches_per_epoch': 64,
@@ -127,7 +141,139 @@ def get_sim_ozz_config() -> dict:
         'save_dir': str(PROJECT_ROOT / 'experiments' / 'phase4'),
         'checkpoint_frequency': 5,
         'seed': 42,
+
+        # --- Реальные осциллограммы (класс «не ОЗЗ») ---
+        'real_csv_path': str(PROJECT_ROOT / 'data' / 'ml_datasets' / 'labeled_2025_12_03.csv'),
+        'norm_coef_path': str(PROJECT_ROOT / 'data' / 'ml_datasets' / 'norm_coef_all_v1.4.csv'),
+        'use_real_no_ozz': True,             # Добавить 5-й класс из реальных данных
+        'real_window_size': 320,             # 10 периодов × 32 spp @ 1600 Гц
     }
+
+
+# ---------------------------------------------------------------------------
+# Подготовка реальных «не ОЗЗ» осциллограмм
+# ---------------------------------------------------------------------------
+
+def _standardize_voltage_columns(df: pl.DataFrame) -> pl.DataFrame:
+    """UA BB -> UA, UB BB -> UB и т.д. Приоритет: BB > CL."""
+    rename_map = {}
+    for target in ['UA', 'UB', 'UC', 'UN']:
+        if target not in df.columns:
+            for src in [f'{target} BB', f'{target} CL']:
+                if src in df.columns:
+                    rename_map[src] = target
+                    break
+    if rename_map:
+        df = df.rename(rename_map)
+    return df
+
+
+def prepare_real_no_ozz_dataset(
+    config: dict,
+    split: str = 'train',
+    val_split: float = 0.2,
+    seed: int = 42,
+) -> Optional[AugmentedSpectralDataset]:
+    """Подготавливает Dataset реальных осциллограмм без ОЗЗ.
+
+    Формат выхода: ``(C, T_zones) = (220, 72)`` — совместимо с SimOZZ,
+    если stride_fraction=8 (stride=4 при spp=32 → (320-32)/4 = 72 зоны).
+
+    Returns:
+        AugmentedSpectralDataset или None (если данных нет / отключено).
+    """
+    if not config.get('use_real_no_ozz', False):
+        return None
+
+    csv_path = Path(config['real_csv_path'])
+    if not csv_path.exists():
+        print(f"  [!] Реальный CSV не найден: {csv_path}")
+        return None
+
+    print(f"\n--- Подготовка реальных «не ОЗЗ» данных ---")
+    print(f"  CSV: {csv_path}")
+
+    df = pl.read_csv(str(csv_path), infer_schema_length=5000)
+    df = _standardize_voltage_columns(df)
+    df = clean_labels(df)
+
+    # Фильтруем файлы без ОЗЗ
+    no_ozz_files, stats = get_no_ozz_files(df, verbose=True)
+    if not no_ozz_files:
+        print("  [!] Нет файлов без ОЗЗ!")
+        return None
+
+    # Split на train/val по файлам
+    rng = np.random.default_rng(seed)
+    rng.shuffle(no_ozz_files)
+    n_val = max(1, int(len(no_ozz_files) * val_split))
+    if split == 'train':
+        selected_files = no_ozz_files[n_val:]
+    else:
+        selected_files = no_ozz_files[:n_val]
+
+    print(f"  {split}: {len(selected_files)} файлов из {len(no_ozz_files)} no-OZZ")
+
+    df_split = df.filter(pl.col('file_name').is_in(selected_files))
+
+    # Убеждаемся, что каналы IN/UN числовые (могут быть String)
+    for ch in ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']:
+        if ch in df_split.columns:
+            df_split = df_split.with_columns(
+                pl.col(ch).cast(pl.Float32, strict=False).fill_null(0.0).alias(ch)
+            )
+
+    # Физическая нормализация (TODO: подключить после определения номиналов)
+    # Пока без нормализации — нормализацию добавим после получения
+    # результатов scan_sim_ozz_statistics.py
+
+    # Индексы и boundaries
+    file_boundaries = AugmentedSpectralDataset.compute_file_boundaries(df_split)
+    window_size = config['real_window_size']  # 320
+    stride = SAMPLES_PER_PERIOD // config['stride_fraction']  # 32 // 8 = 4
+
+    indices = PrecomputedDataset.create_indices(
+        df_split, window_size=window_size, mode='val', stride=stride,
+    )
+    print(f"  Строк: {df_split.height:,}, окон: {len(indices):,}")
+
+    # Создаём Dataset с пустыми target_columns → все метки = 0 (класс «не ОЗЗ»)
+    # Используем те же target_columns что и SimOZZ (4 столбца),
+    # но все они = 0 для этих осциллограмм.
+    target_columns = get_target_columns(config['target_level'])
+
+    # Добавляем нулевые target-колонки (их нет в реальном CSV)
+    for tc in target_columns:
+        if tc not in df_split.columns:
+            df_split = df_split.with_columns(
+                pl.lit(0, dtype=pl.Int8).alias(tc)
+            )
+
+    ds = AugmentedSpectralDataset(
+        dataframe=df_split,
+        file_boundaries=file_boundaries,
+        indices=indices,
+        window_size=window_size,
+        num_harmonics=config['num_harmonics'],
+        sub_periods=config.get('sub_periods'),
+        include_symmetric=config.get('include_symmetric', True),
+        downsampling_stride=stride,
+        future_zones=0,
+        mask_ratio=0.0,
+        augmenter=None,
+        target_columns=target_columns,
+        mode='classify',
+        target_window_mode='any_in_window',
+        zone_target_aggregation=config['zone_target_aggregation'],
+    )
+
+    print(f"  AugmentedSpectralDataset: {len(ds):,} элементов")
+    # Проверка формы
+    if len(ds) > 0:
+        X, Y = ds[0]
+        print(f"  X shape: {X.shape}, Y shape: {Y.shape}")
+
+    return ds
 
 
 # ---------------------------------------------------------------------------
@@ -196,9 +342,29 @@ def prepare_sim_ozz_dataloaders(
         cache_size=config.get('cache_size', 500),
     )
 
+    # Аугментация: inversion + phase shuffle + дропаут IN/UN
+    train_augmenter = None
+    if config.get('use_augmentation', True):
+        base_aug = TimeSeriesAugmenter({
+            'p_inversion': 0.5,
+            'p_scaling': 0.2,
+            'p_noise': 0.0,
+            'p_phase_shuffling': 0.33,
+            'p_drop_channel': 0.0,   # дропаут фазных отключен (есть NeutralChannelDropout)
+        })
+        neutral_dropout = NeutralChannelDropout(
+            fill_value=0.0,
+            p_all=1.0 / 3,
+            p_drop_in=1.0 / 3,
+            p_drop_in_un=1.0 / 3,
+        )
+        train_augmenter = CompositeAugmenter(base_aug, neutral_dropout)
+        print(f"  Аугментация: inversion + scaling + phase_shuffle + "
+              f"NeutralDropout(1/3 all, 1/3 -IN, 1/3 -IN-UN)")
+
     train_ds = SimOZZLazyDataset(
         file_paths=train_paths,
-        augmenter=None,             # TODO: добавить аугментацию
+        augmenter=train_augmenter,
         verbose=True,
         **ds_kwargs,
     )
@@ -214,21 +380,87 @@ def prepare_sim_ozz_dataloaders(
     for ds in (train_ds, val_ds):
         ds.supervision_mode = config.get('supervision_mode', 'zone')
 
-    train_loader = DataLoader(
-        train_ds,
-        batch_size=config['batch_size'],
-        shuffle=True,
-        num_workers=config['num_workers'],
-        pin_memory=True,
-        drop_last=True,
+    # ---------------------------------------------------------------
+    # 5-й класс: реальные осциллограммы без ОЗЗ
+    # ---------------------------------------------------------------
+    real_train_ds = prepare_real_no_ozz_dataset(
+        config, split='train', val_split=config['val_split'], seed=config['seed'],
     )
-    val_loader = DataLoader(
-        val_ds,
-        batch_size=config['val_batch_size'],
-        shuffle=False,
-        num_workers=config['num_workers'],
-        pin_memory=True,
+    real_val_ds = prepare_real_no_ozz_dataset(
+        config, split='val', val_split=config['val_split'], seed=config['seed'],
     )
+
+    if real_train_ds is not None and len(real_train_ds) > 0:
+        # --- Комбинированный train dataset ---
+        # Распределяем class_ids: для SimOZZ каждое окно получает class_id
+        # по типу дуги X файла (0=Stable, 1=Petersen, 2=PetersSlepian, 3=Beliakov).
+        # Для real → class_id = 4 (Normal / не ОЗЗ).
+        sim_class_ids = []
+        for path, _ in train_ds._indices:
+            fi = train_ds._file_infos[path.name]
+            sim_class_ids.append(fi.meta['x'] - 1)  # X=1..4 -> 0..3
+
+        real_class_ids = [4] * len(real_train_ds)
+
+        combined_class_ids = sim_class_ids + real_class_ids
+        combined_train = BalancedConcatDataset(
+            datasets=[train_ds, real_train_ds],
+            class_ids=combined_class_ids,
+            class_names=list(ARC_TYPES) + ['Normal_real'],
+        )
+        combined_train.supervision_mode = config.get('supervision_mode', 'zone')
+        combined_train.print_stats()
+
+        # Balanced sampler
+        train_sampler = BalancedEpochSampler(
+            combined_train,
+            samples_per_class=config.get('samples_per_class'),
+            seed=config['seed'],
+        )
+        print(f"  BalancedEpochSampler: {len(train_sampler):,} элементов/эпоха "
+              f"({len(train_sampler) // 5:,} на класс)")
+
+        train_loader = DataLoader(
+            combined_train,
+            batch_size=config['batch_size'],
+            sampler=train_sampler,
+            num_workers=config['num_workers'],
+            pin_memory=True,
+            drop_last=True,
+        )
+        config['_train_sampler'] = train_sampler  # для set_epoch()
+    else:
+        print("\n  [!] Реальные данные не загружены — обучение только на SimOZZ")
+        train_loader = DataLoader(
+            train_ds,
+            batch_size=config['batch_size'],
+            shuffle=True,
+            num_workers=config['num_workers'],
+            pin_memory=True,
+            drop_last=True,
+        )
+
+    # Val — просто конкатенация без балансировки
+    if real_val_ds is not None and len(real_val_ds) > 0:
+        # Для val: простой ConcatDataset (без балансировки)
+        from torch.utils.data import ConcatDataset as TorchConcatDataset
+        combined_val = TorchConcatDataset([val_ds, real_val_ds])
+        combined_val.supervision_mode = config.get('supervision_mode', 'zone')
+        val_loader = DataLoader(
+            combined_val,
+            batch_size=config['val_batch_size'],
+            shuffle=False,
+            num_workers=config['num_workers'],
+            pin_memory=True,
+        )
+    else:
+        val_loader = DataLoader(
+            val_ds,
+            batch_size=config['val_batch_size'],
+            shuffle=False,
+            num_workers=config['num_workers'],
+            pin_memory=True,
+        )
 
     return train_loader, val_loader, target_columns
 
@@ -371,6 +603,11 @@ def finetune_sim_ozz(
     print("-" * 70)
 
     for epoch in range(start_epoch, total_epochs):
+        # Обновляем seed сэмплера для текущей эпохи
+        sampler = config.get('_train_sampler')
+        if sampler is not None:
+            sampler.set_epoch(epoch)
+
         # Warmup
         if epoch < warmup_epochs:
             frac = (epoch + 1) / warmup_epochs
