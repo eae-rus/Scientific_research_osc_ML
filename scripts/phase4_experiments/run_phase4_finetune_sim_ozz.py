@@ -183,6 +183,7 @@ def get_sim_ozz_config() -> dict:
         'cls_head_type': 'kan',
         'use_angle_gate': True,
         'use_mixed_layer_norm': False,
+        'max_seq_len': 128,                 # >= 72 зон = (num_periods_window-1)*stride_fraction
 
         # Fine-tuning
         'num_classes': NUM_SIM_OZZ_CLASSES,
