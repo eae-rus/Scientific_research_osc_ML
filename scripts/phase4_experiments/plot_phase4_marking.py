@@ -103,7 +103,7 @@ def load_model(
             use_mixed_layer_norm=config.get('use_mixed_layer_norm', False),
             cls_head_type=config.get('cls_head_type', 'kan'),
             dropout=0.0,
-            max_seq_len=64,
+            max_seq_len=config.get('max_seq_len', 128),
         )
     elif model_type == 'BaselineTransformer':
         model = BaselineTransformer(
@@ -115,7 +115,7 @@ def load_model(
             zone_size=zone_size,
             cls_head_type=config.get('cls_head_type', 'linear'),
             dropout=0.0,
-            max_seq_len=64,
+            max_seq_len=config.get('max_seq_len', 128),
         )
     else:
         raise ValueError(f"Неизвестный тип модели: {model_type}")
