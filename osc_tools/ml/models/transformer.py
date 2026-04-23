@@ -268,7 +268,7 @@ class PhysicalKANTransformer(BaseModel):
         cls_head_type: str = 'kan',
         num_future_zones: int = 0,
         dropout: float = 0.1,
-        max_seq_len: int = 64,
+        max_seq_len: int = 128,
     ) -> None:
         super().__init__()
 
@@ -478,7 +478,7 @@ class BaselineTransformer(BaseModel):
         cls_head_type: str = 'linear',
         num_future_zones: int = 0,
         dropout: float = 0.1,
-        max_seq_len: int = 64,
+        max_seq_len: int = 128,
     ) -> None:
         super().__init__()
 
