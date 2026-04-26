@@ -461,7 +461,7 @@ def prepare_sim_ozz_dataloaders(
     if real_train_ds is not None and len(real_train_ds) > 0:
         # --- Комбинированный train dataset ---
         # Распределяем class_ids: для SimOZZ каждое окно получает class_id
-        # по типу дуги X файла (0=Stable, 1=Petersen, 2=PetersSlepian, 3=Beliakov).
+        # по типу дуги X файла (0=Stable, 1Petersen=, 2=PetersSlepian, 3=Beliakov).
         # Для real → class_id = 4 (Normal / не ОЗЗ).
         sim_class_ids = []
         for path, _ in train_ds._indices:

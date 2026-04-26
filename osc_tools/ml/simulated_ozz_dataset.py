@@ -109,6 +109,16 @@ _COLUMN_ALIAS: Dict[str, str] = {
     '3U0': 'UN',
 }
 
+# Маппинг имён колонок-меток в CSV → индекс в ARC_TYPES (после _rename_rtds_columns)
+# CSV: Stable, Petersen, Peters_Slepian, Beliakov2
+# ARC_TYPES: ['Stable', 'Petersen', 'PetersSlepian', 'Beliakov']
+_TARGET_CSV_COLUMNS: Dict[str, int] = {
+    'Stable': 0,           # → ARC_TYPES[0]
+    'Petersen': 1,         # → ARC_TYPES[1]
+    'Peters_Slepian': 2,   # → ARC_TYPES[2]
+    'Beliakov2': 3,        # → ARC_TYPES[3]
+}
+
 
 # ---------------------------------------------------------------------------
 # Парсинг имени файла
@@ -217,11 +227,14 @@ def load_raw_csv(
     # Бинарный флаг OZZ
     ozz = (df['OZZ'].to_numpy() > 0.5).astype(np.int8)
 
-    # Целевые 4 класса: one-hot по X файла × OZZ flag
-    x = meta['x']
+    # Целевые 4 класса: читаем напрямую из CSV-колонок
+    # (Stable, Petersen, Peters_Slepian, Beliakov2)
+    # ВАЖНО: не используем meta['x'] × OZZ, т.к. OZZ = объединение всех фаз
+    # процесса (пробои + стабильное ОЗЗ), а нам нужны конкретные фазы.
     targets = np.zeros((n, len(ARC_TYPES)), dtype=np.int8)
-    if 1 <= x <= len(ARC_TYPES):
-        targets[:, x - 1] = ozz
+    for csv_col, arc_idx in _TARGET_CSV_COLUMNS.items():
+        if csv_col in df.columns:
+            targets[:, arc_idx] = (df[csv_col].to_numpy() > 0.5).astype(np.int8)
 
     return {
         'raw': raw,
