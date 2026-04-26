@@ -941,8 +941,9 @@ if __name__ == '__main__':
 
     # 6. Продолжение прерванного обучения
     # Пример: RESUME_PATH = str(PROJECT_ROOT / 'experiments/phase4/.../latest_checkpoint.pt')
-    RESUME_PATH = None
-    RESET_OPTIMIZER = False     # Сбросить шаг оптимизатора и LR scheduler при возобновлении
+
+    RESUME_PATH = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260425_165909/latest_checkpoint.pt'
+    RESET_OPTIMIZER = False # True, если нужно сбросить оптимизатор и начать с 0 эпохи
 
     # =================================================================
 

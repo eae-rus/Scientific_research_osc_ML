@@ -166,7 +166,7 @@ def create_model_for_finetune(
             cls_head_type=config.get('cls_head_type', 'kan'),
             num_future_zones=config.get('num_future_zones', 0),
             dropout=config['dropout'],
-            max_seq_len=64,
+            max_seq_len=config.get('max_seq_len', 128),
         )
     elif model_type == 'BaselineTransformer':
         model = BaselineTransformer(
@@ -179,7 +179,7 @@ def create_model_for_finetune(
             cls_head_type=config.get('cls_head_type', 'linear'),
             num_future_zones=config.get('num_future_zones', 0),
             dropout=config['dropout'],
-            max_seq_len=64,
+            max_seq_len=config.get('max_seq_len', 128),
         )
     else:
         raise ValueError(f"Неизвестный тип модели: {model_type}")
