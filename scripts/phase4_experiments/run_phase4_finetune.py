@@ -1258,7 +1258,7 @@ def finetune(
         lr_bb = optimizer.param_groups[0]['lr']
         lr_hd = optimizer.param_groups[1]['lr']
         print(
-            f"Epoch {epoch:3d}/{total_epochs} | "
+            f"Epoch {epoch + 1:3d}/{total_epochs} | "
             f"loss={train_metrics['loss']:.4f}/{val_metrics['loss']:.4f} | "
             f"F1={train_metrics['macro_f1']:.4f}/{val_metrics['macro_f1']:.4f}{marker} | "
             f"AUC={val_metrics.get('roc_auc', 0):.4f} | "

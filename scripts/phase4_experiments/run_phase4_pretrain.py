@@ -861,7 +861,7 @@ def pretrain(config: dict, resume_path: str | None = None, reset_optimizer: bool
 
         marker = ' ★' if is_best else ''
         print(
-            f"Epoch {epoch:3d}/{total_epochs} | "
+            f"Epoch {epoch + 1:3d}/{total_epochs} | "
             f"train_loss={train_metrics['loss']:.6f} | "
             f"val_loss={val_metrics['loss']:.6f}{marker} | "
             f"lr={current_lr:.2e} | "

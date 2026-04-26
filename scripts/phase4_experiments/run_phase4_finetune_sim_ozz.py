@@ -769,7 +769,7 @@ def finetune_sim_ozz(
         marker = ' ★' if is_best else (' ★L' if is_best_loss else '')
         lr_bb = optimizer.param_groups[0]['lr']
         print(
-            f"Epoch {epoch:3d}/{total_epochs} | "
+            f"Epoch {epoch + 1:3d}/{total_epochs} | "
             f"loss={train_metrics['loss']:.4f}/{val_metrics['loss']:.4f} | "
             f"F1={train_metrics['macro_f1']:.4f}/{val_metrics['macro_f1']:.4f}{marker} | "
             f"AUC={val_metrics.get('roc_auc', 0):.4f} | "
@@ -937,7 +937,7 @@ if __name__ == '__main__':
     # train_batches_per_epoch × batch_size элементов делится поровну на 5 классов.
     # 128 батчей × 32 = 4096 элементов, ~819 на класс → ~10 мин/эпоха (зависит от диска)
     TRAIN_BATCHES_PER_EPOCH = 128   # Число батчей обучения за эпоху
-    VAL_BATCHES_PER_EPOCH = 32      # Число батчей валидации за эпоху
+    VAL_BATCHES_PER_EPOCH = 16      # Число батчей валидации за эпоху
 
     # 6. Продолжение прерванного обучения
     # Пример: RESUME_PATH = str(PROJECT_ROOT / 'experiments/phase4/.../latest_checkpoint.pt')
