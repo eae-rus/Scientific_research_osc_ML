@@ -32,7 +32,7 @@ import numpy as np
 import polars as pl
 import torch
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from osc_tools.data_management.comtrade_processing import ReadComtrade
@@ -68,7 +68,7 @@ def load_comtrade_raw(
     cfg_path: Path,
     bus: str,
     norm_osc: NormOsc | None = None,
-) -> tuple[np.ndarray | None, float, np.ndarray | None, dict]:
+) -> tuple[np.ndarray | None, np.ndarray | None, float, np.ndarray | None, dict]:
     """Загружает COMTRADE и извлекает 8 каналов для указанной секции (bus).
 
     Args:
@@ -77,7 +77,9 @@ def load_comtrade_raw(
         norm_osc: объект нормализации (если None — без нормализации)
 
     Returns:
-        (raw_8ch, fs, time_arr, signal_info)
+        (raw_8ch_display, raw_8ch_model, fs, time_arr, signal_info)
+        - raw_8ch_display: (N, 8) оригинальные значения для графика
+        - raw_8ch_model: (N, 8) нормализованные значения для inference
         - raw_8ch: (N, 8) numpy array [IA, IB, IC, IN, UA, UB, UC, UN] или None
         - fs: частота дискретизации (Гц)
         - time_arr: (N,) массив времени (с)
@@ -87,7 +89,7 @@ def load_comtrade_raw(
     rec, raw_df = reader.read_comtrade(str(cfg_path))
 
     if rec is None or raw_df is None or raw_df.is_empty():
-        return None, 0.0, None, {}
+        return None, None, 0.0, None, {}
 
     # Частота дискретизации (первая секция COMTRADE)
     fs = rec.cfg.sample_rates[0][0]
@@ -129,28 +131,33 @@ def load_comtrade_raw(
     required_currents = {'IA', 'IB', 'IC'}
     required_voltages = {'UA', 'UB', 'UC'}
     if not required_currents.issubset(set(available)):
-        return None, fs, time_arr, signal_info
+        return None, None, fs, time_arr, signal_info
     if not required_voltages.issubset(set(available)):
-        return None, fs, time_arr, signal_info
+        return None, None, fs, time_arr, signal_info
 
-    # Нормализация
-    file_name = cfg_path.stem  # MD5-хэш
-    if norm_osc is not None:
-        raw_df_norm = norm_osc.normalize_bus_signals(raw_df, file_name)
-        if raw_df_norm is not None:
-            raw_df = raw_df_norm
-
-    # Собираем 8 каналов в правильном порядке
+    # Собираем 8 каналов ОРИГИНАЛЬНЫХ (для графика)
     order = ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']
     N = raw_df.height
-    raw_8ch = np.zeros((N, 8), dtype=np.float32)
+    raw_8ch_display = np.zeros((N, 8), dtype=np.float32)
     for i, ch in enumerate(order):
         col_name = resolved.get(ch)
         if col_name is not None and col_name in raw_df.columns:
-            raw_8ch[:, i] = raw_df[col_name].to_numpy().astype(np.float32)
-        # Если канал отсутствует (e.g. IN, UN) → остаётся 0 (DataSanitizer обработает)
+            raw_8ch_display[:, i] = raw_df[col_name].to_numpy().astype(np.float32)
 
-    return raw_8ch, fs, time_arr, signal_info
+    # Нормализация для модели
+    file_name = cfg_path.stem  # MD5-хэш
+    raw_8ch_model = raw_8ch_display.copy()  # по умолчанию — без нормализации
+    if norm_osc is not None:
+        raw_df_norm = norm_osc.normalize_bus_signals(raw_df, file_name)
+        if raw_df_norm is not None:
+            # Собираем нормализованные каналы для inference
+            raw_8ch_model = np.zeros((N, 8), dtype=np.float32)
+            for i, ch in enumerate(order):
+                col_name = resolved.get(ch)
+                if col_name is not None and col_name in raw_df_norm.columns:
+                    raw_8ch_model[:, i] = raw_df_norm[col_name].to_numpy().astype(np.float32)
+
+    return raw_8ch_display, raw_8ch_model, fs, time_arr, signal_info
 
 
 # ---------------------------------------------------------------------------
@@ -464,20 +471,20 @@ def run_inference_on_real_ozz(
         label = 'confirmed' if is_confirmed else 'false_det'
 
         for bus in file_buses:
-            raw_8ch, fs, time_arr, sig_info = load_comtrade_raw(
+            raw_display, raw_model, fs, time_arr, sig_info = load_comtrade_raw(
                 cfg_path, bus=bus, norm_osc=norm_osc,
             )
 
-            if raw_8ch is None:
+            if raw_display is None:
                 continue
 
             bus_suffix = f'_bus{bus}' if len(file_buses) > 1 else ''
             print(f"  [{file_idx+1}/{len(unique_files)}] {fname}{bus_suffix} "
-                  f"(N={raw_8ch.shape[0]}, Fs={fs:.0f}, {label})")
+                  f"(N={raw_display.shape[0]}, Fs={fs:.0f}, {label})")
 
-            # Inference
+            # Inference — на НОРМАЛИЗОВАННЫХ данных
             probs, cov = mark_real_oscillogram(
-                model, raw_8ch, config, device, fs=fs,
+                model, raw_model, config, device, fs=fs,
             )
 
             # Определяем, есть ли ОЗЗ
@@ -489,14 +496,14 @@ def run_inference_on_real_ozz(
             else:
                 stats['no_ozz_detected'] += 1
 
-            # Построение графика
+            # Построение графика — ОРИГИНАЛЬНЫЕ значения
             plot_name = f'{fname}{bus_suffix}.png'
             plot_path = out_dir_file / plot_name
             title = f'{label.upper()} | {fname} | bus={bus} | Fs={fs:.0f} Гц'
 
             plot_real_ozz_marking(
                 out_path=plot_path,
-                raw_data=raw_8ch,
+                raw_data=raw_display,
                 probs=probs,
                 coverage=cov,
                 fs=fs,
