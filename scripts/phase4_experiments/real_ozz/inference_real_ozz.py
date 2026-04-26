@@ -576,7 +576,7 @@ if __name__ == '__main__':
         # РУЧНОЙ РЕЖИМ — отредактируйте константы ниже
         # =====================================================
         # Укажите путь после обучения
-        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260425_165909/latest_checkpoint.pt' 
+        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260426_143604/latest_checkpoint.pt' 
         # Пример: CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_.../best_model.pt'
 
         SUBSET = 'confirmed'   # 'all' | 'confirmed' | 'false_detection'

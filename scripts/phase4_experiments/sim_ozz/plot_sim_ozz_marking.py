@@ -374,7 +374,7 @@ if __name__ == '__main__':
         # =====================================================================
         # РУЧНОЙ ЗАПУСК
         # =====================================================================
-        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260425_225849/latest_checkpoint.pt'
+        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260426_143604/latest_checkpoint.pt'
 
         if CHECKPOINT is None:
             print("Укажите CHECKPOINT.")

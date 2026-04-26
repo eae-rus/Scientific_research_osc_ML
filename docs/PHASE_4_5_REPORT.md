@@ -206,8 +206,8 @@ Ub_nominal = 3 × base_val  (напряжения)
 | `osc_tools/ml/balanced_dataset.py` | BalancedConcatDataset + BalancedEpochSampler |
 | `osc_tools/data_management/no_ozz_filter.py` | Фильтрация реальных осциллограмм без ОЗЗ |
 | `osc_tools/data_management/sim_ozz_split.py` | Стратифицированный split по типу дуги |
-| `scripts/phase4_experiments/run_phase4_finetune_sim_ozz.py` | Тренировочный скрипт |
-| `scripts/phase4_experiments/scan_sim_ozz_statistics.py` | Сбор статистики каналов |
+| `scripts/phase4_experiments/sim_ozz/run_phase4_finetune_sim_ozz.py` | Тренировочный скрипт |
+| `scripts/phase4_experiments/sim_ozz/scan_sim_ozz_statistics.py` | Сбор статистики каналов |
 
 ### 7.2 Изменённые модули
 | Файл | Изменение |
@@ -243,7 +243,7 @@ LRU-кэш на 500 файлов (~500 МБ) снижает I/O при sequentia
 Команда (CLI):
 ```bash
 C:/ProgramData/anaconda3/Scripts/conda.exe run -p C:\ProgramData\anaconda3 --no-capture-output \
-  python scripts/phase4_experiments/run_phase4_finetune_sim_ozz.py --smoke
+  python scripts/phase4_experiments/sim_ozz/run_phase4_finetune_sim_ozz.py --smoke
 ```
 Что делает: 2 эпохи, 20 файлов, batch=4, без симметричных — проверка работоспособности пайплайна.
 
@@ -251,11 +251,11 @@ C:/ProgramData/anaconda3/Scripts/conda.exe run -p C:\ProgramData\anaconda3 --no-
 Команда (CLI):
 ```bash
 C:/ProgramData/anaconda3/Scripts/conda.exe run -p C:\ProgramData\anaconda3 --no-capture-output \
-  python scripts/phase4_experiments/run_phase4_finetune_sim_ozz.py
+  python scripts/phase4_experiments/sim_ozz/run_phase4_finetune_sim_ozz.py
 ```
 Или с параметрами:
 ```bash
-... python scripts/phase4_experiments/run_phase4_finetune_sim_ozz.py \
+... python scripts/phase4_experiments/sim_ozz/run_phase4_finetune_sim_ozz.py \
     --model PhysicalKANTransformer --complexity light --epochs 50
 ```
 
@@ -283,7 +283,7 @@ MAX_FILES = None   # None = все 19199 файлов
 
 ### 9.5 Продолжение обучения
 ```bash
-... python scripts/phase4_experiments/run_phase4_finetune_sim_ozz.py \
+... python scripts/phase4_experiments/sim_ozz/run_phase4_finetune_sim_ozz.py \
     --resume experiments/phase4/sim_ozz_finetune_.../latest_checkpoint.pt
 ```
 

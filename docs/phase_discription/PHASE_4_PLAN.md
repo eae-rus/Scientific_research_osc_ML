@@ -196,7 +196,7 @@
    - [x] Добавить в `osc_tools/ml/labels.py` уровень `target_level='sim_ozz'` (4 целевых колонки).
    - [x] `osc_tools/data_management/sim_ozz_split.py` — стратифицированное разбиение по типу X (80% train / 20% val по умолчанию).
 3. **Скрипт обучения:**
-   - [x] `scripts/phase4_experiments/run_phase4_finetune_sim_ozz.py` на базе `run_phase4_finetune.py` (ручной запуск + CLI: `--smoke`, `--resume`, `--model`, `--complexity`, `--max-files`). Импортирует общие функции (train_one_epoch, validate, save/load_checkpoint, create_model) из оригинала.
+   - [x] `scripts/phase4_experiments/sim_ozz/run_phase4_finetune_sim_ozz.py` на базе `run_phase4_finetune.py` (ручной запуск + CLI: `--smoke`, `--resume`, `--model`, `--complexity`, `--max-files`). Импортирует общие функции (train_one_epoch, validate, save/load_checkpoint, create_model) из оригинала.
    - [x] Light-модель (d_model=48, 6 слоёв, 4 головы), batch=32, 50 эпох, CosineAnnealingWarmRestarts.
    - [x] Чекпоинт + split.json в `experiments/phase4/sim_ozz_finetune_{model}_{ts}/`.
 4. **Визуализация разметки:**

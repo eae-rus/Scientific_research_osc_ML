@@ -14,9 +14,9 @@ Fine-tuning скрипт для Этапа 4.5: Simulated_OZZ_v1.
 
 Примеры::
 
-    python scripts/phase4_experiments/run_phase4_finetune_sim_ozz.py --smoke
-    python scripts/phase4_experiments/run_phase4_finetune_sim_ozz.py --max-files 100
-    python scripts/phase4_experiments/run_phase4_finetune_sim_ozz.py --resume experiments/phase4/sim_ozz_.../latest_checkpoint.pt
+    python scripts/phase4_experiments/sim_ozz/run_phase4_finetune_sim_ozz.py --smoke
+    python scripts/phase4_experiments/sim_ozz/run_phase4_finetune_sim_ozz.py --max-files 100
+    python scripts/phase4_experiments/sim_ozz/run_phase4_finetune_sim_ozz.py --resume experiments/phase4/sim_ozz_.../latest_checkpoint.pt
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
 # Корень проекта
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 # Импортируем общие функции из оригинального finetune
@@ -942,7 +942,7 @@ if __name__ == '__main__':
     # 6. Продолжение прерванного обучения
     # Пример: RESUME_PATH = str(PROJECT_ROOT / 'experiments/phase4/.../latest_checkpoint.pt')
 
-    RESUME_PATH = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260425_165909/latest_checkpoint.pt'
+    RESUME_PATH = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260426_143604/latest_checkpoint.pt'
     RESET_OPTIMIZER = False # True, если нужно сбросить оптимизатор и начать с 0 эпохи
 
     # =================================================================
