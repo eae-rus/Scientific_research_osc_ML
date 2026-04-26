@@ -29,7 +29,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from osc_tools.ml.simulated_ozz_dataset import (
-    SimOZZFileIndex, FileInfo,
+    SimOZZFileIndex, FileInfo, load_raw_csv, SIM_NOMINAL,
     TARGET_COLUMNS as SIM_TARGET_COLUMNS, ARC_TYPES,
 )
 from osc_tools.ml.augmented_dataset import compute_spectral_from_raw
@@ -48,78 +48,6 @@ PHASE_COLORS = {
 }
 CLASS_COLORS = ['#E74C3C', '#F39C12', '#8E44AD', '#2980B9']
 RAW_CHANNELS = ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']
-
-
-# ---------------------------------------------------------------------------
-# Загрузка одного SimOZZ CSV
-# ---------------------------------------------------------------------------
-
-def load_sim_ozz_csv(path: Path) -> Dict[str, np.ndarray]:
-    """Загружает SimOZZ CSV, возвращает сырые сигналы + метки.
-
-    Returns: {'raw': (T, 8), 'targets': (T, 4), 'ozz': (T,), 'dt': float}
-    """
-    import polars as pl
-
-    df = pl.read_csv(path)
-
-    # Маппинг колонок на стандартные имена
-    col_map = {}
-    for col in df.columns:
-        col_lower = col.lower()
-        if 'ia' in col_lower and 'target' not in col_lower:
-            col_map['IA'] = col
-        elif 'ib' in col_lower and 'target' not in col_lower:
-            col_map['IB'] = col
-        elif 'ic' in col_lower and 'target' not in col_lower:
-            col_map['IC'] = col
-        elif '3i0' in col_lower or ('in' == col_lower):
-            col_map['IN'] = col
-        elif ('va' in col_lower or 'ua' in col_lower) and 'target' not in col_lower:
-            if 'UA' not in col_map:
-                col_map['UA'] = col
-        elif ('vb' in col_lower or 'ub' in col_lower) and 'target' not in col_lower:
-            if 'UB' not in col_map:
-                col_map['UB'] = col
-        elif ('vc' in col_lower or 'uc' in col_lower) and 'target' not in col_lower:
-            if 'UC' not in col_map:
-                col_map['UC'] = col
-        elif '3u0' in col_lower or ('un' == col_lower):
-            col_map['UN'] = col
-
-    T = df.height
-    raw = np.zeros((T, 8), dtype=np.float32)
-    for i, ch in enumerate(RAW_CHANNELS):
-        if ch in col_map and col_map[ch] in df.columns:
-            raw[:, i] = df[col_map[ch]].to_numpy().astype(np.float32)
-
-    # Метки
-    targets = np.zeros((T, 4), dtype=np.float32)
-    for i, arc_type in enumerate(ARC_TYPES):
-        tcol = f'Target_OZZ_{arc_type}'
-        if tcol in df.columns:
-            targets[:, i] = df[tcol].to_numpy().astype(np.float32)
-
-    # OZZ flag
-    ozz = np.zeros(T, dtype=np.float32)
-    for col in df.columns:
-        if col.lower() == 'ozz' or col.lower().endswith('|ozz'):
-            ozz = df[col].to_numpy().astype(np.float32)
-            break
-
-    # dt из Time колонки
-    time_col = None
-    for col in df.columns:
-        if col.lower() in ('time', 'time_s', 't'):
-            time_col = col
-            break
-    dt = 1.0 / 40000.0  # Значение по умолчанию
-    if time_col is not None:
-        t_arr = df[time_col].to_numpy()
-        if len(t_arr) > 1:
-            dt = float(t_arr[1] - t_arr[0])
-
-    return {'raw': raw, 'targets': targets, 'ozz': ozz, 'dt': dt}
 
 
 # ---------------------------------------------------------------------------
@@ -227,21 +155,21 @@ def plot_sim_ozz_marking(
     fig = plt.figure(figsize=(18, 8 + 1.2 * num_classes))
     gs = fig.add_gridspec(nrows=n_rows, ncols=1, height_ratios=height_ratios)
 
-    # --- Токи ---
+    # --- Токи (×1000 → А) ---
     ax_i = fig.add_subplot(gs[0, 0])
     for idx, name in enumerate(['IA', 'IB', 'IC', 'IN']):
-        ax_i.plot(time_ms, raw_data[:, idx], label=name,
+        ax_i.plot(time_ms, raw_data[:, idx] * 1000, label=name,
                   color=PHASE_COLORS[name], linewidth=0.8, alpha=0.9)
-    ax_i.set_ylabel('Токи')
+    ax_i.set_ylabel('Токи, А')
     ax_i.legend(loc='upper right', fontsize=8)
     ax_i.grid(True, alpha=0.3, linestyle=':')
 
-    # --- Напряжения ---
+    # --- Напряжения (кВ) ---
     ax_u = fig.add_subplot(gs[1, 0], sharex=ax_i)
     for idx_off, name in enumerate(['UA', 'UB', 'UC', 'UN']):
         ax_u.plot(time_ms, raw_data[:, 4 + idx_off], label=name,
                   color=PHASE_COLORS[name], linewidth=0.8, alpha=0.9)
-    ax_u.set_ylabel('Напряжения')
+    ax_u.set_ylabel('Напряжения, кВ')
     ax_u.legend(loc='upper right', fontsize=8)
     ax_u.grid(True, alpha=0.3, linestyle=':')
 
@@ -377,24 +305,29 @@ def generate_sim_ozz_markings(
         for fi in files:
             plot_count += 1
 
-            # Загрузка CSV
-            data = load_sim_ozz_csv(fi.path)
-            raw = data['raw']       # (T, 8)
-            targets = data['targets']  # (T, 4)
+            # Загрузка через официальный парсер (корректный маппинг колонок)
+            data_raw = load_raw_csv(fi.path, normalize=False)
+            data_norm = load_raw_csv(fi.path, normalize=True)
+            if data_raw is None or data_norm is None:
+                print(f"  Пропуск: {fi.path.name} (не удалось прочитать)")
+                continue
+            raw_display = data_raw['raw']      # для графиков (исходные единицы)
+            raw_model = data_norm['raw']        # для модели (нормализованные)
+            targets = data_raw['targets']
             fs = fi.fs
 
-            # Inference с усреднением перекрытий
+            # Inference на нормализованных данных (как при обучении)
             probs, coverage = mark_sim_ozz_oscillogram(
-                model, raw, config, device, fs=fs,
+                model, raw_model, config, device, fs=fs,
             )
 
-            # Построение графика
-            title = f'{cls_name} | {fi.path.stem} | Fs={fs:.0f} Гц | T={raw.shape[0]}'
+            # График на сырых данных (читаемые единицы)
+            title = f'{cls_name} | {fi.path.stem} | Fs={fs:.0f} Гц | T={raw_display.shape[0]}'
             plot_path = cls_dir / f'{fi.path.stem}.png'
 
             plot_sim_ozz_marking(
                 out_path=plot_path,
-                raw_data=raw,
+                raw_data=raw_display,
                 probs=probs,
                 coverage=coverage,
                 targets=targets,
