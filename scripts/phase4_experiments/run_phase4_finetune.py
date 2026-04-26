@@ -85,7 +85,7 @@ def get_finetune_config() -> dict:
         'val_stride_multiplier': 4,       # Во сколько раз реже брать окна на валидации
         'batch_size': 32,
         'val_batch_size': 64,
-        'num_workers': 0,
+        'num_workers': 4,                  # параллельная предподготовка (FFT) в фоне
         'val_split': 0.2,                 # Доля файлов для валидации (0.0–1.0), определяет размер валидационного набора
         'target_level': 'base3',           # 3 класса (Normal = все ниже порога)
 
@@ -469,6 +469,7 @@ def prepare_finetune_dataloaders(
         val_ds, batch_size=config['val_batch_size'],
         shuffle=False, num_workers=config['num_workers'],
         pin_memory=True,
+        **_extra_loader_kwargs(config),
     )
 
     return train_loader, val_loader, target_columns
@@ -555,6 +556,14 @@ def _compute_sample_weights(
 # Обучение и валидация
 # ---------------------------------------------------------------------------
 
+def _extra_loader_kwargs(config: dict) -> dict:
+    """Доп. kwargs для DataLoader: persistent_workers + prefetch_factor при num_workers > 0."""
+    nw = config.get('num_workers', 0)
+    if nw > 0:
+        return {'persistent_workers': True, 'prefetch_factor': 2}
+    return {}
+
+
 def _build_train_epoch_loader(
     train_ds: torch.utils.data.Dataset,
     config: dict,
@@ -594,6 +603,7 @@ def _build_train_epoch_loader(
             num_workers=config['num_workers'],
             pin_memory=True,
             drop_last=True,
+            **_extra_loader_kwargs(config),
         )
 
     # Без балансировки — стандартная логика
@@ -605,6 +615,7 @@ def _build_train_epoch_loader(
             num_workers=config['num_workers'],
             pin_memory=True,
             drop_last=True,
+            **_extra_loader_kwargs(config),
         )
 
     target_samples = int(batches_per_epoch) * config['batch_size']
@@ -617,6 +628,7 @@ def _build_train_epoch_loader(
             num_workers=config['num_workers'],
             pin_memory=True,
             drop_last=True,
+            **_extra_loader_kwargs(config),
         )
 
     rng = np.random.default_rng(config.get('seed', 42) + epoch)
@@ -630,6 +642,7 @@ def _build_train_epoch_loader(
         num_workers=config['num_workers'],
         pin_memory=True,
         drop_last=True,
+        **_extra_loader_kwargs(config),
     )
 def _reduce_logits_targets(
     logits: torch.Tensor,
@@ -1514,19 +1527,20 @@ if __name__ == '__main__':
 
     # --- Путь к SSL-чекпоинту (None = random init) ---
     # SSL_CHECKPOINT = None
-    SSL_CHECKPOINT = 'experiments/phase4/pretrain_PhysicalKANTransformer_20260319_180046/best_model.pt'
+    SSL_CHECKPOINT = 'experiments/phase4/pretrain_PhysicalKANTransformer_20260327_155618/best_model.pt'
 
     # --- Продолжение fine-tuning ---
-    RESUME_PATH = None      # Путь к чекпоинту finetune (latest_checkpoint.pt)
+    # RESUME_PATH = None      # Путь к чекпоинту finetune (latest_checkpoint.pt)
+    RESUME_PATH = 'experiments/phase4/finetune_PhysicalKANTransformer_20260328_230623/best_model.pt'
     RESET_OPTIMIZER = True # True, если нужно сбросить оптимизатор и начать с 0 эпохи
 
     # --- Эпохи ---
-    EPOCHS = 200
+    EPOCHS = 100
 
     # --- Задача классификации ---
     # 'base' — 4 класса (Normal, ML_1, ML_2, ML_3)
     # 'ozz'  — 3 класса ОЗЗ (Target_OZZ, Target_OZZ_decay, Target_OZZ_dpozz)
-    TARGET_LEVEL = 'base'
+    TARGET_LEVEL = 'ozz'
     CLS_HEAD_TYPE = 'kan'   # 'kan' | 'mlp' | 'linear'
     SUPERVISION_MODE = 'zone'             # 'zone' | 'window' | 'last_zone'
     USE_ANGLE_GATE = True                       # DirectionalRelayGate (направленный орган)

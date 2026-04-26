@@ -85,6 +85,26 @@ from osc_tools.ml.precomputed_dataset import PrecomputedDataset
 NUM_SIM_OZZ_CLASSES = 4   # Stable, Petersen, PetersSlepian, Beliakov
 
 
+def _sim_ozz_worker_init(worker_id: int) -> None:
+    """Инициализация воркера DataLoader.
+
+    Уменьшает LRU-кэш SimOZZLazyDataset в каждом воркере,
+    чтобы суммарное потребление RAM не взрывалось
+    (N воркеров × cache_size → N × cache_size/N = исходный cache_size).
+    """
+    info = torch.utils.data.get_worker_info()
+    if info is None:
+        return
+    n_workers = info.num_workers
+    ds = info.dataset
+    # Обходим вложенные обёртки (BalancedConcatDataset, ConcatDataset)
+    datasets = ds.datasets if hasattr(ds, 'datasets') else [ds]
+    for sub_ds in datasets:
+        cache = getattr(sub_ds, '_cache', None)
+        if cache is not None and hasattr(cache, '_maxsize'):
+            cache._maxsize = max(10, cache._maxsize // n_workers)
+
+
 # ---------------------------------------------------------------------------
 # Быстрая оценка статистики (без прохода по DataLoader)
 # ---------------------------------------------------------------------------
@@ -169,8 +189,9 @@ def get_sim_ozz_config() -> dict:
         'train_batches_per_epoch': 64,
         'batch_size': 32,
         'val_batch_size': 64,
-        'num_workers': 0,                  # lazy loading + LRU → 0 workers безопаснее
-        'cache_size': 500,                 # LRU-кэш файлов (~500 МБ)
+        'num_workers': 4,                  # параллельная загрузка + FFT в фоне
+        'prefetch_factor': 2,               # кол-во батчей на воркер в очереди
+        'cache_size': 500,                 # LRU-кэш файлов (делится между воркерами)
 
         # Модель
         'model_type': 'PhysicalKANTransformer',
@@ -345,6 +366,31 @@ def prepare_real_no_ozz_dataset(
 
 
 # ---------------------------------------------------------------------------
+# Общие kwargs для DataLoader (multi-worker + prefetch)
+# ---------------------------------------------------------------------------
+
+def _loader_kwargs(config: dict, is_train: bool = True) -> dict:
+    """Возвращает общие kwargs для DataLoader с учётом num_workers.
+
+    Если num_workers > 0: persistent_workers=True (кэш живёт между эпохами),
+    worker_init_fn уменьшает LRU-кэш, prefetch_factor задаёт глубину очереди.
+    """
+    nw = config.get('num_workers', 0)
+    kwargs: dict = {
+        'num_workers': nw,
+        'pin_memory': True,
+        'drop_last': is_train,
+    }
+    if nw > 0:
+        kwargs['persistent_workers'] = True
+        kwargs['worker_init_fn'] = _sim_ozz_worker_init
+        pf = config.get('prefetch_factor', 2)
+        if pf is not None:
+            kwargs['prefetch_factor'] = pf
+    return kwargs
+
+
+# ---------------------------------------------------------------------------
 # Подготовка данных (lazy)
 # ---------------------------------------------------------------------------
 
@@ -358,6 +404,12 @@ def prepare_sim_ozz_dataloaders(
     """
     data_dir = Path(config['data_dir'])
     max_files = config.get('max_files')
+
+    nw = config.get('num_workers', 0)
+    if nw > 0:
+        pf = config.get('prefetch_factor', 2)
+        print(f"DataLoader: {nw} воркеров, prefetch_factor={pf}, "
+              f"persistent_workers=True")
 
     print(f"Сканирование файлов: {data_dir}")
     file_index = SimOZZFileIndex.from_directory(
@@ -504,9 +556,7 @@ def prepare_sim_ozz_dataloaders(
             combined_train,
             batch_size=config['batch_size'],
             sampler=train_sampler,
-            num_workers=config['num_workers'],
-            pin_memory=True,
-            drop_last=True,
+            **_loader_kwargs(config, is_train=True),
         )
         config['_train_sampler'] = train_sampler  # для set_epoch()
     else:
@@ -522,9 +572,7 @@ def prepare_sim_ozz_dataloaders(
             train_ds,
             batch_size=config['batch_size'],
             sampler=_SRS(train_indices.tolist()),
-            num_workers=config['num_workers'],
-            pin_memory=True,
-            drop_last=True,
+            **_loader_kwargs(config, is_train=True),
         )
 
     # Val — ограниченная подвыборка (lazy-dataset тоже медленный для val)
@@ -541,8 +589,7 @@ def prepare_sim_ozz_dataloaders(
             combined_val,
             batch_size=config['val_batch_size'],
             sampler=SubsetRandomSampler(val_indices.tolist()),
-            num_workers=config['num_workers'],
-            pin_memory=True,
+            **_loader_kwargs(config, is_train=False),
         )
         print(f"  Val: {val_n:,} элементов (~{val_batches} батчей) "
               f"из {len(combined_val):,} (SimOZZ + real)")
@@ -556,8 +603,7 @@ def prepare_sim_ozz_dataloaders(
             val_ds,
             batch_size=config['val_batch_size'],
             sampler=SubsetRandomSampler(val_indices.tolist()),
-            num_workers=config['num_workers'],
-            pin_memory=True,
+            **_loader_kwargs(config, is_train=False),
         )
         print(f"  Val: {val_n:,} элементов (~{val_batches} батчей) "
               f"из {len(val_ds):,}")
@@ -936,14 +982,14 @@ if __name__ == '__main__':
     # 5. Размер «эпохи» (lazy dataset — полный проход занял бы часы!)
     # train_batches_per_epoch × batch_size элементов делится поровну на 5 классов.
     # 128 батчей × 32 = 4096 элементов, ~819 на класс → ~10 мин/эпоха (зависит от диска)
-    TRAIN_BATCHES_PER_EPOCH = 128   # Число батчей обучения за эпоху
+    TRAIN_BATCHES_PER_EPOCH = 256   # Число батчей обучения за эпоху
     VAL_BATCHES_PER_EPOCH = 16      # Число батчей валидации за эпоху
 
     # 6. Продолжение прерванного обучения
     # Пример: RESUME_PATH = str(PROJECT_ROOT / 'experiments/phase4/.../latest_checkpoint.pt')
 
     RESUME_PATH = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260426_143604/latest_checkpoint.pt'
-    RESET_OPTIMIZER = False # True, если нужно сбросить оптимизатор и начать с 0 эпохи
+    RESET_OPTIMIZER = True # True, если нужно сбросить оптимизатор и начать с 0 эпохи
 
     # =================================================================
 
