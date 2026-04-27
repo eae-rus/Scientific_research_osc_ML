@@ -82,7 +82,7 @@ def get_default_config(mode: str = 'smoke') -> dict:
         'val_stride_multiplier': 4,      # Во сколько раз реже брать окна на валидации
         'batch_size': 32,
         'val_batch_size': 64,
-        'num_workers': 4,  # параллельная предподготовка (FFT) в фоне
+        'num_workers': 8,  # параллельная предподготовка (FFT) в фоне
         'val_split': 0.2,  # 20% файлов на валидацию
 
         # Модель (значения по умолчанию = light, переопределяются через --complexity)

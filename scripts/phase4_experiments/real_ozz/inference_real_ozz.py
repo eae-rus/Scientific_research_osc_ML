@@ -380,6 +380,7 @@ def run_inference_on_real_ozz(
     threshold: float = 0.5,
     auto_crop: bool = True,
     buses_filter: list[str] | None = None,
+    mask_neutral: bool = True,
 ) -> dict:
     """Inference на реальных COMTRADE файлах.
 
@@ -391,7 +392,7 @@ def run_inference_on_real_ozz(
         threshold: порог бин. классификации
         auto_crop: автокроп вокруг обнаруженного ОЗЗ
         buses_filter: ограничить секции (например ['1'])
-
+        mask_neutral: маскировать IN/UN (без нулевых последовательностей)
     Returns:
         dict со статистикой
     """
@@ -401,6 +402,8 @@ def run_inference_on_real_ozz(
     ckpt_path = Path(checkpoint_path)
     model, config = load_model_from_checkpoint(ckpt_path, device)
     print(f"Модель: {config.get('model_type')}")
+    if mask_neutral:
+        print("Режим: IN/UN маскированы (=0) — без нулевых последовательностей")
 
     # Папка вывода
     if output_dir is None:
@@ -483,8 +486,15 @@ def run_inference_on_real_ozz(
                   f"(N={raw_display.shape[0]}, Fs={fs:.0f}, {label})")
 
             # Inference — на НОРМАЛИЗОВАННЫХ данных
+            raw_for_model = raw_model
+            if mask_neutral:
+                # Маскируем IN (idx=3) и UN (idx=7) — в реальных осциллограммах
+                # эти каналы часто не записываются или содержат мусор
+                raw_for_model = raw_model.copy()
+                raw_for_model[:, 3] = 0.0   # IN
+                raw_for_model[:, 7] = 0.0   # UN
             probs, cov = mark_real_oscillogram(
-                model, raw_model, config, device, fs=fs,
+                model, raw_for_model, config, device, fs=fs,
             )
 
             # Определяем, есть ли ОЗЗ
@@ -549,6 +559,8 @@ def main():
     parser.add_argument('--threshold', type=float, default=0.5)
     parser.add_argument('--no-crop', action='store_true',
                         help='Не кропить графики вокруг ОЗЗ')
+    parser.add_argument('--no-mask-neutral', action='store_true',
+                        help='Не маскировать IN/UN (по умолчанию обнуляются)')
     parser.add_argument('--bus', type=str, default=None,
                         help='Фильтр секций (например "1,2")')
     args = parser.parse_args()
@@ -563,6 +575,7 @@ def main():
         threshold=args.threshold,
         auto_crop=not args.no_crop,
         buses_filter=buses,
+        mask_neutral=not args.no_mask_neutral,
     )
 
 
@@ -576,13 +589,14 @@ if __name__ == '__main__':
         # РУЧНОЙ РЕЖИМ — отредактируйте константы ниже
         # =====================================================
         # Укажите путь после обучения
-        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260426_143604/latest_checkpoint.pt' 
+        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260427_070956/latest_checkpoint.pt' 
         # Пример: CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_.../best_model.pt'
 
-        SUBSET = 'confirmed'   # 'all' | 'confirmed' | 'false_detection'
-        MAX_FILES = 20         # None = все файлы
+        SUBSET = 'all'         # 'all' | 'confirmed' | 'false_detection'
+        MAX_FILES = None       # None = все файлы
         THRESHOLD = 0.5
         AUTO_CROP = True
+        MASK_NEUTRAL = True    # True = обнулять IN/UN перед inference
 
         if CHECKPOINT is None:
             # Автопоиск
@@ -612,4 +626,5 @@ if __name__ == '__main__':
                 max_files=MAX_FILES,
                 threshold=THRESHOLD,
                 auto_crop=AUTO_CROP,
+                mask_neutral=MASK_NEUTRAL,
             )

@@ -181,17 +181,18 @@ def get_sim_ozz_config() -> dict:
         'num_harmonics': 9,
         'sub_periods': [2, 4, 6, 10],
         'include_symmetric': True,
-        'stride_fraction': 8,              # 1/8 периода (96..100 отсчётов, per-file)
+        'stride_fraction': 8,               # 1/8 периода (96..100 отсчётов, per-file)
         'num_periods_window': 10,           # 10 периодов ≈ 7690 отсчётов
         'use_augmentation': True,           # Аугментация с dropout IN/UN
+        'always_drop_neutral': False,       # True = ВСЕГДА обнулять IN+UN (для доучивания без 0-ых)
         'zone_target_aggregation': 'max',
-        'val_split': 0.2,                  # 80/20
+        'val_split': 0.2,                   # 80/20
         'train_batches_per_epoch': 64,
         'batch_size': 32,
         'val_batch_size': 64,
-        'num_workers': 4,                  # параллельная загрузка + FFT в фоне
+        'num_workers': 8,                   # параллельная загрузка + FFT в фоне
         'prefetch_factor': 2,               # кол-во батчей на воркер в очереди
-        'cache_size': 500,                 # LRU-кэш файлов (делится между воркерами)
+        'cache_size': 500,                  # LRU-кэш файлов (делится между воркерами)
 
         # Модель
         'model_type': 'PhysicalKANTransformer',
@@ -464,6 +465,9 @@ def prepare_sim_ozz_dataloaders(
 
     # Аугментация: inversion + phase shuffle + дропаут IN/UN
     train_augmenter = None
+    val_augmenter = None
+    always_drop = config.get('always_drop_neutral', False)
+
     if config.get('use_augmentation', True):
         base_aug = TimeSeriesAugmenter({
             'p_inversion': 0.5,
@@ -472,15 +476,41 @@ def prepare_sim_ozz_dataloaders(
             'p_phase_shuffling': 0.33,
             'p_drop_channel': 0.0,   # дропаут фазных отключен (есть NeutralChannelDropout)
         })
-        neutral_dropout = NeutralChannelDropout(
-            fill_value=0.0,
-            p_all=1.0 / 3,
-            p_drop_in=1.0 / 3,
-            p_drop_in_un=1.0 / 3,
+        if always_drop:
+            # Режим «без нулевых»: IN+UN обнуляются ВСЕГДА (и train, и val)
+            neutral_dropout = NeutralChannelDropout(
+                fill_value=0.0,
+                p_all=0.0,
+                p_drop_in=0.0,
+                p_drop_in_un=1.0,
+            )
+            train_augmenter = CompositeAugmenter(base_aug, neutral_dropout)
+            # Для val: только маскирование IN/UN, без прочих аугментаций
+            val_augmenter = NeutralChannelDropout(
+                fill_value=0.0,
+                p_all=0.0,
+                p_drop_in=0.0,
+                p_drop_in_un=1.0,
+            )
+            print(f"  Аугментация: inversion + scaling + phase_shuffle + "
+                  f"NeutralDropout(ALWAYS drop IN+UN)")
+        else:
+            neutral_dropout = NeutralChannelDropout(
+                fill_value=0.0,
+                p_all=1.0 / 3,
+                p_drop_in=1.0 / 3,
+                p_drop_in_un=1.0 / 3,
+            )
+            train_augmenter = CompositeAugmenter(base_aug, neutral_dropout)
+            print(f"  Аугментация: inversion + scaling + phase_shuffle + "
+                  f"NeutralDropout(1/3 all, 1/3 -IN, 1/3 -IN-UN)")
+    elif always_drop:
+        # Без аугментации, но с маскированием IN/UN
+        train_augmenter = NeutralChannelDropout(
+            fill_value=0.0, p_all=0.0, p_drop_in=0.0, p_drop_in_un=1.0,
         )
-        train_augmenter = CompositeAugmenter(base_aug, neutral_dropout)
-        print(f"  Аугментация: inversion + scaling + phase_shuffle + "
-              f"NeutralDropout(1/3 all, 1/3 -IN, 1/3 -IN-UN)")
+        val_augmenter = train_augmenter
+        print(f"  Аугментация: ТОЛЬКО NeutralDropout(ALWAYS drop IN+UN)")
 
     train_ds = SimOZZLazyDataset(
         file_paths=train_paths,
@@ -491,7 +521,7 @@ def prepare_sim_ozz_dataloaders(
 
     val_ds = SimOZZLazyDataset(
         file_paths=val_paths,
-        augmenter=None,
+        augmenter=val_augmenter,
         verbose=True,
         **ds_kwargs,
     )
@@ -979,6 +1009,12 @@ if __name__ == '__main__':
     MAX_FILES = None            # int или None. Пример: 500 (чтобы проверить на малой выборке)
     USE_REAL_NO_OZZ = True      # True = добавлять 5-й класс "Норма" из реальных осциллограмм (~959 файлов)
 
+    # 4a. Режим «без нулевых последовательностей»
+    # True = ВСЕГДА обнулять IN и UN (и при обучении, и при валидации).
+    # Используйте для доучивания модели, которая будет работать только по фазным каналам.
+    # На inference (inference_real_ozz.py) этот режим включён по умолчанию через mask_neutral=True.
+    ALWAYS_DROP_NEUTRAL = True
+
     # 5. Размер «эпохи» (lazy dataset — полный проход занял бы часы!)
     # train_batches_per_epoch × batch_size элементов делится поровну на 5 классов.
     # 128 батчей × 32 = 4096 элементов, ~819 на класс → ~10 мин/эпоха (зависит от диска)
@@ -988,7 +1024,7 @@ if __name__ == '__main__':
     # 6. Продолжение прерванного обучения
     # Пример: RESUME_PATH = str(PROJECT_ROOT / 'experiments/phase4/.../latest_checkpoint.pt')
 
-    RESUME_PATH = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260426_143604/latest_checkpoint.pt'
+    RESUME_PATH = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260427_070956/latest_checkpoint.pt'
     RESET_OPTIMIZER = True # True, если нужно сбросить оптимизатор и начать с 0 эпохи
 
     # =================================================================
@@ -999,6 +1035,7 @@ if __name__ == '__main__':
     config['batch_size'] = BATCH_SIZE
     config['accumulation_steps'] = ACCUMULATION_STEPS
     config['use_real_no_ozz'] = USE_REAL_NO_OZZ
+    config['always_drop_neutral'] = ALWAYS_DROP_NEUTRAL
     config['train_batches_per_epoch'] = TRAIN_BATCHES_PER_EPOCH
     config['val_batches_per_epoch'] = VAL_BATCHES_PER_EPOCH
     if MAX_FILES is not None:

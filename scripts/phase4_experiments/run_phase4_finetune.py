@@ -85,7 +85,7 @@ def get_finetune_config() -> dict:
         'val_stride_multiplier': 4,       # Во сколько раз реже брать окна на валидации
         'batch_size': 32,
         'val_batch_size': 64,
-        'num_workers': 4,                  # параллельная предподготовка (FFT) в фоне
+        'num_workers': 8,                  # параллельная предподготовка (FFT) в фоне
         'val_split': 0.2,                 # Доля файлов для валидации (0.0–1.0), определяет размер валидационного набора
         'target_level': 'base3',           # 3 класса (Normal = все ниже порога)
 

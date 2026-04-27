@@ -223,12 +223,16 @@ def plot_sim_ozz_marking(
 
 def select_files_per_class(
     file_index: SimOZZFileIndex,
-    per_class: int = 25,
+    per_class: int = 250,
     seed: int = 42,
 ) -> Dict[str, List[FileInfo]]:
-    """Выбирает per_class рандомных файлов для каждого типа ОЗЗ (X=1..4).
+    """Выбирает файлы для каждого типа ОЗЗ, выравнивая по минимальному классу.
 
-    В SimOZZ: X (meta['x']) = 1..4 → {Stable, Petersen, PetersSlepian, Beliakov}.
+    Логика:
+    1. Находим класс с наименьшим числом файлов (min_class_size)
+    2. actual = min(per_class, min_class_size) — per_class является максимумом
+    3. Для минимального класса берём ВСЕ файлы (если их ≤ actual)
+    4. Для остальных — случайные actual файлов
     """
     rng = np.random.RandomState(seed)
     by_class: Dict[str, List[FileInfo]] = defaultdict(list)
@@ -239,12 +243,24 @@ def select_files_per_class(
             arc_name = ARC_TYPES[x - 1]
             by_class[arc_name].append(fi)
 
+    if not by_class:
+        return {}
+
+    # Минимальный класс определяет общее количество
+    min_class_size = min(len(files) for files in by_class.values())
+    actual = min(per_class, min_class_size)
+    print(f"  Минимальный класс: {min_class_size} файлов → берём {actual} из каждого (per_class={per_class})")
+
     selected: Dict[str, List[FileInfo]] = {}
     for cls_name, files in by_class.items():
-        n = min(per_class, len(files))
-        chosen_indices = rng.choice(len(files), size=n, replace=False)
-        selected[cls_name] = [files[i] for i in chosen_indices]
-        print(f"  {cls_name}: {n} файлов (всего доступно: {len(files)})")
+        n = min(actual, len(files))
+        if n >= len(files):
+            # Берём все файлы этого класса
+            selected[cls_name] = list(files)
+        else:
+            chosen_indices = rng.choice(len(files), size=n, replace=False)
+            selected[cls_name] = [files[i] for i in chosen_indices]
+        print(f"  {cls_name}: {len(selected[cls_name])} файлов (всего доступно: {len(files)})")
 
     return selected
 
@@ -350,8 +366,8 @@ def main():
     parser = argparse.ArgumentParser(description='Графики разметки SimOZZ')
     parser.add_argument('--checkpoint', type=str, required=True)
     parser.add_argument('--output-dir', type=str, default=None)
-    parser.add_argument('--per-class', type=int, default=25,
-                        help='Число графиков на класс')
+    parser.add_argument('--per-class', type=int, default=250,
+                        help='Максимум графиков на класс (фактически выравнивается по min классу)')
     parser.add_argument('--threshold', type=float, default=0.5)
     parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args()
@@ -374,7 +390,7 @@ if __name__ == '__main__':
         # =====================================================================
         # РУЧНОЙ ЗАПУСК
         # =====================================================================
-        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260426_143604/latest_checkpoint.pt'
+        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260427_070956/latest_checkpoint.pt'
 
         if CHECKPOINT is None:
             print("Укажите CHECKPOINT.")
@@ -382,6 +398,6 @@ if __name__ == '__main__':
             _ckpt = str(PROJECT_ROOT / CHECKPOINT) if not Path(CHECKPOINT).is_absolute() else CHECKPOINT
             generate_sim_ozz_markings(
                 checkpoint_path=_ckpt,
-                per_class=25,
+                per_class=250,
                 threshold=0.5,
             )
