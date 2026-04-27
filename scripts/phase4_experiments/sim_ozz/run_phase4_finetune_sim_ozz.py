@@ -1017,14 +1017,14 @@ if __name__ == '__main__':
 
     # 5. Размер «эпохи» (lazy dataset — полный проход занял бы часы!)
     # train_batches_per_epoch × batch_size элементов делится поровну на 5 классов.
-    # 128 батчей × 32 = 4096 элементов, ~819 на класс → ~10 мин/эпоха (зависит от диска)
+    # 256 батчей × 32 = 8192 элементов, ~1638 на класс → ~13 мин/эпоха (зависит от диска)
     TRAIN_BATCHES_PER_EPOCH = 256   # Число батчей обучения за эпоху
     VAL_BATCHES_PER_EPOCH = 16      # Число батчей валидации за эпоху
 
     # 6. Продолжение прерванного обучения
     # Пример: RESUME_PATH = str(PROJECT_ROOT / 'experiments/phase4/.../latest_checkpoint.pt')
 
-    RESUME_PATH = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260427_070956/latest_checkpoint.pt'
+    RESUME_PATH = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260427_161925/latest_checkpoint.pt'
     RESET_OPTIMIZER = True # True, если нужно сбросить оптимизатор и начать с 0 эпохи
 
     # =================================================================
