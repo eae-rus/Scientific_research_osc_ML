@@ -63,6 +63,7 @@ from osc_tools.ml.augmented_dataset import (
 from osc_tools.ml.augmentation import (
     TimeSeriesAugmenter,
     NeutralChannelDropout,
+    PhaseCurrentDropout,
     CompositeAugmenter,
 )
 from osc_tools.ml.simulated_ozz_dataset import (
@@ -476,6 +477,14 @@ def prepare_sim_ozz_dataloaders(
             'p_phase_shuffling': 0.33,
             'p_drop_channel': 0.0,   # дропаут фазных отключен (есть NeutralChannelDropout)
         })
+        # Дропаут одной фазы тока (имитация отсутствующего ТТ)
+        phase_dropout = PhaseCurrentDropout(
+            fill_value=0.0,
+            p_all=0.45,
+            p_drop_b=0.45,
+            p_drop_a=0.05,
+            p_drop_c=0.05,
+        )
         if always_drop:
             # Режим «без нулевых»: IN+UN обнуляются ВСЕГДА (и train, и val)
             neutral_dropout = NeutralChannelDropout(
@@ -484,7 +493,7 @@ def prepare_sim_ozz_dataloaders(
                 p_drop_in=0.0,
                 p_drop_in_un=1.0,
             )
-            train_augmenter = CompositeAugmenter(base_aug, neutral_dropout)
+            train_augmenter = CompositeAugmenter(base_aug, phase_dropout, neutral_dropout)
             # Для val: только маскирование IN/UN, без прочих аугментаций
             val_augmenter = NeutralChannelDropout(
                 fill_value=0.0,
@@ -493,6 +502,7 @@ def prepare_sim_ozz_dataloaders(
                 p_drop_in_un=1.0,
             )
             print(f"  Аугментация: inversion + scaling + phase_shuffle + "
+                  f"PhaseCurrentDropout(45%B/5%A/5%C) + "
                   f"NeutralDropout(ALWAYS drop IN+UN)")
         else:
             neutral_dropout = NeutralChannelDropout(
@@ -501,8 +511,9 @@ def prepare_sim_ozz_dataloaders(
                 p_drop_in=1.0 / 3,
                 p_drop_in_un=1.0 / 3,
             )
-            train_augmenter = CompositeAugmenter(base_aug, neutral_dropout)
+            train_augmenter = CompositeAugmenter(base_aug, phase_dropout, neutral_dropout)
             print(f"  Аугментация: inversion + scaling + phase_shuffle + "
+                  f"PhaseCurrentDropout(45%B/5%A/5%C) + "
                   f"NeutralDropout(1/3 all, 1/3 -IN, 1/3 -IN-UN)")
     elif always_drop:
         # Без аугментации, но с маскированием IN/UN
@@ -1013,7 +1024,7 @@ if __name__ == '__main__':
     # True = ВСЕГДА обнулять IN и UN (и при обучении, и при валидации).
     # Используйте для доучивания модели, которая будет работать только по фазным каналам.
     # На inference (inference_real_ozz.py) этот режим включён по умолчанию через mask_neutral=True.
-    ALWAYS_DROP_NEUTRAL = True
+    ALWAYS_DROP_NEUTRAL = False
 
     # 5. Размер «эпохи» (lazy dataset — полный проход занял бы часы!)
     # train_batches_per_epoch × batch_size элементов делится поровну на 5 классов.
@@ -1024,7 +1035,7 @@ if __name__ == '__main__':
     # 6. Продолжение прерванного обучения
     # Пример: RESUME_PATH = str(PROJECT_ROOT / 'experiments/phase4/.../latest_checkpoint.pt')
 
-    RESUME_PATH = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260427_161925/latest_checkpoint.pt'
+    RESUME_PATH = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260427_215035/latest_checkpoint.pt'
     RESET_OPTIMIZER = True # True, если нужно сбросить оптимизатор и начать с 0 эпохи
 
     # =================================================================

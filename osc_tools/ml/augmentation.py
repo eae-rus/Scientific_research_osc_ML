@@ -224,3 +224,72 @@ class CompositeAugmenter:
         for aug in self.augmenters:
             x = aug(x)
         return x
+
+
+class PhaseCurrentDropout:
+    """Аугментация для имитации отсутствия одной фазы тока (физически не подключён ТТ).
+
+    Применяется **до FFT**, на сырых данных (T, 8) или (B, T, 8).
+    Каналы: [IA, IB, IC, IN, UA, UB, UC, UN] — индексы 0, 1, 2 (фазные токи).
+
+    В реальных осциллограммах часто фаза B (индекс 1) отсутствует
+    (физически не подключена → на канале чистый шум).
+    Это ломает вычисление симметричных составляющих и ухудшает inference.
+
+    Режимы (выбираются случайно):
+      - **all**: все 3 фазы тока присутствуют (p_all).
+      - **drop_b**: IB (индекс 1) зануляется (p_drop_b).
+      - **drop_a**: IA (индекс 0) зануляется (p_drop_a).
+      - **drop_c**: IC (индекс 2) зануляется (p_drop_c).
+    """
+
+    IDX_IA: int = 0
+    IDX_IB: int = 1
+    IDX_IC: int = 2
+
+    def __init__(
+        self,
+        fill_value: float = 0.0,
+        p_all: float = 0.45,
+        p_drop_b: float = 0.45,
+        p_drop_a: float = 0.05,
+        p_drop_c: float = 0.05,
+    ) -> None:
+        total = p_all + p_drop_b + p_drop_a + p_drop_c
+        self.p_all = p_all / total
+        self.p_drop_b = p_drop_b / total
+        self.p_drop_a = p_drop_a / total
+        # p_drop_c = остаток
+        self.fill_value = fill_value
+
+    def __call__(
+        self, x: Union[np.ndarray, torch.Tensor],
+    ) -> Union[np.ndarray, torch.Tensor]:
+        is_torch = isinstance(x, torch.Tensor)
+        rnd = float(torch.rand(1)) if is_torch else float(np.random.rand())
+
+        # all — без изменений
+        if rnd < self.p_all:
+            return x
+
+        if is_torch:
+            x = x.clone()
+        else:
+            x = x.copy()
+
+        rnd -= self.p_all
+
+        # Выбираем индекс фазы для зануления
+        if rnd < self.p_drop_b:
+            drop_idx = self.IDX_IB
+        elif rnd < self.p_drop_b + self.p_drop_a:
+            drop_idx = self.IDX_IA
+        else:
+            drop_idx = self.IDX_IC
+
+        if x.ndim == 2:
+            x[:, drop_idx] = self.fill_value
+        elif x.ndim == 3:
+            x[:, :, drop_idx] = self.fill_value
+
+        return x
