@@ -516,7 +516,7 @@ if __name__ == '__main__':
     if len(_sys.argv) > 1:
         main()
     else:
-        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260426_143604/latest_checkpoint.pt'
+        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260428_174217/latest_checkpoint.pt'
         if CHECKPOINT is None:
             exp_root = PROJECT_ROOT / 'experiments' / 'phase4'
             sim_dirs = sorted(
