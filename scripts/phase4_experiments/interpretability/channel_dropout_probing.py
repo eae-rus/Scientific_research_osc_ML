@@ -360,8 +360,7 @@ def run_probing(
 
     # 6) Сохранение
     if output_dir is None:
-        ckpt_dir = Path(checkpoint_path).parent
-        output_dir = str(ckpt_dir / 'interpretability')
+        output_dir = str(PROJECT_ROOT / 'reports' / 'phase4' / 'interpretability')
     out_path = Path(output_dir)
     out_path.mkdir(parents=True, exist_ok=True)
 

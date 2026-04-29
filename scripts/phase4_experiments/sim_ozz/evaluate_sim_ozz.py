@@ -373,7 +373,7 @@ def evaluate_sim_ozz(
     print(f"\n  Итого: {preds_3d.shape[0]:,} окон за {elapsed:.1f}с "
           f"({preds_3d.shape[0]/max(elapsed,0.01):.0f} окон/с)")
 
-    preds_window = preds_3d.mean(axis=1)
+    preds_window = preds_3d.max(axis=1)     # max по зонам: «есть ли ОЗЗ в окне?»
     targets_window = targets_3d.max(axis=1)
     B, T, C = preds_3d.shape
     preds_zone = preds_3d.reshape(-1, C)
@@ -437,7 +437,8 @@ def evaluate_sim_ozz(
     per_file_total = len(per_file_stats)
     for fstats in per_file_stats.values():
         s, e = fstats['idx_start'], fstats['idx_end']
-        pred_any = (preds_window[s:e].mean(axis=0) >= PREDICTION_THRESHOLD).astype(int)
+        # max по окнам файла: «есть ли ОЗЗ хотя бы в одном окне?»
+        pred_any = (preds_window[s:e].max(axis=0) >= PREDICTION_THRESHOLD).astype(int)
         target_any = (targets_window[s:e].max(axis=0) >= 0.5).astype(int)
         if np.array_equal(pred_any, target_any):
             per_file_correct += 1
@@ -452,7 +453,7 @@ def evaluate_sim_ozz(
     metrics['latency_ms'] = latency_ms
 
     if save_plots:
-        plot_dir = PROJECT_ROOT / 'reports' / 'sim_ozz_eval'
+        plot_dir = PROJECT_ROOT / 'reports' / 'phase4' / 'sim_ozz_eval'
         plot_dir.mkdir(parents=True, exist_ok=True)
         print(f"\nГрафики -> {plot_dir}")
         preds_bin = (preds_window >= PREDICTION_THRESHOLD).astype(np.int32)
@@ -481,7 +482,7 @@ def evaluate_sim_ozz(
         'per_file_summary': {'total': per_file_total, 'accuracy': file_accuracy},
         'config': {k: v for k, v in config.items() if not k.startswith('_')},
     }
-    report_dir = PROJECT_ROOT / 'reports' / 'sim_ozz_eval'
+    report_dir = PROJECT_ROOT / 'reports' / 'phase4' / 'sim_ozz_eval'
     report_dir.mkdir(parents=True, exist_ok=True)
     report_path = report_dir / 'sim_ozz_evaluation.json'
     with open(report_path, 'w', encoding='utf-8') as f:

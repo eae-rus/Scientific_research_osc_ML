@@ -700,9 +700,9 @@ C:/ProgramData/anaconda3/Scripts/conda.exe run -p C:\ProgramData\anaconda3 --no-
 ```
 
 **Что получим:**
-- `{exp_dir}/interpretability/channel_dropout_probing.json` — ΔF1 для каждой группы
-- `{exp_dir}/interpretability/channel_dropout_importance.png` — ранжированный bar chart
-- `{exp_dir}/interpretability/channel_dropout_heatmap.png` — heatmap per-class
+- `reports/phase4/interpretability/channel_dropout_probing.json` — ΔF1 для каждой группы
+- `reports/phase4/interpretability/channel_dropout_importance.png` — ранжированный bar chart
+- `reports/phase4/interpretability/channel_dropout_heatmap.png` — heatmap per-class
 
 ### 15.5 Шаг 5: Gradient Attribution (saliency maps)
 
@@ -713,10 +713,10 @@ C:/ProgramData/anaconda3/Scripts/conda.exe run -p C:\ProgramData\anaconda3 --no-
 ```
 
 **Что получим:**
-- `{exp_dir}/interpretability/gradient_attribution.json` — ТОП-20 каналов per-class
-- `{exp_dir}/interpretability/gradient_attribution_arrays.npz` — полные массивы (220×72 per-class)
-- `{exp_dir}/interpretability/gradient_signal_heatmap.png` — важность 8 сигналов
-- `{exp_dir}/interpretability/gradient_temporal_heatmap.png` — ТОП-30 каналов × 72 зоны
+- `reports/phase4/interpretability/gradient_attribution.json` — ТОП-20 каналов per-class
+- `reports/phase4/interpretability/gradient_attribution_arrays.npz` — полные массивы (220×72 per-class)
+- `reports/phase4/interpretability/gradient_signal_heatmap.png` — важность 8 сигналов
+- `reports/phase4/interpretability/gradient_temporal_heatmap.png` — ТОП-30 каналов × 72 зоны
 
 ### 15.6 Порядок запуска (рекомендуемый)
 
@@ -823,11 +823,24 @@ experiments/phase4/sim_ozz_finetune_<model>_<timestamp>/
 ├── config.json                              # Конфигурация обучения
 ├── split.json                               # Train/val split
 ├── training_log.jsonl                       # Метрики по эпохам
-├── best_model.pt                            # Лучшая модель
-├── eval_plots/                              # Оценка на SimOZZ (§15.1)
+└── best_model.pt                            # Лучшая модель
+
+reports/phase4/
+├── sim_ozz_eval/                            # Оценка на SimOZZ (§15.1)
+│   ├── sim_ozz_evaluation.json
 │   ├── confusion_matrix.png
 │   ├── roc_curves.png
 │   └── prob_distributions.png
+├── real_ozz_inference/                      # Inference графики (§15.2)
+│   ├── confirmed_ozz/*.png
+│   ├── false_detection/*.png
+│   └── inference_stats.json
+├── real_ozz_statistics/                     # Статистика (§15.3)
+│   ├── real_ozz_statistics.json              # Агрегированная
+│   ├── per_file_statistics.json              # Per-file
+│   ├── confidence_distributions.png
+│   ├── detection_pie.png
+│   └── per_class_detection.png
 └── interpretability/                        # Интерпретируемость (§15.4-15.5)
     ├── channel_dropout_probing.json
     ├── channel_dropout_importance.png
@@ -836,16 +849,4 @@ experiments/phase4/sim_ozz_finetune_<model>_<timestamp>/
     ├── gradient_attribution_arrays.npz
     ├── gradient_signal_heatmap.png
     └── gradient_temporal_heatmap.png
-
-reports/phase4/
-├── real_ozz_inference/                      # Inference графики (§15.2)
-│   ├── confirmed_ozz/*.png
-│   ├── false_detection/*.png
-│   └── inference_stats.json
-└── real_ozz_statistics/                     # Статистика (§15.3)
-    ├── real_ozz_statistics.json              # Агрегированная
-    ├── per_file_statistics.json              # Per-file
-    ├── confidence_distributions.png
-    ├── detection_pie.png
-    └── per_class_detection.png
 ```
