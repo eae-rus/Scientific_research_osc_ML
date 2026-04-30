@@ -569,4 +569,49 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    import sys as _sys
+
+    if len(_sys.argv) > 1:
+        main()
+    else:
+        # =====================================================
+        # РУЧНОЙ РЕЖИМ — отредактируйте константы ниже
+        # =====================================================
+        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260428_174217/latest_checkpoint.pt'
+        # Пример: CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_.../best_model.pt'
+
+        MAX_FILES = None        # None = все файлы
+        THRESHOLD = 0.5
+        EXPANSION_ZONES = 16    # ~1 период при stride_fraction=8
+        MASK_NEUTRAL = True     # True = обнулять IN/UN перед inference
+
+        if CHECKPOINT is None:
+            # Автопоиск последнего sim_ozz эксперимента
+            exp_root = PROJECT_ROOT / 'experiments' / 'phase4'
+            sim_dirs = sorted(
+                [d for d in exp_root.iterdir()
+                 if d.is_dir() and 'sim_ozz' in d.name],
+                key=lambda d: d.stat().st_mtime,
+            ) if exp_root.exists() else []
+
+            if sim_dirs:
+                latest = sim_dirs[-1]
+                best = latest / 'best_model.pt'
+                if not best.exists():
+                    best = latest / 'latest_checkpoint.pt'
+                if best.exists():
+                    CHECKPOINT = str(best)
+                    print(f"Автоматически найден чекпоинт: {CHECKPOINT}")
+
+        if CHECKPOINT is None:
+            print("Нет чекпоинта. Укажите CHECKPOINT или передайте --checkpoint.")
+        else:
+            _ckpt = (str(PROJECT_ROOT / CHECKPOINT)
+                     if not Path(CHECKPOINT).is_absolute() else CHECKPOINT)
+            collect_statistics(
+                checkpoint_path=_ckpt,
+                max_files=MAX_FILES,
+                threshold=THRESHOLD,
+                expansion_zones=EXPANSION_ZONES,
+                mask_neutral=MASK_NEUTRAL,
+            )

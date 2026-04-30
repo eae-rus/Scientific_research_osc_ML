@@ -249,18 +249,21 @@ def run_inference(
     loader: DataLoader,
     device: torch.device,
     mask_channels: List[int] | None = None,
+    verbose: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Прогоняет val данные через модель, опционально зануляя каналы.
 
     Args:
         mask_channels: список индексов каналов для зануления (из 220).
                        None = без маскирования.
+        verbose: показывать прогресс по батчам.
 
     Returns:
         preds (N_zones, C), targets (N_zones, C)
     """
     all_preds, all_targets = [], []
-    for batch_x, batch_y in loader:
+    n_batches = len(loader)
+    for batch_idx, (batch_x, batch_y) in enumerate(loader):
         # batch_x: (B, C=220, T=72), batch_y: (B, T=72, n_classes)
         batch_x = batch_x.to(device)
         if mask_channels:
@@ -274,6 +277,9 @@ def run_inference(
         all_preds.append(probs.reshape(-1, C))
         all_targets.append(batch_y.numpy().reshape(-1, C))
 
+        if verbose and (batch_idx + 1) % 10 == 0:
+            print(f"    batch {batch_idx + 1}/{n_batches}", end='\r')
+
     return np.concatenate(all_preds), np.concatenate(all_targets)
 
 
@@ -281,8 +287,9 @@ def run_inference(
 def run_probing(
     checkpoint_path: str,
     max_files: int | None = None,
-    batch_size: int = 64,
+    batch_size: int = 256,
     threshold: float = 0.5,
+    num_workers: int = 8,
     output_dir: str | None = None,
 ) -> dict:
     """Запуск Channel Dropout Probing."""
@@ -298,12 +305,15 @@ def run_probing(
     print(f"Val dataset: {len(val_ds)} осциллограмм")
     loader = DataLoader(
         val_ds, batch_size=batch_size, shuffle=False,
-        num_workers=0, pin_memory=(device.type == 'cuda'),
+        num_workers=num_workers,
+        pin_memory=(device.type == 'cuda'),
+        persistent_workers=(num_workers > 0),
     )
 
     # 3) Baseline (без маскирования)
     print("\n[Baseline] Inference без маскирования...")
-    preds_base, targets = run_inference(model, loader, device, mask_channels=None)
+    preds_base, targets = run_inference(model, loader, device,
+                                        mask_channels=None, verbose=True)
     f1_base, macro_base = compute_per_class_f1(preds_base, targets, threshold)
     print(f"  Baseline Macro-F1: {macro_base:.4f}")
     for i, name in enumerate(CLASS_NAMES):
@@ -311,6 +321,7 @@ def run_probing(
 
     # 4) Прогон по группам
     groups = build_channel_groups()
+    n_groups = len(groups)
     results = {
         'baseline': {
             'macro_f1': macro_base,
@@ -319,8 +330,9 @@ def run_probing(
         'groups': {},
     }
 
-    print(f"\nПрогон {len(groups)} групп каналов...")
-    for group_name, ch_indices in sorted(groups.items()):
+    print(f"\nПрогон {n_groups} групп каналов...")
+    t_start = time.time()
+    for g_idx, (group_name, ch_indices) in enumerate(sorted(groups.items())):
         t0 = time.time()
         preds_masked, _ = run_inference(model, loader, device, mask_channels=ch_indices)
         f1_masked, macro_masked = compute_per_class_f1(preds_masked, targets, threshold)
@@ -339,9 +351,12 @@ def run_probing(
             'delta_per_class_f1': delta_per_class,
         }
 
-        print(f"  [{group_name}] ({len(ch_indices)} ch) "
+        elapsed = time.time() - t_start
+        done = g_idx + 1
+        eta = elapsed / done * (n_groups - done) if done > 0 else 0
+        print(f"  [{done}/{n_groups}] {group_name:40s} ({len(ch_indices):3d} ch) "
               f"Macro-F1={macro_masked:.4f} (Δ={delta_macro:+.4f}) "
-              f"[{dt:.1f}s]")
+              f"[{dt:.1f}s] ETA {eta:.0f}s")
 
     # 5) Сортируем по важности (delta macro F1)
     ranked = sorted(
@@ -430,8 +445,9 @@ def main():
                         help='Путь к чекпоинту модели (.pt)')
     parser.add_argument('--max-files', type=int, default=None,
                         help='Макс. число val-файлов (для быстрого теста)')
-    parser.add_argument('--batch-size', type=int, default=64)
+    parser.add_argument('--batch-size', type=int, default=256)
     parser.add_argument('--threshold', type=float, default=0.5)
+    parser.add_argument('--num-workers', type=int, default=8)
     parser.add_argument('--output-dir', type=str, default=None)
     args = parser.parse_args()
 
@@ -440,9 +456,53 @@ def main():
         max_files=args.max_files,
         batch_size=args.batch_size,
         threshold=args.threshold,
+        num_workers=args.num_workers,
         output_dir=args.output_dir,
     )
 
 
 if __name__ == '__main__':
-    main()
+    import sys as _sys
+
+    if len(_sys.argv) > 1:
+        main()
+    else:
+        # =====================================================
+        # РУЧНОЙ РЕЖИМ — отредактируйте константы ниже
+        # =====================================================
+        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260428_174217/latest_checkpoint.pt'
+        # Пример: CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_.../best_model.pt'
+
+        MAX_FILES = 200         # 200 файлов, сбалансировано по классам
+        BATCH_SIZE = 256
+        THRESHOLD = 0.5
+
+        if CHECKPOINT is None:
+            # Автопоиск последнего sim_ozz эксперимента
+            exp_root = PROJECT_ROOT / 'experiments' / 'phase4'
+            sim_dirs = sorted(
+                [d for d in exp_root.iterdir()
+                 if d.is_dir() and 'sim_ozz' in d.name],
+                key=lambda d: d.stat().st_mtime,
+            ) if exp_root.exists() else []
+
+            if sim_dirs:
+                latest = sim_dirs[-1]
+                best = latest / 'best_model.pt'
+                if not best.exists():
+                    best = latest / 'latest_checkpoint.pt'
+                if best.exists():
+                    CHECKPOINT = str(best)
+                    print(f"Автоматически найден чекпоинт: {CHECKPOINT}")
+
+        if CHECKPOINT is None:
+            print("Нет чекпоинта. Укажите CHECKPOINT или передайте --checkpoint.")
+        else:
+            _ckpt = (str(PROJECT_ROOT / CHECKPOINT)
+                     if not Path(CHECKPOINT).is_absolute() else CHECKPOINT)
+            run_probing(
+                checkpoint_path=_ckpt,
+                max_files=MAX_FILES,
+                batch_size=BATCH_SIZE,
+                threshold=THRESHOLD,
+            )

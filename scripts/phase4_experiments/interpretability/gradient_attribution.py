@@ -64,6 +64,9 @@ def compute_gradient_attribution(
 
     model.eval()
 
+    import time as _time
+    t_start = _time.time()
+
     for batch_idx, (batch_x, batch_y) in enumerate(loader):
         # batch_x: (B, C=220, T=72), batch_y: (B, T=72, num_classes)
         batch_x = batch_x.to(device).requires_grad_(True)
@@ -87,21 +90,25 @@ def compute_gradient_attribution(
             attr = np.abs(grad * x_val)                   # |grad × input|
 
             y_cls = batch_y[:, :, c].numpy()  # (B, T)
+            masks = y_cls > 0.5                  # (B, T) bool
 
-            # Per-sample, per-zone — суммируем только где target=1
-            for b in range(B):
-                mask = y_cls[b] > 0.5  # (T,)
-                n_pos = mask.sum()
-                if n_pos == 0:
-                    continue
-                # По каналам (усреднение по зонам)
-                sum_attr[c] += attr[b, :, mask].sum(axis=1)  # (220,)
-                # Temporal — усредняем per-zone
-                sum_attr_temporal[c, :, mask] += attr[b, :, mask]
-                counts[c] += n_pos
+            n_pos_total = int(masks.sum())
+            if n_pos_total > 0:
+                # Векторизованно: broadcast mask (B,1,T) × attr (B,220,T)
+                masked_attr = attr * masks[:, np.newaxis, :]  # (B, 220, T)
+                # Per-channel: сумма по батчу и зонам
+                sum_attr[c] += masked_attr.sum(axis=(0, 2))   # (220,)
+                # Temporal: сумма по батчу (per-zone сохраняется)
+                sum_attr_temporal[c] += masked_attr.sum(axis=0)  # (220, T)
+                counts[c] += n_pos_total
 
-        if (batch_idx + 1) % 20 == 0:
-            print(f"  Batch {batch_idx + 1}/{len(loader)}")
+        if (batch_idx + 1) % 5 == 0 or (batch_idx + 1) == len(loader):
+            elapsed = _time.time() - t_start
+            done = batch_idx + 1
+            eta = elapsed / done * (len(loader) - done) if done > 0 else 0
+            print(f"  Batch {done}/{len(loader)}  "
+                  f"[{elapsed:.0f}s elapsed, ETA {eta:.0f}s]", end='\r')
+    print()  # новая строка после \r
 
     # Нормализация
     for c in range(num_classes):
@@ -138,7 +145,8 @@ def aggregate_by_signal(
 def run_gradient_attribution(
     checkpoint_path: str,
     max_files: int | None = None,
-    batch_size: int = 32,
+    batch_size: int = 64,
+    num_workers: int = 8,
     output_dir: str | None = None,
 ) -> dict:
     """Запуск Gradient Attribution."""
@@ -154,7 +162,9 @@ def run_gradient_attribution(
     print(f"Val dataset: {len(val_ds)} осциллограмм")
     loader = DataLoader(
         val_ds, batch_size=batch_size, shuffle=False,
-        num_workers=0, pin_memory=False,
+        num_workers=num_workers,
+        pin_memory=(device.type == 'cuda'),
+        persistent_workers=(num_workers > 0),
     )
 
     # 3) Gradient Attribution
@@ -289,7 +299,8 @@ def main():
     parser = argparse.ArgumentParser(description='Gradient Attribution')
     parser.add_argument('--checkpoint', type=str, required=True)
     parser.add_argument('--max-files', type=int, default=None)
-    parser.add_argument('--batch-size', type=int, default=32)
+    parser.add_argument('--batch-size', type=int, default=64)
+    parser.add_argument('--num-workers', type=int, default=8)
     parser.add_argument('--output-dir', type=str, default=None)
     args = parser.parse_args()
 
@@ -297,9 +308,51 @@ def main():
         checkpoint_path=args.checkpoint,
         max_files=args.max_files,
         batch_size=args.batch_size,
+        num_workers=args.num_workers,
         output_dir=args.output_dir,
     )
 
 
 if __name__ == '__main__':
-    main()
+    import sys as _sys
+
+    if len(_sys.argv) > 1:
+        main()
+    else:
+        # =====================================================
+        # РУЧНОЙ РЕЖИМ — отредактируйте константы ниже
+        # =====================================================
+        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260428_174217/latest_checkpoint.pt'
+        # Пример: CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_.../best_model.pt'
+
+        MAX_FILES = 200         # 200 файлов, сбалансировано по классам
+        BATCH_SIZE = 256
+
+        if CHECKPOINT is None:
+            # Автопоиск последнего sim_ozz эксперимента
+            exp_root = PROJECT_ROOT / 'experiments' / 'phase4'
+            sim_dirs = sorted(
+                [d for d in exp_root.iterdir()
+                 if d.is_dir() and 'sim_ozz' in d.name],
+                key=lambda d: d.stat().st_mtime,
+            ) if exp_root.exists() else []
+
+            if sim_dirs:
+                latest = sim_dirs[-1]
+                best = latest / 'best_model.pt'
+                if not best.exists():
+                    best = latest / 'latest_checkpoint.pt'
+                if best.exists():
+                    CHECKPOINT = str(best)
+                    print(f"Автоматически найден чекпоинт: {CHECKPOINT}")
+
+        if CHECKPOINT is None:
+            print("Нет чекпоинта. Укажите CHECKPOINT или передайте --checkpoint.")
+        else:
+            _ckpt = (str(PROJECT_ROOT / CHECKPOINT)
+                     if not Path(CHECKPOINT).is_absolute() else CHECKPOINT)
+            run_gradient_attribution(
+                checkpoint_path=_ckpt,
+                max_files=MAX_FILES,
+                batch_size=BATCH_SIZE,
+            )
