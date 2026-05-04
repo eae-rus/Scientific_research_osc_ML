@@ -239,6 +239,9 @@ class PhysicalKANTransformer(BaseModel):
         use_angle_gate: включить DirectionalRelayGate в Stem и FFN (по умолч. True)
         use_mixed_layer_norm: True → стандартный LayerNorm, False → AmpOnlyLayerNorm
         cls_head_type: тип классификационной головы ('kan'|'mlp'|'linear')
+        ffn_type: тип FFN в encoder ('physical_kan'|'kan'|'mlp').
+            'mlp' используется для baseline без KAN при сохранении физического Stem.
+        disable_stem_kan: True → заменить KAN в PhysicalStem на линейный fallback.
         num_future_zones: число будущих зон для авторегрессионного предсказания
             (0 → без future head). Модель предсказывает future зоны, НЕ видя
             их данные — через cross-attention к encoder output.
@@ -266,6 +269,8 @@ class PhysicalKANTransformer(BaseModel):
         use_angle_gate: bool = True,
         use_mixed_layer_norm: bool = False,
         cls_head_type: str = 'kan',
+        ffn_type: str | None = None,
+        disable_stem_kan: bool = False,
         num_future_zones: int = 0,
         dropout: float = 0.1,
         max_seq_len: int = 128,
@@ -292,6 +297,7 @@ class PhysicalKANTransformer(BaseModel):
             use_angle_gate=use_angle_gate,
             use_layer_norm=use_mixed_layer_norm,
             dropout=dropout,
+            disable_kan=disable_stem_kan,
         )
 
         # --- 3. Positional Encoding ---
@@ -300,6 +306,10 @@ class PhysicalKANTransformer(BaseModel):
         )
 
         # --- 4. Transformer Encoder (Physical KAN-FFN + ComplexMHA) ---
+        if ffn_type is None:
+            ffn_type = 'physical_kan' if use_physical_ffn else 'kan'
+        self.ffn_type = ffn_type
+
         self.encoder_blocks = nn.ModuleList()
         for _ in range(num_layers):
             complex_attn = ComplexMultiheadAttention(
@@ -307,7 +317,7 @@ class PhysicalKANTransformer(BaseModel):
                 num_heads=num_heads,
                 dropout=dropout,
             )
-            if use_physical_ffn:
+            if ffn_type == 'physical_kan':
                 ffn = PhysicalKANFeedForward(
                     d_model=d_model,
                     d_ff=d_ff,
@@ -316,13 +326,21 @@ class PhysicalKANTransformer(BaseModel):
                     use_angle_gate=use_angle_gate,
                     dropout=dropout,
                 )
-            else:
+            elif ffn_type == 'kan':
                 ffn = KANFeedForward(
                     d_model=d_model,
                     d_ff=d_ff,
                     kan_grid_size=kan_grid_size,
                     dropout=dropout,
                 )
+            elif ffn_type == 'mlp':
+                ffn = MLPFeedForward(
+                    d_model=d_model,
+                    d_ff=d_ff,
+                    dropout=dropout,
+                )
+            else:
+                raise ValueError(f"Неизвестный ffn_type: {ffn_type}")
             block = TransformerEncoderBlock(
                 d_model=d_model,
                 num_heads=num_heads,
@@ -441,6 +459,24 @@ class PhysicalKANTransformer(BaseModel):
             result['classify'] = cls_out
 
         return result
+
+
+class PhysicalMLPTransformer(PhysicalKANTransformer):
+    """Физически ориентированный Transformer без KAN-блоков.
+
+    Используется как baseline для отделения вклада KAN от вклада физической
+    структуры входного Stem, комплексно-подобного attention и полярного
+    представления. Отличия от PhysicalKANTransformer:
+    - KAN в PhysicalStem заменён линейным fallback;
+    - FFN в encoder заменён на MLPFeedForward;
+    - классификационная голова по умолчанию MLP.
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
+        kwargs['disable_stem_kan'] = True
+        kwargs['ffn_type'] = 'mlp'
+        kwargs.setdefault('cls_head_type', 'mlp')
+        super().__init__(*args, **kwargs)
 
 
 class BaselineTransformer(BaseModel):

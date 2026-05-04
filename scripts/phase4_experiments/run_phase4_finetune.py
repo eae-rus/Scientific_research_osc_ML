@@ -35,7 +35,9 @@ from tqdm.auto import tqdm
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from osc_tools.ml.models.transformer import PhysicalKANTransformer, BaselineTransformer
+from osc_tools.ml.models.transformer import (
+    PhysicalKANTransformer, PhysicalMLPTransformer, BaselineTransformer,
+)
 from osc_tools.ml.precomputed_dataset import PrecomputedDataset
 from osc_tools.ml.augmented_dataset import (
     AugmentedSpectralDataset, compute_num_channels, compute_stride, SAMPLES_PER_PERIOD,
@@ -164,6 +166,22 @@ def create_model_for_finetune(
             use_angle_gate=config.get('use_angle_gate', True),
             use_mixed_layer_norm=config.get('use_mixed_layer_norm', False),
             cls_head_type=config.get('cls_head_type', 'kan'),
+            num_future_zones=config.get('num_future_zones', 0),
+            dropout=config['dropout'],
+            max_seq_len=config.get('max_seq_len', 128),
+        )
+    elif model_type == 'PhysicalMLPTransformer':
+        model = PhysicalMLPTransformer(
+            num_input_channels=config['num_input_channels'],
+            d_model=config['d_model'],
+            num_heads=config['num_heads'],
+            num_layers=config['num_layers'],
+            num_classes=config['num_classes'],
+            zone_size=config['zone_size'],
+            kan_grid_size=config.get('kan_grid_size', 5),
+            use_angle_gate=config.get('use_angle_gate', True),
+            use_mixed_layer_norm=config.get('use_mixed_layer_norm', False),
+            cls_head_type=config.get('cls_head_type', 'mlp'),
             num_future_zones=config.get('num_future_zones', 0),
             dropout=config['dropout'],
             max_seq_len=config.get('max_seq_len', 128),

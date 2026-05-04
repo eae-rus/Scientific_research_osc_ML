@@ -944,7 +944,7 @@ def finetune_sim_ozz(
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description='Phase 4.5: Simulated_OZZ Fine-tuning')
-    p.add_argument('--model', choices=['PhysicalKANTransformer', 'BaselineTransformer'],
+    p.add_argument('--model', choices=['PhysicalKANTransformer', 'PhysicalMLPTransformer', 'BaselineTransformer'],
                    default='PhysicalKANTransformer')
     p.add_argument('--complexity', choices=['light', 'medium', 'heavy'], default=None)
     p.add_argument('--epochs', type=int, default=None)
@@ -964,6 +964,10 @@ def main() -> None:
     config = get_sim_ozz_config()
 
     config['model_type'] = args.model
+    if args.model == 'BaselineTransformer':
+        config['cls_head_type'] = 'linear'
+    elif args.model == 'PhysicalMLPTransformer':
+        config['cls_head_type'] = 'mlp'
     if args.complexity:
         config.update(COMPLEXITY_LEVELS[args.complexity])
     if args.epochs is not None:
@@ -1004,7 +1008,7 @@ if __name__ == '__main__':
     # sys.exit(0)
 
     # 1. Выбор архитектуры
-    # Доступно: 'PhysicalKANTransformer', 'BaselineTransformer'
+    # Доступно: 'PhysicalKANTransformer', 'PhysicalMLPTransformer', 'BaselineTransformer'
     MODEL_TYPE = 'PhysicalKANTransformer'
 
     # 2. Размер модели (влияет на кол-во параметров и потребление видеопамяти VRAM)
@@ -1042,6 +1046,10 @@ if __name__ == '__main__':
 
     config = get_sim_ozz_config()
     config['model_type'] = MODEL_TYPE
+    if MODEL_TYPE == 'BaselineTransformer':
+        config['cls_head_type'] = 'linear'
+    elif MODEL_TYPE == 'PhysicalMLPTransformer':
+        config['cls_head_type'] = 'mlp'
     config['epochs'] = EPOCHS
     config['batch_size'] = BATCH_SIZE
     config['accumulation_steps'] = ACCUMULATION_STEPS

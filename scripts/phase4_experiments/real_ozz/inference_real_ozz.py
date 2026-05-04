@@ -172,6 +172,7 @@ def mark_real_oscillogram(
     device: torch.device,
     fs: float,
     f_network: float = 50.0,
+    fast_mode: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Разметка реальной осциллограммы скользящим окном (адаптация Fs).
 
@@ -182,6 +183,10 @@ def mark_real_oscillogram(
         device: torch device
         fs: частота дискретизации файла (Гц)
         f_network: промышленная частота (50 Гц)
+        fast_mode: если True, шаг скользящего окна равен размеру окна,
+            а внутренний spectral-stride = fft_window (без перекрытия зон).
+            Ускоряет inference в ~num_periods_window * stride_fraction раз
+            ценой более грубой временной локализации.
 
     Returns:
         (probs, coverage): пообразцовые вероятности и покрытие
@@ -197,10 +202,15 @@ def mark_real_oscillogram(
     num_periods_window = config.get('num_periods_window', 10)
     num_classes = config.get('num_classes', 4)
 
-    stride = max(1, spp // stride_fraction)
     fft_window = spp
     window_size = spp * num_periods_window
-    step = spp  # шаг скользящего окна = 1 период
+    if fast_mode:
+        # Быстрый режим: одно окно — одна разметка целого блока, без перекрытий.
+        stride = fft_window
+        step = window_size
+    else:
+        stride = max(1, spp // stride_fraction)
+        step = spp  # шаг скользящего окна = 1 период
 
     if N < window_size + spp:
         print(f"    Слишком короткая осциллограмма: {N} < {window_size}")
@@ -253,6 +263,121 @@ def mark_real_oscillogram(
 # ---------------------------------------------------------------------------
 # Визуализация
 # ---------------------------------------------------------------------------
+
+def _detect_regions(
+    probs: np.ndarray,
+    fs: float,
+    threshold: float = 0.5,
+    f_network: float = 50.0,
+    margin_periods: int = 10,
+    merge_gap_periods: int = 5,
+) -> list[tuple[int, int]]:
+    """Возвращает список регионов (start, end), где max-вероятность ОЗЗ ≥ threshold.
+
+    Регионы расширяются на ``margin_periods`` периодов в обе стороны
+    и объединяются, если зазор между ними меньше ``merge_gap_periods``.
+    Используется как для построения «зоны интереса» в pseudo-CSV экспорте,
+    так и для подсчёта числа детекций.
+    """
+    spp = round(fs / f_network)
+    margin = margin_periods * spp
+    merge_gap = merge_gap_periods * spp
+    N = len(probs)
+
+    max_prob = np.nanmax(probs, axis=1)
+    detected = (max_prob >= threshold) & ~np.isnan(max_prob)
+    if not np.any(detected):
+        return []
+
+    diffs = np.diff(detected.astype(np.int8))
+    starts = (np.where(diffs == 1)[0] + 1).tolist()
+    ends = (np.where(diffs == -1)[0] + 1).tolist()
+    if detected[0]:
+        starts.insert(0, 0)
+    if detected[-1]:
+        ends.append(N)
+
+    regions = [(max(0, s - margin), min(N, e + margin)) for s, e in zip(starts, ends)]
+    if not regions:
+        return []
+
+    merged: list[tuple[int, int]] = [regions[0]]
+    for s, e in regions[1:]:
+        ps, pe = merged[-1]
+        if s - pe <= merge_gap:
+            merged[-1] = (ps, max(pe, e))
+        else:
+            merged.append((s, e))
+    return merged
+
+
+def _save_pseudo_csv_segments(
+    out_dir: Path,
+    fname: str,
+    bus: str,
+    raw_display: np.ndarray,
+    probs: np.ndarray,
+    coverage: np.ndarray,
+    fs: float,
+    threshold: float,
+    margin_periods: int,
+    merge_gap_periods: int,
+) -> list[dict]:
+    """Сохраняет CSV-сегменты вокруг каждого детектированного региона.
+
+    Структура CSV совместима с обычным CSV-экспортом ComtradeParser
+    (имена сигналов IA..UN), плюс P_*/coverage для удобной перепроверки.
+    Возвращает список метаданных по сегментам.
+    """
+    regions = _detect_regions(
+        probs, fs, threshold=threshold,
+        margin_periods=margin_periods,
+        merge_gap_periods=merge_gap_periods,
+    )
+    if not regions:
+        return []
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    metas: list[dict] = []
+    for idx, (s, e) in enumerate(regions):
+        seg_time = np.arange(s, e) / fs
+        seg_probs = probs[s:e]
+        seg_max = np.nanmax(seg_probs, axis=1)
+        seg_pred_class = np.full(e - s, -1, dtype=np.int8)
+        valid = ~np.isnan(seg_probs).any(axis=1)
+        if np.any(valid):
+            seg_pred_class[valid] = np.argmax(seg_probs[valid], axis=1).astype(np.int8)
+
+        data = {
+            'file': [fname] * (e - s),
+            'bus': [bus] * (e - s),
+            'segment': np.full(e - s, idx, dtype=np.int32),
+            'fs': np.full(e - s, fs, dtype=np.float32),
+            'time_s': seg_time.astype(np.float64),
+        }
+        for ci, ch in enumerate(['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']):
+            data[ch] = raw_display[s:e, ci].astype(np.float32)
+        for ci in range(seg_probs.shape[1]):
+            data[f'P_class{ci}'] = seg_probs[:, ci].astype(np.float32)
+        data['P_max'] = seg_max.astype(np.float32)
+        data['pred_class'] = seg_pred_class
+        data['pred_any_ozz'] = (seg_max >= threshold).astype(np.int8)
+        data['coverage'] = coverage[s:e].astype(np.int32)
+
+        seg_path = out_dir / f'{fname}_bus{bus}_seg{idx:02d}.csv'
+        pl.DataFrame(data).write_csv(seg_path)
+        metas.append({
+            'file': fname,
+            'bus': bus,
+            'segment': idx,
+            'start_sample': int(s),
+            'end_sample': int(e),
+            'duration_s': float((e - s) / fs),
+            'max_probability': float(np.nanmax(seg_max)) if seg_max.size else 0.0,
+            'csv': str(seg_path),
+        })
+    return metas
+
 
 def _auto_crop_range(
     probs: np.ndarray,
@@ -381,18 +506,35 @@ def run_inference_on_real_ozz(
     auto_crop: bool = True,
     buses_filter: list[str] | None = None,
     mask_neutral: bool = True,
+    fast_mode: bool = False,
+    save_unknown_plots: bool = False,
+    save_pseudo_csv: bool = False,
+    pseudo_margin_periods: int = 10,
+    pseudo_merge_gap_periods: int = 5,
+    pseudo_csv_dir: str | None = None,
 ) -> dict:
     """Inference на реальных COMTRADE файлах.
 
     Args:
         checkpoint_path: путь к чекпоинту
         output_dir: папка для графиков
-        subset: 'all' | 'confirmed' | 'false_detection'
+        subset: 'all' | 'confirmed' | 'false_detection' | 'unknown'.
+            'unknown' — файлы из COMTRADE_DIR, которых нет в overvoltage_report
+            (используется для авторазметки и расширения базы no-OZZ примеров).
         max_files: ограничение числа файлов
         threshold: порог бин. классификации
         auto_crop: автокроп вокруг обнаруженного ОЗЗ
         buses_filter: ограничить секции (например ['1'])
         mask_neutral: маскировать IN/UN (без нулевых последовательностей)
+        fast_mode: ускоренный inference — шаг скользящего окна равен размеру окна
+            (без перекрытий зон); пробрасывается в mark_real_oscillogram.
+        save_unknown_plots: сохранять PNG для unknown-файлов с детектированным ОЗЗ
+            (по умолчанию False — экономим место, перепроверим позже).
+        save_pseudo_csv: для unknown-файлов с детектированным ОЗЗ сохранять CSV
+            с сегментами вокруг порога (для расширения обучающего датасета).
+        pseudo_margin_periods: запас периодов вокруг каждого детекта для CSV.
+        pseudo_merge_gap_periods: объединять детекты, если зазор меньше N периодов.
+        pseudo_csv_dir: папка для pseudo-CSV (по умолч. <output_dir>/pseudo_csv).
     Returns:
         dict со статистикой
     """
@@ -411,11 +553,18 @@ def run_inference_on_real_ozz(
     else:
         out_base = Path(output_dir)
 
-    # Подпапки для confirmed / false_detection
+    # Подпапки для confirmed / false_detection / unknown
     out_confirmed = out_base / 'confirmed_ozz'
     out_false = out_base / 'false_detection'
+    out_unknown = out_base / 'unknown_detections'  # PNG для unknown с детектом
     out_confirmed.mkdir(parents=True, exist_ok=True)
     out_false.mkdir(parents=True, exist_ok=True)
+
+    # Pseudo-CSV: сегменты с детектом для расширения обучающего датасета
+    pseudo_dir: Path | None = None
+    if save_pseudo_csv:
+        pseudo_dir = Path(pseudo_csv_dir) if pseudo_csv_dir else (out_base / 'pseudo_csv')
+        pseudo_dir.mkdir(parents=True, exist_ok=True)
 
     # Загрузка отчёта
     report = load_real_ozz_report()
@@ -431,20 +580,33 @@ def run_inference_on_real_ozz(
     else:
         print(f"ПРЕДУПРЕЖДЕНИЕ: norm_coef не найден ({NORM_COEF_PATH}), без нормализации")
 
+    # Кеши имён для быстрых проверок категории
+    confirmed_files_set = set(confirmed_df['filename'].to_list())
+    false_files_set = set(false_df['filename'].to_list())
+    known_files_set = confirmed_files_set | false_files_set
+
     # Формируем список файлов для обработки
     if subset == 'confirmed':
         files_df = confirmed_df
+        unique_files = files_df['filename'].unique().sort().to_list()
     elif subset == 'false_detection':
         files_df = false_df
+        unique_files = files_df['filename'].unique().sort().to_list()
+    elif subset == 'unknown':
+        # Файлы, которых нет в overvoltage_report — авторазметка для расширения базы
+        all_existing = {p.stem for p in COMTRADE_DIR.glob('*.cfg')}
+        unique_files = sorted(all_existing - known_files_set)
+        out_unknown.mkdir(parents=True, exist_ok=True)
     else:
         files_df = pl.concat([confirmed_df, false_df])
+        unique_files = files_df['filename'].unique().sort().to_list()
 
-    # Уникальные файлы
-    unique_files = files_df['filename'].unique().sort().to_list()
     if max_files:
         unique_files = unique_files[:max_files]
 
     print(f"Файлов для обработки: {len(unique_files)} ({subset})")
+    if fast_mode:
+        print("Режим: FAST (stride=window, без перекрытия зон)")
 
     stats = {
         'total_files': len(unique_files),
@@ -452,7 +614,16 @@ def run_inference_on_real_ozz(
         'skipped': 0,
         'detected_ozz': 0,
         'no_ozz_detected': 0,
+        'unknown_detected': 0,
+        'unknown_clean': 0,
+        'pseudo_segments': 0,
+        'fast_mode': fast_mode,
+        'subset': subset,
     }
+
+    # Лог авторазметки unknown-файлов (для дальнейшей перепроверки человеком).
+    unknown_log: list[dict] = []
+    pseudo_meta_all: list[dict] = []
 
     for file_idx, fname in enumerate(unique_files):
         cfg_path = COMTRADE_DIR / f'{fname}.cfg'
@@ -460,18 +631,35 @@ def run_inference_on_real_ozz(
             stats['skipped'] += 1
             continue
 
+        # Категория файла: 'confirmed' | 'false_det' | 'unknown'
+        if fname in confirmed_files_set:
+            category = 'confirmed'
+        elif fname in false_files_set:
+            category = 'false_det'
+        else:
+            category = 'unknown'
+
         # Определяем секции (bus) для файла
         file_buses = get_bus_for_file(report, fname)
         if not file_buses:
-            file_buses = ['1']
+            # unknown-файлы или файлы без записей в отчёте — пробуем типовые секции
+            file_buses = ['1', '2'] if category == 'unknown' else ['1']
 
         if buses_filter:
             file_buses = [b for b in file_buses if b in buses_filter]
+            if not file_buses:
+                continue
 
-        # Определяем, confirmed или false
-        is_confirmed = fname in confirmed_df['filename'].to_list()
-        out_dir_file = out_confirmed if is_confirmed else out_false
-        label = 'confirmed' if is_confirmed else 'false_det'
+        # Куда сохранять PNG (если вообще)
+        if category == 'confirmed':
+            out_dir_file = out_confirmed
+            label = 'confirmed'
+        elif category == 'false_det':
+            out_dir_file = out_false
+            label = 'false_det'
+        else:
+            out_dir_file = out_unknown
+            label = 'unknown'
 
         for bus in file_buses:
             raw_display, raw_model, fs, time_arr, sig_info = load_comtrade_raw(
@@ -494,33 +682,71 @@ def run_inference_on_real_ozz(
                 raw_for_model[:, 3] = 0.0   # IN
                 raw_for_model[:, 7] = 0.0   # UN
             probs, cov = mark_real_oscillogram(
-                model, raw_for_model, config, device, fs=fs,
+                model, raw_for_model, config, device, fs=fs, fast_mode=fast_mode,
             )
 
             # Определяем, есть ли ОЗЗ
             max_prob_per_sample = np.nanmax(probs, axis=1)
-            has_ozz = np.nanmax(max_prob_per_sample) >= threshold
+            max_prob_value = float(np.nanmax(max_prob_per_sample)) if np.any(~np.isnan(max_prob_per_sample)) else 0.0
+            has_ozz = max_prob_value >= threshold
 
             if has_ozz:
                 stats['detected_ozz'] += 1
             else:
                 stats['no_ozz_detected'] += 1
 
-            # Построение графика — ОРИГИНАЛЬНЫЕ значения
-            plot_name = f'{fname}{bus_suffix}.png'
-            plot_path = out_dir_file / plot_name
-            title = f'{label.upper()} | {fname} | bus={bus} | Fs={fs:.0f} Гц'
+            if category == 'unknown':
+                if has_ozz:
+                    stats['unknown_detected'] += 1
+                else:
+                    stats['unknown_clean'] += 1
+                unknown_log.append({
+                    'filename': fname,
+                    'bus': bus,
+                    'fs': fs,
+                    'n_samples': int(raw_display.shape[0]),
+                    'max_probability': max_prob_value,
+                    'detected_ozz': bool(has_ozz),
+                })
 
-            plot_real_ozz_marking(
-                out_path=plot_path,
-                raw_data=raw_display,
-                probs=probs,
-                coverage=cov,
-                fs=fs,
-                title=title,
-                threshold=threshold,
-                auto_crop=auto_crop and has_ozz,
-            )
+            # Решение, сохранять ли PNG
+            should_plot = True
+            if category == 'unknown':
+                # Для unknown по умолчанию PNG не сохраняем — экономим место
+                should_plot = save_unknown_plots and has_ozz
+
+            if should_plot:
+                plot_name = f'{fname}{bus_suffix}.png'
+                plot_path = out_dir_file / plot_name
+                title = f'{label.upper()} | {fname} | bus={bus} | Fs={fs:.0f} Гц | maxP={max_prob_value:.3f}'
+
+                plot_real_ozz_marking(
+                    out_path=plot_path,
+                    raw_data=raw_display,
+                    probs=probs,
+                    coverage=cov,
+                    fs=fs,
+                    title=title,
+                    threshold=threshold,
+                    auto_crop=auto_crop and has_ozz,
+                )
+
+            # Pseudo-CSV сегменты только для unknown с детектом (расширение датасета)
+            if save_pseudo_csv and category == 'unknown' and has_ozz and pseudo_dir is not None:
+                seg_metas = _save_pseudo_csv_segments(
+                    out_dir=pseudo_dir,
+                    fname=fname,
+                    bus=bus,
+                    raw_display=raw_display,
+                    probs=probs,
+                    coverage=cov,
+                    fs=fs,
+                    threshold=threshold,
+                    margin_periods=pseudo_margin_periods,
+                    merge_gap_periods=pseudo_merge_gap_periods,
+                )
+                stats['pseudo_segments'] += len(seg_metas)
+                pseudo_meta_all.extend(seg_metas)
 
             stats['processed'] += 1
 
@@ -531,12 +757,29 @@ def run_inference_on_real_ozz(
     print(f"  Пропущено: {stats['skipped']}")
     print(f"  ОЗЗ обнаружено: {stats['detected_ozz']}")
     print(f"  ОЗЗ не обнаружено: {stats['no_ozz_detected']}")
-    print(f"  Графики: {out_base}")
+    if subset == 'unknown' or stats['unknown_detected'] or stats['unknown_clean']:
+        print(f"  unknown с детектом: {stats['unknown_detected']}")
+        print(f"  unknown чистых:     {stats['unknown_clean']}")
+    if save_pseudo_csv:
+        print(f"  pseudo-сегментов:   {stats['pseudo_segments']}")
+    print(f"  Папка вывода: {out_base}")
 
-    # Сохраняем статистику
+    # Сохраняем сводную статистику
     stats_path = out_base / 'inference_stats.json'
     with open(stats_path, 'w', encoding='utf-8') as f:
         json.dump(stats, f, indent=2, ensure_ascii=False)
+
+    # Сохраняем лог по unknown-файлам (всегда, если они обрабатывались)
+    if unknown_log:
+        unknown_csv = out_base / 'unknown_pseudo_marking.csv'
+        pl.DataFrame(unknown_log).write_csv(unknown_csv)
+        print(f"  Лог unknown: {unknown_csv}")
+
+    # Сохраняем мета-информацию по pseudo-сегментам
+    if save_pseudo_csv and pseudo_meta_all and pseudo_dir is not None:
+        meta_csv = pseudo_dir / 'pseudo_segments_index.csv'
+        pl.DataFrame(pseudo_meta_all).write_csv(meta_csv)
+        print(f"  Индекс pseudo-CSV: {meta_csv}")
 
     return stats
 
@@ -552,9 +795,9 @@ def main():
     parser.add_argument('--checkpoint', type=str, required=True,
                         help='Путь к чекпоинту модели')
     parser.add_argument('--output-dir', type=str, default=None)
-    parser.add_argument('--subset', choices=['all', 'confirmed', 'false_detection'],
+    parser.add_argument('--subset', choices=['all', 'confirmed', 'false_detection', 'unknown'],
                         default='all',
-                        help='Подмножество файлов')
+                        help='Подмножество файлов. unknown — файлы вне overvoltage_report.')
     parser.add_argument('--max-files', type=int, default=None)
     parser.add_argument('--threshold', type=float, default=0.5)
     parser.add_argument('--no-crop', action='store_true',
@@ -563,6 +806,15 @@ def main():
                         help='Не маскировать IN/UN (по умолчанию обнуляются)')
     parser.add_argument('--bus', type=str, default=None,
                         help='Фильтр секций (например "1,2")')
+    parser.add_argument('--fast-mode', action='store_true',
+                        help='Быстрый inference (шаг = размер окна, без перекрытий)')
+    parser.add_argument('--save-unknown-plots', action='store_true',
+                        help='Сохранять PNG для unknown-файлов с детектированным ОЗЗ')
+    parser.add_argument('--save-pseudo-csv', action='store_true',
+                        help='Сохранять CSV-сегменты для unknown с детектом (расширение датасета)')
+    parser.add_argument('--pseudo-margin-periods', type=int, default=10)
+    parser.add_argument('--pseudo-merge-gap-periods', type=int, default=5)
+    parser.add_argument('--pseudo-csv-dir', type=str, default=None)
     args = parser.parse_args()
 
     buses = args.bus.split(',') if args.bus else None
@@ -576,6 +828,12 @@ def main():
         auto_crop=not args.no_crop,
         buses_filter=buses,
         mask_neutral=not args.no_mask_neutral,
+        fast_mode=args.fast_mode,
+        save_unknown_plots=args.save_unknown_plots,
+        save_pseudo_csv=args.save_pseudo_csv,
+        pseudo_margin_periods=args.pseudo_margin_periods,
+        pseudo_merge_gap_periods=args.pseudo_merge_gap_periods,
+        pseudo_csv_dir=args.pseudo_csv_dir,
     )
 
 
@@ -589,14 +847,25 @@ if __name__ == '__main__':
         # РУЧНОЙ РЕЖИМ — отредактируйте константы ниже
         # =====================================================
         # Укажите путь после обучения
-        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260428_174217/latest_checkpoint.pt' 
+        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260428_174217/latest_checkpoint.pt'
         # Пример: CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_.../best_model.pt'
 
-        SUBSET = 'all'         # 'all' | 'confirmed' | 'false_detection'
+        # 'all' | 'confirmed' | 'false_detection' | 'unknown'
+        # 'unknown' — авторазметка файлов из COMTRADE_DIR, которых НЕТ в overvoltage_report.
+        # Используется для расширения обучающего датасета no-OZZ примерами.
+        SUBSET = 'all'
         MAX_FILES = None       # None = все файлы
         THRESHOLD = 0.5
         AUTO_CROP = True
         MASK_NEUTRAL = False    # True = обнулять IN/UN перед inference
+
+        # --- Ускорение и расширение базы ---
+        FAST_MODE = False              # True = шаг скользящего окна = размер окна (грубее, но в разы быстрее)
+        SAVE_UNKNOWN_PLOTS = False     # True = сохранять PNG для unknown-файлов с детектом
+        SAVE_PSEUDO_CSV = False        # True = сохранять CSV-сегменты вокруг детекта (для дообучения)
+        PSEUDO_MARGIN_PERIODS = 10     # запас периодов вокруг каждой зоны интереса
+        PSEUDO_MERGE_GAP_PERIODS = 5   # объединять детекты, если зазор меньше N периодов
+        PSEUDO_CSV_DIR = None          # None = <output>/pseudo_csv
 
         if CHECKPOINT is None:
             # Автопоиск
@@ -627,4 +896,10 @@ if __name__ == '__main__':
                 threshold=THRESHOLD,
                 auto_crop=AUTO_CROP,
                 mask_neutral=MASK_NEUTRAL,
+                fast_mode=FAST_MODE,
+                save_unknown_plots=SAVE_UNKNOWN_PLOTS,
+                save_pseudo_csv=SAVE_PSEUDO_CSV,
+                pseudo_margin_periods=PSEUDO_MARGIN_PERIODS,
+                pseudo_merge_gap_periods=PSEUDO_MERGE_GAP_PERIODS,
+                pseudo_csv_dir=PSEUDO_CSV_DIR,
             )
