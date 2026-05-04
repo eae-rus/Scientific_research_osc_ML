@@ -49,8 +49,10 @@ from osc_tools.ml.augmented_dataset import (
     DEFAULT_SUB_PERIODS,
     NUM_RAW,
     RAW_CHANNELS,
+    SAMPLES_PER_PERIOD,
     compute_num_channels,
     compute_spectral_from_raw,
+    resample_to_spp,
 )
 from osc_tools.ml.labels import get_target_columns
 
@@ -512,6 +514,7 @@ class SimOZZLazyDataset(Dataset):
         augmenter: Optional[object] = None,
         cache_size: int = 500,
         verbose: bool = True,
+        use_raw_input: bool = False,
     ) -> None:
         """
         Args:
@@ -530,11 +533,15 @@ class SimOZZLazyDataset(Dataset):
             augmenter: аугментатор на сырых данных (None = без аугментации).
             cache_size: макс. кэшированных файлов.
             verbose: печатать статистику.
+            use_raw_input: если True — вместо spectral-pipeline возвращает
+                ресэмплированные сырые данные (8 каналов × target_spp=32 на период).
+                Для raw_instantaneous baseline.
         """
         super().__init__()
 
         self.mode = mode
         self.augmenter = augmenter
+        self.use_raw_input = use_raw_input
         self.num_harmonics = num_harmonics
         self.sub_periods = (sub_periods if sub_periods is not None
                             else list(DEFAULT_SUB_PERIODS))
@@ -567,14 +574,20 @@ class SimOZZLazyDataset(Dataset):
             raise ValueError("Ни один из file_paths не найден в file_index")
 
         # Число каналов (не зависит от Fs)
-        self.num_output_channels: int = compute_num_channels(
-            num_harmonics, len(self.sub_periods), include_symmetric,
-        )
+        if self.use_raw_input:
+            self.num_output_channels: int = NUM_RAW  # 8 каналов IA..UN
+        else:
+            self.num_output_channels: int = compute_num_channels(
+                num_harmonics, len(self.sub_periods), include_symmetric,
+            )
 
-        # Число зон ВСЕГДА одинаково:
-        #   (num_periods_window * spp - spp) / (spp / stride_fraction)
-        #   = (num_periods_window - 1) * stride_fraction
-        self.num_steps: int = (num_periods_window - 1) * stride_fraction
+        # Число зон:
+        # - Spectral: (num_periods_window - 1) * stride_fraction
+        # - Raw: num_periods_window * SAMPLES_PER_PERIOD (= 320 при 32 spp × 10 периодов)
+        if self.use_raw_input:
+            self.num_steps: int = num_periods_window * SAMPLES_PER_PERIOD
+        else:
+            self.num_steps: int = (num_periods_window - 1) * stride_fraction
 
         # --- Индексация: (file_path, window_start) --- per-file Fs ---
         self._indices: List[Tuple[Path, int]] = []
@@ -741,27 +754,53 @@ class SimOZZLazyDataset(Dataset):
             raw = np.asarray(raw, dtype=np.float32)
 
         # 4. FFT → спектральные признаки (per-file fft_window / spp)
-        spectral = compute_spectral_from_raw(
-            raw,
-            num_harmonics=self.num_harmonics,
-            sub_periods=self.sub_periods,
-            include_symmetric=self.include_symmetric,
-            stride=stride,
-            warmup=ctx_before + fft_window,
-            fft_window=fft_window,
-            samples_per_period=spp,
-        )   # (T_zones, C)
+        if self.use_raw_input:
+            # Raw instantaneous baseline: ресэмплируем к 32 spp, без FFT
+            target_spp = SAMPLES_PER_PERIOD  # 32
+            # Берём только основное окно (без ctx_before — он нужен только для FFT)
+            raw_window = raw[ctx_before:]
+            if spp != target_spp:
+                raw_window = resample_to_spp(raw_window, source_spp=spp, target_spp=target_spp)
+            # Формируем выход: (8, T_raw) → T_raw = num_periods_window * target_spp
+            expected_len = self.num_periods_window * target_spp
+            if raw_window.shape[0] > expected_len:
+                raw_window = raw_window[:expected_len]
+            elif raw_window.shape[0] < expected_len:
+                pad = np.zeros((expected_len - raw_window.shape[0], NUM_RAW), dtype=np.float32)
+                raw_window = np.concatenate([raw_window, pad], axis=0)
+            X = torch.from_numpy(raw_window.T.copy())  # (8, T_raw=320)
+        else:
+            spectral = compute_spectral_from_raw(
+                raw,
+                num_harmonics=self.num_harmonics,
+                sub_periods=self.sub_periods,
+                include_symmetric=self.include_symmetric,
+                stride=stride,
+                warmup=ctx_before + fft_window,
+                fft_window=fft_window,
+                samples_per_period=spp,
+            )   # (T_zones, C)
 
-        # Обрезаем до num_steps (при нецелочисленном spp//stride_fraction
-        # может быть на 1 зону больше)
-        spectral = spectral[:self.num_steps]
+            # Обрезаем до num_steps (при нецелочисленном spp//stride_fraction
+            # может быть на 1 зону больше)
+            spectral = spectral[:self.num_steps]
 
-        X = torch.from_numpy(spectral.T.copy())   # (C, T_zones)
+            X = torch.from_numpy(spectral.T.copy())   # (C, T_zones)
 
         # 5. Метки зон (per-file stride, fft_window)
-        Y = self._extract_zone_targets(
-            file_data, window_start, fft_window, stride,
-        )
+        if self.use_raw_input:
+            # Для raw baseline: метки с шагом = spp (1 сэмпл = 1/spp периода,
+            # но зон 320 — много, агрегируем по 1 сэмплу @ target_spp).
+            # stride_raw = spp / target_spp (пересчёт в пространство файла)
+            target_spp = SAMPLES_PER_PERIOD  # 32
+            raw_stride = max(1, spp // target_spp) if spp >= target_spp else 1
+            Y = self._extract_zone_targets(
+                file_data, window_start, 0, raw_stride,
+            )
+        else:
+            Y = self._extract_zone_targets(
+                file_data, window_start, fft_window, stride,
+            )
         Y = torch.from_numpy(Y)   # (T_zones, n_classes)
 
         return X, Y

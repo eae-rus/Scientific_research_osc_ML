@@ -1279,22 +1279,19 @@ C:/ProgramData/anaconda3/Scripts/conda.exe run -p C:\ProgramData\anaconda3 --no-
 Результат сохраняется в `reports/phase4/model_complexity/` и содержит число
 параметров, размер чекпоинта, latency batch=1, throughput batch=N и peak VRAM.
 
-### 18.7 Рекомендуемые следующие задачи по коду
+### 18.7 Статус задач по коду
 
 1. ✅ Реализован `export_single_comtrade_marking.py` для обработки одного COMTRADE и
   сохранения CSV + PNG.
 2. ✅ Добавлен `model_complexity_report.py`, который для любого чекпоинта
   считает параметры, размер, latency, throughput и peak VRAM.
-3. 🔄 Подготовлены spectral baseline-конфиги из §18.5 без дублирования
-  тренировочного pipeline.
-4. ⏳ Добавить raw instantaneous baseline с отдельным датасетом сырого сигнала.
-5. ⏳ Добавить режим hard-negative fine-tuning на реальных `no OZZ` осциллограммах.
-6. ⏳ Сформировать таблицу результатов для статьи:
-  - SimOZZ F1/ROC-AUC;
-  - real confirmed detection rate;
-  - real false positive rate;
-  - latency/params/FLOPs;
-  - ключевые признаки интерпретируемости.
+3. ✅ Подготовлены spectral baseline + physical_mlp + raw_instantaneous конфиги
+  из §18.5 без дублирования тренировочного pipeline.
+4. ✅ Raw instantaneous baseline интегрирован в `SimOZZLazyDataset`:
+  `resample_to_spp()` — линейная интерполяция к 32 spp на лету в Dataset.
+5. ✅ `model_complexity_report.py` имеет ручной режим с поддержкой нескольких чекпоинтов.
+6. ✅ Выравнивание params: spectral_baseline d_model=56 (≈97% от KAN),
+  raw d_model=56 (≈88%), physical_mlp оставлен d_model=48 (ablation) для максимального совпадения с KAN версией модели и сравнений исключительно эффекта KAN цепей.
 
 ### 18.8 Требования к дальнейшим изменениям
 
@@ -1467,3 +1464,56 @@ C:/ProgramData/anaconda3/python.exe scripts/phase4_experiments/real_ozz/inferenc
 
 Чекпоинты для шагов 2–3 берутся из папок `experiments/phase4/sim_ozz_finetune_*`,
 сформированных на шаге 1 (или из ранее обученной `PhysicalKANTransformer`).
+
+---
+
+## 20. Бэклог: невыполненные задачи (перенесены сюда для видимости)
+
+Все задачи ниже ранее были помечены ⏳ в различных секциях отчёта.
+Перенесены в конец, чтобы не терялись при чтении.
+
+### 20.1 Hard-negative fine-tuning на реальных no-OZZ
+
+Описание: § 18.2. Дообучение на размеченных реальных отрицательных примерах:
+- synthetic loss: 4-классовая multi-label (SimOZZ);
+- real loss: бинарная `any_ozz` для реальных;
+- hard-negative loss: усиленный вес для false-detections.
+
+**Зависимости:** Требуется собрать реальный бинарный датасет (can use
+`inference_real_ozz.py --subset unknown --save-pseudo-csv`  →  ручная разметка
+pseudo_csv/unknown_pseudo_marking.csv).
+
+### 20.2 Таблица результатов для статьи
+
+Что нужно: сводная таблица (markdown + LaTeX) для всех обученных моделей:
+
+| Модель | SimOZZ F1 macro | SimOZZ ROC-AUC | Real TPR (confirmed) | Real FPR (false_det) | Params | Latency ms (batch=1) |
+|--------|-----------------|----------------|---------------------|---------------------|--------|---------------------|
+| PhysicalKAN | ... | ... | ... | ... | 263K | ... |
+| PhysicalMLP | ... | ... | ... | ... | 183K | ... |
+| Spectral Baseline | ... | ... | ... | ... | 256K | ... |
+| Raw Instantaneous | ... | ... | ... | ... | 232K | ... |
+
+**Что уже есть в коде:**
+- `evaluate_phase4.py` → SimOZZ F1/ROC-AUC → `reports/phase4/sim_ozz_evaluation.json`
+- `inference_real_ozz.py` → detected_ozz / total → `reports/phase4/real_ozz_inference/inference_stats.json`
+- `model_complexity_report.py` → params/latency → `reports/phase4/model_complexity/*.json`
+- `channel_dropout_probing.py` → top features → `reports/phase4/channel_dropout_probing.json`
+- `gradient_attribution.py` → top features → `reports/phase4/gradient_attribution.json`
+
+**Что нужно доделать:**
+- Обучить все baseline-модели (`run_phase4_5_baselines.py --exp all`).
+- Прогнать `evaluate_phase4.py` для каждого чекпоинта.
+- Прогнать `inference_real_ozz.py --subset confirmed` и `--subset false_detection`
+  для каждой модели.
+- Прогнать `model_complexity_report.py` для каждого.
+- Свести в единый скрипт-агрегатор (или вручную).
+
+### 20.3 Конвертер pseudo_csv → training format
+
+Для дообучения на реальных данных (§ 20.1) нужен конвертер:
+`pseudo_csv/<file>_bus<N>_seg<NN>.csv` → формат, совместимый с
+`SimOZZLazyDataset` (столбцы IA..UN + Target_OZZ_* + metadata).
+
+**Зависимость:** формат обучающих CSV определяется пользователем
+(может быть как формат сайта с суффиксом bus, так и текущий SimOZZ формат).

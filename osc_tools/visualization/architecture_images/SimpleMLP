@@ -1,0 +1,18 @@
+digraph SimpleMLP {
+	nodesep=0.35 rankdir=LR ranksep=0.55 splines=polyline
+	node [fillcolor=white fontname="Helvetica,Arial,sans-serif" fontsize=10 shape=box style="rounded,filled"]
+	edge [fontname="Helvetica,Arial,sans-serif" fontsize=9]
+	fontname="Helvetica-Bold" fontsize=14 label="
+SimpleMLP (Многослойный перцептрон)" labelloc=b
+	In [label="Вход
+(B, C, T)" fillcolor="#e6f2ff"]
+	Flat [label="Flatten
+→ (B, C·T)" fillcolor="#f2f2f2"]
+	Hid [label="N× блоков:
+Linear → BN → ReLU → Dropout" fillcolor="#ffe6e6"]
+	Head [label="Linear
+(logits)" fillcolor="#d9f2d9"]
+	In -> Flat
+	Flat -> Hid
+	Hid -> Head
+}

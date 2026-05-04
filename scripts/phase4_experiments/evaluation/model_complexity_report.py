@@ -178,4 +178,44 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    main()
+    import sys as _sys
+
+    if len(_sys.argv) > 1:
+        main()
+    else:
+        # =====================================================
+        # РУЧНОЙ РЕЖИМ — отредактируйте константы ниже
+        # =====================================================
+        # Можно указать несколько чекпоинтов — отчёт будет построен для каждого.
+        # Пути относительны корня проекта.
+        CHECKPOINTS = [
+            # PhysicalKANTransformer (текущая модель с KAN)
+            'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260428_174217/latest_checkpoint.pt',
+            # PhysicalMLPTransformer (KAN заменён на MLP)
+            # 'experiments/phase4/sim_ozz_finetune_PhysicalMLPTransformer_.../best_model.pt',
+            # BaselineTransformer (spectral_baseline)
+            # 'experiments/phase4/sim_ozz_finetune_BaselineTransformer_.../best_model.pt',
+            # BaselineTransformer (raw_instantaneous) — если обучен
+            # 'experiments/phase4/sim_ozz_finetune_BaselineTransformer_raw_.../best_model.pt',
+        ]
+
+        BATCH_SIZE = 256
+        WARMUP = 10
+        REPEATS = 50
+        OUTPUT = None  # None = автоимя в reports/phase4/model_complexity/
+
+        for ckpt in CHECKPOINTS:
+            ckpt_full = str(PROJECT_ROOT / ckpt) if not Path(ckpt).is_absolute() else ckpt
+            if not Path(ckpt_full).exists():
+                print(f"ПРОПУСК (не найден): {ckpt}")
+                continue
+            print(f"\n{'='*60}")
+            print(f"Чекпоинт: {ckpt}")
+            print('='*60)
+            build_report(
+                checkpoint=ckpt_full,
+                batch_size=BATCH_SIZE,
+                warmup=WARMUP,
+                repeats=REPEATS,
+                output=OUTPUT,
+            )

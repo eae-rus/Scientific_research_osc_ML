@@ -54,6 +54,69 @@ DEFAULT_SUB_PERIODS = [2, 4, 6, 10]
 NUM_SYMMETRIC = 6          # I1, I2, I0, U1, U2, U0
 
 
+# ---------------------------------------------------------------------------
+# Ресэмплинг сырых сигналов к заданному target_spp (линейная интерполяция)
+# ---------------------------------------------------------------------------
+
+def resample_to_spp(
+    raw: np.ndarray,
+    source_spp: int,
+    target_spp: int = SAMPLES_PER_PERIOD,
+    f_network: float = 50.0,
+) -> np.ndarray:
+    """Передискретизация многоканального сигнала к целевому числу отсчётов на период.
+
+    Алгоритм — линейная интерполяция по каждому каналу:
+    - Если source_spp == target_spp → возвращает raw без копирования.
+    - Если source_spp > target_spp → прореживание с линейным уточнением
+      (если частоты кратны — берётся точка напрямую).
+    - Если source_spp < target_spp → «дорисовывание» промежуточных точек
+      линейной интерполяцией из двух соседних.
+
+    Проход ведётся по целевому массиву: для каждой целевой позиции t находится
+    соответствующая дробная позиция в исходном сигнале (линейное отображение),
+    а затем вычисляется значение линейной интерполяцией между соседними отсчётами.
+
+    Args:
+        raw: (N_source, C) многоканальный сигнал (обычно 8 каналов IA..UN)
+        source_spp: отсчётов на период в исходном сигнале (напр. round(Fs / f_network))
+        target_spp: желаемое число отсчётов на период (по умолчанию 32)
+        f_network: промышленная частота (50 Гц), не используется напрямую (для документации)
+
+    Returns:
+        (N_target, C) float32 массив, где N_target = round(N_source * target_spp / source_spp).
+    """
+    if source_spp == target_spp:
+        return raw
+
+    N_source = raw.shape[0]
+    n_channels = raw.shape[1] if raw.ndim > 1 else 1
+    # Определяем длину целевого массива пропорционально
+    N_target = round(N_source * target_spp / source_spp)
+    if N_target <= 0:
+        return np.empty((0, n_channels), dtype=np.float32)
+
+    # Дробные позиции в исходном массиве для каждой целевой точки
+    ratio = source_spp / target_spp
+    target_indices = np.arange(N_target, dtype=np.float64) * ratio
+
+    # Целые индексы и веса для линейной интерполяции
+    idx_lo = np.floor(target_indices).astype(np.int64)
+    frac = (target_indices - idx_lo).astype(np.float32)
+
+    # Клиппинг на границах
+    idx_hi = np.minimum(idx_lo + 1, N_source - 1)
+    idx_lo = np.minimum(idx_lo, N_source - 1)
+
+    if raw.ndim == 1:
+        result = raw[idx_lo] * (1 - frac) + raw[idx_hi] * frac
+        return result.astype(np.float32)
+
+    # Линейная интерполяция: vectorized по всем каналам
+    result = raw[idx_lo] * (1 - frac[:, np.newaxis]) + raw[idx_hi] * frac[:, np.newaxis]
+    return result.astype(np.float32)
+
+
 def standardize_voltage_columns(df: pl.DataFrame) -> pl.DataFrame:
     """Переименовывает колонки напряжений 'UA BB'→'UA' и т.д. для совместимости с RAW_CHANNELS."""
     available = set(df.columns)

@@ -5,14 +5,18 @@
    каналах, без KAN и без физических stem-блоков.
 2) physical_mlp — физически ориентированный Transformer без KAN-блоков:
    PhysicalStem с линейным fallback вместо KAN, ComplexMHA, MLP-FFN, MLP-head.
+3) raw_instantaneous — BaselineTransformer на сырых мгновенных значениях (8 каналов
+   × 32 отсчёта/период), ресэмплированных к 32 spp линейной интерполяцией.
+   Спектральное представление НЕ вычисляется — модель получает сырой сигнал.
+   Используется для оценки вклада именно spectral pipeline.
 
-Raw instantaneous baseline пока оставлен как отдельная будущая задача: для него
-нужен отдельный датасет с ресэмплингом 10 периодов сырого сигнала к фиксированной
-длине и согласованием с real/no-OZZ примерами.
+Ресэмплинг к 32 spp реализован через resample_to_spp (линейная интерполяция)
+в osc_tools/ml/augmented_dataset.py и вызывается внутри Dataset «на лету».
 
 Примеры:
     python scripts/phase4_experiments/sim_ozz/run_phase4_5_baselines.py --exp spectral_baseline
     python scripts/phase4_experiments/sim_ozz/run_phase4_5_baselines.py --exp physical_mlp
+    python scripts/phase4_experiments/sim_ozz/run_phase4_5_baselines.py --exp raw_instantaneous
     python scripts/phase4_experiments/sim_ozz/run_phase4_5_baselines.py --exp all --epochs 50
 """
 from __future__ import annotations
@@ -35,12 +39,26 @@ EXPERIMENTS = {
     'spectral_baseline': {
         'model_type': 'BaselineTransformer',
         'cls_head_type': 'linear',
-        'description': 'Обычный Transformer на 220 spectral features, без KAN/physical stem.',
+        'd_model': 56,  # Выровнено по params с PhysicalKAN (≈255K vs 263K)
+        'description': 'Обычный Transformer на 220 spectral features, без KAN/physical stem.\n'
+                       'd_model=56 для выравнивания числа параметров с PhysicalKAN.',
     },
     'physical_mlp': {
         'model_type': 'PhysicalMLPTransformer',
         'cls_head_type': 'mlp',
-        'description': 'Physical stem/complex attention, но без KAN-блоков.',
+        # d_model НЕ переопределяется — используем те же гиперпараметры, что у KAN.
+        # Разница в params (~183K vs 263K) = overhead KAN-блоков (ablation study).
+        'description': 'Physical stem/complex attention, без KAN-блоков.\n'
+                       'Те же d_model/num_layers — ablation вклада KAN.',
+    },
+    'raw_instantaneous': {
+        'model_type': 'BaselineTransformer',
+        'cls_head_type': 'linear',
+        'd_model': 56,  # Выровнено по params (~232K vs 263K, ≈0.88 ratio — вход 8ch вместо 220)
+        'use_raw_input': True,
+        'description': 'BaselineTransformer на 8 сырых каналах (IA..UN), ресэмплированных к 32 spp.\n'
+                       'Спектральный pipeline отключён — модель работает на мгновенных значениях.\n'
+                       'num_input_channels=8, seq_len=320 (10 периодов × 32 spp), d_model=56.',
     },
 }
 
@@ -77,9 +95,14 @@ def build_config(
         config['val_batches_per_epoch'] = val_batches_per_epoch
 
     num_lh = len(config['sub_periods'])
-    config['num_input_channels'] = compute_num_channels(
-        config['num_harmonics'], num_lh, config['include_symmetric'],
-    )
+    if config.get('use_raw_input'):
+        # Raw instantaneous: 8 каналов мгновенных значений, seq_len = window_size (320)
+        config['num_input_channels'] = 8
+        config['use_raw_input'] = True
+    else:
+        config['num_input_channels'] = compute_num_channels(
+            config['num_harmonics'], num_lh, config['include_symmetric'],
+        )
     return config
 
 
@@ -112,7 +135,7 @@ def run_experiment(exp_name: str, args: argparse.Namespace) -> Path:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='Phase 4.5 baseline experiments')
-    parser.add_argument('--exp', choices=['spectral_baseline', 'physical_mlp', 'all'],
+    parser.add_argument('--exp', choices=['spectral_baseline', 'physical_mlp', 'raw_instantaneous', 'all'],
                         default='all')
     parser.add_argument('--complexity', choices=['light', 'medium', 'heavy'], default='light')
     parser.add_argument('--epochs', type=int, default=50)
@@ -151,9 +174,10 @@ if __name__ == '__main__':
         # РУЧНОЙ РЕЖИМ — отредактируйте константы ниже
         # =====================================================
         # Перечень baseline-экспериментов (см. EXPERIMENTS):
-        #   'spectral_baseline'  — обычный Transformer на 220 spectral каналах
-        #   'physical_mlp'       — physical stem + complex attention, без KAN
-        #   'all'                — оба последовательно
+        #   'spectral_baseline'   — обычный Transformer на 220 spectral каналах
+        #   'physical_mlp'        — physical stem + complex attention, без KAN
+        #   'raw_instantaneous'   — BaselineTransformer на 8 сырых каналах (32 spp)
+        #   'all'                 — все три последовательно
         EXP = 'all'
         COMPLEXITY = 'light'           # 'light' | 'medium' | 'heavy'
         EPOCHS = 50
