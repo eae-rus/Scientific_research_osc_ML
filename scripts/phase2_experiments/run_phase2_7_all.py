@@ -47,6 +47,38 @@ from osc_tools.ml.labels import clean_labels, add_base_labels, get_target_column
 from osc_tools.data_management import DatasetManager
 
 # ==============================================================================
+# GPU МОНИТОРИНГ
+# ==============================================================================
+
+MAX_OOM_RETRIES = 3  # Макс. попыток с уменьшением batch при OOM
+
+
+def get_gpu_memory_info() -> Dict[str, float]:
+    """Возвращает информацию о GPU памяти в МБ."""
+    if not torch.cuda.is_available():
+        return {'available': False}
+    return {
+        'available': True,
+        'allocated_mb': torch.cuda.memory_allocated() / 1024**2,
+        'reserved_mb': torch.cuda.memory_reserved() / 1024**2,
+        'total_mb': torch.cuda.get_device_properties(0).total_memory / 1024**2,
+        'free_mb': (torch.cuda.get_device_properties(0).total_memory - torch.cuda.memory_reserved()) / 1024**2,
+    }
+
+
+def print_gpu_memory(prefix: str = ""):
+    """Печатает текущее состояние GPU памяти."""
+    info = get_gpu_memory_info()
+    if not info['available']:
+        print(f"  {prefix}GPU: недоступен (обучение на CPU)")
+        return
+    print(f"  {prefix}GPU: занято {info['allocated_mb']:.0f} МБ / "
+          f"зарезервировано {info['reserved_mb']:.0f} МБ / "
+          f"всего {info['total_mb']:.0f} МБ / "
+          f"свободно ~{info['free_mb']:.0f} МБ")
+
+
+# ==============================================================================
 # КОНФИГУРАЦИЯ ЭКСПЕРИМЕНТОВ
 # ==============================================================================
 
@@ -518,14 +550,69 @@ def run_single_experiment(
     print(f"\n>>> Запуск {experiment_name} (seed={seed}, epochs={epochs})")
     print(f"    feature_mode={feature_mode}, sampling={sampling}, "
           f"in_channels={in_channels}, pts={pts}, num_harmonics={num_harmonics}")
+    print(f"    batch_size: train={base_batch_size}, val={val_batch_size}")
+    print_gpu_memory("    [до обучения] ")
     
-    try:
-        history = runner.train(train_loader, val_loader)
-    finally:
-        # Освобождаем GPU память после каждого эксперимента
-        runner.cleanup()
-        del train_loader, val_loader, train_ds, val_ds
-        gc.collect()
+    # --- Retry-логика при OOM: уменьшаем batch и пробуем снова ---
+    current_train_bs = base_batch_size
+    current_val_bs = val_batch_size
+    history = None
+    
+    for attempt in range(MAX_OOM_RETRIES + 1):
+        try:
+            history = runner.train(train_loader, val_loader)
+            break  # Успех — выходим из retry-цикла
+        except torch.cuda.OutOfMemoryError:
+            # Собираем информацию о памяти
+            mem_info = get_gpu_memory_info()
+            allocated = mem_info.get('allocated_mb', 0)
+            total = mem_info.get('total_mb', 0)
+            
+            # Очистка после OOM
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            gc.collect()
+            
+            if attempt < MAX_OOM_RETRIES:
+                # Уменьшаем batch_size: val в 2 раза, train — только если val уже маленький
+                old_val_bs = current_val_bs
+                old_train_bs = current_train_bs
+                
+                if current_val_bs > current_train_bs:
+                    # Сначала уменьшаем валидационный (он обычно виноват)
+                    current_val_bs = max(current_val_bs // 2, 1)
+                else:
+                    # Если val уже <= train, уменьшаем оба
+                    current_val_bs = max(current_val_bs // 2, 1)
+                    current_train_bs = max(current_train_bs // 2, 1)
+                
+                print(f"    !!! OOM (попытка {attempt+1}/{MAX_OOM_RETRIES+1}): "
+                      f"занято {allocated:.0f}/{total:.0f} МБ")
+                print(f"    Уменьшаем batch: train {old_train_bs}→{current_train_bs}, "
+                      f"val {old_val_bs}→{current_val_bs}. Повторяем...")
+                
+                # Пересоздаём DataLoader-ы с новыми batch_size
+                del train_loader, val_loader
+                gc.collect()
+                train_loader = torch.utils.data.DataLoader(
+                    train_ds, batch_size=current_train_bs, shuffle=True, num_workers=0)
+                val_loader = torch.utils.data.DataLoader(
+                    val_ds, batch_size=current_val_bs, shuffle=False, num_workers=0)
+                
+                # Пересоздаём runner (модель с нуля, т.к. состояние может быть повреждено)
+                runner.cleanup()
+                runner = ExperimentRunner(config)
+            else:
+                # Исчерпаны все попытки
+                print(f"    !!! OOM ФИНАЛЬНО (все {MAX_OOM_RETRIES+1} попыток): "
+                      f"занято {allocated:.0f}/{total:.0f} МБ, "
+                      f"последние batch: train={current_train_bs}, val={current_val_bs}")
+                raise  # Пробрасываем OOM наверх
+    
+    # Очистка после успешного обучения
+    runner.cleanup()
+    del train_loader, val_loader, train_ds, val_ds
+    gc.collect()
     return history
 
 
@@ -591,6 +678,11 @@ def main(
     print(f"  Экспериментов: {len(experiments)}, Моделей: {len(models)}, "
           f"Сложностей: {len(complexities)}")
     print(f"  Epochs: {epochs}, Samples/file: {samples_per_file}")
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(f"  Устройство: {device}" + (f" ({torch.cuda.get_device_name(0)})" if device == 'cuda' else ""))
+    if device == 'cuda':
+        print_gpu_memory("  ")
+    print(f"  OOM-retry: до {MAX_OOM_RETRIES} повторов с уменьшением batch")
     print(f"{'='*70}\n")
     
     # --- Подсчёт общего количества экспериментов ---
@@ -663,7 +755,9 @@ def main(
                         except torch.cuda.OutOfMemoryError:
                             total_errors += 1
                             exp_name = build_experiment_name(fold, seed_idx, feature_mode, sampling, model_name, comp)
-                            print(f"!!! OOM: {exp_name} — не хватило GPU памяти, пропускаем")
+                            mem = get_gpu_memory_info()
+                            print(f"!!! OOM ОКОНЧАТЕЛЬНО: {exp_name} — исчерпаны все {MAX_OOM_RETRIES+1} попыток")
+                            print(f"    GPU: {mem.get('allocated_mb', 0):.0f}/{mem.get('total_mb', 0):.0f} МБ")
                             # Принудительная очистка GPU после OOM
                             if torch.cuda.is_available():
                                 torch.cuda.empty_cache()
@@ -722,7 +816,10 @@ def main(
                                     total_run += 1
                             except torch.cuda.OutOfMemoryError:
                                 total_errors += 1
-                                print(f"!!! OOM OZZ: {model_name}_{comp} f{fold}_s{seed_idx} — пропускаем")
+                                mem = get_gpu_memory_info()
+                                print(f"!!! OOM OZZ ОКОНЧАТЕЛЬНО: {model_name}_{comp} f{fold}_s{seed_idx} "
+                                      f"— все {MAX_OOM_RETRIES+1} попыток исчерпаны "
+                                      f"({mem.get('allocated_mb', 0):.0f}/{mem.get('total_mb', 0):.0f} МБ)")
                                 if torch.cuda.is_available():
                                     torch.cuda.empty_cache()
                                 gc.collect()
