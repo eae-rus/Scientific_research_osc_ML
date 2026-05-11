@@ -76,13 +76,13 @@ def get_default_config(mode: str = 'smoke') -> dict:
         'use_augmentation': True,         # Аугментация на сырых данных до FFT
         'use_low_harmonics': True,        # Добавить низшие гармоники
         'include_symmetric': True,        # Симметричные составляющие (I1,I2,I0,U1,U2,U0)
-        'future_periods': 2,
+        'future_zones': 4,
         'mask_ratio': 0.25,
         'train_batches_per_epoch': 64,  # Сколько batch-ов случайно брать за эпоху
         'val_stride_multiplier': 4,      # Во сколько раз реже брать окна на валидации
         'batch_size': 32,
         'val_batch_size': 64,
-        'num_workers': 0,  # 0 = без multiprocessing (Windows-безопасно)
+        'num_workers': 8,  # параллельная предподготовка (FFT) в фоне
         'val_split': 0.2,  # 20% файлов на валидацию
 
         # Модель (значения по умолчанию = light, переопределяются через --complexity)
@@ -276,7 +276,7 @@ def _prepare_augmented_dataloaders(
     val_boundaries = AugmentedSpectralDataset.compute_file_boundaries(val_df)
 
     # Размер окна с будущими периодами
-    full_window = config['window_size'] + config['future_periods'] * 32
+    full_window = config['window_size'] + config.get('future_zones', 0) * config['downsampling_stride']
 
     val_stride = max(
         config['downsampling_stride'],
@@ -302,7 +302,7 @@ def _prepare_augmented_dataloaders(
         sub_periods=sub_periods if sub_periods else None,
         include_symmetric=include_symmetric,
         downsampling_stride=config['downsampling_stride'],
-        future_periods=config['future_periods'],
+        future_zones=config.get('future_zones', 0),
         mask_ratio=config['mask_ratio'],
         augmenter=augmenter,
         mode='ssl',
@@ -316,7 +316,7 @@ def _prepare_augmented_dataloaders(
         sub_periods=sub_periods if sub_periods else None,
         include_symmetric=include_symmetric,
         downsampling_stride=config['downsampling_stride'],
-        future_periods=config['future_periods'],
+        future_zones=config.get('future_zones', 0),
         mask_ratio=0.0,  # Валидация без маскирования
         augmenter=None,   # Валидация без аугментации
         mode='ssl',
@@ -331,6 +331,7 @@ def _prepare_augmented_dataloaders(
         shuffle=False,
         num_workers=config['num_workers'],
         pin_memory=True,
+        **_extra_loader_kwargs(config),
     )
 
     return train_loader, val_loader, channel_groups
@@ -343,32 +344,34 @@ def _prepare_legacy_dataloaders(
 ) -> tuple[DataLoader, DataLoader, list[list[int]] | None]:
     """DataLoader-ы через SSLSpectralDataset (legacy, precomputed features)."""
 
-    # Размер окна с будущими периодами (для SSLSpectralDataset)
-    full_window = config['window_size'] + config['future_periods'] * 32
+    # Размер окна с будущими зонами (для SSLSpectralDataset)
+    future_zones = config.get('future_zones', 0)
+    stride = config['downsampling_stride']
+    full_window = config['window_size'] + future_zones * stride
 
     val_stride = max(
-        config['downsampling_stride'],
-        config['downsampling_stride'] * config.get('val_stride_multiplier', 4),
+        stride,
+        stride * config.get('val_stride_multiplier', 4),
     )
 
     # Создаём индексы (скользящее окно)
     train_indices = PrecomputedDataset.create_indices(
-        train_df, window_size=full_window, mode='val', stride=config['downsampling_stride']
+        train_df, window_size=full_window, mode='val', stride=stride
     )
     val_indices = PrecomputedDataset.create_indices(
         val_df, window_size=full_window, mode='val', stride=val_stride
     )
     print(f"  Окон: train={len(train_indices):,}, val={len(val_indices):,} (val_stride={val_stride})")
 
-    # SSL Datasets
+    # SSL Datasets (legacy: передаём future_zones вместо future_periods)
     train_ds = SSLSpectralDataset(
         dataframe=train_df,
         indices=train_indices,
         window_size=config['window_size'],
         feature_mode=config['feature_mode'],
         num_harmonics=config['num_harmonics'],
-        downsampling_stride=config['downsampling_stride'],
-        future_periods=config['future_periods'],
+        downsampling_stride=stride,
+        future_zones=future_zones,
         mask_ratio=config['mask_ratio'],
     )
     val_ds = SSLSpectralDataset(
@@ -377,8 +380,8 @@ def _prepare_legacy_dataloaders(
         window_size=config['window_size'],
         feature_mode=config['feature_mode'],
         num_harmonics=config['num_harmonics'],
-        downsampling_stride=config['downsampling_stride'],
-        future_periods=config['future_periods'],
+        downsampling_stride=stride,
+        future_zones=future_zones,
         mask_ratio=0.0,  # Валидация без маскирования
     )
 
@@ -391,6 +394,7 @@ def _prepare_legacy_dataloaders(
         shuffle=False,
         num_workers=config['num_workers'],
         pin_memory=True,
+        **_extra_loader_kwargs(config),
     )
 
     return train_loader, val_loader, channel_groups
@@ -400,12 +404,21 @@ def _prepare_legacy_dataloaders(
 # Цикл обучения и валидации
 # ---------------------------------------------------------------------------
 
+def _extra_loader_kwargs(config: dict) -> dict:
+    """Доп. kwargs для DataLoader: persistent_workers + prefetch_factor при num_workers > 0."""
+    nw = config.get('num_workers', 0)
+    if nw > 0:
+        return {'persistent_workers': True, 'prefetch_factor': 2}
+    return {}
+
+
 def _build_train_epoch_loader(
     train_ds: torch.utils.data.Dataset,
     config: dict,
     epoch: int,
 ) -> DataLoader:
     """Строит train DataLoader с фиксированной случайной подвыборкой на эпоху."""
+    extra = _extra_loader_kwargs(config)
     batches_per_epoch = config.get('train_batches_per_epoch')
     if batches_per_epoch is None:
         return DataLoader(
@@ -415,6 +428,7 @@ def _build_train_epoch_loader(
             num_workers=config['num_workers'],
             pin_memory=True,
             drop_last=True,
+            **extra,
         )
 
     target_samples = int(batches_per_epoch) * config['batch_size']
@@ -427,6 +441,7 @@ def _build_train_epoch_loader(
             num_workers=config['num_workers'],
             pin_memory=True,
             drop_last=True,
+            **extra,
         )
 
     rng = np.random.default_rng(config.get('seed', 42) + epoch)
@@ -440,6 +455,7 @@ def _build_train_epoch_loader(
         num_workers=config['num_workers'],
         pin_memory=True,
         drop_last=True,
+        **extra,
     )
 
 def _split_amp_angle(x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -859,7 +875,7 @@ def pretrain(config: dict, resume_path: str | None = None, reset_optimizer: bool
 
         marker = ' ★' if is_best else ''
         print(
-            f"Epoch {epoch:3d}/{total_epochs} | "
+            f"Epoch {epoch + 1:3d}/{total_epochs} | "
             f"train_loss={train_metrics['loss']:.6f} | "
             f"val_loss={val_metrics['loss']:.6f}{marker} | "
             f"lr={current_lr:.2e} | "
@@ -1090,7 +1106,7 @@ if __name__ == '__main__':
     SELECTED_COMPLEXITY = 'light'           # 'light' | 'medium' | 'heavy'
 
     # --- Эпохи ---
-    EPOCHS = 300
+    EPOCHS = 100
 
     # --- Аугментация и признаки ---
     USE_AUGMENTATION = True
@@ -1109,8 +1125,8 @@ if __name__ == '__main__':
     CHECKPOINT_FREQUENCY = 5
 
     # --- Продолжение обучения (None или путь к чекпоинту) ---
-    RESUME_PATH = None
-    # RESUME_PATH = 'experiments/phase4/pretrain_PhysicalKANTransformer_20260319_180046/best_model.pt'
+    # RESUME_PATH = None
+    RESUME_PATH = 'experiments/phase4/pretrain_PhysicalKANTransformer_20260327_122737/best_model.pt'
     RESET_OPTIMIZER = True  # True, если нужно сбросить оптимизатор и начать с 0 эпохи
 
     # =================================================================

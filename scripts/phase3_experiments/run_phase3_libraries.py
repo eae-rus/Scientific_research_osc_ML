@@ -147,7 +147,7 @@ def run_phase3_libraries(
     experiments_dir = ROOT_DIR / 'experiments' / 'phase3'
     experiments_dir.mkdir(parents=True, exist_ok=True)
 
-    norm_coef_path = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
+    norm_coef_path = ROOT_DIR / 'data' / 'norm_coef_all_v1.4.csv'
     metadata_file = data_dir / 'train.csv'
     window_size = 320
 

@@ -61,7 +61,7 @@ def load_data(batch_size=64):
     indices = valid_files["start_idx"].to_list()
     
     # Путь к файлу коэффициентов нормализации по сенсорам
-    norm_coef_path = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
+    norm_coef_path = ROOT_DIR / 'data' / 'norm_coef_all_v1.4.csv'
     
     # Разбиение выборки
     generator = torch.Generator().manual_seed(42)

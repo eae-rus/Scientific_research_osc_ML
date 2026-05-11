@@ -73,8 +73,8 @@ class DatasetManager:
         # Пробуем несколько стандартных мест
         candidates = [
             self.data_dir / self.NORM_COEF_CSV,
-            self.project_root / 'raw_data' / self.NORM_COEF_CSV,
             self.data_dir.parent / self.NORM_COEF_CSV,
+            self.project_root / 'data' / self.NORM_COEF_CSV,
         ]
         for p in candidates:
             if p.exists():
@@ -134,6 +134,179 @@ class DatasetManager:
         
         return train_path, test_path
     
+    # === Имя файла для хранения CV-разбиений ===
+    CV_SPLITS_JSON = "cv_splits.json"
+    
+    def generate_cv_splits(
+        self,
+        n_splits: int = 5,
+        random_state: int = 42,
+        force: bool = False
+    ) -> Path:
+        """
+        Генерирует стратифицированное K-Fold разбиение по осциллограммам.
+        
+        Стратификация выполняется по комбинации меток (ML_1, ML_2, ML_3) на уровне файлов.
+        Каждый fold определяет множество тестовых файлов; остальные — обучающие.
+        Результат сохраняется в JSON для воспроизводимости.
+        
+        Args:
+            n_splits: Количество фолдов (по умолчанию 5)
+            random_state: Seed для воспроизводимости
+            force: Принудительно пересоздать файл, даже если он существует
+            
+        Returns:
+            Путь к JSON файлу с разбиениями
+        """
+        import json as _json
+        
+        output_path = self.data_dir / self.CV_SPLITS_JSON
+        
+        if output_path.exists() and not force:
+            print(f"[DatasetManager] CV-разбиение уже существует: {output_path.name}")
+            return output_path
+        
+        print(f"[DatasetManager] Генерация {n_splits}-fold CV разбиения...")
+        main_path = self.data_dir / self.MAIN_CSV
+        
+        if not main_path.exists():
+            raise FileNotFoundError(f"Основной файл датасета не найден: {main_path}")
+        
+        df = pl.read_csv(main_path, infer_schema_length=50000, null_values=["NA", "nan", "null", ""])
+        
+        # Определяем стратификационный ключ для каждого файла
+        # Используем комбинацию (has_ML1, has_ML2, has_ML3) как категорию
+        files_info = df.group_by('file_name').agg([
+            pl.col('ML_1').max().fill_null(0).cast(pl.Int8).alias('has_ML1'),
+            pl.col('ML_2').max().fill_null(0).cast(pl.Int8).alias('has_ML2'),
+            pl.col('ML_3').max().fill_null(0).cast(pl.Int8).alias('has_ML3'),
+            pl.len().alias('n_rows')
+        ]).sort('file_name')
+        
+        # Формируем стратификационный ключ как строку "ML1_ML2_ML3"
+        files_info = files_info.with_columns(
+            (pl.col('has_ML1').cast(pl.Utf8) + "_" + 
+             pl.col('has_ML2').cast(pl.Utf8) + "_" + 
+             pl.col('has_ML3').cast(pl.Utf8)).alias('stratum')
+        )
+        
+        file_names = files_info['file_name'].to_list()
+        strata = files_info['stratum'].to_list()
+        
+        # Используем StratifiedKFold из sklearn
+        from sklearn.model_selection import StratifiedKFold
+        
+        skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+        
+        folds = []
+        for fold_idx, (train_idx, test_idx) in enumerate(skf.split(file_names, strata)):
+            train_files = [file_names[i] for i in train_idx]
+            test_files = [file_names[i] for i in test_idx]
+            
+            # Статистика по фолду
+            test_info = files_info.filter(pl.col('file_name').is_in(test_files))
+            train_info = files_info.filter(pl.col('file_name').is_in(train_files))
+            
+            fold_data = {
+                "fold": fold_idx + 1,
+                "train_files": sorted(train_files),
+                "test_files": sorted(test_files),
+                "stats": {
+                    "train_n_files": len(train_files),
+                    "test_n_files": len(test_files),
+                    "train_n_rows": int(train_info['n_rows'].sum()),
+                    "test_n_rows": int(test_info['n_rows'].sum()),
+                    "test_class_counts": {
+                        "ML1": int(test_info['has_ML1'].sum()),
+                        "ML2": int(test_info['has_ML2'].sum()),
+                        "ML3": int(test_info['has_ML3'].sum()),
+                    }
+                }
+            }
+            folds.append(fold_data)
+        
+        # Формируем итоговый JSON
+        result = {
+            "n_splits": n_splits,
+            "random_state": random_state,
+            "total_files": len(file_names),
+            "stratification": "by_label_combination_ML1_ML2_ML3",
+            "folds": folds
+        }
+        
+        with open(output_path, 'w', encoding='utf-8') as f:
+            _json.dump(result, f, ensure_ascii=False, indent=2)
+        
+        # Вывод статистики
+        print(f"[DatasetManager] CV-разбиение сохранено: {output_path.name}")
+        print(f"  Всего файлов: {len(file_names)}, Фолдов: {n_splits}")
+        for fold_data in folds:
+            s = fold_data['stats']
+            cc = s['test_class_counts']
+            print(f"  Fold {fold_data['fold']}: train={s['train_n_files']} files, "
+                  f"test={s['test_n_files']} files "
+                  f"(ML1={cc['ML1']}, ML2={cc['ML2']}, ML3={cc['ML3']})")
+        
+        return output_path
+    
+    def load_cv_splits(self) -> Dict:
+        """
+        Загружает предварительно сгенерированные CV-разбиения из JSON.
+        
+        Returns:
+            Словарь с разбиениями (ключи: n_splits, folds, ...)
+        """
+        import json as _json
+        
+        cv_path = self.data_dir / self.CV_SPLITS_JSON
+        if not cv_path.exists():
+            raise FileNotFoundError(
+                f"CV-разбиение не найдено: {cv_path}. "
+                f"Вызовите generate_cv_splits() для создания."
+            )
+        
+        with open(cv_path, 'r', encoding='utf-8') as f:
+            return _json.load(f)
+    
+    def load_fold_data(
+        self, 
+        fold: int, 
+        cv_splits: Optional[Dict] = None
+    ) -> Tuple[pl.DataFrame, pl.DataFrame]:
+        """
+        Загружает train и test DataFrames для указанного fold-а.
+        
+        Args:
+            fold: Номер фолда (1-based)
+            cv_splits: Предзагруженные CV-разбиения (опционально, иначе загрузит из файла)
+            
+        Returns:
+            Кортеж (train_df, test_df) — Polars DataFrames с обработанными метками
+        """
+        if cv_splits is None:
+            cv_splits = self.load_cv_splits()
+        
+        fold_data = cv_splits['folds'][fold - 1]
+        assert fold_data['fold'] == fold, f"Несоответствие номера fold: ожидался {fold}, получен {fold_data['fold']}"
+        
+        train_files = fold_data['train_files']
+        test_files = fold_data['test_files']
+        
+        # Загружаем основной CSV
+        main_path = self.data_dir / self.MAIN_CSV
+        df = pl.read_csv(main_path, infer_schema_length=50000, null_values=["NA", "nan", "null", ""])
+        
+        train_df = df.filter(pl.col('file_name').is_in(train_files))
+        test_df = df.filter(pl.col('file_name').is_in(test_files))
+        
+        # Обработка меток (аналогично load_train_df / load_test_df)
+        train_df = clean_labels(train_df)
+        train_df = add_base_labels(train_df)
+        test_df = clean_labels(test_df)
+        test_df = add_base_labels(test_df)
+        
+        return train_df, test_df
+
     def _get_standardized_columns(self, df: pl.DataFrame) -> List[str]:
         """
         Определяет доступные аналоговые колонки в DataFrame.

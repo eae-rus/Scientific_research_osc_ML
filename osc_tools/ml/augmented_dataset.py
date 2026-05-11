@@ -54,6 +54,69 @@ DEFAULT_SUB_PERIODS = [2, 4, 6, 10]
 NUM_SYMMETRIC = 6          # I1, I2, I0, U1, U2, U0
 
 
+# ---------------------------------------------------------------------------
+# Ресэмплинг сырых сигналов к заданному target_spp (линейная интерполяция)
+# ---------------------------------------------------------------------------
+
+def resample_to_spp(
+    raw: np.ndarray,
+    source_spp: int,
+    target_spp: int = SAMPLES_PER_PERIOD,
+    f_network: float = 50.0,
+) -> np.ndarray:
+    """Передискретизация многоканального сигнала к целевому числу отсчётов на период.
+
+    Алгоритм — линейная интерполяция по каждому каналу:
+    - Если source_spp == target_spp → возвращает raw без копирования.
+    - Если source_spp > target_spp → прореживание с линейным уточнением
+      (если частоты кратны — берётся точка напрямую).
+    - Если source_spp < target_spp → «дорисовывание» промежуточных точек
+      линейной интерполяцией из двух соседних.
+
+    Проход ведётся по целевому массиву: для каждой целевой позиции t находится
+    соответствующая дробная позиция в исходном сигнале (линейное отображение),
+    а затем вычисляется значение линейной интерполяцией между соседними отсчётами.
+
+    Args:
+        raw: (N_source, C) многоканальный сигнал (обычно 8 каналов IA..UN)
+        source_spp: отсчётов на период в исходном сигнале (напр. round(Fs / f_network))
+        target_spp: желаемое число отсчётов на период (по умолчанию 32)
+        f_network: промышленная частота (50 Гц), не используется напрямую (для документации)
+
+    Returns:
+        (N_target, C) float32 массив, где N_target = round(N_source * target_spp / source_spp).
+    """
+    if source_spp == target_spp:
+        return raw
+
+    N_source = raw.shape[0]
+    n_channels = raw.shape[1] if raw.ndim > 1 else 1
+    # Определяем длину целевого массива пропорционально
+    N_target = round(N_source * target_spp / source_spp)
+    if N_target <= 0:
+        return np.empty((0, n_channels), dtype=np.float32)
+
+    # Дробные позиции в исходном массиве для каждой целевой точки
+    ratio = source_spp / target_spp
+    target_indices = np.arange(N_target, dtype=np.float64) * ratio
+
+    # Целые индексы и веса для линейной интерполяции
+    idx_lo = np.floor(target_indices).astype(np.int64)
+    frac = (target_indices - idx_lo).astype(np.float32)
+
+    # Клиппинг на границах
+    idx_hi = np.minimum(idx_lo + 1, N_source - 1)
+    idx_lo = np.minimum(idx_lo, N_source - 1)
+
+    if raw.ndim == 1:
+        result = raw[idx_lo] * (1 - frac) + raw[idx_hi] * frac
+        return result.astype(np.float32)
+
+    # Линейная интерполяция: vectorized по всем каналам
+    result = raw[idx_lo] * (1 - frac[:, np.newaxis]) + raw[idx_hi] * frac[:, np.newaxis]
+    return result.astype(np.float32)
+
+
 def standardize_voltage_columns(df: pl.DataFrame) -> pl.DataFrame:
     """Переименовывает колонки напряжений 'UA BB'→'UA' и т.д. для совместимости с RAW_CHANNELS."""
     available = set(df.columns)
@@ -179,6 +242,8 @@ def compute_spectral_from_raw(
     include_symmetric: bool = True,
     stride: Optional[int] = None,
     warmup: int = 0,
+    fft_window: Optional[int] = None,
+    samples_per_period: Optional[int] = None,
 ) -> np.ndarray:
     """Вычисляет спектральные признаки из сырых 8-канальных данных.
 
@@ -195,6 +260,10 @@ def compute_spectral_from_raw(
         stride: если задан — FFT/polar/symmetric считаются только в позициях
             [warmup, warmup+stride, warmup+2*stride, ...]
         warmup: пропускаемые начальные позиции (FFT warmup)
+        fft_window: размер окна FFT в отсчётах (по умолчанию FFT_WINDOW = 1 период
+            при 1600 Гц). Для других Fs передайте round(Fs / f_network).
+        samples_per_period: отсчётов на период (по умолчанию SAMPLES_PER_PERIOD = 32).
+            Для других Fs передайте round(Fs / f_network).
 
     Returns:
         (T_out, C) float32 массив. T_out = T если stride=None,
@@ -202,6 +271,10 @@ def compute_spectral_from_raw(
     """
     if sub_periods is None:
         sub_periods = DEFAULT_SUB_PERIODS
+    if fft_window is None:
+        fft_window = FFT_WINDOW
+    if samples_per_period is None:
+        samples_per_period = SAMPLES_PER_PERIOD
 
     n_time = raw.shape[0]
 
@@ -217,11 +290,11 @@ def compute_spectral_from_raw(
     complex_all = np.zeros((n_out, NUM_RAW, total_h), dtype=np.complex64)
     for ch in range(NUM_RAW):
         signal = raw[:, ch]
-        phase_phasors = _compute_fft_selected(signal, sel, FFT_WINDOW, num_harmonics)
+        phase_phasors = _compute_fft_selected(signal, sel, fft_window, num_harmonics)
         phase_phasors = np.nan_to_num(phase_phasors, nan=0.0, posinf=0.0, neginf=0.0)
         complex_all[:, ch, :num_harmonics] = phase_phasors
 
-        low_phasors = _compute_low_harmonics_selected(signal, sel, SAMPLES_PER_PERIOD, sub_periods)
+        low_phasors = _compute_low_harmonics_selected(signal, sel, samples_per_period, sub_periods)
         low_phasors = np.nan_to_num(low_phasors, nan=0.0, posinf=0.0, neginf=0.0)
         complex_all[:, ch, num_harmonics:] = low_phasors
 
@@ -282,7 +355,7 @@ class AugmentedSpectralDataset(Dataset):
         include_symmetric: bool = True,
         downsampling_stride: Optional[int] = None,
         stride_fraction: int = 2,
-        future_periods: int = 2,
+        future_zones: int = 0,
         mask_ratio: float = 0.25,
         mask_value: float = 0.0,
         augmenter: Optional[object] = None,
@@ -303,7 +376,9 @@ class AugmentedSpectralDataset(Dataset):
             include_symmetric: добавить симметричные составляющие (I1,I2,I0,U1,U2,U0)
             downsampling_stride: явный stride в отсчётах (если задан — игнорирует stride_fraction)
             stride_fraction: доля периода (2 = полпериода=16, 4 = четверть=8)
-            future_periods: будущих периодов (2 для SSL, >0 для расширенного classify)
+            future_zones: число выходных зон модели для предсказания вперёд.
+                Не зависит от частоты дискретизации — оперирует шагами модели.
+                future_raw_steps = future_zones * downsampling_stride
             mask_ratio: доля маскируемых шагов (0.0 для val)
             mask_value: значение замены
             augmenter: TimeSeriesAugmenter или None
@@ -322,7 +397,7 @@ class AugmentedSpectralDataset(Dataset):
         self.num_harmonics = num_harmonics
         self.sub_periods = sub_periods if sub_periods is not None else DEFAULT_SUB_PERIODS
         self.include_symmetric = include_symmetric
-        self.future_periods = future_periods
+        self.future_zones = future_zones
         self.mask_ratio = mask_ratio
         self.mask_value = mask_value
         self.augmenter = augmenter
@@ -340,8 +415,8 @@ class AugmentedSpectralDataset(Dataset):
         else:
             self.downsampling_stride = compute_stride(SAMPLES_PER_PERIOD, stride_fraction)
 
-        # Будущие шаги
-        self.future_raw_steps = future_periods * SAMPLES_PER_PERIOD
+        # Будущие шаги: определяются числом зон × stride (не зависят от SAMPLES_PER_PERIOD)
+        self.future_raw_steps = future_zones * self.downsampling_stride
         self.full_window_raw = window_size + self.future_raw_steps
 
         # Контекст слева для backward-looking низших гармоник
@@ -355,8 +430,8 @@ class AugmentedSpectralDataset(Dataset):
 
         # Число шагов после stride (warmup = FFT_WINDOW пропускается)
         warmup = FFT_WINDOW
-        self.num_steps_full = max(1, (self.full_window_raw - warmup) // self.downsampling_stride)
         self.num_steps_current = max(1, (window_size - warmup) // self.downsampling_stride)
+        self.num_steps_full = self.num_steps_current + future_zones
 
         # --- Предзагрузка ---
         dataframe = standardize_voltage_columns(dataframe)
@@ -379,7 +454,7 @@ class AugmentedSpectralDataset(Dataset):
               f"{'+sym' if include_symmetric else ''}, "
               f"yagg={self.zone_target_aggregation}, "
               f"aug={'ON' if augmenter else 'OFF'}, "
-              f"future={future_periods}p, ctx={self._context_before}")
+              f"future_zones={future_zones}, ctx={self._context_before}")
 
     # ----- Загрузка сырых данных -----
 
@@ -509,14 +584,26 @@ class AugmentedSpectralDataset(Dataset):
 
         Каждая зона = downsampling_stride raw отсчётов.
         Y[z, c] агрегируется по точкам внутри зоны согласно zone_target_aggregation.
+
+        ВАЖНО: X содержит только текущие шаги (num_steps_current),
+        модель НЕ видит данные из будущего — это критично для РЗА.
+        Y содержит num_steps_full зон (текущие + будущие) — модель
+        предсказывает будущие зоны через FuturePredictionHead (cross-attention
+        к encoder output), не имея доступа к будущим признакам.
         """
-        T_use = min(self.num_steps_full, X_full.shape[1])
-        X = X_full[:, :T_use]
+        # Модель видит только текущие данные, не будущие
+        T_current = min(self.num_steps_current, X_full.shape[1])
+        X = X_full[:, :T_current]
+
+        # Y покрывает все зоны: текущие + будущие
+        T_full = min(self.num_steps_full, X_full.shape[1])
+        # Если future_zones=0, T_full == T_current
+        T_y = max(T_full, T_current)
 
         num_targets = len(self.target_columns)
-        Y = np.zeros((T_use, num_targets), dtype=np.float32)
+        Y = np.zeros((T_y, num_targets), dtype=np.float32)
 
-        for z in range(T_use):
+        for z in range(T_y):
             # Зона z → raw позиции: [warmup + z*stride, warmup + (z+1)*stride)
             z_raw_start = start_idx + FFT_WINDOW + z * self.downsampling_stride
             z_raw_end = z_raw_start + self.downsampling_stride

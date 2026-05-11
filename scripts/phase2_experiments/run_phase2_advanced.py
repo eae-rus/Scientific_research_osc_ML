@@ -66,7 +66,7 @@ def main():
     METADATA_FILE = ROOT_DIR / 'data' / 'ml_datasets' / 'labeled_2025_12_03.csv'
     EXPERIMENTS_DIR = ROOT_DIR / 'experiments' / 'advanced_phase2'
     EXPERIMENTS_DIR.mkdir(parents=True, exist_ok=True)
-    NORM_COEF_PATH = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
+    NORM_COEF_PATH = ROOT_DIR / 'data' / 'norm_coef_all_v1.4.csv'
 
     print(f"Загрузка данных из {METADATA_FILE}")
     df = pl.read_csv(METADATA_FILE, infer_schema_length=10000, null_values=["NA", "nan", "null", ""])

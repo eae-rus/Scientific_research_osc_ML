@@ -22,15 +22,23 @@ def parse_experiment_info(folder_name: str) -> Dict[str, str]:
         "target_level": "base",
         "is_aug": "No",
         "balancing": "None",
-        "arch_type": "Base"
+        "arch_type": "Base",
+        "fold": None,
+        "seed_idx": None,
     }
     
     parts = folder_name.split('_')
     
-    # Пытаемся вытащить ID опыта
-    id_match = re.search(r'(\d+\.\d+\.\d+\.?\w*)', folder_name)
+    # Пытаемся вытащить ID опыта (поддерживаем как 2.7, так и 2.6.1, 2.5.1.0)
+    id_match = re.search(r'(\d+\.\d+(?:\.\d+)?(?:\.\d+)?)', folder_name)
     if id_match:
         info["exp_id"] = id_match.group(1)
+
+    # Парсим fold/seed из формата Exp_2.7_f{N}_s{M}_...
+    fold_match = re.search(r'_f(\d+)_s(\d+)_', folder_name)
+    if fold_match:
+        info["fold"] = int(fold_match.group(1))
+        info["seed_idx"] = int(fold_match.group(2))
 
     # Определяем архитектуру (порядок важен: сначала проверяем более специфичные)
     if 'Hybrid' in folder_name:
@@ -97,14 +105,20 @@ def parse_experiment_info(folder_name: str) -> Dict[str, str]:
 
     if 'raw' in parts: info["feature_mode"] = 'Raw'
     elif 'phase_polar' in folder_name: info["feature_mode"] = 'PhasePolar'
+    elif 'phase_complex' in folder_name: info["feature_mode"] = 'PhaseComplex'
     elif 'phase_rect' in folder_name: info["feature_mode"] = 'PhaseRect'
+    elif 'symmetric_polar' in folder_name: info["feature_mode"] = 'SymmetricPolar'
     elif 'symmetric' in folder_name: info["feature_mode"] = 'Symmetric'
     elif 'power' in parts: info["feature_mode"] = 'Power'
+    elif 'alpha_beta' in folder_name: info["feature_mode"] = 'AlphaBeta'
     elif 'ab' in parts: info["feature_mode"] = 'AB'
     
     if 'stride' in parts: info["sampling"] = 'Stride'
     elif 'snapshot' in parts: info["sampling"] = 'Snapshot'
     elif 'none_sampl' in parts: info["sampling"] = 'NoneSampling'
+    # Для формата Exp_2.7_..._raw_none: последний элемент 'none' = sampling
+    elif folder_name.endswith('_none') or '_none_' in folder_name:
+        info["sampling"] = 'Dense'
     
     if 'aug' in parts: info["is_aug"] = 'Yes'
     
@@ -118,10 +132,10 @@ def parse_experiment_info(folder_name: str) -> Dict[str, str]:
 
 def extract_base_exp_id(text: str) -> str:
     """
-    Извлекает базовый ID опыта из строки (например, 2.5.1.0 или 2.6.4).
+    Извлекает базовый ID опыта из строки (например, 2.5.1.0, 2.6.4 или 2.7).
     Используется для устойчивой группировки и понятных заголовков графиков.
     """
-    match = re.search(r'(\d+\.\d+\.\d+\.\d+|\d+\.\d+\.\d+)', text)
+    match = re.search(r'(\d+\.\d+\.\d+\.\d+|\d+\.\d+\.\d+|\d+\.\d+)', text)
     if match:
         return match.group(1)
     return "Unknown"

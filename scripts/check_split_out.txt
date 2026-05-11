@@ -1,0 +1,6 @@
+Moved dpozz file from val to train
+Moved stable file from val to train
+Train: 161 files, Val: 37 files
+  Train Target_OZZ: 4320, Val Target_OZZ: 2906
+  Train Target_OZZ_decay: 1138, Val Target_OZZ_decay: 1064
+  Train Target_OZZ_dpozz: 1594, Val Target_OZZ_dpozz: 200

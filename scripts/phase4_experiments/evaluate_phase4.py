@@ -35,7 +35,9 @@ from torch.utils.data import DataLoader
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from osc_tools.ml.models.transformer import PhysicalKANTransformer, BaselineTransformer
+from osc_tools.ml.models.transformer import (
+    PhysicalKANTransformer, PhysicalMLPTransformer, BaselineTransformer,
+)
 from osc_tools.ml.precomputed_dataset import PrecomputedDataset
 from osc_tools.ml.augmented_dataset import AugmentedSpectralDataset, compute_num_channels, compute_spectral_from_raw
 from osc_tools.ml.labels import get_target_columns, prepare_labels_for_experiment
@@ -46,6 +48,207 @@ from osc_tools.ml.labels import get_target_columns, prepare_labels_for_experimen
 # ---------------------------------------------------------------------------
 
 PREDICTION_THRESHOLD = 0.5  # Порог для бинарных предсказаний (стандартный для sigmoid)
+
+
+def find_optimal_thresholds(
+    preds: np.ndarray,
+    targets: np.ndarray,
+    target_columns: list[str],
+    grid_steps: int = 101,
+) -> dict[str, dict]:
+    """Поиск оптимального порога per-class через grid search по F1.
+
+    Для каждого класса перебираем пороги от 0.01 до 0.99 и выбираем
+    тот, при котором F1 максимален. Также считаем macro-F1 для
+    оптимальных порогов.
+
+    Args:
+        preds: (N, C) вероятности после sigmoid
+        targets: (N, C) бинарные метки
+        target_columns: названия классов
+        grid_steps: число точек сетки порогов
+
+    Returns:
+        dict с ключами 'per_class' (пороги и F1 для каждого класса),
+        'thresholds' (dict class→float), 'macro_f1_optimal'
+    """
+    from sklearn.metrics import f1_score
+
+    thresholds_grid = np.linspace(0.01, 0.99, grid_steps)
+    targets_int = targets.astype(np.int32)
+    num_classes = targets.shape[1]
+
+    result: dict = {'per_class': {}, 'thresholds': {}}
+    best_preds_bin = np.zeros_like(targets_int)
+
+    for i, col in enumerate(target_columns):
+        best_f1 = -1.0
+        best_thr = 0.5
+
+        # Если класс не представлен — оставляем порог 0.5
+        if targets_int[:, i].sum() == 0 or (1 - targets_int[:, i]).sum() == 0:
+            result['per_class'][col] = {'threshold': 0.5, 'f1': 0.0}
+            result['thresholds'][col] = 0.5
+            best_preds_bin[:, i] = (preds[:, i] >= 0.5).astype(np.int32)
+            continue
+
+        for thr in thresholds_grid:
+            pred_bin = (preds[:, i] >= thr).astype(np.int32)
+            f1_val = f1_score(targets_int[:, i], pred_bin, zero_division=0)
+            if f1_val > best_f1:
+                best_f1 = f1_val
+                best_thr = float(thr)
+
+        result['per_class'][col] = {'threshold': best_thr, 'f1': float(best_f1)}
+        result['thresholds'][col] = best_thr
+        best_preds_bin[:, i] = (preds[:, i] >= best_thr).astype(np.int32)
+
+    # Macro-F1 с оптимальными порогами
+    result['macro_f1_optimal'] = float(
+        f1_score(targets_int, best_preds_bin, average='macro', zero_division=0)
+    )
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Метрики границ событий (Smearing / Delay)
+# ---------------------------------------------------------------------------
+
+def compute_boundary_metrics(
+    probs: np.ndarray,
+    targets: np.ndarray,
+    target_columns: list[str],
+    threshold: float = PREDICTION_THRESHOLD,
+    stride_samples: int = 16,
+) -> dict:
+    """Вычисляет метрики точности границ для каждого класса.
+
+    Для каждого файла (осциллограммы) и каждого класса:
+    - **delay** — задержка обнаружения: расстояние от начала реального события
+      до первого предсказанного положительного (в зонах). Положительное = опоздание.
+    - **smearing_onset** — ширина «нарастания» на начале события: число зон
+      между первым и последним переключением 0→1 в окрестности true onset.
+    - **smearing_offset** — ширина «спада» в конце события: число зон между
+      первым и последним переключением 1→0 в окрестности true offset.
+    - **false_alarm_zones** — число зон с pred=1 за пределами любого реального события.
+
+    Args:
+        probs: (N_zones, C) вероятности (позонные, НЕ window-level)
+        targets: (N_zones, C) бинарные метки (позонные)
+        target_columns: названия классов
+        threshold: порог бинаризации
+        stride_samples: число отсчётов в одной зоне (для перевода в мс)
+
+    Returns:
+        dict с метриками per-class и средними
+    """
+    preds_bin = (probs >= threshold).astype(np.int32)
+    targets_bin = targets.astype(np.int32)
+    num_classes = targets.shape[1]
+    result: dict = {'per_class': {}, 'stride_samples': stride_samples}
+
+    for ci, col in enumerate(target_columns):
+        t = targets_bin[:, ci]
+        p = preds_bin[:, ci]
+
+        # Найти все непрерывные сегменты событий в targets
+        events = _find_segments(t)
+        # Найти все предсказанные сегменты
+        pred_events = _find_segments(p)
+
+        delays = []
+        smearing_onsets = []
+        smearing_offsets = []
+        false_zones = 0
+
+        for ev_start, ev_end in events:
+            # delay: расстояние от ev_start до первого p[i]=1 внутри [ev_start, ev_end)
+            first_pred = None
+            for i in range(ev_start, ev_end):
+                if p[i] == 1:
+                    first_pred = i
+                    break
+            if first_pred is not None:
+                delays.append(first_pred - ev_start)
+            else:
+                # Полный промах — событие не обнаружено
+                delays.append(ev_end - ev_start)  # максимальная задержка = длина события
+
+            # smearing_onset: в окрестности ev_start (±5 зон)
+            # подсчёт зон, где предсказание «колеблется»
+            margin = 5
+            onset_region = p[max(0, ev_start - margin):min(len(p), ev_start + margin)]
+            if len(onset_region) > 0:
+                transitions = int(np.sum(np.abs(np.diff(onset_region))))
+                smearing_onsets.append(transitions)
+            else:
+                smearing_onsets.append(0)
+
+            # smearing_offset: в окрестности ev_end
+            offset_region = p[max(0, ev_end - margin):min(len(p), ev_end + margin)]
+            if len(offset_region) > 0:
+                transitions = int(np.sum(np.abs(np.diff(offset_region))))
+                smearing_offsets.append(transitions)
+            else:
+                smearing_offsets.append(0)
+
+        # false_alarm_zones: pred=1 вне любого реального события
+        event_mask = np.zeros(len(t), dtype=bool)
+        for ev_start, ev_end in events:
+            event_mask[ev_start:ev_end] = True
+        false_zones = int(np.sum(p[~event_mask]))
+
+        cls_result = {
+            'num_events': len(events),
+            'num_pred_events': len(pred_events),
+            'delays_zones': delays,
+            'mean_delay_zones': float(np.mean(delays)) if delays else 0.0,
+            'mean_delay_samples': float(np.mean(delays) * stride_samples) if delays else 0.0,
+            'smearing_onset': smearing_onsets,
+            'mean_smearing_onset': float(np.mean(smearing_onsets)) if smearing_onsets else 0.0,
+            'smearing_offset': smearing_offsets,
+            'mean_smearing_offset': float(np.mean(smearing_offsets)) if smearing_offsets else 0.0,
+            'false_alarm_zones': false_zones,
+        }
+        result['per_class'][col] = cls_result
+
+    # Средние по всем классам
+    all_delays = []
+    all_smear_on = []
+    all_smear_off = []
+    for col in target_columns:
+        cr = result['per_class'][col]
+        all_delays.extend(cr['delays_zones'])
+        all_smear_on.extend(cr['smearing_onset'])
+        all_smear_off.extend(cr['smearing_offset'])
+
+    result['mean_delay_zones'] = float(np.mean(all_delays)) if all_delays else 0.0
+    result['mean_delay_samples'] = result['mean_delay_zones'] * stride_samples
+    result['mean_smearing_onset'] = float(np.mean(all_smear_on)) if all_smear_on else 0.0
+    result['mean_smearing_offset'] = float(np.mean(all_smear_off)) if all_smear_off else 0.0
+
+    return result
+
+
+def _find_segments(binary: np.ndarray) -> list[tuple[int, int]]:
+    """Находит непрерывные сегменты единиц в бинарном массиве.
+    
+    Returns:
+        Список (start, end) — полуоткрытые интервалы [start, end)
+    """
+    segments = []
+    in_seg = False
+    start = 0
+    for i, v in enumerate(binary):
+        if v == 1 and not in_seg:
+            start = i
+            in_seg = True
+        elif v == 0 and in_seg:
+            segments.append((start, i))
+            in_seg = False
+    if in_seg:
+        segments.append((start, len(binary)))
+    return segments
 
 
 def compute_full_metrics(
@@ -173,6 +376,43 @@ def run_inference(
     return np.concatenate(all_preds), np.concatenate(all_targets), elapsed
 
 
+@torch.no_grad()
+def run_inference_zone_level(
+    model: nn.Module,
+    loader: DataLoader,
+    device: torch.device,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Inference с zone-level выходом (без усреднения по зонам).
+
+    Конкатенирует все зоны всех батчей в один длинный массив.
+    Используется для boundary-метрик (smearing, delay).
+
+    Returns:
+        (zone_preds, zone_targets) — позонные данные, shape (N_total_zones, C)
+    """
+    model.eval()
+    all_preds, all_targets = [], []
+
+    for x, y in loader:
+        x = x.to(device)
+        out = model(x, mode='classify')
+        logits = out['classify']  # (B, T_zones, C)
+        probs = torch.sigmoid(logits.float()).cpu().numpy()
+
+        # Flatten batch: (B, T, C) → (B*T, C)
+        B, T, C = probs.shape
+        all_preds.append(probs.reshape(-1, C))
+
+        y_np = y.numpy()
+        if y_np.ndim == 3:
+            all_targets.append(y_np.reshape(-1, y_np.shape[-1]))
+        else:
+            # Если метки window-level — растянуть на T зон
+            all_targets.append(np.repeat(y_np, T, axis=0))
+
+    return np.concatenate(all_preds), np.concatenate(all_targets)
+
+
 def measure_inference_latency(
     model: nn.Module,
     num_channels: int,
@@ -213,13 +453,18 @@ def mark_oscillogram(
     config: dict,
     device: torch.device,
     step: int = 32,
-) -> np.ndarray:
+) -> tuple[np.ndarray, np.ndarray]:
     """Разметка осциллограммы скользящим окном с усреднением перекрывающихся предсказаний.
 
     Алгоритм:
     1. Скользящее окно шагом step=32 (1 период) по raw_data
     2. Для каждого окна: FFT → stride фазоров → polar/symmetric → inference
     3. Пообразцовое усреднение: для каждой точки — среднее от всех покрывающих окон.
+
+    Edge handling (Q10):
+    - Первые ~(fft_window) отсчётов НЕ покрыты — возвращаются как NaN
+    - coverage[i] показывает число окон, покрывающих i-й отсчёт
+    - Надёжность предсказания растёт с coverage (1 окно < 5 окон)
 
     Args:
         model: fine-tuned модель в eval mode
@@ -229,7 +474,9 @@ def mark_oscillogram(
         step: шаг скользящего окна в отсчётах (32 = 1 период)
 
     Returns:
-        (N, num_classes) усреднённые вероятности для каждого отсчёта
+        (probs, coverage):
+        - probs: (N, num_classes) усреднённые вероятности (NaN для непокрытых точек)
+        - coverage: (N,) число окон, покрывающих каждый отсчёт (0 = нет данных)
     """
     model.eval()
     N = raw_data.shape[0]
@@ -285,16 +532,16 @@ def mark_oscillogram(
 
     # Усреднение
     mask_covered = coverage > 0
-    result = np.zeros((N, num_classes), dtype=np.float32)
+    result = np.full((N, num_classes), np.nan, dtype=np.float32)
     result[mask_covered] = (prob_sum[mask_covered] / coverage[mask_covered, np.newaxis]).astype(np.float32)
 
-    # Непокрытые точки (начало осциллограммы) — берём ближайшее предсказание
-    if not mask_covered.all():
-        first_covered = np.argmax(mask_covered)
-        if first_covered > 0:
-            result[:first_covered] = result[first_covered]
+    # Непокрытые точки остаются NaN — это честный edge handling (Q10).
+    # Вызывающий код должен учитывать coverage при визуализации.
+    n_uncovered = int((~mask_covered).sum())
+    if n_uncovered > 0:
+        print(f"  Edge handling: {n_uncovered} отсчётов без покрытия (первые ~{np.argmax(mask_covered)} точек)")
 
-    return result
+    return result, coverage
 
 
 # ---------------------------------------------------------------------------
@@ -330,7 +577,22 @@ def load_model_from_checkpoint(
             use_mixed_layer_norm=config.get('use_mixed_layer_norm', False),
             cls_head_type=config.get('cls_head_type', 'kan'),
             dropout=0.0,  # Dropout off при inference
-            max_seq_len=64,
+            max_seq_len=config.get('max_seq_len', 128),
+        )
+    elif model_type == 'PhysicalMLPTransformer':
+        model = PhysicalMLPTransformer(
+            num_input_channels=config['num_input_channels'],
+            d_model=config['d_model'],
+            num_heads=config['num_heads'],
+            num_layers=config['num_layers'],
+            num_classes=num_classes,
+            zone_size=zone_size,
+            kan_grid_size=config.get('kan_grid_size', 5),
+            use_angle_gate=config.get('use_angle_gate', True),
+            use_mixed_layer_norm=config.get('use_mixed_layer_norm', False),
+            cls_head_type=config.get('cls_head_type', 'mlp'),
+            dropout=0.0,
+            max_seq_len=config.get('max_seq_len', 128),
         )
     elif model_type == 'BaselineTransformer':
         model = BaselineTransformer(
@@ -342,7 +604,7 @@ def load_model_from_checkpoint(
             zone_size=zone_size,
             cls_head_type=config.get('cls_head_type', 'linear'),
             dropout=0.0,
-            max_seq_len=64,
+            max_seq_len=config.get('max_seq_len', 128),
         )
     else:
         raise ValueError(f"Неизвестный тип модели: {model_type}")
@@ -406,11 +668,14 @@ def prepare_val_dataloader(
     use_low_harmonics = config.get('use_low_harmonics', False)
     include_symmetric = config.get('include_symmetric', True)
     sub_periods = config.get('sub_periods', [2, 4, 6, 10]) if use_low_harmonics else []
-    future_periods = config.get('future_periods', 0)
+    future_zones = config.get('future_zones', 0)
+    # Обратная совместимость со старыми конфигами
+    if future_zones == 0 and config.get('future_periods', 0) > 0:
+        future_zones = config['future_periods'] * 32 // stride
     zone_target_aggregation = config.get('zone_target_aggregation', 'max')
 
-    # Правильное окно для индексации (с учётом будущих периодов)
-    full_window = window_size + future_periods * 32
+    # Правильное окно для индексации (с учётом будущих зон)
+    full_window = window_size + future_zones * stride
 
     if use_low_harmonics:
         val_boundaries = AugmentedSpectralDataset.compute_file_boundaries(val_df)
@@ -426,7 +691,7 @@ def prepare_val_dataloader(
             sub_periods=sub_periods if sub_periods else None,
             include_symmetric=include_symmetric,
             downsampling_stride=stride,
-            future_periods=future_periods,
+            future_zones=future_zones,
             mask_ratio=0.0,
             augmenter=None,
             target_columns=target_columns,
@@ -538,8 +803,26 @@ def evaluate_checkpoint(
     preds, targets, inference_time = run_inference(model, val_loader, device)
     print(f"Inference: {preds.shape[0]} samples за {inference_time:.2f} с")
 
-    # Метрики
+    # Метрики с порогом по умолчанию
     metrics = compute_full_metrics(preds, targets, target_columns)
+
+    # Оптимальные пороги per-class
+    opt_thresholds = find_optimal_thresholds(preds, targets, target_columns)
+    metrics['optimal_thresholds'] = opt_thresholds
+    # Метрики с оптимальными порогами
+    metrics_opt = compute_full_metrics(
+        preds, targets, target_columns,
+        threshold=None,  # Не используется — мы подменяем бинаризацию ниже
+    )
+    # Пересчёт с per-class порогами
+    preds_bin_opt = np.zeros_like(preds, dtype=np.int32)
+    for i, col in enumerate(target_columns):
+        thr = opt_thresholds['thresholds'].get(col, 0.5)
+        preds_bin_opt[:, i] = (preds[:, i] >= thr).astype(np.int32)
+    from sklearn.metrics import f1_score as _f1
+    metrics['macro_f1_optimal'] = float(
+        _f1(targets.astype(np.int32), preds_bin_opt, average='macro', zero_division=0)
+    )
 
     # Latency
     num_channels = config['num_input_channels']
@@ -562,6 +845,55 @@ def evaluate_checkpoint(
     # Печать
     print_report(metrics, target_columns, model_info)
 
+    # Таблица оптимальных порогов
+    print("\n--- Оптимальные пороги per-class ---")
+    print(f"  {'Класс':<25s} {'Порог':>8s} {'F1_opt':>8s} {'F1_0.5':>8s}")
+    print("  " + "-" * 55)
+    for col in target_columns:
+        opt = opt_thresholds['per_class'].get(col, {})
+        std = metrics['per_class'].get(col, {})
+        print(
+            f"  {col:<25s} "
+            f"{opt.get('threshold', 0.5):8.3f} "
+            f"{opt.get('f1', 0):8.4f} "
+            f"{std.get('f1', 0):8.4f}"
+        )
+    print(f"\n  Macro-F1 (порог=0.5):      {metrics['macro_f1']:.4f}")
+    print(f"  Macro-F1 (оптимал.):       {metrics['macro_f1_optimal']:.4f}")
+    delta = metrics['macro_f1_optimal'] - metrics['macro_f1']
+    print(f"  Прирост:                   {delta:+.4f}")
+
+    # --- Boundary-метрики (smearing / delay) ---
+    print("\n--- Метрики границ (zone-level) ---")
+    try:
+        zone_preds, zone_targets = run_inference_zone_level(model, val_loader, device)
+        stride_samples = config.get('downsampling_stride', 16)
+        boundary = compute_boundary_metrics(
+            zone_preds, zone_targets, target_columns,
+            threshold=PREDICTION_THRESHOLD, stride_samples=stride_samples,
+        )
+        metrics['boundary'] = boundary
+
+        print(f"  {'Класс':<25s} {'Событий':>8s} {'Delay(зон)':>11s} {'Delay(отсч)':>12s} {'Smear_on':>9s} {'Smear_off':>10s} {'FP_зон':>7s}")
+        print("  " + "-" * 85)
+        for col in target_columns:
+            bc = boundary['per_class'].get(col, {})
+            print(
+                f"  {col:<25s} "
+                f"{bc.get('num_events', 0):8d} "
+                f"{bc.get('mean_delay_zones', 0):11.2f} "
+                f"{bc.get('mean_delay_samples', 0):12.1f} "
+                f"{bc.get('mean_smearing_onset', 0):9.2f} "
+                f"{bc.get('mean_smearing_offset', 0):10.2f} "
+                f"{bc.get('false_alarm_zones', 0):7d}"
+            )
+        print(f"\n  Среднее: delay={boundary['mean_delay_zones']:.2f} зон "
+              f"({boundary['mean_delay_samples']:.0f} отсч.), "
+              f"smear_on={boundary['mean_smearing_onset']:.2f}, "
+              f"smear_off={boundary['mean_smearing_offset']:.2f}")
+    except Exception as e:
+        print(f"  Не удалось вычислить boundary-метрики: {e}")
+
     # Сохранение
     if save_report:
         report_dir = ckpt_path.parent
@@ -575,6 +907,12 @@ def evaluate_checkpoint(
         with open(report_path, 'w', encoding='utf-8') as f:
             json.dump(report, f, indent=2, ensure_ascii=False, default=str)
         print(f"\nОтчёт сохранён: {report_path}")
+
+        # Отдельно сохраняем оптимальные пороги
+        thr_path = report_dir / 'optimal_thresholds.json'
+        with open(thr_path, 'w', encoding='utf-8') as f:
+            json.dump(opt_thresholds, f, indent=2, ensure_ascii=False)
+        print(f"Пороги сохранены: {thr_path}")
 
     return metrics
 
@@ -656,11 +994,13 @@ def main() -> None:
         raw_channels = ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']
         raw_data = raw_df.select(raw_channels).to_numpy().astype(np.float32)
 
-        probs = mark_oscillogram(model, raw_data, config, device, step=args.mark_step)
+        probs, coverage = mark_oscillogram(model, raw_data, config, device, step=args.mark_step)
 
-        # Сохраняем результат
+        # Сохраняем результат (NaN для непокрытых точек остаются)
         target_cols = get_target_columns(config.get('target_level', 'base'))
-        out_df = pl.DataFrame({col: probs[:, i] for i, col in enumerate(target_cols)})
+        data_dict = {col: probs[:, i] for i, col in enumerate(target_cols)}
+        data_dict['coverage'] = coverage.astype(np.float32)
+        out_df = pl.DataFrame(data_dict)
         out_path = mark_path.with_suffix('.marking.csv')
         out_df.write_csv(str(out_path))
         print(f"Разметка сохранена: {out_path} ({probs.shape[0]} отсчётов, {probs.shape[1]} классов)")
@@ -708,9 +1048,11 @@ if __name__ == '__main__':
             raw_df = pl.read_csv(str(mark_path))
             raw_channels = ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']
             raw_data = raw_df.select(raw_channels).to_numpy().astype(np.float32)
-            probs = mark_oscillogram(model, raw_data, config, device, step=MARK_STEP)
+            probs, coverage = mark_oscillogram(model, raw_data, config, device, step=MARK_STEP)
             target_cols = get_target_columns(config.get('target_level', 'base'))
-            out_df = pl.DataFrame({col: probs[:, i] for i, col in enumerate(target_cols)})
+            data_dict = {col: probs[:, i] for i, col in enumerate(target_cols)}
+            data_dict['coverage'] = coverage.astype(np.float32)
+            out_df = pl.DataFrame(data_dict)
             out_path = mark_path.with_suffix('.marking.csv')
             out_df.write_csv(str(out_path))
             print(f"Разметка сохранена: {out_path}")

@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from pathlib import Path
 import json
 import time
+import gc
 from typing import Optional
 from tqdm import tqdm
 from dataclasses import asdict
@@ -18,7 +19,7 @@ from osc_tools.ml.models import (
     HybridMLP, HybridCNN, HybridResNet,
     HybridSimpleKAN, HybridConvKAN, HybridPhysicsKAN,
     PDR_MLP_v2, FFT_MLP_COMPLEX_v1,
-    SimpleKAN, ConvKAN, PhysicsKAN, PhysicsKANConditional, cPhysicsKAN, AutoEncoder
+    SimpleKAN, ConvKAN, PhysicsKAN, PhysicsKANConditional, cPhysicsKAN, rPhysicsKAN, AutoEncoder
 )
 from osc_tools.ml.class_weights import compute_pos_weight_from_loader
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, balanced_accuracy_score
@@ -77,6 +78,8 @@ class ExperimentRunner:
             model = PhysicsKANConditional(**params)
         elif name == 'cPhysicsKAN':
             model = cPhysicsKAN(**params)
+        elif name == 'rPhysicsKAN':
+            model = rPhysicsKAN(**params)
         elif name == 'AutoEncoder':
             model = AutoEncoder(**params)
         # Гибридные модели (Exp 2.6.3)
@@ -338,11 +341,21 @@ class ExperimentRunner:
                 best_val_loss = avg_val_loss
                 self.save_checkpoint('best_model.pt')
             
+            # Сохраняем последнюю модель (перезаписывается каждую эпоху)
+            # Позволяет восстановить обучение при сбое
+            self.save_checkpoint('last_model.pt')
+            
             # Периодический чекпоинт (каждые N эпох)
             if (epoch + 1) % self.config.training.checkpoint_frequency == 0:
                 self.save_checkpoint(f'checkpoint_epoch_{epoch+1}.pt')
                 
         self.save_checkpoint('final_model.pt')
+        
+        # Удаляем last_model.pt — final_model.pt теперь является маркером завершения
+        last_path = self.save_dir / 'last_model.pt'
+        if last_path.exists():
+            last_path.unlink()
+        
         print("Обучение завершено.")
         return history
 
@@ -369,3 +382,20 @@ class ExperimentRunner:
             'config': self.config,
             'optimizer_state_dict': self.optimizer.state_dict()
         }, path)
+
+    def cleanup(self):
+        """Освобождение GPU памяти после завершения обучения.
+        
+        Вызывается извне после run_single_experiment(), чтобы предотвратить
+        накопление фрагментированной памяти при последовательном обучении.
+        """
+        if hasattr(self, 'model'):
+            self.model.cpu()
+            del self.model
+        if hasattr(self, 'optimizer'):
+            del self.optimizer
+        if hasattr(self, 'criterion'):
+            del self.criterion
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        gc.collect()

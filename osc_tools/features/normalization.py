@@ -1106,7 +1106,7 @@ class NormOsc:
     # TODO: Подумать о том, что получается несколько "__init__"
     def __init__(self, norm_coef_file_path='norm_coef.csv'):
         if os.path.exists(norm_coef_file_path):
-            self.norm_coef = pl.read_csv(norm_coef_file_path)
+            self.norm_coef = pl.read_csv(norm_coef_file_path, infer_schema_length=None)
         else:
             self.norm_coef = None
                 

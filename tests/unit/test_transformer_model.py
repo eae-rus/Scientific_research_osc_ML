@@ -585,3 +585,218 @@ class TestSpectralReconstructionLoss:
         loss = loss_fn(pred_amp, pred_phase, true_amp, true_phase)
         assert not torch.isnan(loss)
         assert not torch.isinf(loss)
+
+
+# ============================================================
+# FuturePredictionHead
+# ============================================================
+
+from osc_tools.ml.models.transformer import FuturePredictionHead
+
+
+class TestFuturePredictionHead:
+    """Тесты авторегрессионной головы для предсказания будущих зон."""
+
+    @pytest.fixture
+    def head(self):
+        return FuturePredictionHead(
+            d_model=32, num_future_zones=4, num_classes=3, num_heads=2
+        )
+
+    def test_instantiation(self, head):
+        assert isinstance(head, nn.Module)
+        assert head.num_future_zones == 4
+
+    def test_forward_shape(self, head):
+        """Выход = (B, num_future_zones, num_classes)."""
+        encoder_output = torch.randn(2, 10, 32)
+        out = head(encoder_output)
+        assert out.shape == (2, 4, 3)
+
+    def test_backward(self, head):
+        """Градиенты текут через cross-attention."""
+        encoder_output = torch.randn(2, 10, 32, requires_grad=True)
+        out = head(encoder_output)
+        out.sum().backward()
+        assert encoder_output.grad is not None
+
+    def test_single_future_zone(self):
+        """Работает с одной будущей зоной."""
+        head = FuturePredictionHead(d_model=16, num_future_zones=1, num_classes=2)
+        encoder_output = torch.randn(1, 5, 16)
+        out = head(encoder_output)
+        assert out.shape == (1, 1, 2)
+
+
+# ============================================================
+# PhysicalKANTransformer — FuturePredictionHead + set_ablation
+# ============================================================
+
+class TestPhysicalKANTransformerExtended:
+    """Тесты нового функционала: future_zones и абляции."""
+
+    @pytest.fixture
+    def model_with_future(self):
+        return PhysicalKANTransformer(
+            num_input_channels=16,
+            d_model=32,
+            num_heads=2,
+            num_layers=2,
+            num_classes=3,
+            zone_size=4,
+            num_future_zones=4,
+            kan_grid_size=3,
+            dropout=0.0,
+            max_seq_len=64,
+        )
+
+    def test_classify_with_future_zones(self, model_with_future):
+        """Classify выход включает будущие зоны."""
+        x = torch.randn(2, 16, 20)
+        out = model_with_future(x, mode='classify')
+        # T=20, zone_size=4 → 5 текущих зон + 4 будущих = 9
+        assert out['classify'].shape == (2, 9, 3)
+
+    def test_classify_without_future_zones(self):
+        """Без future zones выход не включает доп. зоны."""
+        model = PhysicalKANTransformer(
+            num_input_channels=16, d_model=32, num_heads=2,
+            num_layers=2, num_classes=3, zone_size=4,
+            num_future_zones=0,
+            kan_grid_size=3, dropout=0.0, max_seq_len=64,
+        )
+        x = torch.randn(2, 16, 20)
+        out = model(x, mode='classify')
+        assert out['classify'].shape == (2, 5, 3)
+
+    def test_set_ablation_disable_kan(self, model_with_future):
+        """set_ablation отключает KAN — forward всё ещё работает."""
+        model_with_future.set_ablation(disable_kan=True)
+        x = torch.randn(2, 16, 20)
+        out = model_with_future(x, mode='classify')
+        assert out['classify'].shape == (2, 9, 3)
+        assert not torch.isnan(out['classify']).any()
+
+    def test_set_ablation_disable_interaction(self, model_with_future):
+        """set_ablation отключает interaction."""
+        model_with_future.set_ablation(disable_interaction=True)
+        x = torch.randn(2, 16, 20)
+        out = model_with_future(x, mode='classify')
+        assert not torch.isnan(out['classify']).any()
+
+    def test_set_ablation_all_disabled(self, model_with_future):
+        """Все блоки отключены — forward не падает."""
+        model_with_future.set_ablation(
+            disable_kan=True, disable_interaction=True, disable_phase_shift=True
+        )
+        x = torch.randn(2, 16, 20)
+        out = model_with_future(x, mode='classify')
+        assert not torch.isnan(out['classify']).any()
+
+    def test_set_ablation_reset(self, model_with_future):
+        """После сброса абляции выход меняется."""
+        x = torch.randn(1, 16, 20)
+        out_full = model_with_future(x, mode='classify')['classify'].detach()
+        model_with_future.set_ablation(disable_kan=True)
+        out_ablated = model_with_future(x, mode='classify')['classify'].detach()
+        model_with_future.set_ablation(disable_kan=False)
+        out_reset = model_with_future(x, mode='classify')['classify'].detach()
+        # После сброса должен вернуться к исходному
+        assert torch.allclose(out_full, out_reset, atol=1e-5)
+
+
+# ============================================================
+# Labels: base3
+# ============================================================
+
+class TestLabelsBase3:
+    """Тесты для base3 target level."""
+
+    def test_base3_returns_3_columns(self):
+        from osc_tools.ml.labels import get_target_columns
+        cols = get_target_columns('base3')
+        assert len(cols) == 3
+        assert 'Target_ML_1' in cols
+        assert 'Target_ML_2' in cols
+        assert 'Target_ML_3' in cols
+
+    def test_base3_no_normal(self):
+        from osc_tools.ml.labels import get_target_columns
+        cols = get_target_columns('base3')
+        assert 'Target_Normal' not in cols
+
+    def test_base_returns_4_columns(self):
+        """Проверяем обратную совместимость: base = 4 класса."""
+        from osc_tools.ml.labels import get_target_columns
+        cols = get_target_columns('base')
+        assert len(cols) == 4
+        assert 'Target_Normal' in cols
+
+
+# ============================================================
+# _find_segments + compute_boundary_metrics
+# ============================================================
+
+import numpy as np
+
+
+class TestFindSegments:
+    """Тесты для утилиты поиска непрерывных сегментов."""
+
+    def test_single_segment(self):
+        from scripts.phase4_experiments.evaluate_phase4 import _find_segments
+        binary = np.array([0, 0, 1, 1, 1, 0])
+        segments = _find_segments(binary)
+        assert segments == [(2, 5)]
+
+    def test_multiple_segments(self):
+        from scripts.phase4_experiments.evaluate_phase4 import _find_segments
+        binary = np.array([1, 1, 0, 0, 1, 0, 1, 1])
+        segments = _find_segments(binary)
+        assert segments == [(0, 2), (4, 5), (6, 8)]
+
+    def test_no_segments(self):
+        from scripts.phase4_experiments.evaluate_phase4 import _find_segments
+        binary = np.zeros(10, dtype=int)
+        segments = _find_segments(binary)
+        assert segments == []
+
+    def test_all_ones(self):
+        from scripts.phase4_experiments.evaluate_phase4 import _find_segments
+        binary = np.ones(5, dtype=int)
+        segments = _find_segments(binary)
+        assert segments == [(0, 5)]
+
+    def test_empty_array(self):
+        from scripts.phase4_experiments.evaluate_phase4 import _find_segments
+        binary = np.array([], dtype=int)
+        segments = _find_segments(binary)
+        assert segments == []
+
+
+class TestComputeBoundaryMetrics:
+    """Smoke-тесты для boundary-метрик."""
+
+    def test_perfect_prediction(self):
+        """Идеальное предсказание: delay=0, smearing=0."""
+        from scripts.phase4_experiments.evaluate_phase4 import compute_boundary_metrics
+        T, C = 20, 2
+        targets = np.zeros((T, C))
+        targets[5:15, 0] = 1.0  # класс 0 — событие в зонах 5-14
+        probs = targets.copy()
+        cols = ['ML_1', 'ML_2']
+        result = compute_boundary_metrics(probs, targets, cols, threshold=0.5)
+        assert result['per_class']['ML_1']['mean_delay_zones'] == 0.0
+        assert result['per_class']['ML_1']['false_alarm_zones'] == 0
+
+    def test_delayed_prediction(self):
+        """Предсказание опаздывает на 3 зоны."""
+        from scripts.phase4_experiments.evaluate_phase4 import compute_boundary_metrics
+        T, C = 20, 1
+        targets = np.zeros((T, C))
+        targets[5:15, 0] = 1.0
+        probs = np.zeros((T, C))
+        probs[8:15, 0] = 1.0  # задержка 3 зоны
+        cols = ['ML_1']
+        result = compute_boundary_metrics(probs, targets, cols, threshold=0.5)
+        assert result['per_class']['ML_1']['mean_delay_zones'] == 3.0

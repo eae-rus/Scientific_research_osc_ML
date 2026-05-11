@@ -804,7 +804,7 @@ if __name__ == "__main__":
         uses_bus='2',
         strat_point=1000,
         end_point=2000,
-        norm_file_path='raw_data/norm_coef_all_v1.4.csv',
+        norm_file_path='data/norm_coef_all_v1.4.csv',
         model_path='marking_up_oscillograms/model/model_ConvMLP_ep100_tl0.1709_train18.7660.pt',
         use_model=True,
         font_size=11,
@@ -820,7 +820,7 @@ if __name__ == "__main__":
         uses_bus='1',
         strat_point=1000,
         end_point=2000,
-        norm_file_path='raw_data/norm_coef_all_v1.4.csv',
+        norm_file_path='data/norm_coef_all_v1.4.csv',
         model_path=None,  # Не требуется при use_model=False
         use_model=False,  # Отключаем использование модели
         font_size=14,

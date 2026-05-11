@@ -127,6 +127,81 @@ def _build_cls_head(
     raise ValueError(f"Неизвестный cls_head_type: {cls_head_type}")
 
 
+class FuturePredictionHead(nn.Module):
+    """Авторегрессионная голова для предсказания будущих зон.
+
+    Принцип: обучаемые запросы (future queries) через cross-attention
+    к скрытым состояниям encoder предсказывают метки зон,
+    которые модель НЕ наблюдает в X (будущие периоды).
+
+    Для РЗА: модель видит текущие периоды и предсказывает,
+    что произойдёт в следующих N периодах. Это критично для
+    упреждающего срабатывания защит.
+
+    Args:
+        d_model: размерность скрытого состояния
+        num_future_zones: число будущих зон для предсказания
+        num_classes: число классов на выходе
+        num_heads: число голов cross-attention
+        dropout: dropout
+    """
+
+    def __init__(
+        self,
+        d_model: int,
+        num_future_zones: int,
+        num_classes: int,
+        num_heads: int = 4,
+        dropout: float = 0.1,
+    ) -> None:
+        super().__init__()
+        self.num_future_zones = num_future_zones
+
+        # Обучаемые запросы — по одному на каждую будущую зону
+        self.future_queries = nn.Parameter(
+            torch.randn(1, num_future_zones, d_model) * 0.02
+        )
+
+        # Cross-attention: queries обращаются к скрытым состояниям encoder
+        self.cross_attn = nn.MultiheadAttention(
+            d_model, num_heads, dropout=dropout, batch_first=True
+        )
+        self.norm1 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
+
+        # FFN после cross-attention
+        self.ffn = nn.Sequential(
+            nn.Linear(d_model, d_model * 2),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_model * 2, d_model),
+            nn.Dropout(dropout),
+        )
+
+        # Проекция в классы
+        self.classifier = nn.Linear(d_model, num_classes)
+
+    def forward(self, encoder_output: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            encoder_output: (B, T_current, d_model) — скрытые состояния encoder
+
+        Returns:
+            (B, num_future_zones, num_classes) — предсказания будущих зон
+        """
+        B = encoder_output.shape[0]
+        queries = self.future_queries.expand(B, -1, -1)  # (B, F, d_model)
+
+        # Cross-attention + residual + norm
+        attn_out, _ = self.cross_attn(queries, encoder_output, encoder_output)
+        h = self.norm1(queries + attn_out)
+
+        # FFN + residual + norm
+        h = self.norm2(h + self.ffn(h))
+
+        return self.classifier(h)  # (B, F, num_classes)
+
+
 class PhysicalKANTransformer(BaseModel):
     """Physical KAN-Transformer с физическим Stem и KAN-FFN.
 
@@ -164,6 +239,12 @@ class PhysicalKANTransformer(BaseModel):
         use_angle_gate: включить DirectionalRelayGate в Stem и FFN (по умолч. True)
         use_mixed_layer_norm: True → стандартный LayerNorm, False → AmpOnlyLayerNorm
         cls_head_type: тип классификационной головы ('kan'|'mlp'|'linear')
+        ffn_type: тип FFN в encoder ('physical_kan'|'kan'|'mlp').
+            'mlp' используется для baseline без KAN при сохранении физического Stem.
+        disable_stem_kan: True → заменить KAN в PhysicalStem на линейный fallback.
+        num_future_zones: число будущих зон для авторегрессионного предсказания
+            (0 → без future head). Модель предсказывает future зоны, НЕ видя
+            их данные — через cross-attention к encoder output.
         dropout: dropout для всех слоёв
         max_seq_len: максимальная длина последовательности для PE
     """
@@ -188,8 +269,11 @@ class PhysicalKANTransformer(BaseModel):
         use_angle_gate: bool = True,
         use_mixed_layer_norm: bool = False,
         cls_head_type: str = 'kan',
+        ffn_type: str | None = None,
+        disable_stem_kan: bool = False,
+        num_future_zones: int = 0,
         dropout: float = 0.1,
-        max_seq_len: int = 64,
+        max_seq_len: int = 128,
     ) -> None:
         super().__init__()
 
@@ -213,6 +297,7 @@ class PhysicalKANTransformer(BaseModel):
             use_angle_gate=use_angle_gate,
             use_layer_norm=use_mixed_layer_norm,
             dropout=dropout,
+            disable_kan=disable_stem_kan,
         )
 
         # --- 3. Positional Encoding ---
@@ -221,6 +306,10 @@ class PhysicalKANTransformer(BaseModel):
         )
 
         # --- 4. Transformer Encoder (Physical KAN-FFN + ComplexMHA) ---
+        if ffn_type is None:
+            ffn_type = 'physical_kan' if use_physical_ffn else 'kan'
+        self.ffn_type = ffn_type
+
         self.encoder_blocks = nn.ModuleList()
         for _ in range(num_layers):
             complex_attn = ComplexMultiheadAttention(
@@ -228,7 +317,7 @@ class PhysicalKANTransformer(BaseModel):
                 num_heads=num_heads,
                 dropout=dropout,
             )
-            if use_physical_ffn:
+            if ffn_type == 'physical_kan':
                 ffn = PhysicalKANFeedForward(
                     d_model=d_model,
                     d_ff=d_ff,
@@ -237,13 +326,21 @@ class PhysicalKANTransformer(BaseModel):
                     use_angle_gate=use_angle_gate,
                     dropout=dropout,
                 )
-            else:
+            elif ffn_type == 'kan':
                 ffn = KANFeedForward(
                     d_model=d_model,
                     d_ff=d_ff,
                     kan_grid_size=kan_grid_size,
                     dropout=dropout,
                 )
+            elif ffn_type == 'mlp':
+                ffn = MLPFeedForward(
+                    d_model=d_model,
+                    d_ff=d_ff,
+                    dropout=dropout,
+                )
+            else:
+                raise ValueError(f"Неизвестный ffn_type: {ffn_type}")
             block = TransformerEncoderBlock(
                 d_model=d_model,
                 num_heads=num_heads,
@@ -273,6 +370,25 @@ class PhysicalKANTransformer(BaseModel):
                 kan_grid_size=kan_grid_size,
                 dropout=dropout,
             )
+
+        # --- 6. Future Prediction Head (авторегрессионное предсказание) ---
+        self.future_head: FuturePredictionHead | None = None
+        if num_future_zones > 0 and num_classes is not None:
+            self.future_head = FuturePredictionHead(
+                d_model=d_model,
+                num_future_zones=num_future_zones,
+                num_classes=num_classes,
+                num_heads=num_heads,
+                dropout=dropout,
+            )
+
+    def set_ablation(self, **kwargs) -> None:
+        """Переключает абляционные флаги в PhysicalStem.
+
+        Поддерживаемые kwargs:
+            disable_interaction, disable_kan, disable_phase_shift, disable_angle_gate
+        """
+        self.stem.set_ablation(**kwargs)
 
     def forward(
         self,
@@ -334,9 +450,33 @@ class PhysicalKANTransformer(BaseModel):
                 # Если T < zone_size, используем всё окно как одну зону
                 h_pooled = h.mean(dim=1, keepdim=True)  # (B, 1, D)
                 cls_out = self.cls_head(h_pooled)        # (B, 1, num_classes)
+
+            # Авторегрессионное предсказание будущих зон (cross-attention к encoder)
+            if self.future_head is not None:
+                future_out = self.future_head(h)  # (B, num_future_zones, num_classes)
+                cls_out = torch.cat([cls_out, future_out], dim=1)
+
             result['classify'] = cls_out
 
         return result
+
+
+class PhysicalMLPTransformer(PhysicalKANTransformer):
+    """Физически ориентированный Transformer без KAN-блоков.
+
+    Используется как baseline для отделения вклада KAN от вклада физической
+    структуры входного Stem, комплексно-подобного attention и полярного
+    представления. Отличия от PhysicalKANTransformer:
+    - KAN в PhysicalStem заменён линейным fallback;
+    - FFN в encoder заменён на MLPFeedForward;
+    - классификационная голова по умолчанию MLP.
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
+        kwargs['disable_stem_kan'] = True
+        kwargs['ffn_type'] = 'mlp'
+        kwargs.setdefault('cls_head_type', 'mlp')
+        super().__init__(*args, **kwargs)
 
 
 class BaselineTransformer(BaseModel):
@@ -356,6 +496,7 @@ class BaselineTransformer(BaseModel):
         num_classes: число классов (None → SSL)
         ssl_output_channels: число каналов на выходе SSL Head
         zone_size: размер зоны классификации
+        num_future_zones: число будущих зон (0 → без future head)
         dropout: dropout
         max_seq_len: максимальная длина последовательности
     """
@@ -371,8 +512,9 @@ class BaselineTransformer(BaseModel):
         ssl_output_channels: int | None = None,
         zone_size: int = 16,
         cls_head_type: str = 'linear',
+        num_future_zones: int = 0,
         dropout: float = 0.1,
-        max_seq_len: int = 64,
+        max_seq_len: int = 128,
     ) -> None:
         super().__init__()
 
@@ -426,6 +568,17 @@ class BaselineTransformer(BaseModel):
                 dropout=dropout,
             )
 
+        # --- Future Prediction Head ---
+        self.future_head: FuturePredictionHead | None = None
+        if num_future_zones > 0 and num_classes is not None:
+            self.future_head = FuturePredictionHead(
+                d_model=d_model,
+                num_future_zones=num_future_zones,
+                num_classes=num_classes,
+                num_heads=num_heads,
+                dropout=dropout,
+            )
+
     def forward(
         self,
         x: torch.Tensor,
@@ -474,6 +627,12 @@ class BaselineTransformer(BaseModel):
             else:
                 h_pooled = h.mean(dim=1, keepdim=True)
                 cls_out = self.cls_head(h_pooled)
+
+            # Авторегрессионное предсказание будущих зон
+            if self.future_head is not None:
+                future_out = self.future_head(h)
+                cls_out = torch.cat([cls_out, future_out], dim=1)
+
             result['classify'] = cls_out
 
         return result

@@ -439,6 +439,8 @@ class ComplexMultiheadAttention(nn.Module):
             score = score + attn_mask
 
         attn_weights = torch.softmax(score, dim=-1)
+        # Защита от NaN: если ВСЕ key замаскированы, softmax(-inf,...,-inf)=NaN
+        attn_weights = torch.nan_to_num(attn_weights, nan=0.0)
         attn_weights = self.dropout(attn_weights)
 
         # Одинаковые веса для amp и angle → согласованная обработка компонент
@@ -500,6 +502,10 @@ class PhysicalStem(nn.Module):
         use_angle_gate: bool = True,
         use_layer_norm: bool = False,
         dropout: float = 0.1,
+        # --- Параметры абляции ---
+        disable_interaction: bool = False,
+        disable_kan: bool = False,
+        disable_phase_shift: bool = False,
     ) -> None:
         super().__init__()
 
@@ -511,6 +517,11 @@ class PhysicalStem(nn.Module):
         self.num_pairs = num_input_channels // 2  # Количество (A, φ) пар
         self.d_model = d_model
         self.use_angle_gate = use_angle_gate
+
+        # Флаги абляции: runtime-переключение через set_ablation()
+        self.disable_interaction = disable_interaction
+        self.disable_kan = disable_kan
+        self.disable_phase_shift = disable_phase_shift
 
         # Число пар токов (по умолчанию — ровно половина)
         if num_current_pairs is None:
@@ -548,6 +559,8 @@ class PhysicalStem(nn.Module):
             use_base_update=True,
             use_layernorm=False,
         )
+        # Линейный fallback для абляции без KAN
+        self.linear_amp_fallback = nn.Linear(num_amplitudes, half_d)
 
         # --- Проекция в amp/angle структуру d_model ---
         d_complex = d_model // 2
@@ -582,6 +595,28 @@ class PhysicalStem(nn.Module):
         angles = x[:, 1::2, :]      # Нечётные каналы — углы
         return amplitudes, angles
 
+    def set_ablation(
+        self,
+        disable_interaction: bool | None = None,
+        disable_kan: bool | None = None,
+        disable_phase_shift: bool | None = None,
+        disable_angle_gate: bool | None = None,
+    ) -> None:
+        """Runtime-переключение абляционных флагов (Q4).
+
+        Позволяет на уже обученной модели отключить физ. блоки
+        для inference-абляции без переобучения.
+        Передайте None, чтобы оставить текущее значение.
+        """
+        if disable_interaction is not None:
+            self.disable_interaction = disable_interaction
+        if disable_kan is not None:
+            self.disable_kan = disable_kan
+        if disable_phase_shift is not None:
+            self.disable_phase_shift = disable_phase_shift
+        if disable_angle_gate is not None:
+            self.use_angle_gate = not disable_angle_gate
+
     def forward(
         self, x: torch.Tensor, mask_missing: torch.Tensor
     ) -> torch.Tensor:
@@ -592,6 +627,13 @@ class PhysicalStem(nn.Module):
 
         Returns:
             embedding: (B, T, d_model) — готовый для Transformer вход
+
+        Note:
+            mask_missing пока не используется внутри Stem — DataSanitizer уже
+            заменил NaN→0 + learnable missing_token. Маска пробрасывается
+            далее в Transformer как key_padding_mask (all_missing_mask).
+            TODO: рассмотреть маскировку gate/KAN для пропущенных каналов,
+            чтобы нулевые амплитуды не вносили шум через нелинейности.
         """
         # Отключаем AMP для всего Stem — внутри комплексные операции (не FP16)
         with torch.amp.autocast('cuda', enabled=False):
@@ -606,7 +648,10 @@ class PhysicalStem(nn.Module):
             ang_flat = angles.permute(0, 2, 1).reshape(B * T, -1)
 
             # 3. Обучаемый сдвиг фазы (поворот вектора = MTA)
-            rotated_angle = ang_flat + self.phase_shift_b
+            if self.disable_phase_shift:
+                rotated_angle = ang_flat
+            else:
+                rotated_angle = ang_flat + self.phase_shift_b
 
             # 4. DirectionalRelayGate: модулируем амплитуды по углу
             if self.use_angle_gate:
@@ -616,13 +661,22 @@ class PhysicalStem(nn.Module):
                 gated_amp = amp_flat
 
             # 5. Обучаемый комплексный блок: z = A·exp(jφ)
-            z_input = torch.polar(amp_flat, rotated_angle)  # complex64
-            z_inter = self.interaction(z_input)
-            inter_amp = z_inter.abs()     # (B*T, num_interaction_pairs)
-            inter_angle = z_inter.angle() # (B*T, num_interaction_pairs)
+            if self.disable_interaction:
+                # Абляция: нулевые выходы interaction (сохраняем форму для concat)
+                inter_amp = torch.zeros(B * T, self.interaction.num_interaction_pairs,
+                                        device=x.device, dtype=x.dtype)
+                inter_angle = torch.zeros_like(inter_amp)
+            else:
+                z_input = torch.polar(amp_flat, rotated_angle)  # complex64
+                z_inter = self.interaction(z_input)
+                inter_amp = z_inter.abs()     # (B*T, num_interaction_pairs)
+                inter_angle = z_inter.angle() # (B*T, num_interaction_pairs)
 
             # 6. KAN для амплитуд (уже отфильтрованных через gate)
-            h_amp = self.kan_amp(gated_amp)
+            if self.disable_kan:
+                h_amp = self.linear_amp_fallback(gated_amp)
+            else:
+                h_amp = self.kan_amp(gated_amp)
 
             # 7. Объединение и раздельная проекция в (amp, angle)
             fused_amp = torch.cat([h_amp, inter_amp], dim=-1)
