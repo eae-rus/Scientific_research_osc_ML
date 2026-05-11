@@ -63,3 +63,38 @@ class TestExperimentRunner:
         save_path = Path(simple_config.training.save_dir) / simple_config.training.experiment_name
         assert (save_path / 'best_model.pt').exists()
         assert (save_path / 'final_model.pt').exists()
+        # last_model.pt удаляется после успешного завершения
+        assert not (save_path / 'last_model.pt').exists()
+
+    def test_last_model_saved_during_training(self, temp_dir):
+        """last_model.pt создаётся во время обучения и удаляется по завершении."""
+        config = ExperimentConfig(
+            model=ModelConfig(name='SimpleMLP', params={'input_size': 10, 'output_size': 2}),
+            data=DataConfig(path='dummy', window_size=10, batch_size=2, mode='classification'),
+            training=TrainingConfig(epochs=2, learning_rate=0.01, save_dir=str(temp_dir),
+                                    experiment_name='test_last_model', device='cpu')
+        )
+        runner = ExperimentRunner(config)
+        x = torch.randn(10, 10)
+        y = torch.randint(0, 2, (10,))
+        dataset = TensorDataset(x, y)
+        loader = DataLoader(dataset, batch_size=2)
+        
+        runner.train(loader, loader)
+        save_path = Path(config.training.save_dir) / config.training.experiment_name
+        
+        # После завершения: final есть, last удалён
+        assert (save_path / 'final_model.pt').exists()
+        assert not (save_path / 'last_model.pt').exists()
+
+    def test_cleanup_releases_resources(self, simple_config):
+        """cleanup() удаляет модель и освобождает ресурсы."""
+        runner = ExperimentRunner(simple_config)
+        assert hasattr(runner, 'model') and runner.model is not None
+        
+        runner.cleanup()
+        
+        # После cleanup модель удалена
+        assert not hasattr(runner, 'model')
+        assert not hasattr(runner, 'optimizer')
+        assert not hasattr(runner, 'criterion')
