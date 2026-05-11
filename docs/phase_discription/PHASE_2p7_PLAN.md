@@ -115,7 +115,11 @@ python scripts/phase2_experiments/run_phase2_7_all.py --fold 1 --seed_idx 0 --ex
 - `config.json` — параметры эксперимента
 - `metrics.jsonl` — метрики по эпохам
 - `best_model.pt` — лучшая модель по val_loss
-- `final_model.pt` — финальная модель
+- `last_model.pt` — последняя модель (перезаписывается каждую эпоху, удаляется после завершения)
+- `final_model.pt` — финальная модель (маркер завершения обучения)
+
+**Маркер завершения:** наличие `final_model.pt` означает, что обучение завершено успешно.
+Если есть `last_model.pt`, но нет `final_model.pt` — обучение было прервано.
 
 ## Оценка общего количества экспериментов
 
@@ -141,7 +145,30 @@ python scripts/phase2_experiments/run_phase2_7_all.py --fold 1 --seed_idx 0 --ex
   - `generate_cv_splits()` — генерация стратифицированного K-Fold
   - `load_cv_splits()` — загрузка CV-разбиений из JSON
   - `load_fold_data()` — загрузка train/test для конкретного fold-а
-- `osc_tools/ml/runner.py` — добавлена поддержка `rPhysicsKAN`
+- `osc_tools/ml/runner.py`:
+  - Добавлена поддержка `rPhysicsKAN`
+  - Добавлен метод `cleanup()` для освобождения GPU памяти
+  - Добавлено сохранение `last_model.pt` (маркер промежуточного состояния)
+  - `last_model.pt` удаляется после успешного сохранения `final_model.pt`
+- `scripts/evaluation/_core/config_resolvers.py`:
+  - Парсинг формата `Exp_2.7_f{N}_s{M}_...` (fold, seed_idx)
+  - Поддержка двухуровневых ID (`2.7`)
+  - Парсинг `phase_complex`, `symmetric_polar`, `alpha_beta`, sampling `none`→Dense
+- `scripts/evaluation/aggregate_reports.py`:
+  - Добавлены поля `Fold` и `SeedIdx` в сводную таблицу
+  - Новая функция `aggregate_by_fold_seed()` — mean ± std по fold/seed
+  - Результат сохраняется в `summary_aggregated.csv`
+
+### Параметры OZZ:
+| Параметр | Описание | По умолчанию |
+|----------|----------|--------------|
+| `--target_level` | base/ozz | base |
+| `--include_ozz` | дополнительный OZZ эксперимент | false |
+
+### Новые тесты:
+- `tests/unit/test_config_resolvers.py` — 19 тестов на парсинг имён экспериментов
+- `tests/unit/test_aggregate_fold_seed.py` — 7 тестов на агрегацию fold/seed
+- `tests/unit/test_ml_runner.py` — добавлены тесты на `cleanup()` и `last_model.pt`
 
 ### Совместимость:
 - Скрипты Фазы 2.5 (`run_phase2_5_all.py`) — НЕ затронуты

@@ -4,6 +4,57 @@
 
 ---
 
+## 11 мая 2026 (вечер) — OOM защита, система чекпоинтов, оценка и тесты
+
+### Выполнено:
+
+1. **Защита от переполнения GPU памяти (OOM)**
+   - `runner.py`: добавлен метод `cleanup()` — переносит модель на CPU, удаляет model/optimizer/criterion, вызывает `torch.cuda.empty_cache()` + `gc.collect()`
+   - `run_phase2_7_all.py`: `runner.cleanup()` вызывается в `finally` блоке после каждого эксперимента
+   - `torch.cuda.OutOfMemoryError` перехватывается отдельно — принудительная очистка + пропуск (не крашит цикл)
+   - После каждого эксперимента: `del train_loader, val_loader, train_ds, val_ds` + `gc.collect()`
+
+2. **Система last/best/final моделей** (см. `osc_tools/ml/runner.py`)
+   - `last_model.pt` — сохраняется после **каждой** эпохи (перезаписывается), позволяет восстановиться при сбое
+   - `best_model.pt` — как и раньше, по минимуму val_loss
+   - `final_model.pt` — маркер завершения обучения, сохраняется только в конце
+   - После сохранения `final_model.pt` файл `last_model.pt` автоматически удаляется
+   - Проверка `skip_existing` проверяет именно `final_model.pt` → прерванное обучение перезапустится
+
+3. **Интеграция OZZ эксперимента** (см. `run_phase2_7_all.py`)
+   - Добавлен параметр `target_level` (base/ozz), прокинут через всю цепочку
+   - Конфигурация `OZZ_EXPERIMENT_CONFIG`: phase_polar, stride/none, heavy, все модели paper1
+   - CLI: `--target_level ozz`, `--include_ozz`
+   - Имя эксперимента OZZ получает суффикс `_ozz` (напр. `Exp_2.7_f1_s0_SimpleMLP_heavy_phase_polar_stride_ozz`)
+
+4. **Обновление парсера** (см. `scripts/evaluation/_core/config_resolvers.py`)
+   - Regex обновлён: поддержка двухуровневых ID (`2.7`)
+   - Парсинг `fold` и `seed_idx` из формата `_f{N}_s{M}_`
+   - Новые feature_modes: `phase_complex`, `symmetric_polar`, `alpha_beta`
+   - Sampling `none` → `Dense`
+
+5. **Агрегация по fold/seed** (см. `scripts/evaluation/aggregate_reports.py`)
+   - Поля `Fold` и `SeedIdx` добавлены в сводную таблицу
+   - Новая функция `aggregate_by_fold_seed()` — группировка по конфигурации, расчёт mean ± std
+   - Результат в `summary_aggregated.csv`
+
+6. **Тесты** — 30 тестов, все проходят:
+   - `tests/unit/test_config_resolvers.py` — 19 тестов (парсинг имён 2.7 и 2.6, fold/seed, feature_modes, OZZ, обратная совместимость)
+   - `tests/unit/test_aggregate_fold_seed.py` — 7 тестов (mean±std, подсчёт N_runs, граничные случаи)
+   - `tests/unit/test_ml_runner.py` — 4 теста (init, train, cleanup, last_model.pt)
+
+7. **Прочие доработки**
+   - PatchTST/TimesNet: убрано `fixed_complexity` из TODO
+   - FIXME о precomputed для fold → заменён на NOTE (on-the-fly достаточен)
+
+### Первый тестовый прогон (1 эпоха, fold 1, seed 0):
+- Всего ~150 конфигураций, большинство обучились успешно
+- OOM ошибки: ConvKAN_heavy_raw_none, ConvKAN (все уровни) на phase_polar_none, все Physics*KAN на phase_polar_none
+- Причина: 8 ГБ GPU недостаточно для KAN-моделей с dense sampling (320 точек × много каналов)
+- На stride/snapshot те же модели обучаются без проблем
+
+---
+
 ## 11 мая 2026 — Инициализация Фазы 2.7
 
 ### Выполнено:
