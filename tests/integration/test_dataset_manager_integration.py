@@ -77,7 +77,7 @@ def test_smoke():
     print("\n4. Тест: phase_polar + snapshot")
     
     target_cols = get_target_columns('base')
-    NORM_COEF_PATH = PROJECT_ROOT / 'raw_data' / 'norm_coef_all_v1.4.csv'
+    NORM_COEF_PATH = PROJECT_ROOT / 'data' / 'norm_coef_all_v1.4.csv'
     if not NORM_COEF_PATH.exists():
         pytest.skip(f"Нет файла нормализации: {NORM_COEF_PATH}")
     

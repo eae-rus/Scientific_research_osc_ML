@@ -392,7 +392,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
 
     # 1. Setup Paths
     DATA_DIR = ROOT_DIR / 'data' / 'ml_datasets'
-    NORM_COEF_PATH = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
+    NORM_COEF_PATH = ROOT_DIR / 'data' / 'norm_coef_all_v1.4.csv'
 
     # Используем DatasetManager для гарантированного разделения данных
     print("Инициализация DatasetManager...")

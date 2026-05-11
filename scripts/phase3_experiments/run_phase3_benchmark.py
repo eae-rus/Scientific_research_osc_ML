@@ -63,7 +63,7 @@ def _prepare_dataloaders(
 ) -> tuple[torch.utils.data.DataLoader, torch.utils.data.DataLoader, int, List[str]]:
     """Готовит train/val DataLoader для бенчмарка Фазы 3."""
     data_dir = ROOT_DIR / 'data' / 'ml_datasets'
-    norm_coef_path = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
+    norm_coef_path = ROOT_DIR / 'data' / 'norm_coef_all_v1.4.csv'
 
     dm = DatasetManager(str(data_dir), norm_coef_path=str(norm_coef_path))
     dm.ensure_train_test_split()

@@ -66,7 +66,7 @@ def main():
     val_indices = indices[split_idx:]
     
     # Путь к файлу коэффициентов нормализации по сенсорам
-    norm_coef_path = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
+    norm_coef_path = ROOT_DIR / 'data' / 'norm_coef_all_v1.4.csv'
     
     # 5. Grid Search
     grid_sizes = [3, 5, 10, 15]

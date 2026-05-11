@@ -142,6 +142,6 @@ if __name__ == "__main__":
     MAX_FILES = None  # None для обработки всех файлов
     WINDOW_SIZE = 1
     PHYSICAL_NORMALIZATION = True
-    NORM_COEF_PATH = None  # Используется по умолчанию: raw_data/norm_coef_all_v1.4.csv
+    NORM_COEF_PATH = None  # Используется по умолчанию: data/norm_coef_all_v1.4.csv
     
     calculate_stats(CSV_PATH, OUTPUT_PATH, MAX_FILES, WINDOW_SIZE, PHYSICAL_NORMALIZATION, NORM_COEF_PATH)

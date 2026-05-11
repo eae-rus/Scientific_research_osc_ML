@@ -49,7 +49,7 @@ from scripts.phase4_experiments.evaluate_phase4 import load_model_from_checkpoin
 # ---------------------------------------------------------------------------
 
 COMTRADE_DIR = PROJECT_ROOT / 'data' / 'real_OZZ' / 'osc_comtrade'
-NORM_COEF_PATH = PROJECT_ROOT / 'raw_data' / 'norm_coef_all_v1.4.csv'
+NORM_COEF_PATH = PROJECT_ROOT / 'data' / 'norm_coef_all_v1.4.csv'
 
 # Цвета фаз (стандарт РЗА)
 PHASE_COLORS = {

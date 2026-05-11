@@ -273,7 +273,7 @@ def save_as_experiment(
 def main(eval_split: str = 'test'):
     """Запуск оценки физической baseline модели на выбранном split данных."""
     DATA_DIR = ROOT_DIR / 'data' / 'ml_datasets'
-    NORM_COEF_PATH = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
+    NORM_COEF_PATH = ROOT_DIR / 'data' / 'norm_coef_all_v1.4.csv'
     split = str(eval_split or 'test').strip().lower()
     if split not in ('train', 'test'):
         raise ValueError(f"Неподдерживаемый eval_split: {eval_split}. Ожидается 'train' или 'test'.")

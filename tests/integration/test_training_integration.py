@@ -106,7 +106,7 @@ def main():
     # 2. Создание датасетов
     print("\n2. Создание датасетов...")
     target_cols = get_target_columns('base')
-    NORM_COEF_PATH = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
+    NORM_COEF_PATH = ROOT_DIR / 'data' / 'norm_coef_all_v1.4.csv'
     
     train_indices = OscillogramDataset.create_indices(
         train_df, window_size=WINDOW_SIZE, mode='train', samples_per_file=2

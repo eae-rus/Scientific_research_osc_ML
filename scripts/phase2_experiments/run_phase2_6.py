@@ -354,7 +354,7 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
     DATA_DIR = ROOT_DIR / 'data' / 'ml_datasets'
     EXPERIMENTS_DIR = ROOT_DIR / 'experiments' / 'phase2_6'
     EXPERIMENTS_DIR.mkdir(parents=True, exist_ok=True)
-    NORM_COEF_PATH = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
+    NORM_COEF_PATH = ROOT_DIR / 'data' / 'norm_coef_all_v1.4.csv'
     METADATA_FILE = DATA_DIR / 'train.csv'
     WINDOW_SIZE = 320
 

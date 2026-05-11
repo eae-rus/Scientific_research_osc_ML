@@ -110,7 +110,7 @@ def main():
             training=train_config
         )
         # Путь к файлу коэффициентов нормализации по сенсорам
-        norm_coef_path = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
+        norm_coef_path = ROOT_DIR / 'data' / 'norm_coef_all_v1.4.csv'
         
         # Датасет с симметричными признаками
         # Примечание: необходимо убедиться, что `OscillogramDataset` действительно выдаёт 12 каналов для 'symmetric'.

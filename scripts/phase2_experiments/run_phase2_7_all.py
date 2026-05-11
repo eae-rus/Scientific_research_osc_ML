@@ -576,7 +576,7 @@ def main(
     
     # --- Инициализация DatasetManager и CV-разбиений ---
     DATA_DIR = ROOT_DIR / 'data' / 'ml_datasets'
-    NORM_COEF_PATH = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
+    NORM_COEF_PATH = ROOT_DIR / 'data' / 'norm_coef_all_v1.4.csv'
     
     dm = DatasetManager(str(DATA_DIR), norm_coef_path=str(NORM_COEF_PATH))
     
@@ -942,5 +942,5 @@ if __name__ == "__main__":
             epochs=EPOCHS,
             samples_per_file=SAMPLES_PER_FILE,
             checkpoint_frequency=CHECKPOINT_FREQUENCY,
-            skip_existing=False,  # Для тестового прогона не пропускаем
+            skip_existing=True,  # Для тестового прогона не пропускаем
         )

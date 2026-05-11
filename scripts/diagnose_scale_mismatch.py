@@ -24,7 +24,7 @@ from osc_tools.ml.augmented_dataset import _extract_fft_harmonics
 # Параметры
 # ---------------------------------------------------------------------------
 SIM_OZZ_DIR = PROJECT_ROOT / 'data' / 'Simulated_OZZ_v1'
-NORM_COEF_PATH = PROJECT_ROOT / 'raw_data' / 'norm_coef_all_v1.4.csv'
+NORM_COEF_PATH = PROJECT_ROOT / 'data' / 'norm_coef_all_v1.4.csv'
 N_SAMPLE_FILES = 30       # количество SimOZZ файлов для анализа
 F_NETWORK = 50.0          # промышленная частота, Гц
 

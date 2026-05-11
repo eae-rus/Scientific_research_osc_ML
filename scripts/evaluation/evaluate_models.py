@@ -112,7 +112,7 @@ def main():
     print(f"Val samples: {len(val_indices)}")
     
     # Путь к файлу коэффициентов нормализации по сенсорам
-    norm_coef_path = ROOT_DIR / 'raw_data' / 'norm_coef_all_v1.4.csv'
+    norm_coef_path = ROOT_DIR / 'data' / 'norm_coef_all_v1.4.csv'
     
     # 3. Подготовка DataLoader (валидационный датасет)
     val_ds = OscillogramDataset(

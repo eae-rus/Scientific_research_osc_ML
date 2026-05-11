@@ -73,8 +73,8 @@ class DatasetManager:
         # Пробуем несколько стандартных мест
         candidates = [
             self.data_dir / self.NORM_COEF_CSV,
-            self.project_root / 'raw_data' / self.NORM_COEF_CSV,
             self.data_dir.parent / self.NORM_COEF_CSV,
+            self.project_root / 'data' / self.NORM_COEF_CSV,
         ]
         for p in candidates:
             if p.exists():
