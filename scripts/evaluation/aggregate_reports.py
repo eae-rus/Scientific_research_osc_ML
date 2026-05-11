@@ -128,6 +128,78 @@ except ImportError:
 # Глобальный логгер (обёрнут через set_eval_logger / get_eval_logger в _core.model_utils)
 _eval_logger: Optional[logging.Logger] = None
 
+def aggregate_by_fold_seed(df: pd.DataFrame) -> Optional[pd.DataFrame]:
+    """
+    Агрегирует результаты по fold/seed: вычисляет mean ± std для числовых метрик.
+    
+    Группировка по: Model, Complexity, Features, Sampling, TargetLevel, ExpID.
+    Возвращает None если в данных нет fold/seed информации.
+    """
+    if 'Fold' not in df.columns or 'SeedIdx' not in df.columns:
+        return None
+    
+    # Фильтруем только строки с fold/seed (Фаза 2.7+)
+    has_fold = df['Fold'].notna()
+    if not has_fold.any():
+        return None
+    
+    fold_df = df[has_fold].copy()
+    
+    # Колонки для группировки (идентифицируют конфигурацию эксперимента)
+    group_cols = ['ExpID', 'Model', 'Complexity', 'Features', 'Sampling', 'TargetLevel']
+    group_cols = [c for c in group_cols if c in fold_df.columns]
+    
+    # Числовые метрики для агрегации
+    metric_cols = ['Val F1', 'Val Loss', 'Val Acc', 'Params', 'Epochs']
+    # Добавляем full_eval метрики если они есть
+    for col in fold_df.columns:
+        if col.startswith('Full ') or col.startswith('Class_') or col == 'CPU Inf (ms)':
+            metric_cols.append(col)
+    metric_cols = [c for c in metric_cols if c in fold_df.columns]
+    
+    # Агрегация
+    agg_dict = {}
+    for col in metric_cols:
+        agg_dict[col] = ['mean', 'std', 'count']
+    
+    grouped = fold_df.groupby(group_cols, dropna=False)[metric_cols].agg(['mean', 'std', 'count'])
+    
+    # Расплющиваем мультииндексные колонки
+    result_rows = []
+    for group_key, row in grouped.iterrows():
+        if not isinstance(group_key, tuple):
+            group_key = (group_key,)
+        result = dict(zip(group_cols, group_key))
+        
+        for col in metric_cols:
+            mean_val = row.get((col, 'mean'), None)
+            std_val = row.get((col, 'std'), None)
+            count_val = row.get((col, 'count'), None)
+            
+            if mean_val is not None and not pd.isna(mean_val):
+                result[col] = round(float(mean_val), 4)
+                if std_val is not None and not pd.isna(std_val):
+                    result[f'{col} std'] = round(float(std_val), 4)
+            if col == metric_cols[0] and count_val is not None:
+                result['N_runs'] = int(count_val)
+        
+        result_rows.append(result)
+    
+    if not result_rows:
+        return None
+    
+    agg_result = pd.DataFrame(result_rows)
+    
+    # Сортировка
+    sort_col = 'Val F1'
+    if 'Full Best F1' in agg_result.columns:
+        sort_col = 'Full Best F1'
+    if sort_col in agg_result.columns:
+        agg_result = agg_result.sort_values(sort_col, ascending=False)
+    
+    return agg_result
+
+
 def aggregate_reports(
     root_dir: str, 
     output_dir: str = None, 
@@ -312,10 +384,12 @@ def aggregate_reports(
                 "Features": info["feature_mode"], "Sampling": info["sampling"],
                 "TargetLevel": info["target_level"], "Balancing": info["balancing"],
                 "Aug": info["is_aug"], "arch_type": info["arch_type"],
+                "Fold": info.get("fold"), "SeedIdx": info.get("seed_idx"),
             }
             if existing_row is not None:
                 for k in ("ExpID", "Model", "Complexity", "Features", "Sampling",
-                          "TargetLevel", "Balancing", "Aug", "arch_type"):
+                          "TargetLevel", "Balancing", "Aug", "arch_type",
+                          "Fold", "SeedIdx"):
                     base_fields[k] = existing_row.get(k, base_fields[k])
 
             exp_data = {
@@ -566,6 +640,13 @@ def aggregate_reports(
     if out_path:
         df.to_csv(csv_path, index=False)
         print(f"\nCSV-отчет сохранен: {csv_path}")
+
+        # Агрегация по fold/seed (mean ± std) для экспериментов Фазы 2.7+
+        agg_df = aggregate_by_fold_seed(df)
+        if agg_df is not None:
+            agg_path = out_path / "summary_aggregated.csv"
+            agg_df.to_csv(agg_path, index=False)
+            print(f"Агрегированный отчёт (mean±std по fold/seed): {agg_path}")
 
         if not prediction_selection_df.empty:
             pred_select_path = out_path / 'selected_best_final_by_predictions.csv'

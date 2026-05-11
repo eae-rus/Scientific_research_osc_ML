@@ -30,6 +30,7 @@ from pathlib import Path
 import torch
 import sys
 import json
+import gc
 import argparse
 from typing import Optional, List, Tuple, Dict, Any
 from itertools import product
@@ -518,7 +519,13 @@ def run_single_experiment(
     print(f"    feature_mode={feature_mode}, sampling={sampling}, "
           f"in_channels={in_channels}, pts={pts}, num_harmonics={num_harmonics}")
     
-    history = runner.train(train_loader, val_loader)
+    try:
+        history = runner.train(train_loader, val_loader)
+    finally:
+        # Освобождаем GPU память после каждого эксперимента
+        runner.cleanup()
+        del train_loader, val_loader, train_ds, val_ds
+        gc.collect()
     return history
 
 
@@ -653,6 +660,14 @@ def main(
                                 total_skipped += 1
                             else:
                                 total_run += 1
+                        except torch.cuda.OutOfMemoryError:
+                            total_errors += 1
+                            exp_name = build_experiment_name(fold, seed_idx, feature_mode, sampling, model_name, comp)
+                            print(f"!!! OOM: {exp_name} — не хватило GPU памяти, пропускаем")
+                            # Принудительная очистка GPU после OOM
+                            if torch.cuda.is_available():
+                                torch.cuda.empty_cache()
+                            gc.collect()
                         except Exception as e:
                             total_errors += 1
                             print(f"!!! ОШИБКА: {build_experiment_name(fold, seed_idx, feature_mode, sampling, model_name, comp)}")
@@ -705,6 +720,12 @@ def main(
                                     total_skipped += 1
                                 else:
                                     total_run += 1
+                            except torch.cuda.OutOfMemoryError:
+                                total_errors += 1
+                                print(f"!!! OOM OZZ: {model_name}_{comp} f{fold}_s{seed_idx} — пропускаем")
+                                if torch.cuda.is_available():
+                                    torch.cuda.empty_cache()
+                                gc.collect()
                             except Exception as e:
                                 total_errors += 1
                                 print(f"!!! ОШИБКА OZZ: {model_name}_{comp} f{fold}_s{seed_idx}")
