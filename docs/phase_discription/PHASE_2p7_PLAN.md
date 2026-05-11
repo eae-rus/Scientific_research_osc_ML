@@ -80,6 +80,7 @@ BCEWithLogitsLoss с pos_weight (взвешивание по частоте со
 
 ### CLI:
 ```bash
+
 # Полный прогон Статьи 1
 python scripts/phase2_experiments/run_phase2_7_all.py --article paper1 --fold all --seed_idx all --epochs 30
 

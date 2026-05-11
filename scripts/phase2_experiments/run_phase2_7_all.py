@@ -73,8 +73,8 @@ MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
     'cPhysicsKAN': {'articles': ['paper1'], 'supports_all_features': False, 'allowed_features': ['phase_polar']},
     'rPhysicsKAN': {'articles': ['paper1'], 'supports_all_features': False, 'allowed_features': ['phase_polar']},
     # TODO: Будущие модели (заглушки — реализация на следующем этапе):
-    # 'PatchTST':  {'articles': ['paper1', 'paper2'], 'supports_all_features': True, 'fixed_complexity': 'medium'},
-    # 'TimesNet':  {'articles': ['paper1', 'paper2'], 'supports_all_features': True, 'fixed_complexity': 'medium'},
+    # 'PatchTST':  {'articles': ['paper1', 'paper2'], 'supports_all_features': True},
+    # 'TimesNet':  {'articles': ['paper1', 'paper2'], 'supports_all_features': True},
 }
 
 # --- Уровни сложности моделей ---
@@ -230,6 +230,17 @@ AUGMENTATION_ENABLED = True
 # Взвешивание классов — используем pos_weight (BCE с весами частоты событий)
 USE_POS_WEIGHT = True
 
+# --- Специальный эксперимент ОЗЗ (paper1) ---
+# Использует те же данные, но target_level='ozz' (3 класса OZZ).
+# Только для paper1, phase_polar + stride/none, heavy complexity.
+OZZ_EXPERIMENT_CONFIG = {
+    'target_level': 'ozz',
+    'feature_modes': ['phase_polar'],
+    'sampling_strategies': ['none', 'stride'],
+    'complexities': ['heavy'],
+    'models': None,  # Все модели paper1
+}
+
 
 # ==============================================================================
 # ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
@@ -289,7 +300,8 @@ def get_model_params(
     complexity: str, 
     feature_mode: str,
     sampling: str,
-    stride: int
+    stride: int,
+    target_level: str = 'base'
 ) -> Dict[str, Any]:
     """Формирует полный набор параметров модели."""
     params = MODEL_COMPLEXITY[complexity].get(model_name, {}).copy()
@@ -297,7 +309,7 @@ def get_model_params(
     num_harmonics = NUM_HARMONICS_BY_COMPLEXITY[complexity]
     in_channels = compute_in_channels(feature_mode, num_harmonics)
     pts = compute_sequence_length(feature_mode, sampling, stride)
-    target_cols = get_target_columns(TARGET_LEVEL)
+    target_cols = get_target_columns(target_level)
     num_classes = len(target_cols)
     input_size = in_channels * pts
     
@@ -354,6 +366,7 @@ def run_single_experiment(
     samples_per_file: int = 12,
     skip_existing: bool = True,
     val_precomputed_df: Optional[pl.DataFrame] = None,
+    target_level: str = 'base',
 ) -> Optional[Dict]:
     """
     Запуск одного эксперимента обучения.
@@ -378,6 +391,9 @@ def run_single_experiment(
         History dict или None если пропущено
     """
     experiment_name = build_experiment_name(fold, seed_idx, feature_mode, sampling, model_name, complexity)
+    # Для OZZ-экспериментов добавляем суффикс, чтобы не конфликтовать с base
+    if target_level != 'base':
+        experiment_name = experiment_name + f"_{target_level}"
     save_dir = ROOT_DIR / 'experiments' / 'phase2_7'
     
     # Проверка: уже обучено?
@@ -391,13 +407,13 @@ def run_single_experiment(
     num_harmonics = NUM_HARMONICS_BY_COMPLEXITY[complexity]
     stride = DEFAULT_STRIDE
     
-    target_cols = get_target_columns(TARGET_LEVEL)
+    target_cols = get_target_columns(target_level)
     num_classes = len(target_cols)
     in_channels = compute_in_channels(feature_mode, num_harmonics)
     pts = compute_sequence_length(feature_mode, sampling, stride)
     input_size = in_channels * pts
     
-    model_params = get_model_params(model_name, complexity, feature_mode, sampling, stride)
+    model_params = get_model_params(model_name, complexity, feature_mode, sampling, stride, target_level)
     
     # Динамический batch_size
     is_harmonic = feature_mode in ['phase_polar', 'symmetric', 'symmetric_polar', 'phase_complex']
@@ -448,7 +464,7 @@ def run_single_experiment(
     train_ds = OscillogramDataset(
         dataframe=train_df_indexed, indices=train_indices, window_size=WINDOW_SIZE,
         mode='classification', feature_mode=feature_mode,
-        target_columns=target_cols, target_level=TARGET_LEVEL,
+        target_columns=target_cols, target_level=target_level,
         physical_normalization=True, norm_coef_path=str(norm_coef_path),
         downsampling_mode=sampling, downsampling_stride=stride,
         augment=AUGMENTATION_ENABLED,
@@ -472,7 +488,7 @@ def run_single_experiment(
             val_ds = PrecomputedDataset(
                 dataframe=val_precomputed_df, indices=val_indices, window_size=WINDOW_SIZE,
                 feature_mode=feature_mode,
-                target_columns=target_cols, target_level=TARGET_LEVEL,
+                target_columns=target_cols, target_level=target_level,
                 sampling_strategy=sampling, downsampling_stride=stride,
                 num_harmonics=num_harmonics
             )
@@ -480,7 +496,7 @@ def run_single_experiment(
             val_ds = OscillogramDataset(
                 dataframe=test_df_indexed, indices=val_indices, window_size=WINDOW_SIZE,
                 mode='classification', feature_mode=feature_mode,
-                target_columns=target_cols, target_level=TARGET_LEVEL,
+                target_columns=target_cols, target_level=target_level,
                 physical_normalization=True, norm_coef_path=str(norm_coef_path),
                 downsampling_mode=sampling, downsampling_stride=stride,
                 num_harmonics=num_harmonics
@@ -489,7 +505,7 @@ def run_single_experiment(
         val_ds = OscillogramDataset(
             dataframe=test_df_indexed, indices=val_indices, window_size=WINDOW_SIZE,
             mode='classification', feature_mode=feature_mode,
-            target_columns=target_cols, target_level=TARGET_LEVEL,
+            target_columns=target_cols, target_level=target_level,
             physical_normalization=True, norm_coef_path=str(norm_coef_path),
             downsampling_mode=sampling, downsampling_stride=stride,
             num_harmonics=num_harmonics
@@ -521,6 +537,8 @@ def main(
     samples_per_file: int = 12,
     checkpoint_frequency: int = 31,
     skip_existing: bool = True,
+    target_level: str = 'base',
+    include_ozz: bool = False,
 ):
     """
     Главная точка входа для запуска экспериментов Фазы 2.7.
@@ -584,8 +602,9 @@ def main(
         train_df, test_df = dm.load_fold_data(fold, cv_splits)
         print(f"  Train: {len(train_df):,} строк, Test: {len(test_df):,} строк")
         
-        # FIXME: Для полной поддержки предрасчёта нужно создавать precomputed для каждого fold-а.
-        # Пока используем on-the-fly расчёт (val_precomputed_df=None).
+        # NOTE: Предрасчёт (PrecomputedDataset) для валидации не критичен по скорости,
+        # т.к. val_loader без аугментации и запускается реже. On-the-fly расчёт достаточен.
+        # Для ускорения можно в будущем кэшировать precomputed для каждого fold-а отдельно.
         val_precomputed_df = None
         
         # === ЦИКЛ 2: По seeds ===
@@ -628,6 +647,7 @@ def main(
                                 samples_per_file=samples_per_file,
                                 skip_existing=skip_existing,
                                 val_precomputed_df=val_precomputed_df,
+                                target_level=target_level,
                             )
                             if result is None:
                                 total_skipped += 1
@@ -637,6 +657,58 @@ def main(
                             total_errors += 1
                             print(f"!!! ОШИБКА: {build_experiment_name(fold, seed_idx, feature_mode, sampling, model_name, comp)}")
                             print(f"    {type(e).__name__}: {e}")
+    
+    # === СПЕЦИАЛЬНЫЙ ЭКСПЕРИМЕНТ ОЗЗ (только для paper1 / both) ===
+    if include_ozz and article in ('paper1', 'both'):
+        print(f"\n{'='*70}")
+        print(f"  ОЗЗ ЭКСПЕРИМЕНТ (target_level='ozz')")
+        print(f"{'='*70}")
+        
+        ozz_cfg = OZZ_EXPERIMENT_CONFIG
+        ozz_models = get_models_for_article('paper1') if ozz_cfg['models'] is None else ozz_cfg['models']
+        ozz_experiments = [
+            {'feature_mode': fm, 'sampling': s}
+            for fm in ozz_cfg['feature_modes']
+            for s in ozz_cfg['sampling_strategies']
+        ]
+        ozz_complexities = ozz_cfg['complexities']
+        
+        for fold in folds:
+            train_df, test_df = dm.load_fold_data(fold, cv_splits)
+            val_precomputed_df = None
+            
+            for seed_idx in seed_indices:
+                for exp in ozz_experiments:
+                    for model_name in ozz_models:
+                        if not is_model_compatible(model_name, exp['feature_mode'], exp['sampling']):
+                            continue
+                        for comp in ozz_complexities:
+                            available = get_complexities_for_model(model_name)
+                            if comp not in available:
+                                continue
+                            total_planned += 1
+                            try:
+                                result = run_single_experiment(
+                                    fold=fold, seed_idx=seed_idx,
+                                    feature_mode=exp['feature_mode'], sampling=exp['sampling'],
+                                    model_name=model_name, complexity=comp,
+                                    train_df=train_df, test_df=test_df,
+                                    norm_coef_path=NORM_COEF_PATH,
+                                    epochs=epochs,
+                                    checkpoint_frequency=checkpoint_frequency,
+                                    samples_per_file=samples_per_file,
+                                    skip_existing=skip_existing,
+                                    val_precomputed_df=val_precomputed_df,
+                                    target_level='ozz',
+                                )
+                                if result is None:
+                                    total_skipped += 1
+                                else:
+                                    total_run += 1
+                            except Exception as e:
+                                total_errors += 1
+                                print(f"!!! ОШИБКА OZZ: {model_name}_{comp} f{fold}_s{seed_idx}")
+                                print(f"    {type(e).__name__}: {e}")
     
     # Итоговая статистика
     print(f"\n{'='*70}")
@@ -675,6 +747,12 @@ def parse_args():
   python run_phase2_7_all.py --fold 1 --seed_idx all --article paper2 --epochs 30
   python run_phase2_7_all.py --fold 2 --seed_idx all --article paper2 --epochs 30
   ...
+
+  # С включением OZZ эксперимента:
+  python run_phase2_7_all.py --article paper1 --fold all --seed_idx all --include_ozz --epochs 30
+
+  # Только OZZ (без base-экспериментов):
+  python run_phase2_7_all.py --target_level ozz --fold all --seed_idx 0 --exp phase_polar_stride --complexity heavy
         """
     )
     
@@ -710,6 +788,13 @@ def parse_args():
     parser.add_argument("--no-skip", action="store_false", dest="skip_existing",
                         help="Не пропускать уже обученные модели")
     parser.set_defaults(skip_existing=True)
+    
+    parser.add_argument("--target_level", type=str, default='base',
+                        choices=['base', 'ozz'],
+                        help="Уровень целевой переменной: base (ML1/ML2/ML3), ozz (OZZ классы)")
+    
+    parser.add_argument("--include_ozz", action="store_true",
+                        help="Включить дополнительный OZZ эксперимент (paper1)")
     
     return parser.parse_args()
 
@@ -772,6 +857,8 @@ def cli_main():
         samples_per_file=args.samples,
         checkpoint_frequency=args.checkpoint_freq,
         skip_existing=args.skip_existing,
+        target_level=args.target_level,
+        include_ozz=args.include_ozz,
     )
 
 
