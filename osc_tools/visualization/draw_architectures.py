@@ -1,6 +1,6 @@
 """Генерация концептуальных схем архитектур нейронных сетей для научной статьи.
 
-Рисует модели из Фаз 2.6 (MLP, CNN, ResNet, SimpleKAN, ConvKAN, PhysicsKAN, cPhysicsKAN)
+Рисует модели из Фаз 2.6 (MLP, CNN, ResNet, SimpleKAN, ConvKAN, PhysicsKAN, cPhysicsKAN, rPhysicsKAN)
 и Фазы 4 (BaselineTransformer, PhysicalKANTransformer).
 
 Схемы — концептуальные (показывают принцип, а не точные гиперпараметры), но верные
@@ -203,6 +203,77 @@ def draw_cphysicskan(output_dir):
     dot.render(filename=os.path.join(output_dir, 'cPhysicsKAN'), cleanup=True)
 
 
+def draw_rphysicskan(output_dir):
+    dot = setup_graph('rPhysicsKAN',
+                      'rPhysicsKAN (Релейный PhysicsKAN с gating из углов)')
+
+    with dot.subgraph(name='cluster_in') as c:
+        c.attr(label='Вход:  [A, φ, A, φ, …]   (пары I и U)',
+               style='dashed', color='gray', fontname='Helvetica-Bold')
+        c.node('AI', 'Амплитуды тока  |I|',       fillcolor=C_INPUT)
+        c.node('PI', 'Фазы тока  ∠I',             fillcolor=C_INPUT_PH)
+        c.node('AU', 'Амплитуды напряж.  |U|',    fillcolor=C_INPUT)
+        c.node('PU', 'Фазы напряж.  ∠U',          fillcolor=C_INPUT_PH)
+
+    with dot.subgraph(name='cluster_phys') as c:
+        c.attr(label='Комплексный физический слой', style='filled',
+               fillcolor=C_PHYS_BG, color='#98fb98', fontname='Helvetica-Bold')
+        c.node('cMul',
+               'ComplexMultiplicationLayer\n|S| = |I|·|U|,  ∠S = ∠I+∠U+bφ',
+               fillcolor=C_PHYS)
+        c.node('cDiv',
+               'ComplexDivisionLayer\n|Y| = |I|/max(|U|,ε),  ∠Y = ∠I−∠U+bφ',
+               fillcolor=C_PHYS)
+        c.node('Cat1',
+               'Concat [x, S, Y]\n→ 2C каналов',
+               shape='cds', fillcolor='#b3ffb3')
+
+    with dot.subgraph(name='cluster_split') as c:
+        c.attr(label='Разделение и нормализация', style='dashed',
+               color='gray', fontname='Helvetica-Bold')
+        c.node('SplitA', 'Амплитуды (чётные)\nBatchNorm → softplus', fillcolor=C_INPUT)
+        c.node('SplitP', 'Фазы (нечётные)\nBatchNorm',              fillcolor=C_INPUT_PH)
+
+    with dot.subgraph(name='cluster_relay') as c:
+        c.attr(label='Relay-механизм (направленное реле)',
+               style='filled', fillcolor='#fff8dc', color='#d4ac0d',
+               fontname='Helvetica-Bold')
+        c.node('AmpKAN',  'KAN_amp(A)\n(амплитудная ветвь)',   fillcolor=C_KAN)
+        c.node('PhKAN',   'KAN_phase(φ)\n(фазовая ветвь)',     fillcolor=C_KAN)
+        c.node('GateKAN', 'KAN_gate(φ)\n→ σ(·) ∈ [0,1]',      fillcolor=C_NORM)
+        c.node('Gated',   'H_gated = softplus(H_A) ⊙ G\n(relay gate)',
+               fillcolor=C_PHYS)
+
+    dot.node('Drop', 'ComplexPairDropout\n(одна маска на пару)', fillcolor=C_NORM)
+    dot.node('Stack', 'Stack [gated_A, φ]\n→ чередующийся формат', fillcolor=C_UTIL)
+    dot.node('Pool', 'AdaptiveAvgPool1d → Flatten', fillcolor=C_UTIL)
+    dot.node('Head', 'KANLinear × 2\n(logits)', fillcolor=C_KAN)
+    dot.node('Out',  'Logits', fillcolor=C_OUT)
+
+    # Связи
+    for src in ('AI', 'AU'):
+        dot.edge(src, 'cMul'); dot.edge(src, 'cDiv')
+    for src in ('PI', 'PU'):
+        dot.edge(src, 'cMul', style='dashed')
+        dot.edge(src, 'cDiv', style='dashed')
+    for src in ('AI', 'PI', 'AU', 'PU'):
+        dot.edge(src, 'Cat1', style='dotted', color='#1f4fe0')
+    dot.edge('cMul', 'Cat1'); dot.edge('cDiv', 'Cat1')
+
+    dot.edge('Cat1', 'SplitA'); dot.edge('Cat1', 'SplitP')
+    dot.edge('SplitA', 'AmpKAN')
+    dot.edge('SplitP', 'PhKAN')
+    dot.edge('SplitP', 'GateKAN')
+    dot.edge('AmpKAN', 'Gated')
+    dot.edge('GateKAN', 'Gated')
+    dot.edge('Gated', 'Drop'); dot.edge('PhKAN', 'Drop')
+    dot.edge('Drop', 'Stack')
+    dot.edge('Stack', 'Pool')
+    dot.edge('Pool', 'Head')
+    dot.edge('Head', 'Out')
+    dot.render(filename=os.path.join(output_dir, 'rPhysicsKAN'), cleanup=True)
+
+
 # =====================================================================
 # Фаза 4
 # =====================================================================
@@ -341,6 +412,7 @@ if __name__ == '__main__':
     draw_convkan(output_directory)
     draw_physicskan(output_directory)
     draw_cphysicskan(output_directory)
+    draw_rphysicskan(output_directory)
 
     # Фаза 4
     draw_baseline_transformer(output_directory)
