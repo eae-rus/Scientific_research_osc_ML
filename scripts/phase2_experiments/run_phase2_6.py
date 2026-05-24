@@ -513,6 +513,30 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
             "models_override": ["cPhysicsKAN", "SimpleMLP", "SimpleCNN", "ConvKAN", "SimpleKAN", "PhysicsKAN", "ResNet1D"],
             "complexities_override": ["heavy"]
         },
+
+        # === Эксперимент 2.6.12: Базовые модели (расширенный список, вкл. rPhysicsKAN) ===
+        "2.6.12_stride": {
+            "feature_mode": "phase_polar",
+            "sampling": "stride",
+            "stride": 16,
+            "aug": True,
+            "balancing": "weights",
+            "target_level": "base",
+            "models_override": [
+                "SimpleMLP", "SimpleCNN", "ResNet1D", "SimpleKAN", "ConvKAN", "PhysicsKAN", "cPhysicsKAN", "rPhysicsKAN"
+            ]
+        },
+        "2.6.12_snapshot": {
+            "feature_mode": "phase_polar",
+            "sampling": "snapshot",
+            "stride": 32,
+            "aug": True,
+            "balancing": "weights",
+            "target_level": "base",
+            "models_override": [
+                "SimpleMLP", "SimpleCNN", "ResNet1D", "SimpleKAN", "ConvKAN", "PhysicsKAN", "cPhysicsKAN", "rPhysicsKAN"
+            ]
+        },
     }
 
     if target_exp not in exp_params:
@@ -712,6 +736,9 @@ if __name__ == "__main__":
     # 2.6.4 - гранулярность меток (full, full_by_levels)
     # 2.6.7 - финальный тест (200 эпох, conditional heads)
     # 2.6.9 - комплексная PhysicsKAN (cPhysicsKAN)
+    # 2.6.10 - глобальная балансировка, только тяжёлые базовые модели
+    # 2.6.11 - детектирование ОЗЗ/ДПОЗЗ (cPhysicsKAN)
+    # 2.6.12 - расширенный список базовых моделей (вкл. rPhysicsKAN)
     EXPS = [
         # === Эксперимент 2.6.1: Калибровка базовых моделей ===
         #"2.6.1_stride", "2.6.1_snapshot", "2.6.1_global_stride",
@@ -742,8 +769,11 @@ if __name__ == "__main__":
         # "2.6.10_global_stride",
         # "2.6.10_weights_stride",
         
-        # === Эксперимент 2.6.11: Детектирование ОЗЗ/ДПОЗЗ ===
-        "2.6.11_weights_stride",
+        # === Эксперимент 2.6.11: Детектирование ОЗЗ/ДПОЗЗ (cPhysicsKAN) ===
+        #"2.6.11_weights_stride",
+
+        # === Эксперимент 2.6.12: Базовые модели (расширенный список) ===
+        "2.6.12_stride", "2.6.12_snapshot",
     ]
     
     # Тип модели ('all' - выберет автоматически подходящие для группы)
