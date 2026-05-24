@@ -201,10 +201,9 @@ class PrecomputedDataset(Dataset):
         
         # Признаки: (N, C) → транспонируем позже при извлечении
         self._features_np = self.data.select(self.feature_columns).to_numpy().astype(np.float32)
-        # NaN сохраняем как маркер отсутствующих каналов — DataSanitizer их обработает
-        inf_mask = np.isinf(self._features_np)
-        if inf_mask.any():
-            self._features_np[inf_mask] = 0.0
+        # Заменяем NaN и Inf на 0.0 (отсутствующие каналы маркированы NaN в CSV,
+        # но модели Phase 2.6 не имеют DataSanitizer — обрабатываем здесь)
+        np.nan_to_num(self._features_np, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
         
         # Метки: (N, num_classes)
         self._targets_np = self.data.select(self.target_columns).to_numpy().astype(np.float32)
