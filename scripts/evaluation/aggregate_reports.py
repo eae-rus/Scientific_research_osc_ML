@@ -151,8 +151,11 @@ def aggregate_by_fold_seed(df: pd.DataFrame) -> Optional[pd.DataFrame]:
     
     # Числовые метрики для агрегации
     metric_cols = ['Val F1', 'Val Loss', 'Val Acc', 'Params', 'Epochs']
-    # Добавляем full_eval метрики если они есть
+    # Добавляем full_eval метрики если они есть (исключаем строковые колонки)
+    non_numeric_full_cols = {'Full Eval Split'}
     for col in fold_df.columns:
+        if col in non_numeric_full_cols:
+            continue
         if col.startswith('Full ') or col.startswith('Class_') or col == 'CPU Inf (ms)':
             metric_cols.append(col)
     metric_cols = [c for c in metric_cols if c in fold_df.columns]
@@ -730,11 +733,12 @@ if __name__ == "__main__":
         # Ограничение на число моделей в объединённых инженерных графиках.
         MAX_MODELS_FOR_COMBINED = MAX_MODELS_FOR_COMBINED_DEFAULT
         # Перед агрегацией запустить формульный PhysicsBaseline.
-        ENABLE_PHYSICS_BASELINE = True
+        ENABLE_PHYSICS_BASELINE = False
         # Дополнительные папки экспериментов, которые надо включить в сканирование.
-        ADDITIONAL_EXPERIMENT_ROOTS = [
-            "experiments/phase2_6/PhysicsBaseline_OZZ"
-        ]
+        # ADDITIONAL_EXPERIMENT_ROOTS = [
+        #     "experiments/phase2_6/PhysicsBaseline_OZZ"
+        # ]
+        ADDITIONAL_EXPERIMENT_ROOTS = []
         # Тонкая настройка инженерных графиков (можно отключать отдельные виды).
         PLOT_SWITCHES = {
             'engineering_bars_per_model_absolute': True,
