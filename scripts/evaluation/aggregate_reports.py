@@ -203,6 +203,26 @@ def aggregate_by_fold_seed(df: pd.DataFrame) -> Optional[pd.DataFrame]:
     return agg_result
 
 
+def _save_csv_with_retry(df: pd.DataFrame, path: Path, max_retries: int = 3, wait_sec: float = 2.0):
+    """Сохраняет DataFrame в CSV с повторными попытками при PermissionError (файл занят)."""
+    for attempt in range(max_retries):
+        try:
+            df.to_csv(path, index=False)
+            return
+        except PermissionError:
+            if attempt < max_retries - 1:
+                print(f"[!] Файл занят: {path}")
+                print(f"    Закройте его (Excel/VS Code) — повтор через {wait_sec} сек (попытка {attempt + 2}/{max_retries})...")
+                time.sleep(wait_sec)
+            else:
+                # Последняя попытка — сохраняем рядом с суффиксом
+                fallback = path.with_suffix('.new.csv')
+                df.to_csv(fallback, index=False)
+                print(f"[!] Не удалось записать {path} (файл заблокирован).")
+                print(f"    Отчёт сохранён как: {fallback}")
+                print(f"    Переименуйте вручную после закрытия файла.")
+
+
 def aggregate_reports(
     root_dir: str, 
     output_dir: str = None, 
@@ -641,7 +661,7 @@ def aggregate_reports(
 
     # Сохранение файлов
     if out_path:
-        df.to_csv(csv_path, index=False)
+        _save_csv_with_retry(df, csv_path)
         print(f"\nCSV-отчет сохранен: {csv_path}")
 
         # Агрегация по fold/seed (mean ± std) для экспериментов Фазы 2.7+

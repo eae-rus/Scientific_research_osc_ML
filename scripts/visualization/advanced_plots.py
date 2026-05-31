@@ -59,9 +59,15 @@ class AdvancedVisualizer:
         'SimpleKAN': '#e67e22',
         'ConvKAN': '#e74c3c',
         'PhysicsKAN': '#9b59b6',
+        'PhysicsKANConditional': '#5dade2',
         'cPhysicsKAN': '#f1c40f',
-        'rPhysicsKAN': '#d4ac0d',
-        'PhysicsBaseline': '#16a085',
+        'rPhysicsKAN': '#1abc9c',
+        'PhysicsBaseline': '#d35400',
+        # Модели поколения 2 (v2)
+        'PhysicsKANv2': '#ff00ff',
+        'cPhysicsKANv2': '#a04000',
+        'rPhysicsKANv2': '#1d8348',
+        'rKANv2': '#5b2c6f',
         # Гибридные модели (те же цвета, слегка темнее)
         'HybridMLP': '#7f8c8d',
         'HybridCNN': '#2980b9',
@@ -314,7 +320,12 @@ class AdvancedVisualizer:
         plt.figure(figsize=(12, 8))
         
         # Фиксированный порядок моделей и сложностей для согласованности между графиками
-        model_order = ['MLP', 'CNN', 'ResNet', 'SimpleKAN', 'ConvKAN', 'PhysicsKAN', 'cPhysicsKAN', 'rPhysicsKAN', 'PhysicsBaseline', 'Unknown']
+        model_order = [
+            'MLP', 'CNN', 'ResNet', 'SimpleKAN', 'ConvKAN',
+            'PhysicsKAN', 'PhysicsKANConditional', 'cPhysicsKAN', 'rPhysicsKAN',
+            'PhysicsKANv2', 'cPhysicsKANv2', 'rPhysicsKANv2', 'rKANv2',
+            'PhysicsBaseline', 'Unknown'
+        ]
         complexity_order = ['Light', 'Medium', 'Heavy', 'Unknown']
         
         # Scatter plot с разными маркерами для сложности

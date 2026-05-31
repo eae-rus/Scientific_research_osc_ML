@@ -199,7 +199,8 @@ def _get_eval_batch_size(
         batch_size = 32
         val_batch_size = 2048
     
-    if is_harmonic_mode and model_name in ['PhysicsKAN', 'ConvKAN', 'HierarchicalPhysicsKAN', 'HierarchicalConvKAN']:
+    if is_harmonic_mode and model_name in ['PhysicsKAN', 'ConvKAN', 'HierarchicalPhysicsKAN', 'HierarchicalConvKAN',
+                                             'PhysicsKANv2', 'cPhysicsKANv2', 'rPhysicsKANv2', 'rKANv2']:
         batch_size = 16
         val_batch_size = 1024
     

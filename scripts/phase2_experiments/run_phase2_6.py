@@ -33,6 +33,10 @@ MODEL_COMPLEXITY = {
         'PhysicsKANConditional': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
         'cPhysicsKAN': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
         'rPhysicsKAN': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
+        'PhysicsKANv2': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
+        'cPhysicsKANv2': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
+        'rPhysicsKANv2': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
+        'rKANv2': {'channels': [8, 16], 'dropout': 0.1, 'grid_size': 3},
         'ResNet1D':  {'layers': [1, 1, 1, 1], 'base_filters': 16},
         # Иерархические модели (2.6.1, 2.6.2)
         'HierarchicalMLP': {'channels': [64, 32], 'dropout': 0.2, 'stem_config': {'independent_layers': 1, 'grouped_layers': 1}},
@@ -58,6 +62,10 @@ MODEL_COMPLEXITY = {
         'PhysicsKANConditional': {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5},
         'cPhysicsKAN': {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5},
         'rPhysicsKAN': {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5},
+        'PhysicsKANv2': {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5},
+        'cPhysicsKANv2': {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5},
+        'rPhysicsKANv2': {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5},
+        'rKANv2': {'channels': [16, 32, 64], 'dropout': 0.2, 'grid_size': 5},
         'ResNet1D':  {'layers': [2, 2, 2, 2], 'base_filters': 32},
         # Иерархические модели (2.6.1, 2.6.2)
         'HierarchicalMLP': {'channels': [256, 128, 64], 'dropout': 0.3, 'stem_config': {'independent_layers': 2, 'grouped_layers': 2}},
@@ -83,6 +91,10 @@ MODEL_COMPLEXITY = {
         'PhysicsKANConditional': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8},
         'cPhysicsKAN': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8},
         'rPhysicsKAN': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8},
+        'PhysicsKANv2': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8},
+        'cPhysicsKANv2': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8},
+        'rPhysicsKANv2': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8},
+        'rKANv2': {'channels': [32, 64, 128], 'dropout': 0.3, 'grid_size': 8},
         'ResNet1D':  {'layers': [3, 4, 6, 3], 'base_filters': 64},
         # Иерархические модели (2.6.1, 2.6.2)
         'HierarchicalMLP': {'channels': [512, 256, 128, 64], 'dropout': 0.4, 'stem_config': {'independent_layers': 3, 'grouped_layers': 3}},
@@ -157,7 +169,7 @@ def run_single_experiment(
             effective_feature_mode = ['raw', feature_mode]
             features_mode_for_hybrid = feature_mode
 
-    if model_name in ['cPhysicsKAN', 'rPhysicsKAN']:
+    if model_name in ['cPhysicsKAN', 'rPhysicsKAN', 'cPhysicsKANv2', 'rPhysicsKANv2', 'rKANv2']:
         modes = effective_feature_mode if isinstance(effective_feature_mode, list) else [effective_feature_mode]
         if modes != ['phase_polar']:
             raise ValueError(
@@ -268,7 +280,7 @@ def run_single_experiment(
     if is_harmonic_mode and num_harmonics >= 3:
         val_batch_size = 2048
 
-    if is_harmonic_mode and complexity == 'heavy' and model_name in ['PhysicsKAN', 'PhysicsKANConditional', 'cPhysicsKAN', 'rPhysicsKAN', 'ConvKAN', 'ResNet1D', 'HierarchicalPhysicsKAN', 'HierarchicalConvKAN', 'HierarchicalResNet']:
+    if is_harmonic_mode and complexity == 'heavy' and model_name in ['PhysicsKAN', 'PhysicsKANConditional', 'cPhysicsKAN', 'rPhysicsKAN', 'PhysicsKANv2', 'cPhysicsKANv2', 'rPhysicsKANv2', 'rKANv2', 'ConvKAN', 'ResNet1D', 'HierarchicalPhysicsKAN', 'HierarchicalConvKAN', 'HierarchicalResNet']:
         val_batch_size = 1024
 
     train_loader = torch.utils.data.DataLoader(train_ds, batch_size=base_batch_size, shuffle=True, num_workers=0)
@@ -283,14 +295,14 @@ def run_single_experiment(
     
     # Модели, которые ожидают input_size (обычно плоские MLP/KAN)
     if model_name in ['SimpleMLP', 'SimpleKAN', 'HierarchicalSimpleKAN', 'PhysicsKAN', 'HierarchicalPhysicsKAN', 
-                      'HybridMLP', 'HybridSimpleKAN']:
+                      'HybridMLP', 'HybridSimpleKAN', 'PhysicsKANv2', 'cPhysicsKANv2', 'rPhysicsKANv2', 'rKANv2']:
         model_params['input_size'] = in_channels * seq_len
         
     # SimpleMLP и SimpleKAN работают только с flatten вектором и не принимают параметр in_channels
     if model_name in ['SimpleMLP', 'SimpleKAN']:
         model_params.pop('in_channels', None)
 
-    if model_name in ['PhysicsKAN', 'HierarchicalPhysicsKAN', 'cPhysicsKAN', 'rPhysicsKAN'] and sampling_strategy == 'snapshot':
+    if model_name in ['PhysicsKAN', 'HierarchicalPhysicsKAN', 'cPhysicsKAN', 'rPhysicsKAN', 'PhysicsKANv2', 'cPhysicsKANv2', 'rPhysicsKANv2', 'rKANv2'] and sampling_strategy == 'snapshot':
         model_params['use_mlp'] = True
         model_params['input_size'] = in_channels * seq_len
 
@@ -537,6 +549,27 @@ def main(exp: str = None, model: str = None, complexity: str = None, samples_per
                 "SimpleMLP", "SimpleCNN", "ResNet1D", "SimpleKAN", "ConvKAN", "PhysicsKAN", "cPhysicsKAN", "rPhysicsKAN"
             ]
         },
+
+        # === Эксперимент 2.6.13: Физика/реле на глубоких слоях (v2-модели) ===
+        # Контролируемая абляция: сравниваем физику только на stem (PhysicsKAN,
+        # rPhysicsKAN) против физики/реле на каждом слое (PhysicsKANv2, rPhysicsKANv2)
+        # при прочих равных. ConvKAN — референс без физики. Только medium-сложность
+        # (глубина значима, экономия ресурсов).
+        "2.6.13_stride": {
+            "feature_mode": "phase_polar",
+            "sampling": "stride",
+            "stride": 16,
+            "aug": True,
+            "balancing": "weights",
+            "target_level": "base",
+            "models_override": [
+                "ConvKAN",
+                "PhysicsKAN", "PhysicsKANv2",
+                "cPhysicsKAN", "cPhysicsKANv2",
+                "rPhysicsKAN", "rKANv2", "rPhysicsKANv2"
+            ],
+            "complexities_override": ["medium", "heavy"]
+        },
     }
 
     if target_exp not in exp_params:
@@ -739,6 +772,7 @@ if __name__ == "__main__":
     # 2.6.10 - глобальная балансировка, только тяжёлые базовые модели
     # 2.6.11 - детектирование ОЗЗ/ДПОЗЗ (cPhysicsKAN)
     # 2.6.12 - расширенный список базовых моделей (вкл. rPhysicsKAN)
+    # 2.6.13 - физика/реле на глубоких слоях (v2-модели)
     EXPS = [
         # === Эксперимент 2.6.1: Калибровка базовых моделей ===
         #"2.6.1_stride", "2.6.1_snapshot", "2.6.1_global_stride",
@@ -773,7 +807,10 @@ if __name__ == "__main__":
         #"2.6.11_weights_stride",
 
         # === Эксперимент 2.6.12: Базовые модели (расширенный список) ===
-        "2.6.12_stride", "2.6.12_snapshot",
+        # "2.6.12_stride", "2.6.12_snapshot",
+
+        # === Эксперимент 2.6.13: Физика/реле на глубоких слоях (v2) ===
+        "2.6.13_stride",
     ]
     
     # Тип модели ('all' - выберет автоматически подходящие для группы)

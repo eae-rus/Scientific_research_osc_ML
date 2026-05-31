@@ -274,6 +274,138 @@ def draw_rphysicskan(output_dir):
     dot.render(filename=os.path.join(output_dir, 'rPhysicsKAN'), cleanup=True)
 
 
+def draw_physicskanv2(output_dir):
+    dot = setup_graph('PhysicsKANv2',
+                      'PhysicsKANv2 (PhysicsKAN + физические блоки на глубоких слоях)')
+
+    with dot.subgraph(name='cluster_stem') as c:
+        c.attr(label='Физический stem (как в PhysicsKAN)', style='filled',
+               fillcolor=C_PHYS_BG, color='#98fb98', fontname='Helvetica-Bold')
+        c.node('In', 'Вход (B, C, T)\nтоки I + напряж. U', fillcolor=C_INPUT)
+        c.node('Stem', 'S = tanh(BN(tanh(I·U)))\nZ = tanh(BN(tanh(I/U)))\nConcat [I, U, S, Z] → 2C',
+               shape='cds', fillcolor='#b3ffb3')
+
+    with dot.subgraph(name='cluster_bb') as c:
+        c.attr(label='Backbone: KAN-Conv стадии + глубокие физ. блоки',
+               style='dashed', color='gray', fontname='Helvetica-Bold')
+        c.node('Conv', 'KANConv1d + BN\n(стадия)', fillcolor=C_CONV)
+        c.node('Phys',
+               'PhysicsInteractionBlock\noperand_proj → k пар (a,b)\ntanh(a·b), tanh(a/b)\nBN → tanh → KANConv1×1\n→ BN → tanh → x + scale·Δ',
+               fillcolor=C_PHYS)
+        c.node('Note',
+               'k ограничен:\n1-й слой ≈25% каналов,\nглубже ≈3-5',
+               shape='note', fillcolor='#fffacd')
+
+    dot.node('GAP', 'AdaptiveAvgPool → KANLinear×2', fillcolor=C_KAN)
+    dot.node('Out', 'Logits', fillcolor=C_OUT)
+
+    dot.edge('In', 'Stem')
+    dot.edge('Stem', 'Conv')
+    dot.edge('Conv', 'Phys')
+    dot.edge('Phys', 'Conv', style='dashed', color='gray', label='  × стадии')
+    dot.edge('Phys', 'Note', style='dotted', arrowhead='none', color='#d4ac0d')
+    dot.edge('Phys', 'GAP')
+    dot.edge('GAP', 'Out')
+    dot.render(filename=os.path.join(output_dir, 'PhysicsKANv2'), cleanup=True)
+
+
+def draw_cphysicskanv2(output_dir):
+    dot = setup_graph('cPhysicsKANv2',
+                      'cPhysicsKANv2 (cPhysicsKAN + комплексные физ. блоки глубже)')
+
+    with dot.subgraph(name='cluster_stem') as c:
+        c.attr(label='Комплексный stem (как в cPhysicsKAN)', style='filled',
+               fillcolor=C_PHYS_BG, color='#98fb98', fontname='Helvetica-Bold')
+        c.node('In', 'Вход [A, φ, A, φ, …]\n(пары I и U)', fillcolor=C_INPUT)
+        c.node('Stem',
+               '|S|=|I||U|, ∠S=∠I+∠U\n|Y|=|I|/|U|, ∠Y=∠I−∠U\ntanh(BN(tanh(amp))), wrap(φ)\nConcat 2C',
+               shape='cds', fillcolor='#b3ffb3')
+
+    with dot.subgraph(name='cluster_bb') as c:
+        c.attr(label='Backbone: KAN-Conv стадии + комплексные физ. блоки',
+               style='dashed', color='gray', fontname='Helvetica-Bold')
+        c.node('Conv', 'KANConv1d + BN\n(стадия)', fillcolor=C_CONV)
+        c.node('Phys',
+               'ComplexPhysicsInteractionBlock\nтаnh(softplus(amp_proj)) × пары\nwrap(phase_proj), tanh(div_amp)\nBN→tanh, KANConv→BN→tanh\nx + scale·Δ',
+               fillcolor=C_PHYS)
+
+    dot.node('GAP', 'AdaptiveAvgPool → KANLinear×2', fillcolor=C_KAN)
+    dot.node('Out', 'Logits', fillcolor=C_OUT)
+
+    dot.edge('In', 'Stem'); dot.edge('Stem', 'Conv')
+    dot.edge('Conv', 'Phys')
+    dot.edge('Phys', 'Conv', style='dashed', color='gray', label='  × стадии')
+    dot.edge('Phys', 'GAP'); dot.edge('GAP', 'Out')
+    dot.render(filename=os.path.join(output_dir, 'cPhysicsKANv2'), cleanup=True)
+
+
+def draw_rphysicskanv2(output_dir):
+    dot = setup_graph('rPhysicsKANv2',
+                      'rPhysicsKANv2 (cPhysicsKANv2 + релейные органы глубже и на выходе)')
+
+    with dot.subgraph(name='cluster_stem') as c:
+        c.attr(label='Комплексный stem (как в cPhysicsKAN)', style='filled',
+               fillcolor=C_PHYS_BG, color='#98fb98', fontname='Helvetica-Bold')
+        c.node('In', 'Вход [A, φ, A, φ, …]\n(пары I и U)', fillcolor=C_INPUT)
+        c.node('Stem', 'Комплексные S, Y\ntanh(BN(tanh(amp))), wrap(φ)\nConcat → 2C',
+               shape='cds', fillcolor='#b3ffb3')
+
+    with dot.subgraph(name='cluster_bb') as c:
+        c.attr(label='Backbone: стадия + комплексная физика + релейный орган',
+               style='dashed', color='gray', fontname='Helvetica-Bold')
+        c.node('Conv', 'KANConv1d + BN', fillcolor=C_CONV)
+        c.node('Phys', 'ComplexPhysicsInteractionBlock\n(tanh/wrap + BN→tanh→KAN→BN→tanh→резидуал)',
+               fillcolor=C_PHYS)
+        c.node('Relay',
+               'RelayGateBlock\ngate=σ(KANConv)\nx·(1 + scale·(gate−0.5))',
+               fillcolor='#fff8dc')
+
+    dot.node('Head', 'Финальное реле (на выходе)\nRelayGateBlock', fillcolor='#fff8dc')
+    dot.node('GAP', 'AdaptiveAvgPool → KANLinear×2', fillcolor=C_KAN)
+    dot.node('Out', 'Logits', fillcolor=C_OUT)
+
+    dot.edge('In', 'Stem'); dot.edge('Stem', 'Conv')
+    dot.edge('Conv', 'Phys'); dot.edge('Phys', 'Relay')
+    dot.edge('Relay', 'Conv', style='dashed', color='gray', label='  × стадии')
+    dot.edge('Relay', 'Head'); dot.edge('Head', 'GAP'); dot.edge('GAP', 'Out')
+    dot.render(filename=os.path.join(output_dir, 'rPhysicsKANv2'), cleanup=True)
+
+
+def draw_rkanv2(output_dir):
+    dot = setup_graph('rKANv2',
+                      'rKANv2 (deep relay only, без глубокой физики — абляция)')
+
+    with dot.subgraph(name='cluster_stem') as c:
+        c.attr(label='Комплексный stem (как в cPhysicsKAN)', style='filled',
+               fillcolor=C_PHYS_BG, color='#98fb98', fontname='Helvetica-Bold')
+        c.node('In', 'Вход [A, φ, A, φ, …]\n(пары I и U)', fillcolor=C_INPUT)
+        c.node('Stem',
+               '|S|=|I||U|, ∠S=∠I+∠U\n|Y|=|I|/|U|, ∠Y=∠I−∠U\ntanh(BN(tanh(amp))), wrap(φ)\nConcat 2C',
+               shape='cds', fillcolor='#b3ffb3')
+
+    with dot.subgraph(name='cluster_bb') as c:
+        c.attr(label='Backbone: KAN-Conv стадии + глубокие реле (без физ. блоков)',
+               style='dashed', color='gray', fontname='Helvetica-Bold')
+        c.node('Conv', 'KANConv1d + BN\n(стадия)', fillcolor=C_CONV)
+        c.node('Relay',
+               'RelayGateBlock\ngate=σ(KANConv)\nx·(1 + scale·(gate−0.5))',
+               fillcolor='#fff8dc')
+        c.node('Note',
+               'Нет ComplexPhysicsInteractionBlock\n(только relay на каждом слое)',
+               shape='note', fillcolor='#fffacd')
+
+    dot.node('Head', 'Финальное реле\nRelayGateBlock', fillcolor='#fff8dc')
+    dot.node('GAP', 'AdaptiveAvgPool → KANLinear×2', fillcolor=C_KAN)
+    dot.node('Out', 'Logits', fillcolor=C_OUT)
+
+    dot.edge('In', 'Stem'); dot.edge('Stem', 'Conv')
+    dot.edge('Conv', 'Relay')
+    dot.edge('Relay', 'Conv', style='dashed', color='gray', label='  × стадии')
+    dot.edge('Relay', 'Note', style='dotted', arrowhead='none', color='#d4ac0d')
+    dot.edge('Relay', 'Head'); dot.edge('Head', 'GAP'); dot.edge('GAP', 'Out')
+    dot.render(filename=os.path.join(output_dir, 'rKANv2'), cleanup=True)
+
+
 # =====================================================================
 # Фаза 4
 # =====================================================================
@@ -413,6 +545,10 @@ if __name__ == '__main__':
     draw_physicskan(output_directory)
     draw_cphysicskan(output_directory)
     draw_rphysicskan(output_directory)
+    draw_physicskanv2(output_directory)
+    draw_cphysicskanv2(output_directory)
+    draw_rphysicskanv2(output_directory)
+    draw_rkanv2(output_directory)
 
     # Фаза 4
     draw_baseline_transformer(output_directory)

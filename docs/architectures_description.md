@@ -31,6 +31,10 @@ python osc_tools/visualization/draw_architectures.py
 | PhysicsKAN | `architecture_images/PhysicsKAN.png` |
 | cPhysicsKAN | `architecture_images/cPhysicsKAN.png` |
 | rPhysicsKAN | `architecture_images/rPhysicsKAN.png` |
+| PhysicsKANv2 | `architecture_images/PhysicsKANv2.png` |
+| cPhysicsKANv2 | `architecture_images/cPhysicsKANv2.png` |
+| rPhysicsKANv2 | `architecture_images/rPhysicsKANv2.png` |
+| rKANv2 | `architecture_images/rKANv2.png` |
 | BaselineTransformer | `architecture_images/BaselineTransformer.png` |
 | PhysicalKANTransformer | `architecture_images/PhysicalKANTransformer.png` |
 
@@ -143,6 +147,28 @@ python osc_tools/visualization/draw_architectures.py
 **Плюсы и минусы:** Модель явно реализует концепцию «угол управляет амплитудой», что математически эквивалентно проекции вектора тока на ось напряжения ($I \cos\varphi$). Это снижает пространство решений и повышает интерпретируемость: можно визуализировать выученную gating-функцию и проверить, соответствует ли она физическим ожиданиям. Минус — более сложная оптимизация из-за трёх параллельных KAN-веток и необходимости балансировать обучение gating-ветви.
 
 **Роль в исследовании:** rPhysicsKAN является мостом между «плоскими» моделями Фазы 2.6 и полноценным Physical KAN-Transformer Фазы 4. Именно идея relay-gate из этой модели была перенесена в `PhysicalStem` и `PhysicalKANFeedForward` трансформера (блоки `DirectionalRelayGate`). Модель позволяет оценить вклад механизма направленного управления без усложнения за счёт Transformer-кодировщика.
+
+
+## 8.1-8.3. Version 2: физика и реле на глубоких слоях (PhysicsKANv2 / cPhysicsKANv2 / rPhysicsKANv2)
+
+**Общая идея.** В исходных Physics-моделях физика (умножение/деление) и релейный орган применяются ТОЛЬКО на входе (stem). Версия 2 проверяет гипотезу о пользе их применения и на скрытых слоях. Все глубокие блоки спроектированы как **резидуальные добавки** $x + \text{scale}\cdot\Delta$ с малым начальным $\text{scale}=0.1$ (обучаемый), чтобы не разрушать основной поток признаков в начале обучения (это ResNet-подобный skip). После проверки на обучении добавлена стабилизация по аналогии с Physical KAN-Transformer: физические признаки проходят `tanh`-сжатие, нормируются отдельно и снова ограничиваются перед резидуальным сложением. Это защищает KAN-сетку от выбросов делительной ветки при малых знаменателях. Стем каждой v2-модели идентичен базовой модели по набору операций, но физические каналы в v2 также ограничиваются перед конкатенацией — это сохраняет блоки, но не допускает loss-взрывов на validation.
+
+- `ConvKAN` (без физики)
+- `PhysicsKAN` (вещественный stem) → `PhysicsKANv2` (+ вещественная физика глубже)
+- `cPhysicsKAN` (комплексный stem) → `cPhysicsKANv2` (+ комплексная физика глубже)
+- `rPhysicsKAN` (комплексный stem + relay-ветки) → `rKANv2` (= только реле глубже, абляция) → `rPhysicsKANv2` (= `cPhysicsKANv2` + релейные органы глубже и на выходе)
+
+Такая структура позволяет изолировать вклад каждого компонента: глубокой физики (v2 vs база), комплексности (c vs вещественный) и реле (r vs c).
+
+**Ограниченное число взаимодействий.** В отличие от stem, где физика считается по всем парам, глубокие блоки вычисляют лишь $k$ взаимодействий: на первом слое со вставкой $k \approx 0.25\cdot C_{out}$ (параметр `first_interaction_ratio`), на последующих — $k=\min(4, C_{out})$ (`deep_interactions`). Это ограничивает рост параметров и VRAM. Операнды формируются линейной проекцией (`Conv1d` 1×1) всех каналов в $2k$ операндов, т.е. взаимодействовать могут произвольные (в т.ч. межсигнальные) линейные комбинации каналов, а не только соседние.
+
+**`PhysicsKANv2` (вещественная).** Стем как у `PhysicsKAN` ($S=I\cdot U$, $Z=I/U$), но `S`/`Z` дополнительно сжимаются через `tanh` до подачи в backbone. В backbone после каждой KAN-Conv стадии вставляется `PhysicsInteractionBlock`: проекция → $k$ пар $(a,b)$ → $\tanh(a\cdot b)$ и безопасное $\tanh(a/b)$ → BatchNorm → `tanh` → KANConv 1×1 → BatchNorm → `tanh` → резидуал. См. `osc_tools/ml/models/kan.py` (`PhysicsInteractionBlock`, `PhysicsKANv2`).
+
+**`cPhysicsKANv2` (комплексная).** То же самое, но в полярной плоскости: стем как у `cPhysicsKAN`, а глубокие блоки — `ComplexPhysicsInteractionBlock`: амплитуды (через softplus, $>0$) перемножаются/делятся и ограничиваются через `tanh`, фазы складываются/вычитаются и возвращаются в диапазон $[-\pi, \pi]$; нормируются только амплитуды. Требует $C \bmod 4 = 0$. См. `osc_tools/ml/models/kan.py` (`ComplexPhysicsInteractionBlock`, `cPhysicsKANv2`).
+
+**`rPhysicsKANv2` (релейная комплексная).** Построена на том же комплексном стеме и глубоких `ComplexPhysicsInteractionBlock`, как `cPhysicsKANv2`, но после каждого блока добавляется `RelayGateBlock` ($\text{gate}=\sigma(\text{KANConv}(x))$, $x\cdot(1+\text{scale}\cdot(\text{gate}-0.5))$), а перед глобальным пулингом — финальное «реле на выходе» (`relay_at_head=True`). См. `osc_tools/ml/models/kan.py` (`RelayGateBlock`, `rPhysicsKANv2`).
+
+**`rKANv2` (только реле глубоко, абляция).** Промежуточная модель для изоляции вклада глубокого релейного механизма отдельно от глубокой физики. Комплексный стем идентичен `cPhysicsKANv2`/`rPhysicsKANv2`, но на глубоких слоях **нет** `ComplexPhysicsInteractionBlock` — только `RelayGateBlock` после каждой KAN-Conv стадии + финальное реле перед GAP. Сравнение: `cPhysicsKANv2` (глубокая физика, без реле) vs `rKANv2` (глубокое реле, без физики) vs `rPhysicsKANv2` (оба). См. `osc_tools/ml/models/kan.py` (`rKANv2`).
 
 
 ## 9. BaselineTransformer (Базовый спектральный Transformer)

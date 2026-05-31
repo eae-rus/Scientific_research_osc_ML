@@ -1,5 +1,65 @@
 # Лог работ по Фазе 2.6 (Архитектурные улучшения)
 
+## [2026-05-30] Стабилизация PhysicsKANv2/cPhysicsKANv2/rPhysicsKANv2 после loss-взрывов на validation
+
+### Проблема
+При запуске `Exp_2.6.13_PhysicsKANv2_medium_phase_polar_stride_base_weights_aug` обучение на train выглядело стабильным (`Train Loss ≈ 0.8–0.9`), но `Val Loss` периодически уходил в диапазон миллионов/миллиардов/триллионов. Это указывает не на обычную плохую сходимость, а на выбросы логитов на отдельных validation-батчах. Наиболее вероятный источник — делительные физические каналы: при малом знаменателе `a/b` создаёт экстремальные значения, которые затем попадают в KAN-свёртки за пределы рабочей сетки.
+
+### Что перенесено из стабильной Transformer-архитектуры
+В [transformer_blocks.py](osc_tools/ml/layers/transformer_blocks.py) `ComplexInteractionBlock` уже использует архитектурную защиту: результат деления сжимается через `tanh(|z|)` с сохранением угла. Этот принцип перенесён в v2-KAN блоки без удаления физики.
+
+### Изменения в [kan.py](osc_tools/ml/models/kan.py)
+1. Добавлены служебные функции `_finite_tanh()` и `_wrap_phase()`.
+2. `PhysicsInteractionBlock`:
+   - вход для физической ветки ограничивается через `tanh`;
+   - `mult` и особенно `div` сжимаются через `tanh` до BatchNorm;
+   - после BatchNorm добавлен повторный `tanh`, чтобы KANConv получал bounded-вход;
+   - после KANConv добавлен `delta_bn + tanh`, поэтому резидуальная добавка ограничена: `x + scale·tanh(norm(Δ))`.
+3. `ComplexPhysicsInteractionBlock`:
+   - амплитуды ограничиваются через `tanh(softplus(...))`;
+   - `div_amp` сжимается через `tanh`;
+   - фазы возвращаются в диапазон `[-pi, pi]` через `_wrap_phase()`;
+   - добавлен `delta_bn + tanh` перед резидуалом.
+4. `PhysicsKANv2` stem: физические каналы `S=I·U` и `Z=I/U` теперь ограничиваются через `tanh` до/после BatchNorm перед конкатенацией.
+5. Комплексный v2-stem (`_ComplexStemMixin`): амплитудные физические каналы ограничиваются через `tanh`, фазы приводятся к главному угловому диапазону.
+
+Физические блоки не удалены: сохранены `mult/div`, комплексные `amp/phase` операции и релейные блоки. Изменён только масштаб прохождения физического пути, чтобы он не мог численно разрушать backbone.
+
+### Тесты и проверка
+- [test_ml_models_kan.py](tests/unit/test_ml_models_kan.py): добавлены регрессионные тесты на почти нулой знаменатель в real/complex div-ветках; резидуальная добавка остаётся bounded и finite.
+- `C:/ProgramData/anaconda3/python.exe -m pytest tests/unit/test_ml_models_kan.py -q` → **26 passed**.
+- `py_compile` для [kan.py](osc_tools/ml/models/kan.py), [test_ml_models_kan.py](tests/unit/test_ml_models_kan.py), [run_phase2_6.py](scripts/phase2_experiments/run_phase2_6.py) → **OK**.
+- Smoke-forward `PhysicsKANv2` medium на входе с почти нулевыми знаменателями: logits finite, `max_abs ≈ 0.144`; `cPhysicsKANv2` и `rPhysicsKANv2` также finite.
+
+## [2026-03-11] Version 2: физика и реле на глубоких слоях (PhysicsKANv2 / cPhysicsKANv2 / rPhysicsKANv2)
+
+### Мотивация
+В исходных Physics-моделях (`PhysicsKAN`, `cPhysicsKAN`, `rPhysicsKAN`) физические операции (умножение/деление) и релейный орган применяются **только на входе (stem)**. Цель версии 2 — проверить гипотезу о пользе их применения **на скрытых слоях**, сохранив при этом возможность валидного вложенного сравнения (меняется ровно одна переменная за раз). Существующие модели и запуски не затрагиваются — все классы новые.
+
+### Новые блоки (см. [kan.py](osc_tools/ml/models/kan.py))
+1. **`PhysicsInteractionBlock`** — резидуальный вещественный физический блок для скрытых слоёв. Все каналы линейно проецируются (`Conv1d` 1×1) в `2k` операндов, считаются `mult`/`div` (`k` взаимодействий), результат смешивается KAN-свёрткой обратно в `C` каналов. Форма `[B, C, T]` сохраняется; добавка резидуальная `x + scale·Δ` (init `scale=0.1`). Проекция операндов допускает **межсигнальные** комбинации каналов. Чётность каналов больше не требуется.
+2. **`ComplexPhysicsInteractionBlock`** — комплексный (полярный) аналог: амплитуды (через `softplus`, `>0`) перемножаются/делятся, фазы складываются/вычитаются; нормируются только амплитуды. Требует чётное число каналов.
+3. **`RelayGateBlock`** — релейный орган `x·(1 + scale·(gate−0.5))`, `gate=σ(KANConv(x))`, применим на любом слое и «на выходе».
+4. **`_BlockConvKAN`** — обобщённый ConvKAN-backbone со стратегией `placement` (`all`/`last`/`none`), вставкой physics/relay блоков и опциональным head-relay. Число взаимодействий ограничено: на первом слое со вставкой `round(first_interaction_ratio·C_out)` (~25%), далее `min(deep_interactions, C_out)` (≈4) — для контроля параметров и VRAM на RTX 3060 Ti.
+5. **`_ComplexStemMixin`** — общий комплексный stem для `cPhysicsKANv2`/`rPhysicsKANv2`.
+
+### Новые модели
+- **`PhysicsKANv2`** — вещественный stem `PhysicsKAN` + `PhysicsInteractionBlock` на скрытых слоях.
+- **`cPhysicsKANv2`** — комплексный stem `cPhysicsKAN` + `ComplexPhysicsInteractionBlock` (полная аналогия с `PhysicsKANv2`, но в комплексной плоскости). Требует каналы кратные 4.
+- **`rPhysicsKANv2`** — `cPhysicsKANv2` + `RelayGateBlock` на слоях и финальное реле на выходе (`relay_at_head=True`). Изолирует именно вклад реле относительно `cPhysicsKANv2`.
+
+Семейство валидных сравнений: `ConvKAN` → `PhysicsKAN`→`PhysicsKANv2` → `cPhysicsKAN`→`cPhysicsKANv2` → `rPhysicsKAN`→`rPhysicsKANv2`.
+
+### Интеграция
+- Регистрация в [models/__init__.py](osc_tools/ml/models/__init__.py) и [runner.py](osc_tools/ml/runner.py).
+- [run_phase2_6.py](scripts/phase2_experiments/run_phase2_6.py): добавлены `cPhysicsKANv2` в `MODEL_COMPLEXITY`, ограничения `phase_polar`, снижение батча для heavy/harmonic, `input_size`/`use_mlp`-списки; опыт **2.6.13_stride** содержит все 7 моделей (`feature_mode=phase_polar`, `stride=16`, `aug`, `balancing=weights`, `target_level=base`).
+- [config_resolvers.py](scripts/evaluation/_core/config_resolvers.py): v2-модели распознаются раньше базовых имён, чтобы не схлопываться в отчётах.
+- [draw_architectures.py](osc_tools/visualization/draw_architectures.py): схемы `draw_physicskanv2/cphysicskanv2/rphysicskanv2`.
+- [architectures_description.md](docs/architectures_description.md): таблица изображений + раздел 8.1–8.3 с описанием v2.
+
+### Тесты
+- [test_ml_models_kan.py](tests/unit/test_ml_models_kan.py): обновлены/добавлены smoke- и контрактные тесты (forward, сохранение формы, резидуальность при `scale=0`, требования к чётности/кратности 4, `cPhysicsKANv2`, `ComplexPhysicsInteractionBlock`). Удалён устаревший тест на чётность `PhysicsInteractionBlock`. **24 passed.**
+
 ## [2026-03-10] Обновление физической baseline-модели (THD + RMS Trend)
 
 ### Модификация алгоритма [ozz_physics.py](osc_tools/analysis/ozz_physics.py)

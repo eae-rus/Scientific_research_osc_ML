@@ -138,14 +138,25 @@ class ReportVisualizer:
         self.t = self.TEXTS[self.lang]
         
         self.color_map = {
+            # Базовые модели
             'MLP': '#95a5a6',
             'CNN': '#3498db',
             'ResNet': '#2ecc71',
             'SimpleKAN': '#e67e22',
             'ConvKAN': '#e74c3c',
             'PhysicsKAN': '#9b59b6',
+            'PhysicsKANConditional': '#5dade2',
             'cPhysicsKAN': '#f1c40f',
-            'rPhysicsKAN': '#d4ac0d',
+            'rPhysicsKAN': '#1abc9c',
+            'PhysicsBaseline': '#d35400',
+            # Модели поколения 2 (v2)
+            'PhysicsKANv2': '#ff00ff',  # Маджента (очень заметно)
+            'cPhysicsKANv2': '#a04000', # Коричневый
+            'rPhysicsKANv2': '#1d8348', # Тёмно-зелёный (хвоя)
+            'rKANv2': '#5b2c6f',        # Тёмно-фиолетовый
+            # Для иерархических/гибридных (если не попали в базу)
+            'HierPhysicsKAN': '#7d3c98',
+            'HybridPhysicsKAN': '#2471a3',
             'Unknown': '#34495e'
         }
 
