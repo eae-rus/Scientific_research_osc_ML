@@ -838,6 +838,7 @@ def finetune_sim_ozz(
             'val_loss': val_metrics['loss'],
             'val_f1': val_metrics['macro_f1'],
             'val_roc_auc': val_metrics.get('roc_auc', 0.0),
+            'val_exact_match': val_metrics.get('exact_match', 0.0),
             'lr_backbone': optimizer.param_groups[0]['lr'],
             'lr_head': optimizer.param_groups[1]['lr'],
             'train_time': train_metrics['time_sec'],
@@ -855,17 +856,29 @@ def finetune_sim_ozz(
 
         marker = ' ★' if is_best else (' ★L' if is_best_loss else '')
         lr_bb = optimizer.param_groups[0]['lr']
+        lr_hd = optimizer.param_groups[1]['lr']
         print(
             f"Epoch {epoch + 1:3d}/{total_epochs} | "
             f"loss={train_metrics['loss']:.4f}/{val_metrics['loss']:.4f} | "
             f"F1={train_metrics['macro_f1']:.4f}/{val_metrics['macro_f1']:.4f}{marker} | "
             f"AUC={val_metrics.get('roc_auc', 0):.4f} | "
-            f"lr={lr_bb:.1e} | "
+            f"lr={lr_bb:.1e}/{lr_hd:.1e} | "
+            f"p̅={val_metrics.get('mean_prob', 0):.3f} | "
             f"time={train_metrics['time_sec'] + val_metrics['time_sec']:.1f}s"
         )
         cls_f1s = [f"{val_metrics.get(f'f1_class_{i}', 0):.3f}"
                    for i in range(len(target_columns))]
-        print(f"         Per-class F1: {cls_f1s}")
+        cls_probs = [f"{val_metrics.get(f'mean_prob_cls_{i}', 0):.3f}"
+                     for i in range(len(target_columns))]
+        print(f"         Per-class F1: {cls_f1s}  |  mean_prob: {cls_probs}")
+
+        # Детекция переобучения: N эпох подряд val_loss не улучшается
+        overfit_patience = config.get('overfit_patience', 20)
+        if len(history) >= overfit_patience:
+            recent_losses = [r['val_loss'] for r in history[-overfit_patience:]]
+            if all(recent_losses[i] >= recent_losses[0] for i in range(1, len(recent_losses))):
+                print(f"  ⚠ ВНИМАНИЕ: val_loss не улучшается {overfit_patience} эпох подряд "
+                      f"(возможно переобучение)")
 
         # Checkpointing
         save_checkpoint(
@@ -1016,7 +1029,7 @@ if __name__ == '__main__':
     SELECTED_COMPLEXITY = 'light'
 
     # 3. Основные гиперпараметры обучения
-    EPOCHS = 50                 # Общее количество эпох
+    EPOCHS = 100                 # Общее количество эпох
     BATCH_SIZE = 32             # Размер батча на 1 шаг (уменьшите, если не хватает VRAM)
     ACCUMULATION_STEPS = 8      # Накопление градиентов (эфф. батч = 32 * 8 = 256)
 

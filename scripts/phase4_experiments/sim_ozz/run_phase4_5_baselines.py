@@ -138,7 +138,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--exp', choices=['spectral_baseline', 'physical_mlp', 'raw_instantaneous', 'all'],
                         default='all')
     parser.add_argument('--complexity', choices=['light', 'medium', 'heavy'], default='light')
-    parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--epochs', type=int, default=100)
     parser.add_argument('--batch-size', type=int, default=32)
     parser.add_argument('--accumulation-steps', type=int, default=8)
     parser.add_argument('--max-files', type=int, default=None,
@@ -180,7 +180,7 @@ if __name__ == '__main__':
         #   'all'                 — все три последовательно
         EXP = 'all'
         COMPLEXITY = 'light'           # 'light' | 'medium' | 'heavy'
-        EPOCHS = 50
+        EPOCHS = 100
         BATCH_SIZE = 32
         ACCUMULATION_STEPS = 8
         MAX_FILES = None               # None = все SimOZZ файлы; для smoke поставьте 100
