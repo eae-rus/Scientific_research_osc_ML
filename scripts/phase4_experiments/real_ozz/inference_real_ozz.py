@@ -612,6 +612,10 @@ def run_inference_on_real_ozz(
         'total_files': len(unique_files),
         'processed': 0,
         'skipped': 0,
+        # Диагностика причин пропуска (для проверки 477 vs 830 confirmed):
+        'skip_not_on_disk': 0,        # .cfg файл отсутствует в osc_comtrade/
+        'skip_no_channels': 0,        # Отсутствуют ханалы IA/IB/IC или UA/UB/UC
+        'skip_too_short': 0,          # Файл короче 10 периодов (~220мс)
         'detected_ozz': 0,
         'no_ozz_detected': 0,
         'unknown_detected': 0,
@@ -629,6 +633,7 @@ def run_inference_on_real_ozz(
         cfg_path = COMTRADE_DIR / f'{fname}.cfg'
         if not cfg_path.exists():
             stats['skipped'] += 1
+            stats['skip_not_on_disk'] += 1
             continue
 
         # Категория файла: 'confirmed' | 'false_det' | 'unknown'
@@ -667,6 +672,9 @@ def run_inference_on_real_ozz(
             )
 
             if raw_display is None:
+                # load_comtrade_raw вернул None: отсутствуют ханалы IA/IB/IC или UA/UB/UC
+                stats['skip_no_channels'] += 1
+                print(f"    SKIP channels: {fname} bus={bus} | доступные: {list(sig_info.keys())}")
                 continue
 
             bus_suffix = f'_bus{bus}' if len(file_buses) > 1 else ''
@@ -684,6 +692,11 @@ def run_inference_on_real_ozz(
             probs, cov = mark_real_oscillogram(
                 model, raw_for_model, config, device, fs=fs, fast_mode=fast_mode,
             )
+
+            # Диагностика: если все NaN — файл слишком короткий
+            if np.all(np.isnan(probs)):
+                stats['skip_too_short'] += 1
+                stats['skipped'] += 1
 
             # Определяем, есть ли ОЗЗ
             max_prob_per_sample = np.nanmax(probs, axis=1)
@@ -754,7 +767,10 @@ def run_inference_on_real_ozz(
     print(f"\n{'='*60}")
     print(f"ИТОГО:")
     print(f"  Обработано: {stats['processed']}")
-    print(f"  Пропущено: {stats['skipped']}")
+    print(f"  Пропущено итого: {stats['skipped']}")
+    print(f"    - нет на диске: {stats['skip_not_on_disk']}")
+    print(f"    - нет каналов:  {stats['skip_no_channels']}")
+    print(f"    - слишком коротко: {stats['skip_too_short']}")
     print(f"  ОЗЗ обнаружено: {stats['detected_ozz']}")
     print(f"  ОЗЗ не обнаружено: {stats['no_ozz_detected']}")
     if subset == 'unknown' or stats['unknown_detected'] or stats['unknown_clean']:
