@@ -64,6 +64,20 @@ CLASS_LABELS = ['Stable SPGF', 'Petersen AIGF', 'Peters-Slepyan AIGF', 'Belyakov
 # Парсинг COMTRADE → сырые сигналы для inference
 # ---------------------------------------------------------------------------
 
+def _build_channel_map(bus: str) -> dict[str, list[str]]:
+    """Возвращает маппинг коротких имён → кандидаты имён столбцов для данного bus."""
+    return {
+        'IA': [f'I | Bus-{bus} | phase: A'],
+        'IB': [f'I | Bus-{bus} | phase: B'],
+        'IC': [f'I | Bus-{bus} | phase: C'],
+        'IN': [f'I | Bus-{bus} | phase: N'],
+        'UA': [f'U | BusBar-{bus} | phase: A', f'U | CableLine-{bus} | phase: A'],
+        'UB': [f'U | BusBar-{bus} | phase: B', f'U | CableLine-{bus} | phase: B'],
+        'UC': [f'U | BusBar-{bus} | phase: C', f'U | CableLine-{bus} | phase: C'],
+        'UN': [f'U | BusBar-{bus} | phase: N', f'U | CableLine-{bus} | phase: N'],
+    }
+
+
 def load_comtrade_raw(
     cfg_path: Path,
     bus: str,
@@ -80,10 +94,14 @@ def load_comtrade_raw(
         (raw_8ch_display, raw_8ch_model, fs, time_arr, signal_info)
         - raw_8ch_display: (N, 8) оригинальные значения для графика
         - raw_8ch_model: (N, 8) нормализованные значения для inference
-        - raw_8ch: (N, 8) numpy array [IA, IB, IC, IN, UA, UB, UC, UN] или None
         - fs: частота дискретизации (Гц)
         - time_arr: (N,) массив времени (с)
         - signal_info: dict с информацией о найденных сигналах
+
+    Примечания:
+        - IB (фаза B тока) необязательна: при отсутствии заполняется нулями.
+          Модель специально обучалась на этот случай (PhaseCurrentDropout p_drop_b=0.45).
+        - Если каналы для запрошенного bus не найдены — автоматически пробуется bus='1'.
     """
     reader = ReadComtrade()
     rec, raw_df = reader.read_comtrade(str(cfg_path))
@@ -98,42 +116,41 @@ def load_comtrade_raw(
     # Время
     time_arr = np.array(rec.time, dtype=np.float64)
 
-    # Ищем каналы для указанной секции (bus)
     cols = set(raw_df.columns)
 
-    # Маппинг длинных имён -> короткие
-    channel_map = {
-        'IA': [f'I | Bus-{bus} | phase: A'],
-        'IB': [f'I | Bus-{bus} | phase: B'],
-        'IC': [f'I | Bus-{bus} | phase: C'],
-        'IN': [f'I | Bus-{bus} | phase: N'],
-        'UA': [f'U | BusBar-{bus} | phase: A', f'U | CableLine-{bus} | phase: A'],
-        'UB': [f'U | BusBar-{bus} | phase: B', f'U | CableLine-{bus} | phase: B'],
-        'UC': [f'U | BusBar-{bus} | phase: C', f'U | CableLine-{bus} | phase: C'],
-        'UN': [f'U | BusBar-{bus} | phase: N', f'U | CableLine-{bus} | phase: N'],
-    }
+    def resolve_channels(target_bus: str) -> dict[str, str | None]:
+        """Разрешает имена каналов для заданного bus."""
+        result = {}
+        for short_name, candidates in _build_channel_map(target_bus).items():
+            result[short_name] = next((c for c in candidates if c in cols), None)
+        return result
 
-    resolved = {}
-    signal_info = {}
-    for short_name, candidates in channel_map.items():
-        found = False
-        for cand in candidates:
-            if cand in cols:
-                resolved[short_name] = cand
-                signal_info[short_name] = cand
-                found = True
-                break
-        if not found:
-            resolved[short_name] = None
+    # Ищем каналы для запрошенного bus
+    resolved = resolve_channels(bus)
+    signal_info: dict = {k: v for k, v in resolved.items() if v is not None}
 
-    # Проверяем минимум каналов (хотя бы 3 тока + 3 напряжения)
-    available = [k for k, v in resolved.items() if v is not None]
-    required_currents = {'IA', 'IB', 'IC'}
-    required_voltages = {'UA', 'UB', 'UC'}
-    if not required_currents.issubset(set(available)):
-        return None, None, fs, time_arr, signal_info
-    if not required_voltages.issubset(set(available)):
-        return None, None, fs, time_arr, signal_info
+    # Минимальный набор: IA, IC (IB опционален — маскируется нулём) + UA, UB, UC
+    required_hard = {'IA', 'IC', 'UA', 'UB', 'UC'}
+    available = {k for k, v in resolved.items() if v is not None}
+
+    if not required_hard.issubset(available):
+        # Fallback: пробуем bus='1', если запрошенный bus не дал результата
+        if bus != '1':
+            resolved_fb = resolve_channels('1')
+            available_fb = {k for k, v in resolved_fb.items() if v is not None}
+            if required_hard.issubset(available_fb):
+                resolved = resolved_fb
+                signal_info = {k: v for k, v in resolved.items() if v is not None}
+                signal_info['_bus_fallback'] = f'bus={bus}→bus=1'
+                available = available_fb
+            else:
+                return None, None, fs, time_arr, signal_info
+        else:
+            return None, None, fs, time_arr, signal_info
+
+    # IB отсутствует → будет заполнен нулями (модель обучена на PhaseCurrentDropout)
+    if resolved.get('IB') is None:
+        signal_info['_IB_masked'] = True
 
     # Собираем 8 каналов ОРИГИНАЛЬНЫХ (для графика)
     order = ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']
@@ -614,8 +631,10 @@ def run_inference_on_real_ozz(
         'skipped': 0,
         # Диагностика причин пропуска (для проверки 477 vs 830 confirmed):
         'skip_not_on_disk': 0,        # .cfg файл отсутствует в osc_comtrade/
-        'skip_no_channels': 0,        # Отсутствуют ханалы IA/IB/IC или UA/UB/UC
+        'skip_no_channels': 0,        # Отсутствуют каналы IA/IC или UA/UB/UC (критичные)
         'skip_too_short': 0,          # Файл короче 10 периодов (~220мс)
+        'ib_masked': 0,               # IB отсутствует → заполнен нулём (модель обучена на это)
+        'bus_fallback': 0,            # bus не найден → использован fallback bus=1
         'detected_ozz': 0,
         'no_ozz_detected': 0,
         'unknown_detected': 0,
@@ -672,13 +691,20 @@ def run_inference_on_real_ozz(
             )
 
             if raw_display is None:
-                # load_comtrade_raw вернул None: отсутствуют ханалы IA/IB/IC или UA/UB/UC
                 stats['skip_no_channels'] += 1
                 print(f"    SKIP channels: {fname} bus={bus} | доступные: {list(sig_info.keys())}")
                 continue
 
+            # Счётчики: IB маскирован / bus fallback
+            if sig_info.get('_IB_masked'):
+                stats['ib_masked'] += 1
+            if sig_info.get('_bus_fallback'):
+                stats['bus_fallback'] += 1
+
             bus_suffix = f'_bus{bus}' if len(file_buses) > 1 else ''
-            print(f"  [{file_idx+1}/{len(unique_files)}] {fname}{bus_suffix} "
+            ib_note = ' [IB=0]' if sig_info.get('_IB_masked') else ''
+            fb_note = f' [fb:{sig_info.get("_bus_fallback", "")}]' if sig_info.get('_bus_fallback') else ''
+            print(f"  [{file_idx+1}/{len(unique_files)}] {fname}{bus_suffix}{ib_note}{fb_note} "
                   f"(N={raw_display.shape[0]}, Fs={fs:.0f}, {label})")
 
             # Inference — на НОРМАЛИЗОВАННЫХ данных
@@ -769,8 +795,10 @@ def run_inference_on_real_ozz(
     print(f"  Обработано: {stats['processed']}")
     print(f"  Пропущено итого: {stats['skipped']}")
     print(f"    - нет на диске: {stats['skip_not_on_disk']}")
-    print(f"    - нет каналов:  {stats['skip_no_channels']}")
+    print(f"    - нет каналов (критичные): {stats['skip_no_channels']}")
     print(f"    - слишком коротко: {stats['skip_too_short']}")
+    print(f"  IB маскирован нулём (обучен): {stats['ib_masked']}")
+    print(f"  Bus fallback (→bus=1): {stats['bus_fallback']}")
     print(f"  ОЗЗ обнаружено: {stats['detected_ozz']}")
     print(f"  ОЗЗ не обнаружено: {stats['no_ozz_detected']}")
     if subset == 'unknown' or stats['unknown_detected'] or stats['unknown_clean']:
