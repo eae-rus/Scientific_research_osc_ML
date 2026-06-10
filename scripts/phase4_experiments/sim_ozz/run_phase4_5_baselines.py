@@ -80,6 +80,7 @@ def build_config(
     config = get_sim_ozz_config()
     config.update(COMPLEXITY_LEVELS[complexity])
     config.update(EXPERIMENTS[exp_name])
+    config['exp_name'] = exp_name  # сохраняем для имени папки и идентификации
 
     if epochs is not None:
         config['epochs'] = epochs

@@ -668,7 +668,9 @@ def finetune_sim_ozz(
     if run_name:
         dir_name = run_name
     else:
-        dir_name = f"sim_ozz_finetune_{config['model_type']}_{timestamp}"
+        exp_name = config.get('exp_name', '')
+        exp_tag = f'_{exp_name}' if exp_name else ''
+        dir_name = f"sim_ozz_finetune{exp_tag}_{config['model_type']}_{timestamp}"
     save_dir = Path(config['save_dir']) / dir_name
     save_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1052,7 +1054,8 @@ if __name__ == '__main__':
     # 6. Продолжение прерванного обучения
     # Пример: RESUME_PATH = str(PROJECT_ROOT / 'experiments/phase4/.../latest_checkpoint.pt')
 
-    RESUME_PATH = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260427_215035/latest_checkpoint.pt'
+    # RESUME_PATH = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260427_215035/latest_checkpoint.pt'
+    RESUME_PATH = None
     RESET_OPTIMIZER = True # True, если нужно сбросить оптимизатор и начать с 0 эпохи
 
     # =================================================================
