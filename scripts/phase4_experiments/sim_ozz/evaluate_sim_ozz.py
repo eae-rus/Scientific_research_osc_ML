@@ -121,7 +121,10 @@ def inference_file_by_file(
 
 
 def prepare_val_dataset(
-    config: dict, max_files: int | None = None, seed: int = 42,
+    config: dict,
+    max_files: int | None = None,
+    seed: int = 42,
+    per_class_files: int | None = None,
 ) -> Tuple[SimOZZLazyDataset, List[str]]:
     """Val SimOZZLazyDataset со стратифицированной выборкой по типу дуги.
 
@@ -140,9 +143,13 @@ def prepare_val_dataset(
     val_name_set = set(val_names)
     val_files = [fi for fi in file_index.files if fi.path.name in val_name_set]
 
-    if max_files:
-        # Стратифицированная выборка: max_files/4 на каждый тип дуги
-        per_class = max(max_files // len(ARC_TYPES), 1)
+    if per_class_files is not None or max_files:
+        # Стратифицированная выборка по классам дуги.
+        # Приоритет: per_class_files (явная уставка), иначе max_files/4.
+        if per_class_files is not None:
+            per_class = max(int(per_class_files), 1)
+        else:
+            per_class = max(max_files // len(ARC_TYPES), 1)
         by_class: Dict[int, list] = defaultdict(list)
         for fi in val_files:
             by_class[fi.meta['x']].append(fi)
@@ -345,10 +352,12 @@ def plot_probability_distributions(preds, targets, target_columns, save_path):
 def evaluate_sim_ozz(
     checkpoint_path: str,
     max_files: int | None = None,
+    per_class_files: int | None = None,
     batch_size: int = 256,
     num_workers: int = 0,
     save_plots: bool = True,
     include_roc: bool = False,
+    output_dir: str | None = None,
 ) -> dict:
     """Полная оценка SimOZZ-модели: file-by-file inference + метрики."""
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -363,7 +372,11 @@ def evaluate_sim_ozz(
     num_params = sum(p.numel() for p in model.parameters())
     print(f"Модель: {config.get('model_type')}, параметров: {num_params:,}", flush=True)
 
-    val_ds, target_columns = prepare_val_dataset(config, max_files=max_files)
+    val_ds, target_columns = prepare_val_dataset(
+        config,
+        max_files=max_files,
+        per_class_files=per_class_files,
+    )
     print(f"Всего val окон: {len(val_ds):,}", flush=True)
 
     print(f"\nDataLoader inference (batch={batch_size}, workers={num_workers})...", flush=True)
@@ -452,8 +465,17 @@ def evaluate_sim_ozz(
     print(f"  Latency: {latency_ms:.2f} мс/sample")
     metrics['latency_ms'] = latency_ms
 
+    if output_dir is None:
+        report_root = (PROJECT_ROOT / 'reports' / 'phase4' / 'sim_ozz_eval' /
+                       exp_dir.name / ckpt_path.stem)
+    else:
+        report_root = Path(output_dir)
+        if not report_root.is_absolute():
+            report_root = PROJECT_ROOT / report_root
+    report_root.mkdir(parents=True, exist_ok=True)
+
     if save_plots:
-        plot_dir = PROJECT_ROOT / 'reports' / 'phase4' / 'sim_ozz_eval'
+        plot_dir = report_root
         plot_dir.mkdir(parents=True, exist_ok=True)
         print(f"\nГрафики -> {plot_dir}")
         preds_bin = (preds_window >= PREDICTION_THRESHOLD).astype(np.int32)
@@ -482,9 +504,7 @@ def evaluate_sim_ozz(
         'per_file_summary': {'total': per_file_total, 'accuracy': file_accuracy},
         'config': {k: v for k, v in config.items() if not k.startswith('_')},
     }
-    report_dir = PROJECT_ROOT / 'reports' / 'phase4' / 'sim_ozz_eval'
-    report_dir.mkdir(parents=True, exist_ok=True)
-    report_path = report_dir / 'sim_ozz_evaluation.json'
+    report_path = report_root / 'sim_ozz_evaluation.json'
     with open(report_path, 'w', encoding='utf-8') as f:
         json.dump(report, f, indent=2, ensure_ascii=False, default=str)
     print(f"\nОтчёт: {report_path}")
@@ -495,20 +515,26 @@ def main():
     parser = argparse.ArgumentParser(description='Оценка SimOZZ (file-by-file)')
     parser.add_argument('--checkpoint', type=str, required=True)
     parser.add_argument('--max-files', type=int, default=None)
+    parser.add_argument('--per-class-files', type=int, default=None,
+                        help='Файлов на каждый класс дуги (X=1..4). Приоритет выше max_files.')
     parser.add_argument('--batch-size', type=int, default=256)
     parser.add_argument('--num-workers', type=int, default=0,
                         help='Кол-во worker-процессов DataLoader (0=основной)')
     parser.add_argument('--no-plots', action='store_true')
+    parser.add_argument('--output-dir', type=str, default=None,
+                        help='Папка отчёта/графиков (по умолчанию reports/phase4/sim_ozz_eval/<exp_name>)')
     parser.add_argument('--roc', action='store_true',
                         help='Включить ROC-кривые (медленно)')
     args = parser.parse_args()
     evaluate_sim_ozz(
         checkpoint_path=args.checkpoint,
         max_files=args.max_files,
+        per_class_files=args.per_class_files,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         save_plots=not args.no_plots,
         include_roc=args.roc,
+        output_dir=args.output_dir,
     )
 
 
@@ -539,13 +565,12 @@ if __name__ == '__main__':
                      if not Path(CHECKPOINT).is_absolute() else CHECKPOINT)
             evaluate_sim_ozz(
                 checkpoint_path=_ckpt,
-                max_files=200,
-                # TODO [ВЕРИФИКАЦИЯ ДЛЯ СТАТЬИ]: оценка сделана на стратифицированной выборке
-                # 200 файлов (50 на каждый из 4 типов дуги), а не на полном наборе ~19200 файлов.
-                # В статье указывать: «200-файловая стратифицированная выборка (50 файлов/тип)».
-                # Для финальной метрики рекомендуется повторить с max_files=None или max_files=2000.
+                # Актуальная уставка для статьи: 240 файлов на каждый из 4 типов дуги = 960 файлов.
+                # Ранее использовалась быстрая выборка 200 (50/класс) для smoke/черновой оценки.
+                per_class_files=240,
                 batch_size=128,
                 num_workers=4,
                 save_plots=True,
                 include_roc=False,
+                output_dir='reports/phase4/sim_ozz_eval/manual_run',
             )
