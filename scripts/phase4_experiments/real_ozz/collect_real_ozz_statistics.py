@@ -37,6 +37,11 @@ from osc_tools.data_management.real_ozz_split import (
 )
 from osc_tools.features.normalization import NormOsc
 from scripts.phase4_experiments.evaluate_phase4 import load_model_from_checkpoint
+from scripts.phase4_experiments.threshold_utils import (
+    resolve_threshold_config,
+    threshold_metadata,
+    thresholds_for_classes,
+)
 from scripts.phase4_experiments.real_ozz.inference_real_ozz import (
     load_comtrade_raw, mark_real_oscillogram,
     COMTRADE_DIR, NORM_COEF_PATH,
@@ -106,7 +111,7 @@ def find_events(
 def compute_file_statistics(
     probs: np.ndarray,           # (N, 4) sample-level probabilities
     fs: float,
-    threshold: float = 0.5,
+    threshold: float | dict[str, float] = 0.5,
     expansion_zones: int = 16,   # ~1 период при stride_fraction=8
 ) -> Dict:
     """Сбор статистики по одному файлу.
@@ -114,13 +119,14 @@ def compute_file_statistics(
     Args:
         probs: (N_samples, 4) — вероятности classов (может содержать NaN)
         fs: частота дискретизации
-        threshold: порог бинаризации
+        threshold: порог бинаризации (scalar или per-class)
         expansion_zones: зон расширения для ДПОЗЗ
 
     Returns:
         dict с метриками файла
     """
     n_samples, n_classes = probs.shape
+    threshold_values = thresholds_for_classes(CLASS_NAMES, threshold)
     # Убираем NaN (первые/последние сэмплы)
     valid_mask = ~np.isnan(probs[:, 0])
     probs_valid = probs[valid_mask]
@@ -143,7 +149,7 @@ def compute_file_statistics(
     for c in range(n_classes):
         mp = float(np.nanmax(probs_valid[:, c]))
         max_probs[CLASS_NAMES[c]] = mp
-        detected[CLASS_NAMES[c]] = mp > threshold
+        detected[CLASS_NAMES[c]] = mp > float(threshold_values[c])
     result['max_prob'] = max_probs
     result['detected'] = detected
     result['any_ozz'] = any(detected.values())
@@ -151,7 +157,7 @@ def compute_file_statistics(
     # ── Zone-level с expansion ──
     events_info = {}
     for c in range(n_classes):
-        binary = probs_valid[:, c] > threshold
+        binary = probs_valid[:, c] > float(threshold_values[c])
         expanded = expand_zones(binary, expansion_zones)
         events = find_events(expanded)
 
@@ -169,7 +175,7 @@ def compute_file_statistics(
 
     # ── Temporal patterns ──
     for c in range(n_classes):
-        binary = probs_valid[:, c] > threshold
+        binary = probs_valid[:, c] > float(threshold_values[c])
         if binary.any():
             first_idx = int(np.argmax(binary))
             relative_onset = first_idx / len(probs_valid)
@@ -292,10 +298,11 @@ def aggregate_statistics(
 def collect_statistics(
     checkpoint_path: str,
     max_files: int | None = None,
-    threshold: float = 0.5,
+    threshold: float | dict[str, float] = 0.5,
     expansion_zones: int = 16,
     mask_neutral: bool = True,
     output_dir: str | None = None,
+    thresholds_json: str | None = None,
 ) -> Dict:
     """Собирает статистику по реальным осциллограммам."""
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -304,6 +311,17 @@ def collect_statistics(
     ckpt_path = Path(checkpoint_path)
     model, config = load_model_from_checkpoint(ckpt_path, device)
     print(f"Модель: {config.get('model_type')}")
+    threshold_config = resolve_threshold_config(
+        CLASS_NAMES,
+        threshold=threshold,
+        thresholds_json=thresholds_json,
+    )
+    if threshold_config['mode'] == 'per_class':
+        print(f"Пороги: per-class ({threshold_config['source']})")
+        for class_name, thr_value in threshold_config['per_class_thresholds'].items():
+            print(f"  {class_name:30s}: {thr_value:.3f}")
+    else:
+        print(f"Порог: fixed = {threshold_config['default_threshold']:.3f}")
 
     # Отчёт
     report = load_real_ozz_report()
@@ -355,7 +373,7 @@ def collect_statistics(
             )
 
             file_stat = compute_file_statistics(
-                probs, fs, threshold=threshold,
+                probs, fs, threshold=threshold_config['threshold_spec'],
                 expansion_zones=expansion_zones,
             )
             file_stat['filename'] = fname
@@ -378,6 +396,7 @@ def collect_statistics(
 
     # ── Агрегация ──
     agg = aggregate_statistics(per_file_stats, confirmed_files_set, false_files_set)
+    agg['thresholding'] = threshold_metadata(threshold_config)
 
     # ── Сохранение ──
     if output_dir is None:
@@ -402,13 +421,152 @@ def collect_statistics(
     # ── Печать сводки ──
     _print_summary(agg)
 
-    # ── Визуализация ──
+    finalize_real_ozz_artifacts(out_path, per_file_stats, agg, report)
+
+    return agg
+
+
+def _error_type(group: str, any_ozz: bool) -> str:
+    """Тип ошибки на уровне файла×bus (confirmed = ОЗЗ есть, false_detection = ОЗЗ нет)."""
+    if group == 'confirmed':
+        return 'missed_ozz' if not any_ozz else 'correct'
+    if group == 'false_detection':
+        return 'false_alarm' if any_ozz else 'correct'
+    return 'unknown'
+
+
+def export_per_file_csv(
+    per_file_stats: List[Dict],
+    output_path: Path,
+    report: pl.DataFrame | None = None,
+) -> Path:
+    """CSV: исходная разметка + предсказания модели по каждому файлу×bus.
+
+    Удобно для поиска осциллограмм, где модель ошиблась:
+    ``data/real_OZZ/osc_comtrade/{filename}.cfg``
+    """
+    rows: List[Dict] = []
+    report_lookup: Dict[tuple[str, str], dict] = {}
+    if report is not None:
+        for row in report.iter_rows(named=True):
+            key = (str(row['filename']), str(row['bus']))
+            report_lookup[key] = row
+
+    for rec in per_file_stats:
+        if not rec.get('valid', False):
+            continue
+        fname = rec.get('filename', '')
+        bus = str(rec.get('bus', ''))
+        group = rec.get('group', '')
+        any_ozz = bool(rec.get('any_ozz', False))
+        meta = report_lookup.get((fname, bus), {})
+
+        row: Dict = {
+            'filename': fname,
+            'bus': bus,
+            'group': group,
+            'verified': meta.get('verified', '+' if group == 'confirmed' else '-'),
+            'equipment_group': meta.get('group', ''),
+            'overvoltage': meta.get('overvoltage'),
+            'overvoltage_group': meta.get('overvoltage_group'),
+            'comment': meta.get('comment', ''),
+            'comtrade_cfg': f'data/real_OZZ/osc_comtrade/{fname}.cfg',
+            'any_ozz_pred': any_ozz,
+            'n_types_detected': rec.get('n_types_detected', 0),
+            'types_detected': ','.join(rec.get('types_detected', []) or []),
+            'error_type': _error_type(group, any_ozz),
+        }
+        for cls in CLASS_NAMES:
+            row[f'max_prob_{cls}'] = rec.get('max_prob', {}).get(cls)
+            row[f'detected_{cls}'] = rec.get('detected', {}).get(cls, False)
+        rows.append(row)
+
+    df = pl.DataFrame(rows)
+    if 'error_type' in df.columns:
+        df = df.sort(['error_type', 'group', 'filename', 'bus'])
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    df.write_csv(str(output_path))
+    n_errors = df.filter(pl.col('error_type') != 'correct').height
+    print(f"CSV предсказаний: {output_path} ({len(rows)} строк, ошибок: {n_errors})")
+    return output_path
+
+
+def _attach_max_prob_values(agg: dict, per_file: list) -> dict:
+    """Восстанавливает _max_prob_values в agg для построения гистограмм."""
+    for group_key in ('confirmed', 'false_detection'):
+        group_files = {f.get('filename') for f in per_file
+                       if f.get('valid') and f.get('group') == group_key}
+        subset = [f for f in per_file
+                  if f.get('valid') and f.get('filename') in group_files]
+        max_probs = {}
+        for cls in CLASS_NAMES:
+            max_probs[cls] = [f.get('max_prob', {}).get(cls, 0.0) for f in subset]
+        if group_key in agg:
+            agg[group_key]['_max_prob_values'] = max_probs
+    return agg
+
+
+def finalize_real_ozz_artifacts(
+    out_path: Path,
+    per_file_stats: List[Dict],
+    agg: dict,
+    report: pl.DataFrame | None = None,
+) -> None:
+    """Экспорт CSV и графиков (вызывается после inference и при догенерации)."""
+    export_per_file_csv(per_file_stats, out_path / 'predictions_per_file.csv', report)
+    errors = [r for r in per_file_stats
+              if r.get('valid') and _error_type(r.get('group', ''), r.get('any_ozz', False)) != 'correct']
+    errors_path = out_path / 'predictions_errors_only.csv'
+    if errors:
+        export_per_file_csv(errors, errors_path, report)
+
+    agg_plot = _attach_max_prob_values(dict(agg), per_file_stats)
     try:
-        _plot_statistics(agg, per_file_stats, out_path)
+        _plot_statistics(agg_plot, per_file_stats, out_path)
     except ImportError:
         print("matplotlib не найден — визуализация пропущена")
 
-    return agg
+
+def finalize_real_ozz_from_disk(
+    output_dir: str | Path,
+    threshold: float | dict[str, float] = 0.5,
+    thresholds_json: str | None = None,
+) -> None:
+    """Догенерация CSV/графиков из уже сохранённых JSON (без повторного inference)."""
+    out_path = Path(output_dir)
+    per_file_path = out_path / 'per_file_statistics.json'
+    if not per_file_path.exists():
+        raise FileNotFoundError(f'Нет per_file_statistics.json: {per_file_path}')
+
+    with open(per_file_path, encoding='utf-8') as f:
+        per_file_stats = json.load(f)
+
+    agg_path = out_path / 'real_ozz_statistics.json'
+    if agg_path.exists():
+        with open(agg_path, encoding='utf-8') as f:
+            agg = json.load(f)
+    else:
+        report = load_real_ozz_report()
+        confirmed_df, false_df = split_by_verification(report)
+        agg = aggregate_statistics(
+            per_file_stats,
+            set(confirmed_df['filename'].to_list()),
+            set(false_df['filename'].to_list()),
+        )
+
+    if 'thresholding' not in agg:
+        agg['thresholding'] = threshold_metadata(
+            resolve_threshold_config(
+                CLASS_NAMES,
+                threshold=threshold,
+                thresholds_json=thresholds_json,
+            )
+        )
+
+    report = load_real_ozz_report()
+    finalize_real_ozz_artifacts(out_path, per_file_stats, agg, report)
+    print(f"Артефакты обновлены: {out_path}")
 
 
 def _remove_internal_keys(d: dict) -> dict:
@@ -476,6 +634,16 @@ def _plot_statistics(agg: dict, per_file: list, out_path: Path) -> None:
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 
+    threshold_cfg = resolve_threshold_config(
+        CLASS_NAMES,
+        threshold=agg.get('thresholding', {}).get('default_threshold', 0.5),
+        per_class_thresholds=agg.get('thresholding', {}).get('per_class_thresholds'),
+        source_label=agg.get('thresholding', {}).get('source', 'fixed'),
+    )
+    threshold_map = threshold_cfg['per_class_thresholds'] or {
+        name: threshold_cfg['default_threshold'] for name in CLASS_NAMES
+    }
+
     # ── 1) Confidence distributions per-class (confirmed vs false) ──
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
     for c_idx, ax in enumerate(axes.flat):
@@ -492,7 +660,8 @@ def _plot_statistics(agg: dict, per_file: list, out_path: Path) -> None:
         ax.set_xlabel('Max P(class)')
         ax.set_ylabel('Density')
         ax.legend(fontsize=8)
-        ax.axvline(0.5, color='black', linestyle='--', alpha=0.5, label='threshold')
+        ax.axvline(threshold_map.get(cls, threshold_cfg['default_threshold']),
+               color='black', linestyle='--', alpha=0.5, label='threshold')
     fig.suptitle('Распределение уверенности модели по классам', fontsize=13)
     plt.tight_layout()
     fig.savefig(out_path / 'confidence_distributions.png', dpi=150)
@@ -546,22 +715,40 @@ def _plot_statistics(agg: dict, per_file: list, out_path: Path) -> None:
 
 def main():
     parser = argparse.ArgumentParser(description='Сбор статистики по реальным ОЗЗ')
-    parser.add_argument('--checkpoint', type=str, required=True,
+    parser.add_argument('--checkpoint', type=str, default=None,
                         help='Путь к чекпоинту модели')
     parser.add_argument('--max-files', type=int, default=None,
                         help='Макс. число файлов (для теста)')
     parser.add_argument('--threshold', type=float, default=0.5)
+    parser.add_argument('--thresholds-json', type=str, default=None,
+                        help='JSON с per-class порогами: sim_ozz_evaluation.json, optimal_thresholds.json и т.п.')
     parser.add_argument('--expansion-zones', type=int, default=16,
                         help='Зон расширения для ДПОЗЗ (~1 период при stride_fraction=8)')
     parser.add_argument('--no-mask-neutral', action='store_true',
                         help='Не маскировать IN/UN')
     parser.add_argument('--output-dir', type=str, default=None)
+    parser.add_argument('--finalize-only', action='store_true',
+                        help='Только CSV/графики из существующего per_file_statistics.json')
     args = parser.parse_args()
+
+    if args.finalize_only:
+        if args.output_dir is None:
+            parser.error('--finalize-only требует --output-dir')
+        finalize_real_ozz_from_disk(
+            args.output_dir,
+            threshold=args.threshold,
+            thresholds_json=args.thresholds_json,
+        )
+        return
+
+    if args.checkpoint is None:
+        parser.error('Укажите --checkpoint или --finalize-only')
 
     collect_statistics(
         checkpoint_path=args.checkpoint,
         max_files=args.max_files,
         threshold=args.threshold,
+        thresholds_json=args.thresholds_json,
         expansion_zones=args.expansion_zones,
         mask_neutral=not args.no_mask_neutral,
         output_dir=args.output_dir,
@@ -582,6 +769,7 @@ if __name__ == '__main__':
 
         MAX_FILES = None        # None = все файлы
         THRESHOLD = 0.5
+        THRESHOLDS_JSON = None # ссылка на JSON с per-class порогами (например, sim_ozz_evaluation.json или optimal_thresholds.json)
         EXPANSION_ZONES = 16    # ~1 период при stride_fraction=8
         MASK_NEUTRAL = True     # True = обнулять IN/UN перед inference
 
@@ -612,6 +800,7 @@ if __name__ == '__main__':
                 checkpoint_path=_ckpt,
                 max_files=MAX_FILES,
                 threshold=THRESHOLD,
+                thresholds_json=THRESHOLDS_JSON,
                 expansion_zones=EXPANSION_ZONES,
                 mask_neutral=MASK_NEUTRAL,
             )

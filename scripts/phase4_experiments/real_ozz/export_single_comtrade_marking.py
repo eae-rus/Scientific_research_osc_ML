@@ -32,11 +32,17 @@ from osc_tools.features.normalization import NormOsc
 from osc_tools.data_management.real_ozz_split import load_real_ozz_report, get_bus_for_file
 from scripts.phase4_experiments.evaluate_phase4 import load_model_from_checkpoint
 from scripts.phase4_experiments.real_ozz.inference_real_ozz import (
+    CLASS_NAMES,
     CLASS_LABELS,
     NORM_COEF_PATH,
     load_comtrade_raw,
     mark_real_oscillogram,
     plot_real_ozz_marking,
+)
+from scripts.phase4_experiments.threshold_utils import (
+    any_positive_mask,
+    thresholds_for_classes,
+    resolve_threshold_config,
 )
 
 SIGNAL_NAMES = ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']
@@ -115,12 +121,13 @@ def _build_export_frame(
     raw_model: np.ndarray,
     probs: np.ndarray,
     coverage: np.ndarray,
-    threshold: float,
+    threshold: float | dict[str, float],
     fs: float,
     cfg_path: Path,
     bus: str,
 ) -> pl.DataFrame:
     """Создаёт таблицу для CSV-экспорта."""
+    threshold_values = thresholds_for_classes(CLASS_NAMES, threshold)
     data: dict[str, object] = {
         'file': [cfg_path.stem] * len(time_arr),
         'bus': [bus] * len(time_arr),
@@ -138,12 +145,12 @@ def _build_export_frame(
 
     max_prob = np.nanmax(probs, axis=1).astype(np.float32)
     data['P_max'] = max_prob
-    data['pred_any_ozz'] = (max_prob >= threshold).astype(np.int8)
+    data['pred_any_ozz'] = any_positive_mask(probs, CLASS_NAMES, threshold).astype(np.int8)
     data['coverage'] = coverage.astype(np.int32)
 
     for idx, label in enumerate(CLASS_LABELS):
         safe_label = label.replace(' ', '_').replace('-', '_')
-        data[f'pred_{safe_label}'] = (probs[:, idx] >= threshold).astype(np.int8)
+        data[f'pred_{safe_label}'] = (probs[:, idx] >= float(threshold_values[idx])).astype(np.int8)
 
     return pl.DataFrame(data)
 
@@ -154,11 +161,12 @@ def export_single_comtrade_marking(
     bus: str = '1',
     output: str | None = None,
     output_dir: str | None = None,
-    threshold: float = 0.5,
+    threshold: float | dict[str, float] = 0.5,
     mask_neutral: bool = True,
     plot: bool = False,
     no_crop: bool = False,
     fast_mode: bool = False,
+    thresholds_json: str | None = None,
 ) -> list[dict[str, str | float | int]]:
     """Обрабатывает один COMTRADE .cfg и сохраняет CSV/PNG.
 
@@ -184,6 +192,11 @@ def export_single_comtrade_marking(
     print(f"Device: {device}")
     model, config = load_model_from_checkpoint(ckpt_path, device)
     print(f"Модель: {config.get('model_type')}")
+    threshold_config = resolve_threshold_config(
+        CLASS_NAMES,
+        threshold=threshold,
+        thresholds_json=thresholds_json,
+    )
 
     norm_osc = None
     if NORM_COEF_PATH.exists():
@@ -223,7 +236,7 @@ def export_single_comtrade_marking(
             raw_model=raw_for_model,
             probs=probs,
             coverage=coverage,
-            threshold=threshold,
+            threshold=threshold_config['threshold_spec'],
             fs=fs,
             cfg_path=cfg_path,
             bus=bus_id,
@@ -231,7 +244,7 @@ def export_single_comtrade_marking(
         df.write_csv(csv_path)
 
         max_prob = float(np.nanmax(probs))
-        detected = max_prob >= threshold
+        detected = bool(np.any(any_positive_mask(probs, CLASS_NAMES, threshold_config['threshold_spec'])))
         print(f"  CSV: {csv_path}")
         print(f"  max P={max_prob:.3f}, detected={detected}")
 
@@ -244,7 +257,7 @@ def export_single_comtrade_marking(
                 coverage=coverage,
                 fs=fs,
                 title=title,
-                threshold=threshold,
+                threshold=threshold_config['threshold_spec'],
                 auto_crop=(not no_crop) and detected,
             )
             print(f"  PNG: {png_path}")
@@ -256,7 +269,13 @@ def export_single_comtrade_marking(
             'bus': bus_id,
             'fs': fs,
             'n_samples': int(raw_display.shape[0]),
-            'threshold': threshold,
+            'threshold': threshold_config['default_threshold'],
+            'thresholding': {
+                'mode': threshold_config['mode'],
+                'default_threshold': threshold_config['default_threshold'],
+                'source': threshold_config['source'],
+                'per_class_thresholds': threshold_config['per_class_thresholds'],
+            },
             'mask_neutral': mask_neutral,
             'max_probability': max_prob,
             'detected': bool(detected),
@@ -287,6 +306,8 @@ def main() -> None:
     parser.add_argument('--output-dir', type=str, default=None,
                         help='Папка вывода при автоматическом имени')
     parser.add_argument('--threshold', type=float, default=0.5)
+    parser.add_argument('--thresholds-json', type=str, default=None,
+                        help='JSON с per-class порогами: sim_ozz_evaluation.json, optimal_thresholds.json и т.п.')
     parser.add_argument('--no-mask-neutral', action='store_true',
                         help='Не обнулять IN/UN перед inference')
     parser.add_argument('--plot', action='store_true', help='Сохранить PNG-график')
@@ -302,6 +323,7 @@ def main() -> None:
         output=args.output,
         output_dir=args.output_dir,
         threshold=args.threshold,
+        thresholds_json=args.thresholds_json,
         mask_neutral=not args.no_mask_neutral,
         plot=args.plot,
         no_crop=args.no_crop,
@@ -329,6 +351,7 @@ if __name__ == '__main__':
         OUTPUT = None          # путь к CSV, иначе автоимя
         OUTPUT_DIR = None      # папка для авто-имени (по умолчанию reports/phase4/single_marking)
         THRESHOLD = 0.5
+        THRESHOLDS_JSON = None # ссылка на JSON с per-class порогами (например, sim_ozz_evaluation.json или optimal_thresholds.json)
         MASK_NEUTRAL = False   # True = обнулять IN/UN
         PLOT = True            # сохранить PNG для статьи
         NO_CROP = False        # True = не кропить PNG
@@ -344,6 +367,7 @@ if __name__ == '__main__':
                 output=OUTPUT,
                 output_dir=OUTPUT_DIR,
                 threshold=THRESHOLD,
+                thresholds_json=THRESHOLDS_JSON,
                 mask_neutral=MASK_NEUTRAL,
                 plot=PLOT,
                 no_crop=NO_CROP,

@@ -204,11 +204,11 @@ if __name__ == '__main__':
         VAL_BATCHES_PER_EPOCH = 16
         RESUME = None                  # общий fallback путь для дообучения
         RESUME_BY_EXP = {
-            'spectral_baseline': None,
-            'physical_mlp': None,
-            'raw_instantaneous': None,
-        }
-        RESET_OPTIMIZER = False
+            'spectral_baseline': 'experiments/phase4/sim_ozz_finetune_spectral_baseline_BaselineTransformer_20260607_104508/latest_checkpoint.pt',
+            'physical_mlp': 'experiments/phase4/sim_ozz_finetune_physical_mlp_PhysicalMLPTransformer_20260608_042419/latest_checkpoint.pt',
+            'raw_instantaneous': 'experiments/phase4/sim_ozz_finetune_raw_instantaneous_BaselineTransformer_20260608_202845/latest_checkpoint.pt',
+        }        
+        RESET_OPTIMIZER = True  # True, если нужно сбросить оптимизатор и начать с 0 эпохи
 
         names = list(EXPERIMENTS.keys()) if EXP == 'all' else [EXP]
 

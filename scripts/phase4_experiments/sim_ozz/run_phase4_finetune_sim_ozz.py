@@ -1053,9 +1053,8 @@ if __name__ == '__main__':
 
     # 6. Продолжение прерванного обучения
     # Пример: RESUME_PATH = str(PROJECT_ROOT / 'experiments/phase4/.../latest_checkpoint.pt')
-
-    # RESUME_PATH = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260427_215035/latest_checkpoint.pt'
-    RESUME_PATH = None
+    RESUME_PATH = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260609_140228/latest_checkpoint.pt'
+    # RESUME_PATH = None
     RESET_OPTIMIZER = True # True, если нужно сбросить оптимизатор и начать с 0 эпохи
 
     # =================================================================

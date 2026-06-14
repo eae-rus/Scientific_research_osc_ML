@@ -28,7 +28,16 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from scripts.phase4_experiments.sim_ozz.evaluate_sim_ozz import evaluate_sim_ozz
-from scripts.phase4_experiments.real_ozz.collect_real_ozz_statistics import collect_statistics
+from scripts.phase4_experiments.real_ozz.collect_real_ozz_statistics import (
+    CLASS_NAMES as REAL_CLASS_NAMES,
+    collect_statistics,
+    finalize_real_ozz_from_disk,
+)
+from scripts.phase4_experiments.threshold_utils import (
+    resolve_threshold_config,
+    threshold_label,
+    threshold_metadata,
+)
 
 
 def _resolve_run_dir(path_str: str) -> Path:
@@ -62,6 +71,119 @@ def _safe_name(name: str) -> str:
     return name.replace(' ', '_').replace('/', '_').replace('\\', '_')
 
 
+MODEL_LABELS = {
+    'physical_kan': 'Physical KAN',
+    'spectral_baseline': 'Spectral baseline',
+    'physical_mlp': 'Physical MLP',
+    'raw_instantaneous': 'Raw instantaneous',
+}
+
+
+def _plot_comparison_summary(rows: list[dict[str, Any]], out_dir: Path) -> None:
+    """Сводные bar-chart по 4 моделям для раздела статьи."""
+    if not rows:
+        return
+    try:
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+        import numpy as np
+    except ImportError:
+        print('matplotlib не найден — сводные графики сравнения пропущены')
+        return
+
+    labels = [MODEL_LABELS.get(r['model_key'], r['model_key']) for r in rows]
+    x = np.arange(len(labels))
+    colors = ['#8E44AD', '#2980B9', '#27AE60', '#E67E22']
+
+    fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+
+    sim_f1 = [r.get('sim_macro_f1', 0) * 100 for r in rows]
+    axes[0].bar(x, sim_f1, color=colors[:len(rows)], alpha=0.85)
+    axes[0].set_xticks(x)
+    axes[0].set_xticklabels(labels, rotation=15, ha='right', fontsize=9)
+    axes[0].set_ylabel('Macro-F1 (%)')
+    axes[0].set_title('SimOZZ (960 val-файлов)')
+    axes[0].set_ylim(min(sim_f1) - 1, 100)
+    axes[0].grid(True, axis='y', alpha=0.3)
+
+    conf_dr = [r.get('real_confirmed_detection_rate_pct', 0) for r in rows]
+    false_dr = [r.get('real_false_detection_rate_pct', 0) for r in rows]
+    threshold_labels = sorted({str(r.get('real_threshold_label', 'fixed=0.500')) for r in rows})
+    real_title = threshold_labels[0] if len(threshold_labels) == 1 else 'mixed thresholds'
+    w = 0.35
+    axes[1].bar(x - w / 2, conf_dr, w, label='Confirmed OZZ', color='#2ecc71', alpha=0.85)
+    axes[1].bar(x + w / 2, false_dr, w, label='False detection (FPR proxy)', color='#e74c3c', alpha=0.85)
+    axes[1].set_xticks(x)
+    axes[1].set_xticklabels(labels, rotation=15, ha='right', fontsize=9)
+    axes[1].set_ylabel('Detection rate (%)')
+    axes[1].set_title(f'Real OZZ ({real_title})')
+    axes[1].legend(fontsize=8)
+    axes[1].grid(True, axis='y', alpha=0.3)
+
+    latency = [r.get('sim_latency_ms', 0) for r in rows]
+    axes[2].bar(x, latency, color=colors[:len(rows)], alpha=0.85)
+    axes[2].set_xticks(x)
+    axes[2].set_xticklabels(labels, rotation=15, ha='right', fontsize=9)
+    axes[2].set_ylabel('Latency (ms/sample)')
+    axes[2].set_title('Inference latency')
+    axes[2].grid(True, axis='y', alpha=0.3)
+
+    fig.suptitle('Сравнение 4 архитектур (Phase 4.5)', fontsize=13)
+    fig.tight_layout()
+    out_path = out_dir / 'comparison_summary_charts.png'
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+    print(f'Сводный график: {out_path}')
+
+
+def _ensure_real_ozz_sidecars(
+    real_out: Path,
+    real_threshold: float | dict[str, float],
+    thresholds_json: str | None = None,
+) -> None:
+    """CSV и PNG, если inference уже был, но sidecar-файлы не создавались."""
+    per_file = real_out / 'per_file_statistics.json'
+    if not per_file.exists():
+        return
+    need_csv = not (real_out / 'predictions_per_file.csv').exists()
+    need_png = not (real_out / 'confidence_distributions.png').exists()
+    if need_csv or need_png:
+        print(f'[finalize] Догенерация CSV/графиков: {real_out}')
+        finalize_real_ozz_from_disk(
+            real_out,
+            threshold=real_threshold,
+            thresholds_json=thresholds_json,
+        )
+
+
+def _cached_thresholds_match(
+    real_agg: dict[str, Any],
+    requested_config: dict[str, Any],
+) -> bool:
+    cached_meta = real_agg.get('thresholding')
+    if not isinstance(cached_meta, dict):
+        return False
+
+    cached_mode = cached_meta.get('mode', 'fixed')
+    requested_mode = requested_config.get('mode', 'fixed')
+    if cached_mode != requested_mode:
+        return False
+
+    if requested_mode == 'per_class':
+        cached_thresholds = cached_meta.get('per_class_thresholds') or {}
+        requested_thresholds = requested_config.get('per_class_thresholds') or {}
+        for class_name in REAL_CLASS_NAMES:
+            if abs(float(cached_thresholds.get(class_name, -1.0)) - float(requested_thresholds.get(class_name, -2.0))) > 1e-9:
+                return False
+        return True
+
+    return abs(
+        float(cached_meta.get('default_threshold', 0.5))
+        - float(requested_config.get('default_threshold', 0.5))
+    ) <= 1e-9
+
+
 def compare_models(
     model_runs: dict[str, str],
     mode: str,
@@ -69,6 +191,8 @@ def compare_models(
     sim_batch_size: int,
     sim_num_workers: int,
     real_threshold: float,
+    real_threshold_mode: str,
+    real_thresholds_json: str | None,
     real_max_files: int | None,
     run_real_eval: bool,
     output_root: str | None,
@@ -147,17 +271,59 @@ def compare_models(
             }
 
             if run_real_eval:
+                if real_threshold_mode == 'sim_optimal':
+                    real_threshold_config = resolve_threshold_config(
+                        REAL_CLASS_NAMES,
+                        threshold=real_threshold,
+                        per_class_thresholds=(
+                            sim_metrics.get('optimal_thresholds', {}) or {}
+                        ).get('thresholds'),
+                        source_label='sim_optimal',
+                    )
+                    if real_threshold_config.get('per_class_thresholds') is None:
+                        raise ValueError(
+                            f'Для {model_key}/{ckpt_tag} не найдены optimal_thresholds в SimOZZ-отчёте.'
+                        )
+                    thresholds_json_effective = None
+                elif real_threshold_mode == 'json':
+                    if real_thresholds_json is None:
+                        raise ValueError('Режим real_threshold_mode=json требует real_thresholds_json')
+                    real_threshold_config = resolve_threshold_config(
+                        REAL_CLASS_NAMES,
+                        threshold=real_threshold,
+                        thresholds_json=real_thresholds_json,
+                    )
+                    thresholds_json_effective = real_thresholds_json
+                else:
+                    real_threshold_config = resolve_threshold_config(
+                        REAL_CLASS_NAMES,
+                        threshold=real_threshold,
+                        source_label='fixed',
+                    )
+                    thresholds_json_effective = None
+
                 real_out = real_out_root / item_tag
                 real_result_file = real_out / 'real_ozz_statistics.json'
                 if real_result_file.exists():
-                    print(f'[SKIP real OZZ] {model_key}/{ckpt_tag} — уже посчитано: {real_result_file}')
                     with open(real_result_file, encoding='utf-8') as _f:
                         real_agg = json.load(_f)
+                    if _cached_thresholds_match(real_agg, threshold_metadata(real_threshold_config)):
+                        print(f'[SKIP real OZZ] {model_key}/{ckpt_tag} — уже посчитано: {real_result_file}')
+                    else:
+                        print(f'[RECALC real OZZ] {model_key}/{ckpt_tag} — уставки изменились, пересчёт')
+                        real_agg = collect_statistics(
+                            checkpoint_path=str(ckpt),
+                            max_files=real_max_files,
+                            threshold=real_threshold_config['threshold_spec'],
+                            thresholds_json=thresholds_json_effective,
+                            output_dir=str(real_out),
+                        )
                 else:
                     real_agg = collect_statistics(
                         checkpoint_path=str(ckpt),
                         max_files=real_max_files,
-                        threshold=real_threshold,
+                        threshold=real_threshold_config['threshold_spec'],
+                        thresholds_json=thresholds_json_effective,
                         output_dir=str(real_out),
                     )
                 confirmed = real_agg.get('confirmed', {})
@@ -167,8 +333,15 @@ def compare_models(
                     'real_confirmed_detection_rate_pct': float(confirmed.get('detection_rate_pct', 0.0)),
                     'real_false_count': int(false_det.get('count', 0)),
                     'real_false_detection_rate_pct': float(false_det.get('detection_rate_pct', 0.0)),
+                    'real_threshold_mode': real_threshold_config['mode'],
+                    'real_threshold_label': threshold_label(real_threshold_config),
                     'real_report_dir': str(real_out),
                 })
+                _ensure_real_ozz_sidecars(
+                    real_out,
+                    real_threshold_config['threshold_spec'],
+                    thresholds_json=thresholds_json_effective,
+                )
 
             rows.append(row)
 
@@ -178,6 +351,8 @@ def compare_models(
         'sim_per_class_files': sim_per_class_files,
         'run_real_eval': run_real_eval,
         'real_threshold': real_threshold,
+        'real_threshold_mode': real_threshold_mode,
+        'real_thresholds_json': real_thresholds_json,
         'real_max_files': real_max_files,
         'items': rows,
     }
@@ -191,6 +366,7 @@ def compare_models(
         summary_csv = out_dir / 'comparison_summary.csv'
         df.write_csv(summary_csv)
         print(f'\nCSV: {summary_csv}')
+        _plot_comparison_summary(rows, out_dir)
 
     print(f'JSON: {summary_json}')
     print(f'Папка сравнения: {out_dir}')
@@ -206,6 +382,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--sim-batch-size', type=int, default=128)
     parser.add_argument('--sim-num-workers', type=int, default=4)
     parser.add_argument('--real-threshold', type=float, default=0.5)
+    parser.add_argument('--real-threshold-mode', choices=['sim_optimal', 'fixed', 'json'],
+                        default='sim_optimal',
+                        help='Источник уставок для real OZZ: optimal с SimOZZ, fixed или внешний JSON')
+    parser.add_argument('--real-thresholds-json', type=str, default=None,
+                        help='JSON с per-class уставками для режима --real-threshold-mode json')
     parser.add_argument('--real-max-files', type=int, default=None)
     parser.add_argument('--no-real', action='store_true',
                         help='Не запускать real OZZ статистику')
@@ -233,6 +414,8 @@ def main() -> None:
         sim_batch_size=args.sim_batch_size,
         sim_num_workers=args.sim_num_workers,
         real_threshold=args.real_threshold,
+        real_threshold_mode=args.real_threshold_mode,
+        real_thresholds_json=args.real_thresholds_json,
         real_max_files=args.real_max_files,
         run_real_eval=not args.no_real,
         output_root=args.output_root,
@@ -256,6 +439,8 @@ if __name__ == '__main__':
 
         RUN_REAL_EVAL = True
         REAL_THRESHOLD = 0.5
+        REAL_THRESHOLD_MODE = 'sim_optimal'  # 'sim_optimal' | 'fixed' | 'json'
+        REAL_THRESHOLDS_JSON = None
         REAL_MAX_FILES = None  # None = полный набор
 
         OUTPUT_ROOT = None
@@ -277,6 +462,8 @@ if __name__ == '__main__':
             sim_batch_size=SIM_BATCH_SIZE,
             sim_num_workers=SIM_NUM_WORKERS,
             real_threshold=REAL_THRESHOLD,
+            real_threshold_mode=REAL_THRESHOLD_MODE,
+            real_thresholds_json=REAL_THRESHOLDS_JSON,
             real_max_files=REAL_MAX_FILES,
             run_real_eval=RUN_REAL_EVAL,
             output_root=OUTPUT_ROOT,
