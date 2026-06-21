@@ -223,6 +223,169 @@ def _save_csv_with_retry(df: pd.DataFrame, path: Path, max_retries: int = 3, wai
                 print(f"    Переименуйте вручную после закрытия файла.")
 
 
+def _class_metric_columns(df: pd.DataFrame, suffix: str) -> List[str]:
+    pattern = re.compile(rf'^Class_\d+_{re.escape(suffix)}$')
+    cols = [c for c in df.columns if pattern.match(str(c))]
+    return sorted(cols, key=lambda c: int(str(c).split('_')[1]))
+
+
+def _selected_model_rows(
+    selected_by_model: Dict[str, Dict[str, Any]],
+    selection_df: pd.DataFrame,
+    summary_df: pd.DataFrame,
+    exp_dirs_by_name: Dict[str, Path],
+) -> pd.DataFrame:
+    rows: List[Dict[str, Any]] = []
+    if not selected_by_model:
+        return pd.DataFrame(rows)
+
+    selection_by_exp = {}
+    if selection_df is not None and not selection_df.empty and 'Experiment' in selection_df.columns:
+        selection_by_exp = selection_df.set_index('Experiment').to_dict(orient='index')
+
+    summary_by_exp = {}
+    if summary_df is not None and not summary_df.empty and 'Experiment' in summary_df.columns:
+        summary_by_exp = summary_df.drop_duplicates('Experiment').set_index('Experiment').to_dict(orient='index')
+
+    for model_name, model_info in selected_by_model.items():
+        exp_name = str(model_info.get('experiment', ''))
+        summary_row = summary_by_exp.get(exp_name, {})
+        selection_row = selection_by_exp.get(exp_name, {})
+        rows.append({
+            'Model': model_name,
+            'Experiment': exp_name,
+            'SourceDir': str(exp_dirs_by_name.get(exp_name, '')),
+            'Complexity': summary_row.get('Complexity', ''),
+            'Features': summary_row.get('Features', ''),
+            'Sampling': summary_row.get('Sampling', ''),
+            'TargetLevel': model_info.get('target_level', summary_row.get('TargetLevel', 'base')),
+            'Selected Weights': selection_row.get('Selected Weights', summary_row.get('Selected Weights', '')),
+            'Selected Test F1': selection_row.get('Selected Test F1', summary_row.get('Selected Test F1', np.nan)),
+            'Full Best F1': summary_row.get('Full Best F1', np.nan),
+            'Full Final F1': summary_row.get('Full Final F1', np.nan),
+            'Params': summary_row.get('Params', np.nan),
+            'CPU Inf (ms)': summary_row.get('CPU Inf (ms)', np.nan),
+        })
+    return pd.DataFrame(rows)
+
+
+def export_article_plot_data(
+    out_path: Path,
+    summary_df: pd.DataFrame,
+    prediction_selection_df: pd.DataFrame,
+    selected_by_model: Dict[str, Dict[str, Any]],
+    exp_dirs_by_name: Dict[str, Path],
+    full_eval_split: str,
+) -> None:
+    """Сохраняет табличные данные для ручного построения журнальных графиков."""
+    if out_path is None:
+        return
+
+    article_dir = out_path / 'article_plot_data'
+    article_dir.mkdir(parents=True, exist_ok=True)
+
+    class_f1_cols = _class_metric_columns(summary_df, 'F1')
+    class_roc_cols = _class_metric_columns(summary_df, 'ROC-AUC')
+
+    selected_rows = _selected_model_rows(
+        selected_by_model=selected_by_model,
+        selection_df=prediction_selection_df,
+        summary_df=summary_df,
+        exp_dirs_by_name=exp_dirs_by_name,
+    )
+    if not selected_rows.empty:
+        selected_rows.to_csv(article_dir / 'selected_models_manifest.csv', index=False)
+
+        selected_exps = selected_rows['Experiment'].dropna().astype(str).tolist()
+        selected_metrics = summary_df[summary_df['Experiment'].astype(str).isin(selected_exps)].copy()
+        order_map = {exp: idx for idx, exp in enumerate(selected_exps)}
+        selected_metrics['_article_order'] = selected_metrics['Experiment'].astype(str).map(order_map)
+        selected_metrics = selected_metrics.sort_values('_article_order').drop(columns=['_article_order'])
+        selected_metrics.to_csv(article_dir / 'selected_models_metrics.csv', index=False)
+
+        radar_cols = ['Model', 'Experiment', 'Complexity', 'Features', 'Sampling', 'TargetLevel']
+        radar_cols += [c for c in class_f1_cols if c in selected_metrics.columns]
+        if class_f1_cols:
+            selected_metrics[radar_cols].to_csv(article_dir / 'radar_selected_models_class_f1.csv', index=False)
+
+    if class_f1_cols:
+        grouped = summary_df.groupby('Model', dropna=False)[class_f1_cols].mean().reset_index()
+        grouped.to_csv(article_dir / 'radar_model_type_mean_class_f1.csv', index=False)
+
+    if class_roc_cols:
+        grouped_roc = summary_df.groupby('Model', dropna=False)[class_roc_cols].mean().reset_index()
+        grouped_roc.to_csv(article_dir / 'radar_model_type_mean_class_roc_auc.csv', index=False)
+
+    if selected_by_model:
+        stats_rows: List[Dict[str, Any]] = []
+        for model_name, model_info in selected_by_model.items():
+            pred_df = model_info['pred_df']
+            target_level = model_info.get('target_level', 'base')
+            class_map = get_engineering_class_map(target_level)
+            if _is_multilabel_pred_df(pred_df):
+                stats_df = build_engineering_stats_multilabel(pred_df, class_map)
+            else:
+                stats_df = build_engineering_stats(
+                    pred_df['y_true'].to_numpy(),
+                    pred_df['y_pred'].to_numpy(),
+                    class_map
+                )
+            exp_name = str(model_info.get('experiment', ''))
+            for _, row in stats_df.iterrows():
+                gt = float(row.get('gt', 0) or 0)
+                tp = float(row.get('tp', 0) or 0)
+                errors = float(row.get('errors', 0) or 0)
+                stats_rows.append({
+                    'Model': model_name,
+                    'Experiment': exp_name,
+                    'TargetLevel': target_level,
+                    'class_id': row.get('class_id'),
+                    'class_name': row.get('class_name'),
+                    'tp': int(row.get('tp', 0)),
+                    'fp': int(row.get('fp', 0)),
+                    'fn': int(row.get('fn', 0)),
+                    'errors': int(row.get('errors', 0)),
+                    'gt': int(row.get('gt', 0)),
+                    'tp_pct_of_gt': (tp / gt * 100.0) if gt > 0 else np.nan,
+                    'errors_pct_of_gt': (errors / gt * 100.0) if gt > 0 else np.nan,
+                })
+        if stats_rows:
+            pd.DataFrame(stats_rows).to_csv(article_dir / 'engineering_stats_selected_models.csv', index=False)
+
+    if prediction_selection_df is not None and not prediction_selection_df.empty:
+        prediction_selection_df.to_csv(article_dir / 'best_final_selection_all_experiments.csv', index=False)
+
+    readme = article_dir / 'README.md'
+    readme.write_text(
+        "\n".join([
+            "# Данные для журнальных графиков",
+            "",
+            f"Сформировано `scripts/evaluation/aggregate_reports.py`, split полной оценки: `{full_eval_split}`.",
+            "",
+            "## Основные файлы",
+            "",
+            "- `selected_models_manifest.csv` - какие эксперименты выбраны как представители типов моделей.",
+            "- `selected_models_metrics.csv` - строки `summary_report.csv` для выбранных представителей.",
+            "- `radar_selected_models_class_f1.csv` - F1 по классам для радара выбранных моделей.",
+            "- `radar_model_type_mean_class_f1.csv` - средний F1 по классам внутри типа модели.",
+            "- `engineering_stats_selected_models.csv` - TP/FP/FN/errors/GT и проценты от GT для инженерных столбцов.",
+            "- `best_final_selection_all_experiments.csv` - выбор Best/Final по сохранённым CSV предсказаний.",
+            "",
+            "## Важное",
+            "",
+            "Если перед запуском отчёта в `ROOT_DIR` оставлены только нужные версии моделей,",
+            "то `selected_models_manifest.csv` фиксирует именно эти версии. Это удобно для статей:",
+            "оформительские скрипты могут читать CSV из этой папки и не искать исходные эксперименты.",
+            "",
+            "Для рисунков статьи 1 сейчас нужны: Парето из `summary_report.csv`/`summary_aggregated.csv`,",
+            "радар из `radar_selected_models_class_f1.csv` или `radar_model_type_mean_class_f1.csv`,",
+            "инженерные столбцы из `engineering_stats_selected_models.csv`.",
+        ]),
+        encoding='utf-8'
+    )
+    print(f"Данные для журнальных графиков сохранены: {article_dir}")
+
+
 def aggregate_reports(
     root_dir: str, 
     output_dir: str = None, 
@@ -346,6 +509,7 @@ def aggregate_reports(
             if (history_file.parent / "config.json").exists():
                 all_exp_dirs_set.add(history_file.parent)
     all_exp_dirs = sorted(all_exp_dirs_set)
+    exp_dirs_by_name = {p.name: p for p in all_exp_dirs}
     print(f"Найдено {len(all_exp_dirs)} экспериментов")
 
     # --- Основной цикл по экспериментам ---
@@ -579,6 +743,8 @@ def aggregate_reports(
                 df['Selected Test F1_pred'].notna(), df.get('Selected Test F1', np.nan))
             df = df.drop(columns=['Selected Test F1_pred'])
 
+    selected_by_model: Dict[str, Dict[str, Any]] = {}
+
     # Генерация инженерных графиков
     if out_path and selected_by_experiment:
         selected_by_model = collapse_selected_to_model_level(
@@ -600,6 +766,16 @@ def aggregate_reports(
     elif out_path:
         print(f"[!] CSV-файлы предсказаний ({full_eval_split}_predictions_best/final.csv) не найдены.")
         print("    Запустите с --full-eval чтобы пересчитать и создать файлы предсказаний.")
+
+    if out_path:
+        export_article_plot_data(
+            out_path=out_path,
+            summary_df=df,
+            prediction_selection_df=prediction_selection_df,
+            selected_by_model=selected_by_model,
+            exp_dirs_by_name=exp_dirs_by_name,
+            full_eval_split=full_eval_split,
+        )
 
     # --- ВИЗУАЛИЗАЦИЯ (Report Engine 2.0) ---
     if plot:
