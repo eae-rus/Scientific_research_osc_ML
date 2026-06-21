@@ -189,19 +189,19 @@ if __name__ == '__main__':
         # Можно указать несколько чекпоинтов — отчёт будет построен для каждого.
         # Пути относительны корня проекта.
         CHECKPOINTS = [
-            # PhysicalKANTransformer — лучшая модель (val_F1=0.961, эпоха 42)
-            'experiments/phase4/Запуски ВЕСНОЙ/sim_ozz_finetune_PhysicalKANTransformer_20260428_174217/best_model.pt',
+            # PhysicalKANTransformer — актуальная KAN-модель для статьи
+            'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt',
             # PhysicalMLPTransformer — ablation: физический stem без KAN (~183K params)
-            'experiments/phase4/sim_ozz_finetune_physical_mlp_PhysicalMLPTransformer_20260608_042419/best_model.pt',
+            # 'experiments/phase4/sim_ozz_finetune_physical_mlp_PhysicalMLPTransformer_20260608_042419/best_model.pt',
             # BaselineTransformer spectral_baseline — 220 spectral features, без KAN/физических блоков (~255K params)
-            'experiments/phase4/sim_ozz_finetune_spectral_baseline_BaselineTransformer_20260607_104508/best_model.pt',
+            # 'experiments/phase4/sim_ozz_finetune_spectral_baseline_BaselineTransformer_20260607_104508/best_model.pt',
             # BaselineTransformer raw_instantaneous — 8 сырых каналов без спектрального pipeline
-            'experiments/phase4/sim_ozz_finetune_raw_instantaneous_BaselineTransformer_20260608_202845/best_model.pt',
+            # 'experiments/phase4/sim_ozz_finetune_raw_instantaneous_BaselineTransformer_20260608_202845/best_model.pt',
         ]
 
         BATCH_SIZE = 256
         WARMUP = 10
-        REPEATS = 50
+        REPEATS = 240
         OUTPUT = None  # None = автоимя в reports/phase4/model_complexity/
 
         for ckpt in CHECKPOINTS:

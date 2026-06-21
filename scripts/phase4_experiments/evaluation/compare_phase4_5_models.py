@@ -401,7 +401,7 @@ def main() -> None:
 
     model_runs = {
         # Папки экспериментов (НЕ путь к .pt). Скрипт сам возьмёт latest/best.
-        'physical_kan': 'experiments/phase4/Запуски ВЕСНОЙ/sim_ozz_finetune_PhysicalKANTransformer_20260428_174217',
+        'physical_kan': 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711',
         'spectral_baseline': 'experiments/phase4/sim_ozz_finetune_BaselineTransformer_20260607_104508',
         'physical_mlp': 'experiments/phase4/sim_ozz_finetune_PhysicalMLPTransformer_20260608_042419',
         'raw_instantaneous': 'experiments/phase4/sim_ozz_finetune_BaselineTransformer_20260608_202845',
@@ -449,7 +449,7 @@ if __name__ == '__main__':
         # CONTINUE_FROM = None
 
         MODEL_RUN_DIRS = {
-            'physical_kan': 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260614_095924',
+            'physical_kan': 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711',
             'spectral_baseline': 'experiments/phase4/sim_ozz_finetune_spectral_baseline_BaselineTransformer_20260612_025508',
             'physical_mlp': 'experiments/phase4/sim_ozz_finetune_physical_mlp_PhysicalMLPTransformer_20260612_204349',
             'raw_instantaneous': 'experiments/phase4/sim_ozz_finetune_raw_instantaneous_BaselineTransformer_20260613_140322',

@@ -344,7 +344,7 @@ if __name__ == '__main__':
         # Подходит для подготовки рисунков статьи: модель может быть почти
         # любой обученной (PhysicalKAN/PhysicalMLP/Baseline) — ключевые
         # совместимые поля берутся из чекпоинта.
-        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260428_174217/latest_checkpoint.pt'
+        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt'
         CFG = 'data/real_OZZ/osc_comtrade/<укажите_файл>.cfg'
 
         BUS = 'auto'           # '1' | '1,2' | 'auto' (взять из overvoltage_report)

@@ -543,7 +543,7 @@ if __name__ == '__main__':
     if len(_sys.argv) > 1:
         main()
     else:
-        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260428_174217/latest_checkpoint.pt'
+        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt'
         if CHECKPOINT is None:
             exp_root = PROJECT_ROOT / 'experiments' / 'phase4'
             sim_dirs = sorted(
@@ -571,6 +571,6 @@ if __name__ == '__main__':
                 batch_size=128,
                 num_workers=4,
                 save_plots=True,
-                include_roc=False,
+                include_roc=True,
                 output_dir='reports/phase4/sim_ozz_eval/manual_run',
             )
