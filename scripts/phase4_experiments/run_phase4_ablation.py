@@ -36,6 +36,16 @@ from scripts.phase4_experiments.evaluate_phase4 import (
     run_inference_zone_level,
     PREDICTION_THRESHOLD,
 )
+from scripts.phase4_experiments.sim_ozz.evaluate_sim_ozz import (
+    prepare_val_dataset,
+    inference_file_by_file,
+)
+from osc_tools.ml.simulated_ozz_dataset import (
+    SimOZZFileIndex,
+    SimOZZLazyDataset,
+    TARGET_COLUMNS as SIM_TARGET_COLUMNS,
+    ARC_TYPES,
+)
 
 
 # =====================================================================
@@ -57,6 +67,89 @@ ABLATION_SCENARIOS = {
 # =====================================================================
 # Inference-абляция
 # =====================================================================
+
+def _is_sim_ozz_config(config: dict) -> bool:
+    """Определяет, что чекпоинт обучался на Simulated_OZZ_v1."""
+    data_dir = str(config.get('data_dir', '')).replace('\\', '/')
+    return (
+        config.get('target_level') == 'sim_ozz'
+        or config.get('dataset') == 'Simulated_OZZ_v1'
+        or '/Simulated_OZZ_v1' in data_dir
+    )
+
+
+def _prepare_sim_ozz_val_dataset(
+    config: dict,
+    ckpt_path: Path,
+    per_class_files: int | None = 240,
+    seed: int = 42,
+) -> tuple[SimOZZLazyDataset, list[str]]:
+    """Готовит val-датасет SimOZZ, по возможности используя split.json рядом с чекпоинтом."""
+    split_path = ckpt_path.parent / 'split.json'
+    if not split_path.exists():
+        return prepare_val_dataset(config, per_class_files=per_class_files, seed=seed)
+
+    with open(split_path, 'r', encoding='utf-8') as f:
+        split_data = json.load(f)
+
+    val_names = split_data.get('val_files') or []
+    if not val_names:
+        return prepare_val_dataset(config, per_class_files=per_class_files, seed=seed)
+
+    data_dir = Path(config['data_dir'])
+    file_index = SimOZZFileIndex.from_directory(data_dir, use_cache=True)
+    val_name_set = set(val_names)
+    val_files = [fi for fi in file_index.files if fi.path.name in val_name_set]
+
+    if not val_files:
+        raise FileNotFoundError(
+            f"Файлы из {split_path} не найдены в {data_dir}",
+        )
+
+    if per_class_files is not None:
+        by_class: dict[int, list] = {1: [], 2: [], 3: [], 4: []}
+        for fi in val_files:
+            x_type = int(fi.meta.get('x', 0))
+            if x_type in by_class:
+                by_class[x_type].append(fi)
+
+        rng = np.random.default_rng(seed)
+        selected: list = []
+        for x_type in sorted(by_class.keys()):
+            pool = by_class[x_type]
+            n_take = min(int(per_class_files), len(pool))
+            if n_take > 0:
+                idx = rng.choice(len(pool), size=n_take, replace=False)
+                selected.extend([pool[i] for i in idx])
+
+        class_counts = {
+            ARC_TYPES[x - 1]: len(by_class[x])
+            for x in sorted(by_class.keys())
+        }
+        print(
+            f"Стратифицированная подвыборка val: {per_class_files}/класс "
+            f"(пул: {class_counts})"
+        )
+        val_files = selected
+
+    val_file_index = SimOZZFileIndex(val_files)
+    val_paths = [fi.path for fi in val_file_index.files]
+
+    val_ds = SimOZZLazyDataset(
+        file_paths=val_paths,
+        file_index=val_file_index,
+        num_harmonics=config.get('num_harmonics', 9),
+        sub_periods=config.get('sub_periods', [2, 4, 6, 10]),
+        include_symmetric=config.get('include_symmetric', True),
+        stride_fraction=config.get('stride_fraction', 8),
+        num_periods_window=config.get('num_periods_window', 10),
+        target_columns=list(SIM_TARGET_COLUMNS),
+        zone_target_aggregation=config.get('zone_target_aggregation', 'max'),
+        augmenter=None,
+        cache_size=config.get('cache_size', 500),
+    )
+    print(f"Val из split.json: {len(val_file_index)} файлов")
+    return val_ds, list(SIM_TARGET_COLUMNS)
 
 def run_inference_ablation(
     checkpoint_path: str,
@@ -85,13 +178,26 @@ def run_inference_ablation(
 
     # Загрузка модели
     model, config = load_model_from_checkpoint(ckpt_path, device)
-    target_columns = config.get('target_columns', [])
+    is_sim_ozz = _is_sim_ozz_config(config)
 
     # Подготовка данных
-    val_loader, target_columns = prepare_val_dataloader(config)
+    if is_sim_ozz:
+        per_class_files = int(config.get('ablation_per_class_files', 240))
+        split_seed = int(config.get('seed', 42))
+        val_dataset, target_columns = _prepare_sim_ozz_val_dataset(
+            config,
+            ckpt_path,
+            per_class_files=per_class_files,
+            seed=split_seed,
+        )
+    else:
+        val_loader, target_columns = prepare_val_dataloader(config)
 
     results = {}
-    stride_samples = config.get('downsampling_stride', 16)
+    if is_sim_ozz:
+        stride_samples = config.get('stride_fraction', 8)
+    else:
+        stride_samples = config.get('downsampling_stride', 16)
 
     print(f"\n{'='*80}")
     print(f"АБЛЯЦИОННОЕ ИССЛЕДОВАНИЕ (inference)")
@@ -121,20 +227,42 @@ def run_inference_ablation(
             print(f"    ⚠ Модель не поддерживает set_ablation, пропуск")
             continue
 
-        # Window-level метрики
-        preds, targets, inf_time = run_inference(model, val_loader, device)
-        metrics = compute_full_metrics(preds, targets, target_columns)
+        # Метрики
+        if is_sim_ozz:
+            preds_3d, targets_3d, inf_time, _per_file_stats = inference_file_by_file(
+                model,
+                val_dataset,
+                device,
+                batch_size=config.get('val_batch_size', 64),
+                num_workers=config.get('num_workers', 0),
+            )
 
-        # Zone-level boundary метрики
-        try:
-            zone_preds, zone_targets = run_inference_zone_level(model, val_loader, device)
+            # Window-level: по аналогии с evaluate_sim_ozz.py
+            preds = preds_3d.max(axis=1)
+            targets = targets_3d.max(axis=1)
+            metrics = compute_full_metrics(preds, targets, target_columns)
+
+            # Zone-level boundary метрики
+            zone_preds = preds_3d.reshape(-1, preds_3d.shape[-1])
+            zone_targets = targets_3d.reshape(-1, targets_3d.shape[-1])
             boundary = compute_boundary_metrics(
                 zone_preds, zone_targets, target_columns,
                 stride_samples=stride_samples,
             )
             metrics['boundary'] = boundary
-        except Exception as e:
-            print(f"    Boundary-метрики не удались: {e}")
+        else:
+            preds, targets, inf_time = run_inference(model, val_loader, device)
+            metrics = compute_full_metrics(preds, targets, target_columns)
+
+            try:
+                zone_preds, zone_targets = run_inference_zone_level(model, val_loader, device)
+                boundary = compute_boundary_metrics(
+                    zone_preds, zone_targets, target_columns,
+                    stride_samples=stride_samples,
+                )
+                metrics['boundary'] = boundary
+            except Exception as e:
+                print(f"    Boundary-метрики не удались: {e}")
 
         metrics['inference_time'] = inf_time
         results[name] = metrics
@@ -284,10 +412,11 @@ if __name__ == '__main__':
     MODE = 'inference'
 
     # --- Чекпоинт (fine-tuned для inference, SSL для train) ---
-    CHECKPOINT = 'experiments/phase4/finetune_PhysicalKANTransformer_20260328_230623/best_model.pt'
+    CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt'
 
     # --- Параметры train-абляции ---
-    SSL_CHECKPOINT = 'experiments/phase4/pretrain_PhysicalKANTransformer_20260327_155618/best_model.pt'
+    # не нужно, если не обучаю.
+    SSL_CHECKPOINT = 'experiments/phase4/pretrain_PhysicalKANTransformer_20260327_155618/latest_checkpoint.pt'
     TRAIN_EPOCHS = 50
     TRAIN_COMPLEXITY = 'light'
 
