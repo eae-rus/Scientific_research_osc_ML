@@ -186,10 +186,18 @@ def load_model(ckpt_path: Path, device: torch.device):
 
 # ── Val dataset ──
 def prepare_val_dataset(
-    config: dict, max_files: int | None = None, seed: int = 42,
+    config: dict,
+    max_files: int | None = None,
+    max_windows: int | None = None,
+    eval_stride: int = 1,
+    window_step_periods: float = 1.0,
+    seed: int = 42,
 ) -> SimOZZLazyDataset:
     """Создаёт val-датасет SimOZZ."""
     import random as _random
+
+    if max_windows is not None and max_windows <= 0:
+        max_windows = None
 
     data_dir = Path(config['data_dir'])
     file_index = SimOZZFileIndex.from_directory(data_dir, use_cache=True)
@@ -229,7 +237,88 @@ def prepare_val_dataset(
         augmenter=None,
         cache_size=config.get('cache_size', 500),
     )
+    _thin_dataset_windows(
+        val_ds,
+        max_windows=max_windows,
+        eval_stride=eval_stride,
+        window_step_periods=window_step_periods,
+        seed=seed,
+    )
     return val_ds
+
+
+def _thin_dataset_windows(
+    dataset: SimOZZLazyDataset,
+    max_windows: int | None,
+    eval_stride: int = 1,
+    window_step_periods: float = 1.0,
+    seed: int = 42,
+) -> None:
+    """Прореживает уже построенный список окон датасета без перечитывания файлов.
+
+    ``max_files`` ограничивает количество исходных CSV, но один CSV даёт десятки
+    и сотни окон. Для интерпретируемости нам обычно нужен лимит именно окон.
+    """
+    indices = list(getattr(dataset, '_indices', []))
+    if not indices:
+        return
+
+    if window_step_periods and window_step_periods > 0:
+        file_infos = getattr(dataset, '_file_infos', {})
+        thinned = []
+        by_file: Dict[Path, list] = defaultdict(list)
+        for item in indices:
+            by_file[item[0]].append(item)
+        for file_path, file_indices in by_file.items():
+            fi = file_infos.get(file_path.name)
+            if fi is None:
+                thinned.extend(file_indices)
+                continue
+            spp, _, _, _, _ = dataset._compute_params(fi.fs)
+            step_samples = max(1, int(round(spp * window_step_periods)))
+            last_ws = None
+            for item in file_indices:
+                _, ws = item
+                if last_ws is None or ws - last_ws >= step_samples:
+                    thinned.append(item)
+                    last_ws = ws
+        indices = thinned
+
+    if eval_stride and eval_stride > 1:
+        indices = indices[::eval_stride]
+
+    if max_windows and len(indices) > max_windows:
+        import random as _random
+
+        by_class: Dict[int, list] = defaultdict(list)
+        file_infos = getattr(dataset, '_file_infos', {})
+        for item in indices:
+            file_path, _ = item
+            fi = file_infos.get(file_path.name)
+            cls = int(fi.meta.get('x', 0)) if fi is not None else 0
+            by_class[cls].append(item)
+
+        rng = _random.Random(seed)
+        per_class = max(max_windows // max(len(by_class), 1), 1)
+        selected = []
+        for cls in sorted(by_class.keys()):
+            pool = by_class[cls]
+            selected.extend(rng.sample(pool, min(per_class, len(pool))))
+
+        # Если из-за редких классов не добрали лимит, добираем из остатка.
+        selected_set = set(selected)
+        remaining = [item for item in indices if item not in selected_set]
+        need = max_windows - len(selected)
+        if need > 0 and remaining:
+            selected.extend(rng.sample(remaining, min(need, len(remaining))))
+        indices = selected[:max_windows]
+
+    dataset._indices = indices
+    print(
+        f"[Interpretability subset] windows={len(indices):,}, "
+        f"max_windows={max_windows}, eval_stride={eval_stride}, "
+        f"window_step_periods={window_step_periods}"
+    )
 
 
 # ── Метрики ──
@@ -304,21 +393,39 @@ def run_inference(
 def run_probing(
     checkpoint_path: str,
     max_files: int | None = None,
+    max_windows: int | None = None,
+    eval_stride: int = 1,
+    window_step_periods: float = 1.0,
     batch_size: int = 256,
     threshold: float = 0.5,
     num_workers: int = 8,
     output_dir: str | None = None,
+    resume: bool = True,
 ) -> dict:
     """Запуск Channel Dropout Probing."""
+    if max_windows is not None and max_windows <= 0:
+        max_windows = None
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Device: {device}")
+
+    if output_dir is None:
+        output_dir = str(PROJECT_ROOT / 'reports' / 'phase4' / 'interpretability')
+    out_path = Path(output_dir)
+    out_path.mkdir(parents=True, exist_ok=True)
+    json_path = out_path / 'channel_dropout_probing.json'
 
     # 1) Загрузка модели
     model, config = load_model(Path(checkpoint_path), device)
     print(f"Модель: {config.get('model_type')}, d_model={config.get('d_model')}")
 
     # 2) Val dataset
-    val_ds = prepare_val_dataset(config, max_files=max_files)
+    val_ds = prepare_val_dataset(
+        config,
+        max_files=max_files,
+        max_windows=max_windows,
+        eval_stride=eval_stride,
+        window_step_periods=window_step_periods,
+    )
     print(f"Val dataset: {len(val_ds)} осциллограмм")
     loader = DataLoader(
         val_ds, batch_size=batch_size, shuffle=False,
@@ -327,29 +434,81 @@ def run_probing(
         persistent_workers=(num_workers > 0),
     )
 
-    # 3) Baseline (без маскирования)
-    print("\n[Baseline] Inference без маскирования...")
-    preds_base, targets = run_inference(model, loader, device,
-                                        mask_channels=None, verbose=True)
-    f1_base, macro_base = compute_per_class_f1(preds_base, targets, threshold)
-    print(f"  Baseline Macro-F1: {macro_base:.4f}")
-    for i, name in enumerate(CLASS_NAMES):
-        print(f"    {name}: F1={f1_base[i]:.4f}")
-
-    # 4) Прогон по группам
     groups = build_channel_groups()
     n_groups = len(groups)
-    results = {
-        'baseline': {
-            'macro_f1': macro_base,
-            'per_class_f1': {CLASS_NAMES[i]: float(f1_base[i]) for i in range(4)},
-        },
-        'groups': {},
+    results = None
+    targets = None
+    if resume and json_path.exists():
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                results = json.load(f)
+            old_meta = results.get('metadata', {}) if isinstance(results, dict) else {}
+            expected_meta = {
+                'max_files': max_files,
+                'max_windows': max_windows,
+                'eval_stride': eval_stride,
+                'window_step_periods': window_step_periods,
+                'threshold': threshold,
+            }
+            compatible = all(old_meta.get(k) == v for k, v in expected_meta.items())
+            if compatible:
+                print(f"[Resume] Загружены существующие результаты: {json_path}")
+            else:
+                print(
+                    "[Resume] Существующий JSON относится к другой выборке "
+                    "или старому формату — пересчёт с нуля."
+                )
+                results = None
+        except Exception as exc:
+            print(f"[Resume] Не удалось прочитать {json_path}: {exc}")
+            results = None
+
+    if results and 'baseline' in results:
+        macro_base = float(results['baseline']['macro_f1'])
+        f1_base = np.array(
+            [float(results['baseline']['per_class_f1'][name]) for name in CLASS_NAMES],
+            dtype=float,
+        )
+        print(f"\n[Baseline] Используется из JSON: Macro-F1={macro_base:.4f}")
+    else:
+        # 3) Baseline (без маскирования)
+        print("\n[Baseline] Inference без маскирования...")
+        preds_base, targets = run_inference(model, loader, device,
+                                            mask_channels=None, verbose=True)
+        f1_base, macro_base = compute_per_class_f1(preds_base, targets, threshold)
+        print(f"  Baseline Macro-F1: {macro_base:.4f}")
+        for i, name in enumerate(CLASS_NAMES):
+            print(f"    {name}: F1={f1_base[i]:.4f}")
+        results = {
+            'baseline': {
+                'macro_f1': macro_base,
+                'per_class_f1': {CLASS_NAMES[i]: float(f1_base[i]) for i in range(4)},
+            },
+            'groups': {},
+        }
+
+    results.setdefault('groups', {})
+    results['metadata'] = {
+        'max_files': max_files,
+        'max_windows': max_windows,
+        'eval_stride': eval_stride,
+        'window_step_periods': window_step_periods,
+        'batch_size': batch_size,
+        'threshold': threshold,
+        'num_windows': len(val_ds),
     }
 
     print(f"\nПрогон {n_groups} групп каналов...")
+    missing_groups = [name for name in sorted(groups.keys()) if name not in results['groups']]
+    if missing_groups and targets is None:
+        print("[Resume] Для продолжения получаю targets одним baseline-прогоном...")
+        _, targets = run_inference(model, loader, device, mask_channels=None, verbose=True)
+
     t_start = time.time()
     for g_idx, (group_name, ch_indices) in enumerate(sorted(groups.items())):
+        if group_name in results['groups']:
+            print(f"  [{g_idx + 1}/{n_groups}] {group_name:40s} уже есть в JSON — пропуск")
+            continue
         t0 = time.time()
         preds_masked, _ = run_inference(model, loader, device, mask_channels=ch_indices)
         f1_masked, macro_masked = compute_per_class_f1(preds_masked, targets, threshold)
@@ -367,6 +526,9 @@ def run_probing(
             'per_class_f1': {CLASS_NAMES[i]: float(f1_masked[i]) for i in range(4)},
             'delta_per_class_f1': delta_per_class,
         }
+
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(results, f, indent=2, ensure_ascii=False)
 
         elapsed = time.time() - t_start
         done = g_idx + 1
@@ -391,12 +553,6 @@ def run_probing(
     results['ranked'] = [name for name, _ in ranked]
 
     # 6) Сохранение
-    if output_dir is None:
-        output_dir = str(PROJECT_ROOT / 'reports' / 'phase4' / 'interpretability')
-    out_path = Path(output_dir)
-    out_path.mkdir(parents=True, exist_ok=True)
-
-    json_path = out_path / 'channel_dropout_probing.json'
     with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
     print(f"\nРезультаты сохранены: {json_path}")
@@ -462,19 +618,31 @@ def main():
                         help='Путь к чекпоинту модели (.pt)')
     parser.add_argument('--max-files', type=int, default=None,
                         help='Макс. число val-файлов (для быстрого теста)')
+    parser.add_argument('--max-windows', type=int, default=None,
+                        help='Макс. число окон после построения датасета')
+    parser.add_argument('--eval-stride', type=int, default=1,
+                        help='Брать каждое N-е окно до max-windows')
+    parser.add_argument('--window-step-periods', type=float, default=1.0,
+                        help='Шаг стартов окон внутри файла в периодах сети')
     parser.add_argument('--batch-size', type=int, default=256)
     parser.add_argument('--threshold', type=float, default=0.5)
     parser.add_argument('--num-workers', type=int, default=8)
     parser.add_argument('--output-dir', type=str, default=None)
+    parser.add_argument('--no-resume', action='store_true',
+                        help='Не продолжать существующий channel_dropout_probing.json')
     args = parser.parse_args()
 
     run_probing(
         checkpoint_path=args.checkpoint,
         max_files=args.max_files,
+        max_windows=args.max_windows,
+        eval_stride=args.eval_stride,
+        window_step_periods=args.window_step_periods,
         batch_size=args.batch_size,
         threshold=args.threshold,
         num_workers=args.num_workers,
         output_dir=args.output_dir,
+        resume=not args.no_resume,
     )
 
 
@@ -490,7 +658,10 @@ if __name__ == '__main__':
         CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt'
         # Пример: CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_.../best_model.pt'
 
-        MAX_FILES = 240*4         # 960 файлов: 240 на каждый из 4 классов
+        MAX_FILES = 240*4         # верхний лимит файлов, не окон
+        MAX_WINDOWS = None        # None = оставить все окна после шага внутри файла
+        EVAL_STRIDE = 1           # дополнительное глобальное прореживание, обычно не нужно
+        WINDOW_STEP_PERIODS = 1.0 # брать старт окна примерно раз в период в каждом файле
         BATCH_SIZE = 256
         THRESHOLD = 0.5
 
@@ -520,6 +691,9 @@ if __name__ == '__main__':
             run_probing(
                 checkpoint_path=_ckpt,
                 max_files=MAX_FILES,
+                max_windows=MAX_WINDOWS,
+                eval_stride=EVAL_STRIDE,
+                window_step_periods=WINDOW_STEP_PERIODS,
                 batch_size=BATCH_SIZE,
                 threshold=THRESHOLD,
             )

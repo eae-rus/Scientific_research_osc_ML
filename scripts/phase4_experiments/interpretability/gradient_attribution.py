@@ -145,11 +145,16 @@ def aggregate_by_signal(
 def run_gradient_attribution(
     checkpoint_path: str,
     max_files: int | None = None,
+    max_windows: int | None = None,
+    eval_stride: int = 1,
+    window_step_periods: float = 1.0,
     batch_size: int = 64,
     num_workers: int = 8,
     output_dir: str | None = None,
 ) -> dict:
     """Запуск Gradient Attribution."""
+    if max_windows is not None and max_windows <= 0:
+        max_windows = None
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Device: {device}")
 
@@ -158,7 +163,13 @@ def run_gradient_attribution(
     print(f"Модель: {config.get('model_type')}, d_model={config.get('d_model')}")
 
     # 2) Val dataset
-    val_ds = prepare_val_dataset(config, max_files=max_files)
+    val_ds = prepare_val_dataset(
+        config,
+        max_files=max_files,
+        max_windows=max_windows,
+        eval_stride=eval_stride,
+        window_step_periods=window_step_periods,
+    )
     print(f"Val dataset: {len(val_ds)} осциллограмм")
     loader = DataLoader(
         val_ds, batch_size=batch_size, shuffle=False,
@@ -299,6 +310,9 @@ def main():
     parser = argparse.ArgumentParser(description='Gradient Attribution')
     parser.add_argument('--checkpoint', type=str, required=True)
     parser.add_argument('--max-files', type=int, default=None)
+    parser.add_argument('--max-windows', type=int, default=None)
+    parser.add_argument('--eval-stride', type=int, default=1)
+    parser.add_argument('--window-step-periods', type=float, default=1.0)
     parser.add_argument('--batch-size', type=int, default=64)
     parser.add_argument('--num-workers', type=int, default=8)
     parser.add_argument('--output-dir', type=str, default=None)
@@ -307,6 +321,9 @@ def main():
     run_gradient_attribution(
         checkpoint_path=args.checkpoint,
         max_files=args.max_files,
+        max_windows=args.max_windows,
+        eval_stride=args.eval_stride,
+        window_step_periods=args.window_step_periods,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         output_dir=args.output_dir,
@@ -325,7 +342,10 @@ if __name__ == '__main__':
         CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt'
         # Пример: CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_.../best_model.pt'
 
-        MAX_FILES = 200         # 200 файлов, сбалансировано по классам
+        MAX_FILES = 240*4       # верхний лимит файлов, не окон
+        MAX_WINDOWS = None      # None = оставить все окна после шага внутри файла
+        EVAL_STRIDE = 1
+        WINDOW_STEP_PERIODS = 1.0
         BATCH_SIZE = 256
 
         if CHECKPOINT is None:
@@ -354,5 +374,8 @@ if __name__ == '__main__':
             run_gradient_attribution(
                 checkpoint_path=_ckpt,
                 max_files=MAX_FILES,
+                max_windows=MAX_WINDOWS,
+                eval_stride=EVAL_STRIDE,
+                window_step_periods=WINDOW_STEP_PERIODS,
                 batch_size=BATCH_SIZE,
             )

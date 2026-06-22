@@ -37,6 +37,38 @@ def _run_step(name: str, args: list[str], cwd: Path = PROJECT_ROOT) -> None:
     subprocess.run(args, cwd=str(cwd), check=True)
 
 
+def _outputs_exist(paths: list[Path]) -> bool:
+    """True, если все ключевые файлы шага уже существуют и непустые."""
+    for path in paths:
+        if not path.exists():
+            return False
+        if path.is_dir():
+            if not any(path.iterdir()):
+                return False
+        elif path.stat().st_size <= 0:
+            return False
+    return True
+
+
+def _run_step_if_needed(
+    name: str,
+    args: list[str],
+    expected_outputs: list[Path],
+    force: bool = False,
+    cwd: Path = PROJECT_ROOT,
+) -> None:
+    """Запускает шаг только если нет ключевых выходных файлов."""
+    if not force and _outputs_exist(expected_outputs):
+        print("\n" + "=" * 90)
+        print(name)
+        print("=" * 90)
+        print("Уже готово, шаг пропущен:")
+        for path in expected_outputs:
+            print(f"  {path}")
+        return
+    _run_step(name, args, cwd=cwd)
+
+
 def run_full_kan_report_collection(
     checkpoint: str | Path,
     output_root: str | Path = "reports/phase4/kan_20260616_072711",
@@ -46,8 +78,14 @@ def run_full_kan_report_collection(
     marking_per_class: int = 240,
     real_threshold: float = 0.5,
     channel_dropout_max_files: int = 240 * 4,
+    channel_dropout_max_windows: int | None = None,
+    channel_dropout_eval_stride: int = 1,
+    channel_dropout_window_step_periods: float = 1.0,
     channel_dropout_batch_size: int = 256,
     gradient_max_files: int = 240 * 4,
+    gradient_max_windows: int | None = None,
+    gradient_eval_stride: int = 1,
+    gradient_window_step_periods: float = 1.0,
     gradient_batch_size: int = 64,
     interpretability_num_workers: int = 4,
     complexity_batch_size: int = 256,
@@ -60,6 +98,7 @@ def run_full_kan_report_collection(
     run_channel_dropout: bool = True,
     run_gradient_attribution: bool = True,
     run_model_complexity: bool = True,
+    force: bool = False,
 ) -> None:
     """Полный прогон отчётов только для PhysicalKANTransformer.
 
@@ -88,7 +127,7 @@ def run_full_kan_report_collection(
     complexity_dir = output_path / "model_complexity"
 
     if run_sim_eval:
-        _run_step(
+        _run_step_if_needed(
             "1/7 SimOZZ evaluation: метрики + графики",
             [
                 py,
@@ -105,10 +144,16 @@ def run_full_kan_report_collection(
                 "--output-dir",
                 str(sim_eval_dir),
             ],
+            expected_outputs=[
+                sim_eval_dir / "sim_ozz_evaluation.json",
+                sim_eval_dir / "radar_per_class.png",
+                sim_eval_dir / "engineering_bars.png",
+            ],
+            force=force,
         )
 
     if run_sim_markings:
-        _run_step(
+        _run_step_if_needed(
             "2/7 SimOZZ marking plots: размеченные синтетические осциллограммы",
             [
                 py,
@@ -122,10 +167,12 @@ def run_full_kan_report_collection(
                 "--output-dir",
                 str(sim_marking_dir),
             ],
+            expected_outputs=[sim_marking_dir],
+            force=force,
         )
 
     if run_real_statistics:
-        _run_step(
+        _run_step_if_needed(
             "3/7 Real OZZ statistics: подтверждённые и ложные реальные случаи",
             [
                 py,
@@ -137,10 +184,12 @@ def run_full_kan_report_collection(
                 "--output-dir",
                 str(real_stats_dir),
             ],
+            expected_outputs=[real_stats_dir / "real_ozz_statistics.json"],
+            force=force,
         )
 
     if run_real_inference:
-        _run_step(
+        _run_step_if_needed(
             "4/7 Real OZZ inference plots: PNG-разметка COMTRADE",
             [
                 py,
@@ -154,10 +203,12 @@ def run_full_kan_report_collection(
                 "--output-dir",
                 str(real_inference_dir),
             ],
+            expected_outputs=[real_inference_dir],
+            force=force,
         )
 
     if run_channel_dropout:
-        _run_step(
+        _run_step_if_needed(
             "5/7 Interpretability: channel dropout probing",
             [
                 py,
@@ -166,6 +217,12 @@ def run_full_kan_report_collection(
                 ckpt,
                 "--max-files",
                 str(channel_dropout_max_files),
+                "--max-windows",
+                str(channel_dropout_max_windows) if channel_dropout_max_windows is not None else "0",
+                "--eval-stride",
+                str(channel_dropout_eval_stride),
+                "--window-step-periods",
+                str(channel_dropout_window_step_periods),
                 "--batch-size",
                 str(channel_dropout_batch_size),
                 "--num-workers",
@@ -175,10 +232,16 @@ def run_full_kan_report_collection(
                 "--output-dir",
                 str(interpretability_dir),
             ],
+            expected_outputs=[
+                interpretability_dir / "channel_dropout_probing.json",
+                interpretability_dir / "channel_dropout_importance.png",
+                interpretability_dir / "channel_dropout_heatmap.png",
+            ],
+            force=force,
         )
 
     if run_gradient_attribution:
-        _run_step(
+        _run_step_if_needed(
             "6/7 Interpretability: gradient attribution",
             [
                 py,
@@ -187,6 +250,12 @@ def run_full_kan_report_collection(
                 ckpt,
                 "--max-files",
                 str(gradient_max_files),
+                "--max-windows",
+                str(gradient_max_windows) if gradient_max_windows is not None else "0",
+                "--eval-stride",
+                str(gradient_eval_stride),
+                "--window-step-periods",
+                str(gradient_window_step_periods),
                 "--batch-size",
                 str(gradient_batch_size),
                 "--num-workers",
@@ -194,10 +263,17 @@ def run_full_kan_report_collection(
                 "--output-dir",
                 str(interpretability_dir),
             ],
+            expected_outputs=[
+                interpretability_dir / "gradient_attribution.json",
+                interpretability_dir / "gradient_attribution_arrays.npz",
+                interpretability_dir / "gradient_signal_heatmap.png",
+                interpretability_dir / "gradient_temporal_heatmap.png",
+            ],
+            force=force,
         )
 
     if run_model_complexity:
-        _run_step(
+        _run_step_if_needed(
             "7/7 Model complexity: параметры и latency",
             [
                 py,
@@ -213,6 +289,8 @@ def run_full_kan_report_collection(
                 "--output",
                 str(complexity_dir / "physical_kan_20260616_latest_complexity.json"),
             ],
+            expected_outputs=[complexity_dir / "physical_kan_20260616_latest_complexity.json"],
+            force=force,
         )
 
     print("\n" + "=" * 90)
@@ -236,10 +314,18 @@ if __name__ == "__main__":
     SIM_PER_CLASS_FILES = 240
     MARKING_PER_CLASS = 240
 
-    # Интерпретируемость. Для ускорения можно временно уменьшить до 200,
-    # но полный режим оставлен как 240*4.
+    # Интерпретируемость:
+    #   MAX_FILES ограничивает исходные CSV: 240*4 = все 960 файлов.
+    #   WINDOW_STEP_PERIODS задаёт шаг стартов окон внутри каждого файла.
+    #   1.0 означает примерно одно окно на период сети вместо исходного 1/8 периода.
     CHANNEL_DROPOUT_MAX_FILES = 240 * 4
+    CHANNEL_DROPOUT_MAX_WINDOWS = None
+    CHANNEL_DROPOUT_EVAL_STRIDE = 1
+    CHANNEL_DROPOUT_WINDOW_STEP_PERIODS = 1.0
     GRADIENT_MAX_FILES = 240 * 4
+    GRADIENT_MAX_WINDOWS = None
+    GRADIENT_EVAL_STRIDE = 1
+    GRADIENT_WINDOW_STEP_PERIODS = 1.0
 
     run_full_kan_report_collection(
         checkpoint=CHECKPOINT,
@@ -247,5 +333,11 @@ if __name__ == "__main__":
         sim_per_class_files=SIM_PER_CLASS_FILES,
         marking_per_class=MARKING_PER_CLASS,
         channel_dropout_max_files=CHANNEL_DROPOUT_MAX_FILES,
+        channel_dropout_max_windows=CHANNEL_DROPOUT_MAX_WINDOWS,
+        channel_dropout_eval_stride=CHANNEL_DROPOUT_EVAL_STRIDE,
+        channel_dropout_window_step_periods=CHANNEL_DROPOUT_WINDOW_STEP_PERIODS,
         gradient_max_files=GRADIENT_MAX_FILES,
+        gradient_max_windows=GRADIENT_MAX_WINDOWS,
+        gradient_eval_stride=GRADIENT_EVAL_STRIDE,
+        gradient_window_step_periods=GRADIENT_WINDOW_STEP_PERIODS,
     )
