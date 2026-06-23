@@ -454,6 +454,19 @@ def _select_best_final_by_f1(versions: dict[str, pd.DataFrame | None]) -> dict[s
     return {"selected_f1": final_f1, "selected_df": final_df}
 
 
+def _per_class_f1(y_true: pd.Series, y_pred: pd.Series, class_ids: Iterable[int]) -> dict[int, float]:
+    yt = y_true.to_numpy()
+    yp = y_pred.to_numpy()
+    result: dict[int, float] = {}
+    for class_id in class_ids:
+        tp = float(((yt == class_id) & (yp == class_id)).sum())
+        fp = float(((yt != class_id) & (yp == class_id)).sum())
+        fn = float(((yt == class_id) & (yp != class_id)).sum())
+        denom = 2 * tp + fp + fn
+        result[int(class_id)] = 0.0 if denom == 0 else float(2 * tp / denom)
+    return result
+
+
 def _load_article_fig8_data(summary_csv: str | Path) -> pd.DataFrame:
     df = pd.read_csv(_resolve(summary_csv))
     class_cols = _class_f1_columns(df)
@@ -470,6 +483,33 @@ def _load_article_fig8_data(summary_csv: str | Path) -> pd.DataFrame:
     return grouped.reset_index()
 
 
+def _load_article_fig8_fixed_complexity_summary(summary_csv: str | Path) -> pd.DataFrame:
+    df = pd.read_csv(_resolve(summary_csv))
+    class_cols = _class_f1_columns(df)
+    if not class_cols:
+        raise ValueError("В таблице нет колонок Class_<n>_F1 для рисунка 8.")
+    rows: list[pd.Series] = []
+    missing: list[str] = []
+    for model in MODEL_ORDER:
+        required = FIG9_REQUIRED_COMPLEXITY[model].capitalize()
+        match = df[
+            (df["Model"].astype(str) == model)
+            & (df["Complexity"].astype(str).str.lower() == required.lower())
+        ].copy()
+        if match.empty:
+            missing.append(f"{model} ({required})")
+            continue
+        score_col = "Full Best F1" if "Full Best F1" in match.columns else class_cols[0]
+        match[score_col] = pd.to_numeric(match[score_col], errors="coerce")
+        rows.append(match.sort_values(score_col, ascending=False).iloc[0])
+    if missing:
+        raise ValueError("В summary не найдены требуемые строки для рисунка 8: " + ", ".join(missing))
+    result = pd.DataFrame(rows)
+    keep_cols = ["Model", "Complexity", "ExpID"] + class_cols
+    keep_cols = [c for c in keep_cols if c in result.columns]
+    return result[keep_cols].reset_index(drop=True)
+
+
 def _load_article_fig8_exported_data(article_data_dir: str | Path, fallback_summary_csv: str | Path) -> pd.DataFrame:
     article_path = _resolve(article_data_dir)
     selected_path = article_path / "radar_selected_models_class_f1.csv"
@@ -481,6 +521,27 @@ def _load_article_fig8_exported_data(article_data_dir: str | Path, fallback_summ
     return _load_article_fig8_data(fallback_summary_csv)
 
 
+def _load_article_fig8_fixed_complexity_predictions(
+    selection_csv: str | Path,
+    experiment_roots: Iterable[str | Path],
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    selected_by_model, sources = _load_selected_predictions_by_model(selection_csv, experiment_roots)
+    rows: list[dict[str, object]] = []
+    class_ids = sorted(ENGINEERING_CLASS_MAP)
+    for model in MODEL_ORDER:
+        pred_df = selected_by_model.get(model)
+        if pred_df is None:
+            continue
+        class_f1 = _per_class_f1(pred_df["y_true"], pred_df["y_pred"], class_ids)
+        row: dict[str, object] = {"Model": model}
+        for class_id in class_ids:
+            row[f"Class_{class_id}_F1"] = class_f1[class_id]
+        rows.append(row)
+    if not rows:
+        raise ValueError("Не удалось собрать F1 по классам из prediction CSV для рисунка 8.")
+    return pd.DataFrame(rows), sources
+
+
 def replot_article1_fig8_radar(
     summary_csv: str | Path,
     output_dir: str | Path,
@@ -489,9 +550,22 @@ def replot_article1_fig8_radar(
     legend_mode: str = "right",
     annotate_line_numbers: bool = True,
     article_data_dir: str | Path | None = None,
+    selection_csv: str | Path | None = None,
+    experiment_roots: Iterable[str | Path] | None = None,
+    use_fixed_complexity_predictions: bool = False,
+    use_fixed_complexity_summary: bool = False,
 ) -> dict[str, Path]:
     """Строит radar-график F1 по классам с ЧБ-различимыми линиями."""
-    if article_data_dir is not None:
+    sources = pd.DataFrame()
+    if use_fixed_complexity_predictions:
+        if selection_csv is None or experiment_roots is None:
+            raise ValueError(
+                "Для use_fixed_complexity_predictions нужны selection_csv и experiment_roots."
+            )
+        df, sources = _load_article_fig8_fixed_complexity_predictions(selection_csv, experiment_roots)
+    elif use_fixed_complexity_summary:
+        df = _load_article_fig8_fixed_complexity_summary(summary_csv)
+    elif article_data_dir is not None:
         df = _load_article_fig8_exported_data(article_data_dir, summary_csv)
     else:
         df = _load_article_fig8_data(summary_csv)
@@ -499,7 +573,10 @@ def replot_article1_fig8_radar(
     output_path.mkdir(parents=True, exist_ok=True)
 
     used_csv = output_path / "fig8_radar_points_used.csv"
+    sources_csv = output_path / "fig8_radar_sources_used.csv"
     df.to_csv(used_csv, index=False)
+    if not sources.empty:
+        sources.to_csv(sources_csv, index=False)
 
     class_cols = _class_f1_columns(df)
     class_labels = ["Норма", "Коммутации", "Аномалии", "Аварии"][: len(class_cols)]
@@ -600,7 +677,10 @@ def replot_article1_fig8_radar(
     fig.savefig(out_path, dpi=300, bbox_inches="tight")
     fig.savefig(out_path.with_suffix(".svg"), bbox_inches="tight")
     plt.close(fig)
-    return {"radar_png": out_path, "radar_svg": out_path.with_suffix(".svg"), "points_csv": used_csv}
+    result = {"radar_png": out_path, "radar_svg": out_path.with_suffix(".svg"), "points_csv": used_csv}
+    if not sources.empty:
+        result["sources_csv"] = sources_csv
+    return result
 
 
 def _find_experiment_dir(exp_name: str, experiment_roots: Iterable[str | Path]) -> Path | None:
@@ -924,25 +1004,15 @@ if __name__ == "__main__":
     # =====================================================================
     # РУЧНОЙ ЗАПУСК ОТДЕЛЬНЫХ РИСУНКОВ ПЕРВОЙ СТАТЬИ
     # =====================================================================
-    SOURCE_SUMMARY = (
-        "reports/Exp_2_5_and_start_Exp_2_6/_Память/"
-        "Опыт 2.6.12 (первая попытка)/summary_aggregated.csv"
-    )
-    SOURCE_SELECTION = (
-        "reports/Exp_2_5_and_start_Exp_2_6/_Память/"
-        "Опыт 2.6.12 (первая попытка)/selected_best_final_by_predictions.csv"
-    )
-    ARTICLE1_OUTPUT_ROOT = (
-        "reports/Exp_2_5_and_start_Exp_2_6/_Память/"
-        "Опыт 2.6.12 (первая попытка)/figures_article1"
-    )
-    ARTICLE_DATA_DIR = (
-        "reports/Exp_2_5_and_start_Exp_2_6/_Память/"
-        "Опыт 2.6.12 (первая попытка)/article_plot_data"
-    )
+    REPORT_ROOT = Path("reports/Exp_2_5_and_start_Exp_2_6")
+    CANONICAL_ARTICLE1_REPORT_ROOT = REPORT_ROOT / "_Память" / "Опыт 2.6.12 (первая попытка)"
+    SOURCE_SUMMARY = CANONICAL_ARTICLE1_REPORT_ROOT / "summary_aggregated.csv"
+    SOURCE_SELECTION = CANONICAL_ARTICLE1_REPORT_ROOT / "selected_best_final_by_predictions.csv"
+    ARTICLE1_OUTPUT_ROOT = REPORT_ROOT / "figures_article1"
+    ARTICLE_DATA_DIR = REPORT_ROOT / "article_plot_data"
 
-    # Для рисунка 9 нужны сохранённые test_predictions_best/final.csv.
-    # Эти корни сканируются без повторного обучения.
+    # Для рисунка 9 основной источник - ARTICLE_DATA_DIR/engineering_stats_selected_models.csv.
+    # Эти корни сканируются только как резерв, если готовой таблицы нет.
     EXPERIMENT_ROOTS = [
         "experiments/Для_запуска_стат",
         "experiments/phase2_6",
@@ -951,7 +1021,9 @@ if __name__ == "__main__":
     # Рисунок 7 уже доведён. Чтобы перестроить его заново, поставьте True.
     RUN_FIG7_PARETO = False
     RUN_FIG8_RADAR = True
-    RUN_FIG9_ENGINEERING_BARS = True
+    # Текущие prediction CSV были перезаписаны и не совпадают со старым отчётом
+    # 2.6.12; не включайте, пока не восстановлены исходные prediction CSV.
+    RUN_FIG9_ENGINEERING_BARS = False
 
     saved: dict[str, Path] = {}
 
@@ -979,7 +1051,7 @@ if __name__ == "__main__":
                 figure_height=7.2,
                 legend_mode="bottom",
                 annotate_line_numbers=False,
-                article_data_dir=ARTICLE_DATA_DIR,
+                use_fixed_complexity_summary=True,
             )
         )
 
@@ -994,7 +1066,7 @@ if __name__ == "__main__":
                     figure_height=6.4,
                     legend_mode="right",
                     annotate_bar_numbers=True,
-                    article_data_dir=ARTICLE_DATA_DIR,
+                    article_data_dir=None,
                 )
             )
         except FileNotFoundError as exc:

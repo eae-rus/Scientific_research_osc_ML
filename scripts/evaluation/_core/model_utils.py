@@ -150,7 +150,8 @@ def _load_state_dict_safe(
     model: nn.Module,
     checkpoint: Dict[str, Any],
     exp_name: str,
-    tag: str
+    tag: str,
+    allow_partial: bool = False,
 ) -> None:
     """
     Загружает state_dict с совместимостью по ключам и строгим логированием.
@@ -159,15 +160,24 @@ def _load_state_dict_safe(
     state_dict = _normalize_state_dict_keys(state_dict)
     
     load_result = model.load_state_dict(state_dict, strict=False)
+    missing = list(load_result.missing_keys)
+    unexpected = [
+        key for key in load_result.unexpected_keys
+        if not str(key).endswith('.num_batches_tracked')
+    ]
+
     if _eval_logger:
-        if load_result.missing_keys:
-            _eval_logger.error(
-                f"{exp_name} - {tag}: Missing keys: {load_result.missing_keys}"
-            )
-        if load_result.unexpected_keys:
-            _eval_logger.error(
-                f"{exp_name} - {tag}: Unexpected keys: {load_result.unexpected_keys}"
-            )
+        if missing:
+            _eval_logger.error(f"{exp_name} - {tag}: Missing keys: {missing}")
+        if unexpected:
+            _eval_logger.error(f"{exp_name} - {tag}: Unexpected keys: {unexpected}")
+
+    if not allow_partial and (missing or unexpected):
+        raise RuntimeError(
+            f"State dict несовместим с текущей архитектурой ({exp_name}, {tag}): "
+            f"missing={len(missing)}, unexpected={len(unexpected)}. "
+            "Оценка остановлена, чтобы не сохранить некорректные prediction CSV."
+        )
 
 
 def _get_eval_batch_size(
