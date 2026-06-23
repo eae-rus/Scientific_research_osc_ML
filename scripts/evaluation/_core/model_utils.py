@@ -158,12 +158,18 @@ def _load_state_dict_safe(
     """
     state_dict = checkpoint.get('model_state_dict', checkpoint)
     state_dict = _normalize_state_dict_keys(state_dict)
-    
-    load_result = model.load_state_dict(state_dict, strict=False)
-    missing = list(load_result.missing_keys)
+
+    model_state = model.state_dict()
+    model_keys = set(model_state)
+    checkpoint_keys = set(state_dict)
+    missing = sorted(model_keys - checkpoint_keys)
     unexpected = [
-        key for key in load_result.unexpected_keys
+        key for key in sorted(checkpoint_keys - model_keys)
         if not str(key).endswith('.num_batches_tracked')
+    ]
+    shape_mismatch = [
+        key for key in sorted(model_keys & checkpoint_keys)
+        if tuple(model_state[key].shape) != tuple(state_dict[key].shape)
     ]
 
     if _eval_logger:
@@ -171,13 +177,28 @@ def _load_state_dict_safe(
             _eval_logger.error(f"{exp_name} - {tag}: Missing keys: {missing}")
         if unexpected:
             _eval_logger.error(f"{exp_name} - {tag}: Unexpected keys: {unexpected}")
+        if shape_mismatch:
+            _eval_logger.error(f"{exp_name} - {tag}: Shape mismatch keys: {shape_mismatch}")
 
-    if not allow_partial and (missing or unexpected):
+    if not allow_partial and (missing or unexpected or shape_mismatch):
         raise RuntimeError(
             f"State dict несовместим с текущей архитектурой ({exp_name}, {tag}): "
-            f"missing={len(missing)}, unexpected={len(unexpected)}. "
+            f"missing={len(missing)}, unexpected={len(unexpected)}, "
+            f"shape_mismatch={len(shape_mismatch)}. "
             "Оценка остановлена, чтобы не сохранить некорректные prediction CSV."
         )
+
+    load_result = model.load_state_dict(state_dict, strict=False)
+    if allow_partial and _eval_logger:
+        partial_missing = list(load_result.missing_keys)
+        partial_unexpected = [
+            key for key in load_result.unexpected_keys
+            if not str(key).endswith('.num_batches_tracked')
+        ]
+        if partial_missing:
+            _eval_logger.error(f"{exp_name} - {tag}: Partial load missing keys: {partial_missing}")
+        if partial_unexpected:
+            _eval_logger.error(f"{exp_name} - {tag}: Partial load unexpected keys: {partial_unexpected}")
 
 
 def _get_eval_batch_size(
@@ -223,6 +244,8 @@ def benchmark_model_cpu(exp_dir: Path, config: Dict[str, Any], iterations: int =
         model_name = config.get('model', {}).get('name')
         params = config.get('model', {}).get('params', {}).copy()
         
+        model_path = exp_dir / "best_model.pt"
+
         model = _create_model_from_config(config)
         if model is None:
             return 0.0
@@ -231,10 +254,9 @@ def benchmark_model_cpu(exp_dir: Path, config: Dict[str, Any], iterations: int =
         model.eval()
         
         # Загрузка весов (если есть)
-        model_path = exp_dir / "best_model.pt"
         if model_path.exists():
             try:
-                checkpoint = torch.load(model_path, map_location='cpu')
+                checkpoint = torch.load(model_path, map_location='cpu', weights_only=False)
                 model.load_state_dict(checkpoint['model_state_dict'])
             except:
                 pass
