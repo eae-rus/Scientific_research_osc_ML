@@ -1,15 +1,24 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Iterable
 
+ROOT_DIR = Path(__file__).resolve().parents[2]
+os.environ.setdefault("MPLBACKEND", "Agg")
+os.environ.setdefault("MPLCONFIGDIR", str(ROOT_DIR / ".matplotlib_cache"))
+(ROOT_DIR / ".matplotlib_cache").mkdir(exist_ok=True)
+
 import numpy as np
 import pandas as pd
+import matplotlib
+
+matplotlib.use("Agg", force=True)
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 
-
-ROOT_DIR = Path(__file__).resolve().parents[2]
 
 MODEL_ORDER = [
     "CNN",
@@ -48,6 +57,63 @@ FEATURE_HATCHES = {
     "Raw": "..",
     "Power": "--",
 }
+
+OZZ_MODEL_ORDER = [
+    "ConvKAN",
+    "PhysicsKAN",
+    "cPhysicsKAN",
+    "PhysicsBaseline",
+    "CNN",
+    "SimpleKAN",
+    "MLP",
+    "ResNet",
+]
+
+OZZ_MODEL_COLORS = {
+    "ConvKAN": "#1f77b4",
+    "PhysicsKAN": "#ff7f0e",
+    "cPhysicsKAN": "#2ca02c",
+    "PhysicsBaseline": "#d62728",
+    "CNN": "#9467bd",
+    "SimpleKAN": "#8c564b",
+    "MLP": "#e377c2",
+    "ResNet": "#7f7f7f",
+}
+
+OZZ_CLASS_ORDER = [
+    "ОЗЗ (обнаружение)",
+    "Затухающее ОЗЗ",
+    "ДПОЗЗ",
+]
+
+# В текущем дереве для опыта 2.6.11 не сохранены prediction-CSV,
+# поэтому статистика восстановлена из старых cm_*_abs.png.
+LEGACY_OZZ_CONFUSION_STATS = [
+    ("ConvKAN", "ОЗЗ (обнаружение)", 202220, 1290, 964, 5305),
+    ("ConvKAN", "Затухающее ОЗЗ", 202024, 5553, 751, 1451),
+    ("ConvKAN", "ДПОЗЗ", 203833, 4471, 4, 1471),
+    ("PhysicsKAN", "ОЗЗ (обнаружение)", 202177, 1333, 1171, 5098),
+    ("PhysicsKAN", "Затухающее ОЗЗ", 203131, 4446, 1102, 1100),
+    ("PhysicsKAN", "ДПОЗЗ", 204223, 4081, 7, 1468),
+    ("cPhysicsKAN", "ОЗЗ (обнаружение)", 202295, 1215, 1263, 5006),
+    ("cPhysicsKAN", "Затухающее ОЗЗ", 202278, 5299, 1115, 1087),
+    ("cPhysicsKAN", "ДПОЗЗ", 204635, 3669, 128, 1347),
+    ("PhysicsBaseline", "ОЗЗ (обнаружение)", 199178, 2418, 842, 7341),
+    ("PhysicsBaseline", "Затухающее ОЗЗ", 204525, 2414, 2840, 0),
+    ("PhysicsBaseline", "ДПОЗЗ", 203118, 4548, 35, 2078),
+    ("CNN", "ОЗЗ (обнаружение)", 197593, 5917, 458, 5811),
+    ("CNN", "Затухающее ОЗЗ", 196957, 10620, 362, 1840),
+    ("CNN", "ДПОЗЗ", 201369, 6935, 0, 1475),
+    ("SimpleKAN", "ОЗЗ (обнаружение)", 197627, 5883, 1149, 5120),
+    ("SimpleKAN", "Затухающее ОЗЗ", 197039, 10538, 1050, 1152),
+    ("SimpleKAN", "ДПОЗЗ", 202292, 6012, 31, 1444),
+    ("MLP", "ОЗЗ (обнаружение)", 193522, 9988, 1203, 5066),
+    ("MLP", "Затухающее ОЗЗ", 190010, 17567, 896, 1306),
+    ("MLP", "ДПОЗЗ", 198924, 9380, 27, 1448),
+    ("ResNet", "ОЗЗ (обнаружение)", 188022, 15488, 645, 5624),
+    ("ResNet", "Затухающее ОЗЗ", 180539, 27038, 443, 1759),
+    ("ResNet", "ДПОЗЗ", 192563, 15741, 15, 1460),
+]
 
 
 def _resolve(path: str | Path) -> Path:
@@ -298,6 +364,236 @@ def replot_article2_fig1_feature_comparison(
     }
 
 
+def _legacy_ozz_stats_df() -> pd.DataFrame:
+    rows = []
+    model_no = {model: idx + 1 for idx, model in enumerate(OZZ_MODEL_ORDER)}
+    for model, class_name, tn, fp, fn, tp in LEGACY_OZZ_CONFUSION_STATS:
+        gt = fn + tp
+        errors = fp + fn
+        rows.append(
+            {
+                "model_no": model_no[model],
+                "model": model,
+                "class_name": class_name,
+                "tn": int(tn),
+                "fp": int(fp),
+                "fn": int(fn),
+                "tp": int(tp),
+                "gt": int(gt),
+                "errors": int(errors),
+                "tp_percent_of_gt": 100.0 * tp / gt if gt else np.nan,
+                "errors_percent_of_gt": 100.0 * errors / gt if gt else np.nan,
+            }
+        )
+
+    df = pd.DataFrame(rows)
+    df["model"] = pd.Categorical(df["model"], categories=OZZ_MODEL_ORDER, ordered=True)
+    df["class_name"] = pd.Categorical(df["class_name"], categories=OZZ_CLASS_ORDER, ordered=True)
+    return df.sort_values(["class_name", "model"]).reset_index(drop=True)
+
+
+def _plot_ozz_bidirectional_bars(
+    stats: pd.DataFrame,
+    output_png: Path,
+    relative: bool,
+    figure_width: float,
+    figure_height: float,
+    show_title: bool,
+) -> None:
+    fig, ax = plt.subplots(figsize=(figure_width, figure_height))
+
+    classes = OZZ_CLASS_ORDER
+    models = OZZ_MODEL_ORDER
+    x = np.arange(len(classes), dtype=float)
+    group_width = 0.78
+    bar_width = group_width / len(models)
+    offsets = (np.arange(len(models)) - (len(models) - 1) / 2) * bar_width
+
+    for model_idx, model in enumerate(models):
+        model_df = stats[stats["model"] == model].set_index("class_name")
+        if relative:
+            tp_vals = [float(model_df.loc[class_name, "tp_percent_of_gt"]) for class_name in classes]
+            err_vals = [-float(model_df.loc[class_name, "errors_percent_of_gt"]) for class_name in classes]
+        else:
+            tp_vals = [float(model_df.loc[class_name, "tp"]) for class_name in classes]
+            err_vals = [-float(model_df.loc[class_name, "errors"]) for class_name in classes]
+
+        xpos = x + offsets[model_idx]
+        color = OZZ_MODEL_COLORS[model]
+        ax.bar(
+            xpos,
+            tp_vals,
+            width=bar_width * 0.92,
+            color=color,
+            edgecolor="black",
+            linewidth=0.45,
+            alpha=0.92,
+            zorder=3,
+        )
+        ax.bar(
+            xpos,
+            err_vals,
+            width=bar_width * 0.92,
+            color=color,
+            edgecolor="black",
+            linewidth=0.45,
+            alpha=0.30,
+            zorder=3,
+        )
+
+        for xi, down in zip(xpos, err_vals):
+            ax.text(
+                xi,
+                down - (11 if relative else 720),
+                str(model_idx + 1),
+                ha="center",
+                va="top",
+                fontsize=8.4,
+                color="black",
+                alpha=0.72,
+            )
+
+    gt_values = []
+    reference_model = models[0]
+    reference_df = stats[stats["model"] == reference_model].set_index("class_name")
+    for class_name in classes:
+        gt_values.append(100.0 if relative else float(reference_df.loc[class_name, "gt"]))
+
+    cluster_half = group_width / 2.0
+    for class_x, gt_value in zip(x, gt_values):
+        ax.hlines(
+            y=gt_value,
+            xmin=class_x - cluster_half,
+            xmax=class_x + cluster_half,
+            colors="black",
+            linestyles=(0, (4, 2)),
+            linewidth=1.9,
+            zorder=4,
+        )
+        ax.scatter(
+            class_x,
+            gt_value,
+            s=24,
+            color="black",
+            zorder=5,
+        )
+
+    ax.axhline(0, color="black", linewidth=1.05)
+    ax.grid(True, axis="y", linestyle=":", alpha=0.36, zorder=0)
+    ax.set_xticks(x)
+    ax.set_xticklabels(["ОЗЗ", "Затухающее\nОЗЗ", "ДПОЗЗ"], fontsize=11)
+    ax.tick_params(axis="y", labelsize=10.5)
+    ax.set_ylabel("Доля от GT, %" if relative else "Количество окон", fontsize=12.5)
+    ax.set_xlabel("Тип события ОЗЗ", fontsize=12.5)
+    if show_title:
+        ax.set_title(
+            "Двунаправленная гистограмма предсказаний ОЗЗ"
+            + (" (относительные величины)" if relative else " (абсолютные значения)"),
+            fontsize=13.5,
+            pad=9,
+        )
+
+    all_up = np.array(gt_values + [stats["tp_percent_of_gt"].max() if relative else stats["tp"].max()], dtype=float)
+    all_down = np.array(
+        [
+            -stats["errors_percent_of_gt"].max() if relative else -stats["errors"].max(),
+        ],
+        dtype=float,
+    )
+    ax.set_ylim(float(all_down.min()) * 1.13, float(all_up.max()) * (1.20 if relative else 1.16))
+
+    mode_handles = [
+        Patch(facecolor="#595959", edgecolor="black", alpha=0.92, label="TP (вверх)"),
+        Patch(facecolor="#595959", edgecolor="black", alpha=0.30, label="ошибки FP+FN (вниз)"),
+        Line2D([0], [0], color="black", linestyle=(0, (4, 2)), marker="o", linewidth=1.55, label="GT"),
+    ]
+    model_handles = [
+        Patch(
+            facecolor=OZZ_MODEL_COLORS[model],
+            edgecolor="black",
+            linewidth=0.45,
+            label=f"{idx + 1}. {model}",
+        )
+        for idx, model in enumerate(models)
+    ]
+
+    first_legend = ax.legend(
+        handles=mode_handles,
+        loc="upper left",
+        bbox_to_anchor=(0.0, -0.24),
+        ncol=3,
+        fontsize=9.4,
+        frameon=True,
+        title="Столбцы:",
+        title_fontsize=9.6,
+    )
+    ax.add_artist(first_legend)
+    ax.legend(
+        handles=model_handles,
+        loc="upper right",
+        bbox_to_anchor=(1.0, -0.24),
+        ncol=4,
+        fontsize=8.8,
+        frameon=True,
+        title="Номера моделей:",
+        title_fontsize=9.6,
+        columnspacing=0.9,
+        handletextpad=0.45,
+    )
+
+    fig.tight_layout(rect=(0, 0.16, 1, 1))
+    fig.savefig(output_png, dpi=300, bbox_inches="tight")
+    fig.savefig(output_png.with_suffix(".svg"), bbox_inches="tight")
+    plt.close(fig)
+
+
+def replot_article2_fig2_ozz_bidirectional_bars(
+    output_dir: str | Path,
+    figure_width: float = 10.8,
+    figure_height: float = 6.2,
+    show_titles: bool = False,
+) -> dict[str, Path]:
+    """Рисунок 2 статьи 2: двунаправленные столбцы TP и ошибок для ОЗЗ."""
+    output_path = _resolve(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    stats = _legacy_ozz_stats_df()
+    stats_csv = output_path / "fig2_ozz_bidirectional_stats_used.csv"
+    stats.to_csv(stats_csv, index=False)
+
+    abs_png = output_path / "fig2a_ozz_bidirectional_abs_article2.png"
+    rel_png = output_path / "fig2b_ozz_bidirectional_rel_article2.png"
+    _plot_ozz_bidirectional_bars(stats, abs_png, False, figure_width, figure_height, show_titles)
+    _plot_ozz_bidirectional_bars(stats, rel_png, True, figure_width, figure_height, show_titles)
+
+    manifest = output_path / "fig2_manifest.csv"
+    pd.DataFrame(
+        [
+            {
+                "source": "reconstructed from reports/.../_Память/Опыт 2.6.11/engineering_plots/cm_*_abs.png",
+                "models": ", ".join(OZZ_MODEL_ORDER),
+                "classes": ", ".join(OZZ_CLASS_ORDER),
+                "positive_bars": "TP",
+                "negative_bars": "FP + FN",
+                "relative_formula": "value / GT * 100%, where GT = TP + FN",
+                "gt_line": f"reference GT from first model in order: {OZZ_MODEL_ORDER[0]}",
+                "fig2a_png": str(abs_png),
+                "fig2b_png": str(rel_png),
+                "stats_csv": str(stats_csv),
+            }
+        ]
+    ).to_csv(manifest, index=False)
+
+    return {
+        "fig2a_png": abs_png,
+        "fig2a_svg": abs_png.with_suffix(".svg"),
+        "fig2b_png": rel_png,
+        "fig2b_svg": rel_png.with_suffix(".svg"),
+        "fig2_stats_csv": stats_csv,
+        "fig2_manifest_csv": manifest,
+    }
+
+
 if __name__ == "__main__":
     REPORT_ROOT = Path("reports/Exp_2_5_and_start_Exp_2_6")
     ARTICLE2_OUTPUT_ROOT = REPORT_ROOT / "figures_article2"
@@ -306,6 +602,7 @@ if __name__ == "__main__":
     SOURCE_SUMMARY = REPORT_ROOT / "_Память" / "Общие опыты 2.5 и 2.6.1" / "summary_report.csv"
 
     RUN_FIG1_FEATURE_COMPARISON = True
+    RUN_FIG2_OZZ_BIDIRECTIONAL_BARS = True
 
     saved: dict[str, Path] = {}
     if RUN_FIG1_FEATURE_COMPARISON:
@@ -317,6 +614,15 @@ if __name__ == "__main__":
                 figure_height_heatmap=5.6,
                 figure_width_boxplot=9.2,
                 figure_height_boxplot=5.2,
+                show_titles=False,
+            )
+        )
+    if RUN_FIG2_OZZ_BIDIRECTIONAL_BARS:
+        saved.update(
+            replot_article2_fig2_ozz_bidirectional_bars(
+                output_dir=ARTICLE2_OUTPUT_ROOT / "fig2_ozz_bidirectional_bars",
+                figure_width=10.8,
+                figure_height=8.0,
                 show_titles=False,
             )
         )
