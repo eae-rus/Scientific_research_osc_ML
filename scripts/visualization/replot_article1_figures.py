@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 import shutil
 import sys
@@ -1113,6 +1114,680 @@ def replot_article1_fig10_marking(
     return saved
 
 
+def _find_experiment_dir_by_name(exp_name: str, experiment_roots: Iterable[str | Path]) -> Path:
+    for root in experiment_roots:
+        root_path = _resolve(root)
+        direct = root_path / exp_name
+        if direct.exists():
+            return direct
+        matches = [p for p in root_path.rglob(exp_name) if p.is_dir()] if root_path.exists() else []
+        if matches:
+            return matches[0]
+    raise FileNotFoundError(f"Эксперимент не найден: {exp_name}")
+
+
+def _load_torch_model_for_article(exp_name: str, experiment_roots: Iterable[str | Path], weights: str = "best"):
+    import importlib.util
+    import torch
+
+    model_utils_path = Path(__file__).resolve().parents[1] / "evaluation" / "_core" / "model_utils.py"
+    spec = importlib.util.spec_from_file_location("_article_model_utils", model_utils_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Не удалось загрузить model_utils.py: {model_utils_path}")
+    model_utils = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(model_utils)
+    _create_model_from_config = model_utils._create_model_from_config
+    _load_state_dict_safe = model_utils._load_state_dict_safe
+
+    exp_dir = _find_experiment_dir_by_name(exp_name, experiment_roots)
+    with open(exp_dir / "config.json", "r", encoding="utf-8") as f:
+        config = json.load(f)
+    model = _create_model_from_config(config)
+    if model is None:
+        raise ValueError(f"Не удалось создать модель из config.json: {exp_dir / 'config.json'}")
+
+    candidates = [weights]
+    candidates += ["best", "final"] if weights != "best" else ["final"]
+    ckpt_path = None
+    for name in candidates:
+        path = exp_dir / f"{name}_model.pt"
+        if path.exists():
+            ckpt_path = path
+            break
+    if ckpt_path is None:
+        raise FileNotFoundError(f"Не найден best/final checkpoint в {exp_dir}")
+
+    checkpoint = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+    _load_state_dict_safe(model, checkpoint, exp_dir.name, f"article_{weights}")
+    model.eval()
+    return model, exp_dir, ckpt_path
+
+
+def _kan_linear_layers(model) -> list[tuple[str, object]]:
+    return [
+        (name, module)
+        for name, module in model.named_modules()
+        if hasattr(module, "base_weight")
+        and hasattr(module, "spline_weight")
+        and hasattr(module, "b_splines")
+        and hasattr(module, "grid")
+    ]
+
+
+def _edge_score_matrix(layer) -> np.ndarray:
+    import torch
+
+    with torch.no_grad():
+        spline = layer.scaled_spline_weight if hasattr(layer, "scaled_spline_weight") else layer.spline_weight
+        score = torch.abs(layer.base_weight).detach().cpu().float()
+        score = score + torch.mean(torch.abs(spline).detach().cpu().float(), dim=-1)
+    return score.numpy()
+
+
+def _select_kan_layer(
+    layers: list[tuple[str, object]],
+    layer_index: int = 0,
+    layer_name_contains: str | None = None,
+) -> tuple[str, object]:
+    if layer_name_contains:
+        for layer_name, layer in layers:
+            if layer_name_contains in layer_name:
+                return layer_name, layer
+        available = ", ".join(name for name, _ in layers)
+        raise ValueError(
+            f"Не найден KAN-слой по фрагменту имени '{layer_name_contains}'. "
+            f"Доступные слои: {available}"
+        )
+    return layers[min(layer_index, len(layers) - 1)]
+
+
+def _edge_function_components(
+    layer,
+    out_idx: int,
+    in_idx: int,
+    x: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    import torch
+
+    x_tensor = torch.zeros((len(x), layer.in_features), dtype=torch.float32)
+    x_tensor[:, in_idx] = torch.tensor(x, dtype=torch.float32)
+    with torch.no_grad():
+        base = layer.base_activation(x_tensor[:, in_idx : in_idx + 1]).squeeze(1)
+        base = base * layer.base_weight[out_idx, in_idx].detach().cpu()
+        bases = layer.b_splines(x_tensor)[:, in_idx, :].detach().cpu()
+        spline_weight = layer.scaled_spline_weight if hasattr(layer, "scaled_spline_weight") else layer.spline_weight
+        spline = bases @ spline_weight[out_idx, in_idx, :].detach().cpu()
+        y = base + spline
+    return y.numpy(), base.numpy(), spline.numpy()
+
+
+def _edge_function(layer, out_idx: int, in_idx: int, x: np.ndarray) -> np.ndarray:
+    y, _, _ = _edge_function_components(layer, out_idx, in_idx, x)
+    return y
+
+
+def _spline_shape_metrics(x: np.ndarray, y: np.ndarray) -> dict[str, float | str]:
+    y = np.nan_to_num(np.asarray(y, dtype=float), nan=0.0, posinf=0.0, neginf=0.0)
+    amp = float(np.max(y) - np.min(y)) if y.size else 0.0
+    eps = 1e-9
+    if amp < eps:
+        return {
+            "label": "нулевая",
+            "amplitude": amp,
+            "corr": 0.0,
+            "nonlinearity": 0.0,
+            "step_score": 0.0,
+            "saturation": 0.0,
+            "turns": 0.0,
+            "crosses_zero": 0.0,
+            "center_near_zero": 0.0,
+            "balance": 0.0,
+        }
+
+    corr = float(np.corrcoef(x, y)[0, 1]) if np.std(y) > eps else 0.0
+    if not np.isfinite(corr):
+        corr = 0.0
+
+    fit = np.polyval(np.polyfit(x, y, deg=1), x)
+    nonlinearity = float(np.sqrt(np.mean((y - fit) ** 2)) / (amp + eps))
+    max_abs = float(np.max(np.abs(y))) + eps
+    crosses_zero = bool(np.min(y) <= 0.0 <= np.max(y))
+    center_idx = int(np.argmin(np.abs(x)))
+    center_near_zero = float(1.0 - min(1.0, abs(float(y[center_idx])) / max_abs))
+    balance = float(1.0 - min(1.0, abs(float(np.mean(y))) / max_abs))
+
+    dy = np.diff(y)
+    abs_dy = np.abs(dy)
+    step_score = float(np.max(abs_dy) / (np.sum(abs_dy) + eps)) if abs_dy.size else 0.0
+    strong = np.sign(dy[np.abs(dy) > 0.05 * (np.max(abs_dy) + eps)])
+    turns = float(np.sum(strong[1:] * strong[:-1] < 0)) if strong.size > 1 else 0.0
+
+    n = max(3, len(dy) // 5)
+    edge_slope = float((np.mean(abs_dy[:n]) + np.mean(abs_dy[-n:])) / 2.0) if abs_dy.size else 0.0
+    mid = len(dy) // 2
+    mid_slope = float(np.mean(abs_dy[max(0, mid - n // 2) : min(len(dy), mid + n // 2)])) if abs_dy.size else 0.0
+    saturation = float(max(0.0, mid_slope - edge_slope) / (mid_slope + eps))
+
+    if turns >= 3 and nonlinearity > 0.10:
+        label = "волнообразная"
+    elif saturation > 0.45 and abs(corr) > 0.35:
+        label = "S/порог"
+    elif step_score > 0.16 and nonlinearity > 0.08:
+        label = "пороговая"
+    elif nonlinearity < 0.10 and abs(corr) > 0.85:
+        label = "линейная"
+    elif abs(corr) > 0.65:
+        label = "монотонная"
+    else:
+        label = "нелинейная"
+
+    return {
+        "label": label,
+        "amplitude": amp,
+        "corr": corr,
+        "nonlinearity": nonlinearity,
+        "step_score": step_score,
+        "saturation": saturation,
+        "turns": turns,
+        "crosses_zero": float(crosses_zero),
+        "center_near_zero": center_near_zero,
+        "balance": balance,
+    }
+
+
+def _select_diverse_spline_edges(
+    layers: list[tuple[str, object]],
+    x: np.ndarray,
+    top_n: int,
+    candidate_pool_per_layer: int,
+) -> list[dict[str, object]]:
+    candidates: list[dict[str, object]] = []
+    for layer_idx, (layer_name, layer) in enumerate(layers):
+        scores = _edge_score_matrix(layer)
+        flat_order = np.argsort(scores.reshape(-1))[::-1]
+        if candidate_pool_per_layer and candidate_pool_per_layer > 0:
+            flat_order = flat_order[:candidate_pool_per_layer]
+        for flat_idx in flat_order:
+            out_idx, in_idx = np.unravel_index(int(flat_idx), scores.shape)
+            y = _edge_function(layer, int(out_idx), int(in_idx), x)
+            metrics = _spline_shape_metrics(x, y)
+            candidates.append(
+                {
+                    "layer_idx": layer_idx,
+                    "layer_name": layer_name,
+                    "layer": layer,
+                    "out_idx": int(out_idx),
+                    "in_idx": int(in_idx),
+                    "edge_score": float(scores[out_idx, in_idx]),
+                    "y": y,
+                    **metrics,
+                }
+            )
+
+    if not candidates:
+        return []
+
+    chosen: list[dict[str, object]] = []
+    used_edges: set[tuple[int, int, int]] = set()
+    chosen_shapes: list[np.ndarray] = []
+
+    def display_curve(candidate: dict[str, object]) -> np.ndarray:
+        y = np.asarray(candidate["y"], dtype=float)
+        y = y - float(np.mean(y))
+        max_abs = float(np.max(np.abs(y)))
+        return y / max_abs if max_abs > 1e-9 else y
+
+    def shape_distance(candidate: dict[str, object]) -> float:
+        y = display_curve(candidate)
+        if not chosen_shapes:
+            return 1.0
+        distances = []
+        for prev in chosen_shapes:
+            if np.std(y) < 1e-9 or np.std(prev) < 1e-9:
+                distances.append(0.0)
+                continue
+            corr = float(np.corrcoef(y, prev)[0, 1])
+            if not np.isfinite(corr):
+                corr = 1.0
+            distances.append(1.0 - abs(corr))
+        return float(min(distances))
+
+    def visual_score(candidate: dict[str, object]) -> float:
+        return (
+            1.00 * float(candidate["nonlinearity"])
+            + 0.35 * min(3.0, float(candidate["turns"]))
+            + 0.45 * float(candidate["crosses_zero"])
+            + 0.35 * float(candidate["center_near_zero"])
+            + 0.25 * float(candidate["balance"])
+            + 0.08 * np.log1p(max(0.0, float(candidate["edge_score"])))
+        )
+
+    def add_candidate(candidate: dict[str, object], min_shape_distance: float = 0.08) -> bool:
+        key = (int(candidate["layer_idx"]), int(candidate["out_idx"]), int(candidate["in_idx"]))
+        if key in used_edges or len(chosen) >= top_n:
+            return False
+        if chosen_shapes and shape_distance(candidate) < min_shape_distance:
+            return False
+        chosen.append(candidate)
+        chosen_shapes.append(display_curve(candidate))
+        used_edges.add(key)
+        return True
+
+    # Сначала набираем разные формы, а не только самые крупные коэффициенты.
+    desired_labels = ["S/порог", "пороговая", "волнообразная", "линейная", "монотонная", "нелинейная"]
+    for label in desired_labels:
+        same_label = [c for c in candidates if c["label"] == label]
+        if same_label:
+            same_label.sort(key=visual_score, reverse=True)
+            for candidate in same_label:
+                if add_candidate(candidate):
+                    break
+
+    # Добираем оставшиеся наиболее выразительные кривые, штрафуя почти одинаковые формы.
+    remaining = sorted(candidates, key=visual_score, reverse=True)
+    for candidate in remaining:
+        add_candidate(candidate)
+        if len(chosen) >= top_n:
+            break
+
+    if len(chosen) < top_n:
+        for candidate in remaining:
+            add_candidate(candidate, min_shape_distance=0.0)
+            if len(chosen) >= top_n:
+                break
+
+    return chosen
+
+
+def replot_article1_fig11_kan_splines(
+    exp_name: str,
+    experiment_roots: Iterable[str | Path],
+    output_dir: str | Path,
+    weights: str = "best",
+    layer_index: int = 0,
+    layer_name_contains: str | None = "processing_net.features.4.kan_layer",
+    top_n: int = 9,
+    figure_width: float = 9.6,
+    figure_height: float = 7.0,
+    plot_components: bool = False,
+    normalize_curves: bool = True,
+    input_indices: Iterable[int] = (0, 1, 2),
+    output_indices: Iterable[int] = (0, 1, 2),
+    scan_all_layers: bool = True,
+    candidate_pool_per_layer: int = 0,
+) -> dict[str, Path]:
+    """Рисунок 11: примеры KAN-функций на рёбрах.
+
+    По умолчанию строится обзор разнообразных нелинейных функций с подписью
+    формы; component-режим оставлен как вспомогательный диагностический.
+    """
+    model, exp_dir, ckpt_path = _load_torch_model_for_article(exp_name, experiment_roots, weights=weights)
+    layers = _kan_linear_layers(model)
+    if not layers:
+        raise ValueError(f"В модели не найдены KANLinear-слои: {exp_name}")
+
+    x = np.linspace(-1.15, 1.15, 240)
+
+    output_path = _resolve(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    out_path = output_path / "fig11_kan_splines_article.png"
+    manifest = output_path / "fig11_kan_splines_manifest.csv"
+
+    if plot_components:
+        layer_name, layer = _select_kan_layer(layers, layer_index=layer_index, layer_name_contains=layer_name_contains)
+        max_out, max_in = layer.base_weight.shape
+        in_ids = [int(i) for i in input_indices if 0 <= int(i) < int(max_in)]
+        out_ids = [int(i) for i in output_indices if 0 <= int(i) < int(max_out)]
+        if not in_ids or not out_ids:
+            raise ValueError(
+                f"Для слоя {layer_name} недопустимые индексы: "
+                f"input_indices={list(input_indices)}, output_indices={list(output_indices)}, "
+                f"shape=({int(max_out)}, {int(max_in)})"
+            )
+
+        fig, axes = plt.subplots(
+            len(out_ids),
+            len(in_ids),
+            figsize=(figure_width, figure_height),
+            sharex=True,
+        )
+        axes_grid = np.array(axes, dtype=object).reshape(len(out_ids), len(in_ids))
+        manifest_rows: list[dict[str, object]] = []
+        edge_scores = _edge_score_matrix(layer)
+
+        for row_idx, out_idx in enumerate(out_ids):
+            for col_idx, in_idx in enumerate(in_ids):
+                ax = axes_grid[row_idx, col_idx]
+                y, base, spline = _edge_function_components(layer, out_idx, in_idx, x)
+                ax.plot(x, y, color="#1f77b4", linewidth=2.0, label="Сумма")
+                ax.plot(x, base, color="#ff7f0e", linewidth=1.5, linestyle="--", label="Базовая (SiLU)")
+                ax.plot(x, spline, color="#2ca02c", linewidth=1.4, linestyle=":", label="Сплайн")
+                ax.axhline(0, color="black", linewidth=0.7, alpha=0.45)
+                ax.grid(True, alpha=0.28, linestyle=":")
+                ax.set_title(f"Вход {in_idx} -> Выход {out_idx}", fontsize=10.5)
+                ax.tick_params(axis="both", labelsize=9.5)
+                if col_idx == 0:
+                    ax.set_ylabel(f"Выход {out_idx}", fontsize=10)
+                if row_idx == len(out_ids) - 1:
+                    ax.set_xlabel(f"Вход {in_idx}", fontsize=10)
+                if row_idx == 0 and col_idx == 0:
+                    ax.legend(fontsize=8.5, frameon=True, loc="best")
+
+                manifest_rows.append(
+                    {
+                        "rank": len(manifest_rows) + 1,
+                        "layer": layer_name,
+                        "out_idx": out_idx,
+                        "in_idx": in_idx,
+                        "mode": "components_sum_base_spline",
+                        "edge_score": float(edge_scores[out_idx, in_idx]),
+                        "experiment": exp_name,
+                        "checkpoint": str(ckpt_path),
+                        "experiment_dir": str(exp_dir),
+                    }
+                )
+
+        fig.tight_layout()
+        fig.savefig(out_path, dpi=300, bbox_inches="tight")
+        fig.savefig(out_path.with_suffix(".svg"), bbox_inches="tight")
+        plt.close(fig)
+        pd.DataFrame(manifest_rows).to_csv(manifest, index=False)
+        return {"fig11_png": out_path, "fig11_svg": out_path.with_suffix(".svg"), "fig11_manifest_csv": manifest}
+
+    selected_layers = layers if scan_all_layers else [layers[min(layer_index, len(layers) - 1)]]
+    selected = _select_diverse_spline_edges(
+        selected_layers,
+        x=x,
+        top_n=top_n,
+        candidate_pool_per_layer=candidate_pool_per_layer,
+    )
+    if not selected:
+        raise ValueError(f"Не удалось выбрать KAN-рёбра для визуализации: {exp_name}")
+
+    ncols = 3
+    nrows = int(np.ceil(top_n / ncols))
+    fig, axes = plt.subplots(nrows, ncols, figsize=(figure_width, figure_height), sharex=True)
+    axes_flat = np.array(axes).reshape(-1)
+    linestyles = ["-", "--", "-.", ":"]
+
+    for plot_idx, (ax, item) in enumerate(zip(axes_flat, selected), start=1):
+        y = np.asarray(item["y"], dtype=float)
+        if normalize_curves:
+            y = y - float(np.mean(y))
+            max_abs = float(np.max(np.abs(y)))
+            if max_abs > 1e-9:
+                y = y / max_abs
+        ax.plot(
+            x,
+            y,
+            color=MODEL_COLORS["PhysicsKAN"],
+            linestyle=linestyles[(plot_idx - 1) % len(linestyles)],
+            linewidth=2.0,
+        )
+        ax.axhline(0, color="black", linewidth=0.8, alpha=0.55)
+        ax.axvline(0, color="black", linewidth=0.6, alpha=0.25)
+        ax.grid(True, alpha=0.25, linestyle=":")
+        ax.set_title(
+            f"{plot_idx}. {item['label']} | o={item['out_idx']}, i={item['in_idx']}",
+            fontsize=9.5,
+        )
+        ax.tick_params(axis="both", labelsize=9)
+
+    for ax in axes_flat[len(selected) :]:
+        ax.axis("off")
+
+    fig.supxlabel("Вход ребра", fontsize=13)
+    fig.supylabel("Значение функции", fontsize=13)
+    fig.tight_layout()
+
+    fig.savefig(out_path, dpi=300, bbox_inches="tight")
+    fig.savefig(out_path.with_suffix(".svg"), bbox_inches="tight")
+    plt.close(fig)
+
+    pd.DataFrame(
+        [
+            {
+                "rank": i + 1,
+                "layer": str(item["layer_name"]),
+                "out_idx": int(item["out_idx"]),
+                "in_idx": int(item["in_idx"]),
+                "shape_label": str(item["label"]),
+                "edge_score": float(item["edge_score"]),
+                "amplitude": float(item["amplitude"]),
+                "corr": float(item["corr"]),
+                "nonlinearity": float(item["nonlinearity"]),
+                "step_score": float(item["step_score"]),
+                "saturation": float(item["saturation"]),
+                "turns": float(item["turns"]),
+                "crosses_zero": float(item["crosses_zero"]),
+                "center_near_zero": float(item["center_near_zero"]),
+                "balance": float(item["balance"]),
+                "display_normalized": bool(normalize_curves),
+                "experiment": exp_name,
+                "checkpoint": str(ckpt_path),
+                "experiment_dir": str(exp_dir),
+            }
+            for i, item in enumerate(selected)
+        ]
+    ).to_csv(manifest, index=False)
+    return {"fig11_png": out_path, "fig11_svg": out_path.with_suffix(".svg"), "fig11_manifest_csv": manifest}
+
+
+def replot_article1_fig12_kan_heatmap(
+    exp_name: str,
+    experiment_roots: Iterable[str | Path],
+    output_dir: str | Path,
+    weights: str = "best",
+    layer_index: int = 0,
+    layer_name_contains: str | None = "processing_net.features.4.kan_layer",
+    figure_width: float = 8.8,
+    figure_height: float = 6.2,
+    show_weak_share: bool = False,
+    use_pruning_importance: bool = False,
+    reference_pruning_report_json: str | Path | None = None,
+    rescale_to_reference_max: bool = True,
+    data_dir: str | Path = "data/ml_datasets",
+    max_importance_windows: int = -1,
+    eval_stride: int = 1,
+    importance_batch_size: int = 64,
+    importance_max_batches: int = 5,
+    importance_max_samples: int = 1000,
+) -> dict[str, Path]:
+    """Рисунок 12: тепловая карта активности рёбер выбранного KAN-слоя."""
+    model, exp_dir, ckpt_path = _load_torch_model_for_article(exp_name, experiment_roots, weights=weights)
+    layers = _kan_linear_layers(model)
+    if not layers:
+        raise ValueError(f"В модели не найдены KANLinear-слои: {exp_name}")
+
+    layer_name, layer = _select_kan_layer(layers, layer_index=layer_index, layer_name_contains=layer_name_contains)
+    scores_source = "edge_weight_activity"
+    scores = _edge_score_matrix(layer)
+    if use_pruning_importance:
+        try:
+            import torch
+            from torch.utils.data import DataLoader
+
+            from osc_tools.ml.kan_pruning import calculate_kan_importance, collect_kan_inputs
+            from scripts.phase2_experiments.run_phase2_6_kan_pruning import _build_dataset
+
+            with open(exp_dir / "config.json", "r", encoding="utf-8") as f:
+                config = json.load(f)
+            device = torch.device("cpu")
+            model = model.to(device)
+            ds_importance, _, _ = _build_dataset(
+                config=config,
+                exp_name=exp_name,
+                data_dir=_resolve(data_dir),
+                max_windows=max_importance_windows,
+                eval_stride=eval_stride,
+            )
+            loader = DataLoader(
+                ds_importance,
+                batch_size=importance_batch_size,
+                shuffle=False,
+                num_workers=0,
+            )
+            inputs = collect_kan_inputs(
+                model,
+                loader,
+                device,
+                max_batches=importance_max_batches,
+                max_samples=importance_max_samples,
+            )
+            importances = calculate_kan_importance(model, inputs, device)
+            if layer_name in importances:
+                scores = importances[layer_name].detach().cpu().numpy()
+                scores_source = "mean_abs_phi_on_dataset"
+        except Exception as exc:
+            print(f"[!] Рисунок 12: не удалось посчитать pruning-importance, fallback на веса: {exc}")
+
+    if reference_pruning_report_json and rescale_to_reference_max and scores.size and np.max(scores) > 0:
+        report_path = _resolve(reference_pruning_report_json)
+        if report_path.exists():
+            with open(report_path, "r", encoding="utf-8") as f:
+                report = json.load(f)
+            ref_stats = report.get("importance_stats", {}).get(layer_name)
+            if ref_stats and float(ref_stats.get("max", 0.0)) > 0:
+                ref_max = float(ref_stats["max"])
+                scores = scores * (ref_max / float(np.max(scores)))
+                scores_source = f"{scores_source}_scaled_to_reference_max"
+    weak_threshold = float(np.max(scores) * 0.05) if scores.size else 0.0
+    weak_share = float(np.mean(scores <= weak_threshold)) if scores.size else 0.0
+
+    fig, ax = plt.subplots(figsize=(figure_width, figure_height))
+    im = ax.imshow(scores, aspect="auto", cmap="viridis")
+    cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.03)
+    cbar.set_label("Важность |phi(x)|", fontsize=12)
+    cbar.ax.tick_params(labelsize=10)
+
+    ax.set_xlabel("Вход", fontsize=13)
+    ax.set_ylabel("Выход", fontsize=13)
+    ax.tick_params(axis="both", labelsize=10)
+    ax.grid(False)
+    if show_weak_share:
+        ax.text(
+            0.02,
+            0.98,
+            f"Слабые связи (<5% max): {weak_share:.0%}",
+            transform=ax.transAxes,
+            ha="left",
+            va="top",
+            fontsize=9.5,
+            bbox=dict(facecolor="white", edgecolor="black", linewidth=0.8, alpha=0.85),
+        )
+    fig.tight_layout()
+
+    output_path = _resolve(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    out_path = output_path / "fig12_kan_edge_activity_heatmap_article.png"
+    fig.savefig(out_path, dpi=300, bbox_inches="tight")
+    fig.savefig(out_path.with_suffix(".svg"), bbox_inches="tight")
+    plt.close(fig)
+
+    csv_path = output_path / "fig12_kan_edge_activity_matrix.csv"
+    pd.DataFrame(scores).to_csv(csv_path, index=False)
+    manifest = output_path / "fig12_kan_heatmap_manifest.csv"
+    pd.DataFrame(
+        [
+            {
+                "layer": layer_name,
+                "experiment": exp_name,
+                "checkpoint": str(ckpt_path),
+                "experiment_dir": str(exp_dir),
+                "rows": scores.shape[0],
+                "cols": scores.shape[1],
+                "scores_source": scores_source,
+                "weak_threshold_5pct_max": weak_threshold,
+                "weak_share_5pct_max": weak_share,
+            }
+        ]
+    ).to_csv(manifest, index=False)
+    return {
+        "fig12_png": out_path,
+        "fig12_svg": out_path.with_suffix(".svg"),
+        "fig12_matrix_csv": csv_path,
+        "fig12_manifest_csv": manifest,
+    }
+
+
+def replot_article1_fig13_ablation(
+    pruning_report_json: str | Path,
+    output_dir: str | Path,
+    figure_width: float = 7.6,
+    figure_height: float = 3.5,
+) -> dict[str, Path]:
+    """Рисунок 13: влияние отключения физических слоёв на F1-Macro."""
+    report_path = _resolve(pruning_report_json)
+    if not report_path.exists():
+        raise FileNotFoundError(f"Не найден pruning/ablation report: {report_path}")
+    with open(report_path, "r", encoding="utf-8") as f:
+        report = json.load(f)
+
+    ablations = report.get("ablation_results", {})
+    if not ablations:
+        raise ValueError(f"В отчёте нет ablation_results: {report_path}")
+
+    label_map = {
+        "baseline": "Базовая",
+        "no_mult": "Без S=U*I",
+        "no_div": "Без Y=I/U",
+        "no_arith": "Без S,Y",
+        "only_arith": "Только S,Y",
+    }
+    order = [k for k in ["baseline", "no_mult", "no_div", "no_arith", "only_arith"] if k in ablations]
+    values = [float(ablations[k].get("f1", 0.0)) for k in order]
+    labels = [label_map.get(k, k) for k in order]
+
+    fig, ax = plt.subplots(figsize=(figure_width, figure_height))
+    x = np.arange(len(order))
+    hatches = ["", "//", "\\\\", "xx", ".."]
+    colors = ["#2ca02c", "#d62728", "#1f77b4", "#ff7f0e", "#9467bd"]
+    bars = ax.bar(
+        x,
+        values,
+        color=colors[: len(order)],
+        edgecolor="black",
+        linewidth=1.1,
+        width=0.68,
+        zorder=3,
+    )
+    for bar, hatch in zip(bars, hatches):
+        bar.set_hatch(hatch)
+    for idx, (bar, value) in enumerate(zip(bars, values), start=1):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            value + 0.012,
+            f"{idx}\n{value:.3f}",
+            ha="center",
+            va="bottom",
+            fontsize=10,
+        )
+
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"{i}. {label}" for i, label in enumerate(labels, start=1)], fontsize=11)
+    ax.set_ylabel("F1-Macro", fontsize=13)
+    ax.tick_params(axis="y", labelsize=11)
+    ax.set_ylim(0, min(1.0, max(values) + 0.12))
+    ax.grid(True, axis="y", alpha=0.28, linestyle=":", zorder=0)
+    fig.tight_layout()
+
+    output_path = _resolve(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    out_path = output_path / "fig13_physics_ablation_article.png"
+    fig.savefig(out_path, dpi=300, bbox_inches="tight")
+    fig.savefig(out_path.with_suffix(".svg"), bbox_inches="tight")
+    plt.close(fig)
+
+    csv_path = output_path / "fig13_physics_ablation_values.csv"
+    pd.DataFrame(
+        [
+            {"variant": key, "label": label, "f1_macro": value, "source_report": str(report_path)}
+            for key, label, value in zip(order, labels, values)
+        ]
+    ).to_csv(csv_path, index=False)
+    return {"fig13_png": out_path, "fig13_svg": out_path.with_suffix(".svg"), "fig13_values_csv": csv_path}
+
+
 if __name__ == "__main__":
     # =====================================================================
     # РУЧНОЙ ЗАПУСК ОТДЕЛЬНЫХ РИСУНКОВ ПЕРВОЙ СТАТЬИ
@@ -1137,7 +1812,16 @@ if __name__ == "__main__":
     # Текущие prediction CSV были перезаписаны и не совпадают со старым отчётом
     # 2.6.12; не включайте, пока не восстановлены исходные prediction CSV.
     RUN_FIG9_ENGINEERING_BARS = False
-    RUN_FIG10_MARKING = True
+    RUN_FIG10_MARKING = False
+    RUN_FIG11_KAN_SPLINES = True
+    RUN_FIG12_KAN_HEATMAP = True
+    RUN_FIG13_PHYSICS_ABLATION = True
+
+    PHYSICSKAN_INTERPRET_EXP = "Exp_2.6.1_PhysicsKAN_medium_phase_polar_stride_base_weights_aug"
+    PHYSICSKAN_PRUNING_REPORT = (
+        Path("reports/phase2_6/exp_2_6_5")
+        / f"{PHYSICSKAN_INTERPRET_EXP}_pruning_report.json"
+    )
 
     saved: dict[str, Path] = {}
 
@@ -1210,6 +1894,54 @@ if __name__ == "__main__":
             )
         )
 
+    if RUN_FIG11_KAN_SPLINES:
+        saved.update(
+            replot_article1_fig11_kan_splines(
+                exp_name=PHYSICSKAN_INTERPRET_EXP,
+                experiment_roots=EXPERIMENT_ROOTS + ["experiments/phase2_5"],
+                output_dir=Path(ARTICLE1_OUTPUT_ROOT) / "fig11_kan_splines",
+                weights="best",
+                layer_index=0,
+                layer_name_contains="processing_net.features.4.kan_layer",
+                top_n=9,
+                figure_width=8.8,
+                figure_height=7.0,
+                plot_components=False,
+                normalize_curves=True,
+                input_indices=(0, 1, 2),
+                output_indices=(0, 1, 2),
+                scan_all_layers=True,
+                candidate_pool_per_layer=0,
+            )
+        )
+
+    if RUN_FIG12_KAN_HEATMAP:
+        saved.update(
+            replot_article1_fig12_kan_heatmap(
+                exp_name=PHYSICSKAN_INTERPRET_EXP,
+                experiment_roots=EXPERIMENT_ROOTS + ["experiments/phase2_5"],
+                output_dir=Path(ARTICLE1_OUTPUT_ROOT) / "fig12_kan_heatmap",
+                weights="best",
+                layer_index=0,
+                layer_name_contains="processing_net.features.4.kan_layer",
+                figure_width=8.8,
+                figure_height=6.2,
+                use_pruning_importance=False,
+                reference_pruning_report_json=PHYSICSKAN_PRUNING_REPORT,
+                rescale_to_reference_max=True,
+            )
+        )
+
+    if RUN_FIG13_PHYSICS_ABLATION:
+        saved.update(
+            replot_article1_fig13_ablation(
+                pruning_report_json=PHYSICSKAN_PRUNING_REPORT,
+                output_dir=Path(ARTICLE1_OUTPUT_ROOT) / "fig13_physics_ablation",
+                figure_width=7.6,
+                figure_height=4.8,
+            )
+        )
+
     print("Готово. Сохранены файлы:")
     for key, path in saved.items():
         print(f"  {key}: {path}")
@@ -1233,3 +1965,9 @@ if __name__ == "__main__":
     #     shutil.copy2(saved["bars_abs_png"], ARTICLE_FIGURES_DIR / "Рис.9.а_engineering_bars_abs_article.png")
     # if "bars_rel_png" in saved:
     #     shutil.copy2(saved["bars_rel_png"], ARTICLE_FIGURES_DIR / "Рис.9.б_engineering_bars_rel_article.png")
+    # if "fig11_png" in saved:
+    #     shutil.copy2(saved["fig11_png"], ARTICLE_FIGURES_DIR / "Рис.11_kan_splines_article.png")
+    # if "fig12_png" in saved:
+    #     shutil.copy2(saved["fig12_png"], ARTICLE_FIGURES_DIR / "Рис.12_kan_heatmap_article.png")
+    # if "fig13_png" in saved:
+    #     shutil.copy2(saved["fig13_png"], ARTICLE_FIGURES_DIR / "Рис.13_physics_ablation_article.png")
