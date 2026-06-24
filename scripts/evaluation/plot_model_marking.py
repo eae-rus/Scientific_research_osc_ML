@@ -9,6 +9,8 @@ from typing import Dict, Any, List, Tuple, Optional
 import numpy as np
 import polars as pl
 import torch
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
@@ -239,6 +241,40 @@ def _build_window_any_labels(
     return labels
 
 
+def _shift_right_for_display(
+    values: np.ndarray,
+    shift_samples: int,
+    fill_value: float | int = 0
+) -> np.ndarray:
+    """Сдвигает ряд вправо только для отображения, не меняя расчёт метрик."""
+    shift = int(shift_samples)
+    if shift <= 0 or len(values) == 0:
+        return values
+
+    shifted = np.full_like(values, fill_value)
+    if shift < len(values):
+        shifted[shift:] = values[:-shift]
+    return shifted
+
+
+def _resolve_norm_coef_path(config: Dict[str, Any], data_dir: Path) -> Optional[str]:
+    """Возвращает существующий файл нормировки, учитывая старые абсолютные пути из config."""
+    config_path = config.get('data', {}).get('norm_coef_path')
+    candidates: List[Path] = []
+    if config_path:
+        candidates.append(Path(config_path))
+    candidates.extend([
+        data_dir / DatasetManager.NORM_COEF_CSV,
+        data_dir.parent / DatasetManager.NORM_COEF_CSV,
+        ROOT_DIR / 'data' / DatasetManager.NORM_COEF_CSV,
+    ])
+
+    for candidate in candidates:
+        if candidate.exists():
+            return str(candidate)
+    return str(candidates[0]) if candidates else None
+
+
 def _apply_time_range(
     time_axis: np.ndarray,
     series: Dict[str, np.ndarray],
@@ -270,6 +306,7 @@ def _plot_marking(
     title_fontsize: float = 14,
     marker_size: float = 16,
     show_title: bool = True,
+    prediction_display_shift_samples: int = 0,
 ) -> None:
     """Строит график токов/напряжений и дискретов (реальные сверху, предикт снизу)."""
     labels = list(real_labels.keys())
@@ -294,9 +331,19 @@ def _plot_marking(
         if ' N' in name_uc or name_uc.endswith(' N') or name_uc.endswith('(N)'): return PHASE_COLORS['N']
         return f"C{idx % 10}"
 
+    def short_label(label_name: str) -> str:
+        label_lc = label_name.lower()
+        if "dpozz" in label_lc or "дпозз" in label_lc:
+            return "P(ДПОЗЗ)"
+        if "decay" in label_lc or "затух" in label_lc:
+            return "P(затух.)"
+        if "ozz" in label_lc or "озз" in label_lc:
+            return "P(ОЗЗ)"
+        return f"P({label_name})"
+
     if plot_mode == 'confidence':
-        height_ratios = [1.1, 1.1, 0.8] + [0.6] * len(labels)
-        fig = plt.figure(figsize=(figure_size[0], figure_size[1] + 1.2 * len(labels)))
+        height_ratios = [1.3, 1.3, 0.55] + [0.34] * len(labels)
+        fig = plt.figure(figsize=figure_size)
         gs = fig.add_gridspec(nrows=3 + len(labels), ncols=1, height_ratios=height_ratios)
 
         ax_curr = fig.add_subplot(gs[0, 0])
@@ -331,13 +378,10 @@ def _plot_marking(
         ax_disc.axhline(0, color='black', linewidth=1)
         ax_disc.set_ylim(-len(labels) - 0.5, len(labels) + 0.5)
 
-        # Настраиваем y-ticks для дискретов
-        y_ticks = np.concatenate([-amplitudes[::-1], amplitudes])
-        y_tick_labels = [f"P:{l}" for l in labels[::-1]] + [f"G:{l}" for l in labels]
-        ax_disc.set_yticks(y_ticks)
-        ax_disc.set_yticklabels(y_tick_labels, fontsize=tick_fontsize)
+        ax_disc.set_yticks([-len(labels) / 2, len(labels) / 2])
+        ax_disc.set_yticklabels(["Пред.", "Реал."], fontsize=tick_fontsize)
 
-        ax_disc.set_ylabel("Дискреты (GT:+, Pred:-)", fontsize=label_fontsize)
+        ax_disc.set_ylabel("Дискреты", fontsize=label_fontsize)
         ax_disc.tick_params(axis='x', labelsize=tick_fontsize)
         ax_disc.grid(True, alpha=0.3, linestyle=':')
         ax_disc.legend(loc='upper right', ncols=2, fontsize=legend_fontsize)
@@ -356,9 +400,11 @@ def _plot_marking(
             ax_conf.set_ylim(-0.02, 1.02)
             ax_conf.set_yticks([0.0, threshold, 1.0])
             ax_conf.set_yticklabels(["0", f"{threshold:.2f}", "1"], fontsize=tick_fontsize)
-            ax_conf.set_ylabel(label_name, fontsize=label_fontsize)
+            ax_conf.set_ylabel(short_label(label_name), fontsize=label_fontsize)
             ax_conf.tick_params(axis='both', labelsize=tick_fontsize)
             ax_conf.grid(True, alpha=0.3, linestyle=':')
+            if i < len(labels) - 1:
+                ax_conf.tick_params(axis='x', labelbottom=False)
 
         ax_conf.set_xlabel("Время, мс", fontsize=label_fontsize)
         if show_title and title:
@@ -444,6 +490,8 @@ def generate_marking_plots_for_model(
     title_fontsize: float = 14,
     marker_size: float = 16,
     show_title: bool = True,
+    prediction_display_shift_samples: int = 0,
+    physical_normalization: bool = True,
 ) -> None:
     """
     Генерация графиков разметки для осциллограмм по выбранной модели.
@@ -461,6 +509,10 @@ def generate_marking_plots_for_model(
             'physics' — использовать физический алгоритм классификации.
         selected_files: Ограничить список файлов конкретным набором.
         file_time_ranges_ms: Диапазоны времени по файлам (мс) для обрезки графиков.
+        prediction_display_shift_samples: Сдвиг предсказаний вправо только на графике.
+            Удобно для моделей target_window_mode='any_in_window', где решение относится
+            к окну целиком, а в статье хочется показать его ближе к правому краю окна.
+        physical_normalization: Применять физическую нормализацию входных окон.
     """
     exp_dir = _find_experiment_dir(exp_name)
     config_path = exp_dir / "config.json"
@@ -489,6 +541,7 @@ def generate_marking_plots_for_model(
 
     target_level = _resolve_target_level(exp_name, config)
     target_window_mode = _resolve_target_window_mode(config, exp_name)
+    norm_coef_path = _resolve_norm_coef_path(config, data_dir)
 
     # Подготовка данных
     dm = DatasetManager(str(data_dir))
@@ -645,8 +698,8 @@ def generate_marking_plots_for_model(
                 target_columns=target_cols,
                 target_level=target_level if target_level != 'base' else 'base_labels',
                 target_window_mode=target_window_mode,
-                physical_normalization=True,
-                norm_coef_path=config.get('data', {}).get('norm_coef_path'),
+                physical_normalization=physical_normalization,
+                norm_coef_path=norm_coef_path if physical_normalization else None,
                 num_harmonics=num_harmonics,
                 augment=False
             )
@@ -710,6 +763,16 @@ def generate_marking_plots_for_model(
             mask = pred_count > 0
             pred_probs[col][mask] = (pred_prob_accum[col][mask] / pred_count[mask]).astype(np.float32)
             pred_labels[col] = (pred_probs[col] >= threshold).astype(np.int8)
+
+        if prediction_display_shift_samples:
+            pred_probs = {
+                col: _shift_right_for_display(values, prediction_display_shift_samples, fill_value=0.0)
+                for col, values in pred_probs.items()
+            }
+            pred_labels = {
+                col: (pred_probs[col] >= threshold).astype(np.int8)
+                for col in target_cols
+            }
 
         # Ось времени
         time_axis = np.arange(len(file_df)) * 1000 / sampling_rate

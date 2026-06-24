@@ -2,9 +2,15 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import shutil
+import sys
+import zipfile
 from typing import Iterable
+import hashlib
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 os.environ.setdefault("MPLBACKEND", "Agg")
 os.environ.setdefault("MPLCONFIGDIR", str(ROOT_DIR / ".matplotlib_cache"))
 (ROOT_DIR / ".matplotlib_cache").mkdir(exist_ok=True)
@@ -85,6 +91,22 @@ OZZ_CLASS_ORDER = [
     "Затухающее ОЗЗ",
     "ДПОЗЗ",
 ]
+
+ARTICLE2_FIG3_PANELS = [
+    {
+        "panel": "a",
+        "file_name": "b700c5c625f7c4d3c78faf197b7542a4_Bus 1 _event N1",
+        "description": "ОЗЗ с пробоем и последующее затухающее ОЗЗ",
+    },
+    {
+        "panel": "b",
+        "file_name": "524e846b63557e667fc44b3e8bcb5c8e_Bus 2 _event N2",
+        "description": "ДПОЗЗ",
+    },
+]
+
+ARTICLE2_FIG3_CONVKAN_EXP = "Exp_2.6.11_ConvKAN_heavy_phase_polar_stride_ozz_win_any_weights_aug"
+ARTICLE2_FIG3_EXPERIMENT_ZIP = Path("experiments/phase2_6 (после выпуска статей 1 и 2 - удалить).zip")
 
 # В текущем дереве для опыта 2.6.11 не сохранены prediction-CSV,
 # поэтому статистика восстановлена из старых cm_*_abs.png.
@@ -594,6 +616,169 @@ def replot_article2_fig2_ozz_bidirectional_bars(
     }
 
 
+def _find_experiment_dir(exp_name: str) -> Path | None:
+    for root in [ROOT_DIR / "experiments"]:
+        if not root.exists():
+            continue
+        matches = [p for p in root.rglob(exp_name) if p.is_dir()]
+        if matches:
+            return matches[0]
+    return None
+
+
+def _ensure_experiment_from_zip(exp_name: str, archive_path: str | Path = ARTICLE2_FIG3_EXPERIMENT_ZIP) -> Path:
+    existing = _find_experiment_dir(exp_name)
+    if existing is not None:
+        return existing
+
+    archive = _resolve(archive_path)
+    if not archive.exists():
+        raise FileNotFoundError(
+            f"Не найден эксперимент {exp_name} и нет архива для восстановления: {archive}"
+        )
+
+    target_prefix = f"phase2_6/Exp_2.6.11/{exp_name}/"
+    alt_prefix = f"phase2_6/{exp_name}/"
+    with zipfile.ZipFile(archive) as zf:
+        members = [
+            info
+            for info in zf.infolist()
+            if info.filename.startswith(target_prefix) or info.filename.startswith(alt_prefix)
+        ]
+        if not members:
+            raise FileNotFoundError(f"В архиве {archive} не найден эксперимент {exp_name}")
+        zf.extractall(ROOT_DIR / "experiments", members)
+
+    restored = _find_experiment_dir(exp_name)
+    if restored is None:
+        raise FileNotFoundError(f"Эксперимент {exp_name} извлечён из архива, но папка не найдена")
+    return restored
+
+
+def _resolve_article2_fig3_checkpoint(
+    exp_name: str = ARTICLE2_FIG3_CONVKAN_EXP,
+    weights: str = "final",
+    restore_from_zip: bool = False,
+) -> Path:
+    exp_dir = _find_experiment_dir(exp_name)
+    if exp_dir is None and restore_from_zip:
+        exp_dir = _ensure_experiment_from_zip(exp_name)
+    if exp_dir is None:
+        raise FileNotFoundError(
+            f"Не найдена папка эксперимента {exp_name}. "
+            f"Её можно восстановить из {ARTICLE2_FIG3_EXPERIMENT_ZIP}, запустив с restore_experiment_from_zip=True."
+        )
+
+    candidates = ["final_model.pt", "best_model.pt"] if weights.lower() == "final" else ["best_model.pt", "final_model.pt"]
+    for name in candidates:
+        path = exp_dir / name
+        if path.exists():
+            return path
+    raise FileNotFoundError(f"В {exp_dir} не найден final_model.pt/best_model.pt")
+
+
+def replot_article2_fig3_marking(
+    output_dir: str | Path,
+    data_dir: str | Path = "data/ml_datasets",
+    split: str = "train",
+    panels: Iterable[dict[str, object]] = ARTICLE2_FIG3_PANELS,
+    exp_name: str = ARTICLE2_FIG3_CONVKAN_EXP,
+    restore_experiment_from_zip: bool = False,
+    plot_mode: str = "confidence",
+    threshold: float = 0.5,
+    figure_width: float = 13.2,
+    figure_height: float = 9.2,
+    prediction_display_shift_samples: int = 320,
+    physical_normalization: bool = False,
+) -> dict[str, Path]:
+    """Рисунок 3 статьи 2: разметка выбранных осциллограмм ConvKAN из фазы 2.6."""
+    output_path = _resolve(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    panel_list = list(panels)
+    exp_dir = _find_experiment_dir(exp_name)
+    if exp_dir is None and restore_experiment_from_zip:
+        exp_dir = _ensure_experiment_from_zip(exp_name)
+    if exp_dir is None:
+        raise FileNotFoundError(
+            f"Не найдена папка эксперимента {exp_name}. "
+            f"Её можно восстановить из {ARTICLE2_FIG3_EXPERIMENT_ZIP}, "
+            "запустив с restore_experiment_from_zip=True."
+        )
+
+    saved: dict[str, Path] = {}
+    manifest_rows: list[dict[str, str]] = []
+
+    from scripts.evaluation.plot_model_marking import generate_marking_plots_for_model
+
+    selected_files = [str(panel["file_name"]) for panel in panel_list]
+    generated_root = output_path / "_generated"
+    generate_marking_plots_for_model(
+        exp_name=exp_name,
+        output_dir=generated_root,
+        data_dir=_resolve(data_dir),
+        include_zero_current=True,
+        include_zero_voltage=True,
+        split=split,
+        plot_mode=plot_mode,
+        threshold=threshold,
+        inference_backend="auto",
+        selected_files=selected_files,
+        figure_size=(figure_width, figure_height),
+        dpi=220,
+        signal_linewidth=1.35,
+        label_fontsize=12,
+        tick_fontsize=10,
+        legend_fontsize=9.5,
+        title_fontsize=13,
+        marker_size=18,
+        show_title=False,
+        prediction_display_shift_samples=prediction_display_shift_samples,
+        physical_normalization=physical_normalization,
+    )
+
+    generated_dir = generated_root / "marking_plots" / f"{exp_name}_{split}"
+    if not generated_dir.exists():
+        selected_text = ", ".join(selected_files)
+        raise FileNotFoundError(
+            f"Генератор не создал папку с PNG: {generated_dir}. "
+            f"Проверьте, что файлы есть в split='{split}': {selected_text}"
+        )
+
+    for panel in panel_list:
+        panel_letter = str(panel["panel"])
+        file_name = str(panel["file_name"])
+        mark_hash = hashlib.md5(f"{file_name}|{exp_name}".encode("utf-8")).hexdigest()[:12]
+        src_png = generated_dir / f"mark_{mark_hash}.png"
+        if not src_png.exists():
+            raise FileNotFoundError(f"Ожидался построенный PNG, но он не найден: {src_png}")
+
+        dst = output_path / f"fig3{panel_letter}_marking_{mark_hash}_article2.png"
+        shutil.copy2(src_png, dst)
+
+        saved[f"fig3{panel_letter}_png"] = dst
+        manifest_rows.append(
+            {
+                "panel": panel_letter,
+                "description": str(panel.get("description", "")),
+                "file_name": file_name,
+                "mark_hash": mark_hash,
+                "source_png": str(src_png),
+                "output_png": str(dst),
+                "exp_name": exp_name,
+                "exp_dir": str(exp_dir),
+                "split": split,
+                "plot_mode": plot_mode,
+                "threshold": str(threshold),
+            }
+        )
+
+    manifest = output_path / "fig3_marking_manifest.csv"
+    pd.DataFrame(manifest_rows).to_csv(manifest, index=False)
+    saved["fig3_manifest_csv"] = manifest
+    return saved
+
+
 if __name__ == "__main__":
     REPORT_ROOT = Path("reports/Exp_2_5_and_start_Exp_2_6")
     ARTICLE2_OUTPUT_ROOT = REPORT_ROOT / "figures_article2"
@@ -601,8 +786,11 @@ if __name__ == "__main__":
     # Для рисунка 1 нужен широкий набор экспериментов по типам данных.
     SOURCE_SUMMARY = REPORT_ROOT / "_Память" / "Общие опыты 2.5 и 2.6.1" / "summary_report.csv"
 
-    RUN_FIG1_FEATURE_COMPARISON = True
-    RUN_FIG2_OZZ_BIDIRECTIONAL_BARS = True
+    RUN_FIG1_FEATURE_COMPARISON = False
+    RUN_FIG2_OZZ_BIDIRECTIONAL_BARS = False
+    # Включайте, когда нужно заново разметить COMTRADE-файлы для рисунка 3.
+    # Если папка эксперимента 2.6.11 не распакована, поставьте restore_experiment_from_zip=True.
+    RUN_FIG3_MARKING = True
 
     saved: dict[str, Path] = {}
     if RUN_FIG1_FEATURE_COMPARISON:
@@ -624,6 +812,22 @@ if __name__ == "__main__":
                 figure_width=10.8,
                 figure_height=8.0,
                 show_titles=False,
+            )
+        )
+    if RUN_FIG3_MARKING:
+        saved.update(
+            replot_article2_fig3_marking(
+                output_dir=ARTICLE2_OUTPUT_ROOT / "fig3_marking",
+                data_dir="data/ml_datasets",
+                split="train",
+                exp_name=ARTICLE2_FIG3_CONVKAN_EXP,
+                restore_experiment_from_zip=False,
+                plot_mode="confidence",
+                threshold=0.5,
+                figure_width=13.2,
+                figure_height=9.2,
+                prediction_display_shift_samples=320,
+                physical_normalization=False,
             )
         )
 

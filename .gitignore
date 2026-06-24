@@ -23,6 +23,7 @@ pytest_log_*.txt
 
 # pytest cache
 .pytest_cache/
+.matplotlib_cache/
 
 # IDE and environment files
 .vscode/
