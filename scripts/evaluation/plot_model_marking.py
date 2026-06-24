@@ -260,7 +260,16 @@ def _plot_marking(
     title: str,
     pred_probs: Optional[Dict[str, np.ndarray]] = None,
     plot_mode: str = 'discrete',
-    threshold: float = 0.5
+    threshold: float = 0.5,
+    figure_size: Tuple[float, float] = (16, 10),
+    dpi: int = 150,
+    signal_linewidth: float = 1.2,
+    label_fontsize: float = 10,
+    tick_fontsize: float = 8,
+    legend_fontsize: float = 8,
+    title_fontsize: float = 14,
+    marker_size: float = 16,
+    show_title: bool = True,
 ) -> None:
     """Строит график токов/напряжений и дискретов (реальные сверху, предикт снизу)."""
     labels = list(real_labels.keys())
@@ -287,21 +296,23 @@ def _plot_marking(
 
     if plot_mode == 'confidence':
         height_ratios = [1.1, 1.1, 0.8] + [0.6] * len(labels)
-        fig = plt.figure(figsize=(16, 10 + 1.2 * len(labels)))
+        fig = plt.figure(figsize=(figure_size[0], figure_size[1] + 1.2 * len(labels)))
         gs = fig.add_gridspec(nrows=3 + len(labels), ncols=1, height_ratios=height_ratios)
 
         ax_curr = fig.add_subplot(gs[0, 0])
         for i, (name, data) in enumerate(currents.items()):
-            ax_curr.plot(time_axis, data, label=name, color=get_color(name, i), linewidth=1.2)
-        ax_curr.set_ylabel("Токи")
-        ax_curr.legend(loc='upper right')
+            ax_curr.plot(time_axis, data, label=name, color=get_color(name, i), linewidth=signal_linewidth)
+        ax_curr.set_ylabel("Токи", fontsize=label_fontsize)
+        ax_curr.tick_params(axis='both', labelsize=tick_fontsize)
+        ax_curr.legend(loc='upper right', fontsize=legend_fontsize)
         ax_curr.grid(True, alpha=0.3, linestyle=':')
 
         ax_volt = fig.add_subplot(gs[1, 0], sharex=ax_curr)
         for i, (name, data) in enumerate(voltages.items()):
-            ax_volt.plot(time_axis, data, label=name, color=get_color(name, i), linewidth=1.2)
-        ax_volt.set_ylabel("Напряжения")
-        ax_volt.legend(loc='upper right')
+            ax_volt.plot(time_axis, data, label=name, color=get_color(name, i), linewidth=signal_linewidth)
+        ax_volt.set_ylabel("Напряжения", fontsize=label_fontsize)
+        ax_volt.tick_params(axis='both', labelsize=tick_fontsize)
+        ax_volt.legend(loc='upper right', fontsize=legend_fontsize)
         ax_volt.grid(True, alpha=0.3, linestyle=':')
 
         ax_disc = fig.add_subplot(gs[2, 0], sharex=ax_curr)
@@ -309,13 +320,13 @@ def _plot_marking(
         for i, label_name in enumerate(labels):
             color = get_color(label_name, i)
             real_positions = [amplitudes[i] if v else np.nan for v in real_labels[label_name]]
-            ax_disc.scatter(time_axis, real_positions, marker='o', s=16, alpha=0.8, color=color, label=f"GT: {label_name}")
+            ax_disc.scatter(time_axis, real_positions, marker='o', s=marker_size, alpha=0.8, color=color, label=f"GT: {label_name}")
 
         # Предсказания — в минус
         for i, label_name in enumerate(labels):
             color = get_color(label_name, i)
             pred_positions = [-amplitudes[i] if v else np.nan for v in pred_labels[label_name]]
-            ax_disc.scatter(time_axis, pred_positions, marker='s', s=14, alpha=0.6, color=color, label=f"Pred: {label_name}")
+            ax_disc.scatter(time_axis, pred_positions, marker='s', s=marker_size * 0.88, alpha=0.6, color=color, label=f"Pred: {label_name}")
 
         ax_disc.axhline(0, color='black', linewidth=1)
         ax_disc.set_ylim(-len(labels) - 0.5, len(labels) + 0.5)
@@ -324,11 +335,12 @@ def _plot_marking(
         y_ticks = np.concatenate([-amplitudes[::-1], amplitudes])
         y_tick_labels = [f"P:{l}" for l in labels[::-1]] + [f"G:{l}" for l in labels]
         ax_disc.set_yticks(y_ticks)
-        ax_disc.set_yticklabels(y_tick_labels, fontsize=7)
+        ax_disc.set_yticklabels(y_tick_labels, fontsize=tick_fontsize)
 
-        ax_disc.set_ylabel("Дискреты (GT:+, Pred:-)")
+        ax_disc.set_ylabel("Дискреты (GT:+, Pred:-)", fontsize=label_fontsize)
+        ax_disc.tick_params(axis='x', labelsize=tick_fontsize)
         ax_disc.grid(True, alpha=0.3, linestyle=':')
-        ax_disc.legend(loc='upper right', ncols=2, fontsize=8)
+        ax_disc.legend(loc='upper right', ncols=2, fontsize=legend_fontsize)
 
         for i, label_name in enumerate(labels):
             ax_conf = fig.add_subplot(gs[3 + i, 0], sharex=ax_curr)
@@ -338,36 +350,40 @@ def _plot_marking(
             ax_conf.plot(time_axis, probs, color=color, linewidth=1.2, alpha=0.6)
             mask = probs >= threshold
             if np.any(mask):
-                ax_conf.scatter(time_axis[mask], probs[mask], color=color, s=8, alpha=0.9)
+                ax_conf.scatter(time_axis[mask], probs[mask], color=color, s=marker_size * 0.5, alpha=0.9)
 
             ax_conf.axhline(threshold, color='red', linewidth=0.9, linestyle='--', alpha=0.7)
             ax_conf.set_ylim(-0.02, 1.02)
             ax_conf.set_yticks([0.0, threshold, 1.0])
-            ax_conf.set_yticklabels(["0", f"{threshold:.2f}", "1"], fontsize=7)
-            ax_conf.set_ylabel(label_name, fontsize=8)
+            ax_conf.set_yticklabels(["0", f"{threshold:.2f}", "1"], fontsize=tick_fontsize)
+            ax_conf.set_ylabel(label_name, fontsize=label_fontsize)
+            ax_conf.tick_params(axis='both', labelsize=tick_fontsize)
             ax_conf.grid(True, alpha=0.3, linestyle=':')
 
-        ax_conf.set_xlabel("Время, мс")
-        fig.suptitle(title, fontsize=14)
+        ax_conf.set_xlabel("Время, мс", fontsize=label_fontsize)
+        if show_title and title:
+            fig.suptitle(title, fontsize=title_fontsize)
         fig.tight_layout()
-        fig.savefig(out_path, dpi=150)
+        fig.savefig(out_path, dpi=dpi)
         plt.close(fig)
         return
 
-    plt.figure(figsize=(16, 10))
+    plt.figure(figsize=figure_size)
 
     ax_curr = plt.subplot(3, 1, 1)
     for i, (name, data) in enumerate(currents.items()):
-        ax_curr.plot(time_axis, data, label=name, color=get_color(name, i), linewidth=1.2)
-    ax_curr.set_ylabel("Токи")
-    ax_curr.legend(loc='upper right')
+        ax_curr.plot(time_axis, data, label=name, color=get_color(name, i), linewidth=signal_linewidth)
+    ax_curr.set_ylabel("Токи", fontsize=label_fontsize)
+    ax_curr.tick_params(axis='both', labelsize=tick_fontsize)
+    ax_curr.legend(loc='upper right', fontsize=legend_fontsize)
     ax_curr.grid(True, alpha=0.3, linestyle=':')
 
     ax_volt = plt.subplot(3, 1, 2)
     for i, (name, data) in enumerate(voltages.items()):
-        ax_volt.plot(time_axis, data, label=name, color=get_color(name, i), linewidth=1.2)
-    ax_volt.set_ylabel("Напряжения")
-    ax_volt.legend(loc='upper right')
+        ax_volt.plot(time_axis, data, label=name, color=get_color(name, i), linewidth=signal_linewidth)
+    ax_volt.set_ylabel("Напряжения", fontsize=label_fontsize)
+    ax_volt.tick_params(axis='both', labelsize=tick_fontsize)
+    ax_volt.legend(loc='upper right', fontsize=legend_fontsize)
     ax_volt.grid(True, alpha=0.3, linestyle=':')
 
     ax_disc = plt.subplot(3, 1, 3)
@@ -376,13 +392,13 @@ def _plot_marking(
     for i, label_name in enumerate(labels):
         color = get_color(label_name, i)
         real_positions = [amplitudes[i] if v else np.nan for v in real_labels[label_name]]
-        ax_disc.scatter(time_axis, real_positions, marker='o', s=16, alpha=0.8, color=color, label=f"GT: {label_name}")
+        ax_disc.scatter(time_axis, real_positions, marker='o', s=marker_size, alpha=0.8, color=color, label=f"GT: {label_name}")
 
     # Предсказания — в минус
     for i, label_name in enumerate(labels):
         color = get_color(label_name, i)
         pred_positions = [-amplitudes[i] if v else np.nan for v in pred_labels[label_name]]
-        ax_disc.scatter(time_axis, pred_positions, marker='s', s=14, alpha=0.6, color=color, label=f"Pred: {label_name}")
+        ax_disc.scatter(time_axis, pred_positions, marker='s', s=marker_size * 0.88, alpha=0.6, color=color, label=f"Pred: {label_name}")
 
     ax_disc.axhline(0, color='black', linewidth=1)
     ax_disc.set_ylim(-len(labels) - 0.5, len(labels) + 0.5)
@@ -391,16 +407,18 @@ def _plot_marking(
     y_ticks = np.concatenate([-amplitudes[::-1], amplitudes])
     y_tick_labels = [f"P:{l}" for l in labels[::-1]] + [f"G:{l}" for l in labels]
     ax_disc.set_yticks(y_ticks)
-    ax_disc.set_yticklabels(y_tick_labels, fontsize=7)
+    ax_disc.set_yticklabels(y_tick_labels, fontsize=tick_fontsize)
 
-    ax_disc.set_ylabel("Дискреты (GT:+, Pred:-)")
-    ax_disc.set_xlabel("Время, мс")
+    ax_disc.set_ylabel("Дискреты (GT:+, Pred:-)", fontsize=label_fontsize)
+    ax_disc.set_xlabel("Время, мс", fontsize=label_fontsize)
+    ax_disc.tick_params(axis='both', labelsize=tick_fontsize)
     ax_disc.grid(True, alpha=0.3, linestyle=':')
-    ax_disc.legend(loc='upper right', ncols=2, fontsize=8)
+    ax_disc.legend(loc='upper right', ncols=2, fontsize=legend_fontsize)
 
-    plt.suptitle(title, fontsize=14)
+    if show_title and title:
+        plt.suptitle(title, fontsize=title_fontsize)
     plt.tight_layout()
-    plt.savefig(out_path, dpi=150)
+    plt.savefig(out_path, dpi=dpi)
     plt.close()
 
 
@@ -416,7 +434,16 @@ def generate_marking_plots_for_model(
     threshold: float = 0.5,
     inference_backend: str = 'auto',
     selected_files: Optional[List[str]] = None,
-    file_time_ranges_ms: Optional[Dict[str, Tuple[float, float]]] = None
+    file_time_ranges_ms: Optional[Dict[str, Tuple[float, float]]] = None,
+    figure_size: Tuple[float, float] = (16, 10),
+    dpi: int = 150,
+    signal_linewidth: float = 1.2,
+    label_fontsize: float = 10,
+    tick_fontsize: float = 8,
+    legend_fontsize: float = 8,
+    title_fontsize: float = 14,
+    marker_size: float = 16,
+    show_title: bool = True,
 ) -> None:
     """
     Генерация графиков разметки для осциллограмм по выбранной модели.
@@ -715,7 +742,16 @@ def generate_marking_plots_for_model(
             title=title,
             pred_probs=pred_probs,
             plot_mode=plot_mode,
-            threshold=threshold
+            threshold=threshold,
+            figure_size=figure_size,
+            dpi=dpi,
+            signal_linewidth=signal_linewidth,
+            label_fontsize=label_fontsize,
+            tick_fontsize=tick_fontsize,
+            legend_fontsize=legend_fontsize,
+            title_fontsize=title_fontsize,
+            marker_size=marker_size,
+            show_title=show_title,
         )
 
 

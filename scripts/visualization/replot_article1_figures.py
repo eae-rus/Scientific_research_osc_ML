@@ -14,7 +14,9 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
+import shutil
 import sys
 from typing import Iterable
 
@@ -1000,6 +1002,117 @@ def replot_article1_fig9_engineering_bars(
     }
 
 
+def _resolve_marking_files_by_hash(
+    data_dir: str | Path,
+    split: str,
+    old_exp_name: str,
+    mark_hashes: Iterable[str],
+) -> dict[str, str]:
+    """Восстанавливает file_name по hash из mark_<hash>.png старого разметчика."""
+    data_path = _resolve(data_dir)
+    csv_name = "train.csv" if split.lower() == "train" else "test.csv"
+    csv_path = data_path / csv_name
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Не найден датасет для поиска осциллограмм: {csv_path}")
+
+    needed = {h.lower().replace("mark_", "").replace(".png", "") for h in mark_hashes}
+    files = pd.read_csv(csv_path, usecols=["file_name"])["file_name"].dropna().astype(str).unique()
+
+    resolved: dict[str, str] = {}
+    for file_name in files:
+        digest = hashlib.md5(f"{file_name}|{old_exp_name}".encode("utf-8")).hexdigest()[:12]
+        if digest in needed:
+            resolved[digest] = file_name
+
+    missing = sorted(needed - set(resolved))
+    if missing:
+        raise FileNotFoundError(
+            "Не удалось восстановить file_name для mark-hash: " + ", ".join(missing)
+        )
+    return resolved
+
+
+def replot_article1_fig10_marking(
+    old_exp_name: str,
+    new_exp_name: str,
+    data_dir: str | Path,
+    output_dir: str | Path,
+    mark_hashes: Iterable[str],
+    split: str = "train",
+    plot_mode: str = "discrete",
+    threshold: float = 0.5,
+    figure_width: float = 12.0,
+    figure_height: float = 7.4,
+    show_title: bool = False,
+    file_time_ranges_ms: dict[str, tuple[float, float]] | None = None,
+) -> dict[str, Path]:
+    """Строит две размеченные осциллограммы для рисунка 10 обновлённой моделью."""
+    from scripts.evaluation.plot_model_marking import generate_marking_plots_for_model
+
+    output_path = _resolve(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    resolved = _resolve_marking_files_by_hash(data_dir, split, old_exp_name, mark_hashes)
+    selected_files = [resolved[h.lower().replace("mark_", "").replace(".png", "")] for h in mark_hashes]
+
+    generated_root = output_path / "_generated"
+    generate_marking_plots_for_model(
+        exp_name=new_exp_name,
+        output_dir=generated_root,
+        data_dir=_resolve(data_dir),
+        include_zero_current=True,
+        include_zero_voltage=True,
+        split=split,
+        plot_mode=plot_mode,
+        threshold=threshold,
+        inference_backend="auto",
+        selected_files=selected_files,
+        file_time_ranges_ms=file_time_ranges_ms,
+        figure_size=(figure_width, figure_height),
+        dpi=300,
+        signal_linewidth=1.55,
+        label_fontsize=13,
+        tick_fontsize=11,
+        legend_fontsize=10,
+        title_fontsize=13,
+        marker_size=24,
+        show_title=show_title,
+    )
+
+    generated_dir = generated_root / "marking_plots" / f"{new_exp_name}_{split}"
+    manifest_rows: list[dict[str, str]] = []
+    saved: dict[str, Path] = {}
+    for idx, old_hash in enumerate(mark_hashes, start=1):
+        normalized_hash = old_hash.lower().replace("mark_", "").replace(".png", "")
+        file_name = resolved[normalized_hash]
+        new_hash = hashlib.md5(f"{file_name}|{new_exp_name}".encode("utf-8")).hexdigest()[:12]
+        src = generated_dir / f"mark_{new_hash}.png"
+        if not src.exists():
+            raise FileNotFoundError(f"Ожидался построенный PNG, но он не найден: {src}")
+
+        suffix = "a" if idx == 1 else "b"
+        dst = output_path / f"fig10{suffix}_marking_{normalized_hash}_article.png"
+        shutil.copy2(src, dst)
+        saved[f"fig10{suffix}_png"] = dst
+        manifest_rows.append(
+            {
+                "panel": suffix,
+                "old_hash": normalized_hash,
+                "new_hash": new_hash,
+                "file_name": file_name,
+                "old_exp_name": old_exp_name,
+                "new_exp_name": new_exp_name,
+                "source_png": str(src),
+                "article_png": str(dst),
+            }
+        )
+
+    manifest_path = output_path / "fig10_marking_manifest.csv"
+    pd.DataFrame(manifest_rows).to_csv(manifest_path, index=False)
+    saved["manifest_csv"] = manifest_path
+    return saved
+
+
 if __name__ == "__main__":
     # =====================================================================
     # РУЧНОЙ ЗАПУСК ОТДЕЛЬНЫХ РИСУНКОВ ПЕРВОЙ СТАТЬИ
@@ -1020,10 +1133,11 @@ if __name__ == "__main__":
 
     # Рисунок 7 уже доведён. Чтобы перестроить его заново, поставьте True.
     RUN_FIG7_PARETO = False
-    RUN_FIG8_RADAR = True
+    RUN_FIG8_RADAR = False
     # Текущие prediction CSV были перезаписаны и не совпадают со старым отчётом
     # 2.6.12; не включайте, пока не восстановлены исходные prediction CSV.
     RUN_FIG9_ENGINEERING_BARS = False
+    RUN_FIG10_MARKING = True
 
     saved: dict[str, Path] = {}
 
@@ -1063,7 +1177,7 @@ if __name__ == "__main__":
                     experiment_roots=EXPERIMENT_ROOTS,
                     output_dir=Path(ARTICLE1_OUTPUT_ROOT) / "fig9_engineering_bars",
                     figure_width=10.8,
-                    figure_height=6.4,
+                    figure_height=4.5,
                     legend_mode="right",
                     annotate_bar_numbers=True,
                     article_data_dir=None,
@@ -1075,6 +1189,26 @@ if __name__ == "__main__":
                 "    Нужны test_predictions_best.csv/test_predictions_final.csv "
                 "для точного набора лучших моделей класса."
             )
+
+    if RUN_FIG10_MARKING:
+        saved.update(
+            replot_article1_fig10_marking(
+                old_exp_name="Exp_2.6.9_cPhysicsKAN_heavy_phase_polar_stride_base_weights_aug",
+                new_exp_name="Exp_2.6.12_rPhysicsKAN_heavy_phase_polar_stride_base_weights_aug",
+                data_dir="data/ml_datasets",
+                output_dir=Path(ARTICLE1_OUTPUT_ROOT) / "fig10_marking",
+                mark_hashes=[
+                    "0d50f79a162f",
+                    "7a8bd50023cd",
+                ],
+                split="train",
+                plot_mode="discrete",
+                threshold=0.7,
+                figure_width=12.0,
+                figure_height=10,
+                show_title=False,
+            )
+        )
 
     print("Готово. Сохранены файлы:")
     for key, path in saved.items():
