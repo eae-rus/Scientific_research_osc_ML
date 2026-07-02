@@ -9,6 +9,7 @@ from osc_tools.ml.ct_saturation_dataset import (
     deterministic_split,
     load_ct_saturation_mat,
 )
+from scripts.phase4_experiments.ct_saturation.analyze_ct_saturation import binary_metrics
 
 
 class FakeTimeseries:
@@ -39,3 +40,14 @@ def test_split_is_stable_and_feature_count_is_84():
     assert {x.record_id for x in a[0]} == {x.record_id for x in b[0]}
     assert {x.record_id for x in a[1]} == {x.record_id for x in b[1]}
     assert current_feature_count() == 84
+
+
+def test_binary_article_metrics_use_expected_confusion_counts():
+    result = binary_metrics(
+        np.array([1, 1, 0, 0], dtype=bool),
+        np.array([1, 0, 1, 0], dtype=bool),
+    )
+    assert (result["tp"], result["fp"], result["fn"], result["tn"]) == (1, 1, 1, 1)
+    assert result["precision"] == pytest.approx(0.5)
+    assert result["recall"] == pytest.approx(0.5)
+    assert result["f1"] == pytest.approx(0.5)

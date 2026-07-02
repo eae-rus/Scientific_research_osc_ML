@@ -533,7 +533,8 @@ if __name__ == "__main__":
     RESUME_PATH = None
     # Пример:
     # RESUME_PATH = PROJECT_ROOT / "experiments/phase4/ct_saturation/run_.../latest_checkpoint.pt"
-    RESET_OPTIMIZER = False      # True: загрузить веса, но начать оптимизацию с эпохи 0
+    RESUME_PATH = PROJECT_ROOT / "experiments/phase4/ct_saturation/run_20260702_023838/latest_checkpoint.pt"
+    RESET_OPTIMIZER = True      # True: загрузить веса, но начать оптимизацию с эпохи 0
 
     # =================================================================
     config = dict(CONFIG)
