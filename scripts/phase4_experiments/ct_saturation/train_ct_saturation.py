@@ -14,12 +14,14 @@ import random
 import shutil
 import subprocess
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, RandomSampler
+from tqdm.auto import tqdm
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -189,7 +191,18 @@ def metrics(logits: torch.Tensor, targets: torch.Tensor, threshold: float) -> di
     }
 
 
-def run_epoch(model, loader, criterion, device, cfg: dict, optimizer=None, scaler=None):
+def run_epoch(
+    model,
+    loader,
+    criterion,
+    device,
+    cfg: dict,
+    *,
+    epoch_index: int,
+    total_epochs: int,
+    optimizer=None,
+    scaler=None,
+):
     """Выполнить одну эпоху обучения или проверки."""
     train = optimizer is not None
     model.train(train)
@@ -197,7 +210,14 @@ def run_epoch(model, loader, criterion, device, cfg: dict, optimizer=None, scale
     accumulation_steps = max(1, int(cfg["accumulation_steps"]))
     if train:
         optimizer.zero_grad(set_to_none=True)
-    for batch_index, (x, y) in enumerate(loader):
+    progress = tqdm(
+        loader,
+        total=len(loader),
+        desc=f"Train {epoch_index + 1}/{total_epochs}" if train else f"Val   {epoch_index + 1}/{total_epochs}",
+        leave=False,
+        dynamic_ncols=True,
+    )
+    for batch_index, (x, y) in enumerate(progress):
         x, y = x.to(device, non_blocking=True), y.to(device, non_blocking=True)
         with torch.set_grad_enabled(train), torch.autocast(
             device_type=device.type,
@@ -218,6 +238,8 @@ def run_epoch(model, loader, criterion, device, cfg: dict, optimizer=None, scale
         losses.append(float(loss.detach()))
         all_logits.append(logits.detach().cpu())
         all_targets.append(y.detach().cpu())
+        progress.set_postfix(loss=f"{np.mean(losses):.4f}")
+    progress.close()
     return float(np.mean(losses)), torch.cat(all_logits), torch.cat(all_targets)
 
 
@@ -307,11 +329,15 @@ def run_experiment(
     print(f"Каталог результатов: {out}")
     log_path = out / "training_log.jsonl"
     for epoch in range(start_epoch, cfg["epochs"]):
+        epoch_started = time.perf_counter()
         train_loss, train_logits, train_y = run_epoch(
-            model, train_loader, criterion, device, cfg, optimizer, scaler
+            model, train_loader, criterion, device, cfg,
+            epoch_index=epoch, total_epochs=cfg["epochs"],
+            optimizer=optimizer, scaler=scaler,
         )
         val_loss, val_logits, val_y = run_epoch(
-            model, val_loader, criterion, device, cfg
+            model, val_loader, criterion, device, cfg,
+            epoch_index=epoch, total_epochs=cfg["epochs"],
         )
         scheduler.step()
         row = {
@@ -319,6 +345,7 @@ def run_experiment(
             "train_loss": train_loss,
             "val_loss": val_loss,
             "lr": optimizer.param_groups[0]["lr"],
+            "time_sec": time.perf_counter() - epoch_started,
             "train": metrics(train_logits, train_y, cfg["threshold"]),
             "val": metrics(val_logits, val_y, cfg["threshold"]),
         }
@@ -332,14 +359,21 @@ def run_experiment(
             "best_f1": best_f1,
             "config": cfg,
         }
-        if row["val"]["macro_f1"] > best_f1:
+        is_best = row["val"]["macro_f1"] > best_f1
+        if is_best:
             best_f1 = row["val"]["macro_f1"]
             state["best_f1"] = best_f1
             torch.save(state, out / "best_model.pt")
         torch.save(state, out / "latest_checkpoint.pt")
         if (epoch + 1) % cfg["checkpoint_frequency"] == 0:
             torch.save(state, out / f"checkpoint_epoch_{epoch + 1:04d}.pt")
-        print(json.dumps(row, ensure_ascii=False))
+        marker = " ★" if is_best else ""
+        print(
+            f"Epoch {epoch + 1:3d}/{cfg['epochs']} | "
+            f"loss={train_loss:.4f}/{val_loss:.4f} | "
+            f"F1={row['train']['macro_f1']:.4f}/{row['val']['macro_f1']:.4f}{marker} | "
+            f"lr={row['lr']:.2e} | time={row['time_sec']:.1f}s"
+        )
     return out
 
 
@@ -469,7 +503,7 @@ if __name__ == "__main__":
     DROPOUT = 0.10
 
     # 6. Основные параметры обучения
-    EPOCHS = 40
+    EPOCHS = 100
     BATCH_SIZE = 16              # Уменьшить при нехватке VRAM
     VAL_BATCH_SIZE = 32
     ACCUMULATION_STEPS = 1       # Эффективный batch = BATCH_SIZE × это значение
