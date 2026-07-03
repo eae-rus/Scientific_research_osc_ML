@@ -16,6 +16,7 @@ import argparse
 import csv
 import json
 import math
+import re
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -34,11 +35,11 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from osc_tools.ml.ct_saturation_dataset import (
     CTSaturationFile,
-    compute_current_spectral_features,
-    current_feature_count,
+    compute_ct_spectral_features,
+    ct_spectral_feature_count,
     load_ct_saturation_mat,
 )
-from osc_tools.ml.models.transformer import PhysicalKANTransformer
+from osc_tools.ml.models.transformer import BaselineTransformer, PhysicalKANTransformer
 
 
 PHASE_NAMES = ("A", "B", "C")
@@ -49,19 +50,37 @@ def load_model(checkpoint_path: str | Path, device: torch.device) -> tuple[torch
     """Восстановить Physical KAN-Transformer из checkpoint насыщения ТТ."""
     checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     config = checkpoint["config"]
-    num_features = current_feature_count(config["num_harmonics"], config["sub_periods"])
-    model = PhysicalKANTransformer(
-        num_input_channels=num_features,
-        num_current_pairs=num_features // 2,
-        num_classes=3,
-        zone_size=1,
-        d_model=config["d_model"],
-        num_heads=config["num_heads"],
-        num_layers=config["num_layers"],
-        dropout=0.0,
-        cls_head_type="kan",
-        max_seq_len=(config["num_periods"] - 1) * config["stride_fraction"],
-    )
+    input_mode = config.get("input_mode", "spectral")
+    include_voltage = config.get("include_voltage", False)
+    if input_mode == "spectral":
+        num_features = ct_spectral_feature_count(
+            config["num_harmonics"], config["sub_periods"], include_voltage,
+        )
+        current_pairs = 3 * (config["num_harmonics"] + len(config["sub_periods"])) + 3
+        model = PhysicalKANTransformer(
+            num_input_channels=num_features,
+            num_current_pairs=current_pairs,
+            num_classes=3,
+            zone_size=1,
+            d_model=config["d_model"],
+            num_heads=config["num_heads"],
+            num_layers=config["num_layers"],
+            dropout=0.0,
+            cls_head_type="kan",
+            max_seq_len=(config["num_periods"] - 1) * config["stride_fraction"],
+        )
+    else:
+        model = BaselineTransformer(
+            num_input_channels=6 if include_voltage else 3,
+            num_classes=3,
+            zone_size=1,
+            d_model=config["d_model"],
+            num_heads=config["num_heads"],
+            num_layers=config["num_layers"],
+            dropout=0.0,
+            cls_head_type="linear",
+            max_seq_len=config["num_periods"] * config.get("raw_target_spp", 32),
+        )
     model.load_state_dict(checkpoint["model"])
     model.to(device).eval()
     return model, config
@@ -106,23 +125,47 @@ def plot_training_curves(rows: Sequence[dict], output_path: Path) -> None:
 
 def _feature_sequence(
     currents: np.ndarray,
+    voltages: np.ndarray | None,
     fs_hz: float,
     config: dict,
 ) -> tuple[np.ndarray, np.ndarray, int]:
     """Рассчитать признаки всей осциллограммы и позиции токенов в отсчётах."""
     spp = round(fs_hz / 50.0)
-    stride = max(1, spp // config["stride_fraction"])
+    if config.get("input_mode", "spectral") == "raw":
+        try:
+            from scipy.signal import resample_poly
+        except ImportError as exc:
+            raise ImportError("Для raw-анализа требуется scipy.signal.resample_poly") from exc
+        include_voltage = config.get("include_voltage", False)
+        if include_voltage and voltages is None:
+            raise ValueError("Raw-модель ожидает напряжения, но они не переданы")
+        signals = currents if not include_voltage else np.concatenate([currents, voltages], axis=1)
+        target_spp = config.get("raw_target_spp", 32)
+        common = math.gcd(int(spp), int(target_spp))
+        features = resample_poly(
+            signals, up=target_spp // common, down=spp // common, axis=0,
+        ).astype(np.float32)
+        positions = np.arange(len(features), dtype=np.float64) * spp / target_spp
+        return features, np.rint(positions).astype(np.int64), max(1, round(spp / target_spp))
+
+    stride = max(1, round(spp / config["stride_fraction"]))
     context = max(config["sub_periods"]) * spp
     padded = np.pad(currents, ((context, 0), (0, 0)), mode="edge")
-    features = compute_current_spectral_features(
+    padded_voltage = (
+        np.pad(voltages, ((context, 0), (0, 0)), mode="edge")
+        if voltages is not None else None
+    )
+    features = compute_ct_spectral_features(
         padded,
+        padded_voltage,
         samples_per_period=spp,
         stride=stride,
-        warmup=context + spp,
+        warmup=context,
         num_harmonics=config["num_harmonics"],
         sub_periods=config["sub_periods"],
+        include_voltage=config.get("include_voltage", False),
     )
-    positions = spp + np.arange(len(features), dtype=np.int64) * stride
+    positions = (np.arange(len(features), dtype=np.int64) + 1) * stride
     valid = positions < len(currents)
     return features[valid], positions[valid], stride
 
@@ -131,6 +174,7 @@ def _feature_sequence(
 def infer_oscillogram(
     model: torch.nn.Module,
     currents_normalized: np.ndarray,
+    voltages_normalized: np.ndarray | None,
     fs_hz: float,
     config: dict,
     device: torch.device,
@@ -138,9 +182,15 @@ def infer_oscillogram(
     batch_size: int = 64,
 ) -> tuple[np.ndarray, np.ndarray, int]:
     """Разметить всю осциллограмму перекрывающимися окнами признаков."""
-    features, positions, stride = _feature_sequence(currents_normalized, fs_hz, config)
-    sequence_length = (config["num_periods"] - 1) * config["stride_fraction"]
-    step_tokens = config["stride_fraction"]  # одно новое окно на период
+    features, positions, stride = _feature_sequence(
+        currents_normalized, voltages_normalized, fs_hz, config,
+    )
+    if config.get("input_mode", "spectral") == "raw":
+        sequence_length = config["num_periods"] * config.get("raw_target_spp", 32)
+        step_tokens = config.get("raw_target_spp", 32)
+    else:
+        sequence_length = config["num_periods"] * config["stride_fraction"]
+        step_tokens = config["stride_fraction"]
     if len(features) < sequence_length:
         pad = sequence_length - len(features)
         features = np.pad(features, ((0, pad), (0, 0)), mode="edge")
@@ -174,7 +224,8 @@ def token_targets(labels: np.ndarray, positions: np.ndarray, stride: int) -> np.
     """Агрегировать поотсчётные метки в те же зоны, что и предсказания."""
     targets = np.zeros((len(positions), 3), dtype=np.uint8)
     for index, start in enumerate(positions):
-        stop = min(int(start + stride), len(labels))
+        next_position = positions[index + 1] if index + 1 < len(positions) else start + stride
+        stop = min(max(int(next_position), int(start) + 1), len(labels))
         if start < len(labels) and stop > start:
             targets[index] = labels[int(start):stop].max(axis=0)
     return targets
@@ -227,6 +278,7 @@ def plot_two_panel_marking(
     title: str,
     threshold: float,
     labels: np.ndarray | None = None,
+    current_error: np.ndarray | None = None,
     normalized_currents: bool = False,
 ) -> None:
     """Построить рисунок: три тока сверху, три смещённых прогноза снизу."""
@@ -240,6 +292,15 @@ def plot_two_panel_marking(
     axes[0].legend(ncol=3, loc="upper right")
     axes[0].grid(alpha=0.25, linestyle=":")
     axes[0].set_title(title)
+    if current_error is not None:
+        error_axis = axes[0].twinx()
+        error_axis.plot(
+            time_ms, current_error[:, 0], color="#7E22CE", linewidth=0.8,
+            alpha=0.8, label="ΔIA = IAидеал − IAизм",
+        )
+        error_axis.set_ylabel("Разность токов фазы A, А", color="#7E22CE")
+        error_axis.tick_params(axis="y", labelcolor="#7E22CE")
+        error_axis.legend(loc="lower right", fontsize=8)
 
     for phase_index, (phase, color) in enumerate(zip(PHASE_NAMES, PHASE_COLORS)):
         offset = float(phase_index)
@@ -333,8 +394,16 @@ def evaluate_simulated(config: dict, model, model_config: dict, device: torch.de
         record = load_ct_saturation_mat(item.path)
         currents_a = np.asarray(record["secondary_a"], dtype=np.float32)
         normalized = currents_a / (model_config["nominal_secondary_a"] * model_config["reserve_factor"])
+        voltage_v = (
+            np.asarray(record["voltage_v"], dtype=np.float32)
+            if record.get("voltage_v") is not None else None
+        )
+        normalized_voltage = (
+            voltage_v / (model_config["nominal_secondary_v"] * model_config["voltage_reserve_factor"])
+            if voltage_v is not None else None
+        )
         probs, positions, stride = infer_oscillogram(
-            model, normalized, float(record["fs_hz"]), model_config, device,
+            model, normalized, normalized_voltage, float(record["fs_hz"]), model_config, device,
             batch_size=config["inference_batch_size"],
         )
         targets = token_targets(np.asarray(record["labels"]), positions, stride)
@@ -361,6 +430,10 @@ def evaluate_simulated(config: dict, model, model_config: dict, device: torch.de
                 currents_a, float(record["fs_hz"]), probs, positions,
                 title=f"Моделирование: τ={item.source_tau_s:g} с, опыт {item.record_id}",
                 threshold=threshold, labels=np.asarray(record["labels"]),
+                current_error=(
+                    np.asarray(record["current_error_a"])
+                    if record.get("current_error_a") is not None else None
+                ),
             )
             examples_saved += 1
             examples_by_tau[item.source_tau_s] += 1
@@ -409,10 +482,18 @@ def evaluate_phase_transfer(config: dict, model, model_config: dict, device: tor
             continue
         for shift in range(3):
             currents = np.roll(np.asarray(record["secondary_a"]), shift, axis=1)
+            voltage = (
+                np.roll(np.asarray(record["voltage_v"]), shift, axis=1)
+                if record.get("voltage_v") is not None else None
+            )
             labels = np.roll(base_labels, shift, axis=1)
             normalized = currents / (model_config["nominal_secondary_a"] * model_config["reserve_factor"])
+            normalized_voltage = (
+                voltage / (model_config["nominal_secondary_v"] * model_config["voltage_reserve_factor"])
+                if voltage is not None else None
+            )
             probs, positions, stride = infer_oscillogram(
-                model, normalized, float(record["fs_hz"]), model_config, device,
+                model, normalized, normalized_voltage, float(record["fs_hz"]), model_config, device,
                 batch_size=config["inference_batch_size"],
             )
             targets = token_targets(labels, positions, stride)
@@ -433,24 +514,82 @@ def evaluate_phase_transfer(config: dict, model, model_config: dict, device: tor
     return result
 
 
+def load_normalization_lookup(path: str | Path) -> dict[str, dict]:
+    """Загрузить только необходимые паспортные коэффициенты реальных файлов."""
+    columns = ["name", "norm"]
+    for bus in range(1, 9):
+        columns.extend([f"{bus}Ip_base", f"{bus}Ub_base", f"{bus}Uc_base"])
+    frame = pl.read_csv(path, columns=columns, infer_schema_length=0)
+    return {str(row["name"]): row for row in frame.to_dicts()}
+
+
+def real_normalization_profile(
+    file_name: str,
+    lookup: dict[str, dict],
+    *,
+    voltage_source: str,
+) -> tuple[float, float]:
+    """Вернуть делители I и U по тем же формулам, что использует NormOsc."""
+    match = re.match(r"^(?P<name>.+)_Bus\s+(?P<bus>\d+)$", file_name)
+    if not match:
+        raise ValueError(f"Не удалось извлечь имя и секцию из {file_name!r}")
+    base_name = match.group("name")
+    bus = int(match.group("bus"))
+    row = lookup.get(base_name)
+    if row is None or "YES" not in str(row.get("norm", "")):
+        raise ValueError(f"Нет разрешённого профиля нормализации для {file_name}")
+    current_base = float(row[f"{bus}Ip_base"])
+    voltage_key = f"{bus}{'Ub' if voltage_source == 'BB' else 'Uc'}_base"
+    voltage_base = float(row[voltage_key])
+    return 20.0 * current_base, 3.0 * voltage_base
+
+
 def plot_real_dataset(config: dict, model, model_config: dict, device: torch.device) -> None:
     """Построить двухпанельную разметку всех выбранных реальных файлов."""
     output_dir = Path(config["output_dir"]) / "real_marking"
     output_dir.mkdir(parents=True, exist_ok=True)
-    columns = ["sample", "file_name", "IA", "IB", "IC"]
+    columns = [
+        "sample", "file_name", "IA", "IB", "IC",
+        "UA BB", "UB BB", "UC BB", "UA CL", "UB CL", "UC CL",
+    ]
     dataframe = pl.read_csv(
         config["real_csv_path"], columns=columns,
-        schema_overrides={"file_name": pl.String, "IA": pl.Float32, "IB": pl.Float32, "IC": pl.Float32},
+        schema_overrides={"file_name": pl.String},
     )
+    numeric_columns = [column for column in columns if column not in {"sample", "file_name"}]
+    dataframe = dataframe.with_columns([
+        pl.col(column).cast(pl.Float32, strict=False).alias(column)
+        for column in numeric_columns
+    ])
+    normalization = load_normalization_lookup(config["norm_coef_path"])
     groups = dataframe.partition_by("file_name", maintain_order=True)
     if config["max_real_files"] is not None:
         groups = groups[:config["max_real_files"]]
     summary_rows: list[dict] = []
     for group in tqdm(groups, desc="Real oscillograms", dynamic_ncols=True):
         file_name = str(group["file_name"][0])
-        currents = group.select(["IA", "IB", "IC"]).to_numpy().astype(np.float32)
+        currents = group.select(["IA", "IB", "IC"]).fill_null(0.0).to_numpy().astype(np.float32)
+        bb = group.select(["UA BB", "UB BB", "UC BB"])
+        if bb.null_count().to_numpy().sum() < bb.height * 3:
+            voltage_source = "BB"
+            voltages = bb.fill_null(0.0).to_numpy().astype(np.float32)
+        else:
+            voltage_source = "CL"
+            voltages = group.select(["UA CL", "UB CL", "UC CL"]).fill_null(0.0).to_numpy().astype(np.float32)
+        try:
+            current_divisor, voltage_divisor = real_normalization_profile(
+                file_name, normalization, voltage_source=voltage_source,
+            )
+        except (ValueError, TypeError, KeyError) as error:
+            if config.get("strict_real_normalization", True):
+                raise
+            print(f"  Пропуск {file_name}: {error}")
+            continue
+        normalized_currents = currents / current_divisor
+        normalized_voltages = voltages / voltage_divisor
         probabilities, positions, _ = infer_oscillogram(
-            model, currents, config["real_fs_hz"], model_config, device,
+            model, normalized_currents, normalized_voltages,
+            config["real_fs_hz"], model_config, device,
             batch_size=config["inference_batch_size"],
         )
         max_probs = np.nanmax(probabilities, axis=0)
@@ -462,13 +601,16 @@ def plot_real_dataset(config: dict, model, model_config: dict, device: torch.dev
             "detected_A": bool(max_probs[0] >= config["threshold"]),
             "detected_B": bool(max_probs[1] >= config["threshold"]),
             "detected_C": bool(max_probs[2] >= config["threshold"]),
+            "current_divisor": current_divisor,
+            "voltage_divisor": voltage_divisor,
+            "voltage_source": voltage_source,
         })
         safe_name = file_name.replace("/", "_").replace("\\", "_")
         plot_two_panel_marking(
             output_dir / f"{safe_name}.png",
             currents, config["real_fs_hz"], probabilities, positions,
             title=f"Реальная осциллограмма: {file_name}",
-            threshold=config["threshold"], normalized_currents=True,
+            threshold=config["threshold"], normalized_currents=False,
         )
     with (output_dir / "real_predictions.csv").open("w", encoding="utf-8-sig", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=list(summary_rows[0].keys()) if summary_rows else ["file_name"])
@@ -540,6 +682,8 @@ def main() -> None:
         "checkpoint_path": str(Path(args.checkpoint) if args.checkpoint else run_dir / "best_model.pt"),
         "output_dir": str(Path(args.output_dir) if args.output_dir else run_dir / "article_report"),
         "real_csv_path": str(PROJECT_ROOT / "data" / "ml_datasets" / "labeled_2025_12_03.csv"),
+        "norm_coef_path": str(PROJECT_ROOT / "data" / "norm_coef_all_v1.4.csv"),
+        "strict_real_normalization": True,
         "do_simulated": True,
         "do_phase_transfer": True,
         "do_real": args.real,
@@ -563,10 +707,12 @@ if __name__ == "__main__":
     # =================================================================
     # РУЧНОЙ ЗАПУСК ИЗ IDE
     # =================================================================
-    RUN_DIR = PROJECT_ROOT / "experiments" / "phase4" / "ct_saturation" / "run_20260702_023838"
+    # Указать новый v2 run того же INPUT_MODE. Старые run_20260702... невалидны.
+    RUN_DIR = PROJECT_ROOT / "experiments" / "phase4" / "ct_saturation_v2" / "spectral_run_REPLACE_ME"
     CHECKPOINT_PATH = RUN_DIR / "latest_checkpoint.pt"
     OUTPUT_DIR = RUN_DIR / "article_report"
     REAL_CSV_PATH = PROJECT_ROOT / "data" / "ml_datasets" / "labeled_2025_12_03.csv"
+    NORM_COEF_PATH = PROJECT_ROOT / "data" / "norm_coef_all_v1.4.csv"
 
     # Части анализа. Реальные рисунки можно включить отдельным вторым запуском.
     DO_SIMULATED = False
@@ -581,6 +727,7 @@ if __name__ == "__main__":
     # Реальный архив: None — построить все файлы; 20 — проверить контур.
     MAX_REAL_FILES = None
     REAL_FS_HZ = 1600.0
+    STRICT_REAL_NORMALIZATION = True  # Не допускать инференс в неверном масштабе
 
     THRESHOLD = 0.50
     INFERENCE_BATCH_SIZE = 64
@@ -592,6 +739,8 @@ if __name__ == "__main__":
         "checkpoint_path": str(CHECKPOINT_PATH),
         "output_dir": str(OUTPUT_DIR),
         "real_csv_path": str(REAL_CSV_PATH),
+        "norm_coef_path": str(NORM_COEF_PATH),
+        "strict_real_normalization": STRICT_REAL_NORMALIZATION,
         "do_simulated": DO_SIMULATED,
         "do_phase_transfer": DO_PHASE_TRANSFER,
         "do_real": DO_REAL,

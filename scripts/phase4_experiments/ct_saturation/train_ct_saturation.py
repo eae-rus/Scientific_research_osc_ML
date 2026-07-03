@@ -28,22 +28,23 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from osc_tools.ml.ct_saturation_dataset import (
     CTSaturationLazyDataset,
-    current_feature_count,
+    ct_spectral_feature_count,
     deterministic_split,
     scan_ct_saturation_files,
 )
-from osc_tools.ml.models.transformer import PhysicalKANTransformer
+from osc_tools.ml.models.transformer import BaselineTransformer, PhysicalKANTransformer
 
 
 CONFIG = {
     # Пути. Исходные MAT неизменяемы; плоская копия содержит только I2 и метки.
     "source_data_dir": str(PROJECT_ROOT / "data" / "meas_DP_PG_2SYS_INT_A0_SC1_exp_3"),
     "data_dir": str(PROJECT_ROOT / "data" / "ct_saturation_flat"),
-    "output_root": str(PROJECT_ROOT / "experiments" / "phase4" / "ct_saturation"),
+    "output_root": str(PROJECT_ROOT / "experiments" / "phase4" / "ct_saturation_v2"),
 
     # Воспроизводимость и разбиение.
     "seed": 42,
     "val_fraction": 0.2,
+    "max_files": None,                    # Ограничение только для smoke/отладки
 
     # Длительность обучения. Эпоха содержит заданное число пакетов, а не весь архив.
     "epochs": 40,
@@ -64,27 +65,33 @@ CONFIG = {
     "accumulation_steps": 1,
 
     # Спектральная обработка.
+    "input_mode": "spectral",          # "spectral" или "raw"
+    "include_voltage": True,
+    "raw_target_spp": 32,
     "num_harmonics": 9,
     "sub_periods": [2, 4, 6, 10],
-    "num_periods": 10,
-    "stride_fraction": 8,
+    "num_periods": 2,                  # 40 мс при 50 Гц
+    "stride_fraction": 32,              # один spectral-токен на 1/32 периода
 
     # Архитектура Physical KAN-Transformer.
     "d_model": 48,
     "num_heads": 4,
-    "num_layers": 4,
+    "num_layers": 6,                   # как в основном SimOZZ опыте
     "dropout": 0.1,
 
     # Выбор окон, нормализация и фазовая аугментация.
     "event_window_probability": 0.8,
     "nominal_secondary_a": 5.0,
     "reserve_factor": 20.0,
+    "nominal_secondary_v": 100.0,
+    "voltage_reserve_factor": 3.0,
     "phase_permutation": True,
+    "gain_jitter_range": [0.9, 1.1],      # общий gain I/U, без удаления фаз
 
     # Порог решения и компенсация редких положительных зон.
     "threshold": 0.5,
     # ~35% файлов содержат насыщение, обычно лишь 6–8 из 72 зон.
-    "pos_weight": 30.0,
+    "pos_weight": 8.0,
 
     # Сохранение промежуточных контрольных точек.
     "checkpoint_frequency": 5,
@@ -118,11 +125,17 @@ def prepare_flat_data(cfg: dict, max_files: int | None = None) -> None:
         "fprintf('Подготовка %d из %d файлов\\n',n,numel(files));"
         "for k=1:n,"
         "src=fullfile(files(k).folder,files(k).name);dst=fullfile(output_dir,files(k).name);"
-        "if ~exist(dst,'file'),"
-        "s=load(src,'I2_CT1','flag_sat_phsA','flag_sat_phsB','flag_sat_phsC');"
-        "secondary_a=single(s.I2_CT1.Data);time_s=double(s.I2_CT1.Time(:));"
+        "needs_write=true;"
+        "if exist(dst,'file'),v=whos('-file',dst);needs_write=~any(strcmp({v.name},'schema_version'));end;"
+        "if needs_write,"
+        "s=load(src,'I1_CT1','I2_CT1','V2_VT1','flag_sat_phsA','flag_sat_phsB','flag_sat_phsC');"
+        "secondary_a=single(s.I2_CT1.Data);voltage_v=single(s.V2_VT1.Data);time_s=double(s.I2_CT1.Time(:));"
         "labels=logical([s.flag_sat_phsA(:),s.flag_sat_phsB(:),s.flag_sat_phsC(:)]);"
-        "tmp=[dst '.tmp.mat'];save(tmp,'secondary_a','time_s','labels','-v7');movefile(tmp,dst,'f');"
+        "schema_version=2;tmp=[dst '.tmp.mat'];"
+        "if any(labels(:)),current_error_a=single(s.I1_CT1.Data/1000-secondary_a);"
+        "save(tmp,'secondary_a','voltage_v','current_error_a','time_s','labels','schema_version','-v7');"
+        "else,save(tmp,'secondary_a','voltage_v','time_s','labels','schema_version','-v7');end;"
+        "movefile(tmp,dst,'f');"
         "end;"
         "if mod(k,100)==0||k==n,fprintf('%d/%d (%.1f%%)\\n',k,n,100*k/n);end;"
         "end;"
@@ -150,7 +163,16 @@ def make_dataset(files, cfg, *, train: bool):
         event_window_probability=cfg["event_window_probability"] if train else 1.0,
         nominal_secondary_a=cfg["nominal_secondary_a"],
         reserve_factor=cfg["reserve_factor"],
+        nominal_secondary_v=cfg["nominal_secondary_v"],
+        voltage_reserve_factor=cfg["voltage_reserve_factor"],
+        input_mode=cfg["input_mode"],
+        include_voltage=cfg["include_voltage"],
+        raw_target_spp=cfg["raw_target_spp"],
         phase_permutation=cfg["phase_permutation"] if train else False,
+        gain_jitter_range=(
+            tuple(cfg["gain_jitter_range"])
+            if train and cfg.get("gain_jitter_range") is not None else None
+        ),
         cache_size=cfg["cache_size"],
         seed=cfg["seed"] + (0 if train else 10_000),
     )
@@ -243,6 +265,39 @@ def run_epoch(
     return float(np.mean(losses)), torch.cat(all_logits), torch.cat(all_targets)
 
 
+def create_ct_model(cfg: dict) -> torch.nn.Module:
+    """Создать spectral PhysicalKAN или raw baseline с общей глубиной Transformer."""
+    if cfg["input_mode"] == "spectral":
+        n_features = ct_spectral_feature_count(
+            cfg["num_harmonics"], cfg["sub_periods"], cfg["include_voltage"],
+        )
+        current_pairs = 3 * (cfg["num_harmonics"] + len(cfg["sub_periods"])) + 3
+        return PhysicalKANTransformer(
+            num_input_channels=n_features,
+            num_current_pairs=current_pairs,
+            num_classes=3,
+            zone_size=1,
+            d_model=cfg["d_model"],
+            num_heads=cfg["num_heads"],
+            num_layers=cfg["num_layers"],
+            dropout=cfg["dropout"],
+            cls_head_type="kan",
+            max_seq_len=cfg["num_periods"] * cfg["stride_fraction"],
+        )
+    n_features = 6 if cfg["include_voltage"] else 3
+    return BaselineTransformer(
+        num_input_channels=n_features,
+        num_classes=3,
+        zone_size=1,
+        d_model=cfg["d_model"],
+        num_heads=cfg["num_heads"],
+        num_layers=cfg["num_layers"],
+        dropout=cfg["dropout"],
+        cls_head_type="linear",
+        max_seq_len=cfg["num_periods"] * cfg["raw_target_spp"],
+    )
+
+
 def run_experiment(
     cfg: dict,
     *,
@@ -261,6 +316,9 @@ def run_experiment(
 
     seed_everything(cfg["seed"])
     files = scan_ct_saturation_files(cfg["data_dir"])
+    if cfg.get("max_files") is not None:
+        # MATLAB dir и подготовка smoke идут в лексикографическом порядке имён.
+        files = sorted(files, key=lambda item: item.path.name)[:int(cfg["max_files"])]
     if not files:
         raise FileNotFoundError(
             f"В {cfg['data_dir']} нет подготовленных файлов. "
@@ -271,7 +329,7 @@ def run_experiment(
         raise RuntimeError("После разбиения обучающая или проверочная выборка оказалась пустой")
 
     out = resume.parent if resume else (
-        Path(cfg["output_root"]) / datetime.now().strftime("run_%Y%m%d_%H%M%S")
+        Path(cfg["output_root"]) / datetime.now().strftime(f"{cfg['input_mode']}_run_%Y%m%d_%H%M%S")
     )
     out.mkdir(parents=True, exist_ok=True)
     (out / "config.json").write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -288,19 +346,7 @@ def run_experiment(
         make_dataset(val_files, cfg, train=False),
         cfg["val_batches"], cfg, train=False,
     )
-    n_features = current_feature_count(cfg["num_harmonics"], cfg["sub_periods"])
-    model = PhysicalKANTransformer(
-        num_input_channels=n_features,
-        num_current_pairs=n_features // 2,
-        num_classes=3,
-        zone_size=1,
-        d_model=cfg["d_model"],
-        num_heads=cfg["num_heads"],
-        num_layers=cfg["num_layers"],
-        dropout=cfg["dropout"],
-        cls_head_type="kan",
-        max_seq_len=(cfg["num_periods"] - 1) * cfg["stride_fraction"],
-    )
+    model = create_ct_model(cfg)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
     optimizer = torch.optim.AdamW(
@@ -318,6 +364,21 @@ def run_experiment(
     start_epoch, best_f1 = 0, -1.0
     if resume:
         checkpoint = torch.load(resume, map_location=device, weights_only=False)
+        checkpoint_config = checkpoint.get("config", {})
+        compatibility_keys = (
+            "input_mode", "include_voltage", "num_periods", "stride_fraction",
+            "d_model", "num_heads", "num_layers",
+        )
+        mismatches = {
+            key: (checkpoint_config.get(key), cfg.get(key))
+            for key in compatibility_keys
+            if checkpoint_config.get(key) != cfg.get(key)
+        }
+        if mismatches:
+            raise ValueError(
+                "Checkpoint несовместим с текущим опытом v2: "
+                f"{mismatches}. Укажите checkpoint того же режима или RESUME_PATH=None."
+            )
         model.load_state_dict(checkpoint["model"])
         best_f1 = checkpoint.get("best_f1", -1.0)
         if not reset_optimizer:
@@ -367,7 +428,7 @@ def run_experiment(
         torch.save(state, out / "latest_checkpoint.pt")
         if (epoch + 1) % cfg["checkpoint_frequency"] == 0:
             torch.save(state, out / f"checkpoint_epoch_{epoch + 1:04d}.pt")
-        marker = " ★" if is_best else ""
+        marker = " *" if is_best else ""
         print(
             f"Epoch {epoch + 1:3d}/{cfg['epochs']} | "
             f"loss={train_loss:.4f}/{val_loss:.4f} | "
@@ -408,6 +469,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--source-data-dir", type=str)
     parser.add_argument("--prepared-data-dir", type=str)
     parser.add_argument("--output-root", type=str)
+    parser.add_argument("--input-mode", choices=["spectral", "raw"])
+    parser.add_argument("--without-voltage", action="store_true")
     parser.add_argument("--reset-optimizer", action="store_true")
     return parser.parse_args()
 
@@ -444,13 +507,17 @@ def main() -> None:
         (args.source_data_dir, "source_data_dir"),
         (args.prepared_data_dir, "data_dir"),
         (args.output_root, "output_root"),
+        (args.input_mode, "input_mode"),
     ):
         if argument is not None:
             cfg[key] = argument
+    if args.without_voltage:
+        cfg["include_voltage"] = False
     if args.smoke:
         cfg.update(
             epochs=1, train_batches_per_epoch=2, val_batches=2,
             batch_size=2, val_batch_size=2, num_workers=0,
+            max_files=20,
         )
     prepare_limit = args.max_prepare_files
     if args.smoke and prepare_limit is None:
@@ -477,29 +544,37 @@ if __name__ == "__main__":
     # 1. Пути к данным и результатам
     SOURCE_DATA_DIR = PROJECT_ROOT / "data" / "meas_DP_PG_2SYS_INT_A0_SC1_exp_3"
     PREPARED_DATA_DIR = PROJECT_ROOT / "data" / "ct_saturation_flat"
-    OUTPUT_ROOT = PROJECT_ROOT / "experiments" / "phase4" / "ct_saturation"
+    OUTPUT_ROOT = PROJECT_ROOT / "experiments" / "phase4" / "ct_saturation_v2"
 
     # 2. Подготовка исходных MATLAB timeseries
     PREPARE_DATA = True          # True: подготовить отсутствующие плоские MAT
     PREPARE_ONLY = False         # True: только подготовка, без обучения
     MAX_PREPARE_FILES = None     # None: весь архив; 20/100/...: отладочный поднабор
+    MAX_FILES = None             # Ограничение обучающей базы; обычно None
 
     # 3. Разбиение и воспроизводимость
     SEED = 42
     VAL_FRACTION = 0.20
 
-    # 4. Спектральная обработка
+    # 4. Представление входа и временная сетка
+    # "spectral": Physical KAN-Transformer, токи+напряжения в polar-спектре.
+    # "raw": BaselineTransformer на мгновенных значениях, антиалиасинг до 32 spp.
+    INPUT_MODE = "spectral"
+    INCLUDE_VOLTAGE = True
+    RAW_TARGET_SPP = 32
     NUM_HARMONICS = 9
     SUB_PERIODS = [2, 4, 6, 10]
-    NUM_PERIODS = 10             # Длина окна модели в периодах 50 Гц
-    STRIDE_FRACTION = 8          # Один токен каждые 1/8 периода
+    NUM_PERIODS = 2              # 40 мс при частоте сети 50 Гц
+    STRIDE_FRACTION = 32         # Один spectral-токен каждые 1/32 периода
     NOMINAL_SECONDARY_A = 5.0    # Номинальный вторичный ток ТТ
     RESERVE_FACTOR = 20.0        # Делитель нормализации = 5 А × 20
+    NOMINAL_SECONDARY_V = 100.0  # Номинальное вторичное напряжение ТН
+    VOLTAGE_RESERVE_FACTOR = 3.0 # Делитель напряжения = 100 В × 3
 
     # 5. Архитектура Physical KAN-Transformer
     D_MODEL = 48
     NUM_HEADS = 4
-    NUM_LAYERS = 4
+    NUM_LAYERS = 6               # Совпадает с основным опытом SimOZZ
     DROPOUT = 0.10
 
     # 6. Основные параметры обучения
@@ -525,16 +600,18 @@ if __name__ == "__main__":
     # 9. Разметка, баланс и решение
     EVENT_WINDOW_PROBABILITY = 0.80
     PHASE_PERMUTATION = True
-    POS_WEIGHT = 30.0
+    GAIN_JITTER_RANGE = [0.9, 1.1]  # Общий масштаб I/U; форма и I/U сохраняются
+    POS_WEIGHT = 8.0             # Новое стартовое значение для короткого окна
     THRESHOLD = 0.50
 
     # 10. Сохранение и продолжение обучения
     CHECKPOINT_FREQUENCY = 5
     RESUME_PATH = None
-    # Пример:
-    # RESUME_PATH = PROJECT_ROOT / "experiments/phase4/ct_saturation/run_.../latest_checkpoint.pt"
-    RESUME_PATH = PROJECT_ROOT / "experiments/phase4/ct_saturation/run_20260702_023838/latest_checkpoint.pt"
-    RESET_OPTIMIZER = True      # True: загрузить веса, но начать оптимизацию с эпохи 0
+    # Старые checkpoint несовместимы с новой сеткой и числом входных каналов.
+    # Пример только для checkpoint, созданного этим же режимом v2:
+    # RESUME_PATH = OUTPUT_ROOT / "spectral_run_.../latest_checkpoint.pt"
+    RESUME_PATH = None
+    RESET_OPTIMIZER = False      # True: загрузить веса, но начать оптимизацию с эпохи 0
 
     # =================================================================
     config = dict(CONFIG)
@@ -544,12 +621,18 @@ if __name__ == "__main__":
         "output_root": str(OUTPUT_ROOT),
         "seed": SEED,
         "val_fraction": VAL_FRACTION,
+        "max_files": MAX_FILES,
+        "input_mode": INPUT_MODE,
+        "include_voltage": INCLUDE_VOLTAGE,
+        "raw_target_spp": RAW_TARGET_SPP,
         "num_harmonics": NUM_HARMONICS,
         "sub_periods": SUB_PERIODS,
         "num_periods": NUM_PERIODS,
         "stride_fraction": STRIDE_FRACTION,
         "nominal_secondary_a": NOMINAL_SECONDARY_A,
         "reserve_factor": RESERVE_FACTOR,
+        "nominal_secondary_v": NOMINAL_SECONDARY_V,
+        "voltage_reserve_factor": VOLTAGE_RESERVE_FACTOR,
         "d_model": D_MODEL,
         "num_heads": NUM_HEADS,
         "num_layers": NUM_LAYERS,
@@ -570,6 +653,7 @@ if __name__ == "__main__":
         "cache_size": CACHE_SIZE,
         "event_window_probability": EVENT_WINDOW_PROBABILITY,
         "phase_permutation": PHASE_PERMUTATION,
+        "gain_jitter_range": GAIN_JITTER_RANGE,
         "pos_weight": POS_WEIGHT,
         "threshold": THRESHOLD,
         "checkpoint_frequency": CHECKPOINT_FREQUENCY,
