@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import random
 import shutil
@@ -40,6 +41,7 @@ CONFIG = {
     "source_data_dir": str(PROJECT_ROOT / "data" / "meas_DP_PG_2SYS_INT_A0_SC1_exp_3"),
     "data_dir": str(PROJECT_ROOT / "data" / "ct_saturation_flat"),
     "output_root": str(PROJECT_ROOT / "experiments" / "phase4" / "ct_saturation_v2"),
+    "expected_file_count": 115_971,
 
     # Воспроизводимость и разбиение.
     "seed": 42,
@@ -103,6 +105,96 @@ def _matlab_path(path: str | Path) -> str:
     return str(Path(path).resolve()).replace("'", "''")
 
 
+PREPARED_MANIFEST = ".ct_saturation_flat_v2_complete.json"
+REQUIRED_FLAT_FIELDS = {
+    "secondary_a", "voltage_v", "time_s", "labels", "schema_version",
+}
+
+
+def _prepared_names(root: Path) -> list[str]:
+    """Получить отсортированный реестр подготовленных осциллограмм."""
+    return sorted(path.name for path in root.glob("A0_INT_SAT_CT1_regime_1_*_exp1.mat"))
+
+
+def _names_digest(names: list[str]) -> str:
+    """Рассчитать компактный отпечаток состава каталога без чтения MAT."""
+    return hashlib.sha256("\n".join(names).encode("utf-8")).hexdigest()
+
+
+def _manifest_matches(output: Path, expected_count: int) -> bool:
+    """Быстро проверить маркер и фактический реестр подготовленных файлов."""
+    marker = output / PREPARED_MANIFEST
+    if not marker.is_file():
+        return False
+    try:
+        manifest = json.loads(marker.read_text(encoding="utf-8"))
+        names = _prepared_names(output)
+        return (
+            manifest.get("schema_version") == 2
+            and manifest.get("complete") is True
+            and manifest.get("file_count") == expected_count == len(names)
+            and manifest.get("names_sha256") == _names_digest(names)
+        )
+    except (OSError, ValueError, TypeError):
+        return False
+
+
+def _write_prepared_manifest(output: Path, names: list[str]) -> None:
+    """Атомарно записать маркер полностью подготовленного архива v2."""
+    marker = output / PREPARED_MANIFEST
+    temporary = marker.with_suffix(marker.suffix + ".tmp")
+    payload = {
+        "complete": True,
+        "schema_version": 2,
+        "file_count": len(names),
+        "names_sha256": _names_digest(names),
+        "required_fields": sorted(REQUIRED_FLAT_FIELDS),
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+    }
+    temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    temporary.replace(marker)
+
+
+def _preserve_source_metadata(source: Path, output: Path) -> None:
+    """Скопировать малые сводные таблицы и паспорт рядом с плоским архивом."""
+    if not source.is_dir():
+        return
+    metadata_dir = output / "source_metadata"
+    candidates = [source / "README.txt", *source.glob("t_sat_CT_*.mat")]
+    existing = [path for path in candidates if path.is_file()]
+    if not existing:
+        return
+    metadata_dir.mkdir(parents=True, exist_ok=True)
+    for path in existing:
+        destination = metadata_dir / path.name
+        if not destination.is_file() or destination.stat().st_size != path.stat().st_size:
+            shutil.copy2(path, destination)
+
+
+def _bootstrap_prepared_manifest(output: Path, expected_count: int) -> bool:
+    """Подхватить уже созданный v2-каталог без повторного полного обхода MATLAB.
+
+    Проверяются число файлов и равномерная детерминированная выборка из 64 MAT.
+    Поля читаются только из заголовков; массивы осциллограмм в память не грузятся.
+    """
+    names = _prepared_names(output)
+    if len(names) != expected_count:
+        return False
+    try:
+        from scipy.io import whosmat
+    except ImportError:
+        return False
+    sample_count = min(64, len(names))
+    indices = np.linspace(0, len(names) - 1, sample_count, dtype=int)
+    for index in indices:
+        fields = {name for name, _shape, _kind in whosmat(output / names[index])}
+        if not REQUIRED_FLAT_FIELDS.issubset(fields):
+            return False
+    _write_prepared_manifest(output, names)
+    print(f"Подготовленный архив v2 подтверждён: {len(names)} файлов; создан {PREPARED_MANIFEST}")
+    return True
+
+
 def prepare_flat_data(cfg: dict, max_files: int | None = None) -> None:
     """Потоково распаковать MATLAB MCOS-timeseries в плоские MAT-файлы.
 
@@ -110,12 +202,25 @@ def prepare_flat_data(cfg: dict, max_files: int | None = None) -> None:
     поэтому оперативная память не зависит от размера архива. Уже готовые файлы
     пропускаются, а запись через временное имя защищает от оборванных результатов.
     """
-    matlab = shutil.which("matlab")
-    if matlab is None:
-        raise RuntimeError("MATLAB не найден в PATH; он необходим для первичной распаковки MCOS")
     source = Path(cfg["source_data_dir"])
     output = Path(cfg["data_dir"])
     output.mkdir(parents=True, exist_ok=True)
+    _preserve_source_metadata(source, output)
+    expected_count = int(cfg.get("expected_file_count", 115_971))
+    if max_files is None and (
+        _manifest_matches(output, expected_count)
+        or _bootstrap_prepared_manifest(output, expected_count)
+    ):
+        print("Подготовка пропущена: плоский архив v2 уже полностью готов.")
+        return
+    if not source.is_dir():
+        raise FileNotFoundError(
+            f"Исходный архив не найден: {source}. Плоский архив не имеет подтверждённого "
+            f"маркера {PREPARED_MANIFEST}; продолжение небезопасно."
+        )
+    matlab = shutil.which("matlab")
+    if matlab is None:
+        raise RuntimeError("MATLAB не найден в PATH; он необходим для первичной распаковки MCOS")
     limit = "inf" if max_files is None else str(int(max_files))
     expression = (
         f"source_dir='{_matlab_path(source)}';"
@@ -126,7 +231,9 @@ def prepare_flat_data(cfg: dict, max_files: int | None = None) -> None:
         "for k=1:n,"
         "src=fullfile(files(k).folder,files(k).name);dst=fullfile(output_dir,files(k).name);"
         "needs_write=true;"
-        "if exist(dst,'file'),v=whos('-file',dst);needs_write=~any(strcmp({v.name},'schema_version'));end;"
+        "if exist(dst,'file'),v=whos('-file',dst);names={v.name};"
+        "req={'secondary_a','voltage_v','time_s','labels','schema_version'};"
+        "needs_write=~all(ismember(req,names));end;"
         "if needs_write,"
         "s=load(src,'I1_CT1','I2_CT1','V2_VT1','flag_sat_phsA','flag_sat_phsB','flag_sat_phsC');"
         "secondary_a=single(s.I2_CT1.Data);voltage_v=single(s.V2_VT1.Data);time_s=double(s.I2_CT1.Time(:));"
@@ -141,6 +248,15 @@ def prepare_flat_data(cfg: dict, max_files: int | None = None) -> None:
         "end;"
     )
     subprocess.run([matlab, "-batch", expression], check=True)
+    if max_files is None:
+        source_names = sorted(path.name for path in source.glob("A0_INT_SAT_CT1_regime_1_*_exp1.mat"))
+        prepared_names = _prepared_names(output)
+        if source_names != prepared_names or len(prepared_names) != expected_count:
+            raise RuntimeError(
+                "Подготовка завершилась с неполным составом файлов; маркер готовности не создан."
+            )
+        _write_prepared_manifest(output, prepared_names)
+        print(f"Создан маркер полного архива: {output / PREPARED_MANIFEST}")
 
 
 def seed_everything(seed: int) -> None:
@@ -609,9 +725,9 @@ if __name__ == "__main__":
     RESUME_PATH = None
     # Старые checkpoint несовместимы с новой сеткой и числом входных каналов.
     # Пример только для checkpoint, созданного этим же режимом v2:
-    # RESUME_PATH = OUTPUT_ROOT / "spectral_run_.../latest_checkpoint.pt"
-    RESUME_PATH = None
-    RESET_OPTIMIZER = False      # True: загрузить веса, но начать оптимизацию с эпохи 0
+    RESUME_PATH = OUTPUT_ROOT / "spectral_run_20260703_145033/latest_checkpoint.pt"
+    # RESUME_PATH = None
+    RESET_OPTIMIZER = True      # True: загрузить веса, но начать оптимизацию с эпохи 0
 
     # =================================================================
     config = dict(CONFIG)

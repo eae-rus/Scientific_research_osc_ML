@@ -12,7 +12,7 @@ from osc_tools.ml.ct_saturation_dataset import (
     deterministic_split,
     load_ct_saturation_mat,
 )
-from scripts.phase4_experiments.ct_saturation.analyze_ct_saturation import binary_metrics
+from scripts.phase4_experiments.ct_saturation.analyze_ct_saturation import binary_metrics, load_model
 from scripts.phase4_experiments.ct_saturation.analyze_ct_saturation import real_normalization_profile
 from scripts.phase4_experiments.ct_saturation.train_ct_saturation import CONFIG, create_ct_model
 
@@ -119,3 +119,16 @@ def test_v2_models_preserve_main_ozz_transformer_depth_and_output_grid():
     assert len(raw_model.encoder_blocks) == 6
     x_raw = torch.zeros(2, 6, 64)
     assert raw_model(x_raw, mode="classify")["classify"].shape == (2, 64, 3)
+
+
+def test_analysis_restores_same_64_token_model_as_training(tmp_path):
+    """Защита от рассогласования positional encoding между train и analysis."""
+    config = dict(CONFIG)
+    trained_model = create_ct_model(config)
+    checkpoint = tmp_path / "checkpoint.pt"
+    torch.save({"config": config, "model": trained_model.state_dict()}, checkpoint)
+
+    restored_model, restored_config = load_model(checkpoint, torch.device("cpu"))
+
+    assert restored_config["num_periods"] == 2
+    assert restored_model.pos_encoder.pe.shape == (1, 64, 48)

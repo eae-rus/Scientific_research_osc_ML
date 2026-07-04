@@ -36,10 +36,9 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from osc_tools.ml.ct_saturation_dataset import (
     CTSaturationFile,
     compute_ct_spectral_features,
-    ct_spectral_feature_count,
     load_ct_saturation_mat,
 )
-from osc_tools.ml.models.transformer import BaselineTransformer, PhysicalKANTransformer
+from scripts.phase4_experiments.ct_saturation.train_ct_saturation import create_ct_model
 
 
 PHASE_NAMES = ("A", "B", "C")
@@ -50,37 +49,9 @@ def load_model(checkpoint_path: str | Path, device: torch.device) -> tuple[torch
     """Восстановить Physical KAN-Transformer из checkpoint насыщения ТТ."""
     checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     config = checkpoint["config"]
-    input_mode = config.get("input_mode", "spectral")
-    include_voltage = config.get("include_voltage", False)
-    if input_mode == "spectral":
-        num_features = ct_spectral_feature_count(
-            config["num_harmonics"], config["sub_periods"], include_voltage,
-        )
-        current_pairs = 3 * (config["num_harmonics"] + len(config["sub_periods"])) + 3
-        model = PhysicalKANTransformer(
-            num_input_channels=num_features,
-            num_current_pairs=current_pairs,
-            num_classes=3,
-            zone_size=1,
-            d_model=config["d_model"],
-            num_heads=config["num_heads"],
-            num_layers=config["num_layers"],
-            dropout=0.0,
-            cls_head_type="kan",
-            max_seq_len=(config["num_periods"] - 1) * config["stride_fraction"],
-        )
-    else:
-        model = BaselineTransformer(
-            num_input_channels=6 if include_voltage else 3,
-            num_classes=3,
-            zone_size=1,
-            d_model=config["d_model"],
-            num_heads=config["num_heads"],
-            num_layers=config["num_layers"],
-            dropout=0.0,
-            cls_head_type="linear",
-            max_seq_len=config["num_periods"] * config.get("raw_target_spp", 32),
-        )
+    # Модель анализа обязана создаваться тем же фабричным методом, что и модель
+    # обучения. Это исключает повторение ошибки 32/64 временных токенов.
+    model = create_ct_model(config)
     model.load_state_dict(checkpoint["model"])
     model.to(device).eval()
     return model, config
@@ -708,21 +679,26 @@ if __name__ == "__main__":
     # РУЧНОЙ ЗАПУСК ИЗ IDE
     # =================================================================
     # Указать новый v2 run того же INPUT_MODE. Старые run_20260702... невалидны.
-    RUN_DIR = PROJECT_ROOT / "experiments" / "phase4" / "ct_saturation_v2" / "spectral_run_REPLACE_ME"
+    RUN_DIR = PROJECT_ROOT / "experiments" / "phase4" / "ct_saturation_v2" / "spectral_run_20260703_145033"
     CHECKPOINT_PATH = RUN_DIR / "latest_checkpoint.pt"
     OUTPUT_DIR = RUN_DIR / "article_report"
     REAL_CSV_PATH = PROJECT_ROOT / "data" / "ml_datasets" / "labeled_2025_12_03.csv"
     NORM_COEF_PATH = PROJECT_ROOT / "data" / "norm_coef_all_v1.4.csv"
 
     # Части анализа. Реальные рисунки можно включить отдельным вторым запуском.
-    DO_SIMULATED = False
-    DO_PHASE_TRANSFER = False
-    DO_REAL = True
+    # симулированные
+    DO_SIMULATED = True
+    DO_PHASE_TRANSFER = True
+    DO_REAL = False
+    # реальные
+    # DO_SIMULATED = False
+    # DO_PHASE_TRANSFER = False
+    # DO_REAL = True
 
     # None означает полный validation; для первого прогона удобно 1000–3000.
-    MAX_SIM_FILES = 5000
+    MAX_SIM_FILES = None
     PHASE_TRANSFER_MAX_FILES = 300
-    SIM_EXAMPLE_COUNT = 4
+    SIM_EXAMPLE_COUNT = 100
 
     # Реальный архив: None — построить все файлы; 20 — проверить контур.
     MAX_REAL_FILES = None
