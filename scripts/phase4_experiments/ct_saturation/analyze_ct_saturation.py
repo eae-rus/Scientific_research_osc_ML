@@ -494,6 +494,23 @@ def load_normalization_lookup(path: str | Path) -> dict[str, dict]:
     return {str(row["name"]): row for row in frame.to_dicts()}
 
 
+def parse_real_file_identity(file_name: str) -> tuple[str, int] | None:
+    """Извлечь исходный hash и номер шины из имени размеченного фрагмента.
+
+    Поддерживаются исходные имена ``hash_Bus 1`` и ``hash_Bus-1``, а также
+    фрагменты Фазы 2 вида ``hash_Bus 1 _event N3``. Производные группы без
+    шины, например ``hash_Diff current``, возвращают ``None``.
+    """
+    cleaned = re.sub(r"\s+_event\s+N\d+\s*$", "", str(file_name), flags=re.IGNORECASE)
+    match = re.fullmatch(
+        r"(?P<name>.+)_Bus(?:\s+|-)\s*(?P<bus>\d+)", cleaned,
+        flags=re.IGNORECASE,
+    )
+    if match is None:
+        return None
+    return match.group("name"), int(match.group("bus"))
+
+
 def real_normalization_profile(
     file_name: str,
     lookup: dict[str, dict],
@@ -501,17 +518,26 @@ def real_normalization_profile(
     voltage_source: str,
 ) -> tuple[float, float]:
     """Вернуть делители I и U по тем же формулам, что использует NormOsc."""
-    match = re.match(r"^(?P<name>.+)_Bus\s+(?P<bus>\d+)$", file_name)
-    if not match:
+    identity = parse_real_file_identity(file_name)
+    if identity is None:
         raise ValueError(f"Не удалось извлечь имя и секцию из {file_name!r}")
-    base_name = match.group("name")
-    bus = int(match.group("bus"))
+    base_name, bus = identity
     row = lookup.get(base_name)
     if row is None or "YES" not in str(row.get("norm", "")):
         raise ValueError(f"Нет разрешённого профиля нормализации для {file_name}")
-    current_base = float(row[f"{bus}Ip_base"])
+    current_value = row.get(f"{bus}Ip_base")
+    if current_value in (None, ""):
+        raise ValueError(f"Не задан Ip_base для {file_name}")
+    current_base = float(current_value)
+    if voltage_source == "NONE":
+        # Нулевой массив напряжений не меняется при делении. Единичный делитель
+        # явно показывает в отчёте, что паспортное U не применялось.
+        return 20.0 * current_base, 1.0
     voltage_key = f"{bus}{'Ub' if voltage_source == 'BB' else 'Uc'}_base"
-    voltage_base = float(row[voltage_key])
+    voltage_value = row.get(voltage_key)
+    if voltage_value in (None, ""):
+        raise ValueError(f"Не задан {voltage_key} для {file_name}")
+    voltage_base = float(voltage_value)
     return 20.0 * current_base, 3.0 * voltage_base
 
 
@@ -537,24 +563,40 @@ def plot_real_dataset(config: dict, model, model_config: dict, device: torch.dev
     if config["max_real_files"] is not None:
         groups = groups[:config["max_real_files"]]
     summary_rows: list[dict] = []
+    skipped_rows: list[dict] = []
     for group in tqdm(groups, desc="Real oscillograms", dynamic_ncols=True):
         file_name = str(group["file_name"][0])
-        currents = group.select(["IA", "IB", "IC"]).fill_null(0.0).to_numpy().astype(np.float32)
-        bb = group.select(["UA BB", "UB BB", "UC BB"])
-        if bb.null_count().to_numpy().sum() < bb.height * 3:
+        if parse_real_file_identity(file_name) is None:
+            reason = "не фазовая запись Bus N; отсутствует паспортный профиль"
+            tqdm.write(f"Пропуск {file_name!r}: {reason}.")
+            skipped_rows.append({"file_name": file_name, "reason": reason})
+            continue
+        currents = group.select(["IA", "IB", "IC"]).to_numpy().astype(np.float32)
+        currents = np.nan_to_num(currents, nan=0.0, posinf=0.0, neginf=0.0)
+        bb = group.select(["UA BB", "UB BB", "UC BB"]).to_numpy().astype(np.float32)
+        cl = group.select(["UA CL", "UB CL", "UC CL"]).to_numpy().astype(np.float32)
+        bb_finite = int(np.isfinite(bb).sum())
+        cl_finite = int(np.isfinite(cl).sum())
+        if bb_finite > 0 and bb_finite >= cl_finite:
             voltage_source = "BB"
-            voltages = bb.fill_null(0.0).to_numpy().astype(np.float32)
-        else:
+            voltages = bb
+        elif cl_finite > 0:
             voltage_source = "CL"
-            voltages = group.select(["UA CL", "UB CL", "UC CL"]).fill_null(0.0).to_numpy().astype(np.float32)
+            voltages = cl
+        else:
+            voltage_source = "NONE"
+            voltages = np.zeros_like(currents)
+        voltages = np.nan_to_num(voltages, nan=0.0, posinf=0.0, neginf=0.0)
         try:
             current_divisor, voltage_divisor = real_normalization_profile(
                 file_name, normalization, voltage_source=voltage_source,
             )
         except (ValueError, TypeError, KeyError) as error:
-            if config.get("strict_real_normalization", True):
-                raise
-            print(f"  Пропуск {file_name}: {error}")
+            # Строгий режим запрещает лишь обработку в неподтверждённом масштабе:
+            # проблемный файл пропускается, но многосотенный пакет не обрывается.
+            reason = str(error)
+            tqdm.write(f"Пропуск {file_name!r}: {reason}.")
+            skipped_rows.append({"file_name": file_name, "reason": reason})
             continue
         normalized_currents = currents / current_divisor
         normalized_voltages = voltages / voltage_divisor
@@ -587,6 +629,10 @@ def plot_real_dataset(config: dict, model, model_config: dict, device: torch.dev
         writer = csv.DictWriter(stream, fieldnames=list(summary_rows[0].keys()) if summary_rows else ["file_name"])
         writer.writeheader()
         writer.writerows(summary_rows)
+    with (output_dir / "real_skipped.csv").open("w", encoding="utf-8-sig", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=["file_name", "reason"])
+        writer.writeheader()
+        writer.writerows(skipped_rows)
 
 
 def write_report(config: dict, simulated: dict | None, transfer: dict | None) -> None:

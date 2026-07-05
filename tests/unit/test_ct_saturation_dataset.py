@@ -13,7 +13,10 @@ from osc_tools.ml.ct_saturation_dataset import (
     load_ct_saturation_mat,
 )
 from scripts.phase4_experiments.ct_saturation.analyze_ct_saturation import binary_metrics, load_model
-from scripts.phase4_experiments.ct_saturation.analyze_ct_saturation import real_normalization_profile
+from scripts.phase4_experiments.ct_saturation.analyze_ct_saturation import (
+    parse_real_file_identity,
+    real_normalization_profile,
+)
 from scripts.phase4_experiments.ct_saturation.train_ct_saturation import CONFIG, create_ct_model
 
 
@@ -104,6 +107,12 @@ def test_real_normalization_matches_normosc_formulas():
     }
     assert real_normalization_profile("abc_Bus 1", lookup, voltage_source="BB") == (100.0, 300.0)
     assert real_normalization_profile("abc_Bus 1", lookup, voltage_source="CL") == (100.0, 330.0)
+    assert real_normalization_profile(
+        "abc_Bus 1 _event N5", lookup, voltage_source="BB",
+    ) == (100.0, 300.0)
+    assert real_normalization_profile("abc_Bus-1", lookup, voltage_source="BB") == (100.0, 300.0)
+    assert real_normalization_profile("abc_Bus 1", lookup, voltage_source="NONE") == (100.0, 1.0)
+    assert parse_real_file_identity("abc_Diff current") is None
 
 
 def test_v2_models_preserve_main_ozz_transformer_depth_and_output_grid():
