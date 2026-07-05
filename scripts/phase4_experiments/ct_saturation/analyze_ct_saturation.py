@@ -733,13 +733,13 @@ if __name__ == "__main__":
 
     # Части анализа. Реальные рисунки можно включить отдельным вторым запуском.
     # симулированные
-    DO_SIMULATED = True
-    DO_PHASE_TRANSFER = True
-    DO_REAL = False
+    # DO_SIMULATED = True
+    # DO_PHASE_TRANSFER = True
+    # DO_REAL = False
     # реальные
-    # DO_SIMULATED = False
-    # DO_PHASE_TRANSFER = False
-    # DO_REAL = True
+    DO_SIMULATED = False
+    DO_PHASE_TRANSFER = False
+    DO_REAL = True
 
     # None означает полный validation; для первого прогона удобно 1000–3000.
     MAX_SIM_FILES = None
