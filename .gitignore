@@ -4,6 +4,9 @@ _ALL_OSC/
 raw_data/
 data/
 
+# Local closed-source PDR algorithms and private research materials
+private/
+
 # Ignore __pycache__ folder in all subdirectories
 __pycache__/
 
