@@ -1,5 +1,45 @@
 # Журнал работ Phase 5
 
+## 12.07.2026 — Исправление ручных запусков Stage 1
+
+- `prepare_french_rte_npy.py` сделан идемпотентным: существующий NPY сверяется
+  по shape/dtype с архивом и при совпадении возвращается как
+  `reused_existing=true`; ошибкой остаётся только несовместимый файл.
+- Все новые Stage 1 сценарии используют `PROJECT_ROOT`, вычисленный от
+  `__file__`; direct F5 больше не требует вручную задавать cwd или `PYTHONPATH`.
+- Реально выполнен direct-script smoke из `scripts/phase5_experiments`:
+  повторный French extraction, French mmap scan на одной записи и Open_EE smoke
+  на всех 18 CSV. Все три команды завершились с кодом 0.
+
+## 12.07.2026 — Ручной запуск Stage 1 через F5
+
+- Во все длительные сценарии Stage 1 добавлены явные блоки ручного запуска
+  через F5: `scan_french_dataset.py`, `scan_open_ee_dataset.py` и
+  `build_real_ozz_exclusion.py`. CLI остаётся доступным при передаче аргументов.
+- Для French в `run_manual()` уже указан извлечённый
+  `data/phase5/french_rte/DATA_S.npy`; `MAX_RECORDS = None` запускает полный
+  RMS-проход, а значение `100` позволяет сначала проверить окружение.
+- Реально проверено: CLI French scan с `--max-records 1` открыл извлечённый NPY
+  через mmap и сформировал корректный отчёт без материализации всего массива.
+
+## 12.07.2026 — Подготовка French random-access и real_OZZ exclusion
+
+- Исследователь разрешил разовое извлечение French `DATA_S.npy` (~12,15 ГБ).
+  Реализован `scripts/phase5_experiments/prepare_french_rte_npy.py`: он сохраняет
+  архив неизменным, проверяет свободное место, извлекает member во временный файл,
+  валидирует shape/dtype через mmap и записывает `preparation_manifest.json`.
+- Полный extraction не завершён в sandbox: каждый terminal-вызов принудительно
+  ограничен 60 секундами, а распаковка занимает больше. Сценарий готов для
+  ручного запуска; исходный архив не был изменён.
+- Реализован `scripts/phase5_experiments/build_real_ozz_exclusion.py` и unit-test:
+  файл `real_ozz_exclusion.json` фиксирует exact/soft/ambiguous совпадения, а
+  `open_ee_real_no_ozz_index.json` исключает только подтверждённые совпадения.
+- `osc_tools/ml/__init__.py` переведён на ленивые legacy exports. Это устраняет
+  неявное требование PyTorch при CPU-only сканировании/подготовке Phase 5.
+  Реальный smoke `scan_open_ee_dataset.py --smoke` снова прочитал все 18 CSV.
+- В актуальный план внесены статусы French extraction, real_OZZ exclusion и
+  первой стадии French storage benchmark.
+
 ## 12.07.2026 — Синхронизация плана и handoff-документов с фактическим прогрессом
 
 - `PHASE_5_PLAN.md`, `PHASE_5_START_PROMPT.md` и исследовательская выжимка

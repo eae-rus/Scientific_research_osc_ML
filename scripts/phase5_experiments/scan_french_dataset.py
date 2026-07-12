@@ -6,7 +6,13 @@ import argparse
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import sys
 import zipfile
+
+# При F5 VS Code может назначить cwd каталогом самого скрипта.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 import numpy as np
 from numpy.lib import format as npy_format
@@ -104,10 +110,10 @@ def build_report(npz_path: Path, extracted_npy: Path | None = None, max_records:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--npz", type=Path, default=Path("data/digital-fault-recording-database/DATA_S.npz"))
+    parser.add_argument("--npz", type=Path, default=PROJECT_ROOT / "data/digital-fault-recording-database/DATA_S.npz")
     parser.add_argument("--extracted-npy", type=Path)
     parser.add_argument("--max-records", type=int)
-    parser.add_argument("--json", type=Path, default=Path("data/digital-fault-recording-database/french_scan.json"))
+    parser.add_argument("--json", type=Path, default=PROJECT_ROOT / "data/digital-fault-recording-database/french_scan.json")
     args = parser.parse_args()
     report = build_report(args.npz, args.extracted_npy, args.max_records)
     args.json.parent.mkdir(parents=True, exist_ok=True)
@@ -116,5 +122,28 @@ def main() -> int:
     return 0
 
 
+def run_manual() -> None:
+    """Ручной запуск через F5: параметры редактируются только в этом блоке."""
+
+    # =================================================================
+    # РЕЖИМ РУЧНОГО ЗАПУСКА F5 (VS Code / PyCharm)
+    # Для CLI: python -m scripts.phase5_experiments.scan_french_dataset
+    #          --extracted-npy data/phase5/french_rte/DATA_S.npy
+    # =================================================================
+    SOURCE_NPZ = PROJECT_ROOT / "data/digital-fault-recording-database/DATA_S.npz"
+    EXTRACTED_NPY = PROJECT_ROOT / "data/phase5/french_rte/DATA_S.npy"
+    OUTPUT_JSON = PROJECT_ROOT / "data/digital-fault-recording-database/french_scan.json"
+    # None = все 12053 записей. Для первой короткой проверки: 100.
+    MAX_RECORDS: int | None = None
+
+    report = build_report(SOURCE_NPZ, EXTRACTED_NPY, MAX_RECORDS)
+    OUTPUT_JSON.parent.mkdir(parents=True, exist_ok=True)
+    OUTPUT_JSON.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(json.dumps(report["container"], ensure_ascii=False, indent=2))
+    print(f"RMS рассчитан для записей: {report['rms_scan']['records_scanned']}")
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    if len(sys.argv) > 1:
+        raise SystemExit(main())
+    run_manual()

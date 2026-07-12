@@ -11,7 +11,13 @@ import math
 from pathlib import Path
 import random
 import re
+import sys
 from typing import Iterable
+
+# Поддерживаем прямой F5 независимо от cwd, заданного IDE.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from osc_tools.ml.phase5_contracts import TimebaseContract, available_harmonics
 
@@ -198,9 +204,9 @@ def write_report(report: dict[str, object], json_path: Path, markdown_path: Path
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dataset-dir", type=Path, default=Path("data/Open_EE_Dataset_v1_3_osc_CSV"))
-    parser.add_argument("--json", type=Path, default=Path("data/Open_EE_Dataset_v1_3_osc_CSV/open_ee_scan.json"))
-    parser.add_argument("--markdown", type=Path, default=Path("reports/phase5/open_ee_scan.md"))
+    parser.add_argument("--dataset-dir", type=Path, default=PROJECT_ROOT / "data/Open_EE_Dataset_v1_3_osc_CSV")
+    parser.add_argument("--json", type=Path, default=PROJECT_ROOT / "data/Open_EE_Dataset_v1_3_osc_CSV/open_ee_scan.json")
+    parser.add_argument("--markdown", type=Path, default=PROJECT_ROOT / "reports/phase5/open_ee_scan.md")
     parser.add_argument("--max-rows-per-file", type=int, default=None)
     parser.add_argument("--reservoir-size", type=int, default=20_000)
     parser.add_argument("--smoke", action="store_true", help="Прочитать не более 1000 строк каждого файла")
@@ -216,5 +222,26 @@ def main(argv: Iterable[str] | None = None) -> int:
     return 0
 
 
+def run_manual() -> None:
+    """Ручной запуск полного/ограниченного Open_EE scan через F5."""
+
+    # =================================================================
+    # РЕЖИМ РУЧНОГО ЗАПУСКА F5
+    # Для CLI: python -m scripts.phase5_experiments.scan_open_ee_dataset
+    # =================================================================
+    DATASET_DIR = PROJECT_ROOT / "data/Open_EE_Dataset_v1_3_osc_CSV"
+    OUTPUT_JSON = DATASET_DIR / "open_ee_scan.json"
+    OUTPUT_MARKDOWN = PROJECT_ROOT / "reports/phase5/open_ee_scan.md"
+    # None = полный проход; 1000 = короткая проверка каждого CSV.
+    MAX_ROWS_PER_FILE: int | None = None
+    RESERVOIR_SIZE = 20_000
+
+    report = scan_dataset(DATASET_DIR, MAX_ROWS_PER_FILE, RESERVOIR_SIZE)
+    write_report(report, OUTPUT_JSON, OUTPUT_MARKDOWN)
+    print(f"Просканировано файлов: {report['file_count']}; полный проход: {report['scan_complete']}")
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    if len(sys.argv) > 1:
+        raise SystemExit(main())
+    run_manual()
