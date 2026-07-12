@@ -12,7 +12,13 @@ import zipfile
 import numpy as np
 from numpy.lib import format as npy_format
 
+import sys
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from scripts.phase5_experiments.progress import ProgressReporter
 
 def inspect_npz(path: Path) -> dict[str, object]:
     """Прочитать metadata единственного NPY member без импорта ML-пакета."""
@@ -86,7 +92,13 @@ def extract_npy(source_npz: Path, destination: Path, overwrite: bool = False) ->
         ) as temporary:
             temporary_path = Path(temporary.name)
             with archive.open(member) as compressed:
-                shutil.copyfileobj(compressed, temporary, length=8 * 1024 * 1024)
+                progress = ProgressReporter("French/RTE extraction", required)
+                copied = 0
+                while chunk := compressed.read(8 * 1024 * 1024):
+                    temporary.write(chunk)
+                    copied += len(chunk)
+                    progress.update(copied)
+                progress.finish()
         try:
             shutil.copystat(source_npz, temporary_path, follow_symlinks=True)
             loaded = np.load(temporary_path, mmap_mode="r", allow_pickle=False)

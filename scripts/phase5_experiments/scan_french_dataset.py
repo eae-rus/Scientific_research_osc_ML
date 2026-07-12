@@ -18,6 +18,7 @@ import numpy as np
 from numpy.lib import format as npy_format
 
 from osc_tools.ml.phase5_contracts import TimebaseContract
+from scripts.phase5_experiments.progress import ProgressReporter
 
 
 def inspect_npz(path: Path) -> dict[str, object]:
@@ -70,11 +71,14 @@ def scan_npy_rms(
     period_count = data.shape[2] // spp
     collected: list[np.ndarray] = []
     scales = np.asarray([quant_voltage] * 3 + [quant_current] * 3, dtype=np.float64)
+    progress = ProgressReporter("French/RTE RMS", count)
     for start in range(0, count, batch_records):
         chunk = np.asarray(data[start:min(start + batch_records, count), :, :period_count * spp])
         chunk = chunk.reshape(chunk.shape[0], 6, period_count, spp)
         rms = np.sqrt(np.mean(np.square(chunk, dtype=np.float64), axis=-1))
         collected.append(rms * scales[None, :, None])
+        progress.update(min(start + batch_records, count))
+    progress.finish()
     values = np.concatenate(collected, axis=(0)) if collected else np.empty((0, 6, period_count))
     quantiles = (0.1, 0.2, 0.5, 0.9, 0.95, 0.99, 1.0)
     return {
@@ -108,16 +112,56 @@ def build_report(npz_path: Path, extracted_npy: Path | None = None, max_records:
     return report
 
 
+def render_markdown(report: dict[str, object]) -> str:
+    """Сформировать заметку для решения исследователя о нормировке тока."""
+
+    lines = [
+        "# French/RTE: статистика RMS",
+        "",
+        f"Записей обработано: {report.get('rms_scan', {}).get('records_scanned', 0)}.",
+        "Статистика рассчитана по всем полным периодам записи; спокойный доаварийный "
+        "участок пока не выделялся.",
+        "",
+    ]
+    if "rms_scan" in report:
+        rms = report["rms_scan"]
+        lines.extend(["| Канал | 10% | 50% | 90% | 95% | 99% | max |", "|---|---:|---:|---:|---:|---:|---:|"])
+        for index, unit in enumerate(rms["units"]):
+            values = rms["period_rms_quantiles"][f"channel_{index}"]
+            lines.append(
+                f"| {report['channel_order_source'][index]} ({unit}) | "
+                f"{values['0.1']:.3f} | {values['0.5']:.3f} | {values['0.9']:.3f} | "
+                f"{values['0.95']:.3f} | {values['0.99']:.3f} | {values['1.0']:.3f} |"
+            )
+    lines.extend([
+        "",
+        "**Интерпретация:** напряжение можно нормировать только по заранее заданному "
+        "номиналу 90 кВ и reserve=3. Номинал тока из квантилей автоматически не "
+        "выбирается: `current_nominal_a` остаётся исследовательским решением.",
+        "",
+    ])
+    return "\n".join(lines)
+
+
+def write_report(report: dict[str, object], json_path: Path, markdown_path: Path) -> None:
+    """Сохранить машинный отчёт и исследовательскую заметку."""
+
+    json_path.parent.mkdir(parents=True, exist_ok=True)
+    markdown_path.parent.mkdir(parents=True, exist_ok=True)
+    json_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    markdown_path.write_text(render_markdown(report), encoding="utf-8")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--npz", type=Path, default=PROJECT_ROOT / "data/digital-fault-recording-database/DATA_S.npz")
     parser.add_argument("--extracted-npy", type=Path)
     parser.add_argument("--max-records", type=int)
     parser.add_argument("--json", type=Path, default=PROJECT_ROOT / "data/digital-fault-recording-database/french_scan.json")
+    parser.add_argument("--markdown", type=Path, default=PROJECT_ROOT / "reports/phase5/french_normalization_notes.md")
     args = parser.parse_args()
     report = build_report(args.npz, args.extracted_npy, args.max_records)
-    args.json.parent.mkdir(parents=True, exist_ok=True)
-    args.json.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_report(report, args.json, args.markdown)
     print(json.dumps(report["container"], ensure_ascii=False, indent=2))
     return 0
 
@@ -133,12 +177,12 @@ def run_manual() -> None:
     SOURCE_NPZ = PROJECT_ROOT / "data/digital-fault-recording-database/DATA_S.npz"
     EXTRACTED_NPY = PROJECT_ROOT / "data/phase5/french_rte/DATA_S.npy"
     OUTPUT_JSON = PROJECT_ROOT / "data/digital-fault-recording-database/french_scan.json"
+    OUTPUT_MARKDOWN = PROJECT_ROOT / "reports/phase5/french_normalization_notes.md"
     # None = все 12053 записей. Для первой короткой проверки: 100.
     MAX_RECORDS: int | None = None
 
     report = build_report(SOURCE_NPZ, EXTRACTED_NPY, MAX_RECORDS)
-    OUTPUT_JSON.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_JSON.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_report(report, OUTPUT_JSON, OUTPUT_MARKDOWN)
     print(json.dumps(report["container"], ensure_ascii=False, indent=2))
     print(f"RMS рассчитан для записей: {report['rms_scan']['records_scanned']}")
 

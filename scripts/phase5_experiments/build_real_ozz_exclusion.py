@@ -12,6 +12,11 @@ from typing import Iterable
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from scripts.phase5_experiments.progress import ProgressReporter
+
 def _normalise(value: str) -> str:
     """Нормализовать идентификатор, не меняя его семантику."""
 
@@ -53,10 +58,15 @@ def build_index(open_ee_dir: Path, report_path: Path) -> dict[str, object]:
 
     entries: list[dict[str, object]] = []
     seen: set[tuple[str, str]] = set()
-    for csv_path in sorted(open_ee_dir.glob("unlabeled_*.csv")):
+    paths = sorted(open_ee_dir.glob("unlabeled_*.csv"))
+    progress = ProgressReporter("real_OZZ exclusion", sum(path.stat().st_size for path in paths))
+    completed_bytes = 0
+    for csv_path in paths:
+        row_count = 0
         with csv_path.open("r", encoding="utf-8-sig", newline="") as stream:
             reader = csv.DictReader(stream)
             for row in reader:
+                row_count += 1
                 file_name = (row.get("file_name") or "").strip()
                 key = (csv_path.name, file_name)
                 if not file_name or key in seen:
@@ -73,6 +83,11 @@ def build_index(open_ee_dir: Path, report_path: Path) -> dict[str, object]:
                         "split_group": f"open_ee:{csv_path.name}:{file_name}",
                     }
                 )
+                if row_count % 100_000 == 0:
+                    progress.update(completed_bytes + min(csv_path.stat().st_size, stream.buffer.tell()))
+        completed_bytes += csv_path.stat().st_size
+        progress.update(completed_bytes)
+    progress.finish()
 
     excluded = [item for item in entries if item["is_known_real_ozz"]]
     ambiguous = [item for item in entries if item["match_type"] == "ambiguous"]

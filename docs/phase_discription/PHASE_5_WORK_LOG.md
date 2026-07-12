@@ -1,5 +1,19 @@
 # Журнал работ Phase 5
 
+## 12.07.2026 — Завершён French RMS scan и добавлен прогресс длительных задач
+
+- Полный mmap-проход French `DATA_S.npy` выполнен агентом: 12053 записи,
+  164 полных периода на запись. Результаты сохранены в
+  `data/digital-fault-recording-database/french_scan.json` и
+  `reports/phase5/french_normalization_notes.md`.
+- Добавлен dependency-free индикатор `scripts/phase5_experiments/progress.py`.
+  French показывает прогресс по записям, Open_EE и real_OZZ exclusion — по
+  байтам при полном проходе и по числу файлов в smoke-режиме, extraction — по
+  распакованным байтам. Отображаются процент и ETA.
+- Реально проверены French full scan с прогрессом и Open_EE smoke с корректным
+  file-level прогрессом. Номинал French current по-прежнему не выбран
+  автоматически.
+
 ## 12.07.2026 — Исправление ручных запусков Stage 1
 
 - `prepare_french_rte_npy.py` сделан идемпотентным: существующий NPY сверяется

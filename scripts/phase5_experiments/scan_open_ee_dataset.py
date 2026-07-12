@@ -20,6 +20,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from osc_tools.ml.phase5_contracts import TimebaseContract, available_harmonics
+from scripts.phase5_experiments.progress import ProgressReporter
 
 
 FILE_PATTERN = re.compile(r"^unlabeled_(?P<network>\d+)_(?P<sampling>\d+)\.csv$")
@@ -105,6 +106,9 @@ def scan_csv(
     path: Path,
     max_rows: int | None = None,
     reservoir_size: int = 20_000,
+    progress: ProgressReporter | None = None,
+    completed_before: int = 0,
+    byte_progress: bool = True,
 ) -> dict[str, object]:
     """Просканировать один CSV последовательно, сохранив только агрегаты."""
 
@@ -130,6 +134,11 @@ def scan_csv(
                 lengths[file_name] = lengths.get(file_name, 0) + 1
             for column, accumulator in stats.items():
                 accumulator.update(row.get(column))
+            if progress is not None and byte_progress and row_count % 100_000 == 0:
+                progress.update(completed_before + min(path.stat().st_size, stream.buffer.tell()))
+
+    if progress is not None and byte_progress:
+        progress.update(completed_before + path.stat().st_size)
 
     length_values = sorted(lengths.values())
     return {
@@ -164,7 +173,17 @@ def scan_dataset(
     paths = sorted(dataset_dir.glob("unlabeled_*.csv"))
     if not paths:
         raise FileNotFoundError(f"В {dataset_dir} не найдены unlabeled_*.csv")
-    files = [scan_csv(path, max_rows_per_file, reservoir_size) for path in paths]
+    byte_progress = max_rows_per_file is None
+    total_work = sum(path.stat().st_size for path in paths) if byte_progress else len(paths)
+    progress = ProgressReporter("Open_EE scan", total_work)
+    files = []
+    completed_bytes = 0
+    for index, path in enumerate(paths, start=1):
+        files.append(scan_csv(path, max_rows_per_file, reservoir_size, progress, completed_bytes, byte_progress))
+        completed_bytes += path.stat().st_size
+        if not byte_progress:
+            progress.update(index)
+    progress.finish()
     return {
         "schema_version": 1,
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
