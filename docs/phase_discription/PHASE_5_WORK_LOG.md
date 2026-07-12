@@ -1,5 +1,18 @@
 # Журнал работ Phase 5
 
+## 12.07.2026 — Синхронизация плана и handoff-документов с фактическим прогрессом
+
+- `PHASE_5_PLAN.md`, `PHASE_5_START_PROMPT.md` и исследовательская выжимка
+  синхронизированы с уже реализованными контрактами/сканерами и результатами
+  от 08.07.2026; исправлен путь summary после переноса в `docs/article/`.
+- В план внесён подтверждённый формат French `DATA_S.npz`: deflate-сжатый
+  `float64`, около 2,046 ГБ в архиве и 12,149 ГБ после extraction; прямой mmap
+  сжатого member невозможен. Разделены source archive и prepared training data.
+- Для научной оценки разделены протоколы `research_strict` (never-seen file-level
+  holdout до SSL) и `full_archive` (финальный рабочий backbone без претензии на
+  независимый transfer test).
+- Код не изменялся; выполнена структурная проверка Markdown и `git diff --check`.
+
 ## 08.07.2026 — Потоковые сканеры Open_EE и French/RTE
 
 ### Выполнено
