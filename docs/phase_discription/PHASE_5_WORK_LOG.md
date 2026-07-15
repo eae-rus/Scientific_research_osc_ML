@@ -1,5 +1,16 @@
 # Журнал работ Phase 5
 
+## 15.07.2026 — Подтверждён формат Open_EE shard и resume
+
+- На 1000 одинаковых Open_EE записей (10 shards по 100) проведён benchmark:
+  uncompressed — 10320.4 records/s и 133.22 MiB; compressed — 2587.5 records/s
+  и 52.47 MiB. Для основной подготовки выбран uncompressed `.npz` layout.
+- Sandbox оборвал создание compressed prototype после 700 записей. В ответ
+  `prepare_open_ee_shards.py` дополнен resume: готовые shards читаются и
+  валидно переиспользуются, а CSV перечитывается только для продолжения
+  детерминированного порядка. Реальный restart достроил оставшиеся 300 записей.
+- Результат сохранён в `reports/phase5/storage_benchmark_1000.json`.
+
 ## 12.07.2026 — Open_EE shard prototype и I/O benchmark
 
 - По полному `open_ee_scan.json` проверено покрытие: 44755 из 44773 записей

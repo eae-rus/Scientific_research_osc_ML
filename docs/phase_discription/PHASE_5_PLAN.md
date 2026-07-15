@@ -394,6 +394,12 @@ sharded/chunked формата отложен до измерения real-disk 
 Это поддерживает uncompressed как стартовую гипотезу для training shards, но
 не является окончательным выбором до benchmark крупного поднабора.
 
+**Подтверждение 15.07.2026:** benchmark на 1000 одинаковых записях и 10 shards
+подтвердил решение: uncompressed 10320 records/s при 133.22 MiB, compressed
+2588 records/s при 52.47 MiB. Для Phase 5 выбран uncompressed layout по 100
+осциллограмм на shard. `prepare_open_ee_shards.py` умеет продолжить оборванный
+запуск, переиспользуя проверенные уже записанные shards.
+
 ### 6.2. Open_EE shards
 
 Скрипт: `scripts/phase5_experiments/prepare_open_ee_shards.py`

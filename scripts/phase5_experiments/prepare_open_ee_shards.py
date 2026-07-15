@@ -73,7 +73,7 @@ def write_shard(records: list[dict[str, object]], path: Path, compressed: bool) 
 
 def prepare_shards(
     source_dir: Path, output_dir: Path, shard_records: int = 100,
-    max_records: int | None = None, compressed: bool = False,
+    max_records: int | None = None, compressed: bool = False, resume: bool = True,
 ) -> dict[str, object]:
     """Создать shards; ``max_records`` предназначен для обязательного benchmark prototype."""
 
@@ -85,12 +85,27 @@ def prepare_shards(
     progress = ProgressReporter("Open_EE shards", target)
     buffer: list[dict[str, object]] = []
     entries: list[dict[str, object]] = []
-    written = 0
-    shard_index = 0
+    existing_shards = sorted(output_dir.glob("open_ee_*.npz")) if resume else []
+    for shard_path in existing_shards:
+        with np.load(shard_path, allow_pickle=False) as shard:
+            loaded_entries = json.loads(str(shard["metadata_json"].item()))
+        entries.extend(entry | {"shard_path": str(shard_path.relative_to(output_dir.parent))} for entry in loaded_entries)
+    written = len(entries)
+    existing_records = written
+    shard_index = len(existing_shards)
+    if written:
+        print(f"Продолжение: найдено готовых записей {written} в {len(existing_shards)} shards")
+        progress.update(min(written, target))
+    seen_records = 0
     for csv_path in paths:
         f_network, f_adc = parse_frequencies(csv_path)
         timebase = TimebaseContract.create(f_adc, f_network)
         for file_name, rows in iter_records(csv_path):
+            seen_records += 1
+            # Готовые shards содержат первые записи в том же детерминированном
+            # порядке. CSV приходится перечитать, но запись повторно не идёт.
+            if seen_records <= existing_records:
+                continue
             adapted = adapt_open_ee_rows(rows)
             buffer.append({
                 "signals": adapted.signals, "provenance": adapted.provenance,
