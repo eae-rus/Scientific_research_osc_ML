@@ -1,5 +1,17 @@
 # Журнал работ Phase 5
 
+## 15.07.2026 — Начат feature contract v2
+
+- Добавлен `osc_tools/ml/spectral_features.py` с изолированным от legacy Phase 4
+  `SpectralFeatureBuilder`, `SpectralFeatureConfig` и `FeatureSchema`.
+  Version A возвращает 220 внешних `magnitude+angle` признаков, Version B — 156
+  самостоятельных symmetric-polar признаков.
+- Builder сохраняет NaN/mask для missing signals и harmonics выше Найквиста:
+  при SPP=12 доступны h1–h6, недоступные h7–h9 маскируются.
+- Smoke на аналитической трёхфазной синусоиде выполнен. В первом запуске
+  обнаружена лишняя symmetric ветвь A для h2–h9 (364 вместо 220 признаков),
+  исправлена до интеграции: symmetric в A остаётся только для h1.
+
 ## 15.07.2026 — Завершена подготовка Open_EE shards
 
 - Ручной full build успешно завершён: 44773 осциллограммы в 448 uncompressed
