@@ -148,9 +148,9 @@ def _manifest(output_dir: Path, entries: list[dict[str, object]], compressed: bo
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-dir", type=Path, default=PROJECT_ROOT / "data/Open_EE_Dataset_v1_3_osc_CSV")
-    parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "data/phase5/open_ee_shards_prototype")
+    parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "data/phase5/open_ee_shards")
     parser.add_argument("--shard-records", type=int, default=100)
-    parser.add_argument("--max-records", type=int, default=200)
+    parser.add_argument("--max-records", type=int, default=None)
     parser.add_argument("--compressed", action="store_true")
     args = parser.parse_args()
     result = prepare_shards(args.source_dir, args.output_dir, args.shard_records, args.max_records, args.compressed)
@@ -158,5 +158,26 @@ def main() -> int:
     return 0
 
 
+def run_manual() -> None:
+    """Полная подготовка Open_EE через F5; можно безопасно перезапускать."""
+
+    # =================================================================
+    # РЕЖИМ РУЧНОГО ЗАПУСКА F5
+    # None = все 44773 записи. Для промежуточной волны задайте, например, 5000.
+    # Повторный запуск продолжает от готовых shard-ов с начала CSV порядка.
+    # =================================================================
+    SOURCE_DIR = PROJECT_ROOT / "data/Open_EE_Dataset_v1_3_osc_CSV"
+    OUTPUT_DIR = PROJECT_ROOT / "data/phase5/open_ee_shards"
+    SHARD_RECORDS = 100
+    MAX_RECORDS: int | None = None
+    COMPRESSED = False
+
+    result = prepare_shards(SOURCE_DIR, OUTPUT_DIR, SHARD_RECORDS, MAX_RECORDS, COMPRESSED)
+    print(f"Подготовлено записей: {len(result['records'])}; shards: {len(list(OUTPUT_DIR.glob('*.npz')))}")
+
+
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1:
+        main()
+    else:
+        run_manual()

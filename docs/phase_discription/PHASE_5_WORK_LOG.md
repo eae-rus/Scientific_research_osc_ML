@@ -1,5 +1,16 @@
 # Журнал работ Phase 5
 
+## 15.07.2026 — Lazy multi-dataset и подготовка полного Open_EE build
+
+- Добавлен `osc_tools/ml/lazy_multi_dataset.py`: deterministic epoch/index
+  sampling источников, выбор целой осциллограммы и 10-period raw window.
+  Spectral builder намеренно остаётся отдельным следующим слоем.
+- Реальный smoke на Open_EE/French readers вернул `(8, 200)` окно с SPP=20 и
+  metadata source/record/window. French использует утверждённый per-unit profile.
+- `prepare_open_ee_shards.py` получил F5 mode для полного uncompressed build в
+  `data/phase5/open_ee_shards`, shard=100, `MAX_RECORDS=None` и resume.
+  Полный build ожидает ручного длительного запуска.
+
 ## 15.07.2026 — Зафиксирована French/RTE нормировка
 
 - Исследователь подтвердил engineering contract French/RTE:
