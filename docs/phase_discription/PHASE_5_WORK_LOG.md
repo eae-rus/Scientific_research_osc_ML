@@ -1,5 +1,18 @@
 # Журнал работ Phase 5
 
+## 15.07.2026 — Dataset registry и базовые lazy sources
+
+- Созданы `osc_tools/ml/dataset_registry.py`, расширенный
+  `osc_tools/ml/phase5_sources.py` и `data/phase5/datasets_registry.json`.
+  Registry различает archive и prepared French source, а также не разрешает
+  случайно использовать French в SSL как нормированный без `current_nominal_a`.
+- `OpenEEShardedSource` реализует ограниченный LRU-кэш открытых shards;
+  `FrenchRTESource` читает `.npy` через mmap и заполняет `IN/UN` как NaN.
+- Реально проверено: Open_EE prototype source вернул `(8, 7001)`, French source
+  — `(8, 21000)` float32 в physical units.
+- Удалены временные 10-record prototype shards и smoke JSON. Сохранены 1000-record
+  benchmark shards как компактный реальный fixture следующего lazy-dataset этапа.
+
 ## 15.07.2026 — Подтверждён формат Open_EE shard и resume
 
 - На 1000 одинаковых Open_EE записей (10 shards по 100) проведён benchmark:

@@ -529,6 +529,13 @@ class DatasetSource:
 - `FrenchRTESource`;
 - позже `ComtradeSource`, `SimOZZSource`, другие.
 
+**Статус 15.07.2026:** реализованы `DatasetSource`, `OpenEEShardedSource`,
+`FrenchRTESource` и versioned `dataset_registry.py`. Open_EE reader использует
+LRU открытых shards и возвращает `(8, n_samples)` float32; French reader требует
+подготовленный `.npy`, возвращает physical units при `current_nominal_a=null` и
+отказывается выдавать его за нормированный источник. Реальный smoke прочитал
+Open_EE `(8, 7001)` и French `(8, 21000)`.
+
 ### 7.2. Выборка
 
 Алгоритм `__getitem__` для SSL:

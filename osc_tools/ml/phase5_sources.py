@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections import OrderedDict
+from abc import ABC, abstractmethod
+import json
+from pathlib import Path
 from typing import Mapping, Sequence
 
 import numpy as np
@@ -26,6 +30,107 @@ class AdaptedOpenEERecord:
     provenance: np.ndarray
     voltage_basis: str
     source_columns: tuple[str | None, ...]
+
+
+class DatasetSource(ABC):
+    """Общий read-only API реального источника Phase 5."""
+
+    name: str
+    channel_order = CHANNEL_ORDER
+
+    @abstractmethod
+    def __len__(self) -> int: ...
+
+    @abstractmethod
+    def get_metadata(self, idx: int) -> dict[str, object]: ...
+
+    @abstractmethod
+    def load_signal(self, idx: int) -> np.ndarray: ...
+
+
+class OpenEEShardedSource(DatasetSource):
+    """Lazy reader flat Open_EE shards с ограниченным LRU-кэшем открытых ZIP."""
+
+    name = "open_ee"
+
+    def __init__(self, manifest_path: Path, max_cached_shards: int = 2) -> None:
+        self.manifest_path = Path(manifest_path)
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        if manifest.get("kind") != "open_ee_sharded":
+            raise ValueError("Manifest не является open_ee_sharded")
+        self.entries: list[dict[str, object]] = manifest["records"]
+        self.root = self.manifest_path.parent.parent
+        self.max_cached_shards = max_cached_shards
+        self._cache: OrderedDict[Path, object] = OrderedDict()
+        self.cache_hits = 0
+        self.cache_misses = 0
+
+    def __len__(self) -> int:
+        return len(self.entries)
+
+    def get_metadata(self, idx: int) -> dict[str, object]:
+        return dict(self.entries[idx])
+
+    def _shard(self, relative_path: str) -> object:
+        path = self.root / relative_path
+        cached = self._cache.pop(path, None)
+        if cached is not None:
+            self.cache_hits += 1
+            self._cache[path] = cached
+            return cached
+        self.cache_misses += 1
+        loaded = np.load(path, allow_pickle=False)
+        self._cache[path] = loaded
+        while len(self._cache) > self.max_cached_shards:
+            _, stale = self._cache.popitem(last=False)
+            stale.close()
+        return loaded
+
+    def load_signal(self, idx: int) -> np.ndarray:
+        entry = self.entries[idx]
+        shard = self._shard(str(entry["shard_path"]))
+        offsets = shard["offsets"]
+        local_index = int(entry["local_index"])
+        signal = shard["signals"][int(offsets[local_index]):int(offsets[local_index + 1])]
+        return np.asarray(signal, dtype=np.float32).T
+
+    def close(self) -> None:
+        for shard in self._cache.values():
+            shard.close()
+        self._cache.clear()
+
+
+class FrenchRTESource(DatasetSource):
+    """Lazy mmap reader French/RTE; без тока per-unit источник не считается нормированным."""
+
+    name = "french_rte"
+
+    def __init__(self, prepared_path: Path, current_nominal_a: float | None = None) -> None:
+        self.prepared_path = Path(prepared_path)
+        if self.prepared_path.suffix != ".npy" or not self.prepared_path.exists():
+            raise FileNotFoundError("French training source требует существующий mmap-доступный .npy")
+        self.data = np.load(self.prepared_path, mmap_mode="r", allow_pickle=False)
+        if self.data.ndim != 3 or self.data.shape[1] != 6:
+            raise ValueError(f"Ожидалась French форма (N, 6, T), получена {self.data.shape}")
+        self.current_nominal_a = current_nominal_a
+
+    def __len__(self) -> int:
+        return int(self.data.shape[0])
+
+    def get_metadata(self, idx: int) -> dict[str, object]:
+        return {"source": self.name, "record_id": idx, "f_network": 50, "f_adc": 6400, "spp": 128,
+                "normalization_profile": "per_unit" if self.current_nominal_a else "physical_units",
+                "channels_available": ["IA", "IB", "IC", "UA", "UB", "UC"]}
+
+    def load_signal(self, idx: int) -> np.ndarray:
+        raw = np.asarray(self.data[idx], dtype=np.float32)
+        out = np.full((8, raw.shape[1]), np.nan, dtype=np.float32)
+        out[4:7] = raw[:3] * 18.310
+        out[:3] = raw[3:] * 4.314
+        if self.current_nominal_a is not None:
+            out[4:7] /= 90000.0 * 3.0
+            out[:3] /= self.current_nominal_a * 20.0
+        return out
 
 
 def adapt_open_ee_rows(rows: Sequence[Mapping[str, str]]) -> AdaptedOpenEERecord:
