@@ -1,5 +1,13 @@
 # Журнал работ Phase 5
 
+## 15.07.2026 — Завершена подготовка Open_EE shards
+
+- Ручной full build успешно завершён: 44773 осциллограммы в 448 uncompressed
+  shards по 100 записей (последний неполный). Manifest содержит SPP/metadata;
+  44755 записей имеют phase voltage basis, 18 — missing basis.
+- `datasets_registry.json` подключён к фактически подготовленному
+  `data/phase5/open_ee_shards`.
+
 ## 15.07.2026 — Lazy multi-dataset и подготовка полного Open_EE build
 
 - Добавлен `osc_tools/ml/lazy_multi_dataset.py`: deterministic epoch/index
