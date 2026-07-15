@@ -1,5 +1,13 @@
 # Журнал работ Phase 5
 
+## 15.07.2026 — Зафиксирована French/RTE нормировка
+
+- Исследователь подтвердил engineering contract French/RTE:
+  `current_nominal_a=300 A`, `current_reserve=20`, `voltage_nominal_v=90000 V`,
+  `voltage_reserve=3`. Registry помечает French как нормированный источник.
+- `FrenchRTESource` применяет `I_pu=I_phys/(300*20)` и
+  `U_pu=U_phys/(90000*3)`; медианный RMS i1 после нормировки равен около 0.0519.
+
 ## 15.07.2026 — Dataset registry и базовые lazy sources
 
 - Созданы `osc_tools/ml/dataset_registry.py`, расширенный

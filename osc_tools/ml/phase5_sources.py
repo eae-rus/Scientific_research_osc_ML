@@ -105,7 +105,7 @@ class FrenchRTESource(DatasetSource):
 
     name = "french_rte"
 
-    def __init__(self, prepared_path: Path, current_nominal_a: float | None = None) -> None:
+    def __init__(self, prepared_path: Path, current_nominal_a: float | None = 300.0) -> None:
         self.prepared_path = Path(prepared_path)
         if self.prepared_path.suffix != ".npy" or not self.prepared_path.exists():
             raise FileNotFoundError("French training source требует существующий mmap-доступный .npy")
@@ -113,6 +113,9 @@ class FrenchRTESource(DatasetSource):
         if self.data.ndim != 3 or self.data.shape[1] != 6:
             raise ValueError(f"Ожидалась French форма (N, 6, T), получена {self.data.shape}")
         self.current_nominal_a = current_nominal_a
+        self.current_reserve = 20.0
+        self.voltage_nominal_v = 90000.0
+        self.voltage_reserve = 3.0
 
     def __len__(self) -> int:
         return int(self.data.shape[0])
@@ -128,8 +131,8 @@ class FrenchRTESource(DatasetSource):
         out[4:7] = raw[:3] * 18.310
         out[:3] = raw[3:] * 4.314
         if self.current_nominal_a is not None:
-            out[4:7] /= 90000.0 * 3.0
-            out[:3] /= self.current_nominal_a * 20.0
+            out[4:7] /= self.voltage_nominal_v * self.voltage_reserve
+            out[:3] /= self.current_nominal_a * self.current_reserve
         return out
 
 

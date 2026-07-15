@@ -338,6 +338,11 @@ Phase 5 + Transformer. Два legacy smoke-модуля не собраны из
 для `v1` и 311.28 А для `i1`; это описательная статистика, не автоматический
 выбор номинала тока.
 
+**Решение исследователя 15.07.2026:** закрепить `current_nominal_a=300 A` и
+`current_reserve=20`, сохранив `voltage_nominal_v=90000 V` и
+`voltage_reserve=3`. French normalisation profile: `I_pu=I_phys/(300*20)`,
+`U_pu=U_phys/(90000*3)`.
+
 ### 5.3. Исключение известных ОЗЗ из Open_EE
 
 Скрипт: `scripts/phase5_experiments/build_real_ozz_exclusion.py`
