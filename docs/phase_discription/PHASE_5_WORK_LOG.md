@@ -1,5 +1,23 @@
 # Журнал работ Phase 5
 
+## 12.07.2026 — Open_EE shard prototype и I/O benchmark
+
+- По полному `open_ee_scan.json` проверено покрытие: 44755 из 44773 записей
+  имеют полный фазный `UA/UB/UC`; только 18 не имеют полного фазного напряжения,
+  и записей с одними полноценными линейными напряжениями нет. Базовая schema не
+  требует line-voltage fallback, но adapter сохраняет `voltage_basis`.
+- Добавлены `osc_tools/ml/phase5_sources.py` и
+  `scripts/phase5_experiments/prepare_open_ee_shards.py`: flat float32 signals
+  + offsets вместо padding, 8 logical channels, NaN для missing, provenance,
+  `source_columns`, SPP и voltage basis.
+- Реальный 10-record prototype успешно собран в два shard-а. Ошибка попытки
+  сериализовать provenance в JSON была обнаружена и исправлена до дальнейшей
+  конвертации.
+- Добавлен `benchmark_phase5_storage.py`; 3-повторный benchmark того же
+  prototype: uncompressed 5045.2 records/s и 1.31 MiB, compressed 1848.5
+  records/s и 0.54 MiB. Результат сохранён в
+  `reports/phase5/storage_benchmark.json`.
+
 ## 12.07.2026 — Завершён French RMS scan и добавлен прогресс длительных задач
 
 - Полный mmap-проход French `DATA_S.npy` выполнен агентом: 12053 записи,

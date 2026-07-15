@@ -387,6 +387,13 @@ matching и ограниченным prefix/containment soft matching. Полн�
 как первая benchmark-стадия (`prepare_french_rte_npy.py`); выбор финального
 sharded/chunked формата отложен до измерения real-disk I/O.
 
+**Статус 12.07.2026 (Open_EE prototype):** реализованы
+`osc_tools/ml/phase5_sources.py`, `prepare_open_ee_shards.py` и
+`benchmark_phase5_storage.py`. На одинаковых 10 записях uncompressed `.npz`
+дал ~5045 records/s при 1.31 MiB, compressed — ~1849 records/s при 0.54 MiB.
+Это поддерживает uncompressed как стартовую гипотезу для training shards, но
+не является окончательным выбором до benchmark крупного поднабора.
+
 ### 6.2. Open_EE shards
 
 Скрипт: `scripts/phase5_experiments/prepare_open_ee_shards.py`
