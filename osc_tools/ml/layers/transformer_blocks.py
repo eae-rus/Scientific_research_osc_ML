@@ -324,6 +324,15 @@ class ComplexInteractionBlock(nn.Module):
 # ComplexMultiheadAttention: MHA для комплексно-структурированного d_model
 # ---------------------------------------------------------------------------
 
+def cyclic_angle_features(angles: torch.Tensor) -> torch.Tensor:
+    """Закодировать углы периодическими признаками ``sin/cos``.
+
+    Такое представление устраняет искусственный разрыв между ``-pi`` и ``pi``
+    перед обучаемыми линейными проекциями. Сырые углы при этом остаются нужны
+    физическим операциям (``torch.polar`` и направленному реле).
+    """
+    return torch.cat([torch.sin(angles), torch.cos(angles)], dim=-1)
+
 class ComplexMultiheadAttention(nn.Module):
     """Multi-Head Attention для полярно-структурированных (amp/angle) представлений.
 
@@ -344,6 +353,8 @@ class ComplexMultiheadAttention(nn.Module):
         d_model: полная размерность (= 2 × d_complex)
         num_heads: число голов (d_model / num_heads должно быть чётным)
         dropout: dropout для attention weights
+        cyclic_angle_encoding: перед линейными Q/K/V-проекциями заменить каждый
+            угол на ``sin/cos``. По умолчанию False для legacy-чекпойнтов.
     """
 
     def __init__(
@@ -351,6 +362,7 @@ class ComplexMultiheadAttention(nn.Module):
         d_model: int,
         num_heads: int,
         dropout: float = 0.1,
+        cyclic_angle_encoding: bool = False,
     ) -> None:
         super().__init__()
         assert d_model % 2 == 0, f"d_model должен быть чётным, получено {d_model}"
@@ -366,14 +378,16 @@ class ComplexMultiheadAttention(nn.Module):
         self.d_complex = d_model // 2
         self.num_heads = num_heads
         self.d_head_complex = self.d_complex // num_heads
+        self.cyclic_angle_encoding = cyclic_angle_encoding
+        angle_input_dim = self.d_complex * (2 if cyclic_angle_encoding else 1)
 
         # Раздельные проекции Q, K, V для amp и angle компонент
         self.W_Q_amp = nn.Linear(self.d_complex, self.d_complex, bias=False)
-        self.W_Q_angle = nn.Linear(self.d_complex, self.d_complex, bias=False)
+        self.W_Q_angle = nn.Linear(angle_input_dim, self.d_complex, bias=False)
         self.W_K_amp = nn.Linear(self.d_complex, self.d_complex, bias=False)
-        self.W_K_angle = nn.Linear(self.d_complex, self.d_complex, bias=False)
+        self.W_K_angle = nn.Linear(angle_input_dim, self.d_complex, bias=False)
         self.W_V_amp = nn.Linear(self.d_complex, self.d_complex, bias=False)
-        self.W_V_angle = nn.Linear(self.d_complex, self.d_complex, bias=False)
+        self.W_V_angle = nn.Linear(angle_input_dim, self.d_complex, bias=False)
 
         # Выходная проекция (раздельно)
         self.out_proj_amp = nn.Linear(self.d_complex, self.d_complex, bias=False)
@@ -412,6 +426,11 @@ class ComplexMultiheadAttention(nn.Module):
         q_amp, q_angle = query[:, :, :dc], query[:, :, dc:]
         k_amp, k_angle = key[:, :, :dc], key[:, :, dc:]
         v_amp, v_angle = value[:, :, :dc], value[:, :, dc:]
+
+        if self.cyclic_angle_encoding:
+            q_angle = cyclic_angle_features(q_angle)
+            k_angle = cyclic_angle_features(k_angle)
+            v_angle = cyclic_angle_features(v_angle)
 
         # Проекции Q, K, V → (B, num_heads, T, d_head_complex)
         def to_heads(x: torch.Tensor) -> torch.Tensor:
@@ -488,6 +507,8 @@ class PhysicalStem(nn.Module):
         use_angle_gate: включить DirectionalRelayGate (по умолч. True)
         use_layer_norm: включить AmpOnlyLayerNorm на выходе (по умолч. False)
         dropout: вероятность dropout
+        cyclic_angle_encoding: использовать ``sin/cos`` перед обучаемой
+            проекцией углов; False сохраняет legacy-формы параметров.
     """
 
     def __init__(
@@ -506,6 +527,7 @@ class PhysicalStem(nn.Module):
         disable_interaction: bool = False,
         disable_kan: bool = False,
         disable_phase_shift: bool = False,
+        cyclic_angle_encoding: bool = False,
     ) -> None:
         super().__init__()
 
@@ -517,6 +539,7 @@ class PhysicalStem(nn.Module):
         self.num_pairs = num_input_channels // 2  # Количество (A, φ) пар
         self.d_model = d_model
         self.use_angle_gate = use_angle_gate
+        self.cyclic_angle_encoding = cyclic_angle_encoding
 
         # Флаги абляции: runtime-переключение через set_ablation()
         self.disable_interaction = disable_interaction
@@ -569,7 +592,8 @@ class PhysicalStem(nn.Module):
         self.proj_amp = nn.Linear(amp_fusion_dim, d_complex)
         # angle-путь: сырые углы (с phase_shift) + interaction angles
         angle_fusion_dim = self.num_pairs + num_interaction_pairs
-        self.proj_angle = nn.Linear(angle_fusion_dim, d_complex, bias=False)
+        angle_projection_dim = angle_fusion_dim * (2 if cyclic_angle_encoding else 1)
+        self.proj_angle = nn.Linear(angle_projection_dim, d_complex, bias=False)
 
         # --- Нормализация (опционально, по умолч. ВЫКЛ) ---
         self.norm: nn.Module
@@ -681,6 +705,8 @@ class PhysicalStem(nn.Module):
             # 7. Объединение и раздельная проекция в (amp, angle)
             fused_amp = torch.cat([h_amp, inter_amp], dim=-1)
             fused_angle = torch.cat([rotated_angle, inter_angle], dim=-1)
+            if self.cyclic_angle_encoding:
+                fused_angle = cyclic_angle_features(fused_angle)
 
             emb_amp = self.proj_amp(fused_amp)
             emb_angle = self.proj_angle(fused_angle)

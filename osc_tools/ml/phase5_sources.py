@@ -47,6 +47,17 @@ class DatasetSource(ABC):
     @abstractmethod
     def load_signal(self, idx: int) -> np.ndarray: ...
 
+    def get_provenance(self, idx: int) -> np.ndarray:
+        """Вернуть provenance восьми каналов; default годится для measured-only sources."""
+
+        signal = self.load_signal(idx)
+        present = np.isfinite(signal).any(axis=1)
+        return np.where(
+            present,
+            int(ChannelProvenance.MEASURED),
+            int(ChannelProvenance.MISSING),
+        ).astype(np.uint8)
+
 
 class OpenEEShardedSource(DatasetSource):
     """Lazy reader flat Open_EE shards с ограниченным LRU-кэшем открытых ZIP."""
@@ -94,6 +105,11 @@ class OpenEEShardedSource(DatasetSource):
         signal = shard["signals"][int(offsets[local_index]):int(offsets[local_index + 1])]
         return np.asarray(signal, dtype=np.float32).T
 
+    def get_provenance(self, idx: int) -> np.ndarray:
+        entry = self.entries[idx]
+        shard = self._shard(str(entry["shard_path"]))
+        return np.asarray(shard["provenance"][int(entry["local_index"])], dtype=np.uint8)
+
     def close(self) -> None:
         for shard in self._cache.values():
             shard.close()
@@ -134,6 +150,18 @@ class FrenchRTESource(DatasetSource):
             out[4:7] /= self.voltage_nominal_v * self.voltage_reserve
             out[:3] /= self.current_nominal_a * self.current_reserve
         return out
+
+    def get_provenance(self, idx: int) -> np.ndarray:
+        return np.asarray([
+            ChannelProvenance.MEASURED,
+            ChannelProvenance.MEASURED,
+            ChannelProvenance.MEASURED,
+            ChannelProvenance.MISSING,
+            ChannelProvenance.MEASURED,
+            ChannelProvenance.MEASURED,
+            ChannelProvenance.MEASURED,
+            ChannelProvenance.MISSING,
+        ], dtype=np.uint8)
 
 
 def adapt_open_ee_rows(rows: Sequence[Mapping[str, str]]) -> AdaptedOpenEERecord:

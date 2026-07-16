@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import IntEnum
 import math
+from typing import Literal
 
 
 CHANNEL_ORDER: tuple[str, ...] = (
@@ -107,6 +108,39 @@ def snapshot_indices(first: int, last: int, count: int) -> tuple[int, ...]:
     if len(set(indices)) != count:
         raise RuntimeError("Округление создало повторяющиеся snapshot-индексы")
     return indices
+
+
+TemporalMode = Literal["sequence_1_8", "snapshot_2", "snapshot_5"]
+
+
+def spectral_positions(
+    n_samples: int,
+    spp: int,
+    mode: TemporalMode,
+    history_periods: float = 10.0,
+    stride_fraction: int = 8,
+) -> tuple[int, ...]:
+    """Выбрать causal позиции спектральных токенов после предыстории.
+
+    Позиция обозначает последний (включённый) отсчёт FFT-окна. Поэтому
+    ``history_periods`` должны быть не меньше самого длинного low-period окна.
+    Snapshot-режимы всегда включают первую и последнюю допустимые позиции.
+    """
+
+    if n_samples <= 0 or spp <= 0:
+        raise ValueError("Размер сигнала и SPP должны быть положительными")
+    first = periods_to_samples(history_periods, spp) - 1
+    last = n_samples - 1
+    if first > last:
+        raise ValueError("Сигнал короче требуемой спектральной предыстории")
+    if mode == "snapshot_2":
+        return snapshot_indices(first, last, 2)
+    if mode == "snapshot_5":
+        return snapshot_indices(first, last, 5)
+    if mode == "sequence_1_8":
+        stride = period_fraction_stride(spp, stride_fraction)
+        return tuple(range(first, last + 1, stride))
+    raise ValueError(f"Неизвестный temporal mode: {mode!r}")
 
 
 @dataclass(frozen=True)

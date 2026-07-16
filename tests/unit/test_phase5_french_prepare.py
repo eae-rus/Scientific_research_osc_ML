@@ -23,11 +23,22 @@ def test_extracts_mmap_readable_npy_without_changing_archive(tmp_path: Path) -> 
     assert np.array_equal(restored, original)
 
 
-def test_refuses_to_overwrite_prepared_array(tmp_path: Path) -> None:
+def test_reuses_compatible_prepared_array(tmp_path: Path) -> None:
     source = tmp_path / "DATA_S.npz"
     np.savez_compressed(source, DATA_S=np.zeros((1, 6, 4)))
     destination = tmp_path / "DATA_S.npy"
-    extract_npy(source, destination)
+    first = extract_npy(source, destination)
+    second = extract_npy(source, destination)
+
+    assert "reused_existing" not in first
+    assert second["reused_existing"] is True
+
+
+def test_refuses_to_overwrite_incompatible_prepared_array(tmp_path: Path) -> None:
+    source = tmp_path / "DATA_S.npz"
+    np.savez_compressed(source, DATA_S=np.zeros((1, 6, 4)))
+    destination = tmp_path / "DATA_S.npy"
+    np.save(destination, np.zeros((2, 6, 4)))
 
     with pytest.raises(FileExistsError):
         extract_npy(source, destination)

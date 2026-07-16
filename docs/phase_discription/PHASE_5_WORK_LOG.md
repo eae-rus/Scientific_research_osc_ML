@@ -1,5 +1,60 @@
 # Журнал работ Phase 5
 
+## 16.07.2026 — Исправлен fully-missing sample в Version B
+
+- Воспроизведён сбой validation index 24: Open_EE record 44635, SPP=12,
+  внутри выбранного окна полностью отсутствуют IB и UA/UB/UC. Version B состоит
+  из симметричных составляющих, поэтому без полной тройки фаз не имела ни одной
+  физически допустимой SSL target-группы.
+- `MaskedSpectralDataset` теперь детерминированно пробует другую индексную
+  выборку (до 16 попыток), сохраняет requested/sampled index и номер retry в
+  metadata. Значения не подменяются нулями, а неполная запись не используется
+  как фиктивный zero-loss sample. На исходном smoke validation index 24 был
+  корректно заменён index 7 с одной попытки.
+
+## 15.07.2026 — Подготовлен research-strict SSL smoke
+
+- Создан и реально сгенерирован `data/phase5/research_strict_splits.json` с
+  SHA-256 `c8f0089f8cb09427df59f9fea10b26f5a5026b4b375ab65ced472f15aa4d88ff`.
+  Open_EE разделён целыми исходными CSV: train=38473, validation=1823,
+  never-seen holdout=4477. French разделён по записям: 9643/1205/1205.
+- Добавлены group-aware masked modeling и immutable checkpoint passport с
+  feature names/order, temporal mode, cyclic/provenance flags и schema hash.
+- `run_phase5_pretrain.py` поддерживает F5, `--smoke`, `--resume`,
+  `--reset-optimizer`, latest/best checkpoints и проверку контракта до загрузки
+  state_dict. Реальный запуск в bundled runtime дошёл до ожидаемой понятной
+  ошибки об отсутствии PyTorch; синтаксис и вся numpy/data цепочка проверены.
+- В VS Code Anaconda найден pytest, но нет torch/polars. С workspace basetemp и
+  без общего polars-conftest весь набор `test_phase5_*.py` прошёл: **35 passed**.
+  Попутно исправлен устаревший тест extraction: он теперь проверяет требуемый
+  idempotent reuse совместимого NPY и отказ для несовместимого файла. Временный
+  pytest-каталог после проверки удалён.
+
+## 15.07.2026 — Feature v2 подключён к реальным lazy sources
+
+- `SpectralMultiSourceDataset` связал Open_EE/French readers с версиями A/B и
+  режимами `snapshot_2`, `snapshot_5`, `sequence_1_8`. Low-period FFT теперь
+  causal: позиции означают конец окна, а 10 периодов предыстории загружаются
+  отдельно от 10-периодного модельного интервала.
+- Provenance `measured/derived/missing` проходит от shard/French adapter до
+  каждого спектрального признака; line-voltage ветвь вычисляет доступные U1/U2
+  и маскирует физически невосстановимый U0.
+- Реальный smoke выполнен для 12 сочетаний source × A/B × temporal mode.
+  Формы: A=220, B=156; snapshot=2/5; sequence на проверенных SPP даёт 81 токен,
+  а при SPP=20 и округлённом шаге 3 — 67 токенов. В Open_EE случайно попала одна
+  из записей без напряжений, и masks/provenance корректно сохранили отсутствие.
+
+## 15.07.2026 — Циклическая Phase 5-ветка модели
+
+- `PhysicalStem` и `ComplexMultiheadAttention` получили явный
+  `cyclic_angle_encoding`: перед обучаемыми angle-проекциями используются
+  `sin/cos`, а `torch.polar` и directional gate продолжают получать сырой угол.
+- Default оставлен `False`, поэтому формы legacy Phase 4 state_dict не меняются.
+  `PhysicalKANTransformer(..., cyclic_angle_encoding=True)` включает новый путь.
+- Добавлены torch-тесты инвариантности к `angle + 2*pi` и проверки legacy/new
+  shapes. В текущем bundled runtime нет torch/pytest: выполнены `py_compile` и
+  numpy real-data smoke; torch-набор подготовлен для основного окружения.
+
 ## 15.07.2026 — Начат feature contract v2
 
 - Добавлен `osc_tools/ml/spectral_features.py` с изолированным от legacy Phase 4

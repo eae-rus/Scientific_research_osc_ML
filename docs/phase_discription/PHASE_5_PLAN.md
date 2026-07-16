@@ -1,12 +1,13 @@
 # План Фазы 5: предобучение на реальных осциллограммах и дообучение под задачи
 
--> **Статус:** в работе; базовый safety pass, временные контракты и smoke-сканеры данных реализованы 08.07.2026
+> **Статус:** в работе; данные подготовлены, unified lazy pipeline и feature contract v2 реализованы к 15.07.2026
 **Цель:** продолжить Фазу 4/4.5, модернизировать признаковое пространство Physical KAN-Transformer по результатам нового исследования и предобучить общий backbone на большом наборе реальных осциллограмм. Главной прикладной демонстрацией Фазы 5 становится интеллектуальный орган направления мощности (РНМ/PDR): сначала воспроизведение и сравнение аналитических органов, затем обучение по их псевдоразметке реальных данных и пост-обучение на сложных размеченных случаях. ДПОЗЗ/ОЗЗ остаётся подключаемой демонстрационной задачей, но не входит в первую очередь работ.
 
 **Фактическая точка продолжения:** см. `PHASE_5_WORK_LOG.md`. Уже существуют
-`osc_tools/ml/phase5_contracts.py`, потоковые сканеры Open_EE/French и их unit-тесты.
-Следующая незакрытая развилка — подготовка mmap-доступного представления French
-для полного RMS-скана и выбор дальнейшего формата хранения после проверки места/скорости.
+полные Open_EE shards и French mmap, registry/lazy readers, feature schema A/B и
+циклическая Phase 5-ветка PhysicalStem/ComplexMHA. Следующая работа — SSL masking,
+checkpoint passport и малый pretrain smoke; PyTorch-прогон выполняется в основном
+окружении исследователя, поскольку встроенный runtime Codex не содержит torch.
 
 ---
 
@@ -547,6 +548,12 @@ raw окно. Полный Open_EE build завершён: 44773 осцилло�
 shards; 44755 записей имеют `voltage_basis=phase`, 18 — `missing`. Registry
 подключён к `data/phase5/open_ee_shards`.
 
+**Статус 15.07.2026:** добавлен `SpectralMultiSourceDataset`: causal предыстория
+для low-period FFT отделена от 10-периодного модельного окна; реализованы
+`snapshot_2`, `snapshot_5`, `sequence_1_8`, feature-level missing/provenance и
+реальный smoke Open_EE/French для A/B. Batch grouping по SPP остаётся задачей
+DataLoader/sampler перед полным pretrain.
+
 ### 7.2. Выборка
 
 Алгоритм `__getitem__` для SSL:
@@ -669,6 +676,13 @@ Builder должен поддерживать:
 - legacy v1 остаётся запускаемым;
 - отчёт `reports/phase5/feature_architecture_ablation.md`.
 
+**Статус 15.07.2026:** A/B builder, causal temporal modes, line-voltage branch,
+provenance и cyclic encoding реализованы. Legacy raw-angle путь остаётся default
+(`cyclic_angle_encoding=False`), Phase 5 включает его явно. Реальный numpy smoke
+пройден; torch-тесты циклической инвариантности добавлены, но требуют запуска в
+окружении проекта с PyTorch. Предварительный отчёт создан, обучение A/B ещё не
+проводилось.
+
 ---
 
 ## 9. Этап 5: Phase 5 SSL pretrain
@@ -705,6 +719,14 @@ transductive/exploratory. Само отсутствие task labels в SSL не 
 - `config.json`;
 - `training_log.jsonl`;
 - экспорт кривых.
+
+**Статус 15.07.2026:** создан первый запускаемый контур
+`run_phase5_pretrain.py`: F5/CLI smoke, masked group reconstruction, A/B,
+research-strict splits, cyclic/provenance model path, ComplexMSE, AdamW,
+ReduceLROnPlateau, latest/best checkpoints, passport compatibility и JSONL log.
+Numpy/data часть проверена на French; torch smoke подготовлен для ручного запуска
+в основном окружении. До полного pretrain нужно выполнить этот smoke и добавить
+per-source validation aggregation/экспорт графика из JSONL.
 
 ### 9.1. Pretext tasks
 

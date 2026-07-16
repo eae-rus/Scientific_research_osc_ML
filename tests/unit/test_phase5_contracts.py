@@ -8,6 +8,7 @@ from osc_tools.ml.phase5_contracts import (
     TimebaseContract,
     available_harmonics,
     snapshot_indices,
+    spectral_positions,
 )
 
 
@@ -58,6 +59,16 @@ def test_snapshot_modes_include_boundaries_without_duplicates() -> None:
 def test_snapshot_mode_rejects_too_short_sequence() -> None:
     with pytest.raises(ValueError, match="Недостаточно"):
         snapshot_indices(3, 5, 5)
+
+
+def test_spectral_temporal_modes_share_causal_boundaries() -> None:
+    assert spectral_positions(400, 20, "snapshot_2") == (199, 399)
+    assert spectral_positions(400, 20, "snapshot_5") == (199, 249, 299, 349, 399)
+    sequence = spectral_positions(400, 20, "sequence_1_8")
+    assert sequence[0] == 199
+    assert sequence[-1] == 397
+    assert len(sequence) == 67
+    assert set(b - a for a, b in zip(sequence, sequence[1:])) == {3}
 
 
 @pytest.mark.parametrize(

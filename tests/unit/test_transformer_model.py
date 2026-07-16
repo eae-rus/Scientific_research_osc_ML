@@ -28,6 +28,7 @@ from osc_tools.ml.layers.transformer_blocks import (
     PhysicalStem,
     SinusoidalPositionalEncoding,
     TransformerEncoderBlock,
+    cyclic_angle_features,
 )
 from osc_tools.ml.models.transformer import (
     BaselineTransformer,
@@ -380,6 +381,34 @@ class TestComplexMultiheadAttention:
         attn = ComplexMultiheadAttention(d_model=32, num_heads=8)
         assert attn.d_head_complex == 2
 
+    def test_cyclic_features_are_invariant_to_full_turn(self):
+        angles = torch.tensor([[-torch.pi, -0.3, 0.7, torch.pi]])
+        encoded = cyclic_angle_features(angles)
+        encoded_shifted = cyclic_angle_features(angles + 2 * torch.pi)
+        assert torch.allclose(encoded, encoded_shifted, atol=1e-6)
+
+    def test_cyclic_attention_is_invariant_to_full_turn(self):
+        attn = ComplexMultiheadAttention(
+            d_model=32,
+            num_heads=2,
+            dropout=0.0,
+            cyclic_angle_encoding=True,
+        ).eval()
+        x = torch.randn(2, 5, 32)
+        shifted = x.clone()
+        shifted[:, :, 16:] += 2 * torch.pi
+        out, _ = attn(x, x, x)
+        shifted_out, _ = attn(shifted, shifted, shifted)
+        assert torch.allclose(out, shifted_out, atol=2e-6)
+
+    def test_legacy_angle_projection_shapes_are_unchanged(self):
+        legacy = ComplexMultiheadAttention(d_model=32, num_heads=2)
+        cyclic = ComplexMultiheadAttention(
+            d_model=32, num_heads=2, cyclic_angle_encoding=True
+        )
+        assert legacy.W_Q_angle.weight.shape == (16, 16)
+        assert cyclic.W_Q_angle.weight.shape == (16, 32)
+
 
 # ============================================================
 # PhysicalKANTransformer (полная модель)
@@ -456,6 +485,36 @@ class TestPhysicalKANTransformer:
         has_grad = any(p.grad is not None and p.grad.abs().sum() > 0
                        for p in model.parameters() if p.requires_grad)
         assert has_grad
+
+    def test_phase5_provenance_and_cyclic_path(self):
+        model = PhysicalKANTransformer(
+            num_input_channels=16,
+            d_model=32,
+            num_heads=2,
+            num_layers=1,
+            kan_grid_size=3,
+            dropout=0.0,
+            max_seq_len=32,
+            cyclic_angle_encoding=True,
+            use_provenance_embedding=True,
+        )
+        x = torch.randn(2, 16, 10)
+        provenance = torch.ones_like(x, dtype=torch.long)
+        provenance[:, 8:, :] = 2
+        out = model(x, mode='ssl', provenance=provenance)
+        assert out['ssl'].shape == x.shape
+        assert model.provenance_embedding is not None
+
+    def test_phase5_provenance_is_required_when_enabled(self):
+        model = PhysicalKANTransformer(
+            num_input_channels=16,
+            d_model=32,
+            num_heads=2,
+            num_layers=1,
+            use_provenance_embedding=True,
+        )
+        with pytest.raises(ValueError, match="provenance"):
+            model(torch.randn(1, 16, 5), mode='ssl')
 
 
 # ============================================================
