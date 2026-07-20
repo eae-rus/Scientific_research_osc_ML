@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import sys
 import time
+from typing import Sequence
 
 import numpy as np
 
@@ -21,6 +22,7 @@ from osc_tools.ml.lazy_multi_dataset import LazyMultiSourceDataset, SpectralMult
 from osc_tools.ml.phase5_splits import IndexedDatasetSource, split_manifest_hash
 from osc_tools.ml.phase5_ssl import MaskedSpectralDataset, SpectralMaskingConfig
 from osc_tools.ml.spectral_features import SpectralFeatureBuilder, SpectralFeatureConfig
+from scripts.phase5_experiments.progress import ProgressReporter
 
 
 @dataclass
@@ -34,6 +36,8 @@ class PretrainConfig:
     learning_rate: float = 3e-4
     weight_decay: float = 1e-4
     mask_ratio: float = 0.25
+    loss_type: str = "complex_huber"
+    huber_beta: float = 0.1
     seed: int = 42
     d_model: int = 64
     num_heads: int = 4
@@ -53,14 +57,14 @@ def _imports():
     try:
         import torch
         from torch.utils.data import DataLoader
-        from osc_tools.ml.losses import ComplexMSELoss
+        from osc_tools.ml.losses import ComplexMSELoss, RobustComplexLoss
         from osc_tools.ml.models.transformer import PhysicalKANTransformer
     except ModuleNotFoundError as exc:
         raise RuntimeError(
             "Pretrain требует основное Python-окружение проекта с PyTorch; "
             "bundled runtime Codex предназначен только для CPU/numpy smoke"
         ) from exc
-    return torch, DataLoader, ComplexMSELoss, PhysicalKANTransformer
+    return torch, DataLoader, ComplexMSELoss, RobustComplexLoss, PhysicalKANTransformer
 
 
 def _load_splits(path: Path) -> dict[str, object]:
@@ -76,10 +80,11 @@ def _spectral_dataset(
     split: str,
     samples: int,
     seed_offset: int,
+    source_names: Sequence[str] = ("open_ee", "french_rte"),
 ) -> MaskedSpectralDataset:
     registry = PROJECT_ROOT / "data/phase5/datasets_registry.json"
     sources = {}
-    for name in ("open_ee", "french_rte"):
+    for name in source_names:
         base = create_source(registry, name)
         indices = split_manifest["sources"][name]["splits"][split]
         sources[name] = IndexedDatasetSource(base, indices, split)
@@ -87,6 +92,7 @@ def _spectral_dataset(
         "open_ee": cfg.source_weights_open_ee,
         "french_rte": cfg.source_weights_french_rte,
     }
+    weights = {name: weights[name] for name in source_names}
     raw = LazyMultiSourceDataset(
         sources,
         weights,
@@ -145,8 +151,62 @@ def _masked_complex_loss(loss_fn, prediction, target, reconstruction_mask, missi
     )
 
 
+def _evaluate(model, loader, loss_fn, device, label: str) -> float:
+    model.eval()
+    total = 0.0
+    progress = ProgressReporter(label, len(loader))
+    with __import__("torch").no_grad():
+        for batch_index, batch in enumerate(loader, start=1):
+            output = model(
+                batch["features"].to(device),
+                mode="ssl",
+                provenance=batch["provenance"].to(device),
+            )["ssl"]
+            loss = _masked_complex_loss(
+                loss_fn,
+                output,
+                batch["target"].to(device),
+                batch["reconstruction_mask"].to(device),
+                batch["missing_mask"].to(device),
+            )
+            total += float(loss)
+            progress.update(batch_index)
+    progress.finish()
+    return total / max(1, len(loader))
+
+
+def _export_training_curves(log_path: Path, output_dir: Path) -> None:
+    """Экспортировать компактные данные кривых и PNG, если доступен matplotlib."""
+
+    records = [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    (output_dir / "training_curves.json").write_text(
+        json.dumps(records, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    try:
+        import matplotlib.pyplot as plt
+    except ModuleNotFoundError:
+        return
+    epochs = [record["epoch"] for record in records]
+    figure, axis = plt.subplots(figsize=(8, 5))
+    for key, label in (
+        ("train_loss", "train"),
+        ("val_loss", "validation combined"),
+        ("val_open_ee_loss", "validation Open_EE"),
+        ("val_french_rte_loss", "validation French/RTE"),
+    ):
+        if all(key in record for record in records):
+            axis.plot(epochs, [record[key] for record in records], marker="o", label=label)
+    axis.set_xlabel("Epoch")
+    axis.set_ylabel("Complex masked reconstruction loss")
+    axis.grid(True, alpha=0.3)
+    axis.legend()
+    figure.tight_layout()
+    figure.savefig(output_dir / "training_curves.png", dpi=160)
+    plt.close(figure)
+
+
 def run(cfg: PretrainConfig, output_dir: Path, resume: bool, reset_optimizer: bool) -> None:
-    torch, DataLoader, ComplexMSELoss, PhysicalKANTransformer = _imports()
+    torch, DataLoader, ComplexMSELoss, RobustComplexLoss, PhysicalKANTransformer = _imports()
     print(json.dumps({
         "python_executable": sys.executable,
         "python_version": sys.version.split()[0],
@@ -161,6 +221,13 @@ def run(cfg: PretrainConfig, output_dir: Path, resume: bool, reset_optimizer: bo
     splits = _load_splits(split_path)
     train_dataset = _spectral_dataset(cfg, splits, "train", cfg.samples_per_epoch, 0)
     val_dataset = _spectral_dataset(cfg, splits, "validation", cfg.validation_samples, 1)
+    per_source_samples = max(16, cfg.validation_samples // 2)
+    val_open_ee_dataset = _spectral_dataset(
+        cfg, splits, "validation", per_source_samples, 101, ("open_ee",)
+    )
+    val_french_dataset = _spectral_dataset(
+        cfg, splits, "validation", per_source_samples, 102, ("french_rte",)
+    )
     builder = train_dataset.dataset.feature_builder
     passport = FeatureContractPassport.create(
         builder.schema, cfg.temporal_mode, cfg.cyclic_angle_encoding,
@@ -190,13 +257,23 @@ def run(cfg: PretrainConfig, output_dir: Path, resume: bool, reset_optimizer: bo
     ).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.learning_rate, weight_decay=cfg.weight_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=3)
-    loss_fn = ComplexMSELoss()
+    if cfg.loss_type == "complex_mse":
+        loss_fn = ComplexMSELoss()
+    elif cfg.loss_type == "complex_huber":
+        loss_fn = RobustComplexLoss(beta=cfg.huber_beta)
+    else:
+        raise ValueError(f"Неизвестный loss_type: {cfg.loss_type!r}")
     start_epoch = 0
     best_val = float("inf")
     latest = output_dir / "latest_checkpoint.pt"
     if resume and latest.exists():
         checkpoint = torch.load(latest, map_location=device, weights_only=False)
         passport.assert_compatible(checkpoint["feature_passport"])
+        checkpoint_loss = checkpoint.get("config", {}).get("loss_type", "complex_mse")
+        if checkpoint_loss != cfg.loss_type:
+            raise ValueError(
+                f"Нельзя resume с другим loss: checkpoint={checkpoint_loss}, current={cfg.loss_type}"
+            )
         model.load_state_dict(checkpoint["model_state_dict"])
         if not reset_optimizer:
             optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
@@ -207,13 +284,19 @@ def run(cfg: PretrainConfig, output_dir: Path, resume: bool, reset_optimizer: bo
 
     train_loader = DataLoader(train_dataset, batch_size=cfg.batch_size, shuffle=False, num_workers=cfg.num_workers, collate_fn=_collate)
     val_loader = DataLoader(val_dataset, batch_size=cfg.batch_size, shuffle=False, num_workers=cfg.num_workers, collate_fn=_collate)
+    val_open_ee_loader = DataLoader(val_open_ee_dataset, batch_size=cfg.batch_size, shuffle=False, num_workers=cfg.num_workers, collate_fn=_collate)
+    val_french_loader = DataLoader(val_french_dataset, batch_size=cfg.batch_size, shuffle=False, num_workers=cfg.num_workers, collate_fn=_collate)
     log_path = output_dir / "training_log.jsonl"
     for epoch in range(start_epoch, cfg.epochs):
         started = time.time()
+        if device.type == "cuda":
+            torch.cuda.reset_peak_memory_stats(device)
         train_dataset.set_epoch(epoch)
         model.train()
         train_total = 0.0
-        for batch in train_loader:
+        train_batch_losses: list[float] = []
+        train_progress = ProgressReporter(f"Epoch {epoch} train", len(train_loader))
+        for batch_index, batch in enumerate(train_loader, start=1):
             optimizer.zero_grad(set_to_none=True)
             x = batch["features"].to(device)
             target = batch["target"].to(device)
@@ -223,21 +306,39 @@ def run(cfg: PretrainConfig, output_dir: Path, resume: bool, reset_optimizer: bo
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
-            train_total += float(loss.detach())
+            batch_loss = float(loss.detach())
+            train_total += batch_loss
+            train_batch_losses.append(batch_loss)
+            train_progress.update(batch_index)
+        train_progress.finish()
 
-        model.eval()
-        val_total = 0.0
-        with torch.no_grad():
-            for batch in val_loader:
-                output = model(batch["features"].to(device), mode="ssl", provenance=batch["provenance"].to(device))["ssl"]
-                loss = _masked_complex_loss(loss_fn, output, batch["target"].to(device), batch["reconstruction_mask"].to(device), batch["missing_mask"].to(device))
-                val_total += float(loss)
+        train_seconds = time.time() - started
         train_loss = train_total / max(1, len(train_loader))
-        val_loss = val_total / max(1, len(val_loader))
+        val_loss = _evaluate(model, val_loader, loss_fn, device, f"Epoch {epoch} validation combined")
+        val_open_ee_loss = _evaluate(model, val_open_ee_loader, loss_fn, device, f"Epoch {epoch} validation Open_EE")
+        val_french_rte_loss = _evaluate(model, val_french_loader, loss_fn, device, f"Epoch {epoch} validation French/RTE")
         scheduler.step(val_loss)
-        record = {"epoch": epoch, "train_loss": train_loss, "val_loss": val_loss, "lr": optimizer.param_groups[0]["lr"], "seconds": time.time() - started}
+        record = {
+            "epoch": epoch,
+            "train_loss": train_loss,
+            "train_batch_loss_median": float(np.median(train_batch_losses)),
+            "train_batch_loss_p95": float(np.quantile(train_batch_losses, 0.95)),
+            "train_batch_loss_max": max(train_batch_losses),
+            "val_loss": val_loss,
+            "val_open_ee_loss": val_open_ee_loss,
+            "val_french_rte_loss": val_french_rte_loss,
+            "lr": optimizer.param_groups[0]["lr"],
+            "seconds": time.time() - started,
+            "train_seconds": train_seconds,
+            "train_samples_per_second": cfg.samples_per_epoch / max(train_seconds, 1e-9),
+            "peak_cuda_memory_mib": (
+                torch.cuda.max_memory_allocated(device) / (1024 ** 2)
+                if device.type == "cuda" else 0.0
+            ),
+        }
         with log_path.open("a", encoding="utf-8") as stream:
             stream.write(json.dumps(record, ensure_ascii=False) + "\n")
+        _export_training_curves(log_path, output_dir)
         state = {"epoch": epoch, "model_state_dict": model.state_dict(), "optimizer_state_dict": optimizer.state_dict(), "scheduler_state_dict": scheduler.state_dict(), "best_val_loss": min(best_val, val_loss), "config": config_payload, "feature_passport": passport.to_dict()}
         temporary = output_dir / "latest_checkpoint.tmp"
         torch.save(state, temporary)
@@ -254,9 +355,22 @@ def main() -> int:
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--reset-optimizer", action="store_true")
     parser.add_argument("--feature-version", choices=("A", "B"), default="B")
-    parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "experiments/phase5/pretrain_b")
+    parser.add_argument("--temporal-mode", choices=("snapshot_2", "snapshot_5", "sequence_1_8"), default="snapshot_5")
+    parser.add_argument("--epochs", type=int, default=None)
+    parser.add_argument("--samples-per-epoch", type=int, default=None)
+    parser.add_argument("--validation-samples", type=int, default=None)
+    parser.add_argument("--batch-size", type=int, default=None)
+    parser.add_argument("--loss-type", choices=("complex_mse", "complex_huber"), default="complex_huber")
+    parser.add_argument("--huber-beta", type=float, default=0.1)
+    parser.add_argument("--output-dir", type=Path, default=None)
     args = parser.parse_args()
-    cfg = PretrainConfig(feature_version=args.feature_version)
+    cfg = PretrainConfig(
+        feature_version=args.feature_version,
+        temporal_mode=args.temporal_mode,
+        loss_type=args.loss_type,
+        huber_beta=args.huber_beta,
+    )
+    output_dir = args.output_dir or PROJECT_ROOT / f"experiments/phase5/pretrain_{args.feature_version.lower()}"
     if args.smoke:
         cfg.samples_per_epoch = 64
         cfg.validation_samples = 32
@@ -265,8 +379,16 @@ def main() -> int:
         cfg.d_model = 32
         cfg.num_layers = 2
         cfg.d_ff = 128
-        args.output_dir = PROJECT_ROOT / f"experiments/phase5/smoke_{args.feature_version.lower()}"
-    run(cfg, args.output_dir, args.resume, args.reset_optimizer)
+        output_dir = args.output_dir or PROJECT_ROOT / f"experiments/phase5/smoke_{args.feature_version.lower()}"
+    if args.epochs is not None:
+        cfg.epochs = args.epochs
+    if args.samples_per_epoch is not None:
+        cfg.samples_per_epoch = args.samples_per_epoch
+    if args.validation_samples is not None:
+        cfg.validation_samples = args.validation_samples
+    if args.batch_size is not None:
+        cfg.batch_size = args.batch_size
+    run(cfg, output_dir, args.resume, args.reset_optimizer)
     return 0
 
 
@@ -274,13 +396,31 @@ def run_manual() -> None:
     # ================================================================
     # РУЧНОЙ ЗАПУСК F5: сначала SMOKE=True; затем False для полного run.
     # RESUME=True продолжает latest_checkpoint.pt.
+    # На RTX 3060 Ti профиль целевой модели дал около 67 train samples/s:
+    # стартовая оценка полного запуска 20k × 50 — примерно 5–6 часов.
     # ================================================================
     FEATURE_VERSION = "B"
-    SMOKE = True
+    TEMPORAL_MODE = "snapshot_5"
+    LOSS_TYPE = "complex_huber"
+    HUBER_BETA = 0.1
+    SMOKE = False
     RESUME = False
     RESET_OPTIMIZER = False
+    SAMPLES_PER_EPOCH = 20_000
+    VALIDATION_SAMPLES = 2_000
+    EPOCHS = 50
+    BATCH_SIZE = 32
     OUTPUT_DIR = PROJECT_ROOT / f"experiments/phase5/{'smoke' if SMOKE else 'pretrain'}_{FEATURE_VERSION.lower()}"
-    cfg = PretrainConfig(feature_version=FEATURE_VERSION)
+    cfg = PretrainConfig(
+        feature_version=FEATURE_VERSION,
+        temporal_mode=TEMPORAL_MODE,
+        loss_type=LOSS_TYPE,
+        huber_beta=HUBER_BETA,
+        samples_per_epoch=SAMPLES_PER_EPOCH,
+        validation_samples=VALIDATION_SAMPLES,
+        epochs=EPOCHS,
+        batch_size=BATCH_SIZE,
+    )
     if SMOKE:
         cfg.samples_per_epoch = 64
         cfg.validation_samples = 32

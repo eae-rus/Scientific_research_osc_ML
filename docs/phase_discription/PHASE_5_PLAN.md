@@ -728,6 +728,15 @@ Numpy/data часть проверена на French; torch smoke подгото
 в основном окружении. До полного pretrain нужно выполнить этот smoke и добавить
 per-source validation aggregation/экспорт графика из JSONL.
 
+**Статус 16.07.2026:** torch/CUDA smoke и resume реально пройдены на RTX 3060 Ti.
+Добавлены per-source validation, JSON/PNG curves, throughput/peak CUDA memory,
+batch median/p95/max и progress/ETA. A/B probes выявили выбросы squared
+ComplexMSE; robust complex Huber (`beta=0.1`) выбран default. Version B временно
+выбрана основным SSL contract по combined/Open_EE validation и размерности, но
+окончательный A/B выбор отложен до PDR probe. Целевая модель `d_model=64`, 4 слоя
+профилирована: около 67 train samples/s и 26 MiB allocated CUDA на snapshot_5;
+20k × 50 оценивается примерно в 5–6 часов с validation/checkpoint overhead.
+
 ### 9.1. Pretext tasks
 
 Базовый набор:

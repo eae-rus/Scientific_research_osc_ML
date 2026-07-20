@@ -1,5 +1,23 @@
 # Журнал работ Phase 5
 
+## 16.07.2026 — GPU smoke/resume, A/B и robust loss
+
+- Подключён пользовательский PyTorch user-site: Python 3.13.5, torch 2.7.1+cu118,
+  CUDA, NVIDIA RTX 3060 Ti. Torch model suite реально выполнен: **82 passed**.
+- Resume Version B продолжил epoch 2 из `latest_checkpoint.pt`: val `0.11574`,
+  Open_EE `0.12273`, French `0.11498`. Сформированы JSON/PNG curves и проверен
+  checkpoint passport.
+- Средний 512-window A/B ComplexMSE probe: B `0.01664`, A `0.01704`, однако
+  train loss обеих версий сильно прыгал из-за редких выбросов.
+- Добавлен `RobustComplexLoss` (SmoothL1 в Re/Im, beta=0.1). Huber probe дал
+  устойчивое снижение train loss. B combined/Open_EE/French =
+  `0.06077/0.06374/0.05657`; A = `0.06223/0.07166/0.05224`.
+- Создан `reports/phase5/pretrain_smoke_comparison.md`. Huber зафиксирован как
+  Phase 5 default; B — предварительный основной контракт до PDR probe.
+- Профиль целевой B-модели (`d_model=64`, 4 слоя, batch 16): 67.4 train
+  samples/s, peak allocated CUDA 25.99 MiB. Full F5 блок документирован как
+  20k окон × 50 эпох, ориентировочно 5–6 часов; добавлены progress и ETA.
+
 ## 16.07.2026 — Исправлен fully-missing sample в Version B
 
 - Воспроизведён сбой validation index 24: Open_EE record 44635, SPP=12,

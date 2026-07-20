@@ -34,7 +34,7 @@ from osc_tools.ml.models.transformer import (
     BaselineTransformer,
     PhysicalKANTransformer,
 )
-from osc_tools.ml.losses import ComplexMSELoss, SpectralReconstructionLoss
+from osc_tools.ml.losses import ComplexMSELoss, RobustComplexLoss, SpectralReconstructionLoss
 
 
 # ============================================================
@@ -561,6 +561,13 @@ class TestComplexMSELoss:
     def test_instantiation(self):
         loss = ComplexMSELoss()
         assert isinstance(loss, nn.Module)
+
+    def test_robust_complex_loss_limits_large_outlier(self):
+        mse = ComplexMSELoss()
+        robust = RobustComplexLoss(beta=0.1)
+        zeros = torch.zeros(1, 1, 1)
+        outlier = torch.full((1, 1, 1), 100.0)
+        assert robust(outlier, zeros, zeros, zeros) < mse(outlier, zeros, zeros, zeros)
 
     def test_forward_no_mask(self):
         loss_fn = ComplexMSELoss()
