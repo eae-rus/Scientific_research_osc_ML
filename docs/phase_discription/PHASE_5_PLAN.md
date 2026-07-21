@@ -1,13 +1,14 @@
 # План Фазы 5: предобучение на реальных осциллограммах и дообучение под задачи
 
-> **Статус:** в работе; данные подготовлены, unified lazy pipeline и feature contract v2 реализованы к 15.07.2026
+> **Статус:** в работе; infrastructure, feature contract v2 и первый
+> `research_strict` full SSL pretrain Version B завершены к 20.07.2026
 **Цель:** продолжить Фазу 4/4.5, модернизировать признаковое пространство Physical KAN-Transformer по результатам нового исследования и предобучить общий backbone на большом наборе реальных осциллограмм. Главной прикладной демонстрацией Фазы 5 становится интеллектуальный орган направления мощности (РНМ/PDR): сначала воспроизведение и сравнение аналитических органов, затем обучение по их псевдоразметке реальных данных и пост-обучение на сложных размеченных случаях. ДПОЗЗ/ОЗЗ остаётся подключаемой демонстрационной задачей, но не входит в первую очередь работ.
 
 **Фактическая точка продолжения:** см. `PHASE_5_WORK_LOG.md`. Уже существуют
-полные Open_EE shards и French mmap, registry/lazy readers, feature schema A/B и
-циклическая Phase 5-ветка PhysicalStem/ComplexMHA. Следующая работа — SSL masking,
-checkpoint passport и малый pretrain smoke; PyTorch-прогон выполняется в основном
-окружении исследователя, поскольку встроенный runtime Codex не содержит torch.
+полные Open_EE shards и French mmap, registry/lazy readers, feature schema A/B,
+циклическая Phase 5-ветка и завершённый B SSL backbone. Следующая работа —
+анализ/визуализация reconstruction, защита output-dir перед scale-up, затем
+общий task API и PDR-контур после получения математики органов от исследователя.
 
 ---
 
@@ -736,6 +737,12 @@ ComplexMSE; robust complex Huber (`beta=0.1`) выбран default. Version B в
 окончательный A/B выбор отложен до PDR probe. Целевая модель `d_model=64`, 4 слоя
 профилирована: около 67 train samples/s и 26 MiB allocated CUDA на snapshot_5;
 20k × 50 оценивается примерно в 5–6 часов с validation/checkpoint overhead.
+
+**Статус 20.07.2026:** две идентичные 50-эпоховые research-strict B-волны
+завершены. Лучший combined validation `0.00046684594` достигнут на epoch 11;
+для дальнейшей работы использовать `experiments/phase5/pretrain_b/best_model.pt`.
+До следующего fresh run добавить защиту существующей output-папки: текущий
+runner дописывает JSONL при `resume=False`, что смешивает историю волн.
 
 ### 9.1. Pretext tasks
 

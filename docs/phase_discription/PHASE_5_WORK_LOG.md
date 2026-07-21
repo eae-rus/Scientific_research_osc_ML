@@ -1,5 +1,23 @@
 # Журнал работ Phase 5
 
+## 20.07.2026 — Завершён research-strict full SSL pretrain Version B
+
+- В `experiments/phase5/pretrain_b/` завершены две детерминированно одинаковые
+  fresh-волны по 50 эпох. Каждая использовала 20 000 random train windows/epoch,
+  2 000 mixed validation windows/epoch, Version B, `snapshot_5`, `d_model=64`,
+  4 encoder слоя, complex Huber beta=0.1 и веса Open_EE/French 2/3 : 1/3.
+- Это `research_strict`: train pools содержат 38 473 Open_EE и 9 643 French
+  осциллограмм; never-seen holdout (4 477 / 1 205) не использовался. Один run
+  создаёт 1 млн sampled окон, а не фиксированный полный обход каждой записи.
+- В каждом run best combined validation loss = `0.00046684594` (epoch 11),
+  Open_EE = `0.00043630388` (epoch 11), French = `0.00050780442` (epoch 32).
+  К epoch 49 combined validation около `0.00056888`, LR снижен до
+  `5.859375e-07`; основным артефактом остаётся `best_model.pt`.
+- Обнаружен долг runner: при `resume=False` существующая output-папка не
+  защищена, поэтому второй run дописал ещё 50 строк в `training_log.jsonl`.
+  До следующего тяжёлого запуска требуется явная защита/архивация run output,
+  без автоматического удаления прежних результатов.
+
 ## 16.07.2026 — GPU smoke/resume, A/B и robust loss
 
 - Подключён пользовательский PyTorch user-site: Python 3.13.5, torch 2.7.1+cu118,
