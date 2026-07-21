@@ -1,5 +1,24 @@
 # Журнал работ Phase 5
 
+## 21.07.2026 — Детальный анализ первого предобучения, 3 пресета сложностей (Small/Medium/Heavy), Косинусный шедулер с перезапусками и защита логов
+
+- Выполнен детальный анализ результатов первого обучения (`experiments/phase5/pretrain_b/`):
+  - Потверждена сходимость модели Version B на 48 116 осциллограммах `research_strict`.
+  - Реализован `scripts/phase5_experiments/eval_phase5_pretrain.py` для детализированного расчёта ошибки по группам признаков:
+    - Общий валидационный Robust Loss на `best_model.pt` = `0.0005303`.
+    - Фундаментальная $h_1$ = `0.0048437`, высшие гармоники $h_2..h_9$ = `0.0000771`, низшие $lp_2..lp_{10}$ = `0.0003265`.
+    - Токовые каналы $I$ = `0.0007494`, напряжения $U$ = `0.0003200`.
+    - Сохранение отчётов в `reports/phase5/eval_pretrain_b.json` и `reports/phase5/eval_pretrain_b.md`.
+- Добавлен переключатель сложностей моделей (`MODEL_PRESET`) в `scripts/phase5_experiments/run_phase5_pretrain.py`:
+  - `small` (Лёгкая): `d_model=64`, `num_heads=4`, `num_layers=4`, `d_ff=256` (~300k параметров, peak CUDA ~23 MiB).
+  - `medium` (Средняя): `d_model=128`, `num_heads=8`, `num_layers=6`, `d_ff=512` (~1.2M параметров).
+  - `heavy` (Тяжёлая): `d_model=256`, `num_heads=8`, `num_layers=8`, `d_ff=1024` (~4.8M параметров, peak CUDA ~167.5 MiB).
+  - Все три модели полностью проверены GPU-smoke тестами на RTX 3060 Ti (8 GB VRAM).
+- Добавлен косинусный шедулер обучающей скорости с циклическими рестартами (`CosineAnnealingWarmRestarts`):
+  - По умолчанию заложено **200 эпох** с перезапусками каждые 50 эпох ($T_0=50, T_\text{mult}=1$).
+- Реализована автоматическая защита логов и чекпоинтов при свежем запуске (`archive_existing_output`):
+  - Если `resume=False` и папке результатов уже есть старый `training_log.jsonl`, runner автоматически создаёт `archive_YYYYMMDD_HHMMSS/` и перемещает предыдущие артефакты, предотвращая непреднамеренное наложение логов.
+
 ## 20.07.2026 — Завершён research-strict full SSL pretrain Version B
 
 - В `experiments/phase5/pretrain_b/` завершены две детерминированно одинаковые
