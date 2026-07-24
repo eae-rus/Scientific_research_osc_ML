@@ -110,9 +110,8 @@ class PDRTaskDataset(Dataset):
             mode=self.temporal_mode,
         )
 
-        # Преобразование метки направления: -1 -> 0 (Reverse), 0 -> 1 (Block), 1 -> 2 (Forward)
-        # Классификационная цель: 3 класса {0: REVERSE, 1: BLOCK, 2: FORWARD}
-        target_class = 0 if direction_val == -1 else (2 if direction_val == 1 else 1)
+        # Бинарная классификация направления: 0: REVERSE, 1: FORWARD
+        target_class = 1 if direction_val == 1 else 0
 
         return {
             "features": torch.tensor(spectral_feat, dtype=torch.float32),

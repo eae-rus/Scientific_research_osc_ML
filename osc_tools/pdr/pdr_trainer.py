@@ -28,7 +28,7 @@ class PDRTaskHead(nn.Module if HAS_TORCH else object):
     def __init__(
         self,
         d_model: int = 64,
-        num_classes: int = 3,
+        num_classes: int = 2,
         use_margin_head: bool = True,
     ) -> None:
         if not HAS_TORCH:

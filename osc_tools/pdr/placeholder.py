@@ -15,12 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class PlaceholderPDRAlgorithm(PDRAlgorithm):
-    """Публичная заглушка для закрытых проприетарных алгоритмов РНМ.
-
-    Если закрытые алгоритмы из `private/pdr_algorithms/` не загружены,
-    эта заглушка перехватывает вызов, выдаёт предупреждение в лог
-    и возвращает блокировку со 100% прозрачностью.
-    """
+    """Публичная заглушка для закрытых проприетарных алгоритмов РНМ."""
 
     algorithm_id = "private_pdr_placeholder"
     name = "Proprietary PDR Algorithm (Placeholder / Stub)"
@@ -33,12 +28,12 @@ class PlaceholderPDRAlgorithm(PDRAlgorithm):
         logger.warning(
             f"ВНИМАНИЕ: Запрошен закрытый алгоритм РНМ '{target_algorithm_id}', "
             f"но доступен только публичный плагин-заглушка {self.name}. "
-            f"Результаты будут помечены как BLOCK (неразмеченный фолбэк)."
+            f"Результаты будут помечены как REVERSE (0, фолбэк)."
         )
 
     def compute(self, input_data: PDRInputData) -> PDROutput:
         return PDROutput(
-            direction=PDRDirection.BLOCK,
+            direction=PDRDirection.REVERSE,
             is_tripped=False,
             margin=0.0,
             confidence=0.0,

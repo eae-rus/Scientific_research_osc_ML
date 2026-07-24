@@ -239,7 +239,6 @@ class PDRDatasetLabeler:
                 "n_valid_windows": int(np.sum(~res.warmup_mask)),
                 "forward_windows": int(np.sum(res.directions == int(PDRDirection.FORWARD))),
                 "reverse_windows": int(np.sum(res.directions == int(PDRDirection.REVERSE))),
-                "block_windows": int(np.sum(res.directions == int(PDRDirection.BLOCK))),
             })
 
         npz_path = output_dir / f"pdr_labels_{split_name}.npz"

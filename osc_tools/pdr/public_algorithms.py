@@ -1,7 +1,7 @@
 """Публичные открытые алгоритмы РНМ (PDR).
 
 Содержит:
-1. PhasePDRAlgorithm — базовый фазный алгоритм РНМ.
+1. PhasePDRAlgorithm — базовый фазный алгоритм РНМ (FORWARD=1, REVERSE=0).
 2. PositiveSequencePDRAlgorithm — базовый алгоритм РНМ прямой последовательности.
 3. Заглушки для исследования и быстрой интеграции алгоритмов БАВР других производителей.
 """
@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 import math
-from typing import Dict, Any, Tuple
+from typing import Dict, Any
 import numpy as np
 
 from .base import PDRAlgorithm, PDRInputData, PDROutput, PDRDirection
@@ -36,7 +36,11 @@ class PhasePDRAlgorithm(PDRAlgorithm):
     Выполняет пофазный анализ угла сдвига между напряжением и током:
     phi_k = arg(U_k) - arg(I_k).
 
-    Уставки задаются относительно (per-unit):
+    Результаты:
+    - FORWARD (1): Прямое направление мощности.
+    - REVERSE (0): Обратное направление / Блокировка / Малый сигнал.
+
+    Уставки в относительно-именуемых единицах (per-unit):
     - phi_mch_deg: Угол максимальной чувствительности (по умолчанию 45.0 град, ток отстает от U)
     - u_min_pu: Порог по модулю напряжения (по умолчанию 0.05 о.е.)
     - i_min_pu: Порог по модулю тока (по умолчанию 0.02 о.е.)
@@ -61,7 +65,6 @@ class PhasePDRAlgorithm(PDRAlgorithm):
 
         phase_results: Dict[str, Dict[str, Any]] = {}
         forward_count = 0
-        reverse_count = 0
         margins: list[float] = []
 
         for phase in ("A", "B", "C"):
@@ -69,7 +72,7 @@ class PhasePDRAlgorithm(PDRAlgorithm):
             i_ph = input_data.phasors_i.get(phase)
 
             if u_ph is None or i_ph is None or not (np.isfinite(u_ph) and np.isfinite(i_ph)):
-                phase_results[phase] = {"direction": PDRDirection.BLOCK, "reason": "missing_signal"}
+                phase_results[phase] = {"direction": PDRDirection.REVERSE, "reason": "missing_signal"}
                 continue
 
             u_abs = abs(u_ph)
@@ -77,7 +80,7 @@ class PhasePDRAlgorithm(PDRAlgorithm):
 
             if u_abs < u_min or i_abs < i_min:
                 phase_results[phase] = {
-                    "direction": PDRDirection.BLOCK,
+                    "direction": PDRDirection.REVERSE,
                     "reason": "below_threshold",
                     "u_abs": u_abs,
                     "i_abs": i_abs,
@@ -100,7 +103,6 @@ class PhasePDRAlgorithm(PDRAlgorithm):
                 forward_count += 1
             else:
                 ph_dir = PDRDirection.REVERSE
-                reverse_count += 1
 
             phase_results[phase] = {
                 "direction": ph_dir,
@@ -111,19 +113,8 @@ class PhasePDRAlgorithm(PDRAlgorithm):
                 "i_abs": i_abs,
             }
 
-        # Агрегация пофазных решений
-        if forward_count > 0 and reverse_count == 0:
-            final_dir = PDRDirection.FORWARD
-        elif reverse_count > 0 and forward_count == 0:
-            final_dir = PDRDirection.REVERSE
-        elif forward_count > 0 and reverse_count > 0:
-            # Преобладание направления по наибольшему суммарному запасу
-            pos_margin = sum(res["margin"] for res in phase_results.values() if res.get("direction") == PDRDirection.FORWARD)
-            neg_margin = sum(res["margin"] for res in phase_results.values() if res.get("direction") == PDRDirection.REVERSE)
-            final_dir = PDRDirection.FORWARD if pos_margin >= abs(neg_margin) else PDRDirection.REVERSE
-        else:
-            final_dir = PDRDirection.BLOCK
-
+        # Если хотя бы в одной фазе зафиксировано прямое направление
+        final_dir = PDRDirection.FORWARD if forward_count > 0 else PDRDirection.REVERSE
         total_margin = float(np.mean(margins)) if margins else 0.0
         is_tripped = (final_dir == PDRDirection.FORWARD)
 
@@ -131,17 +122,19 @@ class PhasePDRAlgorithm(PDRAlgorithm):
             direction=final_dir,
             is_tripped=is_tripped,
             margin=total_margin,
-            confidence=1.0 if final_dir != PDRDirection.BLOCK else 0.0,
-            diagnostics={"phases": phase_results, "forward_count": forward_count, "reverse_count": reverse_count},
+            confidence=1.0 if margins else 0.0,
+            diagnostics={"phases": phase_results, "forward_count": forward_count},
         )
 
 
 class PositiveSequencePDRAlgorithm(PDRAlgorithm):
     """Базовый алгоритм РНМ прямой последовательности (публичная версия).
 
-    Рассчитывает фазоры U_1 и I_1 прямой последовательности и угол phi_1 = arg(U_1) - arg(I_1).
+    Результаты:
+    - FORWARD (1): Прямое направление.
+    - REVERSE (0): Обратное направление.
 
-    Уставки задаются относительно (per-unit):
+    Уставки в относительно-именуемых единицах (per-unit):
     - phi_mch_deg: Угол максимальной чувствительности (по умолчанию 45.0 град)
     - u1_min_pu: Порог по напряжению прямой последовательности (по умолчанию 0.05 о.е.)
     - i1_min_pu: Порог по току прямой последовательности (по умолчанию 0.02 о.е.)
@@ -176,7 +169,7 @@ class PositiveSequencePDRAlgorithm(PDRAlgorithm):
 
         if not (valid_u and valid_i):
             return PDROutput(
-                direction=PDRDirection.BLOCK,
+                direction=PDRDirection.REVERSE,
                 is_tripped=False,
                 margin=0.0,
                 confidence=0.0,
@@ -191,7 +184,7 @@ class PositiveSequencePDRAlgorithm(PDRAlgorithm):
 
         if u1_abs < u1_min or i1_abs < i1_min:
             return PDROutput(
-                direction=PDRDirection.BLOCK,
+                direction=PDRDirection.REVERSE,
                 is_tripped=False,
                 margin=0.0,
                 confidence=0.0,
@@ -225,11 +218,7 @@ class PositiveSequencePDRAlgorithm(PDRAlgorithm):
 
 
 class ManufacturerPowerPDRStub(PDRAlgorithm):
-    """Публичная заглушка-напоминание для алгоритмов РНМ по мощности других производителей БАВР.
-
-    Задача для исследовательской группы: провести интернет-поиск и задокументировать
-    вариации алгоритмов РНМ по активной/полной мощности сторонних БАВР.
-    """
+    """Публичная заглушка-напоминание для алгоритмов РНМ по мощности других производителей БАВР."""
 
     algorithm_id = "bavr_manufacturer_power_stub"
     name = "BAVR Manufacturer Power PDR (Stub / Research Task)"
@@ -238,7 +227,7 @@ class ManufacturerPowerPDRStub(PDRAlgorithm):
 
     def compute(self, input_data: PDRInputData) -> PDROutput:
         return PDROutput(
-            direction=PDRDirection.BLOCK,
+            direction=PDRDirection.REVERSE,
             is_tripped=False,
             margin=0.0,
             confidence=0.0,
@@ -247,11 +236,7 @@ class ManufacturerPowerPDRStub(PDRAlgorithm):
 
 
 class ManufacturerCurrentPDRStub(PDRAlgorithm):
-    """Публичная заглушка-напоминание для алгоритмов РНМ с токовыми адаптивностями других производителей.
-
-    Задача для исследовательской группы: задокументировать сторонние варианты
-    токовых органов направления для БАВР.
-    """
+    """Публичная заглушка-напоминание для алгоритмов РНМ с токовыми адаптивностями других производителей."""
 
     algorithm_id = "bavr_manufacturer_current_stub"
     name = "BAVR Manufacturer Current PDR (Stub / Research Task)"
@@ -260,7 +245,7 @@ class ManufacturerCurrentPDRStub(PDRAlgorithm):
 
     def compute(self, input_data: PDRInputData) -> PDROutput:
         return PDROutput(
-            direction=PDRDirection.BLOCK,
+            direction=PDRDirection.REVERSE,
             is_tripped=False,
             margin=0.0,
             confidence=0.0,
