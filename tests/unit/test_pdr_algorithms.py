@@ -13,7 +13,6 @@ def test_phase_pdr_forward():
     """Тест фазного РНМ на прямое направление (ток отстает от напряжения на 45 град)."""
     alg = PhasePDRAlgorithm(phi_mch_deg=45.0, u_min_pu=0.05, i_min_pu=0.02)
 
-    # U: 1.0 < 0 deg; I: 1.0 < -45 deg -> phi = arg(U) - arg(I) = 45 deg = phi_mch
     u_ph = complex(1.0, 0.0)
     i_ph = complex(math.cos(math.radians(-45)), math.sin(math.radians(-45)))
 
@@ -24,6 +23,7 @@ def test_phase_pdr_forward():
 
     out = alg.compute(inp)
     assert out.direction == PDRDirection.FORWARD
+    assert out.direction == 1
     assert out.is_tripped is True
     assert out.margin > 0.9
 
@@ -32,7 +32,6 @@ def test_phase_pdr_reverse():
     """Тест фазного РНМ на обратное направление (ток опережает напряжение на 135 град)."""
     alg = PhasePDRAlgorithm(phi_mch_deg=45.0)
 
-    # U: 1.0 < 0 deg; I: 1.0 < 135 deg -> phi = arg(U) - arg(I) = -135 deg -> delta_phi = -180 deg
     u_ph = complex(1.0, 0.0)
     i_ph = complex(math.cos(math.radians(135)), math.sin(math.radians(135)))
 
@@ -43,11 +42,12 @@ def test_phase_pdr_reverse():
 
     out = alg.compute(inp)
     assert out.direction == PDRDirection.REVERSE
+    assert out.direction == 0
     assert out.is_tripped is False
 
 
 def test_phase_pdr_below_threshold():
-    """Тест фазного РНМ на блокировку при малом токе."""
+    """Тест фазного РНМ на занижение при малом токе."""
     alg = PhasePDRAlgorithm(i_min_pu=0.05)
 
     inp = PDRInputData(
@@ -56,7 +56,8 @@ def test_phase_pdr_below_threshold():
     )
 
     out = alg.compute(inp)
-    assert out.direction == PDRDirection.BLOCK
+    assert out.direction == PDRDirection.REVERSE
+    assert out.direction == 0
     assert out.is_tripped is False
 
 
@@ -67,12 +68,10 @@ def test_pos_seq_pdr_forward():
     a = complex(-0.5, math.sqrt(3) / 2)
     a_sq = complex(-0.5, -math.sqrt(3) / 2)
 
-    # Симметричная 3-фазная система напряжений 1.0 < 0
     ua = complex(1.0, 0.0)
     ub = ua * a_sq
     uc = ua * a
 
-    # Ток прямой последовательности с углом -45 град
     i_mag = complex(math.cos(math.radians(-45)), math.sin(math.radians(-45)))
     ia = i_mag
     ib = ia * a_sq
@@ -85,6 +84,7 @@ def test_pos_seq_pdr_forward():
 
     out = alg.compute(inp)
     assert out.direction == PDRDirection.FORWARD
+    assert out.direction == 1
     assert out.is_tripped is True
 
 
@@ -93,6 +93,7 @@ def test_placeholder_fallback():
     stub = PlaceholderPDRAlgorithm(target_algorithm_id="secret_mir_pdr")
     out = stub.compute(PDRInputData(phasors_u={}, phasors_i={}))
 
-    assert out.direction == PDRDirection.BLOCK
+    assert out.direction == PDRDirection.REVERSE
+    assert out.direction == 0
     assert out.confidence == 0.0
     assert out.diagnostics["is_placeholder_fallback"] is True
