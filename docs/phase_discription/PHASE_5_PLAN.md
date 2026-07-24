@@ -882,12 +882,13 @@ Task-head не должен знать, из Open_EE или French пришёл 
 
 Реализация:
 
-- общий интерфейс `PDRAlgorithm`;
-- чистые векторизованные функции без зависимости от PyTorch Dataset;
-- конфигурации органов отдельно от кода;
-- unit-тесты открытых органов на аналитических фазорах и граничных углах;
-- приватные тесты закрытых органов без публикации формул и чувствительных эталонных трасс;
-- trace/debug output, объясняющий причину действия органа.
+- [x] общий интерфейс `PDRAlgorithm` (см. [base.py](file:///c:/Users/User/Desktop/Projects/Scientific_research_osc_ML/osc_tools/pdr/base.py));
+- [x] чистые векторизованные функции без зависимости от PyTorch Dataset (см. [public_algorithms.py](file:///c:/Users/User/Desktop/Projects/Scientific_research_osc_ML/osc_tools/pdr/public_algorithms.py));
+- [x] конфигурации органов отдельно от кода (см. уставки `tunable_parameters` в `PDRAlgorithm`);
+- [x] unit-тесты открытых органов на аналитических фазорах и граничных углах (см. [test_pdr_algorithms.py](file:///c:/Users/User/Desktop/Projects/Scientific_research_osc_ML/tests/unit/test_pdr_algorithms.py));
+- [x] приватная изолированная структура плагинов (см. каталог [private/pdr_algorithms/](file:///c:/Users/User/Desktop/Projects/Scientific_research_osc_ML/private/pdr_algorithms/));
+- [x] trace/debug output и метаданные диагностики причины действия органа (см. `PDROutput.diagnostics`).
+
 
 ### 11.2. Статистическое исследование органов
 

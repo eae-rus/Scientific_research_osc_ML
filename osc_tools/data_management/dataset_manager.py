@@ -24,7 +24,7 @@ from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
 from osc_tools.ml.labels import clean_labels, add_base_labels, get_target_columns, get_ml_columns
-from osc_tools.features.pdr_calculator import sliding_window_fft
+from osc_tools.features.phasor import sliding_window_fft
 from osc_tools.features.phasor import calculate_symmetrical_components, calculate_power
 from osc_tools.features.polar import calculate_polar_features
 

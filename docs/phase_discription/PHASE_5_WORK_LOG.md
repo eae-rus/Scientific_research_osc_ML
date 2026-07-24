@@ -1,6 +1,25 @@
 # Журнал работ Phase 5
 
-## 23.07.2026 — Анализ 200 эпох предобучения лёгкой модели (pretrain_b_small)
+## 24.07.2026 — Реализация инфраструктуры РНМ (PDR) для Phase 5
+
+- **Анализ полноты сигналов и расчёт отсутствующих каналов** (`osc_tools/pdr/signal_analysis.py`):
+  - Реализован аудит доступности сигналов для фазного РНМ и РНМ прямой последовательности.
+  - Векторный расчёт отсутствующего тока фазы B: $I_B = -(I_A + I_C)$ с присвоением `ChannelProvenance.DERIVED`.
+- **Базовый модуль и открытые алгоритмы РНМ** (`osc_tools/pdr/base.py`, `osc_tools/pdr/public_algorithms.py`):
+  - Созданы контракты данных `PDRInputData`, `PDROutput` и `PDRDirection` (`UNLABELED=-999`, `REVERSE=-1`, `BLOCK=0`, `FORWARD=1`).
+  - Реализованы публичные алгоритмы: `PhasePDRAlgorithm` (пофазный сдвиг, $\phi_{mch}=45^\circ$, уставки $U_{min}, I_{min}$ о.е.) и `PositiveSequencePDRAlgorithm` (фазоры прямой последовательности $U_1, I_1$).
+  - Заложены заглушки `ManufacturerPowerPDRStub` и `ManufacturerCurrentPDRStub` для алгоритмов сторонних производителей БАВР.
+- **Модульный реестр и подгрузка закрытых алгоритмов** (`osc_tools/pdr/registry.py`, `osc_tools/pdr/placeholder.py`):
+  - Реализован `PDRRegistry` с динамической подгрузкой приватных алгоритмов из `private/pdr_algorithms/` (исключён из Git).
+  - Создана заглушка `PlaceholderPDRAlgorithm` для безопасного публичного фолбэка без сбоев.
+- **Генератор псевдоразметки и PyTorch Task Dataset** (`osc_tools/pdr/labeler.py`, `osc_tools/pdr/pdr_dataset.py`):
+  - `PDRDatasetLabeler`: скользящее 10-периодное окно с расчётом 1-й гармоники Фурье. Зона разогрева помечается как `warmup_mask=True` и `direction=-999` (`UNLABELED`), предотвращая смешение с блоком (`BLOCK=0`).
+  - `PDRTaskDataset`: связывает спектральные токены KAN-Transformer с метками РНМ для дообучения.
+- **Обучение, аудит и документация** (`osc_tools/pdr/pdr_trainer.py`, `scripts/phase5_experiments/audit_pdr_signals.py`, `docs/phase_discription/PHASE_5_PDR_ALGORITHMS.md`):
+  - Описан контур тонкой настройки (`PDRTrainer`) с комбинированным лоссом (CrossEntropy + Huber Margin).
+  - Очищены устаревшие legacy-файлы РНМ (`pdr_calculator.py`, `train_PDR.py`), функции перенесены в `phasor.py`.
+  - Все 12 unit и интеграционных тестов РНМ усешно пройдены.
+
 
 - Проведён детальный анализ прогона 200 эпох лёгкой модели (`pretrain_b_small`, `d_model=64`, ~300k параметров, `cosine_restarts` каждые 50 эпох):
   - **Динамика сходимости**: Модель успешно снижала ошибку первые 90 эпох, достигнув глобального минимума валидационного loss **`0.0003576` на 90-й эпохе** (были минимальны и Open_EE = `0.0003875`, и French = `0.0003853`).

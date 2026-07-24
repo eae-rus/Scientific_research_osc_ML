@@ -101,3 +101,30 @@ def calculate_linear_voltages(ua: np.ndarray, ub: np.ndarray, uc: np.ndarray) ->
     ubc = ub - uc
     uca = uc - ua
     return uab, ubc, uca
+
+def sliding_window_fft(signal: np.ndarray, window_size: int, num_harmonics: int, verbose: bool = False) -> np.ndarray:
+    """
+    Выполняет БПФ в скользящем окне.
+    Возвращает комплексные значения для указанного числа гармоник для каждого окна.
+    """
+    n_points = len(signal)
+    if n_points < window_size:
+        if verbose:
+            print(f"Предупреждение: Длина сигнала ({n_points}) меньше окна FFT ({window_size}). Пропуск FFT.")
+        return np.full((n_points, num_harmonics), np.nan + 1j*np.nan, dtype=complex)
+
+    windows = np.lib.stride_tricks.sliding_window_view(signal, window_size)
+    hanning_window = np.hanning(window_size)
+    windows_windowed = windows * hanning_window
+
+    fft_coeffs = np.fft.fft(windows_windowed, axis=-1) / window_size
+    harmonics = fft_coeffs[:, 1 : num_harmonics + 1] * 2
+
+    fft_results = np.full((n_points, num_harmonics), np.nan + 1j*np.nan, dtype=complex)
+    n_windows = len(harmonics)
+    end_indices = np.arange(window_size - 1, window_size - 1 + n_windows)
+    valid_mask = end_indices < n_points
+    fft_results[end_indices[valid_mask]] = harmonics[valid_mask]
+
+    return fft_results
+

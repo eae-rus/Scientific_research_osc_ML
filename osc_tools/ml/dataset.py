@@ -3,7 +3,7 @@ from torch.utils.data import Dataset
 import polars as pl
 import numpy as np
 from typing import List, Union, Optional, Tuple
-from osc_tools.features.pdr_calculator import sliding_window_fft
+from osc_tools.features.phasor import sliding_window_fft
 from osc_tools.features.phasor import (
     calculate_symmetrical_components, 
     calculate_power, 
