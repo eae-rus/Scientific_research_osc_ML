@@ -1,5 +1,33 @@
 # Журнал работ Phase 5
 
+## 25.07.2026 — Рефакторинг открытых измерительных органов РНМ и физическая стандартизация
+
+- **Глубокий анализ PDR-отчётов AI-ассистентов**:
+  - Создана 7-главная глава 1 для диссертации пользователя [`DISSERTATION_PDR_BAVR_SECTION.md`](file:///d:/Программирование/Fork/Scientific_research_osc_ML/docs/article/DISSERTATION_PDR_BAVR_SECTION.md).
+  - Обновлён спецификационный документ [`PDR_CODEBASE_SPECIFICATION.md`](file:///d:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PDR_CODEBASE_SPECIFICATION.md).
+- **Реструктуризация открытых алгоритмов РНМ по 4 фундаментальным физическим принципам**:
+  - Дублирование по "брендам производителей" заменено на **4 физических алгоритма**:
+    1. `PhasePDRAlgorithm` (`phase_pdr_basic`, `basic_phase.py`) — пофазный угловой алгоритм с поддержкой `quadrature_90` ($I_A \leftrightarrow U_{BC}$) и `direct` ($I_A \leftrightarrow U_A$) поляризаций.
+    2. `PositiveSequencePDRAlgorithm` (`pos_seq_pdr_basic`, `basic_pos_seq.py`) — угловой алгоритм прямой последовательности $U_1, I_1$.
+    3. `PhasePowerPDRAlgorithm` (`phase_power_pdr_basic`, `basic_phase_power.py`) — пофазный мощностной алгоритм 90° схемы (Механотроника БМРЗ-БАВР).
+    4. `PositiveSequencePowerPDRAlgorithm` (`pos_seq_power_pdr_basic`, `basic_pos_seq_power.py`) — мощностной алгоритм прямой последовательности (SEL 32P / ЭКРА 217 / ABB 32R).
+- **Универсальное восстановление 3-х фазных и 3-х линейных напряжений** (`osc_tools/pdr/voltage_utils.py`):
+  - Реализована функция `derive_unified_voltages`, автоматически вычисляющая 3-е линейное напряжение из **абсолютно любой пары из 3-х возможных комбинаций** ($U_{AB}+U_{BC}$, $U_{BC}+U_{CA}$, $U_{CA}+U_{AB}$).
+  - Добавлено автовычисление эквивалентных фазных напряжений $U_A, U_B, U_C$ при отутствии фазных каналов, что делает все 4 алгоритма прозрачными для работы от 2 линейных напряжений.
+- **Стандартизация логики БАВР, памяти предыстории и уставок**:
+  - В `osc_tools/pdr/base.py` обновлен стандарт выходов БАВР:
+    - **`FORWARD (1)`** = БЛОКИРОВКА БАВР ($P > 0$, мощность в нагрузку) $\implies$ `is_tripped = True`.
+    - **`REVERSE (0)`** = РАЗРЕШЕНИЕ БАВР ($P < 0$, мощность в сеть / выбег двигателей) $\implies$ `is_tripped = False`.
+    - **`UNLABELED (-999)`** = Неразмеченная/невалидная зона (начальный прогрев БПФ / отсутствие данных).
+  - Память $U_{mem}$ переходит на первую доступную БПФ-точку записи ($N_{fourier} \ge 1$), если глубина предыстории -200 мс еще не накопилась.
+  - Уставка по углу зафиксирована равной $\varphi_{mch\_deg} = 45.0^\circ$ во всех 4 физических органах.
+  - Уставка по мощностному моменту 3-фазной сети выверена с учётом линейно-фазного коэффициента $\sqrt{3}$: $P_{thresh} = \sqrt{3} \cdot 1.0 \cdot 0.05 = \mathbf{0.0866\text{ о.е.}}$.
+  - В `voltage_utils.py` добавлена функция `scale_thresholds_for_profile` для автопересчета уставок под профили входных каналов (`dataset_internal`: деление на 20 по току, на 3 по напряжению и на 60 по мощности).
+- **Обновление реестра и документации**:
+  - `PDRRegistry` обновлен на 4 физических класса.
+  - Переписан [`PUBLIC_PDR_ALGORITHMS_DESCRIPTION.md`](file:///d:/Программирование/Fork/Scientific_research_osc_ML/osc_tools/pdr/public_algorithms/PUBLIC_PDR_ALGORITHMS_DESCRIPTION.md).
+  - Выполнено полное тестирование `test_public_pdr.py` — 100% PASS.
+
 ## 24.07.2026 — Анализ результатов предобучения модели Heavy (pretrain_b_heavy, 4.8M параметров)
 
 - Проведён детальный анализ прогона 200 эпох тяжелой модели (`pretrain_b_heavy`, `d_model=256`, 8 слоёв, `d_ff=1024`, ~4.8 млн параметров):
