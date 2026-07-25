@@ -50,7 +50,7 @@ class PositiveSequencePDRAlgorithm(PDRAlgorithm):
 
         if i1 is None or not np.isfinite(i1):
             return PDROutput(
-                direction=PDRDirection.REVERSE,
+                direction=PDRDirection.UNLABELED,
                 is_tripped=False,
                 margin=-half_sector,
                 diagnostics={"reason": "missing_current_sequence"},

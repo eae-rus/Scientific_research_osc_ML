@@ -46,12 +46,12 @@ class PositiveSequencePowerPDRAlgorithm(PDRAlgorithm):
 
         i1 = compute_positive_sequence(input_data.phasors_i, is_voltage=False)
 
-        if i1 is None or not np.isfinite(i1) or abs(i1) < i_min:
+        if i1 is None or not np.isfinite(i1):
             return PDROutput(
-                direction=PDRDirection.REVERSE,
+                direction=PDRDirection.UNLABELED,
                 is_tripped=False,
                 margin=0.0,
-                diagnostics={"reason": "current_below_threshold"},
+                diagnostics={"reason": "missing_current_sequence"},
             )
 
         u1_raw = compute_positive_sequence(input_data.phasors_u, is_voltage=True)

@@ -49,7 +49,7 @@ class PhasePowerPDRAlgorithm(PDRAlgorithm):
         uv = derive_unified_voltages(input_data.phasors_u)
         if uv.mode == "invalid":
             return PDROutput(
-                direction=PDRDirection.REVERSE,
+                direction=PDRDirection.UNLABELED,
                 is_tripped=False,
                 margin=0.0,
                 diagnostics={"reason": "missing_voltage_signals"},
