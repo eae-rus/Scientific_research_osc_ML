@@ -1,7 +1,7 @@
 """Реестр алгоритмов РНМ (PDRRegistry).
 
 Управляет поиском, регистрацией и динамической подгрузкой 4 открытых физических алгоритмов РНМ
-и закрытых (private) плагинов.
+и закрытых (private) адаптивных плагинов.
 """
 
 from __future__ import annotations
@@ -22,6 +22,17 @@ from .public_algorithms import (
 from .placeholder import PlaceholderPDRAlgorithm
 
 logger = logging.getLogger(__name__)
+
+# Карта удобных алиасов для вызова алгоритмов
+ALGORITHM_ALIASES: Dict[str, str] = {
+    "adaptive_pdr": "adaptive_pdr_mir",
+    "mir_adaptive": "adaptive_pdr_mir",
+    "bavr_adaptive": "adaptive_pdr_mir",
+    "phase_pdr": "phase_pdr_basic",
+    "pos_seq_pdr": "pos_seq_pdr_basic",
+    "phase_power_pdr": "phase_power_pdr_basic",
+    "pos_seq_power_pdr": "pos_seq_power_pdr_basic",
+}
 
 
 class PDRRegistry:
@@ -59,7 +70,7 @@ class PDRRegistry:
         cls._initialized_private = True
         try:
             importlib.import_module("private.pdr_algorithms")
-            logger.info("Закрытые алгоритмы РНМ из private/pdr_algorithms успешно подключены.")
+            logger.info("Закрытый адаптивный орган РНМ из private/pdr_algorithms успешно подключен.")
         except ImportError:
             pass
 
@@ -69,24 +80,29 @@ class PDRRegistry:
         algorithm_id: str,
         fallback_id: Optional[str] = "pos_seq_pdr_basic",
     ) -> Type[PDRAlgorithm]:
-        """Получить класс алгоритма по его ID с возможностью использования fallback."""
+        """Получить класс алгоритма по его ID или алиасу с поддержкой fallback."""
         cls._try_load_private_plugins()
 
-        if algorithm_id in cls._registry:
-            return cls._registry[algorithm_id]
+        # Разрешение алиасов
+        resolved_id = ALGORITHM_ALIASES.get(algorithm_id, algorithm_id)
+
+        if resolved_id in cls._registry:
+            return cls._registry[resolved_id]
+
+        resolved_fallback = ALGORITHM_ALIASES.get(fallback_id, fallback_id) if fallback_id else None
 
         logger.warning(
-            f"Алгоритм РНМ '{algorithm_id}' не найден в реестре. "
-            f"Применяется fallback на '{fallback_id}'."
+            f"Алгоритм РНМ '{algorithm_id}' (запрошенный как '{resolved_id}') не найден в реестре. "
+            f"Применяется fallback на '{resolved_fallback}'."
         )
 
-        if fallback_id and fallback_id in cls._registry:
-            return cls._registry[fallback_id]
+        if resolved_fallback and resolved_fallback in cls._registry:
+            return cls._registry[resolved_fallback]
 
         return PlaceholderPDRAlgorithm
 
 
-# Регистрация встроенных открытых физических алгоритмов
+# Регистрация открытых физических алгоритмов и заглушек
 PDRRegistry.register(PhasePDRAlgorithm)
 PDRRegistry.register(PositiveSequencePDRAlgorithm)
 PDRRegistry.register(PhasePowerPDRAlgorithm)
@@ -97,10 +113,14 @@ PDRRegistry.register(PlaceholderPDRAlgorithm)
 
 
 def get_pdr_algorithm(
-    algorithm_id: str,
+    algorithm_id: str = "adaptive_pdr_mir",
     fallback_id: Optional[str] = "pos_seq_pdr_basic",
     **kwargs: Any,
 ) -> PDRAlgorithm:
-    """Вспомогательная функция для создания экземпляра алгоритма из реестра."""
+    """Вспомогательная функция для создания экземпляра алгоритма из реестра.
+
+    По умолчанию вызовет закрытый адаптивный орган 'adaptive_pdr_mir' со всеми
+    включенными адаптивностями и стандартными уставками БАВР.
+    """
     alg_cls = PDRRegistry.get_class(algorithm_id, fallback_id=fallback_id)
     return alg_cls(**kwargs)

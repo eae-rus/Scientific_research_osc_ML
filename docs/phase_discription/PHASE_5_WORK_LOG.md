@@ -1,5 +1,12 @@
 # Журнал работ Phase 5
 
+## 26.07.2026 — Интеграция закрытого адаптивного алгоритма в PDRRegistry и система алиасов
+
+- **Поддержка вызова закрытого адаптивного органа из `PDRRegistry`** ([`osc_tools/pdr/registry.py`](file:///d:/Программирование/Fork/Scientific_research_osc_ML/osc_tools/pdr/registry.py)):
+  - В `PDRRegistry` добавлена система разрешимых алиасов `ALGORITHM_ALIASES`, связывающая удобные имена (`"adaptive_pdr"`, `"bavr_adaptive"`, `"mir_adaptive"`) с закрытым ID `"adaptive_pdr_mir"`.
+  - По умолчанию вызов `get_pdr_algorithm()` автоматически загружает и инициализирует экземпляр закрытого адаптивного алгоритма `AdaptivePDRAlgorithm` со всеми включенными адаптивными уставками БАВР.
+  - Написаны unit-тесты (`test_adaptive_registry.py` — **PASS**).
+
 ## 26.07.2026 — Синхронизация модуля анализа сигналов signal_analysis.py
 
 - **Универсальный векторный расчёт любого отсутствующего тока** ([`osc_tools/pdr/signal_analysis.py`](file:///d:/Программирование/Fork/Scientific_research_osc_ML/osc_tools/pdr/signal_analysis.py)):
