@@ -12,7 +12,7 @@ from typing import Dict, Any
 import numpy as np
 
 from osc_tools.pdr.base import PDRAlgorithm, PDRInputData, PDROutput, PDRDirection
-from osc_tools.pdr.voltage_utils import compute_positive_sequence, get_memory_voltage, scale_thresholds_for_profile
+from osc_tools.pdr.pdr_signal_utils import compute_positive_sequence, get_memory_voltage, scale_thresholds_for_profile
 
 
 def _wrap_angle_deg(angle_deg: float) -> float:

@@ -1,4 +1,4 @@
-"""Утилиты работы с фазорами напряжений, восстановлением любых линейных цепей, восстановлением токов и памятью предыстории.
+"""Утилиты работы с фазорами напряжений и токов, восстановлением линейных/фазных цепей и памятью предыстории.
 
 Обеспечивают:
 - Восстановление 3-го линейного напряжения для ВСЕХ комбинаций пары (AB/BC, BC/CA, CA/AB).
@@ -44,7 +44,6 @@ def derive_unified_voltages(
     if not phasors_u:
         return empty_res
 
-    # 1. Попытка извлечения 3 фазных напряжений
     ua = phasors_u.get("A") or phasors_u.get("UA")
     ub = phasors_u.get("B") or phasors_u.get("UB")
     uc = phasors_u.get("C") or phasors_u.get("UC")
@@ -55,12 +54,10 @@ def derive_unified_voltages(
             u_ln = {"AB": ua - ub, "BC": ub - uc, "CA": uc - ua}
             return UnifiedVoltagePhasors(u_ph, u_ln, "phase")
 
-    # 2. Попытка извлечения линейных напряжений (любая пара из 3-х!)
     u_ab = phasors_u.get("AB") or phasors_u.get("UAB")
     u_bc = phasors_u.get("BC") or phasors_u.get("UBC")
     u_ca = phasors_u.get("CA") or phasors_u.get("UCA")
 
-    # Автоматическое восстановление 3-го линейного из любой пары
     if u_ab is not None and u_bc is not None and np.isfinite([u_ab, u_bc]).all():
         u_ca = -(u_ab + u_bc)
     elif u_bc is not None and u_ca is not None and np.isfinite([u_bc, u_ca]).all():
@@ -72,7 +69,6 @@ def derive_unified_voltages(
 
     if u_ab is not None and u_bc is not None and u_ca is not None and np.isfinite([u_ab, u_bc, u_ca]).all():
         u_ln = {"AB": u_ab, "BC": u_bc, "CA": u_ca}
-        # Эквивалентные фазные напряжения при нулевом потенциале нейтрали
         ua_eq = (u_ab - u_ca) / 3.0
         ub_eq = (u_bc - u_ab) / 3.0
         uc_eq = (u_ca - u_bc) / 3.0
@@ -175,16 +171,7 @@ def scale_thresholds_for_profile(
     current_reserve: float = 20.0,
     voltage_reserve: float = 3.0,
 ) -> Tuple[float, float, float]:
-    """Автоматический пересчёт уставок в зависимости от профиля входных сигналов.
-
-    - scale_profile = 'physical_pu': сигналы в чистых физических о.е.
-      Уставки не изменяются (0.05, 0.05, 0.0866).
-    - scale_profile = 'dataset_internal': внутренний контракт датасета (ток делен на 20, напряжение на 3).
-      Уставки автоматически делятся:
-      I_min_eff = I_min / 20.0 (0.0025 о.е.)
-      U_min_eff = U_min / 3.0 (0.01667 о.е.)
-      P_thresh_eff = P_thresh / (20.0 * 3.0) = P_thresh / 60.0 (0.001443 о.е.)
-    """
+    """Автоматический пересчёт уставок в зависимости от профиля входных сигналов."""
     if scale_profile == "dataset_internal":
         i_eff = i_min / current_reserve
         u_eff = u_min / voltage_reserve

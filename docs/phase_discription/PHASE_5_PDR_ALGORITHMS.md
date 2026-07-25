@@ -20,7 +20,7 @@
 Scientific_research_osc_ML/
 ├── osc_tools/pdr/                             # Публичное ядро РНМ (в Git)
 │   ├── base.py                                # Контракты PDRInputData, PDROutput, PDRDirection
-│   ├── voltage_utils.py                       # Восстановление 2 линейных напряжений и U_mem
+│   ├── pdr_signal_utils.py                    # Восстановление 2 линейных напряжений, 2 токов и U_mem
 │   ├── signal_analysis.py                     # Проверка полноты сигналов и расчёт I_B = -(I_A + I_C)
 │   ├── registry.py                            # Реестр PDRRegistry и подгрузка плагинов
 │   ├── placeholder.py                         # Безопасная заглушка PlaceholderPDRAlgorithm
