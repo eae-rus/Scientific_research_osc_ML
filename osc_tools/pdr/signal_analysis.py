@@ -1,7 +1,7 @@
 """Модуль анализа полноты сигналов и их восстановления для РНМ.
 
 Реализует правила оценки доступности каналов напряжений и токов, а также
-векторный расчёт отсутствующего тока фазы B: I_B = -(I_A + I_C).
+векторное восстановление любого 3-го недостающего тока (Ia + Ib + Ic = 0).
 """
 
 from __future__ import annotations
@@ -29,11 +29,10 @@ def derive_missing_currents(
     signals: np.ndarray,
     provenance: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Векторный расчёт отсутствующего тока фазы B из токов фаз A и C.
+    """Векторный расчёт любого 3-го недостающего фазного тока из двух любых (Ia + Ib + Ic = 0).
 
-    Если ток фазы A (индекс 0) и фазы C (индекс 2) измерены (MEASURED),
-    а ток фазы B (индекс 1) отсутствует (MISSING) или содержит NaN,
-    он вычисляется как: I_B = -(I_A + I_C), а provenance для IB меняется на DERIVED.
+    Если любые два фазных тока из (IA, IB, IC) присутствуют, а 3-й отсутствует
+    или содержит NaN, он восстанавливается векторно, а его provenance меняется на DERIVED.
 
     Args:
         signals: Массив сигналов формы (8, T)
@@ -50,13 +49,22 @@ def derive_missing_currents(
     idx_ic = CHANNEL_ORDER.index("IC")
 
     ia_ok = (provenance[idx_ia] != ChannelProvenance.MISSING) and np.isfinite(signals[idx_ia]).any()
+    ib_ok = (provenance[idx_ib] != ChannelProvenance.MISSING) and np.isfinite(signals[idx_ib]).any()
     ic_ok = (provenance[idx_ic] != ChannelProvenance.MISSING) and np.isfinite(signals[idx_ic]).any()
-    ib_missing = (provenance[idx_ib] == ChannelProvenance.MISSING) or not np.isfinite(signals[idx_ib]).all()
 
-    if ia_ok and ic_ok and ib_missing:
-        # Расчёт I_B = -(I_A + I_C)
+    ia_missing = (provenance[idx_ia] == ChannelProvenance.MISSING) or not np.isfinite(signals[idx_ia]).all()
+    ib_missing = (provenance[idx_ib] == ChannelProvenance.MISSING) or not np.isfinite(signals[idx_ib]).all()
+    ic_missing = (provenance[idx_ic] == ChannelProvenance.MISSING) or not np.isfinite(signals[idx_ic]).all()
+
+    if ib_ok and ic_ok and ia_missing:
+        signals[idx_ia] = -(signals[idx_ib] + signals[idx_ic])
+        provenance[idx_ia] = int(ChannelProvenance.DERIVED)
+    elif ia_ok and ic_ok and ib_missing:
         signals[idx_ib] = -(signals[idx_ia] + signals[idx_ic])
         provenance[idx_ib] = int(ChannelProvenance.DERIVED)
+    elif ia_ok and ib_ok and ic_missing:
+        signals[idx_ic] = -(signals[idx_ia] + signals[idx_ib])
+        provenance[idx_ic] = int(ChannelProvenance.DERIVED)
 
     return signals, provenance
 
@@ -88,31 +96,29 @@ def check_pdr_signal_sufficiency(
         else:
             measured_ch.append(ch_name)
 
-    # Проверка напряжений: нужно ли фазное напряжение UA, UB, UC
-    # В Phase 5 принята приоритетная работа по фазным напряжениям СШ (UA BB, UB BB, UC BB)
-    has_u_phase = all(
-        provenance[CHANNEL_ORDER.index(ch)] != ChannelProvenance.MISSING
-        for ch in ("UA", "UB", "UC")
+    # Проверка напряжений: нужно 3 фазных или 2 линейных напряжения
+    valid_u_count = sum(
+        1 for ch in ("UA", "UB", "UC")
+        if provenance[CHANNEL_ORDER.index(ch)] != ChannelProvenance.MISSING
     )
-    
-    # Проверка токов: нужны все три фазных тока (измеренные или рассчитанные)
-    has_i_three_phase = all(
-        provenance[CHANNEL_ORDER.index(ch)] != ChannelProvenance.MISSING
-        for ch in ("IA", "IB", "IC")
+    has_u_sufficient = (valid_u_count >= 2) or (voltage_basis == "line")
+
+    # Проверка токов: доступно ли хотя бы 2 фазных тока для восстановления 3-го
+    valid_i_count = sum(
+        1 for ch in ("IA", "IB", "IC")
+        if provenance[CHANNEL_ORDER.index(ch)] != ChannelProvenance.MISSING
     )
+    has_i_sufficient = valid_i_count >= 2
 
-    if voltage_basis != "phase" and not has_u_phase:
-        notes.append(f"Напряжения имеют базис {voltage_basis!r}, фазные напряжения отсутствуют.")
+    if voltage_basis != "phase" and valid_u_count < 3:
+        notes.append(f"Напряжения имеют базис {voltage_basis!r}, выполнена генерация эквивалентных фазных напряжений.")
 
-    can_phase = has_u_phase and any(
-        provenance[CHANNEL_ORDER.index(ch)] != ChannelProvenance.MISSING
-        for ch in ("IA", "IB", "IC")
-    )
+    can_phase = has_u_sufficient and valid_i_count >= 1
+    can_pos_seq = has_u_sufficient and has_i_sufficient
 
-    can_pos_seq = has_u_phase and has_i_three_phase
-
-    if "IB" in derived_ch:
-        notes.append("Ток фазы B (IB) рассчитан векторно из IA и IC.")
+    for ch in ("IA", "IB", "IC"):
+        if ch in derived_ch:
+            notes.append(f"Ток фазы {ch[1]} ({ch}) рассчитан векторно из двух других фаз.")
 
     return PDRSignalAuditResult(
         can_run_phase_pdr=can_phase,
