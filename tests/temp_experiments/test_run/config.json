@@ -1,0 +1,36 @@
+{
+    "model": {
+        "name": "SimpleMLP",
+        "params": {
+            "input_size": 10,
+            "output_size": 2
+        }
+    },
+    "data": {
+        "path": "dummy",
+        "window_size": 10,
+        "batch_size": 2,
+        "num_workers": 0,
+        "features": null,
+        "target": null,
+        "mode": "classification",
+        "norm_coef_path": null,
+        "target_window_mode": "point"
+    },
+    "training": {
+        "epochs": 1,
+        "learning_rate": 0.01,
+        "weight_decay": 0.0,
+        "device": "cpu",
+        "save_dir": "D:\\\u041f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u0435\\Fork\\Scientific_research_osc_ML\\tests\\temp_experiments",
+        "experiment_name": "test_run",
+        "seed": 42,
+        "use_pos_weight": false,
+        "checkpoint_frequency": 2,
+        "ml23_loss_weight": 1.0
+    },
+    "model_info": {
+        "num_params": 10178,
+        "device": "cpu"
+    }
+}

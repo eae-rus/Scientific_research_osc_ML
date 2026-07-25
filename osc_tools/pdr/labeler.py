@@ -155,11 +155,32 @@ class PDRDatasetLabeler:
             hist_end_idx = end_idx - warmup_samples
             hist_phasors = compute_causal_h1_phasors(signals, hist_end_idx, spp) if hist_end_idx >= spp - 1 else None
 
-            u_dict = {ch: current_phasors[f"U{ch}"] for ch in ("A", "B", "C", "N") if f"U{ch}" in current_phasors}
-            i_dict = {ch: current_phasors[f"I{ch}"] for ch in ("A", "B", "C", "N") if f"I{ch}" in current_phasors}
+            # Если глубокая предыстория (t - 200 мс) недоступна, берем фазоры первого валидного БПФ-окна (spp - 1)
+            if hist_phasors is None:
+                first_valid_idx = spp - 1
+                hist_phasors = compute_causal_h1_phasors(signals, first_valid_idx, spp) if end_idx >= first_valid_idx else None
 
-            hist_u = {ch: hist_phasors[f"U{ch}"] for ch in ("A", "B", "C", "N") if f"U{ch}" in hist_phasors} if hist_phasors else None
-            hist_i = {ch: hist_phasors[f"I{ch}"] for ch in ("A", "B", "C", "N") if f"I{ch}" in hist_phasors} if hist_phasors else None
+            u_dict = {}
+            for key, val in current_phasors.items():
+                if key.startswith("U"):
+                    u_dict[key[1:]] = val
+
+            i_dict = {}
+            for key, val in current_phasors.items():
+                if key.startswith("I"):
+                    i_dict[key[1:]] = val
+
+            hist_u = {}
+            if hist_phasors:
+                for key, val in hist_phasors.items():
+                    if key.startswith("U"):
+                        hist_u[key[1:]] = val
+
+            hist_i = {}
+            if hist_phasors:
+                for key, val in hist_phasors.items():
+                    if key.startswith("I"):
+                        hist_i[key[1:]] = val
 
             inp = PDRInputData(
                 phasors_u=u_dict,

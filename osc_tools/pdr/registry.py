@@ -1,7 +1,7 @@
 """Реестр алгоритмов РНМ (PDRRegistry).
 
-Управляет поиском, регистрацией и динамической подгрузкой алгоритмов РНМ.
-Поддерживает открытые и закрытые (private) плагины с безопасным fallback.
+Управляет поиском, регистрацией и динамической подгрузкой 4 открытых физических алгоритмов РНМ
+и закрытых (private) плагинов.
 """
 
 from __future__ import annotations
@@ -14,6 +14,8 @@ from .base import PDRAlgorithm
 from .public_algorithms import (
     PhasePDRAlgorithm,
     PositiveSequencePDRAlgorithm,
+    PhasePowerPDRAlgorithm,
+    PositiveSequencePowerPDRAlgorithm,
     ManufacturerPowerPDRStub,
     ManufacturerCurrentPDRStub,
 )
@@ -56,11 +58,9 @@ class PDRRegistry:
             return
         cls._initialized_private = True
         try:
-            # Импорт модуля плагинов если он существует
             importlib.import_module("private.pdr_algorithms")
             logger.info("Закрытые алгоритмы РНМ из private/pdr_algorithms успешно подключены.")
         except ImportError:
-            # Разрешённое отсутствие закрытых файлов в публичном репозитории
             pass
 
     @classmethod
@@ -86,9 +86,11 @@ class PDRRegistry:
         return PlaceholderPDRAlgorithm
 
 
-# Регистрация встроенных публичных алгоритмов
+# Регистрация встроенных открытых физических алгоритмов
 PDRRegistry.register(PhasePDRAlgorithm)
 PDRRegistry.register(PositiveSequencePDRAlgorithm)
+PDRRegistry.register(PhasePowerPDRAlgorithm)
+PDRRegistry.register(PositiveSequencePowerPDRAlgorithm)
 PDRRegistry.register(ManufacturerPowerPDRStub)
 PDRRegistry.register(ManufacturerCurrentPDRStub)
 PDRRegistry.register(PlaceholderPDRAlgorithm)
@@ -99,8 +101,6 @@ def get_pdr_algorithm(
     fallback_id: Optional[str] = "pos_seq_pdr_basic",
     **kwargs: Any,
 ) -> PDRAlgorithm:
-    """Удобный фабричный метод получения экземпляра алгоритма РНМ."""
-    cls = PDRRegistry.get_class(algorithm_id, fallback_id=fallback_id)
-    if issubclass(cls, PlaceholderPDRAlgorithm):
-        return cls(target_algorithm_id=algorithm_id, **kwargs)
-    return cls(**kwargs)
+    """Вспомогательная функция для создания экземпляра алгоритма из реестра."""
+    alg_cls = PDRRegistry.get_class(algorithm_id, fallback_id=fallback_id)
+    return alg_cls(**kwargs)
