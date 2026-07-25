@@ -1,5 +1,15 @@
 # Журнал работ Phase 5
 
+## 26.07.2026 — Аудит и доработка PyTorch датасета PDRTaskDataset (pdr_dataset.py)
+
+- **Полная совместимость с Phase 5 SpectralFeatureBuilder**:
+  - В [`osc_tools/pdr/pdr_dataset.py`](file:///d:/Программирование/Fork/Scientific_research_osc_ML/osc_tools/pdr/pdr_dataset.py) адаптирован вызов `SpectralFeatureBuilder.build` с вычислением спектральных признаков (Version A / Version B) для KAN-Transformer.
+  - Добавлена безопасность считывания меток из сжатых NPZ архивов и их закрытие для надежной работы в батчах.
+- **Поддержка раннего отбора размеченных точек (`include_warmup`)**:
+  - Реализован параметр `include_warmup`: при `include_warmup=False` фильтруются точки разметки контекста нейросети, а при `include_warmup=True` становятся доступны абсолютно все физически размеченные учителем отсчёты (начиная со 2-го отсчета БПФ).
+  - Реализовано автодополнение `sub_signal` краевыми значениями (edge padding) при формировании фрагментов в начале осциллограммы.
+  - Проведены unit-тесты (`test_pdr_dataset_unit.py` — **100% PASS**).
+
 ## 26.07.2026 — Оптимизация разметчика PDRDatasetLabeler и ранний старт разметки
 
 - **Разметка со 2-го окна БПФ (1 период $end\_idx \ge spp - 1$)** ([`osc_tools/pdr/labeler.py`](file:///d:/Программирование/Fork/Scientific_research_osc_ML/osc_tools/pdr/labeler.py)):
