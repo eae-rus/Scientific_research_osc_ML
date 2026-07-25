@@ -1,5 +1,14 @@
 # Журнал работ Phase 5
 
+## 26.07.2026 — Адаптация модуля обучения PDRTrainer (pdr_trainer.py)
+
+- **Безопасная обработка размерностей в PDRTaskHead**:
+  - В [`osc_tools/pdr/pdr_trainer.py`](file:///d:/Программирование/Fork/Scientific_research_osc_ML/osc_tools/pdr/pdr_trainer.py) обновлён метод `forward`: корректно обрабатываются 2D и 3D формы признаков тензора (`last_token = x[:, -1, :] if x.ndim == 3 else x`).
+  - Добавлена очистка нечисловых признаков через `torch.nan_to_num(feats, nan=0.0)` для стабильного градиентного спуска.
+- **Метрики качества BAVR классификации и регрессии**:
+  - Модуль оценки `evaluate_pdr_metrics` расширен метриками `Precision`, `Recall`, `F1-score` для бинарной классификации БАВР (`FORWARD` / `REVERSE`), а также `MAE Margin` регрессионного углового/мощностного запаса.
+  - Написаны unit-тесты (`test_pdr_trainer_unit.py` — **100% PASS**).
+
 ## 26.07.2026 — Аудит и доработка PyTorch датасета PDRTaskDataset (pdr_dataset.py)
 
 - **Полная совместимость с Phase 5 SpectralFeatureBuilder**:

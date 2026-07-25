@@ -35,14 +35,14 @@ class PDRTaskHead(nn.Module if HAS_TORCH else object):
             raise RuntimeError("PyTorch не установлен.")
         super().__init__()
         self.use_margin_head = use_margin_head
-        # Линейные/KAN классификатор направления (0: REVERSE, 1: BLOCK, 2: FORWARD)
+        # Классификатор направления БАВР (0: REVERSE / Разрешение, 1: FORWARD / Блокировка)
         self.class_head = nn.Linear(d_model, num_classes)
-        # Регрессор запаса срабатывания (margin)
+        # Регрессор углового/мощностного запаса срабатывания (margin)
         self.margin_head = nn.Linear(d_model, 1) if use_margin_head else None
 
     def forward(self, x: torch.Tensor) -> Dict[str, torch.Tensor]:
-        # x: (batch_size, num_tokens, d_model) -> берем последний токен
-        last_token = x[:, -1, :]
+        # x: (batch_size, num_tokens, d_model) или (batch_size, d_model)
+        last_token = x[:, -1, :] if x.ndim == 3 else x
         logits = self.class_head(last_token)
         out = {"logits": logits}
         if self.margin_head is not None:
@@ -72,7 +72,7 @@ def pdr_combined_loss(
 
 
 def evaluate_pdr_metrics(
-    model: nn.Module,
+    model: Optional[nn.Module],
     head: PDRTaskHead,
     dataloader: DataLoader,
     device: str = "cpu",
@@ -81,7 +81,8 @@ def evaluate_pdr_metrics(
     if not HAS_TORCH:
         return {}
 
-    model.eval()
+    if model is not None:
+        model.eval()
     head.eval()
 
     all_preds: list[int] = []
@@ -91,11 +92,12 @@ def evaluate_pdr_metrics(
     with torch.no_grad():
         for batch in dataloader:
             feats = batch["features"].to(device)
+            feats = torch.nan_to_num(feats, nan=0.0)
             target_cls = batch["target_class"].to(device)
             target_margin = batch["pdr_margin"].to(device)
 
-            # Передача через модель backbone (если доступна) или линейную проекцию
-            feats_out = model(feats) if hasattr(model, "forward") else feats
+            # Передача через backbone модель (если задана)
+            feats_out = model(feats) if (model is not None and hasattr(model, "forward")) else feats
             out = head(feats_out)
 
             preds = torch.argmax(out["logits"], dim=-1)
@@ -112,8 +114,20 @@ def evaluate_pdr_metrics(
     acc = float(np.mean(all_preds_arr == all_targets_arr)) if len(all_targets_arr) > 0 else 0.0
     mae_margin = float(np.mean(margin_errors)) if margin_errors else 0.0
 
+    # Вычисление Precision, Recall и F1-score для класса FORWARD (1)
+    tp = float(np.sum((all_preds_arr == 1) & (all_targets_arr == 1)))
+    fp = float(np.sum((all_preds_arr == 1) & (all_targets_arr == 0)))
+    fn = float(np.sum((all_preds_arr == 0) & (all_targets_arr == 1)))
+
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+    f1 = 2.0 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+
     return {
         "accuracy": acc,
+        "precision": precision,
+        "recall": recall,
+        "f1_score": f1,
         "mae_margin": mae_margin,
         "n_samples": len(all_targets),
     }
