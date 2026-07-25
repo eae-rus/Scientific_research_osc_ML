@@ -1,10 +1,11 @@
-"""Утилиты работы с фазорами напряжений, восстановлением любых линейных цепей и памятью предыстории.
+"""Утилиты работы с фазорами напряжений, восстановлением любых линейных цепей, восстановлением токов и памятью предыстории.
 
 Обеспечивают:
 - Восстановление 3-го линейного напряжения для ВСЕХ комбинаций пары (AB/BC, BC/CA, CA/AB).
 - Расчёт эквивалентных фазных напряжений из 3 линейных (Ua = (Uab - Uca)/3).
+- Восстановление любого 3-го недостающего фазного тока из двух любых (Ia + Ib + Ic = 0).
 - Расчёт напряжений и токов прямой последовательности.
-- Извлечение напряжения предыстории U_mem.
+- Извлечение напряжения и тока предыстории U_mem, I_mem.
 - Автоматический масштаб уставок под внутренний контракт датасета (деление на 20/3/60).
 """
 
@@ -81,6 +82,41 @@ def derive_unified_voltages(
     return empty_res
 
 
+def derive_unified_currents(
+    phasors_i: Dict[str, complex],
+) -> Dict[str, complex]:
+    """Универсальное восстановление любого 3-го фазного тока из 2-х любых (Ia + Ib + Ic = 0).
+
+    Returns:
+        Словарь фазных токов {"A": ..., "B": ..., "C": ...}
+    """
+    if not phasors_i:
+        return {}
+
+    ia = phasors_i.get("A") or phasors_i.get("IA")
+    ib = phasors_i.get("B") or phasors_i.get("IB")
+    ic = phasors_i.get("C") or phasors_i.get("IC")
+
+    ia_ok = ia is not None and np.isfinite(ia)
+    ib_ok = ib is not None and np.isfinite(ib)
+    ic_ok = ic is not None and np.isfinite(ic)
+
+    if ia_ok and ib_ok and ic_ok:
+        return {"A": ia, "B": ib, "C": ic}
+    elif ia_ok and ib_ok:
+        return {"A": ia, "B": ib, "C": -(ia + ib)}
+    elif ib_ok and ic_ok:
+        return {"A": -(ib + ic), "B": ib, "C": ic}
+    elif ia_ok and ic_ok:
+        return {"A": ia, "B": -(ia + ic), "C": ic}
+
+    res = {}
+    if ia_ok: res["A"] = ia
+    if ib_ok: res["B"] = ib
+    if ic_ok: res["C"] = ic
+    return res
+
+
 def compute_positive_sequence(
     phasors: Dict[str, complex],
     is_voltage: bool = False,
@@ -99,9 +135,8 @@ def compute_positive_sequence(
             return (u_ab + u_bc * _A_OPERATOR) / 3.0
         return None
     else:
-        ia = phasors.get("A") or phasors.get("IA")
-        ib = phasors.get("B") or phasors.get("IB")
-        ic = phasors.get("C") or phasors.get("IC")
+        currents = derive_unified_currents(phasors)
+        ia, ib, ic = currents.get("A"), currents.get("B"), currents.get("C")
         if ia is not None and ib is not None and ic is not None:
             if np.isfinite([ia, ib, ic]).all():
                 return (ia + ib * _A_OPERATOR + ic * _A2_OPERATOR) / 3.0

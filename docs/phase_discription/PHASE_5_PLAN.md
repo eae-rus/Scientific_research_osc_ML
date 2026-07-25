@@ -883,11 +883,10 @@ Task-head не должен знать, из Open_EE или French пришёл 
 - форму выхода: binary start/trip, continuous margin, angle margin, confidence;
 - поведение при NaN и недостаточной предыстории.
 
-Реализация:
-
-- [x] общий интерфейс `PDRAlgorithm` (см. [base.py](file:///c:/Users/User/Desktop/Projects/Scientific_research_osc_ML/osc_tools/pdr/base.py));
-- [x] чистые векторизованные функции без зависимости от PyTorch Dataset (см. [public_algorithms.py](file:///c:/Users/User/Desktop/Projects/Scientific_research_osc_ML/osc_tools/pdr/public_algorithms.py));
+- [x] общий интерфейс `PDRAlgorithm` (см. [base.py](file:///d:/Программирование/Fork/Scientific_research_osc_ML/osc_tools/pdr/base.py));
+- [x] чистые векторизованные функции без зависимости от PyTorch Dataset;
 - [x] конфигурации органов отдельно от кода (см. уставки `tunable_parameters` в `PDRAlgorithm`);
+- [x] **Гарантия изоляции осциллограмм в PDRDatasetLabeler**: при начале обработки каждой новой осциллограммы обязательно вызывается `self.teacher.reset_state()`, что полностью обнуляет счетчики блокировок адаптивности. Фазоры предыстории (t - 200 мс) извлекаются исключительно из массива каналов текущей осциллограммы, исключая протекание данных между файлами.
 - [x] unit-тесты открытых органов на аналитических фазорах и граничных углах (см. [test_pdr_algorithms.py](file:///c:/Users/User/Desktop/Projects/Scientific_research_osc_ML/tests/unit/test_pdr_algorithms.py));
 - [x] приватная изолированная структура плагинов (см. каталог [private/pdr_algorithms/](file:///c:/Users/User/Desktop/Projects/Scientific_research_osc_ML/private/pdr_algorithms/));
 - [x] trace/debug output и метаданные диагностики причины действия органа (см. `PDROutput.diagnostics`).

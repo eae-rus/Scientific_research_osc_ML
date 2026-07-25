@@ -94,6 +94,10 @@ class PDRAlgorithm(ABC):
         """Расчёт решения органа РНМ для одной точки/окна."""
         pass
 
+    def reset_state(self) -> None:
+        """Сбросить внутреннее состояние алгоритма (таймеры, блокировки) при старте новой осциллограммы."""
+        pass
+
     def vectorized_compute(self, inputs: Sequence[PDRInputData]) -> list[PDROutput]:
         """Векторизованный или последовательный расчёт для списка входов."""
         return [self.compute(inp) for inp in inputs]

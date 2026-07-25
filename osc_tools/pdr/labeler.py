@@ -116,6 +116,9 @@ class PDRDatasetLabeler:
         Returns:
             LabelingRecordResult с метками направления и запасов
         """
+        # Сброс внутреннего состояния алгоритма перед началом новой осциллограммы
+        self.teacher.reset_state()
+
         # Восстановление отсутствующего IB если возможно
         signals, provenance = derive_missing_currents(signals, provenance)
 
