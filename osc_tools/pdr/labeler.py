@@ -1,8 +1,12 @@
 """Модуль генерации псевдоразметки РНМ (PDRDatasetLabeler).
 
-Прогоняет заданный teacher-алгоритм РНМ по скользящему 10-периодному окну
-осциллограмм датасета, вычисляет фазоры 1-й гармоники и сохраняет результатирующие
-метки (pdr_direction, pdr_margin, warmup_mask, provenance).
+Прогоняет заданный teacher-алгоритм РНМ по скользящему окну осциллограмм датасета,
+вычисляет фазоры 1-й гармоники и сохраняет результатирующие метки (pdr_direction,
+pdr_margin, warmup_mask, provenance).
+
+Физические РНМ начинают разметку сразу после 1 периода БПФ (spp - 1), используя
+для предыстории 1-й доступный фазор при t < 10 периодов. Флаг warmup_mask отмечает
+первые 10 периодов (контекст нейросети).
 """
 
 from __future__ import annotations
@@ -52,7 +56,6 @@ def compute_causal_h1_phasors(
         return {}
 
     t_arr = np.arange(spp)
-    # Ортогональные составляющие (1-я гармоника)
     cos_kernel = np.cos(2.0 * np.pi * t_arr / spp)
     sin_kernel = np.sin(2.0 * np.pi * t_arr / spp)
 
@@ -61,11 +64,8 @@ def compute_causal_h1_phasors(
         ch_raw = window_data[ch_idx]
         if not np.isfinite(ch_raw).all():
             continue
-        # Синусная и косинусная составляющие Фурье (с коэффициентом 2/N)
         real_part = (2.0 / spp) * np.sum(ch_raw * cos_kernel)
         imag_part = (2.0 / spp) * np.sum(ch_raw * sin_kernel)
-        # Действующее значение (амплитуда / sqrt(2)) и фазовый угол
-        # Комплексный фазор: Re - j*Im
         phasors[ch_name] = complex(real_part, -imag_part)
 
     return phasors
@@ -76,7 +76,7 @@ class LabelingRecordResult:
     """Результат псевдоразметки одной осциллограммы."""
 
     record_id: int | str
-    directions: np.ndarray  # int16 массив длины N_windows (-999, -1, 0, 1)
+    directions: np.ndarray  # int16 массив длины N_windows (-999, 0, 1)
     margins: np.ndarray  # float32 массив длины N_windows
     warmup_mask: np.ndarray  # bool массив длины N_windows
     sample_indices: np.ndarray  # int32 конечные индексы окон в сигналах
@@ -119,14 +119,14 @@ class PDRDatasetLabeler:
         # Сброс внутреннего состояния алгоритма перед началом новой осциллограммы
         self.teacher.reset_state()
 
-        # Восстановление отсутствующего IB если возможно
+        # Восстановление любого отсутствующего тока если возможно
         signals, provenance = derive_missing_currents(signals, provenance)
 
         spp = timebase.spp
         stride = timebase.stride_samples
         n_samples = signals.shape[1]
 
-        # Минимально необходимое окно предыстории (10 периодов)
+        # Контекст разогрева нейросети (10 периодов)
         warmup_samples = timebase.window_samples
 
         # Точки окон с шагом stride_fraction
@@ -139,19 +139,20 @@ class PDRDatasetLabeler:
         sample_indices = np.array(end_indices, dtype=np.int32)
 
         for w_idx, end_idx in enumerate(end_indices):
-            # Проверка зоны разогрева (первые 10 периодов)
-            if end_idx < warmup_samples - 1:
-                warmup_mask[w_idx] = True
+            # Маска прогрева контекста нейросети (первые 10 периодов)
+            is_warmup = end_idx < (warmup_samples - 1)
+            warmup_mask[w_idx] = is_warmup
+
+            # РНМ начинает расчёт сразу после 1 периода БПФ (end_idx >= spp - 1)
+            if end_idx < spp - 1:
                 directions[w_idx] = int(PDRDirection.UNLABELED)
                 margins[w_idx] = 0.0
                 continue
 
-            warmup_mask[w_idx] = False
-
             # Расчёт фазоров текущего момента (t)
             current_phasors = compute_causal_h1_phasors(signals, end_idx, spp)
             if not current_phasors:
-                directions[w_idx] = int(PDRDirection.BLOCK)
+                directions[w_idx] = int(PDRDirection.UNLABELED)
                 continue
 
             # Расчёт фазоров предыстории (t - 200 мс = t - 10 периодов)
