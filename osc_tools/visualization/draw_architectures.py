@@ -10,6 +10,155 @@
 import graphviz
 from pathlib import Path
 import os
+import argparse
+import re
+
+
+# Локализованные подписи к архитектурным диаграммам.  Использование исходных диаграмм на
+# Русском языке делает их использование в диссертации обратно совместимым; те же самые
+# функции рисования позволяют по запросу создать набор диаграмм на английском языке, готовый к публикации.
+SUPPORTED_LANGUAGES = {'ru', 'en'}
+_LANGUAGE = 'ru'
+
+# Более длинные фрагменты должны предшествовать составляющим их словам.  Текст переведен на русский язык
+# конечный точечный источник, поэтому метки узлов, кластеров, ребер и заголовков графиков являются
+# последовательно описывается без дублирования каждой функции `draw_*`.
+EN_TRANSLATIONS = {
+    'Физически-информированный': 'Physically informed',
+    'Физический слой': 'Physical layer',
+    'Физический stem': 'Physical stem',
+    'Комплексный физический слой': 'Complex physical layer',
+    'Комплексный PhysicsKAN': 'Complex PhysicsKAN',
+    'Комплексный stem': 'Complex stem',
+    'Комплексные физ. блоки': 'complex physical blocks',
+    'комплексные физ. блоки': 'complex physical blocks',
+    'комплексная физика': 'complex physics',
+    'комплексное  · и ÷': 'complex  · and ÷',
+    'Комплексные S, Y': 'Complex S, Y',
+    'Релейный PhysicsKAN с gating из углов': 'Relay PhysicsKAN with angle gating',
+    'Relay-механизм': 'Relay mechanism',
+    'Релейный орган': 'Relay unit',
+    'релейный орган': 'relay unit',
+    'релейный': 'relay',
+    'релейные органы глубже и на выходе': 'relay units at deeper layers and at the output',
+    'Финальное реле': 'Final relay',
+    'направленное реле': 'directional relay',
+    'глубокие реле': 'deep relay units',
+    'глубокие физ. блоки': 'deep physical blocks',
+    'без глубокой физики': 'without deep physics',
+    'без физ. блоков': 'without physical blocks',
+    'физические блоки на глубоких слоях': 'physical blocks at deeper layers',
+    'как в PhysicsKAN': 'as in PhysicsKAN',
+    'как в cPhysicsKAN': 'as in cPhysicsKAN',
+    'Фаза 4': 'Phase 4',
+    'Спектральный Transformer': 'Spectral Transformer',
+    'Многослойный перцептрон': 'Multilayer perceptron',
+    'Одномерная свёрточная сеть': 'One-dimensional convolutional network',
+    'Остаточная свёрточная сеть': 'Residual convolutional network',
+    'Полносвязный Колмогоров-Арнольд': 'Fully connected Kolmogorov-Arnold network',
+    'Сверточный Колмогоров-Арнольд': 'Convolutional Kolmogorov-Arnold network',
+    'в полярных координатах': 'in polar coordinates',
+    'в полярн.': 'polar',
+    'Особенность KAN:': 'KAN characteristic:',
+    'нелинейность на рёбрах, узлы = суммы': 'nonlinearity on edges, nodes = sums',
+    'Вход (спектр., полярн.)': 'Input (spectral, polar)',
+    'Вход (спектр.)': 'Input (spectral)',
+    'Вход': 'Input',
+    'Токи': 'Currents',
+    'токи': 'currents',
+    'Напряжения': 'Voltages',
+    'напряж.': 'voltages',
+    'Амплитуды тока': 'Current amplitudes',
+    'Амплитуды напряж.': 'Voltage amplitudes',
+    'Амплитуды': 'Amplitudes',
+    'амплитудная ветвь': 'amplitude branch',
+    'амплитудной ветви': 'amplitude branch',
+    'Фазы тока': 'Current phases',
+    'Фазы': 'Phases',
+    'фазовая ветвь': 'phase branch',
+    'по фазе': 'by phase',
+    'по φ': 'by φ',
+    'Физически-информированный Transformer': 'Physically informed Transformer',
+    'Разделение и нормализация': 'Splitting and normalization',
+    'Разделение:': 'Split:',
+    'чётные': 'even',
+    'нечётные': 'odd',
+    'чередование': 'interleaving',
+    'чередующийся формат': 'interleaved format',
+    'пары I и U': 'I and U pairs',
+    'пар (a,b)': 'pairs (a,b)',
+    'пары': 'pairs',
+    'одна маска на пару': 'one mask per pair',
+    'по каналам': 'along channels',
+    'половина каналов': 'half of the channels',
+    '1-я': '1st',
+    '2-я': '2nd',
+    'каналов': 'channels',
+    'каналы': 'channels',
+    'обычные каналы': 'ordinary channels',
+    'как': 'as',
+    'A и φ': 'A and φ',
+    'обрабатывает': 'processes',
+    'только': 'only',
+    'поэлементно': 'elementwise',
+    'защита от 0': 'zero protection',
+    'обучаемый сдвиг': 'learnable shift',
+    'обучаемые пары': 'learnable pairs',
+    'раздельные W для A и φ': 'separate W for A and φ',
+    'Головы:': 'Heads:',
+    'опц.': 'optional',
+    'стадии': 'stages',
+    'стадия': 'stage',
+    'блоков': 'blocks',
+    'обычно': 'typically',
+    'по умолч.': 'by default',
+    'глубже': 'deeper',
+    'на выходе': 'at the output',
+    'на каждом слое': 'at each layer',
+    'на глубоких слоях': 'at deeper layers',
+    'абляция': 'ablation',
+    'маска': 'mask',
+    'малый': 'small',
+    'Нет': 'No',
+    'ограничен:': 'limited:',
+    '1-й слой': '1st layer',
+    'глубже ≈': 'deeper ≈',
+    'только relay': 'relay only',
+    'не гейтированные': 'ungated',
+    'НЕгейтированные': 'UNGATED',
+    'резидуал': 'residual',
+    'таnh': 'tanh',
+    'Финальное': 'Final',
+}
+
+
+def set_language(language: str) -> None:
+    """Выберите язык субтитров для последующего отображения архитектуры."""
+    normalized = language.lower()
+    if normalized not in SUPPORTED_LANGUAGES:
+        raise ValueError(f"Unsupported language {language!r}; choose one of {sorted(SUPPORTED_LANGUAGES)}")
+    global _LANGUAGE
+    _LANGUAGE = normalized
+
+
+def _localized_source(source: str) -> str:
+    if _LANGUAGE == 'ru':
+        return source
+    for russian in sorted(EN_TRANSLATIONS, key=len, reverse=True):
+        source = source.replace(russian, EN_TRANSLATIONS[russian])
+    untranslated = re.search(r'[А-Яа-яЁё]', source)
+    if untranslated:
+        raise ValueError(
+            'English diagram contains an untranslated Russian fragment: '
+            f'{source[untranslated.start():untranslated.start() + 80]!r}'
+        )
+    return source
+
+
+def _render(dot, filename: str) -> str:
+    """Визуализируйте диаграмму после применения выбранного словаря подписей."""
+    localized = graphviz.Source(_localized_source(dot.source), format='png', engine=dot.engine)
+    return localized.render(filename=filename, cleanup=True)
 
 # Единая палитра
 C_INPUT     = '#e6f2ff'   # Входы (амплитуды, обычные данные)
@@ -32,6 +181,9 @@ def setup_graph(name, title, rankdir='LR'):
              style='rounded,filled', fillcolor='white', fontsize='10')
     dot.attr('edge', fontname='Helvetica,Arial,sans-serif', fontsize='9')
     dot.attr(label=f'\n{title}', fontname='Helvetica-Bold', fontsize='14', labelloc='b')
+    # All existing draw functions retain their normal ``dot.render(...)`` call.
+    # Rendering through this small adapter applies the active captions dictionary.
+    dot.render = lambda filename, cleanup=True: _render(dot, filename)
     return dot
 
 
@@ -531,10 +683,11 @@ def draw_physical_kan_transformer(output_dir):
 # Main
 # =====================================================================
 
-if __name__ == '__main__':
-    output_directory = Path(__file__).parent / 'architecture_images'
+def generate_all(output_directory: Path, language: str = 'ru') -> None:
+    """Generate the complete set of architecture diagrams in ``language``."""
+    set_language(language)
     output_directory.mkdir(parents=True, exist_ok=True)
-    print(f'Генерация схем в  {output_directory} …')
+    print(f'Generating {_LANGUAGE} architecture diagrams in {output_directory} …')
 
     # Фаза 2.6
     draw_mlp(output_directory)
@@ -554,4 +707,20 @@ if __name__ == '__main__':
     draw_baseline_transformer(output_directory)
     draw_physical_kan_transformer(output_directory)
 
-    print('Готово.')
+    print('Done.')
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Генерируйте локализованные диаграммы архитектуры нейронной сети')
+    parser.add_argument('--lang', choices=sorted(SUPPORTED_LANGUAGES), default='ru',
+                        help='captions language (default: ru)')
+    parser.add_argument('--output-dir', type=Path,
+                        help='аталог для отрисованных PNG-файлов; по умолчанию используется architecture_images '
+                             'для русского языка и architecture_images/<lang> для другого языка')
+    args = parser.parse_args()
+
+    default_directory = Path(__file__).parent / 'architecture_images'
+    output_directory = args.output_dir or (
+        default_directory if args.lang == 'ru' else default_directory / args.lang
+    )
+    generate_all(output_directory, args.lang)

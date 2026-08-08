@@ -16,10 +16,18 @@ osc_tools/visualization/draw_architectures.py
 osc_tools/visualization/architecture_images/
 ```
 
-Для перегенерации (требуется `graphviz`):
+Для перегенерации русских схем (требуется `graphviz`):
 ```bash
 python osc_tools/visualization/draw_architectures.py
 ```
+
+Для английских схем, предназначенных для англоязычной статьи, используйте:
+```bash
+python osc_tools/visualization/draw_architectures.py --lang en
+```
+По умолчанию они сохраняются в `osc_tools/visualization/architecture_images/en/`,
+поэтому существующий русский комплект PNG не перезаписывается. При необходимости
+целевую папку можно задать явно: `--output-dir <путь>`.
 
 | Архитектура | Файл изображения |
 |-------------|-----------------|
