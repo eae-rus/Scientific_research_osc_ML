@@ -25,6 +25,7 @@ Scientific_research_osc_ML/
 │   ├── registry.py                            # Реестр PDRRegistry и подгрузка плагинов
 │   ├── placeholder.py                         # Безопасная заглушка PlaceholderPDRAlgorithm
 │   ├── labeler.py                             # Генератор псевдоразметки по окну осциллограмм
+│   ├── study.py                               # Multi-PDR shards, статистика и поиск сложных записей
 │   ├── pdr_dataset.py                         # PyTorch Task Dataset
 │   ├── pdr_trainer.py                         # Контур fine-tuning
 │   │
@@ -112,6 +113,10 @@ Scientific_research_osc_ML/
   что и SSL; метка относится к последнему токену.
 - В файл разметки сохраняются direction, margin, confidence, warmup/unknown,
   requested/resolved teacher ID, факт fallback, timebase записи и SHA-256 входа.
+- Для полного архива используется sharded study-format: directions всех органов,
+  margin/confidence адаптивного teacher, offsets и исходные sample indices.
+  `PDRTaskDataset` читает его лениво. Инструкция приведена в
+  `PHASE_5_PDR_DATASET_GUIDE.md`.
 
 ## 7. Политика fallback
 

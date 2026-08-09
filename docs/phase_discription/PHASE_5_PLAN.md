@@ -207,7 +207,9 @@
 
 `DATA_u.npz` и `DATA_i.npz` пока не являются основным источником: это уже отобранные однопериодные транзиенты, полезные для диагностики/сравнения, но не для обучения на цельной осциллограмме.
 
-Открытый вопрос: нормировка токов. Номинал ТТ неизвестен, поэтому в Phase 5 сначала собираем статистику, а затем исследователь выбирает рабочий делитель.
+Нормировка токов и напряжений подтверждена исследователем по предыдущим проверкам
+и прогонам моделей. Текущий подготовленный источник использует зафиксированный
+профиль; повторная нормировка при PDR-разметке запрещена.
 
 ### 3.3. Simulated_OZZ_v1
 
@@ -856,7 +858,7 @@ Task-head не должен знать, из Open_EE или French пришёл 
 Математика предоставлена исследователем и реализована в четырёх публичных и одном
 локальном закрытом органе. Формулы и уставки не менять без инженерного основания;
 публичные и закрытые органы остаются разделены архитектурно. Результаты повторного
-ревью зафиксированы в `PDR_CODE_REVIEW.md`.
+ревью зафиксированы в журнале Phase 5 и действующих тестах.
 
 Публичная часть репозитория:
 
@@ -916,6 +918,14 @@ Task-head не должен знать, из Open_EE или French пришёл 
 
 Статистика на неразмеченных данных нужна для понимания поведения и поиска аномалий, но не определяет объективно лучший орган. Teacher для псевдоразметки выбирает исследователь по личному опыту и инженерным основаниям. Сравнение качества органов откладывается до появления эталонных RTDS/ручных данных.
 
+- [x] Потоковый multi-PDR прогон с общим precompute h1, атомарными shards,
+  resume и progress/ETA (см. `scripts/phase5_experiments/run_pdr_dataset_study.py`).
+- [x] Метрики переключений, chattering, локализованных и постоянных расхождений;
+  постоянный пороговый сдвиг вынесен из основного динамического рейтинга
+  (см. `osc_tools/pdr/study.py`).
+- [x] CSV-рейтинг и тематические подборки для будущей ручной разметки
+  (см. `docs/phase_discription/PHASE_5_PDR_DATASET_GUIDE.md`).
+
 ### 11.3. Псевдоразметка реальных данных лучшим органом
 
 После решения исследователя о teacher-алгоритме:
@@ -937,6 +947,12 @@ Task-head не должен знать, из Open_EE или French пришёл 
 - confidence filtering, soft targets/sample weights и игнорирование пограничных точек оставить как последующее улучшение после появления подходящего margin у выбранного органа;
 - отдельный набор расхождений нескольких органов для последующего исследования;
 - frozen teacher benchmark: нейросеть должна сравниваться с органом, который создал метки.
+
+- [x] Выбран адаптивный закрытый teacher со стандартными уставками; fallback для
+  массового запуска запрещён.
+- [x] Реализован compact sharded format: directions всех органов и полные
+  margin/confidence адаптивного teacher; lazy-reader подключён к `PDRTaskDataset`
+  (см. `osc_tools/pdr/study.py`, `osc_tools/pdr/pdr_dataset.py`).
 
 ### 11.4. Первое PDR fine-tuning
 
@@ -1170,11 +1186,12 @@ Task-head не должен знать, из Open_EE или French пришёл 
 | `osc_tools/ml/spectral_features.py` | versioned feature builder v2 |
 | `osc_tools/pdr/` | публичный интерфейс, registry и открытые PDR |
 | `private/pdr_algorithms/` | локальный gitignored пакет закрытых PDR и тестов |
-| `osc_tools/ml/pdr_dataset.py` | pseudo/high-quality PDR dataset adapters |
-| `scripts/phase5_experiments/pdr/scan_pdr_algorithms.py` | статистика аналитических органов |
-| `scripts/phase5_experiments/pdr/build_pdr_pseudolabels.py` | воспроизводимая teacher-разметка |
+| `osc_tools/pdr/pdr_dataset.py` | pseudo/high-quality PDR dataset adapter |
+| `osc_tools/pdr/study.py` | multi-PDR разметка, sharded reader и метрики интересности |
+| `scripts/phase5_experiments/run_pdr_dataset_study.py` | статистика органов и воспроизводимая teacher-разметка |
 | `scripts/phase5_experiments/pdr/run_phase5_pdr_finetune.py` | PDR fine-tuning и post-training |
 | `docs/phase_discription/PHASE_5_PDR_ALGORITHMS.md` | математика и версии органов |
+| `docs/phase_discription/PHASE_5_PDR_DATASET_GUIDE.md` | ручной запуск, мониторинг и отбор сложных записей |
 | `data/phase5/datasets_registry.json` | машинный реестр |
 | `reports/phase5/*.md` | отчёты |
 | `tests/unit/test_phase5_*.py` | unit-тесты Phase 5 |

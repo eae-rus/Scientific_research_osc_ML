@@ -30,6 +30,7 @@ from osc_tools.ml.phase5_sources import DatasetSource
 from osc_tools.ml.spectral_features import SpectralFeatureBuilder, SpectralFeatureConfig
 from .base import PDRDirection
 from .signal_analysis import derive_missing_currents
+from .study import PDRStudyLabelStore
 
 
 class PDRTaskDataset(Dataset):
@@ -44,6 +45,7 @@ class PDRTaskDataset(Dataset):
         temporal_mode: TemporalMode = "snapshot_5",
         feature_version: str = "B",
         include_warmup: bool = False,
+        teacher_algorithm_id: Optional[str] = None,
     ) -> None:
         if not HAS_TORCH:
             raise RuntimeError("PyTorch не установлен в текущем окружении.")
@@ -56,12 +58,20 @@ class PDRTaskDataset(Dataset):
         self.feature_version = feature_version
         self.include_warmup = include_warmup
 
-        # Загрузка меток из NPZ
+        # Legacy single-NPZ остаётся совместимым; новый массовый формат читается
+        # лениво по shards и не загружает сотни миллионов меток в RAM.
         if not self.labels_path.exists():
             raise FileNotFoundError(f"Файл меток РНМ не найден: {self.labels_path}")
-
-        with np.load(self.labels_path) as data:
-            self.labels_dict = {k: data[k] for k in data.files}
+        self.label_store: Optional[PDRStudyLabelStore] = None
+        self.labels_dict: Dict[str, np.ndarray] = {}
+        if self.labels_path.is_dir() or self.labels_path.name == "manifest.json":
+            self.label_store = PDRStudyLabelStore(
+                self.labels_path,
+                algorithm_id=teacher_algorithm_id,
+            )
+        else:
+            with np.load(self.labels_path) as data:
+                self.labels_dict = {k: data[k] for k in data.files}
 
         ver = "B" if str(feature_version).upper().endswith("B") else "A"
         feat_config = SpectralFeatureConfig(version=ver)
@@ -75,12 +85,12 @@ class PDRTaskDataset(Dataset):
     def _build_sample_index(self) -> None:
         """Построение индекса образцов (исключая неразмеченные окна UNLABELED)."""
         for rec_idx in self.indices:
-            prefix = f"rec_{rec_idx}"
-            if f"{prefix}_dir" not in self.labels_dict:
+            record_labels = self._record_labels(rec_idx)
+            if record_labels is None:
                 continue
-            dirs = self.labels_dict[f"{prefix}_dir"]
-            warmup = self.labels_dict[f"{prefix}_warmup"]
-            sample_indices = self.labels_dict[f"{prefix}_samples"]
+            dirs = record_labels["directions"]
+            warmup = record_labels["warmup"]
+            sample_indices = record_labels["samples"]
             record_timebase = self._record_timebase(rec_idx)
             required_samples = periods_to_samples(
                 self.feature_history_periods + record_timebase.window_periods,
@@ -119,7 +129,9 @@ class PDRTaskDataset(Dataset):
 
     def __getitem__(self, idx: int) -> Dict[str, Any]:
         rec_idx, w_idx = self.samples[idx]
-        prefix = f"rec_{rec_idx}"
+        record_labels = self._record_labels(rec_idx)
+        if record_labels is None:
+            raise KeyError(f"Разметка записи {rec_idx} исчезла после построения индекса")
 
         # Загрузка исходных сигналов
         signal = self.source.load_signal(rec_idx)
@@ -130,13 +142,11 @@ class PDRTaskDataset(Dataset):
         record_timebase = self._record_timebase(rec_idx)
 
         # Извлечение меток РНМ для данного окна
-        direction_val = int(self.labels_dict[f"{prefix}_dir"][w_idx])
-        margin_val = float(self.labels_dict[f"{prefix}_margin"][w_idx])
-        warmup_val = bool(self.labels_dict[f"{prefix}_warmup"][w_idx])
-        confidence_val = float(
-            self.labels_dict.get(f"{prefix}_confidence", np.ones_like(self.labels_dict[f"{prefix}_margin"]))[w_idx]
-        )
-        sample_end_idx = int(self.labels_dict[f"{prefix}_samples"][w_idx])
+        direction_val = int(record_labels["directions"][w_idx])
+        margin_val = float(record_labels["margins"][w_idx])
+        warmup_val = bool(record_labels["warmup"][w_idx])
+        confidence_val = float(record_labels["confidences"][w_idx])
+        sample_end_idx = int(record_labels["samples"][w_idx])
 
         total_periods = self.feature_history_periods + record_timebase.window_periods
         total_samples = periods_to_samples(total_periods, record_timebase.spp)
@@ -183,4 +193,26 @@ class PDRTaskDataset(Dataset):
             "channel_provenance": torch.tensor(provenance, dtype=torch.long),
             "record_id": rec_idx,
             "window_idx": w_idx,
+        }
+
+    def _record_labels(self, rec_idx: int) -> Optional[Dict[str, np.ndarray]]:
+        """Получить одну запись из legacy NPZ либо lazy sharded store."""
+
+        if self.label_store is not None:
+            if not self.label_store.has_record(rec_idx):
+                return None
+            return self.label_store.get_record(rec_idx)
+        prefix = f"rec_{rec_idx}"
+        if f"{prefix}_dir" not in self.labels_dict:
+            return None
+        margins = self.labels_dict[f"{prefix}_margin"]
+        return {
+            "directions": self.labels_dict[f"{prefix}_dir"],
+            "margins": margins,
+            "confidences": self.labels_dict.get(
+                f"{prefix}_confidence",
+                np.ones_like(margins, dtype=np.float32),
+            ),
+            "warmup": self.labels_dict[f"{prefix}_warmup"],
+            "samples": self.labels_dict[f"{prefix}_samples"],
         }
