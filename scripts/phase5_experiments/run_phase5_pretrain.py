@@ -307,10 +307,6 @@ def run(cfg: PretrainConfig, output_dir: Path, resume: bool, reset_optimizer: bo
         "split_sha256": splits["sha256"],
         "feature_passport": passport.to_dict(),
     }
-    (output_dir / "config.json").write_text(
-        json.dumps(config_payload, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
-
     device = torch.device(
         "cuda" if cfg.device == "auto" and torch.cuda.is_available() else "cpu" if cfg.device == "auto" else cfg.device
     )
@@ -350,14 +346,47 @@ def run(cfg: PretrainConfig, output_dir: Path, resume: bool, reset_optimizer: bo
     start_epoch = 0
     best_val = float("inf")
     latest = output_dir / "latest_checkpoint.pt"
-    if resume and latest.exists():
+    if resume and not latest.exists():
+        raise FileNotFoundError(f"Запрошен resume, но checkpoint отсутствует: {latest}")
+    if resume:
         checkpoint = torch.load(latest, map_location=device, weights_only=False)
         passport.assert_compatible(checkpoint["feature_passport"])
-        checkpoint_loss = checkpoint.get("config", {}).get("loss_type", "complex_mse")
+        stored_config = checkpoint.get("config", {})
+        checkpoint_loss = stored_config.get("loss_type", "complex_mse")
         if checkpoint_loss != cfg.loss_type:
             raise ValueError(
                 f"Нельзя resume с другим loss: checkpoint={checkpoint_loss}, current={cfg.loss_type}"
             )
+        data_contract_keys = (
+            "split_sha256",
+            "feature_version",
+            "temporal_mode",
+            "mask_ratio",
+            "seed",
+            "source_weights_open_ee",
+            "source_weights_french_rte",
+            "huber_beta",
+        )
+        mismatches = [
+            key for key in data_contract_keys
+            if stored_config.get(key) != config_payload.get(key)
+        ]
+        if mismatches:
+            raise ValueError(
+                "Нельзя resume с изменённым data/SSL contract: "
+                + ", ".join(mismatches)
+            )
+        if not reset_optimizer:
+            optimizer_contract_keys = ("scheduler_type", "restart_epochs")
+            optimizer_mismatches = [
+                key for key in optimizer_contract_keys
+                if stored_config.get(key) != config_payload.get(key)
+            ]
+            if optimizer_mismatches:
+                raise ValueError(
+                    "Для смены scheduler при resume требуется --reset-optimizer: "
+                    + ", ".join(optimizer_mismatches)
+                )
         model.load_state_dict(checkpoint["model_state_dict"])
         if not reset_optimizer:
             optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
@@ -365,6 +394,12 @@ def run(cfg: PretrainConfig, output_dir: Path, resume: bool, reset_optimizer: bo
                 scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
         start_epoch = int(checkpoint["epoch"]) + 1
         best_val = float(checkpoint.get("best_val_loss", best_val))
+
+    # Конфиг обновляется только после успешной проверки resume, чтобы ошибочный
+    # запуск не затёр паспорт предыдущего эксперимента.
+    (output_dir / "config.json").write_text(
+        json.dumps(config_payload, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
 
     train_loader = DataLoader(
         train_dataset, batch_size=cfg.batch_size, shuffle=False, num_workers=cfg.num_workers, collate_fn=_collate

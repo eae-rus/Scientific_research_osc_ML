@@ -6,7 +6,11 @@ import pytest
 
 from osc_tools.ml.phase5_contracts import TimebaseContract, ChannelProvenance
 from osc_tools.pdr.public_algorithms import PhasePDRAlgorithm
-from osc_tools.pdr.labeler import PDRDatasetLabeler
+from osc_tools.pdr.labeler import (
+    PDRDatasetLabeler,
+    compute_causal_h1_phasors,
+    precompute_causal_h1_phasors,
+)
 from osc_tools.pdr.base import PDRDirection
 
 
@@ -56,15 +60,24 @@ def test_pdr_labeler_single_record():
     )
 
     assert len(res.directions) > 0
-    # Проверка зоны разогрева (первые 10 периодов имеют UNLABELED / -999)
+    # Публичный орган не требует t-200 мс и начинает после первого полного периода.
     warmup_indices = np.where(res.warmup_mask)[0]
-    valid_indices = np.where(~res.warmup_mask)[0]
+    assert len(warmup_indices) == 0
+    assert (res.directions == int(PDRDirection.FORWARD)).all()
+    assert (res.confidences == 1.0).all()
 
-    assert len(warmup_indices) > 0
-    assert len(valid_indices) > 0
 
-    # В зоне разогрева метки должны быть UNLABELED (-999)
-    assert (res.directions[warmup_indices] == int(PDRDirection.UNLABELED)).all()
+def test_precomputed_h1_matches_direct_fourier():
+    rng = np.random.default_rng(42)
+    spp = 32
+    signal = rng.normal(size=(8, 10 * spp)).astype(np.float32)
+    signal[3, 50] = np.nan
+    positions = [spp - 1, 4 * spp - 1, 9 * spp - 1]
 
-    # После зоны разогрева метки должны быть FORWARD (1) для нашего тестового сигнала
-    assert (res.directions[valid_indices] == int(PDRDirection.FORWARD)).all()
+    table = precompute_causal_h1_phasors(signal, positions, spp)
+
+    for position in positions:
+        direct = compute_causal_h1_phasors(signal, position, spp)
+        assert table[position].keys() == direct.keys()
+        for channel, value in direct.items():
+            assert table[position][channel] == pytest.approx(value, abs=1e-10)

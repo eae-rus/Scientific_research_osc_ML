@@ -19,7 +19,12 @@ from typing import Dict, Any
 import numpy as np
 
 from osc_tools.pdr.base import PDRAlgorithm, PDRInputData, PDROutput, PDRDirection
-from osc_tools.pdr.pdr_signal_utils import derive_unified_voltages, get_memory_voltage, scale_thresholds_for_profile
+from osc_tools.pdr.pdr_signal_utils import (
+    derive_unified_currents,
+    derive_unified_voltages,
+    get_memory_voltage,
+    scale_thresholds_for_profile,
+)
 
 
 class PhasePowerPDRAlgorithm(PDRAlgorithm):
@@ -54,6 +59,15 @@ class PhasePowerPDRAlgorithm(PDRAlgorithm):
                 margin=0.0,
                 diagnostics={"reason": "missing_voltage_signals"},
             )
+        currents = derive_unified_currents(input_data.phasors_i)
+        if set(currents) != {"A", "B", "C"}:
+            return PDROutput(
+                direction=PDRDirection.UNLABELED,
+                is_tripped=False,
+                margin=0.0,
+                confidence=0.0,
+                diagnostics={"reason": "missing_current_signals"},
+            )
 
         phase_quads = {
             "A": ("A", "B", "C", "BC"),
@@ -66,10 +80,12 @@ class PhasePowerPDRAlgorithm(PDRAlgorithm):
         margins: list[float] = []
 
         for phase, (i_ch, u_ch1, u_ch2, u_ln_ch) in phase_quads.items():
-            i_ph = input_data.phasors_i.get(i_ch)
+            i_ph = currents[i_ch]
 
             if i_ph is None or not np.isfinite(i_ph) or abs(i_ph) < i_min:
                 phase_results[phase] = {"direction": PDRDirection.REVERSE, "reason": "current_below_threshold"}
+                i_abs = abs(i_ph) if i_ph is not None and np.isfinite(i_ph) else 0.0
+                margins.append(i_abs - i_min)
                 continue
 
             u1_raw = uv.u_phase.get(u_ch1)
@@ -86,14 +102,17 @@ class PhasePowerPDRAlgorithm(PDRAlgorithm):
             u_ln_abs = abs(u_ln)
             i_abs = abs(i_ph)
 
-            if u_ln_abs < 1e-5:
+            if u_ln_abs < u_min:
                 phase_results[phase] = {"direction": PDRDirection.REVERSE, "reason": "voltage_below_threshold"}
+                margins.append(u_ln_abs - u_min)
                 continue
 
             phi_diff = math.atan2(i_ph.imag, i_ph.real) - math.atan2(u_ln.imag, u_ln.real)
             t_op = u_ln_abs * i_abs * math.cos(phi_diff - phi_mch_90_rad)
 
-            margin_ph = abs(t_op)
+            # Единый контракт margin: положительное значение внутри зоны
+            # FORWARD, отрицательное — снаружи.
+            margin_ph = t_op
             margins.append(margin_ph)
 
             if t_op > 0.0:
@@ -111,7 +130,7 @@ class PhasePowerPDRAlgorithm(PDRAlgorithm):
             }
 
         valid_count = len(margins)
-        if valid_count > 0 and forward_count == valid_count:
+        if valid_count == 3 and forward_count == 3:
             overall_direction = PDRDirection.FORWARD
             is_tripped = True
             overall_margin = float(np.min(margins))

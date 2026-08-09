@@ -57,13 +57,16 @@ def derive_missing_currents(
     ic_missing = (provenance[idx_ic] == ChannelProvenance.MISSING) or not np.isfinite(signals[idx_ic]).all()
 
     if ib_ok and ic_ok and ia_missing:
-        signals[idx_ia] = -(signals[idx_ib] + signals[idx_ic])
+        valid = np.isfinite(signals[idx_ib]) & np.isfinite(signals[idx_ic])
+        signals[idx_ia, valid] = -(signals[idx_ib, valid] + signals[idx_ic, valid])
         provenance[idx_ia] = int(ChannelProvenance.DERIVED)
     elif ia_ok and ic_ok and ib_missing:
-        signals[idx_ib] = -(signals[idx_ia] + signals[idx_ic])
+        valid = np.isfinite(signals[idx_ia]) & np.isfinite(signals[idx_ic])
+        signals[idx_ib, valid] = -(signals[idx_ia, valid] + signals[idx_ic, valid])
         provenance[idx_ib] = int(ChannelProvenance.DERIVED)
     elif ia_ok and ib_ok and ic_missing:
-        signals[idx_ic] = -(signals[idx_ia] + signals[idx_ib])
+        valid = np.isfinite(signals[idx_ia]) & np.isfinite(signals[idx_ib])
+        signals[idx_ic, valid] = -(signals[idx_ia, valid] + signals[idx_ib, valid])
         provenance[idx_ic] = int(ChannelProvenance.DERIVED)
 
     return signals, provenance
@@ -96,12 +99,13 @@ def check_pdr_signal_sufficiency(
         else:
             measured_ch.append(ch_name)
 
-    # Проверка напряжений: нужно 3 фазных или 2 линейных напряжения
+    # В унифицированных slots достаточно любых двух напряжений: для phase
+    # восстанавливается третья фаза, для line — третье линейное напряжение.
     valid_u_count = sum(
         1 for ch in ("UA", "UB", "UC")
         if provenance[CHANNEL_ORDER.index(ch)] != ChannelProvenance.MISSING
     )
-    has_u_sufficient = (valid_u_count >= 2) or (voltage_basis == "line")
+    has_u_sufficient = valid_u_count >= 2
 
     # Проверка токов: доступно ли хотя бы 2 фазных тока для восстановления 3-го
     valid_i_count = sum(
@@ -113,7 +117,7 @@ def check_pdr_signal_sufficiency(
     if voltage_basis != "phase" and valid_u_count < 3:
         notes.append(f"Напряжения имеют базис {voltage_basis!r}, выполнена генерация эквивалентных фазных напряжений.")
 
-    can_phase = has_u_sufficient and valid_i_count >= 1
+    can_phase = has_u_sufficient and has_i_sufficient
     can_pos_seq = has_u_sufficient and has_i_sufficient
 
     for ch in ("IA", "IB", "IC"):

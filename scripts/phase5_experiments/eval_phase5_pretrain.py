@@ -85,6 +85,12 @@ def evaluate_checkpoint(
 
     split_path = PROJECT_ROOT / "data/phase5/research_strict_splits.json"
     splits = _load_splits(split_path)
+    checkpoint_split_hash = config.get("split_sha256")
+    if checkpoint_split_hash and checkpoint_split_hash != splits["sha256"]:
+        raise ValueError(
+            "Текущий research_strict split не совпадает со split checkpoint: "
+            f"checkpoint={checkpoint_split_hash}, current={splits['sha256']}"
+        )
 
     registry = PROJECT_ROOT / "data/phase5/datasets_registry.json"
     sources = {}
@@ -93,21 +99,30 @@ def evaluate_checkpoint(
         indices = splits["sources"][name]["splits"]["validation"]
         sources[name] = IndexedDatasetSource(base, indices, "validation")
 
-    weights = {"open_ee": 0.6667, "french_rte": 0.3333}
+    weights = {
+        "open_ee": float(config.get("source_weights_open_ee", 2.0 / 3.0)),
+        "french_rte": float(config.get("source_weights_french_rte", 1.0 / 3.0)),
+    }
     raw = LazyMultiSourceDataset(
         sources,
         weights,
         samples_per_epoch=validation_samples,
         window_periods=10.0,
         history_periods=10.0,
-        seed=42,
+        seed=int(config.get("seed", 42)),
     )
 
     feature_version = config.get("feature_version", "B")
     temporal_mode = config.get("temporal_mode", "snapshot_5")
     builder = SpectralFeatureBuilder(SpectralFeatureConfig(feature_version))
     spectral = SpectralMultiSourceDataset(raw, builder, temporal_mode)
-    dataset = MaskedSpectralDataset(spectral, SpectralMaskingConfig(0.25), seed=10042)
+    seed = int(config.get("seed", 42))
+    mask_ratio = float(config.get("mask_ratio", 0.25))
+    dataset = MaskedSpectralDataset(
+        spectral,
+        SpectralMaskingConfig(mask_ratio),
+        seed=seed + 10_000,
+    )
 
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=_collate)
 
@@ -133,7 +148,7 @@ def evaluate_checkpoint(
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()
 
-    loss_fn = RobustComplexLoss(beta=0.1)
+    loss_fn = RobustComplexLoss(beta=float(config.get("huber_beta", 0.1)))
 
     # Категории признаков
     groups = {

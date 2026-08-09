@@ -23,11 +23,13 @@ except ImportError:
 from osc_tools.ml.phase5_contracts import (
     TimebaseContract,
     TemporalMode,
-    available_harmonics,
+    periods_to_samples,
+    spectral_positions,
 )
 from osc_tools.ml.phase5_sources import DatasetSource
 from osc_tools.ml.spectral_features import SpectralFeatureBuilder, SpectralFeatureConfig
 from .base import PDRDirection
+from .signal_analysis import derive_missing_currents
 
 
 class PDRTaskDataset(Dataset):
@@ -64,6 +66,7 @@ class PDRTaskDataset(Dataset):
         ver = "B" if str(feature_version).upper().endswith("B") else "A"
         feat_config = SpectralFeatureConfig(version=ver)
         self.feature_builder = SpectralFeatureBuilder(config=feat_config)
+        self.feature_history_periods = float(max(feat_config.low_periods, default=1))
 
         # Индексация валидных окон для обучения
         self.samples: List[Tuple[int, int]] = []  # (record_idx, window_idx)
@@ -77,16 +80,39 @@ class PDRTaskDataset(Dataset):
                 continue
             dirs = self.labels_dict[f"{prefix}_dir"]
             warmup = self.labels_dict[f"{prefix}_warmup"]
+            sample_indices = self.labels_dict[f"{prefix}_samples"]
+            record_timebase = self._record_timebase(rec_idx)
+            required_samples = periods_to_samples(
+                self.feature_history_periods + record_timebase.window_periods,
+                record_timebase.spp,
+            )
 
             # Валидные окна: разметка не равна UNLABELED (-999)
             if self.include_warmup:
                 valid_mask = (dirs != int(PDRDirection.UNLABELED))
             else:
                 valid_mask = (dirs != int(PDRDirection.UNLABELED)) & (~warmup)
+            # Для совместимости с SSL backbone нужен полный causal-фрагмент:
+            # feature history (до 10 периодов для lp10) + 10 периодов модели.
+            valid_mask &= sample_indices >= (required_samples - 1)
 
             valid_w_indices = np.where(valid_mask)[0]
             for w_idx in valid_w_indices:
                 self.samples.append((rec_idx, int(w_idx)))
+
+    def _record_timebase(self, rec_idx: int) -> TimebaseContract:
+        """Получить временной контракт конкретной записи, а не всего источника."""
+        meta = self.source.get_metadata(rec_idx)
+        sampling_rate = meta.get("f_adc", meta.get("sampling_rate_hz"))
+        network_frequency = meta.get("f_network", meta.get("network_frequency_hz"))
+        if sampling_rate is None or network_frequency is None:
+            return self.timebase
+        return TimebaseContract.create(
+            float(sampling_rate),
+            float(network_frequency),
+            window_periods=self.timebase.window_periods,
+            stride_fraction=self.timebase.stride_fraction,
+        )
 
     def __len__(self) -> int:
         return len(self.samples)
@@ -97,34 +123,50 @@ class PDRTaskDataset(Dataset):
 
         # Загрузка исходных сигналов
         signal = self.source.load_signal(rec_idx)
-        provenance = self.source.get_provenance(rec_idx)
+        source_provenance = self.source.get_provenance(rec_idx)
+        signal, provenance = derive_missing_currents(signal, source_provenance)
         meta = self.source.get_metadata(rec_idx)
         voltage_basis = str(meta.get("voltage_basis", "phase"))
+        record_timebase = self._record_timebase(rec_idx)
 
         # Извлечение меток РНМ для данного окна
         direction_val = int(self.labels_dict[f"{prefix}_dir"][w_idx])
         margin_val = float(self.labels_dict[f"{prefix}_margin"][w_idx])
         warmup_val = bool(self.labels_dict[f"{prefix}_warmup"][w_idx])
+        confidence_val = float(
+            self.labels_dict.get(f"{prefix}_confidence", np.ones_like(self.labels_dict[f"{prefix}_margin"]))[w_idx]
+        )
         sample_end_idx = int(self.labels_dict[f"{prefix}_samples"][w_idx])
 
-        # Извлечение подмассива сигналов длины window_samples с дополнением слева при необходимости
-        start_idx = max(0, sample_end_idx - self.timebase.window_samples + 1)
+        total_periods = self.feature_history_periods + record_timebase.window_periods
+        total_samples = periods_to_samples(total_periods, record_timebase.spp)
+        start_idx = sample_end_idx - total_samples + 1
+        if start_idx < 0:
+            raise RuntimeError("В индекс PDRTaskDataset попала точка без полного causal-контекста")
         sub_signal_raw = signal[:, start_idx : sample_end_idx + 1]
+        if sub_signal_raw.shape[1] != total_samples:
+            raise RuntimeError("Длина causal-фрагмента не совпадает с временным контрактом записи")
+        positions = spectral_positions(
+            total_samples,
+            record_timebase.spp,
+            self.temporal_mode,
+            history_periods=self.feature_history_periods,
+            stride_fraction=record_timebase.stride_fraction,
+        )
 
-        target_len = self.timebase.window_samples
-        if sub_signal_raw.shape[1] < target_len:
-            pad_len = target_len - sub_signal_raw.shape[1]
-            sub_signal = np.pad(sub_signal_raw, ((0, 0), (pad_len, 0)), mode="edge")
-        else:
-            sub_signal = sub_signal_raw
-
-        # Извлечение спектральных признаков KAN-Transformer (передаем sub_signal формы (T, 8))
-        spectral_feat, missing_mask, _meta_feat = self.feature_builder.build(
-            sub_signal.T,
-            spp=self.timebase.spp,
+        # Тот же temporal/feature contract, который использовался в SSL pretrain.
+        spectral_feat, missing_mask, meta_feat = self.feature_builder.build(
+            sub_signal_raw.T,
+            spp=record_timebase.spp,
+            positions=positions,
             voltage_basis=voltage_basis,
             channel_provenance=provenance,
         )
+        feature_provenance = np.broadcast_to(
+            np.asarray(meta_feat["feature_provenance"], dtype=np.uint8),
+            spectral_feat.shape,
+        ).copy()
+        feature_provenance[missing_mask] = 0
 
         # Бинарная классификация направления: 0: REVERSE, 1: FORWARD
         target_class = 1 if direction_val == 1 else 0
@@ -132,11 +174,13 @@ class PDRTaskDataset(Dataset):
         return {
             "features": torch.tensor(spectral_feat, dtype=torch.float32),
             "missing_mask": torch.tensor(missing_mask, dtype=torch.bool),
+            "provenance": torch.tensor(feature_provenance, dtype=torch.long),
             "target_class": torch.tensor(target_class, dtype=torch.long),
             "pdr_direction": torch.tensor(direction_val, dtype=torch.int16),
             "pdr_margin": torch.tensor(margin_val, dtype=torch.float32),
+            "pdr_confidence": torch.tensor(confidence_val, dtype=torch.float32),
             "warmup_mask": torch.tensor(warmup_val, dtype=torch.bool),
-            "provenance": torch.tensor(provenance, dtype=torch.long),
+            "channel_provenance": torch.tensor(provenance, dtype=torch.long),
             "record_id": rec_idx,
             "window_idx": w_idx,
         }

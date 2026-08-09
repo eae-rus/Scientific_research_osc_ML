@@ -42,7 +42,8 @@ class PDRInputData:
     history_phasors_i: Optional[Dict[str, complex]] = None
     # Provenance каналов (8 элементов согласно CHANNEL_ORDER)
     provenance: Optional[np.ndarray] = None
-    # Базис напряжений ('phase' или 'line')
+    # Базис исходных напряжений ('phase' или 'line'); восстановленные фазные
+    # величины могут быть помечены служебным режимом 'phase_derived'.
     voltage_basis: str = "phase"
     # Временная метка окна в секундах
     timestamp_sec: float = 0.0
@@ -80,6 +81,8 @@ class PDRAlgorithm(ABC):
     algorithm_id: str = "base_pdr"
     name: str = "Base PDR Algorithm"
     is_public: bool = True
+    requires_history: bool = False
+    is_stateful: bool = False
     tunable_parameters: Dict[str, Any] = {}
 
     def __init__(self, **kwargs: Any) -> None:
@@ -88,6 +91,12 @@ class PDRAlgorithm(ABC):
         for key, value in kwargs.items():
             if key in self.params:
                 self.params[key] = value
+        # Эти поля переопределяются registry при разрешении алиаса/fallback.
+        # Они нужны, чтобы генератор разметки не мог скрыть подмену teacher.
+        self.requested_algorithm_id = self.algorithm_id
+        self.resolved_algorithm_id = self.algorithm_id
+        self.fallback_applied = False
+        self.fallback_algorithm_id: Optional[str] = None
 
     @abstractmethod
     def compute(self, input_data: PDRInputData) -> PDROutput:

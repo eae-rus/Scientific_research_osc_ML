@@ -74,7 +74,7 @@ class PositiveSequencePDRAlgorithm(PDRAlgorithm):
             u_min_thresh=u1_min,
         )
 
-        if u1 is None or not np.isfinite(u1) or abs(u1) < 1e-5:
+        if u1 is None or not np.isfinite(u1) or abs(u1) < u1_min:
             return PDROutput(
                 direction=PDRDirection.REVERSE,
                 is_tripped=False,

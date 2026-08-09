@@ -23,10 +23,14 @@ def test_private_pdr_algorithms_if_available():
     # Динамический запуск тестов из private/
     try:
         from private.pdr_algorithms.test_adaptive_pdr import (
+            test_adaptive_current_lockout_conditions,
             test_adaptive_pdr_positive_sequence_default,
-            test_adaptive_pdr_phase_and_logic,
+            test_adaptive_pdr_requires_real_history,
+            test_adaptive_pdr_vector_memory_and_missing_current,
         )
         test_adaptive_pdr_positive_sequence_default()
-        test_adaptive_pdr_phase_and_logic()
+        test_adaptive_pdr_vector_memory_and_missing_current()
+        test_adaptive_current_lockout_conditions()
+        test_adaptive_pdr_requires_real_history()
     except Exception as exc:
         pytest.fail(f"Ошибка при выполнении закрытых тестов РНМ: {exc}")

@@ -5,6 +5,7 @@ import pytest
 from osc_tools.pdr.registry import PDRRegistry, get_pdr_algorithm
 from osc_tools.pdr.public_algorithms import PhasePDRAlgorithm, PositiveSequencePDRAlgorithm
 from osc_tools.pdr.placeholder import PlaceholderPDRAlgorithm
+from osc_tools.pdr.labeler import PDRDatasetLabeler
 
 
 def test_list_algorithms():
@@ -26,6 +27,15 @@ def test_get_pdr_algorithm_fallback():
     """Запрос неизвестного алгоритма должен возвращать fallback."""
     alg = get_pdr_algorithm("unknown_algorithm_123", fallback_id="pos_seq_pdr_basic")
     assert isinstance(alg, PositiveSequencePDRAlgorithm)
+    assert alg.fallback_applied is True
+    assert alg.requested_algorithm_id == "unknown_algorithm_123"
+    assert alg.fallback_algorithm_id == "pos_seq_pdr_basic"
+
+    with pytest.raises(ValueError, match="fallback"):
+        PDRDatasetLabeler(alg)
+
+    # Явное подтверждение оставляет fallback доступным для диагностических запусков.
+    PDRDatasetLabeler(alg, allow_teacher_fallback=True)
 
 
 def test_get_pdr_algorithm_placeholder_fallback():

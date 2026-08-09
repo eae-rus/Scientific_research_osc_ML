@@ -42,6 +42,8 @@ class PDRTaskHead(nn.Module if HAS_TORCH else object):
 
     def forward(self, x: torch.Tensor) -> Dict[str, torch.Tensor]:
         # x: (batch_size, num_tokens, d_model) или (batch_size, d_model)
+        if x.ndim not in (2, 3):
+            raise ValueError(f"PDRTaskHead ожидает (B,D) или (B,T,D), получено {tuple(x.shape)}")
         last_token = x[:, -1, :] if x.ndim == 3 else x
         logits = self.class_head(last_token)
         out = {"logits": logits}
@@ -59,16 +61,97 @@ def pdr_combined_loss(
     logits = outputs["logits"]
     target_class = targets["target_class"]
 
-    loss_ce = F.cross_entropy(logits, target_class)
+    sample_weight = targets.get("pdr_confidence")
+    loss_ce_per_sample = F.cross_entropy(logits, target_class, reduction="none")
+    if sample_weight is not None:
+        weight = sample_weight.to(loss_ce_per_sample.dtype).clamp(min=0.0)
+        loss_ce = (loss_ce_per_sample * weight).sum() / weight.sum().clamp(min=1.0)
+    else:
+        loss_ce = loss_ce_per_sample.mean()
     total_loss = loss_ce
 
     if "margin" in outputs and "pdr_margin" in targets:
         pred_margin = outputs["margin"]
         target_margin = targets["pdr_margin"]
-        loss_huber = F.huber_loss(pred_margin, target_margin, delta=0.1)
+        loss_huber_per_sample = F.huber_loss(
+            pred_margin,
+            target_margin,
+            delta=0.1,
+            reduction="none",
+        )
+        if sample_weight is not None:
+            weight = sample_weight.to(loss_huber_per_sample.dtype).clamp(min=0.0)
+            loss_huber = (loss_huber_per_sample * weight).sum() / weight.sum().clamp(min=1.0)
+        else:
+            loss_huber = loss_huber_per_sample.mean()
         total_loss = total_loss + margin_loss_weight * loss_huber
 
     return total_loss
+
+
+def extract_backbone_features(
+    model: Optional[nn.Module],
+    batch: Dict[str, torch.Tensor],
+    device: str,
+) -> torch.Tensor:
+    """Привести PDR batch к контракту backbone и вернуть latent (B,T,D)."""
+    features_time_first = batch["features"].to(device)
+    if model is None:
+        return torch.nan_to_num(features_time_first, nan=0.0)
+
+    features = features_time_first.transpose(1, 2)  # (B,C,T)
+    provenance = batch.get("provenance")
+    provenance_channels_first = (
+        provenance.to(device).transpose(1, 2) if provenance is not None else None
+    )
+    try:
+        result = model(
+            features,
+            mode="features",
+            provenance=provenance_channels_first,
+        )
+    except TypeError:
+        # Совместимость с простыми пользовательскими backbone без mode/provenance.
+        result = model(features)
+    if isinstance(result, dict):
+        if "features" not in result:
+            raise KeyError("Backbone не вернул обязательный ключ 'features'")
+        return result["features"]
+    if not isinstance(result, torch.Tensor):
+        raise TypeError("Backbone должен вернуть Tensor или dict с ключом 'features'")
+    return result
+
+
+def train_pdr_epoch(
+    model: Optional[nn.Module],
+    head: PDRTaskHead,
+    dataloader: DataLoader,
+    optimizer: torch.optim.Optimizer,
+    device: str = "cpu",
+    margin_loss_weight: float = 0.5,
+) -> float:
+    """Одна эпоха fine-tuning с единым контрактом Phase 5 backbone."""
+    if model is not None:
+        model.train()
+    head.train()
+    total_loss = 0.0
+    n_batches = 0
+    for batch in dataloader:
+        optimizer.zero_grad(set_to_none=True)
+        latent = extract_backbone_features(model, batch, device)
+        outputs = head(latent)
+        targets = {
+            "target_class": batch["target_class"].to(device),
+            "pdr_margin": batch["pdr_margin"].to(device),
+        }
+        if "pdr_confidence" in batch:
+            targets["pdr_confidence"] = batch["pdr_confidence"].to(device)
+        loss = pdr_combined_loss(outputs, targets, margin_loss_weight)
+        loss.backward()
+        optimizer.step()
+        total_loss += float(loss.detach())
+        n_batches += 1
+    return total_loss / max(1, n_batches)
 
 
 def evaluate_pdr_metrics(
@@ -91,14 +174,11 @@ def evaluate_pdr_metrics(
 
     with torch.no_grad():
         for batch in dataloader:
-            feats = batch["features"].to(device)
-            feats = torch.nan_to_num(feats, nan=0.0)
             target_cls = batch["target_class"].to(device)
             target_margin = batch["pdr_margin"].to(device)
 
-            # Передача через backbone модель (если задана)
-            feats_out = model(feats) if (model is not None and hasattr(model, "forward")) else feats
-            out = head(feats_out)
+            latent = extract_backbone_features(model, batch, device)
+            out = head(latent)
 
             preds = torch.argmax(out["logits"], dim=-1)
             all_preds.extend(preds.cpu().tolist())

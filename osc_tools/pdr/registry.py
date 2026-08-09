@@ -71,8 +71,8 @@ class PDRRegistry:
         try:
             importlib.import_module("private.pdr_algorithms")
             logger.info("Закрытый адаптивный орган РНМ из private/pdr_algorithms успешно подключен.")
-        except ImportError:
-            pass
+        except ImportError as exc:
+            logger.info("Закрытые PDR-плагины недоступны: %s", exc)
 
     @classmethod
     def get_class(
@@ -122,5 +122,13 @@ def get_pdr_algorithm(
     По умолчанию вызовет закрытый адаптивный орган 'adaptive_pdr_mir' со всеми
     включенными адаптивностями и стандартными уставками БАВР.
     """
+    PDRRegistry._try_load_private_plugins()
+    requested_resolved = ALGORITHM_ALIASES.get(algorithm_id, algorithm_id)
+    requested_available = requested_resolved in PDRRegistry._registry
     alg_cls = PDRRegistry.get_class(algorithm_id, fallback_id=fallback_id)
-    return alg_cls(**kwargs)
+    algorithm = alg_cls(**kwargs)
+    algorithm.requested_algorithm_id = algorithm_id
+    algorithm.resolved_algorithm_id = alg_cls.algorithm_id
+    algorithm.fallback_applied = not requested_available
+    algorithm.fallback_algorithm_id = alg_cls.algorithm_id if not requested_available else None
+    return algorithm

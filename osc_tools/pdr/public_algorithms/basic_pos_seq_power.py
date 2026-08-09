@@ -53,6 +53,18 @@ class PositiveSequencePowerPDRAlgorithm(PDRAlgorithm):
                 margin=0.0,
                 diagnostics={"reason": "missing_current_sequence"},
             )
+        i1_abs = abs(i1)
+        if i1_abs < i_min:
+            return PDROutput(
+                direction=PDRDirection.REVERSE,
+                is_tripped=False,
+                margin=-i_min + i1_abs,
+                diagnostics={
+                    "reason": "current_below_threshold",
+                    "i1_abs": i1_abs,
+                    "i_min": i_min,
+                },
+            )
 
         u1_raw = compute_positive_sequence(input_data.phasors_u, is_voltage=True)
 
@@ -63,7 +75,7 @@ class PositiveSequencePowerPDRAlgorithm(PDRAlgorithm):
             u_min_thresh=u_min,
         )
 
-        if u1 is None or not np.isfinite(u1) or abs(u1) < 1e-5:
+        if u1 is None or not np.isfinite(u1) or abs(u1) < u_min:
             return PDROutput(
                 direction=PDRDirection.REVERSE,
                 is_tripped=False,
@@ -72,8 +84,6 @@ class PositiveSequencePowerPDRAlgorithm(PDRAlgorithm):
             )
 
         u1_abs = abs(u1)
-        i1_abs = abs(i1)
-
         # Момент / Мощность: T_op = Re[ V1 * (I1 * exp(-j * MTA))* ]
         i1_rot = i1 * np.exp(-1j * mta_rad)
         t_op = float(np.real(u1 * np.conj(i1_rot)))
@@ -85,7 +95,7 @@ class PositiveSequencePowerPDRAlgorithm(PDRAlgorithm):
             direction = PDRDirection.REVERSE
             is_tripped = False
 
-        margin = abs(t_op - (-p_thresh))
+        margin = t_op + p_thresh
 
         return PDROutput(
             direction=direction,

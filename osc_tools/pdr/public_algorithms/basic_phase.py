@@ -15,7 +15,12 @@ from typing import Dict, Any
 import numpy as np
 
 from osc_tools.pdr.base import PDRAlgorithm, PDRInputData, PDROutput, PDRDirection
-from osc_tools.pdr.pdr_signal_utils import derive_unified_voltages, get_memory_voltage, scale_thresholds_for_profile
+from osc_tools.pdr.pdr_signal_utils import (
+    derive_unified_currents,
+    derive_unified_voltages,
+    get_memory_voltage,
+    scale_thresholds_for_profile,
+)
 
 
 def _wrap_angle_deg(angle_deg: float) -> float:
@@ -59,6 +64,15 @@ class PhasePDRAlgorithm(PDRAlgorithm):
                 margin=-half_sector,
                 diagnostics={"reason": "missing_voltage_signals"},
             )
+        currents = derive_unified_currents(input_data.phasors_i)
+        if set(currents) != {"A", "B", "C"}:
+            return PDROutput(
+                direction=PDRDirection.UNLABELED,
+                is_tripped=False,
+                margin=-half_sector,
+                confidence=0.0,
+                diagnostics={"reason": "missing_current_signals"},
+            )
 
         phase_pairs = {
             "A": ("A", "BC" if pol_mode == "quadrature_90" else "A"),
@@ -74,7 +88,7 @@ class PhasePDRAlgorithm(PDRAlgorithm):
         margins: list[float] = []
 
         for phase, (i_ch, u_ch) in phase_pairs.items():
-            i_ph = input_data.phasors_i.get(i_ch)
+            i_ph = currents[i_ch]
             u_ph_raw = uv.u_line.get(u_ch) if pol_mode == "quadrature_90" else uv.u_phase.get(u_ch)
 
             if i_ph is None or not np.isfinite(i_ph):
@@ -84,6 +98,7 @@ class PhasePDRAlgorithm(PDRAlgorithm):
             i_abs = abs(i_ph)
             if i_abs < i_min:
                 phase_results[phase] = {"direction": PDRDirection.REVERSE, "reason": "current_below_threshold"}
+                margins.append(i_abs - i_min)
                 continue
 
             u_ph = get_memory_voltage(
@@ -93,8 +108,10 @@ class PhasePDRAlgorithm(PDRAlgorithm):
                 u_min_thresh=u_min,
             )
 
-            if u_ph is None or not np.isfinite(u_ph) or abs(u_ph) < 1e-5:
+            if u_ph is None or not np.isfinite(u_ph) or abs(u_ph) < u_min:
                 phase_results[phase] = {"direction": PDRDirection.REVERSE, "reason": "voltage_below_threshold"}
+                u_abs = abs(u_ph) if u_ph is not None and np.isfinite(u_ph) else 0.0
+                margins.append(u_abs - u_min)
                 continue
 
             u_angle = math.degrees(math.atan2(u_ph.imag, u_ph.real))
@@ -122,7 +139,7 @@ class PhasePDRAlgorithm(PDRAlgorithm):
             }
 
         valid_count = len(margins)
-        if valid_count > 0 and forward_count == valid_count:
+        if valid_count == 3 and forward_count == 3:
             overall_direction = PDRDirection.FORWARD
             is_tripped = True
             overall_margin = float(np.min(margins))

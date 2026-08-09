@@ -18,6 +18,14 @@ _A_OPERATOR = np.exp(1j * 2.0 * np.pi / 3.0)
 _A2_OPERATOR = np.exp(1j * 4.0 * np.pi / 3.0)
 
 
+def _first_present(mapping: Dict[str, complex], *keys: str) -> Optional[complex]:
+    """Вернуть первое присутствующее значение, не считая корректный ``0j`` отсутствующим."""
+    for key in keys:
+        if key in mapping:
+            return mapping[key]
+    return None
+
+
 class UnifiedVoltagePhasors(NamedTuple):
     """Единая структура фазных и линейных напряжений."""
 
@@ -44,9 +52,9 @@ def derive_unified_voltages(
     if not phasors_u:
         return empty_res
 
-    ua = phasors_u.get("A") or phasors_u.get("UA")
-    ub = phasors_u.get("B") or phasors_u.get("UB")
-    uc = phasors_u.get("C") or phasors_u.get("UC")
+    ua = _first_present(phasors_u, "A", "UA")
+    ub = _first_present(phasors_u, "B", "UB")
+    uc = _first_present(phasors_u, "C", "UC")
 
     if ua is not None and ub is not None and uc is not None:
         if np.isfinite([ua, ub, uc]).all():
@@ -54,9 +62,27 @@ def derive_unified_voltages(
             u_ln = {"AB": ua - ub, "BC": ub - uc, "CA": uc - ua}
             return UnifiedVoltagePhasors(u_ph, u_ln, "phase")
 
-    u_ab = phasors_u.get("AB") or phasors_u.get("UAB")
-    u_bc = phasors_u.get("BC") or phasors_u.get("UBC")
-    u_ca = phasors_u.get("CA") or phasors_u.get("UCA")
+    # При наличии любых двух фазных напряжений восстанавливаем третье из
+    # UA + UB + UC = 0. Нулевая последовательность при этом недоступна, но для
+    # направленных органов получается согласованная трёхфазная система.
+    phase_values = {"A": ua, "B": ub, "C": uc}
+    valid_phase = {
+        key: value
+        for key, value in phase_values.items()
+        if value is not None and np.isfinite(value)
+    }
+    if len(valid_phase) == 2:
+        missing_phase = next(key for key in ("A", "B", "C") if key not in valid_phase)
+        completed_phase = dict(valid_phase)
+        completed_phase[missing_phase] = -sum(valid_phase.values())
+        ua, ub, uc = completed_phase["A"], completed_phase["B"], completed_phase["C"]
+        u_ph = {"A": ua, "B": ub, "C": uc}
+        u_ln = {"AB": ua - ub, "BC": ub - uc, "CA": uc - ua}
+        return UnifiedVoltagePhasors(u_ph, u_ln, "phase_derived")
+
+    u_ab = _first_present(phasors_u, "AB", "UAB")
+    u_bc = _first_present(phasors_u, "BC", "UBC")
+    u_ca = _first_present(phasors_u, "CA", "UCA")
 
     if u_ab is not None and u_bc is not None and np.isfinite([u_ab, u_bc]).all():
         u_ca = -(u_ab + u_bc)
@@ -89,9 +115,9 @@ def derive_unified_currents(
     if not phasors_i:
         return {}
 
-    ia = phasors_i.get("A") or phasors_i.get("IA")
-    ib = phasors_i.get("B") or phasors_i.get("IB")
-    ic = phasors_i.get("C") or phasors_i.get("IC")
+    ia = _first_present(phasors_i, "A", "IA")
+    ib = _first_present(phasors_i, "B", "IB")
+    ic = _first_present(phasors_i, "C", "IC")
 
     ia_ok = ia is not None and np.isfinite(ia)
     ib_ok = ib is not None and np.isfinite(ib)
@@ -123,12 +149,9 @@ def compute_positive_sequence(
 
     if is_voltage:
         uv = derive_unified_voltages(phasors)
-        if uv.mode == "phase":
+        if uv.mode != "invalid":
             ua, ub, uc = uv.u_phase["A"], uv.u_phase["B"], uv.u_phase["C"]
             return (ua + ub * _A_OPERATOR + uc * _A2_OPERATOR) / 3.0
-        elif uv.mode == "line":
-            u_ab, u_bc = uv.u_line["AB"], uv.u_line["BC"]
-            return (u_ab + u_bc * _A_OPERATOR) / 3.0
         return None
     else:
         currents = derive_unified_currents(phasors)
@@ -156,7 +179,9 @@ def get_memory_voltage(
                 return mem_u
         else:
             uv_hist = derive_unified_voltages(history_phasors_u)
-            mem_u = uv_hist.u_phase.get(key) or uv_hist.u_line.get(key)
+            mem_u = _first_present(uv_hist.u_phase, key)
+            if mem_u is None:
+                mem_u = _first_present(uv_hist.u_line, key)
             if mem_u is not None and np.isfinite(mem_u) and abs(mem_u) > 1e-4:
                 return mem_u
 

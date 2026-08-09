@@ -5,7 +5,15 @@ import pytest
 import numpy as np
 
 from osc_tools.pdr.base import PDRInputData, PDRDirection
-from osc_tools.pdr.public_algorithms import PhasePDRAlgorithm, PositiveSequencePDRAlgorithm
+from osc_tools.pdr.public_algorithms import (
+    PhasePDRAlgorithm,
+    PositiveSequencePDRAlgorithm,
+    PositiveSequencePowerPDRAlgorithm,
+)
+from osc_tools.pdr.pdr_signal_utils import (
+    compute_positive_sequence,
+    derive_unified_voltages,
+)
 from osc_tools.pdr.placeholder import PlaceholderPDRAlgorithm
 
 
@@ -97,3 +105,44 @@ def test_placeholder_fallback():
     assert out.direction == 0
     assert out.confidence == 0.0
     assert out.diagnostics["is_placeholder_fallback"] is True
+
+
+def test_positive_sequence_is_equal_for_phase_and_line_voltages():
+    """U1 должна быть инвариантна к фазному/линейному представлению входа."""
+    a = np.exp(1j * 2 * np.pi / 3)
+    phase = {"A": 1.0 + 0j, "B": a ** 2, "C": a}
+    line = derive_unified_voltages(phase).u_line
+
+    u1_phase = compute_positive_sequence(phase, is_voltage=True)
+    u1_line = compute_positive_sequence(line, is_voltage=True)
+
+    assert u1_phase == pytest.approx(u1_line, abs=1e-12)
+
+
+def test_phase_pdr_requires_two_currents_and_restores_third():
+    """Одна фаза недостаточна, две позволяют восстановить третью."""
+    a = np.exp(1j * 2 * np.pi / 3)
+    voltages = {"A": 1.0 + 0j, "B": a ** 2, "C": a}
+    ia = np.exp(-1j * np.pi / 4)
+    currents = {"A": ia, "C": ia * a}
+    algorithm = PhasePDRAlgorithm(polarization_mode="direct")
+
+    insufficient = algorithm.compute(PDRInputData(phasors_u=voltages, phasors_i={"A": ia}))
+    restored = algorithm.compute(PDRInputData(phasors_u=voltages, phasors_i=currents))
+
+    assert insufficient.direction == PDRDirection.UNLABELED
+    assert restored.direction == PDRDirection.FORWARD
+    assert restored.diagnostics["valid_count"] == 3
+
+
+def test_positive_sequence_power_honours_minimum_current():
+    """Публичный мощностной орган не действует ниже i_min_pu."""
+    a = np.exp(1j * 2 * np.pi / 3)
+    voltages = {"A": 1.0 + 0j, "B": a ** 2, "C": a}
+    currents = {"A": 0.001 + 0j, "B": 0.001 * a ** 2, "C": 0.001 * a}
+    out = PositiveSequencePowerPDRAlgorithm(i_min_pu=0.05).compute(
+        PDRInputData(phasors_u=voltages, phasors_i=currents)
+    )
+
+    assert out.direction == PDRDirection.REVERSE
+    assert out.diagnostics["reason"] == "current_below_threshold"

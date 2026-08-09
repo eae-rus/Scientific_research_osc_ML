@@ -56,3 +56,14 @@ def test_check_signal_sufficiency():
     assert res.can_run_pos_seq_pdr is True
     assert "IB" in res.derived_channels
     assert "IN" in res.missing_channels
+
+
+def test_line_basis_without_two_voltage_channels_is_insufficient():
+    provenance = np.full(8, int(ChannelProvenance.MISSING), dtype=np.uint8)
+    provenance[CHANNEL_ORDER.index("IA")] = int(ChannelProvenance.MEASURED)
+    provenance[CHANNEL_ORDER.index("IB")] = int(ChannelProvenance.MEASURED)
+
+    res = check_pdr_signal_sufficiency(provenance, voltage_basis="line")
+
+    assert res.can_run_phase_pdr is False
+    assert res.can_run_pos_seq_pdr is False
