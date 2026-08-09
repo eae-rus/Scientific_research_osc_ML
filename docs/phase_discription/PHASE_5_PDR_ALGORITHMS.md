@@ -113,8 +113,9 @@ Scientific_research_osc_ML/
   что и SSL; метка относится к последнему токену.
 - В файл разметки сохраняются direction, margin, confidence, warmup/unknown,
   requested/resolved teacher ID, факт fallback, timebase записи и SHA-256 входа.
-- Для полного архива используется sharded study-format: directions всех органов,
-  margin/confidence адаптивного teacher, offsets и исходные sample indices.
+- Для полного архива используется sharded study-format: direction, margin,
+  confidence и warmup всех органов, offsets и исходные sample indices для каждой
+  точки после накопления однопериодного окна.
   `PDRTaskDataset` читает его лениво. Инструкция приведена в
   `PHASE_5_PDR_DATASET_GUIDE.md`.
 

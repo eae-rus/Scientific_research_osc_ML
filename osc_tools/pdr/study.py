@@ -16,7 +16,7 @@ from typing import Any, Sequence
 
 import numpy as np
 
-from osc_tools.ml.phase5_contracts import TimebaseContract, periods_to_samples, period_fraction_stride
+from osc_tools.ml.phase5_contracts import TimebaseContract, periods_to_samples
 from .base import PDRAlgorithm, PDRDirection, PDRInputData
 from .labeler import precompute_causal_h1_phasors
 from .signal_analysis import derive_missing_currents
@@ -43,14 +43,15 @@ def label_record_multi(
     voltage_basis: str,
     algorithms: Sequence[PDRAlgorithm],
     *,
-    stride_fraction: int = 8,
+    sample_step: int = 1,
     default_history_periods: float = 10.0,
     allow_fallback: bool = False,
 ) -> MultiPDRRecordResult:
     """Разметить запись несколькими органами, разделяя один расчёт h1.
 
     Публичный орган без обязательной истории работает после первого полного
-    периода. Орган с ``requires_history=True`` до настоящей точки t-history
+    периода. По умолчанию решение рассчитывается для каждого следующего исходного
+    отсчёта. Орган с ``requires_history=True`` до настоящей точки t-history
     оставляет метку ``UNLABELED``.
     """
 
@@ -60,6 +61,8 @@ def label_record_multi(
         raise ValueError(f"Ожидались сигналы формы (8,T), получено {signals.shape}")
     if len(provenance) != 8:
         raise ValueError("Provenance должен содержать 8 элементов")
+    if sample_step <= 0:
+        raise ValueError("Шаг разметки в отсчётах должен быть положительным")
 
     algorithm_ids = tuple(str(algorithm.resolved_algorithm_id) for algorithm in algorithms)
     if len(set(algorithm_ids)) != len(algorithm_ids):
@@ -80,8 +83,7 @@ def label_record_multi(
     ).hexdigest()
     prepared_signals, prepared_provenance = derive_missing_currents(signals, provenance)
     spp = timebase.spp
-    stride = period_fraction_stride(spp, stride_fraction)
-    end_indices = list(range(spp - 1, prepared_signals.shape[1], stride))
+    end_indices = list(range(spp - 1, prepared_signals.shape[1], sample_step))
     n_windows = len(end_indices)
 
     history_samples_by_algorithm: list[int] = []
@@ -121,7 +123,7 @@ def label_record_multi(
     ):
         algorithm.reset_state()
         if "steps_per_period" in algorithm.params:
-            algorithm.params["steps_per_period"] = max(1, round(spp / stride))
+            algorithm.params["steps_per_period"] = max(1, round(spp / sample_step))
         requires_history = bool(getattr(algorithm, "requires_history", False))
 
         for window_index, end_idx in enumerate(end_indices):

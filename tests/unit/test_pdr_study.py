@@ -58,6 +58,8 @@ def test_multi_labeler_separates_public_start_and_required_history() -> None:
         [_AlwaysForward(), _HistoryReverse()],
     )
 
+    assert len(result.sample_indices) == samples - timebase.spp + 1
+    assert np.all(np.diff(result.sample_indices) == 1)
     assert np.all(result.directions[0] == int(PDRDirection.FORWARD))
     assert np.any(result.warmup_mask[1])
     assert np.all(result.directions[1, result.warmup_mask[1]] == int(PDRDirection.UNLABELED))
@@ -105,9 +107,9 @@ def test_sharded_label_store_reads_teacher_and_other_algorithm(tmp_path) -> None
         offsets=np.asarray([0, 3], dtype=np.int64),
         samples=np.asarray([10, 12, 14], dtype=np.int32),
         directions=np.asarray([[1, 0, 1], [0, 0, 1]], dtype=np.int16),
-        teacher_margin=np.asarray([0.5, -0.2, 0.8], dtype=np.float32),
-        teacher_confidence=np.asarray([1.0, 0.5, 1.0], dtype=np.float16),
-        teacher_warmup=np.asarray([False, False, False]),
+        all_margins=np.asarray([[0.5, -0.2, 0.8], [-0.4, -0.3, 0.2]], dtype=np.float32),
+        all_confidences=np.asarray([[1.0, 0.5, 1.0], [0.7, 0.8, 0.9]], dtype=np.float32),
+        all_warmup=np.zeros((2, 3), dtype=bool),
         provenance=np.ones((1, 8), dtype=np.uint8),
     )
     manifest = {
@@ -127,5 +129,6 @@ def test_sharded_label_store_reads_teacher_and_other_algorithm(tmp_path) -> None
     comparison = PDRStudyLabelStore(tmp_path, algorithm_id="comparison")
     comparison_record = comparison.get_record(7)
     assert comparison_record["directions"].tolist() == [0, 0, 1]
-    assert np.all(comparison_record["margins"] == 0.0)
+    assert comparison_record["margins"].tolist() == pytest.approx([-0.4, -0.3, 0.2])
+    assert comparison_record["confidences"].tolist() == pytest.approx([0.7, 0.8, 0.9])
     comparison.close()

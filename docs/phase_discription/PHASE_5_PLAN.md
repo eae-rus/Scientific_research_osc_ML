@@ -950,8 +950,8 @@ Task-head не должен знать, из Open_EE или French пришёл 
 
 - [x] Выбран адаптивный закрытый teacher со стандартными уставками; fallback для
   массового запуска запрещён.
-- [x] Реализован compact sharded format: directions всех органов и полные
-  margin/confidence адаптивного teacher; lazy-reader подключён к `PDRTaskDataset`
+- [x] Реализован sharded format: direction/margin/confidence/warmup всех органов
+  на каждом исходном отсчёте; lazy-reader подключён к `PDRTaskDataset`
   (см. `osc_tools/pdr/study.py`, `osc_tools/pdr/pdr_dataset.py`).
 
 ### 11.4. Первое PDR fine-tuning
@@ -1230,12 +1230,13 @@ never-seen file-level holdout, зафиксированный до pretrain.
 - Первый сравнительный SSL-протокол: `research_strict`; `full_archive` допустим
   после выбора конфигурации для финального рабочего backbone.
 - Окно: 10 периодов.
-- Stride: 1/8 периода.
+- Stride спектральных токенов нейросети: 1/8 периода. Аналитическая PDR-разметка
+  рассчитывается отдельно на каждом исходном отсчёте (`sample_step=1`).
 - Open_EE storage: benchmark single-record и shard layouts; 100 записей на shard — стартовая гипотеза.
 - French storage: оставить `DATA_S.npz` источником истины; training adapter
   использует только отдельно подготовленный random-access NPY/shards после benchmark.
-- French voltage normalization: `value * 18.310 / (90000 * 3)` (проверить).
-- French current normalization: после RMS-отчёта, параметр задаётся явно.
+- French voltage/current normalization: использовать подтверждённый исследователем
+  подготовленный профиль; повторная нормировка в PDR-сценарии запрещена.
 - Missing channels: `NaN`.
 - Phase 5 features: две schema внутри `feature_contract_v2` — A (`phase-polar + h1 symmetric`) и B (`symmetric-polar h1-h9` без фазной ветви), обе с low harmonics; внешний формат `magnitude+angle`, внутренние непериодические проекции получают циклический encoding.
 - Legacy Phase 4 features: `feature_contract_v1`, только для совместимости и baseline.

@@ -22,7 +22,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from osc_tools.ml.phase5_contracts import TimebaseContract, period_fraction_stride
+from osc_tools.ml.phase5_contracts import TimebaseContract
 from osc_tools.ml.phase5_sources import DatasetSource, FrenchRTESource, OpenEEShardedSource
 from osc_tools.pdr.base import PDRAlgorithm
 from osc_tools.pdr.registry import get_pdr_algorithm
@@ -71,17 +71,17 @@ def run_study(
     algorithm_ids: Sequence[str] = DEFAULT_ALGORITHMS,
     teacher_id: str = DEFAULT_TEACHER,
     split_scope: str = "all",
-    stride_fraction: int = 8,
-    shard_records: int = 64,
+    sample_step: int = 1,
+    records_per_shard: int = 64,
     max_records_per_source: int | None = None,
-    compressed: bool = True,
-    store_all_margins: bool = False,
-    top_candidates: int = 200,
+    lossless_compression: bool = True,
 ) -> dict[str, Any]:
     """Выполнить возобновляемую разметку выбранных источников."""
 
-    if shard_records <= 0:
-        raise ValueError("shard_records должен быть положительным")
+    if records_per_shard <= 0:
+        raise ValueError("records_per_shard должен быть положительным")
+    if sample_step <= 0:
+        raise ValueError("sample_step должен быть положительным")
     algorithms = create_algorithms(algorithm_ids)
     resolved_ids = tuple(algorithm.resolved_algorithm_id for algorithm in algorithms)
     if teacher_id not in resolved_ids:
@@ -98,11 +98,11 @@ def run_study(
         "teacher_algorithm_id": teacher_id,
         "parameter_fingerprints": parameter_fingerprints,
         "split_scope": split_scope,
-        "stride_fraction": stride_fraction,
-        "shard_records": shard_records,
+        "sample_step": sample_step,
+        "records_per_shard": records_per_shard,
         "max_records_per_source": max_records_per_source,
-        "compressed": compressed,
-        "store_all_margins": store_all_margins,
+        "lossless_compression": lossless_compression,
+        "stores_all_algorithm_outputs": True,
     }
     config_hash = stable_config_hash(run_config)
     output_dir = Path(output_dir)
@@ -142,11 +142,9 @@ def run_study(
                 teacher_id=teacher_id,
                 output_dir=output_dir / source_name,
                 config_hash=config_hash,
-                stride_fraction=stride_fraction,
-                shard_records=shard_records,
-                compressed=compressed,
-                store_all_margins=store_all_margins,
-                top_candidates=top_candidates,
+                sample_step=sample_step,
+                records_per_shard=records_per_shard,
+                lossless_compression=lossless_compression,
             )
         finally:
             close = getattr(source, "close", None)
@@ -171,14 +169,15 @@ def _process_source(
     teacher_id: str,
     output_dir: Path,
     config_hash: str,
-    stride_fraction: int,
-    shard_records: int,
-    compressed: bool,
-    store_all_margins: bool,
-    top_candidates: int,
+    sample_step: int,
+    records_per_shard: int,
+    lossless_compression: bool,
 ) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
-    batches = [selected_indices[start:start + shard_records] for start in range(0, len(selected_indices), shard_records)]
+    batches = [
+        selected_indices[start:start + records_per_shard]
+        for start in range(0, len(selected_indices), records_per_shard)
+    ]
     existing: dict[int, dict[str, Any]] = {}
     for sidecar_path in sorted(output_dir.glob("shard_*.json")):
         sidecar = json.loads(sidecar_path.read_text(encoding="utf-8"))
@@ -201,9 +200,11 @@ def _process_source(
     progress.update(completed_before)
     started = time.monotonic()
     processed_now = 0
-    estimated_windows = _estimate_windows(source, selected_indices, stride_fraction)
+    estimated_windows = _estimate_windows(source, selected_indices, sample_step)
     n_algorithms = len(algorithms)
-    bytes_per_window = 2 * n_algorithms + 11 + (7 * (n_algorithms - 1) if store_all_margins else 0)
+    # На каждый алгоритм: direction int16 + margin/confidence float32 + warmup bool.
+    # Плюс общий sample index int32.
+    bytes_per_window = 11 * n_algorithms + 4
     print(
         f"\n{source.name}: {len(selected_indices):,} записей; примерно {estimated_windows:,} окон; "
         f"сырой объём целевой разметки около {estimated_windows * bytes_per_window / 2**30:.2f} ГБ."
@@ -224,7 +225,7 @@ def _process_source(
                     timebase,
                     str(metadata.get("voltage_basis", "phase")),
                     algorithms,
-                    stride_fraction=stride_fraction,
+                    sample_step=sample_step,
                 )
                 interest = summarize_record_interest(result, timebase)
                 statistics.append({
@@ -269,8 +270,7 @@ def _process_source(
             statistics=statistics,
             teacher_id=teacher_id,
             config_hash=config_hash,
-            compressed=compressed,
-            store_all_margins=store_all_margins,
+            lossless_compression=lossless_compression,
         )
         existing[shard_index] = sidecar
         _write_source_manifest(
@@ -281,13 +281,12 @@ def _process_source(
             config_hash,
             selected_indices,
             existing,
-            stride_fraction,
-            store_all_margins,
+            sample_step,
         )
 
     progress.finish()
     elapsed_now = max(time.monotonic() - started, 1e-9)
-    aggregate = _aggregate_statistics(output_dir, top_candidates)
+    aggregate = _aggregate_statistics(output_dir)
     result_bytes = sum((output_dir / item["file"]).stat().st_size for item in existing.values())
     summary = {
         "records": len(selected_indices),
@@ -321,13 +320,13 @@ def _write_shard(
     statistics: list[dict[str, Any]],
     teacher_id: str,
     config_hash: str,
-    compressed: bool,
-    store_all_margins: bool,
+    lossless_compression: bool,
 ) -> dict[str, Any]:
     if not results:
         raise ValueError("Нельзя сохранить пустой PDR shard")
     algorithm_ids = results[0].algorithm_ids
-    teacher_index = algorithm_ids.index(teacher_id)
+    if teacher_id not in algorithm_ids:
+        raise ValueError("Teacher отсутствует среди результатов shard")
     lengths = [len(result.sample_indices) for result in results]
     offsets = np.concatenate(([0], np.cumsum(lengths, dtype=np.int64)))
     directions = np.concatenate([result.directions for result in results], axis=1)
@@ -339,23 +338,17 @@ def _write_shard(
         "offsets": offsets,
         "samples": np.concatenate([result.sample_indices for result in results]),
         "directions": directions,
-        "teacher_margin": margins[teacher_index].astype(np.float32, copy=False),
-        "teacher_confidence": confidences[teacher_index].astype(np.float16),
-        "teacher_warmup": warmup[teacher_index],
+        "all_margins": margins.astype(np.float32, copy=False),
+        "all_confidences": confidences.astype(np.float32, copy=False),
+        "all_warmup": warmup,
         "provenance": np.stack([result.provenance for result in results]),
     }
-    if store_all_margins:
-        payload.update({
-            "all_margins": margins.astype(np.float32, copy=False),
-            "all_confidences": confidences.astype(np.float16),
-            "all_warmup": warmup,
-        })
 
     npz_name = f"shard_{shard_index:05d}.npz"
     npz_path = output_dir / npz_name
     temporary_npz = output_dir / f".{npz_name}.tmp"
     with temporary_npz.open("wb") as stream:
-        if compressed:
+        if lossless_compression:
             np.savez_compressed(stream, **payload)
         else:
             np.savez(stream, **payload)
@@ -390,8 +383,7 @@ def _write_source_manifest(
     config_hash: str,
     selected_indices: list[int],
     shards: dict[int, dict[str, Any]],
-    stride_fraction: int,
-    store_all_margins: bool,
+    sample_step: int,
 ) -> None:
     ordered = [shards[index] for index in sorted(shards)]
     manifest = {
@@ -401,8 +393,8 @@ def _write_source_manifest(
         "config_hash": config_hash,
         "algorithm_ids": [algorithm.resolved_algorithm_id for algorithm in algorithms],
         "teacher_algorithm_id": teacher_id,
-        "stride_fraction": stride_fraction,
-        "store_all_margins": store_all_margins,
+        "sample_step": sample_step,
+        "stores_all_algorithm_outputs": True,
         "selected_records": len(selected_indices),
         "completed_records": sum(len(item["record_ids"]) for item in ordered),
         "shards": ordered,
@@ -410,7 +402,7 @@ def _write_source_manifest(
     _atomic_write_json(output_dir / "manifest.json", manifest)
 
 
-def _aggregate_statistics(output_dir: Path, top_candidates: int) -> dict[str, Any]:
+def _aggregate_statistics(output_dir: Path) -> dict[str, Any]:
     records: list[dict[str, Any]] = []
     category_counts: dict[str, int] = {}
     algorithm_totals: dict[str, dict[str, float]] = {}
@@ -433,31 +425,59 @@ def _aggregate_statistics(output_dir: Path, top_candidates: int) -> dict[str, An
 
     ranked = sorted(records, key=lambda item: item["interest_score"], reverse=True)
     csv_path = output_dir / "interesting_records.csv"
+    algorithm_ids = list(algorithm_totals)
+    algorithm_metric_names = (
+        "valid_windows",
+        "coverage_fraction",
+        "forward_fraction",
+        "transitions",
+        "transitions_per_second",
+        "short_run_fraction",
+        "near_boundary_fraction",
+        "mean_confidence",
+    )
+    base_fields = [
+        "rank", "source", "record_id", "split", "file_name", "source_csv",
+        "f_adc", "f_network", "spp", "voltage_basis", "duration_sec", "n_windows",
+        "interest_score", "categories", "total_transitions", "vote_change_count",
+        "disagreement_fraction", "localized_disagreement", "dynamic_disagreement",
+        "static_threshold_disagreement", "low_coverage",
+        "most_disagreeing_pair", "most_disagreeing_pair_fraction",
+        "most_disagreeing_pair_transitions",
+    ]
+    algorithm_fields = [
+        f"{algorithm_id}__{metric_name}"
+        for algorithm_id in algorithm_ids
+        for metric_name in algorithm_metric_names
+    ]
+    fieldnames = base_fields + algorithm_fields
     with csv_path.open("w", encoding="utf-8-sig", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=[
-            "rank", "source", "record_id", "split", "file_name", "source_csv",
-            "interest_score", "categories", "total_transitions",
-            "disagreement_fraction", "localized_disagreement", "dynamic_disagreement",
-            "static_threshold_disagreement", "low_coverage", "duration_sec", "n_windows",
-        ])
+        writer = csv.DictWriter(stream, fieldnames=fieldnames)
         writer.writeheader()
         for rank, record in enumerate(ranked, start=1):
-            writer.writerow({
-                key: (
-                    rank if key == "rank"
-                    else "|".join(record["categories"]) if key == "categories"
-                    else record.get(key)
-                )
-                for key in writer.fieldnames
-            })
+            pair = record.get("most_disagreeing_pair") or {}
+            row = {key: record.get(key) for key in base_fields}
+            row["rank"] = rank
+            row["categories"] = "|".join(record["categories"])
+            row["most_disagreeing_pair"] = (
+                f"{pair.get('left')}|{pair.get('right')}" if pair else ""
+            )
+            row["most_disagreeing_pair_fraction"] = pair.get("disagreement_fraction")
+            row["most_disagreeing_pair_transitions"] = pair.get("disagreement_transitions")
+            for algorithm_id in algorithm_ids:
+                stats = record["algorithms"].get(algorithm_id, {})
+                for metric_name in algorithm_metric_names:
+                    row[f"{algorithm_id}__{metric_name}"] = stats.get(metric_name)
+            writer.writerow(row)
 
     def candidates(predicate: Any) -> list[dict[str, Any]]:
-        return [_candidate_view(record) for record in ranked if predicate(record)][:top_candidates]
+        return [_candidate_view(record) for record in ranked if predicate(record)]
 
     candidate_payload = {
         "selection_note": (
-            "overall_dynamic исключает записи, где единственная причина расхождения — "
-            "постоянный сдвиг порога на всей осциллограмме. Такие записи вынесены отдельно."
+            "Списки не ограничены top-N. Полная числовая статистика всех записей "
+            "находится в interesting_records.csv. overall_dynamic исключает записи, "
+            "где единственная причина расхождения — постоянный сдвиг порога."
         ),
         "overall_dynamic": candidates(
             lambda record: (
@@ -476,7 +496,7 @@ def _aggregate_statistics(output_dir: Path, top_candidates: int) -> dict[str, An
         ),
         "low_coverage": candidates(lambda record: record["low_coverage"]),
     }
-    _atomic_write_json(output_dir / "manual_review_candidates.json", candidate_payload)
+    _atomic_write_json(output_dir / "review_groups.json", candidate_payload)
 
     scores = np.asarray([record["interest_score"] for record in records], dtype=np.float64)
     for stats in algorithm_totals.values():
@@ -495,7 +515,7 @@ def _aggregate_statistics(output_dir: Path, top_candidates: int) -> dict[str, An
         },
         "algorithms": algorithm_totals,
         "ranked_csv": csv_path.name,
-        "manual_candidates": "manual_review_candidates.json",
+        "review_groups": "review_groups.json",
     }
 
 
@@ -546,19 +566,18 @@ def _record_timebase(metadata: dict[str, Any]) -> TimebaseContract:
     network_frequency = metadata.get("f_network", metadata.get("network_frequency_hz"))
     if sampling_rate is None or network_frequency is None:
         raise ValueError("В metadata записи отсутствуют f_adc/f_network")
-    return TimebaseContract.create(float(sampling_rate), float(network_frequency), stride_fraction=8)
+    return TimebaseContract.create(float(sampling_rate), float(network_frequency))
 
 
-def _estimate_windows(source: DatasetSource, indices: Sequence[int], stride_fraction: int) -> int:
+def _estimate_windows(source: DatasetSource, indices: Sequence[int], sample_step: int) -> int:
     total = 0
     default_samples = int(getattr(getattr(source, "data", None), "shape", (0, 0, 0))[-1])
     for record_id in indices:
         metadata = source.get_metadata(record_id)
         spp = int(metadata.get("spp") or round(float(metadata["f_adc"]) / float(metadata["f_network"])))
         n_samples = int(metadata.get("n_samples", default_samples))
-        stride = period_fraction_stride(spp, stride_fraction)
         if n_samples >= spp:
-            total += (n_samples - spp) // stride + 1
+            total += (n_samples - spp) // sample_step + 1
     return total
 
 
@@ -586,12 +605,10 @@ def main() -> int:
     parser.add_argument("--algorithms", nargs="+", default=list(DEFAULT_ALGORITHMS))
     parser.add_argument("--teacher", default=DEFAULT_TEACHER)
     parser.add_argument("--split", choices=("all", "train", "validation", "holdout"), default="all")
-    parser.add_argument("--stride-fraction", type=int, default=8)
-    parser.add_argument("--shard-records", type=int, default=64)
+    parser.add_argument("--sample-step", type=int, default=1, help="Шаг решений в исходных отсчётах")
+    parser.add_argument("--records-per-shard", type=int, default=64)
     parser.add_argument("--max-records-per-source", type=int, default=None)
-    parser.add_argument("--uncompressed", action="store_true")
-    parser.add_argument("--store-all-margins", action="store_true")
-    parser.add_argument("--top-candidates", type=int, default=200)
+    parser.add_argument("--no-compression", action="store_true", help="Отключить lossless ZIP-сжатие shards")
     args = parser.parse_args()
     max_records = 8 if args.smoke else args.max_records_per_source
     run_study(
@@ -600,12 +617,10 @@ def main() -> int:
         algorithm_ids=args.algorithms,
         teacher_id=args.teacher,
         split_scope=args.split,
-        stride_fraction=args.stride_fraction,
-        shard_records=(4 if args.smoke else args.shard_records),
+        sample_step=args.sample_step,
+        records_per_shard=(4 if args.smoke else args.records_per_shard),
         max_records_per_source=max_records,
-        compressed=not args.uncompressed,
-        store_all_margins=args.store_all_margins,
-        top_candidates=args.top_candidates,
+        lossless_compression=not args.no_compression,
     )
     return 0
 
@@ -618,11 +633,9 @@ def run_manual() -> None:
     ALGORITHMS = DEFAULT_ALGORITHMS
     TEACHER = DEFAULT_TEACHER
     SPLIT_SCOPE = "all"           # Размечаем всё, но исходный train/validation/holdout сохраняется в статистике.
-    STRIDE_FRACTION = 8            # Шаг 1/8 периода.
-    SHARD_RECORDS = 64             # При сбое пересчитывается максимум один небольшой shard.
-    STORE_ALL_MARGINS = False      # False экономит ~2.4 ГБ raw; margin/confidence teacher сохраняются всегда.
-    COMPRESSED = True              # Экономит диск; отключать только после отдельного benchmark.
-    TOP_CANDIDATES = 200
+    SAMPLE_STEP = 1                # Решение каждого РНМ для каждого исходного отсчёта.
+    RECORDS_PER_SHARD = 64         # RAM/checkpoint-компромисс; не меняет физическую разметку.
+    LOSSLESS_COMPRESSION = True    # Только упаковка без потери точности значений.
 
     run_study(
         output_dir=OUTPUT_DIR,
@@ -630,12 +643,10 @@ def run_manual() -> None:
         algorithm_ids=ALGORITHMS,
         teacher_id=TEACHER,
         split_scope=SPLIT_SCOPE,
-        stride_fraction=STRIDE_FRACTION,
-        shard_records=(4 if SMOKE else SHARD_RECORDS),
+        sample_step=SAMPLE_STEP,
+        records_per_shard=(4 if SMOKE else RECORDS_PER_SHARD),
         max_records_per_source=(8 if SMOKE else None),
-        compressed=COMPRESSED,
-        store_all_margins=STORE_ALL_MARGINS,
-        top_candidates=TOP_CANDIDATES,
+        lossless_compression=LOSSLESS_COMPRESSION,
     )
 
 
