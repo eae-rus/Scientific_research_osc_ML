@@ -1,4 +1,5 @@
 import json
+import os
 
 import numpy as np
 import pytest
@@ -11,6 +12,7 @@ from osc_tools.pdr.study import (
     label_record_multi,
     summarize_record_interest,
 )
+from scripts.phase5_experiments import run_pdr_dataset_study as study_script
 
 
 class _AlwaysForward(PDRAlgorithm):
@@ -132,3 +134,38 @@ def test_sharded_label_store_reads_teacher_and_other_algorithm(tmp_path) -> None
     assert comparison_record["margins"].tolist() == pytest.approx([-0.4, -0.3, 0.2])
     assert comparison_record["confidences"].tolist() == pytest.approx([0.7, 0.8, 0.9])
     comparison.close()
+
+
+def test_atomic_json_write_retries_transient_windows_lock(tmp_path, monkeypatch) -> None:
+    destination = tmp_path / "progress.json"
+    destination.write_text('{"old": true}', encoding="utf-8")
+    real_replace = os.replace
+    attempts = 0
+
+    def flaky_replace(source, target):
+        nonlocal attempts
+        attempts += 1
+        if attempts < 3:
+            raise PermissionError(5, "temporary lock", str(target))
+        real_replace(source, target)
+
+    monkeypatch.setattr(study_script.os, "replace", flaky_replace)
+    monkeypatch.setattr(study_script.time, "sleep", lambda _seconds: None)
+
+    study_script._atomic_write_json(destination, {"completed": 42})
+
+    assert attempts == 3
+    assert json.loads(destination.read_text(encoding="utf-8")) == {"completed": 42}
+    assert not list(tmp_path.glob("*.tmp"))
+
+
+def test_run_lock_reclaims_dead_owner_and_prevents_live_duplicate(tmp_path) -> None:
+    lock_path = tmp_path / ".run.lock"
+    lock_path.write_text(json.dumps({"pid": 999_999_999}), encoding="utf-8")
+
+    acquired = study_script._acquire_run_lock(tmp_path)
+    assert acquired == lock_path
+
+    with pytest.raises(RuntimeError, match="уже обрабатывает процесс"):
+        study_script._acquire_run_lock(tmp_path)
+    acquired.unlink()

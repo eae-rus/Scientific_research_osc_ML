@@ -11,10 +11,12 @@ import argparse
 import csv
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import sys
 import time
 from typing import Any, Sequence
+from uuid import uuid4
 
 import numpy as np
 
@@ -43,6 +45,9 @@ DEFAULT_ALGORITHMS = (
     "pos_seq_power_pdr_basic",
 )
 DEFAULT_TEACHER = "adaptive_pdr_mir"
+PROGRESS_WRITE_INTERVAL_SECONDS = 5.0
+ATOMIC_REPLACE_ATTEMPTS = 20
+PROGRESS_REPLACE_ATTEMPTS = 6
 
 
 def create_algorithms(algorithm_ids: Sequence[str]) -> list[PDRAlgorithm]:
@@ -127,6 +132,7 @@ def run_study(
     source_summaries: dict[str, Any] = {}
     for source_name in source_names:
         source = _create_source(source_name)
+        lock_path: Path | None = None
         try:
             selected, split_lookup = _select_indices(
                 split_manifest,
@@ -134,19 +140,24 @@ def run_study(
                 split_scope,
                 max_records_per_source,
             )
+            source_output_dir = output_dir / source_name
+            source_output_dir.mkdir(parents=True, exist_ok=True)
+            lock_path = _acquire_run_lock(source_output_dir)
             source_summaries[source_name] = _process_source(
                 source=source,
                 selected_indices=selected,
                 split_lookup=split_lookup,
                 algorithms=algorithms,
                 teacher_id=teacher_id,
-                output_dir=output_dir / source_name,
+                output_dir=source_output_dir,
                 config_hash=config_hash,
                 sample_step=sample_step,
                 records_per_shard=records_per_shard,
                 lossless_compression=lossless_compression,
             )
         finally:
+            if lock_path is not None:
+                lock_path.unlink(missing_ok=True)
             close = getattr(source, "close", None)
             if callable(close):
                 close()
@@ -200,6 +211,9 @@ def _process_source(
     progress.update(completed_before)
     started = time.monotonic()
     processed_now = 0
+    durable_completed = completed_before
+    last_progress_write = 0.0
+    progress_write_failures = 0
     estimated_windows = _estimate_windows(source, selected_indices, sample_step)
     n_algorithms = len(algorithms)
     # На каждый алгоритм: direction int16 + margin/confidence float32 + warmup bool.
@@ -209,6 +223,34 @@ def _process_source(
         f"\n{source.name}: {len(selected_indices):,} записей; примерно {estimated_windows:,} окон; "
         f"сырой объём целевой разметки около {estimated_windows * bytes_per_window / 2**30:.2f} ГБ."
     )
+
+    def write_progress(payload: dict[str, Any], *, force: bool = False) -> None:
+        """Best-effort progress: его блокировка не должна останавливать разметку."""
+
+        nonlocal last_progress_write, progress_write_failures
+        now = time.monotonic()
+        if not force and now - last_progress_write < PROGRESS_WRITE_INTERVAL_SECONDS:
+            return
+        try:
+            _atomic_write_json(
+                output_dir / "progress.json",
+                payload,
+                replace_attempts=PROGRESS_REPLACE_ATTEMPTS,
+            )
+        except OSError as exc:
+            progress_write_failures += 1
+            last_progress_write = now
+            # Не засоряем консоль при длительной блокировке файла наблюдателем.
+            if progress_write_failures == 1 or progress_write_failures % 12 == 0:
+                print(
+                    f"\nПредупреждение: progress.json временно недоступен "
+                    f"({type(exc).__name__}: {exc}). Разметка продолжается; "
+                    "готовые shards не затронуты.",
+                    file=sys.stderr,
+                )
+        else:
+            progress_write_failures = 0
+            last_progress_write = now
 
     for shard_index, record_ids in enumerate(batches):
         if shard_index in existing:
@@ -244,22 +286,24 @@ def _process_source(
                 processed_now += 1
                 completed = completed_before + processed_now
                 progress.update(completed)
-                _atomic_write_json(output_dir / "progress.json", progress.snapshot(completed) | {
+                write_progress(progress.snapshot(completed) | {
                     "source": source.name,
                     "current_record_id": record_id,
                     "completed_shards": len(existing),
                     "total_shards": len(batches),
+                    "durable_completed": durable_completed,
                     "updated_at_utc": datetime.now(timezone.utc).isoformat(),
                 })
         except Exception as exc:
             completed = completed_before + processed_now
-            _atomic_write_json(output_dir / "progress.json", progress.snapshot(completed) | {
+            write_progress(progress.snapshot(completed) | {
                 "source": source.name,
                 "status": "error",
                 "error": f"{type(exc).__name__}: {exc}",
                 "failed_shard": shard_index,
+                "durable_completed": durable_completed,
                 "updated_at_utc": datetime.now(timezone.utc).isoformat(),
-            })
+            }, force=True)
             raise
 
         sidecar = _write_shard(
@@ -273,6 +317,7 @@ def _process_source(
             lossless_compression=lossless_compression,
         )
         existing[shard_index] = sidecar
+        durable_completed += len(record_ids)
         _write_source_manifest(
             output_dir,
             source.name,
@@ -283,6 +328,15 @@ def _process_source(
             existing,
             sample_step,
         )
+        completed = completed_before + processed_now
+        write_progress(progress.snapshot(completed) | {
+            "source": source.name,
+            "current_record_id": record_ids[-1],
+            "completed_shards": len(existing),
+            "total_shards": len(batches),
+            "durable_completed": durable_completed,
+            "updated_at_utc": datetime.now(timezone.utc).isoformat(),
+        }, force=True)
 
     progress.finish()
     elapsed_now = max(time.monotonic() - started, 1e-9)
@@ -299,15 +353,16 @@ def _process_source(
         "statistics": aggregate,
     }
     _atomic_write_json(output_dir / "summary.json", summary)
-    _atomic_write_json(output_dir / "progress.json", {
+    write_progress({
         "source": source.name,
         "status": "complete",
         "completed": len(selected_indices),
+        "durable_completed": len(selected_indices),
         "total": len(selected_indices),
         "percent": 100.0,
         "result_gib": summary["result_gib"],
         "updated_at_utc": datetime.now(timezone.utc).isoformat(),
-    })
+    }, force=True)
     return summary
 
 
@@ -346,21 +401,27 @@ def _write_shard(
 
     npz_name = f"shard_{shard_index:05d}.npz"
     npz_path = output_dir / npz_name
-    temporary_npz = output_dir / f".{npz_name}.tmp"
-    with temporary_npz.open("wb") as stream:
-        if lossless_compression:
-            np.savez_compressed(stream, **payload)
-        else:
-            np.savez(stream, **payload)
-    temporary_npz.replace(npz_path)
+    temporary_npz = _unique_temporary_path(npz_path)
+    try:
+        with temporary_npz.open("wb") as stream:
+            if lossless_compression:
+                np.savez_compressed(stream, **payload)
+            else:
+                np.savez(stream, **payload)
+        _replace_with_retry(temporary_npz, npz_path)
+    finally:
+        temporary_npz.unlink(missing_ok=True)
 
     stats_name = f"shard_{shard_index:05d}.jsonl"
     stats_path = output_dir / stats_name
-    temporary_stats = output_dir / f".{stats_name}.tmp"
-    with temporary_stats.open("w", encoding="utf-8") as stream:
-        for record in statistics:
-            stream.write(json.dumps(record, ensure_ascii=False, separators=(",", ":")) + "\n")
-    temporary_stats.replace(stats_path)
+    temporary_stats = _unique_temporary_path(stats_path)
+    try:
+        with temporary_stats.open("w", encoding="utf-8") as stream:
+            for record in statistics:
+                stream.write(json.dumps(record, ensure_ascii=False, separators=(",", ":")) + "\n")
+        _replace_with_retry(temporary_stats, stats_path)
+    finally:
+        temporary_stats.unlink(missing_ok=True)
 
     sidecar = {
         "config_hash": config_hash,
@@ -581,10 +642,86 @@ def _estimate_windows(source: DatasetSource, indices: Sequence[int], sample_step
     return total
 
 
-def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
-    temporary = path.with_name(f".{path.name}.tmp")
-    temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    temporary.replace(path)
+def _atomic_write_json(
+    path: Path,
+    payload: dict[str, Any],
+    *,
+    replace_attempts: int = ATOMIC_REPLACE_ATTEMPTS,
+) -> None:
+    """Атомарно записать JSON, переживая краткие Windows file locks."""
+
+    temporary = _unique_temporary_path(path)
+    try:
+        temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        _replace_with_retry(temporary, path, attempts=replace_attempts)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _unique_temporary_path(path: Path) -> Path:
+    return path.with_name(f".{path.name}.{os.getpid()}.{uuid4().hex}.tmp")
+
+
+def _replace_with_retry(
+    source: Path,
+    destination: Path,
+    *,
+    attempts: int = ATOMIC_REPLACE_ATTEMPTS,
+) -> None:
+    """Заменить файл с backoff для временной блокировки назначения в Windows."""
+
+    delay_seconds = 0.05
+    for attempt in range(attempts):
+        try:
+            os.replace(source, destination)
+            return
+        except PermissionError:
+            if attempt + 1 == attempts:
+                raise
+            time.sleep(delay_seconds)
+            delay_seconds = min(delay_seconds * 1.8, 1.0)
+
+
+def _acquire_run_lock(output_dir: Path) -> Path:
+    """Не допустить два одновременных писателя в каталог одного источника."""
+
+    lock_path = output_dir / ".run.lock"
+    for _ in range(2):
+        try:
+            descriptor = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            try:
+                lock_payload = json.loads(lock_path.read_text(encoding="utf-8"))
+                owner_pid = int(lock_payload["pid"])
+            except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+                raise RuntimeError(
+                    f"Не удалось проверить существующий lock {lock_path}. "
+                    "Убедитесь, что другой запуск не работает, затем удалите только .run.lock."
+                ) from exc
+            if _pid_is_running(owner_pid):
+                raise RuntimeError(
+                    f"Каталог {output_dir} уже обрабатывает процесс PID {owner_pid}. "
+                    "Не запускайте второй экземпляр с тем же OUTPUT_DIR."
+                )
+            lock_path.unlink(missing_ok=True)
+            continue
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            json.dump({
+                "pid": os.getpid(),
+                "created_at_utc": datetime.now(timezone.utc).isoformat(),
+            }, stream, ensure_ascii=False, indent=2)
+        return lock_path
+    raise RuntimeError(f"Не удалось получить lock для {output_dir}")
+
+
+def _pid_is_running(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    return True
 
 
 def _jsonable(value: Any) -> Any:
@@ -627,7 +764,7 @@ def main() -> int:
 
 def run_manual() -> None:
     # Сначала обязательно выполнить SMOKE=True. После проверки артефактов заменить на False.
-    SMOKE = True
+    SMOKE = False
     OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v1_smoke" if SMOKE else PROJECT_ROOT / "data/phase5/pdr_labels_v1"
     SOURCES = ("open_ee", "french_rte")
     ALGORITHMS = DEFAULT_ALGORITHMS
