@@ -84,8 +84,9 @@ class PositiveSequencePowerPDRAlgorithm(PDRAlgorithm):
             )
 
         u1_abs = abs(u1)
-        # Момент / Мощность: T_op = Re[ V1 * (I1 * exp(-j * MTA))* ]
-        i1_rot = i1 * np.exp(-1j * mta_rad)
+        # При принятой конвенции U-I=MTA (ток отстаёт) ток поворачивается вперёд:
+        # T_op = Re[V1 * (I1 * exp(+j*MTA))*].
+        i1_rot = i1 * np.exp(1j * mta_rad)
         t_op = float(np.real(u1 * np.conj(i1_rot)))
 
         if t_op >= -p_thresh:

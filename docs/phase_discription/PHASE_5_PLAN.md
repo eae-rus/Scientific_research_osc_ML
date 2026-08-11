@@ -925,6 +925,18 @@ Task-head не должен знать, из Open_EE или French пришёл 
   (см. `osc_tools/pdr/study.py`).
 - [x] CSV-рейтинг и тематические подборки для будущей ручной разметки
   (см. `docs/phase_discription/PHASE_5_PDR_DATASET_GUIDE.md`).
+- [x] Общая и per-source статистика по осциллограммам, exact pointwise
+  agreement/kappa/MCC, signal RMS audit, SHA-256 duplicate audit,
+  exploratory-кластеры и короткие PNG/CSV review bundles
+  (см. `scripts/phase5_experiments/analyze_pdr_dataset_study.py`).
+- [x] Исправлены знак MTA, общий `p_thresh_pu` и `sqrt(3)`-масштаб двух
+  мощностных органов; эквивалентность фазного и последовательностного момента
+  подтверждена на симметричных аналитических режимах.
+- [x] French/RTE strict split v2 группирует точные копии по content SHA-256 и
+  не допускает пересечения дубликатов между train/validation/holdout.
+- [ ] Выполнить полный `pdr_labels_v2`, повторить статистику в
+  `pdr_analysis_v2`, проверить диагностические графики и только затем удалить
+  частично аннулированный `pdr_labels_v1`.
 
 ### 11.3. Псевдоразметка реальных данных лучшим органом
 

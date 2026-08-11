@@ -45,6 +45,7 @@ DEFAULT_ALGORITHMS = (
     "pos_seq_power_pdr_basic",
 )
 DEFAULT_TEACHER = "adaptive_pdr_mir"
+SPLIT_MANIFEST_PATH = PROJECT_ROOT / "data/phase5/research_strict_splits_v2.json"
 PROGRESS_WRITE_INTERVAL_SECONDS = 5.0
 ATOMIC_REPLACE_ATTEMPTS = 20
 PROGRESS_REPLACE_ATTEMPTS = 6
@@ -95,9 +96,13 @@ def run_study(
         algorithm.resolved_algorithm_id: stable_config_hash(_jsonable(algorithm.params))
         for algorithm in algorithms
     }
+    split_manifest = json.loads(SPLIT_MANIFEST_PATH.read_text(encoding="utf-8"))
     run_config = {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": "pdr_dataset_study",
+        "pdr_algorithm_contract_version": 2,
+        "split_manifest": str(SPLIT_MANIFEST_PATH.relative_to(PROJECT_ROOT)),
+        "split_manifest_sha256": split_manifest.get("sha256"),
         "source_names": list(source_names),
         "algorithm_ids": list(resolved_ids),
         "teacher_algorithm_id": teacher_id,
@@ -126,9 +131,6 @@ def run_study(
             "created_at_utc": datetime.now(timezone.utc).isoformat(),
         })
 
-    split_manifest = json.loads(
-        (PROJECT_ROOT / "data/phase5/research_strict_splits.json").read_text(encoding="utf-8")
-    )
     source_summaries: dict[str, Any] = {}
     for source_name in source_names:
         source = _create_source(source_name)
@@ -737,7 +739,12 @@ def _jsonable(value: Any) -> Any:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--smoke", action="store_true", help="По 8 записей каждого источника")
-    parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "data/phase5/pdr_labels_v1")
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="По умолчанию pdr_labels_v2, а с --smoke — pdr_labels_v2_smoke",
+    )
     parser.add_argument("--sources", nargs="+", choices=("open_ee", "french_rte"), default=["open_ee", "french_rte"])
     parser.add_argument("--algorithms", nargs="+", default=list(DEFAULT_ALGORITHMS))
     parser.add_argument("--teacher", default=DEFAULT_TEACHER)
@@ -748,8 +755,11 @@ def main() -> int:
     parser.add_argument("--no-compression", action="store_true", help="Отключить lossless ZIP-сжатие shards")
     args = parser.parse_args()
     max_records = 8 if args.smoke else args.max_records_per_source
+    output_dir = args.output_dir or PROJECT_ROOT / (
+        "data/phase5/pdr_labels_v2_smoke" if args.smoke else "data/phase5/pdr_labels_v2"
+    )
     run_study(
-        output_dir=args.output_dir,
+        output_dir=output_dir,
         source_names=args.sources,
         algorithm_ids=args.algorithms,
         teacher_id=args.teacher,
@@ -765,7 +775,7 @@ def main() -> int:
 def run_manual() -> None:
     # Сначала обязательно выполнить SMOKE=True. После проверки артефактов заменить на False.
     SMOKE = False
-    OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v1_smoke" if SMOKE else PROJECT_ROOT / "data/phase5/pdr_labels_v1"
+    OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v2_smoke" if SMOKE else PROJECT_ROOT / "data/phase5/pdr_labels_v2"
     SOURCES = ("open_ee", "french_rte")
     ALGORITHMS = DEFAULT_ALGORITHMS
     TEACHER = DEFAULT_TEACHER

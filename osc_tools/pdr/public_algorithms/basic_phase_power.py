@@ -2,9 +2,9 @@
 
 Реализует пофазный расчёт электромагнитного мощностного момента по 90-градусной квадратурной схеме
 для всех 3 фаз с объединением по условию «И» (AND):
-- Фаза A: Top_A = |U_BC| * |I_A| * cos(arg I_A - arg U_BC - phi_mch_90)
-- Фаза B: Top_B = |U_CA| * |I_B| * cos(arg I_B - arg U_CA - phi_mch_90)
-- Фаза C: Top_C = |U_AB| * |I_C| * cos(arg I_C - arg U_AB - phi_mch_90)
+- Фаза A: Top_A = |U_BC|/sqrt(3) * |I_A| * cos(arg U_BC - arg I_A - phi_mch_90)
+- Фаза B: Top_B = |U_CA|/sqrt(3) * |I_B| * cos(arg U_CA - arg I_B - phi_mch_90)
+- Фаза C: Top_C = |U_AB|/sqrt(3) * |I_C| * cos(arg U_AB - arg I_C - phi_mch_90)
 
 Уставка по углу: phi_mch_deg = 45.0° (ток отстает от Ua на 45°, уставка для 90° схемы phi_mch_90 = phi_mch - 90° = -45.0°).
 
@@ -37,6 +37,7 @@ class PhasePowerPDRAlgorithm(PDRAlgorithm):
         "phi_mch_deg": 45.0,
         "i_min_pu": 0.05,
         "u_min_pu": 0.05,
+        "p_thresh_pu": 0.0866,
         "scale_profile": "physical_pu",
     }
 
@@ -47,9 +48,12 @@ class PhasePowerPDRAlgorithm(PDRAlgorithm):
 
         raw_i_min = float(self.params["i_min_pu"])
         raw_u_min = float(self.params["u_min_pu"])
+        raw_p_thresh = float(self.params["p_thresh_pu"])
         scale_prof = str(self.params.get("scale_profile", "physical_pu"))
 
-        u_min, i_min, _ = scale_thresholds_for_profile(raw_u_min, raw_i_min, 0.0, scale_prof)
+        u_min, i_min, p_thresh = scale_thresholds_for_profile(
+            raw_u_min, raw_i_min, raw_p_thresh, scale_prof
+        )
 
         uv = derive_unified_voltages(input_data.phasors_u)
         if uv.mode == "invalid":
@@ -107,15 +111,21 @@ class PhasePowerPDRAlgorithm(PDRAlgorithm):
                 margins.append(u_ln_abs - u_min)
                 continue
 
-            phi_diff = math.atan2(i_ph.imag, i_ph.real) - math.atan2(u_ln.imag, u_ln.real)
-            t_op = u_ln_abs * i_abs * math.cos(phi_diff - phi_mch_90_rad)
+            # Та же угловая конвенция, что у PhasePDRAlgorithm: U - I.
+            # Деление линейного напряжения на sqrt(3) делает момент численно
+            # эквивалентным U1*I1 на симметричном режиме и позволяет применять
+            # общую p_thresh_pu к фазному и последовательностному органам.
+            phi_diff = math.atan2(u_ln.imag, u_ln.real) - math.atan2(i_ph.imag, i_ph.real)
+            t_op = (u_ln_abs / math.sqrt(3.0)) * i_abs * math.cos(
+                phi_diff - phi_mch_90_rad
+            )
 
             # Единый контракт margin: положительное значение внутри зоны
             # FORWARD, отрицательное — снаружи.
-            margin_ph = t_op
+            margin_ph = t_op + p_thresh
             margins.append(margin_ph)
 
-            if t_op > 0.0:
+            if margin_ph >= 0.0:
                 ph_dir = PDRDirection.FORWARD
                 forward_count += 1
             else:
@@ -124,6 +134,7 @@ class PhasePowerPDRAlgorithm(PDRAlgorithm):
             phase_results[phase] = {
                 "direction": ph_dir,
                 "t_op": t_op,
+                "p_thresh": p_thresh,
                 "margin": margin_ph,
                 "u_ln_abs": u_ln_abs,
                 "i_abs": i_abs,
@@ -147,6 +158,7 @@ class PhasePowerPDRAlgorithm(PDRAlgorithm):
                 "forward_count": forward_count,
                 "valid_count": valid_count,
                 "voltage_mode": uv.mode,
+                "p_thresh": p_thresh,
                 "phase_results": phase_results,
             },
         )

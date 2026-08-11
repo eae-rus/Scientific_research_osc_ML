@@ -169,3 +169,20 @@ def test_run_lock_reclaims_dead_owner_and_prevents_live_duplicate(tmp_path) -> N
     with pytest.raises(RuntimeError, match="уже обрабатывает процесс"):
         study_script._acquire_run_lock(tmp_path)
     acquired.unlink()
+
+
+def test_label_store_rejects_explicitly_invalidated_algorithm(tmp_path) -> None:
+    (tmp_path / "manifest.json").write_text(json.dumps({
+        "kind": "pdr_study_sharded",
+        "algorithm_ids": ["valid", "invalid"],
+        "teacher_algorithm_id": "valid",
+        "shards": [],
+    }), encoding="utf-8")
+    (tmp_path / "INVALIDATED_ALGORITHMS.json").write_text(json.dumps({
+        "invalid_algorithm_ids": ["invalid"],
+    }), encoding="utf-8")
+
+    valid = PDRStudyLabelStore(tmp_path, algorithm_id="valid")
+    valid.close()
+    with pytest.raises(RuntimeError, match="помечен недействительным"):
+        PDRStudyLabelStore(tmp_path, algorithm_id="invalid")

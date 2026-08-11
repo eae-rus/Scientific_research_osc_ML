@@ -332,6 +332,25 @@ class PDRStudyLabelStore:
         selected = algorithm_id or str(self.manifest["teacher_algorithm_id"])
         if selected not in self.algorithm_ids:
             raise KeyError(f"Алгоритм {selected!r} отсутствует в разметке")
+        invalidation_path = next(
+            (
+                candidate
+                for candidate in (
+                    path.parent / "INVALIDATED_ALGORITHMS.json",
+                    path.parent.parent / "INVALIDATED_ALGORITHMS.json",
+                )
+                if candidate.exists()
+            ),
+            None,
+        )
+        if invalidation_path is not None:
+            invalidation = json.loads(invalidation_path.read_text(encoding="utf-8"))
+            invalid_ids = set(invalidation.get("invalid_algorithm_ids", ()))
+            if selected in invalid_ids:
+                raise RuntimeError(
+                    f"Канал {selected!r} помечен недействительным в {invalidation_path}. "
+                    "Используйте исправленную версию PDR-разметки."
+                )
         self.algorithm_id = selected
         self.algorithm_index = self.algorithm_ids.index(selected)
         self._record_map: dict[int, tuple[Path, int]] = {}

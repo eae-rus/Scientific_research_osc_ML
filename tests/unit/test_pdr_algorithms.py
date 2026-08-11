@@ -7,6 +7,7 @@ import numpy as np
 from osc_tools.pdr.base import PDRInputData, PDRDirection
 from osc_tools.pdr.public_algorithms import (
     PhasePDRAlgorithm,
+    PhasePowerPDRAlgorithm,
     PositiveSequencePDRAlgorithm,
     PositiveSequencePowerPDRAlgorithm,
 )
@@ -146,3 +147,48 @@ def test_positive_sequence_power_honours_minimum_current():
 
     assert out.direction == PDRDirection.REVERSE
     assert out.diagnostics["reason"] == "current_below_threshold"
+
+
+@pytest.mark.parametrize(
+    ("current_angle_deg", "expected_direction"),
+    [(-45.0, PDRDirection.FORWARD), (135.0, PDRDirection.REVERSE)],
+)
+def test_power_algorithms_match_on_balanced_phase_system(
+    current_angle_deg: float,
+    expected_direction: PDRDirection,
+) -> None:
+    """Пофазный и U1/I1 моменты имеют общий знак, масштаб и уставку."""
+
+    a = np.exp(1j * 2 * np.pi / 3)
+    voltages = {"A": 1.0 + 0j, "B": a ** 2, "C": a}
+    ia = 0.2 * np.exp(1j * np.deg2rad(current_angle_deg))
+    currents = {"A": ia, "B": ia * a ** 2, "C": ia * a}
+    input_data = PDRInputData(phasors_u=voltages, phasors_i=currents)
+
+    phase = PhasePowerPDRAlgorithm().compute(input_data)
+    sequence = PositiveSequencePowerPDRAlgorithm().compute(input_data)
+
+    assert phase.direction == expected_direction
+    assert sequence.direction == expected_direction
+    assert phase.margin == pytest.approx(sequence.margin, abs=1e-12)
+    for phase_result in phase.diagnostics["phase_results"].values():
+        assert phase_result["t_op"] == pytest.approx(sequence.diagnostics["t_op"], abs=1e-12)
+
+
+def test_power_algorithms_use_same_nonzero_threshold() -> None:
+    """Небольшая обратная мощность остаётся внутри общей зоны p_thresh."""
+
+    a = np.exp(1j * 2 * np.pi / 3)
+    voltages = {"A": 1.0 + 0j, "B": a ** 2, "C": a}
+    # Обратный максимальный момент -0.05 меньше по модулю стандартной уставки 0.0866.
+    ia = 0.05 * np.exp(1j * np.deg2rad(135.0))
+    currents = {"A": ia, "B": ia * a ** 2, "C": ia * a}
+    input_data = PDRInputData(phasors_u=voltages, phasors_i=currents)
+
+    phase = PhasePowerPDRAlgorithm(i_min_pu=0.01).compute(input_data)
+    sequence = PositiveSequencePowerPDRAlgorithm(i_min_pu=0.01).compute(input_data)
+
+    assert phase.direction == PDRDirection.FORWARD
+    assert sequence.direction == PDRDirection.FORWARD
+    assert phase.margin == pytest.approx(0.0366, abs=1e-12)
+    assert phase.margin == pytest.approx(sequence.margin, abs=1e-12)

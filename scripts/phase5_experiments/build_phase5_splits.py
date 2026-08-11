@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import numpy as np
 from pathlib import Path
 import sys
@@ -12,6 +13,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from osc_tools.ml.phase5_splits import assign_keys, write_split_manifest
+from scripts.phase5_experiments.progress import ProgressReporter
 
 
 def build(output_path: Path, seed: int = 42) -> dict[str, object]:
@@ -24,9 +26,15 @@ def build(output_path: Path, seed: int = 42) -> dict[str, object]:
         mmap_mode="r",
         allow_pickle=False,
     )
-    french_keys = [f"record_{index:05d}" for index in range(int(french.shape[0]))]
+    french_keys: list[str] = []
+    progress = ProgressReporter("Хэширование French/RTE для strict split", len(french), unit="зап.")
+    for index in range(int(french.shape[0])):
+        record = np.ascontiguousarray(french[index])
+        french_keys.append(hashlib.sha256(record.view(np.uint8)).hexdigest())
+        progress.update(index + 1)
+    progress.finish()
     manifest: dict[str, object] = {
-        "version": 1,
+        "version": 2,
         "protocol": "research_strict",
         "seed": seed,
         "validation_fraction": 0.1,
@@ -37,7 +45,7 @@ def build(output_path: Path, seed: int = 42) -> dict[str, object]:
                 "splits": assign_keys(open_keys, "open_ee", seed=seed),
             },
             "french_rte": {
-                "grouping": "record",
+                "grouping": "content_sha256",
                 "splits": assign_keys(french_keys, "french_rte", seed=seed),
             },
         },
@@ -46,7 +54,7 @@ def build(output_path: Path, seed: int = 42) -> dict[str, object]:
 
 
 def run_manual() -> None:
-    OUTPUT_PATH = PROJECT_ROOT / "data/phase5/research_strict_splits.json"
+    OUTPUT_PATH = PROJECT_ROOT / "data/phase5/research_strict_splits_v2.json"
     SEED = 42
     result = build(OUTPUT_PATH, SEED)
     print(json.dumps({

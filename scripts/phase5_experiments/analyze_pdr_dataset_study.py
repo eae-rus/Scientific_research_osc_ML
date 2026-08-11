@@ -1,0 +1,1156 @@
+"""Статистический аудит и визуальная проверка multi-PDR разметки Phase 5.
+
+Режим ``summary`` работает только с компактными JSONL и формирует таблицы,
+кластеры и список репрезентативных случаев. ``agreement`` последовательно читает
+готовые NPZ shards и считает точные попарные confusion/agreement. ``plots``
+строит короткие диагностические окна с исходными сигналами и всеми РНМ.
+"""
+
+from __future__ import annotations
+
+import argparse
+from collections import Counter, defaultdict
+import csv
+from dataclasses import dataclass
+import json
+import math
+import os
+from pathlib import Path
+import sys
+import time
+from typing import Any, Iterable, Sequence
+from uuid import uuid4
+
+import numpy as np
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from osc_tools.ml.phase5_contracts import CHANNEL_ORDER
+from osc_tools.ml.phase5_sources import FrenchRTESource, OpenEEShardedSource
+from osc_tools.pdr.base import PDRDirection
+from scripts.phase5_experiments.progress import ProgressReporter
+
+
+DEFAULT_LABEL_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v2"
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_analysis_v2"
+DEFAULT_SOURCES = ("open_ee", "french_rte")
+TEACHER_ID = "adaptive_pdr_mir"
+TRANSITION_BINS = (
+    "0_other_switch",
+    "1_2",
+    "3_10",
+    "11_30",
+    "31_plus",
+    "static_disagreement",
+    "low_coverage",
+)
+ALGORITHM_METRICS = (
+    "valid_windows", "coverage_fraction", "forward_fraction", "transitions",
+    "transitions_per_second", "short_run_fraction", "near_boundary_fraction",
+    "mean_confidence",
+)
+
+
+@dataclass
+class StudyArchive:
+    root: Path
+
+    def __post_init__(self) -> None:
+        self.manifest = json.loads((self.root / "manifest.json").read_text(encoding="utf-8"))
+        self.algorithm_ids = tuple(self.manifest["algorithm_ids"])
+        self.record_map: dict[int, tuple[Path, int]] = {}
+        for shard in self.manifest["shards"]:
+            path = self.root / str(shard["file"])
+            for local_index, record_id in enumerate(shard["record_ids"]):
+                self.record_map[int(record_id)] = (path, local_index)
+        self._cached_path: Path | None = None
+        self._cached: dict[str, np.ndarray] | None = None
+
+    def get_record(self, record_id: int) -> dict[str, np.ndarray]:
+        path, local_index = self.record_map[int(record_id)]
+        if path != self._cached_path:
+            with np.load(path, allow_pickle=False) as archive:
+                self._cached = {name: archive[name] for name in archive.files}
+            self._cached_path = path
+        assert self._cached is not None
+        offsets = self._cached["offsets"]
+        start, stop = int(offsets[local_index]), int(offsets[local_index + 1])
+        return {
+            "samples": self._cached["samples"][start:stop],
+            "directions": self._cached["directions"][:, start:stop],
+            "margins": self._cached["all_margins"][:, start:stop],
+            "confidences": self._cached["all_confidences"][:, start:stop],
+            "warmup": self._cached["all_warmup"][:, start:stop],
+        }
+
+
+def transition_group(record: dict[str, Any]) -> str:
+    teacher = record["algorithms"][TEACHER_ID]
+    transitions = int(teacher["transitions"])
+    total = int(record["total_transitions"])
+    if transitions == 0 and total > 0:
+        return "0_other_switch"
+    if transitions <= 2:
+        return "1_2" if transitions else "0_stable"
+    if transitions <= 10:
+        return "3_10"
+    if transitions <= 30:
+        return "11_30"
+    return "31_plus"
+
+
+def audit_strata(record: dict[str, Any]) -> list[str]:
+    strata = [transition_group(record)]
+    if (
+        int(record["total_transitions"]) == 0
+        and float(record["disagreement_fraction"]) >= 0.25
+    ):
+        strata.append("static_disagreement")
+    if bool(record["low_coverage"]):
+        strata.append("low_coverage")
+    return strata
+
+
+def load_records(label_dir: Path, sources: Sequence[str]) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    paths = [
+        path
+        for source in sources
+        for path in sorted((label_dir / source).glob("shard_*.jsonl"))
+    ]
+    progress = ProgressReporter("Чтение PDR statistics", max(1, len(paths)), unit="файл")
+    for index, path in enumerate(paths, start=1):
+        with path.open("r", encoding="utf-8") as stream:
+            records.extend(json.loads(line) for line in stream if line.strip())
+        progress.update(index)
+    progress.finish()
+    return records
+
+
+def flatten_record(record: dict[str, Any], cluster_id: int | None = None) -> dict[str, Any]:
+    row = {
+        key: record.get(key)
+        for key in (
+            "source", "record_id", "split", "file_name", "source_csv", "input_sha256",
+            "f_adc", "f_network", "spp", "voltage_basis", "duration_sec", "n_windows",
+            "interest_score", "total_transitions", "vote_change_count",
+            "disagreement_fraction", "localized_disagreement", "dynamic_disagreement",
+            "static_threshold_disagreement", "low_coverage",
+        )
+    }
+    row["categories"] = "|".join(record["categories"])
+    row["adaptive_transition_group"] = transition_group(record)
+    row["audit_strata"] = "|".join(audit_strata(record))
+    row["cluster_id"] = cluster_id
+    for algorithm_id, values in record["algorithms"].items():
+        for metric in ALGORITHM_METRICS:
+            row[f"{algorithm_id}__{metric}"] = values.get(metric)
+    return row
+
+
+def _feature_matrix(records: Sequence[dict[str, Any]]) -> np.ndarray:
+    values: list[list[float]] = []
+    for record in records:
+        algorithms = record["algorithms"]
+        forward = np.asarray([item["forward_fraction"] for item in algorithms.values()])
+        transitions = np.asarray([item["transitions"] for item in algorithms.values()])
+        teacher = algorithms[TEACHER_ID]
+        values.append([
+            math.log1p(float(record["duration_sec"])),
+            math.log1p(float(record["total_transitions"])),
+            float(record["disagreement_fraction"]),
+            float(record["localized_disagreement"]),
+            float(record["dynamic_disagreement"]),
+            float(teacher["coverage_fraction"]),
+            float(teacher["forward_fraction"]),
+            math.log1p(float(teacher["transitions_per_second"])),
+            float(teacher["near_boundary_fraction"]),
+            float(np.std(forward)),
+            float(np.std(np.log1p(transitions))),
+        ])
+    return np.asarray(values, dtype=np.float64)
+
+
+def cluster_records(records: list[dict[str, Any]], output_dir: Path) -> dict[tuple[str, int], int]:
+    """Exploratory KMeans per source; кластеры не считаются ground truth."""
+
+    try:
+        from sklearn.cluster import KMeans
+        from sklearn.metrics import silhouette_score
+        from sklearn.preprocessing import RobustScaler
+    except ImportError:
+        print("sklearn отсутствует: exploratory clustering пропущен", file=sys.stderr)
+        return {}
+
+    assignments: dict[tuple[str, int], int] = {}
+    diagnostics: list[dict[str, Any]] = []
+    profiles: list[dict[str, Any]] = []
+    rng = np.random.default_rng(20260811)
+    feature_names = (
+        "log_duration", "log_total_transitions", "disagreement", "localized_disagreement",
+        "dynamic_disagreement", "teacher_coverage", "teacher_forward",
+        "log_teacher_transition_rate", "teacher_near_boundary", "forward_dispersion",
+        "transition_dispersion",
+    )
+    for source in sorted({str(record["source"]) for record in records}):
+        subset = [record for record in records if record["source"] == source]
+        raw = _feature_matrix(subset)
+        scaled = RobustScaler(quantile_range=(10, 90)).fit_transform(raw)
+        sample_indices = rng.choice(len(subset), min(5000, len(subset)), replace=False)
+        best_k, best_score = 3, -1.0
+        for k in range(3, min(9, len(subset))):
+            model = KMeans(n_clusters=k, n_init=10, random_state=20260811).fit(scaled)
+            score = float(silhouette_score(scaled[sample_indices], model.labels_[sample_indices]))
+            diagnostics.append({"source": source, "k": k, "silhouette": score})
+            if score > best_score:
+                best_k, best_score = k, score
+        model = KMeans(n_clusters=best_k, n_init=20, random_state=20260811).fit(scaled)
+        for record, cluster_id in zip(subset, model.labels_):
+            assignments[(source, int(record["record_id"]))] = int(cluster_id)
+        for cluster_id in range(best_k):
+            mask = model.labels_ == cluster_id
+            profile: dict[str, Any] = {
+                "source": source,
+                "cluster_id": cluster_id,
+                "records": int(mask.sum()),
+                "fraction": float(mask.mean()),
+                "selected_k": best_k,
+                "silhouette": best_score,
+            }
+            for feature_index, name in enumerate(feature_names):
+                profile[f"median__{name}"] = float(np.median(raw[mask, feature_index]))
+            profiles.append(profile)
+    _write_csv(output_dir / "cluster_diagnostics.csv", diagnostics)
+    _write_csv(output_dir / "cluster_profiles.csv", profiles)
+    return assignments
+
+
+def build_summary(
+    label_dir: Path,
+    output_dir: Path,
+    sources: Sequence[str],
+    *,
+    enable_clusters: bool,
+    plots_per_group: int,
+) -> list[dict[str, Any]]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    records = load_records(label_dir, sources)
+    assignments = cluster_records(records, output_dir) if enable_clusters else {}
+    flat = [
+        flatten_record(record, assignments.get((str(record["source"]), int(record["record_id"]))))
+        for record in records
+    ]
+    _write_csv(output_dir / "record_statistics.csv", flat)
+
+    transition_rows: list[dict[str, Any]] = []
+    algorithm_rows: list[dict[str, Any]] = []
+    dataset_rows: list[dict[str, Any]] = []
+    analysis_groups = [("all", records)] + [
+        (source, [record for record in records if record["source"] == source])
+        for source in sources
+    ]
+    for source, subset in analysis_groups:
+        groups = Counter(transition_group(record) for record in subset)
+        for group in ("0_stable",) + TRANSITION_BINS[:5]:
+            transition_rows.append({
+                "source": source,
+                "transition_group": group,
+                "records": groups[group],
+                "fraction": groups[group] / max(1, len(subset)),
+            })
+        dataset_rows.append(_dataset_summary(source, subset))
+        algorithm_ids = tuple(subset[0]["algorithms"]) if subset else ()
+        for algorithm_id in algorithm_ids:
+            for metric in ALGORITHM_METRICS[1:]:
+                values = np.asarray([
+                    float(record["algorithms"][algorithm_id][metric]) for record in subset
+                ])
+                algorithm_rows.append({
+                    "source": source,
+                    "algorithm_id": algorithm_id,
+                    "metric": metric,
+                    "mean": float(np.mean(values)),
+                    "median": float(np.median(values)),
+                    "p05": float(np.quantile(values, 0.05)),
+                    "p25": float(np.quantile(values, 0.25)),
+                    "p75": float(np.quantile(values, 0.75)),
+                    "p95": float(np.quantile(values, 0.95)),
+                })
+    _write_csv(output_dir / "dataset_summary.csv", dataset_rows)
+    _write_csv(output_dir / "transition_groups.csv", transition_rows)
+    _write_csv(output_dir / "algorithm_record_distributions.csv", algorithm_rows)
+    _write_duplicates(records, output_dir)
+    _write_source_shift(records, sources, output_dir)
+    candidates = select_candidates(records, plots_per_group)
+    _write_csv(output_dir / "plot_candidates.csv", candidates)
+    _plot_overview(records, sources, output_dir / "figures")
+    _write_report(dataset_rows, transition_rows, output_dir)
+    _atomic_json(output_dir / "summary.json", {
+        "records": len(records),
+        "sources": list(sources),
+        "label_dir": str(label_dir),
+        "clusters_enabled": enable_clusters,
+        "plot_candidates": len(candidates),
+        "outputs": {
+            "records": "record_statistics.csv",
+            "datasets": "dataset_summary.csv",
+            "transitions": "transition_groups.csv",
+            "algorithms": "algorithm_record_distributions.csv",
+            "duplicates": "duplicate_groups.csv",
+            "source_shift": "source_shift.csv",
+            "candidates": "plot_candidates.csv",
+        },
+    })
+    return candidates
+
+
+def _dataset_summary(source: str, records: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    hashes = Counter(str(record["input_sha256"]) for record in records)
+    duplicate_records = sum(count for count in hashes.values() if count > 1)
+    return {
+        "source": source,
+        "records": len(records),
+        "windows": sum(int(record["n_windows"]) for record in records),
+        "duration_hours": sum(float(record["duration_sec"]) for record in records) / 3600.0,
+        "median_duration_sec": float(np.median([record["duration_sec"] for record in records])),
+        "switching_records": sum(int(record["total_transitions"]) > 0 for record in records),
+        "teacher_switching_records": sum(
+            int(record["algorithms"][TEACHER_ID]["transitions"]) > 0 for record in records
+        ),
+        "disagreement_records": sum(float(record["disagreement_fraction"]) > 0 for record in records),
+        "low_coverage_records": sum(bool(record["low_coverage"]) for record in records),
+        "unique_input_hashes": len(hashes),
+        "duplicate_records": duplicate_records,
+        "duplicate_fraction": duplicate_records / max(1, len(records)),
+    }
+
+
+def _write_duplicates(records: Sequence[dict[str, Any]], output_dir: Path) -> None:
+    groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for record in records:
+        groups[str(record["input_sha256"])].append(record)
+    rows: list[dict[str, Any]] = []
+    for digest, items in groups.items():
+        if len(items) < 2:
+            continue
+        sources = sorted({str(item["source"]) for item in items})
+        splits = sorted({str(item["split"]) for item in items})
+        rows.append({
+            "input_sha256": digest,
+            "records": len(items),
+            "sources": "|".join(sources),
+            "splits": "|".join(splits),
+            "cross_split": len(splits) > 1,
+            "cross_source": len(sources) > 1,
+            "record_keys": "|".join(f"{item['source']}:{item['record_id']}" for item in items),
+        })
+    rows.sort(key=lambda row: (-int(row["records"]), str(row["input_sha256"])))
+    _write_csv(output_dir / "duplicate_groups.csv", rows, fallback_fields=(
+        "input_sha256", "records", "sources", "splits", "cross_split", "cross_source",
+        "record_keys",
+    ))
+
+
+def _write_source_shift(
+    records: Sequence[dict[str, Any]], sources: Sequence[str], output_dir: Path
+) -> None:
+    if len(sources) != 2:
+        return
+    from scipy.stats import ks_2samp, wasserstein_distance
+
+    left = [record for record in records if record["source"] == sources[0]]
+    right = [record for record in records if record["source"] == sources[1]]
+    if not left or not right:
+        return
+    extractors = {
+        "duration_sec": lambda r: r["duration_sec"],
+        "total_transitions": lambda r: r["total_transitions"],
+        "disagreement_fraction": lambda r: r["disagreement_fraction"],
+        "localized_disagreement": lambda r: r["localized_disagreement"],
+        "teacher_coverage": lambda r: r["algorithms"][TEACHER_ID]["coverage_fraction"],
+        "teacher_forward": lambda r: r["algorithms"][TEACHER_ID]["forward_fraction"],
+        "teacher_transition_rate": lambda r: r["algorithms"][TEACHER_ID]["transitions_per_second"],
+    }
+    rows: list[dict[str, Any]] = []
+    for name, extractor in extractors.items():
+        a = np.asarray([float(extractor(record)) for record in left])
+        b = np.asarray([float(extractor(record)) for record in right])
+        pooled = np.concatenate((a, b))
+        iqr = float(np.quantile(pooled, 0.75) - np.quantile(pooled, 0.25))
+        ks = ks_2samp(a, b)
+        rows.append({
+            "metric": name,
+            f"median__{sources[0]}": float(np.median(a)),
+            f"median__{sources[1]}": float(np.median(b)),
+            "ks_statistic": float(ks.statistic),
+            "ks_pvalue": float(ks.pvalue),
+            "wasserstein": float(wasserstein_distance(a, b)),
+            "wasserstein_over_pooled_iqr": float(wasserstein_distance(a, b) / max(iqr, 1e-12)),
+        })
+    _write_csv(output_dir / "source_shift.csv", rows)
+
+
+def select_candidates(records: Sequence[dict[str, Any]], per_group: int) -> list[dict[str, Any]]:
+    selected: list[dict[str, Any]] = []
+    for source in sorted({str(record["source"]) for record in records}):
+        source_records = [record for record in records if record["source"] == source]
+        for stratum in TRANSITION_BINS:
+            subset = [record for record in source_records if stratum in audit_strata(record)]
+            for rank, record in enumerate(_diverse_subset(subset, per_group), start=1):
+                selected.append({
+                    "source": source,
+                    "record_id": int(record["record_id"]),
+                    "stratum": stratum,
+                    "selection_rank": rank,
+                    "file_name": record.get("file_name"),
+                    "split": record.get("split"),
+                    "duration_sec": record.get("duration_sec"),
+                    "teacher_transitions": record["algorithms"][TEACHER_ID]["transitions"],
+                    "total_transitions": record["total_transitions"],
+                    "disagreement_fraction": record["disagreement_fraction"],
+                    "interest_score": record["interest_score"],
+                    "focus_left": "",
+                    "focus_right": "",
+                })
+    return selected
+
+
+def _diverse_subset(records: Sequence[dict[str, Any]], count: int) -> list[dict[str, Any]]:
+    if len(records) <= count:
+        return list(records)
+    matrix = _feature_matrix(records)
+    low = np.quantile(matrix, 0.10, axis=0)
+    high = np.quantile(matrix, 0.90, axis=0)
+    scaled = np.clip((matrix - low) / np.maximum(high - low, 1e-12), 0.0, 1.0)
+    first = int(np.argmax([float(record["interest_score"]) for record in records]))
+    chosen = [first]
+    minimum_distance = np.linalg.norm(scaled - scaled[first], axis=1)
+    while len(chosen) < count:
+        minimum_distance[chosen] = -1.0
+        next_index = int(np.argmax(minimum_distance))
+        chosen.append(next_index)
+        minimum_distance = np.minimum(
+            minimum_distance,
+            np.linalg.norm(scaled - scaled[next_index], axis=1),
+        )
+    return [records[index] for index in chosen]
+
+
+def scan_exact_agreement(label_dir: Path, output_dir: Path, sources: Sequence[str]) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    all_rows: list[dict[str, Any]] = []
+    record_rows: list[dict[str, Any]] = []
+    focused_pairs = {
+        frozenset(("phase_pdr_basic", "pos_seq_pdr_basic")),
+        frozenset(("phase_power_pdr_basic", "pos_seq_power_pdr_basic")),
+    }
+    for source in sources:
+        manifest = json.loads((label_dir / source / "manifest.json").read_text(encoding="utf-8"))
+        algorithm_ids = tuple(manifest["algorithm_ids"])
+        pair_counts = {
+            (left, right): np.zeros((2, 2), dtype=np.int64)
+            for left in range(len(algorithm_ids))
+            for right in range(left + 1, len(algorithm_ids))
+        }
+        common_counts = Counter()
+        progress = ProgressReporter(f"Agreement {source}", len(manifest["shards"]), unit="shard")
+        for shard_number, shard in enumerate(manifest["shards"], start=1):
+            with np.load(label_dir / source / shard["file"], allow_pickle=False) as archive:
+                directions = archive["directions"]
+                offsets = archive["offsets"]
+                record_ids = archive["record_ids"]
+                for (left, right), confusion in pair_counts.items():
+                    a, b = directions[left], directions[right]
+                    common = (a != int(PDRDirection.UNLABELED)) & (b != int(PDRDirection.UNLABELED))
+                    common_counts[(left, right)] += int(common.sum())
+                    for av in (0, 1):
+                        for bv in (0, 1):
+                            confusion[av, bv] += int(np.count_nonzero(common & (a == av) & (b == bv)))
+                    pair_name = frozenset((algorithm_ids[left], algorithm_ids[right]))
+                    if pair_name in focused_pairs:
+                        for local_index, record_id in enumerate(record_ids):
+                            start = int(offsets[local_index])
+                            stop = int(offsets[local_index + 1])
+                            local_common = common[start:stop]
+                            local_count = int(local_common.sum())
+                            local_disagreement = (a[start:stop] != b[start:stop]) & local_common
+                            valid_disagreement = local_disagreement[local_common]
+                            record_rows.append({
+                                "source": source,
+                                "record_id": int(record_id),
+                                "left": algorithm_ids[left],
+                                "right": algorithm_ids[right],
+                                "common_windows": local_count,
+                                "disagreement_fraction": (
+                                    float(local_disagreement.sum() / local_count) if local_count else 0.0
+                                ),
+                                "disagreement_transitions": int(
+                                    np.count_nonzero(valid_disagreement[1:] != valid_disagreement[:-1])
+                                ),
+                            })
+            progress.update(shard_number)
+        progress.finish()
+        for (left, right), confusion in pair_counts.items():
+            total = int(confusion.sum())
+            agreement = int(confusion[0, 0] + confusion[1, 1])
+            expected = (
+                float(confusion.sum(axis=1) @ confusion.sum(axis=0)) / max(total * total, 1)
+            )
+            observed = agreement / max(total, 1)
+            row_forward = int(confusion[1, :].sum())
+            row_reverse = int(confusion[0, :].sum())
+            column_forward = int(confusion[:, 1].sum())
+            column_reverse = int(confusion[:, 0].sum())
+            denominator = math.sqrt(float(
+                row_forward * row_reverse * column_forward * column_reverse
+            ))
+            mcc = float(
+                (confusion[1, 1] * confusion[0, 0] - confusion[1, 0] * confusion[0, 1])
+                / denominator
+            ) if denominator else 0.0
+            all_rows.append({
+                "source": source,
+                "left": algorithm_ids[left],
+                "right": algorithm_ids[right],
+                "common_windows": total,
+                "agreement": observed,
+                "disagreement": 1.0 - observed,
+                "cohen_kappa": (observed - expected) / max(1.0 - expected, 1e-12),
+                "mcc": mcc,
+                "n_reverse_reverse": int(confusion[0, 0]),
+                "n_reverse_forward": int(confusion[0, 1]),
+                "n_forward_reverse": int(confusion[1, 0]),
+                "n_forward_forward": int(confusion[1, 1]),
+            })
+    _write_csv(output_dir / "pairwise_pointwise_agreement.csv", all_rows)
+    _write_csv(output_dir / "pairwise_record_agreement.csv", record_rows)
+    _append_pair_candidates(output_dir, record_rows, per_group=4)
+
+
+def scan_signal_statistics(
+    output_dir: Path,
+    sources: Sequence[str],
+    *,
+    low_current_rms_threshold: float,
+) -> None:
+    """Проверить гипотезы о нагрузке и качестве сигналов без пересчёта РНМ."""
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    source_factories = {
+        "open_ee": lambda: OpenEEShardedSource(
+            PROJECT_ROOT / "data/phase5/open_ee_shards/manifest.json"
+        ),
+        "french_rte": lambda: FrenchRTESource(
+            PROJECT_ROOT / "data/phase5/french_rte/DATA_S.npy"
+        ),
+    }
+    rows: list[dict[str, Any]] = []
+    for source_name in sources:
+        source = source_factories[source_name]()
+        checkpoint_path = output_dir / f"signal_records__{source_name}.csv"
+        source_rows: list[dict[str, Any]] = []
+        if checkpoint_path.exists():
+            with checkpoint_path.open("r", encoding="utf-8-sig", newline="") as stream:
+                source_rows = list(csv.DictReader(stream))
+            completed_ids = [int(row["record_id"]) for row in source_rows]
+            if completed_ids != list(range(len(source_rows))):
+                raise RuntimeError(f"Неконтинуальный signal checkpoint: {checkpoint_path}")
+        initial_completed = len(source_rows)
+        progress = ProgressReporter(
+            f"Signal audit {source_name}", len(source), unit="зап.",
+            initial_completed=initial_completed,
+        )
+        progress.update(initial_completed)
+        try:
+            for record_id in range(initial_completed, len(source)):
+                signal = np.asarray(source.load_signal(record_id), dtype=np.float64)
+                metadata = source.get_metadata(record_id)
+                current = signal[:3]
+                voltage = signal[4:7]
+                current_rms_phases = _channel_rms(current)
+                voltage_rms_phases = _channel_rms(voltage)
+                current_rms = _finite_median(current_rms_phases)
+                voltage_rms = _finite_median(voltage_rms_phases)
+                edge = max(1, signal.shape[1] // 5)
+                first_current_rms = _global_rms(current[:, :edge])
+                last_current_rms = _global_rms(current[:, -edge:])
+                finite_current = np.abs(current[np.isfinite(current)])
+                crest = (
+                    float(np.quantile(finite_current, 0.99) / max(current_rms, 1e-12))
+                    if finite_current.size else float("nan")
+                )
+                voltage_basis = str(metadata.get("voltage_basis", "phase"))
+                power_proxy = (
+                    float(np.nanmean(np.nansum(current * voltage, axis=0)))
+                    if voltage_basis == "phase" else float("nan")
+                )
+                current_present = bool(np.isfinite(current_rms))
+                voltage_present = bool(np.isfinite(voltage_rms))
+                source_rows.append({
+                    "source": source_name,
+                    "record_id": record_id,
+                    "file_name": metadata.get("file_name", record_id),
+                    "f_adc": metadata.get("f_adc", metadata.get("sampling_rate_hz")),
+                    "voltage_basis": voltage_basis,
+                    "samples": signal.shape[1],
+                    "current_rms": current_rms,
+                    "voltage_rms": voltage_rms,
+                    "current_to_voltage_rms": (
+                        current_rms / max(voltage_rms, 1e-12)
+                        if current_present and voltage_present else float("nan")
+                    ),
+                    "current_phase_unbalance_cv": _finite_cv(current_rms_phases),
+                    "voltage_phase_unbalance_cv": _finite_cv(voltage_rms_phases),
+                    "current_rms_last_over_first": (
+                        last_current_rms / max(first_current_rms, 1e-12)
+                        if np.isfinite(first_current_rms) and np.isfinite(last_current_rms)
+                        else float("nan")
+                    ),
+                    "current_crest_p99_over_rms": crest,
+                    "mean_three_phase_power_proxy": power_proxy,
+                    "missing_current_group": not current_present,
+                    "missing_voltage_group": not voltage_present,
+                    "low_current_rms": current_present and current_rms < low_current_rms_threshold,
+                })
+                progress.update(record_id + 1)
+                if (record_id + 1) % 1000 == 0:
+                    _write_csv(checkpoint_path, source_rows)
+        finally:
+            if source_rows:
+                _write_csv(checkpoint_path, source_rows)
+            close = getattr(source, "close", None)
+            if callable(close):
+                close()
+        _write_csv(checkpoint_path, source_rows)
+        rows.extend(source_rows)
+        progress.finish()
+    _write_csv(output_dir / "signal_record_statistics.csv", rows)
+
+    summary_rows: list[dict[str, Any]] = []
+    groups = [("all", rows)] + [
+        (source, [row for row in rows if row["source"] == source]) for source in sources
+    ]
+    metrics = (
+        "current_rms", "voltage_rms", "current_to_voltage_rms",
+        "current_phase_unbalance_cv", "voltage_phase_unbalance_cv",
+        "current_rms_last_over_first", "current_crest_p99_over_rms",
+        "mean_three_phase_power_proxy",
+    )
+    for source, subset in groups:
+        low_current_count = sum(
+            np.isfinite(float(row["current_rms"]))
+            and float(row["current_rms"]) < low_current_rms_threshold
+            for row in subset
+        )
+        base = {
+            "source": source,
+            "records": len(subset),
+            "missing_current_records": sum(_as_bool(row["missing_current_group"]) for row in subset),
+            "missing_voltage_records": sum(_as_bool(row["missing_voltage_group"]) for row in subset),
+            "low_current_records": low_current_count,
+            "low_current_fraction": low_current_count / max(1, len(subset)),
+            "low_current_rms_threshold": low_current_rms_threshold,
+        }
+        for metric in metrics:
+            values = np.asarray([float(row[metric]) for row in subset], dtype=np.float64)
+            values = values[np.isfinite(values)]
+            base[f"{metric}__median"] = float(np.median(values)) if values.size else float("nan")
+            base[f"{metric}__p10"] = float(np.quantile(values, 0.10)) if values.size else float("nan")
+            base[f"{metric}__p90"] = float(np.quantile(values, 0.90)) if values.size else float("nan")
+        summary_rows.append(base)
+    _write_csv(output_dir / "signal_summary.csv", summary_rows)
+
+
+def _channel_rms(values: np.ndarray) -> np.ndarray:
+    finite = np.isfinite(values)
+    counts = finite.sum(axis=1)
+    sums = np.where(finite, values * values, 0.0).sum(axis=1)
+    result = np.full(values.shape[0], np.nan, dtype=np.float64)
+    present = counts > 0
+    result[present] = np.sqrt(sums[present] / counts[present])
+    return result
+
+
+def _global_rms(values: np.ndarray) -> float:
+    finite = values[np.isfinite(values)]
+    return float(np.sqrt(np.mean(finite * finite))) if finite.size else float("nan")
+
+
+def _finite_median(values: np.ndarray) -> float:
+    finite = values[np.isfinite(values)]
+    return float(np.median(finite)) if finite.size else float("nan")
+
+
+def _finite_cv(values: np.ndarray) -> float:
+    finite = values[np.isfinite(values)]
+    if not finite.size:
+        return float("nan")
+    return float(np.std(finite) / max(np.mean(finite), 1e-12))
+
+
+def _as_bool(value: Any) -> bool:
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes"}
+    return bool(value)
+
+
+def _append_pair_candidates(
+    output_dir: Path, record_rows: Sequence[dict[str, Any]], *, per_group: int
+) -> None:
+    candidate_path = output_dir / "plot_candidates.csv"
+    if not candidate_path.exists():
+        print(
+            "plot_candidates.csv отсутствует: pair-кандидаты будут добавлены после MODE='summary'",
+            file=sys.stderr,
+        )
+        return
+    with candidate_path.open("r", encoding="utf-8-sig", newline="") as stream:
+        candidates = [row for row in csv.DictReader(stream) if not row["stratum"].startswith("pair_")]
+    grouped: dict[tuple[str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in record_rows:
+        fraction = float(row["disagreement_fraction"])
+        transitions = int(row["disagreement_transitions"])
+        if fraction <= 0.0:
+            continue
+        mode = "dynamic" if transitions > 0 else "static"
+        key = (str(row["source"]), str(row["left"]), str(row["right"]), mode)
+        grouped[key].append(row)
+    for (source, left, right, mode), rows in sorted(grouped.items()):
+        if mode == "dynamic":
+            rows.sort(key=lambda row: (
+                -int(row["disagreement_transitions"]),
+                -float(row["disagreement_fraction"]),
+                int(row["record_id"]),
+            ))
+        else:
+            rows.sort(key=lambda row: (-float(row["disagreement_fraction"]), int(row["record_id"])))
+        # Берём разные квантили списка, чтобы не получить только почти одинаковый extreme-tail.
+        indices = np.linspace(0, len(rows) - 1, min(per_group, len(rows)), dtype=int)
+        stratum = f"pair_{mode}__{left}__vs__{right}"
+        for rank, row_index in enumerate(indices, start=1):
+            row = rows[int(row_index)]
+            candidates.append({
+                "source": source,
+                "record_id": int(row["record_id"]),
+                "stratum": stratum,
+                "selection_rank": rank,
+                "file_name": "",
+                "split": "",
+                "duration_sec": "",
+                "teacher_transitions": "",
+                "total_transitions": "",
+                "disagreement_fraction": row["disagreement_fraction"],
+                "interest_score": "",
+                "focus_left": left,
+                "focus_right": right,
+            })
+    _write_csv(candidate_path, candidates)
+
+
+def build_diagnostic_plots(
+    label_dir: Path,
+    output_dir: Path,
+    sources: Sequence[str],
+    *,
+    window_seconds: float,
+    export_csv: bool,
+) -> None:
+    candidate_path = output_dir / "plot_candidates.csv"
+    if not candidate_path.exists():
+        raise FileNotFoundError("Сначала выполните MODE='summary': plot_candidates.csv отсутствует")
+    with candidate_path.open("r", encoding="utf-8-sig", newline="") as stream:
+        candidates = [row for row in csv.DictReader(stream) if row["source"] in sources]
+    source_factories = {
+        "open_ee": lambda: OpenEEShardedSource(
+            PROJECT_ROOT / "data/phase5/open_ee_shards/manifest.json"
+        ),
+        "french_rte": lambda: FrenchRTESource(
+            PROJECT_ROOT / "data/phase5/french_rte/DATA_S.npy"
+        ),
+    }
+    sources_by_name = {source: source_factories[source]() for source in sources}
+    archives = {source: StudyArchive(label_dir / source) for source in sources}
+    plot_root = output_dir / "diagnostic_cases"
+    plot_root.mkdir(parents=True, exist_ok=True)
+    manifest_rows: list[dict[str, Any]] = []
+    progress = ProgressReporter("Диагностические графики", max(1, len(candidates)), unit="случай")
+    try:
+        for index, candidate in enumerate(candidates, start=1):
+            source_name = candidate["source"]
+            record_id = int(candidate["record_id"])
+            source = sources_by_name[source_name]
+            metadata = source.get_metadata(record_id)
+            signal = source.load_signal(record_id)
+            labels = archives[source_name].get_record(record_id)
+            f_adc = float(metadata.get("f_adc", metadata.get("sampling_rate_hz", 1.0)))
+            start, stop, local_transitions, local_disagreement = _best_window(
+                labels,
+                signal.shape[1],
+                f_adc,
+                window_seconds,
+                algorithm_ids=archives[source_name].algorithm_ids,
+                focus_pair=(candidate.get("focus_left", ""), candidate.get("focus_right", "")),
+            )
+            stem = f"{source_name}__{candidate['stratum']}__record_{record_id:05d}"
+            case_dir = plot_root / candidate["stratum"]
+            case_dir.mkdir(parents=True, exist_ok=True)
+            png_path = case_dir / f"{stem}.png"
+            _plot_case(
+                png_path, signal, labels, archives[source_name].algorithm_ids, metadata,
+                source_name, record_id, start, stop, f_adc,
+            )
+            csv_path: Path | None = None
+            if export_csv:
+                csv_path = case_dir / f"{stem}.csv"
+                _export_case_csv(csv_path, signal, labels, archives[source_name].algorithm_ids,
+                                 start, stop, f_adc)
+            manifest_rows.append(dict(candidate) | {
+                "window_start_sec": start / f_adc,
+                "window_stop_sec": stop / f_adc,
+                "local_total_transitions": local_transitions,
+                "local_disagreement_fraction": local_disagreement,
+                "png": str(png_path.relative_to(output_dir)),
+                "csv": str(csv_path.relative_to(output_dir)) if csv_path else "",
+            })
+            progress.update(index)
+    finally:
+        for source in sources_by_name.values():
+            close = getattr(source, "close", None)
+            if callable(close):
+                close()
+    progress.finish()
+    _write_csv(output_dir / "diagnostic_cases.csv", manifest_rows)
+
+
+def _best_window(
+    labels: dict[str, np.ndarray],
+    signal_length: int,
+    f_adc: float,
+    window_seconds: float,
+    *,
+    algorithm_ids: Sequence[str] = (),
+    focus_pair: tuple[str, str] = ("", ""),
+) -> tuple[int, int, int, float]:
+    samples = labels["samples"].astype(np.int64)
+    directions = labels["directions"]
+    width = min(signal_length, max(2, int(round(window_seconds * f_adc))))
+    transitions = np.zeros(directions.shape[1], dtype=np.float64)
+    transitions[1:] = np.sum(
+        (directions[:, 1:] != directions[:, :-1])
+        & (directions[:, 1:] != int(PDRDirection.UNLABELED))
+        & (directions[:, :-1] != int(PDRDirection.UNLABELED)),
+        axis=0,
+    )
+    valid = directions != int(PDRDirection.UNLABELED)
+    votes = np.sum(directions == int(PDRDirection.FORWARD), axis=0)
+    valid_count = valid.sum(axis=0)
+    disagreement = (valid_count >= 2) & (votes > 0) & (votes < valid_count)
+    score = 3.0 * transitions + disagreement.astype(np.float64)
+    if all(focus_pair) and all(algorithm_id in algorithm_ids for algorithm_id in focus_pair):
+        left = algorithm_ids.index(focus_pair[0])
+        right = algorithm_ids.index(focus_pair[1])
+        pair_valid = valid[left] & valid[right]
+        pair_disagreement = pair_valid & (directions[left] != directions[right])
+        pair_transition = np.zeros(len(samples), dtype=np.float64)
+        pair_transition[1:] = (
+            pair_valid[1:] & pair_valid[:-1]
+            & (pair_disagreement[1:] != pair_disagreement[:-1])
+        )
+        score += 5.0 * pair_transition + 2.0 * pair_disagreement.astype(np.float64)
+    label_width = max(1, int(round(width * len(samples) / max(signal_length, 1))))
+    cumulative = np.concatenate(([0.0], np.cumsum(score)))
+    if len(score) <= label_width:
+        center_sample = int(samples[len(samples) // 2])
+    else:
+        rolling = cumulative[label_width:] - cumulative[:-label_width]
+        best = int(np.argmax(rolling))
+        center_sample = int(samples[min(len(samples) - 1, best + label_width // 2)])
+    start = min(max(0, center_sample - width // 2), max(0, signal_length - width))
+    stop = min(signal_length, start + width)
+    inside = (samples >= start) & (samples < stop)
+    local_transitions = int(np.sum(transitions[inside]))
+    local_disagreement = float(np.mean(disagreement[inside])) if np.any(inside) else 0.0
+    return start, stop, local_transitions, local_disagreement
+
+
+def _plot_case(
+    path: Path,
+    signal: np.ndarray,
+    labels: dict[str, np.ndarray],
+    algorithm_ids: Sequence[str],
+    metadata: dict[str, Any],
+    source: str,
+    record_id: int,
+    start: int,
+    stop: int,
+    f_adc: float,
+) -> None:
+    import matplotlib.pyplot as plt
+
+    time_axis = np.arange(start, stop) / f_adc
+    samples = labels["samples"]
+    mask = (samples >= start) & (samples < stop)
+    label_time = samples[mask] / f_adc
+    figure, axes = plt.subplots(4, 1, figsize=(14, 10), sharex=True,
+                                gridspec_kw={"height_ratios": (2, 2, 2.4, 1.7)})
+    for channel, name in zip(range(3), CHANNEL_ORDER[:3]):
+        axes[0].plot(time_axis, signal[channel, start:stop], linewidth=0.8, label=name)
+    voltage_names = ("UA", "UB", "UC") if metadata.get("voltage_basis", "phase") == "phase" else ("UAB", "UBC", "UCA")
+    for channel, name in zip(range(4, 7), voltage_names):
+        axes[1].plot(time_axis, signal[channel, start:stop], linewidth=0.8, label=name)
+    axes[0].set_ylabel("Ток, p.u.")
+    axes[1].set_ylabel("Напряжение, p.u.")
+    axes[0].legend(ncol=3, loc="upper right")
+    axes[1].legend(ncol=3, loc="upper right")
+
+    directions = labels["directions"][:, mask]
+    for algorithm_index, algorithm_id in enumerate(algorithm_ids):
+        values = directions[algorithm_index].astype(float)
+        values[values == int(PDRDirection.UNLABELED)] = np.nan
+        axes[2].step(label_time, algorithm_index + 0.72 * values, where="post", linewidth=1.0)
+    axes[2].set_yticks(np.arange(len(algorithm_ids)) + 0.36, labels=algorithm_ids)
+    axes[2].set_ylabel("Решение\n0=REV, 1=FWD")
+    axes[2].grid(axis="x", alpha=0.25)
+
+    margins = labels["margins"][:, mask]
+    for algorithm_index, algorithm_id in enumerate(algorithm_ids):
+        finite = np.abs(margins[algorithm_index][np.isfinite(margins[algorithm_index])])
+        scale = float(np.quantile(finite, 0.90)) if finite.size else 1.0
+        axes[3].plot(label_time, np.arcsinh(margins[algorithm_index] / max(scale, 1e-12)),
+                     linewidth=0.8, label=algorithm_id)
+    axes[3].axhline(0.0, color="black", linewidth=0.7)
+    axes[3].set_ylabel("asinh(margin/P90)")
+    axes[3].set_xlabel("Время, с")
+    axes[3].legend(ncol=3, fontsize=8, loc="upper right")
+    title = (
+        f"{source}, record={record_id}, {metadata.get('file_name', record_id)}; "
+        f"f_adc={f_adc:g} Гц, U={metadata.get('voltage_basis', 'phase')}"
+    )
+    figure.suptitle(title)
+    figure.tight_layout()
+    figure.savefig(path, dpi=160, bbox_inches="tight")
+    plt.close(figure)
+
+
+def _export_case_csv(
+    path: Path,
+    signal: np.ndarray,
+    labels: dict[str, np.ndarray],
+    algorithm_ids: Sequence[str],
+    start: int,
+    stop: int,
+    f_adc: float,
+) -> None:
+    label_lookup = {int(sample): index for index, sample in enumerate(labels["samples"])}
+    fields = ["sample", "time_sec", *CHANNEL_ORDER]
+    for algorithm_id in algorithm_ids:
+        fields.extend((f"{algorithm_id}__direction", f"{algorithm_id}__margin",
+                       f"{algorithm_id}__confidence", f"{algorithm_id}__warmup"))
+    with path.open("w", encoding="utf-8-sig", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=fields)
+        writer.writeheader()
+        for sample in range(start, stop):
+            row: dict[str, Any] = {"sample": sample, "time_sec": sample / f_adc}
+            row.update({name: float(signal[index, sample]) for index, name in enumerate(CHANNEL_ORDER)})
+            label_index = label_lookup.get(sample)
+            for algorithm_index, algorithm_id in enumerate(algorithm_ids):
+                if label_index is None:
+                    row[f"{algorithm_id}__direction"] = int(PDRDirection.UNLABELED)
+                    row[f"{algorithm_id}__margin"] = ""
+                    row[f"{algorithm_id}__confidence"] = ""
+                    row[f"{algorithm_id}__warmup"] = True
+                else:
+                    row[f"{algorithm_id}__direction"] = int(labels["directions"][algorithm_index, label_index])
+                    row[f"{algorithm_id}__margin"] = float(labels["margins"][algorithm_index, label_index])
+                    row[f"{algorithm_id}__confidence"] = float(labels["confidences"][algorithm_index, label_index])
+                    row[f"{algorithm_id}__warmup"] = bool(labels["warmup"][algorithm_index, label_index])
+            writer.writerow(row)
+
+
+def _plot_overview(records: Sequence[dict[str, Any]], sources: Sequence[str], output_dir: Path) -> None:
+    import matplotlib.pyplot as plt
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    groups = ("0_stable", "0_other_switch", "1_2", "3_10", "11_30", "31_plus")
+    x = np.arange(len(groups))
+    width = 0.8 / max(1, len(sources))
+    figure, axis = plt.subplots(figsize=(11, 5))
+    for source_index, source in enumerate(sources):
+        subset = [record for record in records if record["source"] == source]
+        counts = Counter(transition_group(record) for record in subset)
+        fractions = [counts[group] / max(1, len(subset)) for group in groups]
+        axis.bar(x + (source_index - (len(sources) - 1) / 2) * width, fractions,
+                 width=width, label=source)
+    axis.set_xticks(x, labels=groups)
+    axis.set_ylabel("Доля осциллограмм")
+    axis.set_title("Переходы адаптивного РНМ по осциллограммам")
+    axis.legend()
+    axis.grid(axis="y", alpha=0.25)
+    figure.tight_layout()
+    figure.savefig(output_dir / "adaptive_transition_groups.png", dpi=160)
+    plt.close(figure)
+
+    figure, axes = plt.subplots(1, len(sources), figsize=(14, 5), sharey=True)
+    if len(sources) == 1:
+        axes = [axes]
+    for axis, source in zip(axes, sources):
+        subset = [record for record in records if record["source"] == source]
+        algorithm_ids = tuple(subset[0]["algorithms"])
+        values = [[record["algorithms"][algorithm_id]["forward_fraction"] for record in subset]
+                  for algorithm_id in algorithm_ids]
+        axis.boxplot(values, tick_labels=algorithm_ids, showfliers=False)
+        axis.tick_params(axis="x", rotation=35)
+        axis.set_title(source)
+        axis.set_ylabel("Доля FORWARD в записи")
+        axis.grid(axis="y", alpha=0.25)
+    figure.suptitle("Распределение решений разных РНМ")
+    figure.tight_layout()
+    figure.savefig(output_dir / "algorithm_forward_fraction.png", dpi=160)
+    plt.close(figure)
+
+
+def _write_report(
+    dataset_rows: Sequence[dict[str, Any]], transition_rows: Sequence[dict[str, Any]], output_dir: Path
+) -> None:
+    lines = [
+        "# Первичный статистический аудит multi-PDR разметки", "",
+        "Отчёт разделяет источники: различия между Open_EE и French/RTE нельзя трактовать "
+        "как качество алгоритма без ручной проверки и учёта состава режимов.", "",
+        "## Полнота и дубликаты", "",
+    ]
+    for row in dataset_rows:
+        lines.append(
+            f"- **{row['source']}**: {row['records']:,} записей, "
+            f"{row['windows']:,} решений, {row['duration_hours']:.2f} ч сигнала; "
+            f"дубликатами затронуто {row['duplicate_records']:,} записей "
+            f"({100 * row['duplicate_fraction']:.2f}%)."
+        )
+    lines.extend([
+        "", "## Интерпретация", "",
+        "- `transition_groups.csv` — стратификация по числу переходов адаптивного РНМ.",
+        "- `algorithm_record_distributions.csv` — распределения считаются по осциллограммам, "
+        "а не по автокоррелированным временным точкам.",
+        "- `source_shift.csv` — описательная диагностика доменного сдвига; малые p-value при "
+        "таком объёме данных сами по себе не означают практическую значимость.",
+        "- `cluster_profiles.csv` — только exploratory-архетипы для покрытия ручным аудитом, "
+        "не физические классы и не целевые метки.",
+        "- `pairwise_pointwise_agreement.csv` появляется после режима `agreement`; для статьи "
+        "основной единицей bootstrap/доверительных интервалов должна оставаться осциллограмма.",
+    ])
+    (output_dir / "PRIMARY_ANALYSIS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _write_csv(
+    path: Path,
+    rows: Sequence[dict[str, Any]],
+    fallback_fields: Sequence[str] = (),
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fields = list(rows[0]) if rows else list(fallback_fields)
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.{uuid4().hex}.tmp")
+    try:
+        with temporary.open("w", encoding="utf-8-sig", newline="") as stream:
+            writer = csv.DictWriter(stream, fieldnames=fields)
+            writer.writeheader()
+            writer.writerows(rows)
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.{uuid4().hex}.tmp")
+    try:
+        temporary.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def run_analysis(
+    *,
+    mode: str,
+    label_dir: Path = DEFAULT_LABEL_DIR,
+    output_dir: Path = DEFAULT_OUTPUT_DIR,
+    sources: Sequence[str] = DEFAULT_SOURCES,
+    enable_clusters: bool = True,
+    plots_per_group: int = 4,
+    window_seconds: float = 0.8,
+    export_csv: bool = True,
+    low_current_rms_threshold: float = 0.02,
+) -> None:
+    if mode in {"summary", "all"}:
+        build_summary(label_dir, output_dir, sources, enable_clusters=enable_clusters,
+                      plots_per_group=plots_per_group)
+    if mode in {"agreement", "all"}:
+        scan_exact_agreement(label_dir, output_dir, sources)
+    if mode in {"signals", "all"}:
+        scan_signal_statistics(
+            output_dir,
+            sources,
+            low_current_rms_threshold=low_current_rms_threshold,
+        )
+    if mode in {"plots", "all"}:
+        build_diagnostic_plots(label_dir, output_dir, sources,
+                               window_seconds=window_seconds, export_csv=export_csv)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--mode", choices=("summary", "signals", "agreement", "plots", "all"), default="summary"
+    )
+    parser.add_argument("--label-dir", type=Path, default=DEFAULT_LABEL_DIR)
+    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument("--sources", nargs="+", choices=DEFAULT_SOURCES, default=list(DEFAULT_SOURCES))
+    parser.add_argument("--plots-per-group", type=int, default=4)
+    parser.add_argument("--window-seconds", type=float, default=0.8)
+    parser.add_argument("--no-clusters", action="store_true")
+    parser.add_argument("--no-window-csv", action="store_true")
+    parser.add_argument("--low-current-rms-threshold", type=float, default=0.02)
+    args = parser.parse_args()
+    run_analysis(
+        mode=args.mode,
+        label_dir=args.label_dir,
+        output_dir=args.output_dir,
+        sources=args.sources,
+        enable_clusters=not args.no_clusters,
+        plots_per_group=args.plots_per_group,
+        window_seconds=args.window_seconds,
+        export_csv=not args.no_window_csv,
+        low_current_rms_threshold=args.low_current_rms_threshold,
+    )
+    return 0
+
+
+def run_manual() -> None:
+    # Рекомендуемый порядок: summary -> signals -> agreement -> plots.
+    MODE = "summary"               # summary | plots | agreement | all
+    LABEL_DIR = DEFAULT_LABEL_DIR
+    OUTPUT_DIR = DEFAULT_OUTPUT_DIR
+    SOURCES = DEFAULT_SOURCES
+    ENABLE_CLUSTERS = True          # Exploratory KMeans отдельно внутри каждого источника.
+    PLOTS_PER_GROUP = 4             # На источник и audit-группу; отбор разнообразный, не только top.
+    WINDOW_SECONDS = 0.8            # Короткое окно 800 мс вокруг максимума локальной динамики.
+    EXPORT_WINDOW_CSV = True        # Сигналы + все решения/margins для ручной перепроверки.
+    LOW_CURRENT_RMS_THRESHOLD = 0.02  # Диагностический, не физическая уставка РНМ.
+
+    run_analysis(
+        mode=MODE,
+        label_dir=LABEL_DIR,
+        output_dir=OUTPUT_DIR,
+        sources=SOURCES,
+        enable_clusters=ENABLE_CLUSTERS,
+        plots_per_group=PLOTS_PER_GROUP,
+        window_seconds=WINDOW_SECONDS,
+        export_csv=EXPORT_WINDOW_CSV,
+        low_current_rms_threshold=LOW_CURRENT_RMS_THRESHOLD,
+    )
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        raise SystemExit(main())
+    run_manual()
