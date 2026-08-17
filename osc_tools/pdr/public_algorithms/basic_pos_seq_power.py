@@ -18,7 +18,11 @@ from typing import Dict, Any
 import numpy as np
 
 from osc_tools.pdr.base import PDRAlgorithm, PDRInputData, PDROutput, PDRDirection
-from osc_tools.pdr.pdr_signal_utils import compute_positive_sequence, get_memory_voltage, scale_thresholds_for_profile
+from osc_tools.pdr.pdr_signal_utils import (
+    compute_positive_sequence,
+    get_memory_voltage,
+    scale_thresholds_for_profile,
+)
 
 
 class PositiveSequencePowerPDRAlgorithm(PDRAlgorithm):
@@ -31,7 +35,7 @@ class PositiveSequencePowerPDRAlgorithm(PDRAlgorithm):
         "mta_deg": 45.0,
         "u_min_pu": 0.05,
         "i_min_pu": 0.05,
-        "p_thresh_pu": 0.0866,
+        "p_thresh_pu": 0.05,
         "scale_profile": "physical_pu",
     }
 

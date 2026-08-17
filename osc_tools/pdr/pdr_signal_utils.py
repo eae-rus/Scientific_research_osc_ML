@@ -11,11 +11,31 @@
 
 from __future__ import annotations
 
+import math
 from typing import Dict, Optional, Tuple, NamedTuple
 import numpy as np
 
 _A_OPERATOR = np.exp(1j * 2.0 * np.pi / 3.0)
 _A2_OPERATOR = np.exp(1j * 4.0 * np.pi / 3.0)
+
+
+def power_threshold_for_internal_phasors(
+    current_threshold: float,
+    voltage_reserve: float = 3.0,
+) -> float:
+    """Согласовать мощностной порог с токовым во внутренних FFT-координатах.
+
+    Мгновенное фазное напряжение нормируется на
+    ``voltage_reserve * U_line_nom``, а одночастотный DFT возвращает пиковую
+    амплитуду. Поэтому номинальный фазный фазор напряжения имеет модуль
+    ``sqrt(2) / (voltage_reserve * sqrt(3))``.
+    """
+
+    if current_threshold < 0.0:
+        raise ValueError("Токовая уставка не может быть отрицательной")
+    if voltage_reserve <= 0.0:
+        raise ValueError("Коэффициент запаса напряжения должен быть положительным")
+    return current_threshold * math.sqrt(2.0) / (voltage_reserve * math.sqrt(3.0))
 
 
 def _first_present(mapping: Dict[str, complex], *keys: str) -> Optional[complex]:
@@ -197,6 +217,16 @@ def scale_thresholds_for_profile(
     voltage_reserve: float = 3.0,
 ) -> Tuple[float, float, float]:
     """Автоматический пересчёт уставок в зависимости от профиля входных сигналов."""
+    if scale_profile == "dataset_peak_phasor":
+        # Исходные параметры заданы в физических RMS p.u., тогда как Phase 5
+        # хранит мгновенные токи как I/(20*I_nom), напряжения как
+        # U_phase/(3*U_line_nom), а одночастотный DFT возвращает peak-фазор.
+        i_eff = i_min * math.sqrt(2.0) / current_reserve
+        u_eff = u_min * math.sqrt(2.0) / (voltage_reserve * math.sqrt(3.0))
+        p_eff = p_thresh * 2.0 / (
+            current_reserve * voltage_reserve * math.sqrt(3.0)
+        )
+        return u_eff, i_eff, p_eff
     if scale_profile == "dataset_internal":
         i_eff = i_min / current_reserve
         u_eff = u_min / voltage_reserve

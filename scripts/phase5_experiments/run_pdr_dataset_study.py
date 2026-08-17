@@ -49,12 +49,16 @@ SPLIT_MANIFEST_PATH = PROJECT_ROOT / "data/phase5/research_strict_splits_v2.json
 PROGRESS_WRITE_INTERVAL_SECONDS = 5.0
 ATOMIC_REPLACE_ATTEMPTS = 20
 PROGRESS_REPLACE_ATTEMPTS = 6
+DATASET_SCALE_PROFILE = "dataset_peak_phasor"
 
 
 def create_algorithms(algorithm_ids: Sequence[str]) -> list[PDRAlgorithm]:
     """Создать органы без допустимого fallback и проверить уникальность ID."""
 
     algorithms = [get_pdr_algorithm(algorithm_id, fallback_id=None) for algorithm_id in algorithm_ids]
+    for algorithm in algorithms:
+        if "scale_profile" in algorithm.params:
+            algorithm.params["scale_profile"] = DATASET_SCALE_PROFILE
     missing = [
         algorithm.requested_algorithm_id
         for algorithm in algorithms
@@ -100,12 +104,13 @@ def run_study(
     run_config = {
         "schema_version": 2,
         "kind": "pdr_dataset_study",
-        "pdr_algorithm_contract_version": 2,
+        "pdr_algorithm_contract_version": 3,
         "split_manifest": str(SPLIT_MANIFEST_PATH.relative_to(PROJECT_ROOT)),
         "split_manifest_sha256": split_manifest.get("sha256"),
         "source_names": list(source_names),
         "algorithm_ids": list(resolved_ids),
         "teacher_algorithm_id": teacher_id,
+        "dataset_scale_profile": DATASET_SCALE_PROFILE,
         "parameter_fingerprints": parameter_fingerprints,
         "split_scope": split_scope,
         "sample_step": sample_step,
@@ -743,7 +748,7 @@ def main() -> int:
         "--output-dir",
         type=Path,
         default=None,
-        help="По умолчанию pdr_labels_v2, а с --smoke — pdr_labels_v2_smoke",
+        help="По умолчанию pdr_labels_v3, а с --smoke — pdr_labels_v3_smoke",
     )
     parser.add_argument("--sources", nargs="+", choices=("open_ee", "french_rte"), default=["open_ee", "french_rte"])
     parser.add_argument("--algorithms", nargs="+", default=list(DEFAULT_ALGORITHMS))
@@ -756,7 +761,7 @@ def main() -> int:
     args = parser.parse_args()
     max_records = 8 if args.smoke else args.max_records_per_source
     output_dir = args.output_dir or PROJECT_ROOT / (
-        "data/phase5/pdr_labels_v2_smoke" if args.smoke else "data/phase5/pdr_labels_v2"
+        "data/phase5/pdr_labels_v3_smoke" if args.smoke else "data/phase5/pdr_labels_v3"
     )
     run_study(
         output_dir=output_dir,
@@ -775,7 +780,7 @@ def main() -> int:
 def run_manual() -> None:
     # Сначала обязательно выполнить SMOKE=True. После проверки артефактов заменить на False.
     SMOKE = False
-    OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v2_smoke" if SMOKE else PROJECT_ROOT / "data/phase5/pdr_labels_v2"
+    OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v3_smoke" if SMOKE else PROJECT_ROOT / "data/phase5/pdr_labels_v3"
     SOURCES = ("open_ee", "french_rte")
     ALGORITHMS = DEFAULT_ALGORITHMS
     TEACHER = DEFAULT_TEACHER

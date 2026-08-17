@@ -33,9 +33,10 @@ from osc_tools.pdr.base import PDRDirection
 from scripts.phase5_experiments.progress import ProgressReporter
 
 
-DEFAULT_LABEL_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v2"
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_analysis_v2"
+DEFAULT_LABEL_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v3"
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_analysis_v3"
 DEFAULT_SOURCES = ("open_ee", "french_rte")
+DEFAULT_LOW_CURRENT_RMS_THRESHOLD = 0.05 / 20.0
 TEACHER_ID = "adaptive_pdr_mir"
 TRANSITION_BINS = (
     "0_other_switch",
@@ -906,22 +907,59 @@ def _plot_case(
     axes[1].legend(ncol=3, loc="upper right")
 
     directions = labels["directions"][:, mask]
+    lane_height = 0.72
     for algorithm_index, algorithm_id in enumerate(algorithm_ids):
         values = directions[algorithm_index].astype(float)
         values[values == int(PDRDirection.UNLABELED)] = np.nan
-        axes[2].step(label_time, algorithm_index + 0.72 * values, where="post", linewidth=1.0)
-    axes[2].set_yticks(np.arange(len(algorithm_ids)) + 0.36, labels=algorithm_ids)
-    axes[2].set_ylabel("Решение\n0=REV, 1=FWD")
+        axes[2].step(
+            label_time,
+            algorithm_index + lane_height * values,
+            where="post",
+            linewidth=1.15,
+        )
+        axes[2].axhline(algorithm_index, color="0.82", linewidth=0.45, zorder=0)
+        axes[2].axhline(
+            algorithm_index + lane_height, color="0.90", linewidth=0.45, zorder=0
+        )
+    axes[2].set_yticks(
+        np.arange(len(algorithm_ids)) + lane_height / 2.0,
+        labels=algorithm_ids,
+    )
+    axes[2].set_ylim(-0.15, len(algorithm_ids) - 1 + lane_height + 0.15)
+    axes[2].set_ylabel("Решение РНМ")
+    axes[2].text(
+        0.995,
+        0.985,
+        "верх дорожки = 1 / FORWARD / блокировка\n"
+        "низ дорожки = 0 / REVERSE / разрешение; пробел = UNLABELED",
+        transform=axes[2].transAxes,
+        ha="right",
+        va="top",
+        fontsize=8,
+        bbox={"facecolor": "white", "edgecolor": "0.8", "alpha": 0.85},
+    )
     axes[2].grid(axis="x", alpha=0.25)
 
     margins = labels["margins"][:, mask]
     for algorithm_index, algorithm_id in enumerate(algorithm_ids):
-        finite = np.abs(margins[algorithm_index][np.isfinite(margins[algorithm_index])])
+        valid = directions[algorithm_index] != int(PDRDirection.UNLABELED)
+        plotted_margin = np.where(valid, margins[algorithm_index], np.nan)
+        finite = np.abs(plotted_margin[np.isfinite(plotted_margin)])
         scale = float(np.quantile(finite, 0.90)) if finite.size else 1.0
-        axes[3].plot(label_time, np.arcsinh(margins[algorithm_index] / max(scale, 1e-12)),
+        axes[3].plot(label_time, np.arcsinh(plotted_margin / max(scale, 1e-12)),
                      linewidth=0.8, label=algorithm_id)
     axes[3].axhline(0.0, color="black", linewidth=0.7)
-    axes[3].set_ylabel("asinh(margin/P90)")
+    axes[3].set_ylabel("Норм. запас\n(asinh, /P90)")
+    axes[3].text(
+        0.005,
+        0.04,
+        "+ внутри зоны FORWARD; − вне зоны / ниже порога. "
+        "Масштаб каждого РНМ отдельный — сравнивать знак и динамику, не высоту.",
+        transform=axes[3].transAxes,
+        ha="left",
+        va="bottom",
+        fontsize=8,
+    )
     axes[3].set_xlabel("Время, с")
     axes[3].legend(ncol=3, fontsize=8, loc="upper right")
     title = (
@@ -998,16 +1036,52 @@ def _plot_overview(records: Sequence[dict[str, Any]], sources: Sequence[str], ou
     for axis, source in zip(axes, sources):
         subset = [record for record in records if record["source"] == source]
         algorithm_ids = tuple(subset[0]["algorithms"])
+        record_means = []
+        window_means = []
+        any_forward = []
+        for algorithm_id in algorithm_ids:
+            stats = [record["algorithms"][algorithm_id] for record in subset]
+            fractions = np.asarray([item["forward_fraction"] for item in stats], dtype=float)
+            valid_windows = np.asarray([item["valid_windows"] for item in stats], dtype=float)
+            record_means.append(float(np.mean(fractions)))
+            window_means.append(float(np.sum(fractions * valid_windows) / max(1.0, np.sum(valid_windows))))
+            any_forward.append(float(np.mean(fractions > 0.0)))
+        x_alg = np.arange(len(algorithm_ids))
+        bar_width = 0.25
+        axis.bar(x_alg - bar_width, window_means, width=bar_width,
+                 label="доля FORWARD по всем валидным точкам")
+        axis.bar(x_alg, record_means, width=bar_width,
+                 label="средняя доля FORWARD по осциллограммам")
+        axis.bar(x_alg + bar_width, any_forward, width=bar_width,
+                 label="доля записей, где FORWARD встречался")
+        axis.set_xticks(x_alg, labels=algorithm_ids)
+        axis.tick_params(axis="x", rotation=35)
+        axis.set_title(source)
+        axis.set_ylabel("Доля")
+        axis.set_ylim(0.0, 1.04)
+        axis.grid(axis="y", alpha=0.25)
+    axes[0].legend(fontsize=8, loc="upper right")
+    figure.suptitle("FORWARD: три разных способа агрегации")
+    figure.tight_layout()
+    figure.savefig(output_dir / "algorithm_forward_fraction.png", dpi=160)
+    plt.close(figure)
+
+    figure, axes = plt.subplots(1, len(sources), figsize=(14, 5), sharey=True)
+    if len(sources) == 1:
+        axes = [axes]
+    for axis, source in zip(axes, sources):
+        subset = [record for record in records if record["source"] == source]
+        algorithm_ids = tuple(subset[0]["algorithms"])
         values = [[record["algorithms"][algorithm_id]["forward_fraction"] for record in subset]
                   for algorithm_id in algorithm_ids]
         axis.boxplot(values, tick_labels=algorithm_ids, showfliers=False)
         axis.tick_params(axis="x", rotation=35)
         axis.set_title(source)
-        axis.set_ylabel("Доля FORWARD в записи")
+        axis.set_ylabel("Доля FORWARD в одной записи")
         axis.grid(axis="y", alpha=0.25)
-    figure.suptitle("Распределение решений разных РНМ")
+    figure.suptitle("Распределение доли FORWARD по осциллограммам")
     figure.tight_layout()
-    figure.savefig(output_dir / "algorithm_forward_fraction.png", dpi=160)
+    figure.savefig(output_dir / "algorithm_forward_fraction_boxplot.png", dpi=160)
     plt.close(figure)
 
 
@@ -1079,7 +1153,7 @@ def run_analysis(
     plots_per_group: int = 4,
     window_seconds: float = 0.8,
     export_csv: bool = True,
-    low_current_rms_threshold: float = 0.02,
+    low_current_rms_threshold: float = DEFAULT_LOW_CURRENT_RMS_THRESHOLD,
 ) -> None:
     if mode in {"summary", "all"}:
         build_summary(label_dir, output_dir, sources, enable_clusters=enable_clusters,
@@ -1109,7 +1183,15 @@ def main() -> int:
     parser.add_argument("--window-seconds", type=float, default=0.8)
     parser.add_argument("--no-clusters", action="store_true")
     parser.add_argument("--no-window-csv", action="store_true")
-    parser.add_argument("--low-current-rms-threshold", type=float, default=0.02)
+    parser.add_argument(
+        "--low-current-rms-threshold",
+        type=float,
+        default=DEFAULT_LOW_CURRENT_RMS_THRESHOLD,
+        help=(
+            "Порог для RMS мгновенного нормированного тока; по умолчанию "
+            "0.05 Iном / current_reserve=20 = 0.0025"
+        ),
+    )
     args = parser.parse_args()
     run_analysis(
         mode=args.mode,
@@ -1127,15 +1209,17 @@ def main() -> int:
 
 def run_manual() -> None:
     # Рекомендуемый порядок: summary -> signals -> agreement -> plots.
-    MODE = "summary"               # summary | plots | agreement | all
+    MODE = "all"               # summary | plots | agreement | all
     LABEL_DIR = DEFAULT_LABEL_DIR
     OUTPUT_DIR = DEFAULT_OUTPUT_DIR
     SOURCES = DEFAULT_SOURCES
     ENABLE_CLUSTERS = True          # Exploratory KMeans отдельно внутри каждого источника.
-    PLOTS_PER_GROUP = 4             # На источник и audit-группу; отбор разнообразный, не только top.
+    PLOTS_PER_GROUP = 20             # На источник и audit-группу; отбор разнообразный, не только top.
     WINDOW_SECONDS = 0.8            # Короткое окно 800 мс вокруг максимума локальной динамики.
     EXPORT_WINDOW_CSV = True        # Сигналы + все решения/margins для ручной перепроверки.
-    LOW_CURRENT_RMS_THRESHOLD = 0.02  # Диагностический, не физическая уставка РНМ.
+    # RMS исходной волны: 0.05 Iном / current_reserve=20. В отличие от DFT-порогов,
+    # здесь sqrt(2) не нужен, поскольку сравниваются RMS с RMS.
+    LOW_CURRENT_RMS_THRESHOLD = DEFAULT_LOW_CURRENT_RMS_THRESHOLD
 
     run_analysis(
         mode=MODE,

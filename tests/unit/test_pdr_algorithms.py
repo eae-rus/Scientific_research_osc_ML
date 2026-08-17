@@ -14,6 +14,8 @@ from osc_tools.pdr.public_algorithms import (
 from osc_tools.pdr.pdr_signal_utils import (
     compute_positive_sequence,
     derive_unified_voltages,
+    power_threshold_for_internal_phasors,
+    scale_thresholds_for_profile,
 )
 from osc_tools.pdr.placeholder import PlaceholderPDRAlgorithm
 
@@ -180,15 +182,79 @@ def test_power_algorithms_use_same_nonzero_threshold() -> None:
 
     a = np.exp(1j * 2 * np.pi / 3)
     voltages = {"A": 1.0 + 0j, "B": a ** 2, "C": a}
-    # Обратный максимальный момент -0.05 меньше по модулю стандартной уставки 0.0866.
-    ia = 0.05 * np.exp(1j * np.deg2rad(135.0))
+    # В generic physical_pu-профиле обратный момент -0.01 остаётся внутри
+    # стандартной зоны мощности 0.05.
+    ia = 0.01 * np.exp(1j * np.deg2rad(135.0))
     currents = {"A": ia, "B": ia * a ** 2, "C": ia * a}
     input_data = PDRInputData(phasors_u=voltages, phasors_i=currents)
 
-    phase = PhasePowerPDRAlgorithm(i_min_pu=0.01).compute(input_data)
-    sequence = PositiveSequencePowerPDRAlgorithm(i_min_pu=0.01).compute(input_data)
+    phase = PhasePowerPDRAlgorithm(i_min_pu=0.001).compute(input_data)
+    sequence = PositiveSequencePowerPDRAlgorithm(i_min_pu=0.001).compute(input_data)
 
     assert phase.direction == PDRDirection.FORWARD
     assert sequence.direction == PDRDirection.FORWARD
-    assert phase.margin == pytest.approx(0.0366, abs=1e-12)
+    assert phase.margin == pytest.approx(0.04, abs=1e-12)
     assert phase.margin == pytest.approx(sequence.margin, abs=1e-12)
+
+
+def test_default_power_threshold_matches_internal_voltage_normalization() -> None:
+    """Порог учитывает reserve=3, линейно-фазный базис и peak FFT-фазор."""
+
+    expected_u = 0.05 * math.sqrt(2.0) / (3.0 * math.sqrt(3.0))
+    expected_i = 0.05 * math.sqrt(2.0) / 20.0
+    expected_p = 0.05 * 2.0 / (20.0 * 3.0 * math.sqrt(3.0))
+    u_eff, i_eff, p_eff = scale_thresholds_for_profile(
+        0.05, 0.05, 0.05, "dataset_peak_phasor"
+    )
+    assert u_eff == pytest.approx(expected_u)
+    assert i_eff == pytest.approx(expected_i)
+    assert p_eff == pytest.approx(expected_p)
+    assert power_threshold_for_internal_phasors(expected_i) == pytest.approx(expected_p)
+    assert PhasePowerPDRAlgorithm().params["p_thresh_pu"] == pytest.approx(0.05)
+    assert PositiveSequencePowerPDRAlgorithm().params["p_thresh_pu"] == pytest.approx(0.05)
+
+
+def test_dataset_peak_profile_has_no_double_scaling_at_current_pickup() -> None:
+    """0.05 Iном RMS проходит ровно одно преобразование в peak-фазор."""
+
+    a = np.exp(1j * 2 * np.pi / 3)
+    u_peak = math.sqrt(2.0) / (3.0 * math.sqrt(3.0))
+    i_pickup_peak = 0.05 * math.sqrt(2.0) / 20.0
+    ia = i_pickup_peak * np.exp(-1j * math.radians(45.0))
+    input_at_pickup = PDRInputData(
+        phasors_u={"A": u_peak, "B": u_peak * a ** 2, "C": u_peak * a},
+        phasors_i={"A": ia, "B": ia * a ** 2, "C": ia * a},
+    )
+
+    phase = PhasePDRAlgorithm(scale_profile="dataset_peak_phasor").compute(input_at_pickup)
+    sequence = PositiveSequencePDRAlgorithm(scale_profile="dataset_peak_phasor").compute(input_at_pickup)
+    assert phase.direction == PDRDirection.FORWARD
+    assert sequence.direction == PDRDirection.FORWARD
+
+    below = ia * 0.98
+    input_below = PDRInputData(
+        phasors_u=input_at_pickup.phasors_u,
+        phasors_i={"A": below, "B": below * a ** 2, "C": below * a},
+    )
+    assert PhasePDRAlgorithm(scale_profile="dataset_peak_phasor").compute(input_below).direction == PDRDirection.REVERSE
+    assert PositiveSequencePDRAlgorithm(scale_profile="dataset_peak_phasor").compute(input_below).direction == PDRDirection.REVERSE
+
+
+@pytest.mark.parametrize("current_pu, expected", [(0.049, PDRDirection.FORWARD), (0.051, PDRDirection.REVERSE)])
+def test_dataset_peak_power_threshold_matches_physical_reverse_power(
+    current_pu: float,
+    expected: PDRDirection,
+) -> None:
+    """Мощностной порог 0.05 Uном*Iном масштабируется один раз, включая peak²."""
+
+    a = np.exp(1j * 2 * np.pi / 3)
+    u_peak = math.sqrt(2.0) / (3.0 * math.sqrt(3.0))
+    i_peak = current_pu * math.sqrt(2.0) / 20.0
+    ia = i_peak * np.exp(1j * math.radians(135.0))
+    input_data = PDRInputData(
+        phasors_u={"A": u_peak, "B": u_peak * a ** 2, "C": u_peak * a},
+        phasors_i={"A": ia, "B": ia * a ** 2, "C": ia * a},
+    )
+    kwargs = {"scale_profile": "dataset_peak_phasor", "i_min_pu": 0.001}
+    assert PhasePowerPDRAlgorithm(**kwargs).compute(input_data).direction == expected
+    assert PositiveSequencePowerPDRAlgorithm(**kwargs).compute(input_data).direction == expected

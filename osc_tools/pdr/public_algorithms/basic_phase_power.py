@@ -37,7 +37,9 @@ class PhasePowerPDRAlgorithm(PDRAlgorithm):
         "phi_mch_deg": 45.0,
         "i_min_pu": 0.05,
         "u_min_pu": 0.05,
-        "p_thresh_pu": 0.0866,
+        # Физическая RMS p.u.-уставка U_nom * 0.05 I_nom. Для датасета она
+        # переводится в peak-фазорную координату профилем scale_profile.
+        "p_thresh_pu": 0.05,
         "scale_profile": "physical_pu",
     }
 
