@@ -276,7 +276,6 @@ def summarize_record_interest(
         disagreement_fraction >= 0.75
         and localized_disagreement <= 0.20
         and total_transitions <= 1
-        and vote_change_count == 0
     )
     low_coverage = bool(
         min((item["coverage_fraction"] for item in algorithm_stats.values()), default=0.0) < 0.5
@@ -293,7 +292,9 @@ def summarize_record_interest(
     if low_coverage:
         categories.append("low_coverage")
     if not categories:
-        categories.append("stable_consensus")
+        categories.append(
+            "stable_agreement" if disagreement_fraction <= 0.01 else "stable_disagreement"
+        )
 
     most_disagreeing_pair = max(
         pair_stats,
@@ -353,6 +354,14 @@ class PDRStudyLabelStore:
                 )
         self.algorithm_id = selected
         self.algorithm_index = self.algorithm_ids.index(selected)
+        correction_path = path.parent / "UNLABELED_RECORD_MASKS.json"
+        self._masked_record_ids: set[int] = set()
+        if correction_path.exists():
+            correction = json.loads(correction_path.read_text(encoding="utf-8"))
+            self._masked_record_ids = {
+                int(record_id)
+                for record_id in correction.get("algorithm_record_masks", {}).get(selected, ())
+            }
         self._record_map: dict[int, tuple[Path, int]] = {}
         for shard in self.manifest["shards"]:
             shard_path = path.parent / str(shard["file"])
@@ -383,11 +392,20 @@ class PDRStudyLabelStore:
             margins = np.zeros(stop - start, dtype=np.float32)
             confidences = np.ones(stop - start, dtype=np.float32)
             warmup = directions == int(PDRDirection.UNLABELED)
+        directions = np.asarray(directions)
+        margins = np.asarray(margins)
+        confidences = np.asarray(confidences)
+        warmup = np.asarray(warmup)
+        if int(record_id) in self._masked_record_ids:
+            directions = np.full_like(directions, int(PDRDirection.UNLABELED))
+            margins = np.zeros_like(margins)
+            confidences = np.zeros_like(confidences)
+            warmup = np.ones_like(warmup, dtype=bool)
         return {
-            "directions": np.asarray(directions),
-            "margins": np.asarray(margins),
-            "confidences": np.asarray(confidences),
-            "warmup": np.asarray(warmup),
+            "directions": directions,
+            "margins": margins,
+            "confidences": confidences,
+            "warmup": warmup,
             "samples": np.asarray(shard["samples"][start:stop]),
         }
 

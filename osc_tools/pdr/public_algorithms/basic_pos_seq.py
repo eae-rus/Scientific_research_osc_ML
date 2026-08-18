@@ -56,6 +56,19 @@ class PositiveSequencePDRAlgorithm(PDRAlgorithm):
                 diagnostics={"reason": "missing_current_sequence"},
             )
 
+        # Отсутствие восстанавливаемой группы напряжений означает отсутствие
+        # входных данных, а не разрешающее решение REVERSE. Проверяем это до
+        # токовой чувствительности, чтобы низкий ток не скрывал потерю U.
+        u1_raw = compute_positive_sequence(input_data.phasors_u, is_voltage=True)
+        if u1_raw is None or not np.isfinite(u1_raw):
+            return PDROutput(
+                direction=PDRDirection.UNLABELED,
+                is_tripped=False,
+                margin=-half_sector,
+                confidence=0.0,
+                diagnostics={"reason": "missing_voltage_sequence"},
+            )
+
         i1_abs = abs(i1)
         if i1_abs < i1_min:
             return PDROutput(
@@ -64,8 +77,6 @@ class PositiveSequencePDRAlgorithm(PDRAlgorithm):
                 margin=-half_sector,
                 diagnostics={"reason": "current_below_threshold", "i1_abs": i1_abs},
             )
-
-        u1_raw = compute_positive_sequence(input_data.phasors_u, is_voltage=True)
 
         u1 = get_memory_voltage(
             current_u=u1_raw,

@@ -152,6 +152,22 @@ def test_positive_sequence_power_honours_minimum_current():
 
 
 @pytest.mark.parametrize(
+    "algorithm",
+    [PositiveSequencePDRAlgorithm(), PositiveSequencePowerPDRAlgorithm()],
+)
+def test_positive_sequence_algorithms_do_not_label_missing_voltage_as_reverse(algorithm):
+    """Без двух восстанавливаемых U решение отсутствует даже при малом токе."""
+
+    a = np.exp(1j * 2 * np.pi / 3)
+    currents = {"A": 0.001 + 0j, "B": 0.001 * a ** 2, "C": 0.001 * a}
+    out = algorithm.compute(PDRInputData(phasors_u={}, phasors_i=currents))
+
+    assert out.direction == PDRDirection.UNLABELED
+    assert out.confidence == 0.0
+    assert out.diagnostics["reason"] == "missing_voltage_sequence"
+
+
+@pytest.mark.parametrize(
     ("current_angle_deg", "expected_direction"),
     [(-45.0, PDRDirection.FORWARD), (135.0, PDRDirection.REVERSE)],
 )

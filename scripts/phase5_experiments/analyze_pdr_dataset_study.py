@@ -61,6 +61,15 @@ class StudyArchive:
     def __post_init__(self) -> None:
         self.manifest = json.loads((self.root / "manifest.json").read_text(encoding="utf-8"))
         self.algorithm_ids = tuple(self.manifest["algorithm_ids"])
+        correction_path = self.root / "UNLABELED_RECORD_MASKS.json"
+        correction = (
+            json.loads(correction_path.read_text(encoding="utf-8"))
+            if correction_path.exists() else {}
+        )
+        self.record_masks = {
+            algorithm_id: {int(record_id) for record_id in record_ids}
+            for algorithm_id, record_ids in correction.get("algorithm_record_masks", {}).items()
+        }
         self.record_map: dict[int, tuple[Path, int]] = {}
         for shard in self.manifest["shards"]:
             path = self.root / str(shard["file"])
@@ -78,13 +87,61 @@ class StudyArchive:
         assert self._cached is not None
         offsets = self._cached["offsets"]
         start, stop = int(offsets[local_index]), int(offsets[local_index + 1])
+        directions = self._cached["directions"][:, start:stop].copy()
+        margins = self._cached["all_margins"][:, start:stop].copy()
+        confidences = self._cached["all_confidences"][:, start:stop].copy()
+        warmup = self._cached["all_warmup"][:, start:stop].copy()
+        for algorithm_index, algorithm_id in enumerate(self.algorithm_ids):
+            if int(record_id) in self.record_masks.get(algorithm_id, set()):
+                directions[algorithm_index] = int(PDRDirection.UNLABELED)
+                margins[algorithm_index] = 0.0
+                confidences[algorithm_index] = 0.0
+                warmup[algorithm_index] = True
         return {
             "samples": self._cached["samples"][start:stop],
-            "directions": self._cached["directions"][:, start:stop],
-            "margins": self._cached["all_margins"][:, start:stop],
-            "confidences": self._cached["all_confidences"][:, start:stop],
-            "warmup": self._cached["all_warmup"][:, start:stop],
+            "directions": directions,
+            "margins": margins,
+            "confidences": confidences,
+            "warmup": warmup,
         }
+
+
+def _load_record_masks(source_root: Path) -> dict[str, set[int]]:
+    path = source_root / "UNLABELED_RECORD_MASKS.json"
+    if not path.exists():
+        return {}
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        algorithm_id: {int(record_id) for record_id in record_ids}
+        for algorithm_id, record_ids in payload.get("algorithm_record_masks", {}).items()
+    }
+
+
+def _apply_masks_to_record_summary(
+    record: dict[str, Any], masks: dict[str, set[int]]
+) -> dict[str, Any]:
+    record_id = int(record["record_id"])
+    masked = [algorithm_id for algorithm_id, ids in masks.items() if record_id in ids]
+    if not masked:
+        return record
+    corrected = dict(record)
+    corrected["algorithms"] = {
+        algorithm_id: dict(stats) for algorithm_id, stats in record["algorithms"].items()
+    }
+    for algorithm_id in masked:
+        stats = corrected["algorithms"][algorithm_id]
+        stats.update({
+            "valid_windows": 0,
+            "coverage_fraction": 0.0,
+            "forward_fraction": 0.0,
+            "transitions": 0,
+            "transitions_per_second": 0.0,
+            "short_run_fraction": 0.0,
+            "near_boundary_fraction": 0.0,
+            "mean_confidence": 0.0,
+        })
+    corrected["low_coverage"] = True
+    return corrected
 
 
 def transition_group(record: dict[str, Any]) -> str:
@@ -117,14 +174,18 @@ def audit_strata(record: dict[str, Any]) -> list[str]:
 def load_records(label_dir: Path, sources: Sequence[str]) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
     paths = [
-        path
+        (source, path)
         for source in sources
         for path in sorted((label_dir / source).glob("shard_*.jsonl"))
     ]
     progress = ProgressReporter("Чтение PDR statistics", max(1, len(paths)), unit="файл")
-    for index, path in enumerate(paths, start=1):
+    masks_by_source = {source: _load_record_masks(label_dir / source) for source in sources}
+    for index, (source, path) in enumerate(paths, start=1):
         with path.open("r", encoding="utf-8") as stream:
-            records.extend(json.loads(line) for line in stream if line.strip())
+            records.extend(
+                _apply_masks_to_record_summary(json.loads(line), masks_by_source[source])
+                for line in stream if line.strip()
+            )
         progress.update(index)
     progress.finish()
     return records
@@ -265,13 +326,19 @@ def build_summary(
         algorithm_ids = tuple(subset[0]["algorithms"]) if subset else ()
         for algorithm_id in algorithm_ids:
             for metric in ALGORITHM_METRICS[1:]:
+                included = [
+                    record for record in subset
+                    if metric == "coverage_fraction"
+                    or int(record["algorithms"][algorithm_id]["valid_windows"]) > 0
+                ]
                 values = np.asarray([
-                    float(record["algorithms"][algorithm_id][metric]) for record in subset
+                    float(record["algorithms"][algorithm_id][metric]) for record in included
                 ])
                 algorithm_rows.append({
                     "source": source,
                     "algorithm_id": algorithm_id,
                     "metric": metric,
+                    "records_included": len(included),
                     "mean": float(np.mean(values)),
                     "median": float(np.median(values)),
                     "p05": float(np.quantile(values, 0.05)),
@@ -450,6 +517,7 @@ def scan_exact_agreement(label_dir: Path, output_dir: Path, sources: Sequence[st
     for source in sources:
         manifest = json.loads((label_dir / source / "manifest.json").read_text(encoding="utf-8"))
         algorithm_ids = tuple(manifest["algorithm_ids"])
+        record_masks = _load_record_masks(label_dir / source)
         pair_counts = {
             (left, right): np.zeros((2, 2), dtype=np.int64)
             for left in range(len(algorithm_ids))
@@ -459,9 +527,18 @@ def scan_exact_agreement(label_dir: Path, output_dir: Path, sources: Sequence[st
         progress = ProgressReporter(f"Agreement {source}", len(manifest["shards"]), unit="shard")
         for shard_number, shard in enumerate(manifest["shards"], start=1):
             with np.load(label_dir / source / shard["file"], allow_pickle=False) as archive:
-                directions = archive["directions"]
+                directions = archive["directions"].copy()
                 offsets = archive["offsets"]
                 record_ids = archive["record_ids"]
+                for algorithm_index, algorithm_id in enumerate(algorithm_ids):
+                    masked_ids = record_masks.get(algorithm_id, set())
+                    if not masked_ids:
+                        continue
+                    for local_index, record_id in enumerate(record_ids):
+                        if int(record_id) in masked_ids:
+                            start = int(offsets[local_index])
+                            stop = int(offsets[local_index + 1])
+                            directions[algorithm_index, start:stop] = int(PDRDirection.UNLABELED)
                 for (left, right), confusion in pair_counts.items():
                     a, b = directions[left], directions[right]
                     common = (a != int(PDRDirection.UNLABELED)) & (b != int(PDRDirection.UNLABELED))
@@ -748,6 +825,17 @@ def _append_pair_candidates(
                 "focus_right": right,
             })
     _write_csv(candidate_path, candidates)
+    _update_summary_count(output_dir, "plot_candidates", len(candidates))
+
+
+def _update_summary_count(output_dir: Path, key: str, value: int) -> None:
+    """Keep the lightweight run manifest consistent after staged analysis modes."""
+    summary_path = output_dir / "summary.json"
+    if not summary_path.exists():
+        return
+    payload = json.loads(summary_path.read_text(encoding="utf-8"))
+    payload[key] = int(value)
+    _atomic_json(summary_path, payload)
 
 
 def build_diagnostic_plots(
@@ -823,6 +911,7 @@ def build_diagnostic_plots(
                 close()
     progress.finish()
     _write_csv(output_dir / "diagnostic_cases.csv", manifest_rows)
+    _update_summary_count(output_dir, "diagnostic_cases", len(manifest_rows))
 
 
 def _best_window(
@@ -1041,8 +1130,9 @@ def _plot_overview(records: Sequence[dict[str, Any]], sources: Sequence[str], ou
         any_forward = []
         for algorithm_id in algorithm_ids:
             stats = [record["algorithms"][algorithm_id] for record in subset]
-            fractions = np.asarray([item["forward_fraction"] for item in stats], dtype=float)
-            valid_windows = np.asarray([item["valid_windows"] for item in stats], dtype=float)
+            valid_stats = [item for item in stats if int(item["valid_windows"]) > 0]
+            fractions = np.asarray([item["forward_fraction"] for item in valid_stats], dtype=float)
+            valid_windows = np.asarray([item["valid_windows"] for item in valid_stats], dtype=float)
             record_means.append(float(np.mean(fractions)))
             window_means.append(float(np.sum(fractions * valid_windows) / max(1.0, np.sum(valid_windows))))
             any_forward.append(float(np.mean(fractions > 0.0)))
@@ -1072,8 +1162,11 @@ def _plot_overview(records: Sequence[dict[str, Any]], sources: Sequence[str], ou
     for axis, source in zip(axes, sources):
         subset = [record for record in records if record["source"] == source]
         algorithm_ids = tuple(subset[0]["algorithms"])
-        values = [[record["algorithms"][algorithm_id]["forward_fraction"] for record in subset]
-                  for algorithm_id in algorithm_ids]
+        values = [[
+            record["algorithms"][algorithm_id]["forward_fraction"]
+            for record in subset
+            if int(record["algorithms"][algorithm_id]["valid_windows"]) > 0
+        ] for algorithm_id in algorithm_ids]
         axis.boxplot(values, tick_labels=algorithm_ids, showfliers=False)
         axis.tick_params(axis="x", rotation=35)
         axis.set_title(source)

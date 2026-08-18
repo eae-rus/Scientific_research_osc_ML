@@ -102,6 +102,34 @@ def test_interest_score_downranks_constant_threshold_disagreement() -> None:
     assert localized_stats["interest_score"] > constant_stats["interest_score"]
 
 
+def test_static_disagreement_survives_validity_boundary_vote_change() -> None:
+    """Разный warm-up не должен превращать постоянное расхождение в consensus."""
+
+    timebase = TimebaseContract.create(800.0, 50.0)
+    samples = np.arange(40, dtype=np.int32)
+    directions = np.stack((
+        np.r_[np.full(5, int(PDRDirection.UNLABELED)), np.ones(35, dtype=np.int16)],
+        np.zeros(40, dtype=np.int16),
+        np.ones(40, dtype=np.int16),
+    ))
+    result = MultiPDRRecordResult(
+        algorithm_ids=("delayed_forward", "reverse", "forward"),
+        sample_indices=samples,
+        directions=directions,
+        margins=np.ones((3, 40), dtype=np.float32),
+        confidences=np.ones((3, 40), dtype=np.float32),
+        warmup_mask=directions == int(PDRDirection.UNLABELED),
+        provenance=np.ones(8, dtype=np.uint8),
+        input_sha256="validity-boundary",
+    )
+
+    stats = summarize_record_interest(result, timebase)
+
+    assert stats["vote_change_count"] == 1
+    assert stats["static_threshold_disagreement"] is True
+    assert "static_threshold_disagreement" in stats["categories"]
+
+
 def test_sharded_label_store_reads_teacher_and_other_algorithm(tmp_path) -> None:
     np.savez(
         tmp_path / "shard_00000.npz",
@@ -134,6 +162,36 @@ def test_sharded_label_store_reads_teacher_and_other_algorithm(tmp_path) -> None
     assert comparison_record["margins"].tolist() == pytest.approx([-0.4, -0.3, 0.2])
     assert comparison_record["confidences"].tolist() == pytest.approx([0.7, 0.8, 0.9])
     comparison.close()
+
+
+def test_sharded_label_store_applies_unlabeled_record_overlay(tmp_path) -> None:
+    np.savez(
+        tmp_path / "shard_00000.npz",
+        record_ids=np.asarray([7], dtype=np.int32),
+        offsets=np.asarray([0, 3], dtype=np.int64),
+        samples=np.asarray([10, 11, 12], dtype=np.int32),
+        directions=np.asarray([[0, 0, 0]], dtype=np.int16),
+        all_margins=np.asarray([[-1.0, -1.0, -1.0]], dtype=np.float32),
+        all_confidences=np.ones((1, 3), dtype=np.float32),
+        all_warmup=np.zeros((1, 3), dtype=bool),
+        provenance=np.ones((1, 8), dtype=np.uint8),
+    )
+    (tmp_path / "manifest.json").write_text(json.dumps({
+        "kind": "pdr_study_sharded",
+        "algorithm_ids": ["sequence"],
+        "teacher_algorithm_id": "sequence",
+        "shards": [{"file": "shard_00000.npz", "record_ids": [7]}],
+    }), encoding="utf-8")
+    (tmp_path / "UNLABELED_RECORD_MASKS.json").write_text(json.dumps({
+        "algorithm_record_masks": {"sequence": [7]},
+    }), encoding="utf-8")
+
+    record = PDRStudyLabelStore(tmp_path).get_record(7)
+
+    assert np.all(record["directions"] == int(PDRDirection.UNLABELED))
+    assert np.all(record["margins"] == 0.0)
+    assert np.all(record["confidences"] == 0.0)
+    assert np.all(record["warmup"])
 
 
 def test_atomic_json_write_retries_transient_windows_lock(tmp_path, monkeypatch) -> None:

@@ -57,6 +57,18 @@ class PositiveSequencePowerPDRAlgorithm(PDRAlgorithm):
                 margin=0.0,
                 diagnostics={"reason": "missing_current_sequence"},
             )
+
+        # Потеря восстанавливаемой группы напряжений не является направлением
+        # REVERSE и должна исключаться из статистики/обучения.
+        u1_raw = compute_positive_sequence(input_data.phasors_u, is_voltage=True)
+        if u1_raw is None or not np.isfinite(u1_raw):
+            return PDROutput(
+                direction=PDRDirection.UNLABELED,
+                is_tripped=False,
+                margin=0.0,
+                confidence=0.0,
+                diagnostics={"reason": "missing_voltage_sequence"},
+            )
         i1_abs = abs(i1)
         if i1_abs < i_min:
             return PDROutput(
@@ -69,8 +81,6 @@ class PositiveSequencePowerPDRAlgorithm(PDRAlgorithm):
                     "i_min": i_min,
                 },
             )
-
-        u1_raw = compute_positive_sequence(input_data.phasors_u, is_voltage=True)
 
         u1 = get_memory_voltage(
             current_u=u1_raw,
