@@ -7,6 +7,7 @@ import torch.nn as nn
 
 from osc_tools.pdr.pdr_trainer import (
     PDRTaskHead,
+    decode_pdr_predictions,
     extract_backbone_features,
     pdr_combined_loss,
 )
@@ -28,7 +29,9 @@ def test_extract_backbone_features_transposes_and_passes_provenance() -> None:
     }
     latent = extract_backbone_features(_ContractBackbone(), batch, "cpu")
     assert latent.shape == (2, 5, 12)
-    assert PDRTaskHead(d_model=12)(latent)["logits"].shape == (2, 2)
+    outputs = PDRTaskHead(d_model=12)(latent)
+    assert outputs["logits"].shape == (2, 2)
+    assert outputs["applicability_logit"].shape == (2,)
 
 
 def test_combined_loss_uses_confidence_weights() -> None:
@@ -43,6 +46,36 @@ def test_combined_loss_uses_confidence_weights() -> None:
     }
     loss = pdr_combined_loss(outputs, targets)
     assert loss.item() < 0.01
+
+
+def test_unlabeled_trains_applicability_but_not_direction_or_margin() -> None:
+    outputs = {
+        "logits": torch.tensor([[0.0, 0.0], [-100.0, 100.0]], requires_grad=True),
+        "applicability_logit": torch.tensor([5.0, 5.0], requires_grad=True),
+        "margin": torch.tensor([0.0, 1000.0], requires_grad=True),
+    }
+    targets = {
+        "target_class": torch.tensor([0, 0]),
+        "target_applicable": torch.tensor([True, False]),
+        "pdr_margin": torch.tensor([0.0, float("nan")]),
+        "pdr_confidence": torch.tensor([1.0, 0.0]),
+    }
+    loss = pdr_combined_loss(outputs, targets)
+    assert torch.isfinite(loss)
+    loss.backward()
+    # На UNLABELED нет градиента ни направления, ни margin.
+    assert torch.equal(outputs["logits"].grad[1], torch.zeros(2))
+    assert outputs["margin"].grad[1].item() == 0.0
+    # Но ошибка применимости на этой точке обучает отдельную голову.
+    assert outputs["applicability_logit"].grad[1].abs().item() > 0.0
+
+
+def test_decode_abstains_before_returning_direction() -> None:
+    outputs = {
+        "logits": torch.tensor([[0.0, 2.0], [2.0, 0.0], [0.0, 2.0]]),
+        "applicability_logit": torch.tensor([2.0, 2.0, -2.0]),
+    }
+    assert decode_pdr_predictions(outputs).tolist() == [1, 0, -999]
 
 
 def test_actual_phase5_backbone_pdr_forward_backward() -> None:
@@ -61,6 +94,7 @@ def test_actual_phase5_backbone_pdr_forward_backward() -> None:
         "features": torch.randn(3, 5, 12),
         "provenance": torch.ones(3, 5, 12, dtype=torch.long),
         "target_class": torch.tensor([0, 1, 0]),
+        "target_applicable": torch.tensor([True, True, False]),
         "pdr_margin": torch.tensor([-1.0, 1.0, -0.5]),
         "pdr_confidence": torch.ones(3),
     }

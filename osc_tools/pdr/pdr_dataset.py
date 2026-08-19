@@ -1,8 +1,8 @@
 """PyTorch Task Dataset для задачи РНМ (PDRTaskDataset).
 
 Объединяет спектральные признаки Phase 5 (Version A / Version B) с псевдометками РНМ,
-сгенерированными PDRDatasetLabeler. Поддерживает маскирование неразмеченных зон (UNLABELED=-999)
-и сплиты согласно research_strict_splits.json.
+сгенерированными PDRDatasetLabeler. UNLABELED используется как отрицательная цель
+применимости, но маскируется для направления/margin. Поддерживает strict splits.
 """
 
 from __future__ import annotations
@@ -46,6 +46,7 @@ class PDRTaskDataset(Dataset):
         feature_version: str = "B",
         include_warmup: bool = False,
         teacher_algorithm_id: Optional[str] = None,
+        include_unlabeled_for_applicability: bool = True,
     ) -> None:
         if not HAS_TORCH:
             raise RuntimeError("PyTorch не установлен в текущем окружении.")
@@ -57,6 +58,7 @@ class PDRTaskDataset(Dataset):
         self.temporal_mode = temporal_mode
         self.feature_version = feature_version
         self.include_warmup = include_warmup
+        self.include_unlabeled_for_applicability = include_unlabeled_for_applicability
 
         # Legacy single-NPZ остаётся совместимым; новый массовый формат читается
         # лениво по shards и не загружает сотни миллионов меток в RAM.
@@ -83,7 +85,7 @@ class PDRTaskDataset(Dataset):
         self._build_sample_index()
 
     def _build_sample_index(self) -> None:
-        """Построение индекса образцов (исключая неразмеченные окна UNLABELED)."""
+        """Построение индекса направления и применимости по causal-окнам."""
         for rec_idx in self.indices:
             record_labels = self._record_labels(rec_idx)
             if record_labels is None:
@@ -97,11 +99,14 @@ class PDRTaskDataset(Dataset):
                 record_timebase.spp,
             )
 
-            # Валидные окна: разметка не равна UNLABELED (-999)
-            if self.include_warmup:
-                valid_mask = (dirs != int(PDRDirection.UNLABELED))
+            # UNLABELED после полного causal-контекста — отдельная цель
+            # применимости органа. Это не третий класс направления.
+            if self.include_unlabeled_for_applicability:
+                valid_mask = np.ones_like(dirs, dtype=bool)
             else:
-                valid_mask = (dirs != int(PDRDirection.UNLABELED)) & (~warmup)
+                valid_mask = (dirs != int(PDRDirection.UNLABELED))
+            if not self.include_warmup:
+                valid_mask &= ~warmup
             # Для совместимости с SSL backbone нужен полный causal-фрагмент:
             # feature history (до 10 периодов для lp10) + 10 периодов модели.
             valid_mask &= sample_indices >= (required_samples - 1)
@@ -178,14 +183,17 @@ class PDRTaskDataset(Dataset):
         ).copy()
         feature_provenance[missing_mask] = 0
 
-        # Бинарная классификация направления: 0: REVERSE, 1: FORWARD
-        target_class = 1 if direction_val == 1 else 0
+        # Для UNLABELED target_class — лишь безопасное фиктивное значение:
+        # direction loss обязательно маскируется через target_applicable.
+        target_applicable = direction_val != int(PDRDirection.UNLABELED)
+        target_class = 1 if direction_val == int(PDRDirection.FORWARD) else 0
 
         return {
             "features": torch.tensor(spectral_feat, dtype=torch.float32),
             "missing_mask": torch.tensor(missing_mask, dtype=torch.bool),
             "provenance": torch.tensor(feature_provenance, dtype=torch.long),
             "target_class": torch.tensor(target_class, dtype=torch.long),
+            "target_applicable": torch.tensor(target_applicable, dtype=torch.bool),
             "pdr_direction": torch.tensor(direction_val, dtype=torch.int16),
             "pdr_margin": torch.tensor(margin_val, dtype=torch.float32),
             "pdr_confidence": torch.tensor(confidence_val, dtype=torch.float32),

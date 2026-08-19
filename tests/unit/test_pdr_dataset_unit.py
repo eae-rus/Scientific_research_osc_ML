@@ -88,6 +88,7 @@ def test_dataset_uses_full_context_last_point_and_derived_current(tmp_path: Path
     assert sample["features"][0, 0].item() == pytest.approx(1.0, abs=1e-5)
     assert sample["features"][-1, 0].item() == pytest.approx(5.0, abs=1e-5)
     assert sample["pdr_confidence"].item() == pytest.approx(0.8)
+    assert sample["target_applicable"].item() is True
 
 
 def test_dataset_reads_new_sharded_teacher_format(tmp_path: Path) -> None:
@@ -106,12 +107,12 @@ def test_dataset_reads_new_sharded_teacher_format(tmp_path: Path) -> None:
     np.savez_compressed(
         labels_dir / "shard_00000.npz",
         record_ids=np.asarray([0], dtype=np.int32),
-        offsets=np.asarray([0, 1], dtype=np.int64),
-        samples=np.asarray([n_samples - 1], dtype=np.int32),
-        directions=np.asarray([[1], [0]], dtype=np.int16),
-        teacher_margin=np.asarray([0.75], dtype=np.float32),
-        teacher_confidence=np.asarray([0.625], dtype=np.float16),
-        teacher_warmup=np.asarray([False]),
+        offsets=np.asarray([0, 2], dtype=np.int64),
+        samples=np.asarray([n_samples - 2, n_samples - 1], dtype=np.int32),
+        directions=np.asarray([[-999, 1], [0, 0]], dtype=np.int16),
+        teacher_margin=np.asarray([np.nan, 0.75], dtype=np.float32),
+        teacher_confidence=np.asarray([0.0, 0.625], dtype=np.float16),
+        teacher_warmup=np.asarray([False, False]),
         provenance=np.ones((1, 8), dtype=np.uint8),
     )
     (labels_dir / "manifest.json").write_text(json.dumps({
@@ -130,8 +131,12 @@ def test_dataset_reads_new_sharded_teacher_format(tmp_path: Path) -> None:
         feature_version="A",
     )
 
-    assert len(dataset) == 1
+    assert len(dataset) == 2
     sample = dataset[0]
+    assert sample["pdr_direction"].item() == -999
+    assert sample["target_applicable"].item() is False
+    sample = dataset[1]
     assert sample["pdr_direction"].item() == 1
+    assert sample["target_applicable"].item() is True
     assert sample["pdr_margin"].item() == pytest.approx(0.75)
     assert sample["pdr_confidence"].item() == pytest.approx(0.625)
