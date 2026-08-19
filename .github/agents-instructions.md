@@ -19,11 +19,13 @@
 обязательны проверки переноса на реальные режимы, сложные отрицательные примеры,
 инженерные метрики и анализ ограничений.
 
-## Ключевые документы (на 08.07.2026)
+## Ключевые документы (на 19.08.2026)
 
 - **docs/article/RESEARCH_CONTEXT_SUMMARY.md** — краткая выжимка проведённых исследований
 - **docs/phase_discription/PHASE_5_PLAN.md** — актуальный план следующей фазы
-- **docs/phase_discription/PHASE_5_START_PROMPT.md** — контекст для нового агента Phase 5
+- **docs/phase_discription/PHASE_5_WORK_LOG.md** — фактический контекст и последние изменения Phase 5
+- **docs/phase_discription/PHASE_5_PDR_PIPELINE_GUIDE.md** — актуальный ручной PDR-pipeline
+- **scripts/phase5_experiments/README.md** — карта актуальных сценариев и их назначение
 - **docs/article/*.docx** — четыре последовательные научные работы; поздние статьи и код приоритетнее ранних архитектурных гипотез
 - **docs/RESEARCH_PLAN_KAN_RZA.md** — исторический общий план исследований
 - **docs/TESTING_ROADMAP.md** — стратегия тестирования и приоритеты
