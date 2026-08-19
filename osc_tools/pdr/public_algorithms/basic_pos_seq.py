@@ -68,6 +68,14 @@ class PositiveSequencePDRAlgorithm(PDRAlgorithm):
                 confidence=0.0,
                 diagnostics={"reason": "missing_voltage_sequence"},
             )
+        if abs(u1_raw) < u1_min:
+            return PDROutput(
+                direction=PDRDirection.UNLABELED,
+                is_tripped=False,
+                margin=abs(u1_raw) - u1_min,
+                confidence=0.0,
+                diagnostics={"reason": "voltage_below_threshold", "u1_abs": abs(u1_raw)},
+            )
 
         i1_abs = abs(i1)
         if i1_abs < i1_min:
@@ -87,9 +95,10 @@ class PositiveSequencePDRAlgorithm(PDRAlgorithm):
 
         if u1 is None or not np.isfinite(u1) or abs(u1) < u1_min:
             return PDROutput(
-                direction=PDRDirection.REVERSE,
+                direction=PDRDirection.UNLABELED,
                 is_tripped=False,
-                margin=-half_sector,
+                margin=0.0,
+                confidence=0.0,
                 diagnostics={"reason": "voltage_below_threshold"},
             )
 

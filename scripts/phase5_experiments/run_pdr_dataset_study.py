@@ -50,6 +50,9 @@ PROGRESS_WRITE_INTERVAL_SECONDS = 5.0
 ATOMIC_REPLACE_ATTEMPTS = 20
 PROGRESS_REPLACE_ATTEMPTS = 6
 DATASET_SCALE_PROFILE = "dataset_peak_phasor"
+PDR_ALGORITHM_CONTRACT_VERSION = 4
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v4"
+DEFAULT_SMOKE_OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v4_smoke"
 
 
 def create_algorithms(algorithm_ids: Sequence[str]) -> list[PDRAlgorithm]:
@@ -104,7 +107,7 @@ def run_study(
     run_config = {
         "schema_version": 2,
         "kind": "pdr_dataset_study",
-        "pdr_algorithm_contract_version": 3,
+        "pdr_algorithm_contract_version": PDR_ALGORITHM_CONTRACT_VERSION,
         "split_manifest": str(SPLIT_MANIFEST_PATH.relative_to(PROJECT_ROOT)),
         "split_manifest_sha256": split_manifest.get("sha256"),
         "source_names": list(source_names),
@@ -748,7 +751,7 @@ def main() -> int:
         "--output-dir",
         type=Path,
         default=None,
-        help="По умолчанию pdr_labels_v3, а с --smoke — pdr_labels_v3_smoke",
+        help="По умолчанию pdr_labels_v4, а с --smoke — pdr_labels_v4_smoke",
     )
     parser.add_argument("--sources", nargs="+", choices=("open_ee", "french_rte"), default=["open_ee", "french_rte"])
     parser.add_argument("--algorithms", nargs="+", default=list(DEFAULT_ALGORITHMS))
@@ -760,8 +763,8 @@ def main() -> int:
     parser.add_argument("--no-compression", action="store_true", help="Отключить lossless ZIP-сжатие shards")
     args = parser.parse_args()
     max_records = 8 if args.smoke else args.max_records_per_source
-    output_dir = args.output_dir or PROJECT_ROOT / (
-        "data/phase5/pdr_labels_v3_smoke" if args.smoke else "data/phase5/pdr_labels_v3"
+    output_dir = args.output_dir or (
+        DEFAULT_SMOKE_OUTPUT_DIR if args.smoke else DEFAULT_OUTPUT_DIR
     )
     run_study(
         output_dir=output_dir,
@@ -780,7 +783,7 @@ def main() -> int:
 def run_manual() -> None:
     # Сначала обязательно выполнить SMOKE=True. После проверки артефактов заменить на False.
     SMOKE = False
-    OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v3_smoke" if SMOKE else PROJECT_ROOT / "data/phase5/pdr_labels_v3"
+    OUTPUT_DIR = DEFAULT_SMOKE_OUTPUT_DIR if SMOKE else DEFAULT_OUTPUT_DIR
     SOURCES = ("open_ee", "french_rte")
     ALGORITHMS = DEFAULT_ALGORITHMS
     TEACHER = DEFAULT_TEACHER

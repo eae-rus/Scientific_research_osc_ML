@@ -33,8 +33,8 @@ from osc_tools.pdr.base import PDRDirection
 from scripts.phase5_experiments.progress import ProgressReporter
 
 
-DEFAULT_LABEL_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v3"
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_analysis_v3"
+DEFAULT_LABEL_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v4"
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_analysis_v4"
 DEFAULT_SOURCES = ("open_ee", "french_rte")
 DEFAULT_LOW_CURRENT_RMS_THRESHOLD = 0.05 / 20.0
 TEACHER_ID = "adaptive_pdr_mir"
@@ -608,6 +608,7 @@ def scan_exact_agreement(label_dir: Path, output_dir: Path, sources: Sequence[st
 
 
 def scan_signal_statistics(
+    label_dir: Path,
     output_dir: Path,
     sources: Sequence[str],
     *,
@@ -627,22 +628,34 @@ def scan_signal_statistics(
     rows: list[dict[str, Any]] = []
     for source_name in sources:
         source = source_factories[source_name]()
+        manifest = json.loads(
+            (Path(label_dir) / source_name / "manifest.json").read_text(encoding="utf-8")
+        )
+        selected_ids = [
+            int(record_id)
+            for shard in manifest.get("shards", [])
+            for record_id in shard.get("record_ids", [])
+        ]
+        if len(selected_ids) != len(set(selected_ids)):
+            raise RuntimeError(f"Manifest {source_name} содержит повторные record_id")
         checkpoint_path = output_dir / f"signal_records__{source_name}.csv"
         source_rows: list[dict[str, Any]] = []
         if checkpoint_path.exists():
             with checkpoint_path.open("r", encoding="utf-8-sig", newline="") as stream:
                 source_rows = list(csv.DictReader(stream))
             completed_ids = [int(row["record_id"]) for row in source_rows]
-            if completed_ids != list(range(len(source_rows))):
-                raise RuntimeError(f"Неконтинуальный signal checkpoint: {checkpoint_path}")
+            if completed_ids != selected_ids[:len(completed_ids)]:
+                raise RuntimeError(f"Signal checkpoint не совпадает с manifest: {checkpoint_path}")
         initial_completed = len(source_rows)
         progress = ProgressReporter(
-            f"Signal audit {source_name}", len(source), unit="зап.",
+            f"Signal audit {source_name}", len(selected_ids), unit="зап.",
             initial_completed=initial_completed,
         )
         progress.update(initial_completed)
         try:
-            for record_id in range(initial_completed, len(source)):
+            for progress_index, record_id in enumerate(
+                selected_ids[initial_completed:], start=initial_completed + 1
+            ):
                 signal = np.asarray(source.load_signal(record_id), dtype=np.float64)
                 metadata = source.get_metadata(record_id)
                 current = signal[:3]
@@ -692,8 +705,8 @@ def scan_signal_statistics(
                     "missing_voltage_group": not voltage_present,
                     "low_current_rms": current_present and current_rms < low_current_rms_threshold,
                 })
-                progress.update(record_id + 1)
-                if (record_id + 1) % 1000 == 0:
+                progress.update(progress_index)
+                if progress_index % 1000 == 0:
                     _write_csv(checkpoint_path, source_rows)
         finally:
             if source_rows:
@@ -828,6 +841,40 @@ def _append_pair_candidates(
     _update_summary_count(output_dir, "plot_candidates", len(candidates))
 
 
+def _append_forced_candidates(
+    output_dir: Path,
+    forced_cases: Sequence[tuple[str, int]],
+) -> None:
+    """Добавить заданные исследователем осциллограммы независимо от score."""
+    if not forced_cases:
+        return
+    candidate_path = output_dir / "plot_candidates.csv"
+    if not candidate_path.exists():
+        raise FileNotFoundError("Сначала нужен MODE='summary' для plot_candidates.csv")
+    with candidate_path.open("r", encoding="utf-8-sig", newline="") as stream:
+        candidates = [
+            row for row in csv.DictReader(stream) if row["stratum"] != "forced_review"
+        ]
+    for rank, (source, record_id) in enumerate(forced_cases, start=1):
+        candidates.append({
+            "source": source,
+            "record_id": int(record_id),
+            "stratum": "forced_review",
+            "selection_rank": rank,
+            "file_name": "",
+            "split": "",
+            "duration_sec": "",
+            "teacher_transitions": "",
+            "total_transitions": "",
+            "disagreement_fraction": "",
+            "interest_score": "",
+            "focus_left": "",
+            "focus_right": "",
+        })
+    _write_csv(candidate_path, candidates)
+    _update_summary_count(output_dir, "plot_candidates", len(candidates))
+
+
 def _update_summary_count(output_dir: Path, key: str, value: int) -> None:
     """Keep the lightweight run manifest consistent after staged analysis modes."""
     summary_path = output_dir / "summary.json"
@@ -882,7 +929,12 @@ def build_diagnostic_plots(
                 algorithm_ids=archives[source_name].algorithm_ids,
                 focus_pair=(candidate.get("focus_left", ""), candidate.get("focus_right", "")),
             )
-            stem = f"{source_name}__{candidate['stratum']}__record_{record_id:05d}"
+            # Stratum уже хранится в имени папки. Не дублируем его в
+            # filename, чтобы не превышать Windows MAX_PATH для длинных pair-ID.
+            stem = (
+                f"{source_name}__record_{record_id:05d}__"
+                f"rank_{int(candidate.get('selection_rank') or 0):03d}"
+            )
             case_dir = plot_root / candidate["stratum"]
             case_dir.mkdir(parents=True, exist_ok=True)
             png_path = case_dir / f"{stem}.png"
@@ -1247,14 +1299,18 @@ def run_analysis(
     window_seconds: float = 0.8,
     export_csv: bool = True,
     low_current_rms_threshold: float = DEFAULT_LOW_CURRENT_RMS_THRESHOLD,
+    forced_cases: Sequence[tuple[str, int]] = (),
 ) -> None:
     if mode in {"summary", "all"}:
         build_summary(label_dir, output_dir, sources, enable_clusters=enable_clusters,
                       plots_per_group=plots_per_group)
     if mode in {"agreement", "all"}:
         scan_exact_agreement(label_dir, output_dir, sources)
+    if mode in {"summary", "agreement", "plots", "all"}:
+        _append_forced_candidates(output_dir, forced_cases)
     if mode in {"signals", "all"}:
         scan_signal_statistics(
+            label_dir,
             output_dir,
             sources,
             low_current_rms_threshold=low_current_rms_threshold,
@@ -1277,6 +1333,13 @@ def main() -> int:
     parser.add_argument("--no-clusters", action="store_true")
     parser.add_argument("--no-window-csv", action="store_true")
     parser.add_argument(
+        "--record",
+        action="append",
+        default=[],
+        metavar="SOURCE:ID",
+        help="Принудительно добавить запись в PNG/CSV, например open_ee:44574",
+    )
+    parser.add_argument(
         "--low-current-rms-threshold",
         type=float,
         default=DEFAULT_LOW_CURRENT_RMS_THRESHOLD,
@@ -1286,6 +1349,12 @@ def main() -> int:
         ),
     )
     args = parser.parse_args()
+    forced_cases = []
+    for value in args.record:
+        source, separator, record_id = value.partition(":")
+        if not separator or source not in DEFAULT_SOURCES:
+            parser.error(f"Ожидалось SOURCE:ID, получено {value!r}")
+        forced_cases.append((source, int(record_id)))
     run_analysis(
         mode=args.mode,
         label_dir=args.label_dir,
@@ -1296,6 +1365,7 @@ def main() -> int:
         window_seconds=args.window_seconds,
         export_csv=not args.no_window_csv,
         low_current_rms_threshold=args.low_current_rms_threshold,
+        forced_cases=forced_cases,
     )
     return 0
 
@@ -1313,6 +1383,9 @@ def run_manual() -> None:
     # RMS исходной волны: 0.05 Iном / current_reserve=20. В отличие от DFT-порогов,
     # здесь sqrt(2) не нужен, поскольку сравниваются RMS с RMS.
     LOW_CURRENT_RMS_THRESHOLD = DEFAULT_LOW_CURRENT_RMS_THRESHOLD
+    # Всегда построить проверочный случай из прежнего аудита, даже если
+    # после исправления он больше не попадает в рейтинг disagreement.
+    FORCED_CASES = (("open_ee", 44574),)
 
     run_analysis(
         mode=MODE,
@@ -1324,6 +1397,7 @@ def run_manual() -> None:
         window_seconds=WINDOW_SECONDS,
         export_csv=EXPORT_WINDOW_CSV,
         low_current_rms_threshold=LOW_CURRENT_RMS_THRESHOLD,
+        forced_cases=FORCED_CASES,
     )
 
 

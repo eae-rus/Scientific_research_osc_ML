@@ -899,7 +899,8 @@ Task-head не должен знать, из Open_EE или French пришёл 
 - [x] trace/debug output и метаданные диагностики причины действия органа (см. `PDROutput.diagnostics`).
 - [x] единый минимум сигналов: не менее двух токов и двух напряжений с восстановлением третьей фазы;
 - [x] одинаковый комплексный `U1` для согласованных фазных и линейных входов;
-- [x] явные признаки `requires_history`/`is_stateful` и запрет ложной предыстории;
+- [x] явные признаки `requires_history`/`is_stateful` и политика
+  `history_fallback_to_earliest` для раннего старта adaptive;
 - [x] явный requested/resolved teacher ID и запрещённый по умолчанию fallback при создании датасета.
 
 
@@ -924,7 +925,7 @@ Task-head не должен знать, из Open_EE или French пришёл 
   постоянный пороговый сдвиг вынесен из основного динамического рейтинга
   (см. `osc_tools/pdr/study.py`).
 - [x] CSV-рейтинг и тематические подборки для будущей ручной разметки
-  (см. `docs/phase_discription/PHASE_5_PDR_DATASET_GUIDE.md`).
+  (см. `docs/phase_discription/PHASE_5_PDR_PIPELINE_GUIDE.md`).
 - [x] Общая и per-source статистика по осциллограммам, exact pointwise
   agreement/kappa/MCC, signal RMS audit, SHA-256 duplicate audit,
   exploratory-кластеры и короткие PNG/CSV review bundles
@@ -937,19 +938,21 @@ Task-head не должен знать, из Open_EE или French пришёл 
 - [x] Выполнены полный `pdr_labels_v2` и первичный аудит `pdr_analysis_v2`.
 - [x] Аудит выявил смешение физических RMS p.u. уставок с внутренними
   peak-фазорами после резервной нормировки 20/3.
-- [ ] Выполнить `pdr_labels_v3` с профилем `dataset_peak_phasor`, повторить
-  статистику в `pdr_analysis_v3`, сравнить v2/v3 и только затем удалять
-  аннулированные тяжёлые версии.
+- [x] Выполнены `pdr_labels_v3`/`pdr_analysis_v3` с профилем
+  `dataset_peak_phasor` (см. `PHASE_5_PDR_V3_REVIEW.md`).
+- [ ] Выполнить `pdr_labels_v4`/`pdr_analysis_v4` с ранней памятью adaptive
+  и `UNLABELED` при полной потере U; после аудита v3 становится
+  кандидатом на удаление (см. `PHASE_5_PDR_PIPELINE_GUIDE.md`).
 
 ### 11.3. Псевдоразметка реальных данных лучшим органом
 
 После решения исследователя о teacher-алгоритме:
 
 1. прогнать его по пригодным Open_EE и, если физически сопоставимо, French-записям;
-2. вычислить causal-фазоры h1 по однопериодному окну: публичный stateless teacher
-   размечает точки сразу после первого полного периода, а teacher с памятью — только
-   после появления его настоящей предыстории `t-history`; недоступные точки имеют
-   `UNLABELED` и исключаются последующими алгоритмами;
+2. вычислить causal-фазоры h1 по однопериодному окну: все пять органов
+   размечают с первой полной FFT-точки; adaptive до 10T использует самую раннюю
+   доступную память, затем `t-10T`; физически неопредимые точки имеют
+   `UNLABELED` и исключаются из loss/agreement;
 3. дополнительно сохранять непрерывные диагностические величины и confidence/margin;
 4. сохранять `teacher_id`, версию, конфиг и hash входной осциллограммы;
 5. не смешивать train/val окна одной осциллограммы;
@@ -957,8 +960,8 @@ Task-head не должен знать, из Open_EE или French пришёл 
 
 Эта разметка является **weak/pseudo-label**, а не независимой истиной. Поэтому нужны:
 
-- базовый этап использует только teacher-метки, отличные от `UNLABELED`; отдельно
-  хранится warmup mask отсутствия обязательной истории teacher;
+- базовый этап использует только teacher-метки, отличные от `UNLABELED`;
+  `warmup` и физическая невалидность не превращаются в третий класс;
 - confidence filtering, soft targets/sample weights и игнорирование пограничных точек оставить как последующее улучшение после появления подходящего margin у выбранного органа;
 - отдельный набор расхождений нескольких органов для последующего исследования;
 - frozen teacher benchmark: нейросеть должна сравниваться с органом, который создал метки.
@@ -1206,7 +1209,8 @@ Task-head не должен знать, из Open_EE или French пришёл 
 | `scripts/phase5_experiments/run_pdr_dataset_study.py` | статистика органов и воспроизводимая teacher-разметка |
 | `scripts/phase5_experiments/pdr/run_phase5_pdr_finetune.py` | PDR fine-tuning и post-training |
 | `docs/phase_discription/PHASE_5_PDR_ALGORITHMS.md` | математика и версии органов |
-| `docs/phase_discription/PHASE_5_PDR_DATASET_GUIDE.md` | ручной запуск, мониторинг и отбор сложных записей |
+| `docs/phase_discription/PHASE_5_PDR_PIPELINE_GUIDE.md` | разметка, мониторинг, анализ и отбор сложных записей |
+| `scripts/phase5_experiments/README.md` | карта ручных сценариев Phase 5 |
 | `data/phase5/datasets_registry.json` | машинный реестр |
 | `reports/phase5/*.md` | отчёты |
 | `tests/unit/test_phase5_*.py` | unit-тесты Phase 5 |

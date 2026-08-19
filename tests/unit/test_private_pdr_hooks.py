@@ -25,12 +25,12 @@ def test_private_pdr_algorithms_if_available():
         from private.pdr_algorithms.test_adaptive_pdr import (
             test_adaptive_current_lockout_conditions,
             test_adaptive_pdr_positive_sequence_default,
-            test_adaptive_pdr_requires_real_history,
+            test_adaptive_pdr_starts_with_current_phasor_as_earliest_history,
             test_adaptive_pdr_vector_memory_and_missing_current,
         )
         test_adaptive_pdr_positive_sequence_default()
         test_adaptive_pdr_vector_memory_and_missing_current()
         test_adaptive_current_lockout_conditions()
-        test_adaptive_pdr_requires_real_history()
+        test_adaptive_pdr_starts_with_current_phasor_as_earliest_history()
     except Exception as exc:
         pytest.fail(f"Ошибка при выполнении закрытых тестов РНМ: {exc}")

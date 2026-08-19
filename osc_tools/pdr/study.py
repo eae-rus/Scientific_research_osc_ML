@@ -50,9 +50,9 @@ def label_record_multi(
     """Разметить запись несколькими органами, разделяя один расчёт h1.
 
     Публичный орган без обязательной истории работает после первого полного
-    периода. По умолчанию решение рассчитывается для каждого следующего исходного
-    отсчёта. Орган с ``requires_history=True`` до настоящей точки t-history
-    оставляет метку ``UNLABELED``.
+    периода. Stateful-орган с ``history_fallback_to_earliest=True`` до
+    накопления полных ``history_periods`` использует самую раннюю FFT-точку.
+    Остальные history-required алгоритмы сохраняют обычный ``UNLABELED`` warm-up.
     """
 
     if not algorithms:
@@ -88,14 +88,18 @@ def label_record_multi(
 
     history_samples_by_algorithm: list[int] = []
     phasor_end_indices = list(end_indices)
+    first_phasor_end = spp - 1
     for algorithm in algorithms:
         history_periods = float(algorithm.params.get("history_periods", default_history_periods))
         history_samples = periods_to_samples(history_periods, spp)
         history_samples_by_algorithm.append(history_samples)
+        fallback_to_earliest = bool(
+            getattr(algorithm, "history_fallback_to_earliest", False)
+        )
         phasor_end_indices.extend(
-            end_idx - history_samples
+            max(first_phasor_end, end_idx - history_samples)
             for end_idx in end_indices
-            if end_idx - history_samples >= spp - 1
+            if fallback_to_earliest or end_idx - history_samples >= first_phasor_end
         )
 
     phasor_table = precompute_causal_h1_phasors(
@@ -125,12 +129,18 @@ def label_record_multi(
         if "steps_per_period" in algorithm.params:
             algorithm.params["steps_per_period"] = max(1, round(spp / sample_step))
         requires_history = bool(getattr(algorithm, "requires_history", False))
+        fallback_to_earliest = bool(
+            getattr(algorithm, "history_fallback_to_earliest", False)
+        )
 
         for window_index, end_idx in enumerate(end_indices):
             current = converted_phasors.get(end_idx)
             if current is None:
                 continue
-            history = converted_phasors.get(end_idx - history_samples)
+            history_end_idx = end_idx - history_samples
+            if fallback_to_earliest:
+                history_end_idx = max(first_phasor_end, history_end_idx)
+            history = converted_phasors.get(history_end_idx)
             if requires_history and history is None:
                 warmup_mask[algorithm_index, window_index] = True
                 continue

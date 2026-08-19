@@ -23,6 +23,7 @@ from osc_tools.pdr.pdr_signal_utils import (
     derive_unified_currents,
     derive_unified_voltages,
     get_memory_voltage,
+    has_voltage_above_threshold,
     scale_thresholds_for_profile,
 )
 
@@ -64,6 +65,14 @@ class PhasePowerPDRAlgorithm(PDRAlgorithm):
                 is_tripped=False,
                 margin=0.0,
                 diagnostics={"reason": "missing_voltage_signals"},
+            )
+        if not has_voltage_above_threshold(uv, u_min):
+            return PDROutput(
+                direction=PDRDirection.UNLABELED,
+                is_tripped=False,
+                margin=0.0,
+                confidence=0.0,
+                diagnostics={"reason": "all_voltages_below_threshold"},
             )
         currents = derive_unified_currents(input_data.phasors_i)
         if set(currents) != {"A", "B", "C"}:

@@ -5,11 +5,9 @@
 pdr_margin, warmup_mask, provenance).
 
 Публичные органы без памяти начинают разметку после первого полного периода.
-Органы с ``requires_history=True`` получают реальный фазор в точке t-history и
-до накопления этой предыстории возвращают UNLABELED; подмена истории первым
-доступным фазором не допускается. Флаг warmup_mask отражает именно отсутствие
-обязательной предыстории teacher, а полный causal-контекст нейросети проверяет
-``PDRTaskDataset`` отдельно.
+Адаптивный teacher до накопления 10T получает самую раннюю доступную
+FFT-точку, а затем фазор ``t-10T``. Полный causal-контекст нейросети
+по-прежнему проверяет ``PDRTaskDataset`` отдельно.
 """
 
 from __future__ import annotations
@@ -204,6 +202,9 @@ class PDRDatasetLabeler:
         n_samples = signals.shape[1]
         history_samples = periods_to_samples(self.history_periods, spp)
         requires_history = bool(getattr(self.teacher, "requires_history", False))
+        fallback_to_earliest = bool(
+            getattr(self.teacher, "history_fallback_to_earliest", False)
+        )
 
         # Таймеры stateful-органа считаются в точках разметки, поэтому их
         # масштаб должен соответствовать фактическому stride этой группы SPP.
@@ -220,10 +221,11 @@ class PDRDatasetLabeler:
         warmup_mask = np.ones(n_windows, dtype=bool)
         sample_indices = np.array(end_indices, dtype=np.int32)
 
+        first_phasor_end = spp - 1
         history_end_indices = [
-            end_idx - history_samples
+            max(first_phasor_end, end_idx - history_samples)
             for end_idx in end_indices
-            if end_idx - history_samples >= spp - 1
+            if fallback_to_earliest or end_idx - history_samples >= first_phasor_end
         ]
         phasor_table = precompute_causal_h1_phasors(
             signals,
@@ -233,6 +235,8 @@ class PDRDatasetLabeler:
 
         for w_idx, end_idx in enumerate(end_indices):
             hist_end_idx = end_idx - history_samples
+            if fallback_to_earliest:
+                hist_end_idx = max(first_phasor_end, hist_end_idx)
             hist_phasors = phasor_table.get(hist_end_idx)
             is_warmup = requires_history and not hist_phasors
             warmup_mask[w_idx] = is_warmup

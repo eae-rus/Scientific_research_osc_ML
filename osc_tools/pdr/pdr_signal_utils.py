@@ -54,6 +54,19 @@ class UnifiedVoltagePhasors(NamedTuple):
     mode: str                    # 'phase', 'line' или 'invalid'
 
 
+def has_voltage_above_threshold(
+    voltages: UnifiedVoltagePhasors,
+    threshold: float,
+) -> bool:
+    """Проверить, что хотя бы одно фазное U пригодно для определения направления."""
+    if voltages.mode == "invalid":
+        return False
+    return any(
+        value is not None and np.isfinite(value) and abs(value) >= threshold
+        for value in voltages.u_phase.values()
+    )
+
+
 def derive_unified_voltages(
     phasors_u: Dict[str, complex],
 ) -> UnifiedVoltagePhasors:

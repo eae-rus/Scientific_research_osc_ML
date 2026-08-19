@@ -1,5 +1,27 @@
 # Журнал работ Phase 5
 
+## 19.08.2026 — PDR contract v4: ранняя память и точная семантика UNLABELED
+
+- Adaptive MIR начинает разметку с первого полного FFT-окна. До 10T
+  память равна самой ранней доступной FFT-точке, затем — `t-10T`.
+- `UNLABELED` закреплён как маска, а не третий класс: нет полного FFT-окна,
+  двух восстанавливаемых токов/U или все U ниже `0.05 Uном`.
+- Измеренный нулевой/подпороговый ток остаётся `REVERSE`. Adaptive может
+  продолжить работу при потере текущего U по поляризующей памяти.
+- Введён PDR contract v4 и новые каталоги `pdr_labels_v4[_smoke]`/
+  `pdr_analysis_v4`; v3 не перезаписывается и удаляется только после приёмки v4.
+- Целевая проверка Open_EE record 44574 на новом контракте дала adaptive
+  FORWARD на 100% из 310 точек; оба sequence-органа также 100%, оба phase-органа
+  99,68%. Случай добавлен в `FORCED_CASES` будущего полного анализа.
+- v4 smoke завершён: 8+8 записей, 199 835 точек, adaptive warm-up = 0;
+  полная smoke-цепочка analysis/review сформировала 23 PNG/CSV. Signal audit
+  теперь ограничивается record ID из label manifest, а длинные pair-имена не
+  превышают Windows MAX_PATH. Целевые тесты: **51 passed, 1 skipped**.
+- Объединены PDR dataset/analysis guide, удалены устаревший start prompt
+  одноразовый overlay-builder и дублирующий provenance-only PDR audit;
+  карта сценариев добавлена в
+  `scripts/phase5_experiments/README.md`.
+
 ## 18.08.2026 — Полный статистический аудит PDR v3
 
 - Проверены 56 826 осциллограмм, 485,4 млн окон и 58,74 ч
@@ -74,8 +96,7 @@
   низкотоковых записей 32,9% и 81,4% соответственно.
 - Проверки: исправленные PDR/split/study unit-тесты — **19 passed**; полный
   v2-smoke (8+8 записей) и его точный agreement-анализ — PASS.
-- Инструкции: `PHASE_5_PDR_DATASET_GUIDE.md` и
-  `PHASE_5_PDR_ANALYSIS_GUIDE.md`.
+- Инструкции позднее объединены в `PHASE_5_PDR_PIPELINE_GUIDE.md`.
 
 ## 09.08.2026 — Sharded multi-PDR датасет и поиск сложных осциллограмм
 
@@ -99,7 +120,7 @@
   завершился без пересчёта готовых shards.
 - Проверка после расширения: публичный набор — **600 passed, 2 skipped**;
   локальные тесты закрытого адаптивного органа — **4 passed**.
-- Инструкция: `PHASE_5_PDR_DATASET_GUIDE.md`.
+- Инструкция позднее объединена в `PHASE_5_PDR_PIPELINE_GUIDE.md`.
 
 ## 09.08.2026 — Повторное ревью и стабилизация Phase 5 / PDR
 
@@ -287,6 +308,6 @@
 - **Генератор псевдоразметки и PyTorch Task Dataset** (`osc_tools/pdr/labeler.py`, `osc_tools/pdr/pdr_dataset.py`):
   - `PDRDatasetLabeler`: скользящее 10-периодное окно с расчётом 1-й гармоники Фурье. Зона разогрева помечается как `warmup_mask=True` и `direction=-999` (`UNLABELED`).
   - `PDRTaskDataset`: связывает спектральные токены KAN-Transformer с метками РНМ для дообучения.
-- **Обучение, аудит и документация** (`osc_tools/pdr/pdr_trainer.py`, `scripts/phase5_experiments/audit_pdr_signals.py`, `docs/phase_discription/PHASE_5_PDR_ALGORITHMS.md`):
+- **Обучение, аудит и документация** (`osc_tools/pdr/pdr_trainer.py`, `docs/phase_discription/PHASE_5_PDR_ALGORITHMS.md`; прежний отдельный audit-скрипт позднее объединён с основным анализом):
   - Описан контур тонкой настройки (`PDRTrainer`) с комбинированным лоссом (CrossEntropy + Huber Margin).
   - Очищены устаревшие legacy-файлы РНМ (`pdr_calculator.py`, `train_PDR.py`), функции перенесены в `phasor.py`.

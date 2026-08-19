@@ -32,6 +32,23 @@ class _HistoryReverse(PDRAlgorithm):
         return PDROutput(PDRDirection.REVERSE, False, -1.0)
 
 
+class _EarlyHistoryReverse(_HistoryReverse):
+    algorithm_id = "early_history_reverse"
+    history_fallback_to_earliest = True
+
+
+class _EarlyHistoryRecorder(_EarlyHistoryReverse):
+    algorithm_id = "early_history_recorder"
+
+    def __init__(self):
+        super().__init__()
+        self.history_a: list[complex] = []
+
+    def compute(self, input_data):
+        self.history_a.append(input_data.history_phasors_i["A"])
+        return PDROutput(PDRDirection.REVERSE, False, -1.0)
+
+
 def test_multi_labeler_separates_public_start_and_required_history() -> None:
     timebase = TimebaseContract.create(800.0, 50.0)
     samples = 12 * timebase.spp
@@ -57,7 +74,7 @@ def test_multi_labeler_separates_public_start_and_required_history() -> None:
         provenance,
         timebase,
         "phase",
-        [_AlwaysForward(), _HistoryReverse()],
+        [_AlwaysForward(), _HistoryReverse(), _EarlyHistoryReverse()],
     )
 
     assert len(result.sample_indices) == samples - timebase.spp + 1
@@ -66,6 +83,38 @@ def test_multi_labeler_separates_public_start_and_required_history() -> None:
     assert np.any(result.warmup_mask[1])
     assert np.all(result.directions[1, result.warmup_mask[1]] == int(PDRDirection.UNLABELED))
     assert np.any(result.directions[1] == int(PDRDirection.REVERSE))
+    assert not np.any(result.warmup_mask[2])
+    assert np.all(result.directions[2] == int(PDRDirection.REVERSE))
+
+
+def test_early_history_uses_first_fft_point_until_t_minus_10_periods() -> None:
+    timebase = TimebaseContract.create(800.0, 50.0)
+    samples = 13 * timebase.spp
+    t = np.arange(samples) / timebase.sampling_rate_hz
+    envelope = 1.0 + np.arange(samples) / samples
+    signal = np.full((8, samples), np.nan, dtype=np.float32)
+    for index, shift in zip((0, 1, 2, 4, 5, 6), (0.0, -2*np.pi/3, 2*np.pi/3) * 2):
+        signal[index] = envelope * np.sin(2 * np.pi * 50 * t + shift)
+    provenance = np.asarray([
+        ChannelProvenance.MEASURED,
+        ChannelProvenance.MEASURED,
+        ChannelProvenance.MEASURED,
+        ChannelProvenance.MISSING,
+        ChannelProvenance.MEASURED,
+        ChannelProvenance.MEASURED,
+        ChannelProvenance.MEASURED,
+        ChannelProvenance.MISSING,
+    ], dtype=np.uint8)
+    algorithm = _EarlyHistoryRecorder()
+
+    result = label_record_multi(signal, provenance, timebase, "phase", [algorithm])
+    lookup = {int(sample): index for index, sample in enumerate(result.sample_indices)}
+    first_end = timebase.spp - 1
+    first_history = algorithm.history_a[lookup[first_end]]
+
+    assert algorithm.history_a[lookup[first_end + 5 * timebase.spp]] == pytest.approx(first_history)
+    assert algorithm.history_a[lookup[first_end + 10 * timebase.spp]] == pytest.approx(first_history)
+    assert algorithm.history_a[lookup[first_end + 11 * timebase.spp]] != pytest.approx(first_history)
 
 
 def test_interest_score_downranks_constant_threshold_disagreement() -> None:

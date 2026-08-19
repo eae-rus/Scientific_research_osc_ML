@@ -168,6 +168,72 @@ def test_positive_sequence_algorithms_do_not_label_missing_voltage_as_reverse(al
 
 
 @pytest.mark.parametrize(
+    "algorithm",
+    [
+        PhasePDRAlgorithm(),
+        PositiveSequencePDRAlgorithm(),
+        PhasePowerPDRAlgorithm(),
+        PositiveSequencePowerPDRAlgorithm(),
+    ],
+)
+def test_algorithms_leave_all_low_voltages_unlabeled(algorithm):
+    """Нулевой ток — REVERSE, но без напряжения само направление неопределимо."""
+
+    zeros = {"A": 0j, "B": 0j, "C": 0j}
+    out = algorithm.compute(PDRInputData(phasors_u=zeros, phasors_i=zeros))
+
+    assert out.direction == PDRDirection.UNLABELED
+    assert out.confidence == 0.0
+
+
+@pytest.mark.parametrize(
+    "algorithm",
+    [
+        PhasePDRAlgorithm(),
+        PositiveSequencePDRAlgorithm(),
+        PhasePowerPDRAlgorithm(),
+        PositiveSequencePowerPDRAlgorithm(),
+    ],
+)
+def test_algorithms_keep_zero_current_as_reverse_when_voltage_exists(algorithm):
+    """Измеренный нулевой/подпороговый ток — это REVERSE, а не missing data."""
+
+    a = np.exp(1j * 2 * np.pi / 3)
+    voltages = {"A": 1.0 + 0j, "B": a ** 2, "C": a}
+    currents = {"A": 0j, "B": 0j, "C": 0j}
+    out = algorithm.compute(PDRInputData(phasors_u=voltages, phasors_i=currents))
+
+    assert out.direction == PDRDirection.REVERSE
+
+
+@pytest.mark.parametrize(
+    "algorithm_type",
+    [
+        PhasePDRAlgorithm,
+        PositiveSequencePDRAlgorithm,
+        PhasePowerPDRAlgorithm,
+        PositiveSequencePowerPDRAlgorithm,
+    ],
+)
+def test_dataset_voltage_pickup_applies_phase_sqrt3_and_reserve_once(algorithm_type):
+    """0.05 Uном сравнивается с peak-фазором после `/sqrt(3)` и `/3`."""
+
+    a = np.exp(1j * 2 * np.pi / 3)
+    nominal_phase_peak = math.sqrt(2.0) / (3.0 * math.sqrt(3.0))
+    currents = {"A": 0j, "B": 0j, "C": 0j}
+
+    def direction_at(voltage_pu: float) -> PDRDirection:
+        ua = voltage_pu * nominal_phase_peak
+        voltages = {"A": ua, "B": ua * a ** 2, "C": ua * a}
+        return algorithm_type(scale_profile="dataset_peak_phasor").compute(
+            PDRInputData(phasors_u=voltages, phasors_i=currents)
+        ).direction
+
+    assert direction_at(0.049) == PDRDirection.UNLABELED
+    assert direction_at(0.051) == PDRDirection.REVERSE
+
+
+@pytest.mark.parametrize(
     ("current_angle_deg", "expected_direction"),
     [(-45.0, PDRDirection.FORWARD), (135.0, PDRDirection.REVERSE)],
 )
