@@ -133,7 +133,7 @@ class PhasePowerPDRAlgorithm(PDRAlgorithm):
 
             # Единый контракт margin: положительное значение внутри зоны
             # FORWARD, отрицательное — снаружи.
-            margin_ph = t_op + p_thresh
+            margin_ph = t_op - p_thresh
             margins.append(margin_ph)
 
             if margin_ph >= 0.0:

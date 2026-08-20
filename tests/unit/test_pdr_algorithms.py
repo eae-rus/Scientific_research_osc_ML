@@ -260,7 +260,7 @@ def test_power_algorithms_match_on_balanced_phase_system(
 
 
 def test_power_algorithms_use_same_nonzero_threshold() -> None:
-    """Небольшая обратная мощность остаётся внутри общей зоны p_thresh."""
+    """Небольшая обратная мощность не подтверждает прямое направление."""
 
     a = np.exp(1j * 2 * np.pi / 3)
     voltages = {"A": 1.0 + 0j, "B": a ** 2, "C": a}
@@ -273,9 +273,9 @@ def test_power_algorithms_use_same_nonzero_threshold() -> None:
     phase = PhasePowerPDRAlgorithm(i_min_pu=0.001).compute(input_data)
     sequence = PositiveSequencePowerPDRAlgorithm(i_min_pu=0.001).compute(input_data)
 
-    assert phase.direction == PDRDirection.FORWARD
-    assert sequence.direction == PDRDirection.FORWARD
-    assert phase.margin == pytest.approx(0.04, abs=1e-12)
+    assert phase.direction == PDRDirection.REVERSE
+    assert sequence.direction == PDRDirection.REVERSE
+    assert phase.margin == pytest.approx(-0.06, abs=1e-12)
     assert phase.margin == pytest.approx(sequence.margin, abs=1e-12)
 
 
@@ -322,8 +322,8 @@ def test_dataset_peak_profile_has_no_double_scaling_at_current_pickup() -> None:
     assert PositiveSequencePDRAlgorithm(scale_profile="dataset_peak_phasor").compute(input_below).direction == PDRDirection.REVERSE
 
 
-@pytest.mark.parametrize("current_pu, expected", [(0.049, PDRDirection.FORWARD), (0.051, PDRDirection.REVERSE)])
-def test_dataset_peak_power_threshold_matches_physical_reverse_power(
+@pytest.mark.parametrize("current_pu, expected", [(0.049, PDRDirection.REVERSE), (0.051, PDRDirection.FORWARD)])
+def test_dataset_peak_power_threshold_matches_physical_forward_power(
     current_pu: float,
     expected: PDRDirection,
 ) -> None:
@@ -332,7 +332,7 @@ def test_dataset_peak_power_threshold_matches_physical_reverse_power(
     a = np.exp(1j * 2 * np.pi / 3)
     u_peak = math.sqrt(2.0) / (3.0 * math.sqrt(3.0))
     i_peak = current_pu * math.sqrt(2.0) / 20.0
-    ia = i_peak * np.exp(1j * math.radians(135.0))
+    ia = i_peak * np.exp(-1j * math.radians(45.0))
     input_data = PDRInputData(
         phasors_u={"A": u_peak, "B": u_peak * a ** 2, "C": u_peak * a},
         phasors_i={"A": ia, "B": ia * a ** 2, "C": ia * a},

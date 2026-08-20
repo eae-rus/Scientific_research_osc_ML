@@ -34,8 +34,8 @@ from osc_tools.pdr.signal_analysis import check_pdr_signal_sufficiency
 from scripts.phase5_experiments.progress import ProgressReporter
 
 
-DEFAULT_LABEL_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v4"
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_analysis_v4"
+DEFAULT_LABEL_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v5"
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_analysis_v5"
 DEFAULT_SOURCES = ("open_ee", "french_rte")
 DEFAULT_LOW_CURRENT_RMS_THRESHOLD = 0.05 / 20.0
 TEACHER_ID = "adaptive_pdr_mir"
@@ -1698,7 +1698,9 @@ def run_manual() -> None:
     LOW_CURRENT_RMS_THRESHOLD = DEFAULT_LOW_CURRENT_RMS_THRESHOLD
     # Всегда построить проверочный случай из прежнего аудита, даже если
     # после исправления он больше не попадает в рейтинг disagreement.
-    FORCED_CASES = (("open_ee", 44574),)
+    # Два ранее разобранных контрольных случая всегда попадают в PNG,
+    # даже если после исправления они выпадут из вершины рейтинга.
+    FORCED_CASES = (("open_ee", 44574), ("french_rte", 44))
 
     run_analysis(
         mode=MODE,

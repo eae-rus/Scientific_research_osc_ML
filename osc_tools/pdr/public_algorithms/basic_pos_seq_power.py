@@ -1,13 +1,14 @@
-"""Базовый алгоритм РНМ по мощностному моменту прямой последовательности (PositiveSequencePowerPDRAlgorithm).
+"""Базовый РНМ по мощностному моменту прямой последовательности.
 
-Реализует электромагнитный момент / мощность прямой последовательности (Torque Equation):
-T_op = Re[ V1_pol * (I1 * exp(-j * MTA))* ]
+Реализует мощностной момент прямой последовательности:
+T_op = Re[ V1_pol * (I1 * exp(+j * MTA))* ]
 
-Уставка по углу: mta_deg = 45.0° (MTA / phi_mch, ток отстает от U).
+Угол максимальной чувствительности: mta_deg = 45.0°
+(ток отстаёт от напряжения). FORWARD подтверждается при `T_op >= P_уст`.
 
 Совпадение с техникой:
 - SEL 32P (Schweitzer Engineering Laboratories);
-- ЭКРА 217 БАВР (P1 < -P_thresh);
+- ЭКРА 217 БАВР;
 - ABB Relion (DOPPDPR 32R).
 """
 
@@ -112,14 +113,18 @@ class PositiveSequencePowerPDRAlgorithm(PDRAlgorithm):
         i1_rot = i1 * np.exp(1j * mta_rad)
         t_op = float(np.real(u1 * np.conj(i1_rot)))
 
-        if t_op >= -p_thresh:
+        # Прямое направление подтверждается только положительной рабочей
+        # мощностью выше уставки. Зона от -Pуст до +Pуст не должна молча
+        # превращаться в блокирующее FORWARD: после отдельных проверок I/U она
+        # относится к REVERSE в принятом двухсостоянийном контракте БАВР.
+        if t_op >= p_thresh:
             direction = PDRDirection.FORWARD
             is_tripped = True
         else:
             direction = PDRDirection.REVERSE
             is_tripped = False
 
-        margin = t_op + p_thresh
+        margin = t_op - p_thresh
 
         return PDROutput(
             direction=direction,

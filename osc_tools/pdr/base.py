@@ -42,7 +42,7 @@ class PDRInputData:
     # Доступные фазоры предыстории для органов с памятью по напряжению/току
     history_phasors_u: Optional[Dict[str, complex]] = None
     history_phasors_i: Optional[Dict[str, complex]] = None
-    # Provenance каналов (8 элементов согласно CHANNEL_ORDER)
+    # Происхождение каналов (8 элементов согласно CHANNEL_ORDER)
     provenance: Optional[np.ndarray] = None
     # Базис исходных напряжений ('phase' или 'line'); восстановленные фазные
     # величины могут быть помечены служебным режимом 'phase_derived'.
@@ -84,8 +84,8 @@ class PDRAlgorithm(ABC):
     name: str = "Base PDR Algorithm"
     is_public: bool = True
     requires_history: bool = False
-    # Stateful-органы могут начинать с первого FFT-окна: пока t-history
-    # недоступно, labeler передаёт самый ранний доступный фазор.
+    # Органы с памятью могут начинать с первого окна Фурье: пока точка t-history
+    # недоступна, разметчик передаёт самый ранний доступный фазор.
     history_fallback_to_earliest: bool = False
     is_stateful: bool = False
     tunable_parameters: Dict[str, Any] = {}
@@ -96,8 +96,8 @@ class PDRAlgorithm(ABC):
         for key, value in kwargs.items():
             if key in self.params:
                 self.params[key] = value
-        # Эти поля переопределяются registry при разрешении алиаса/fallback.
-        # Они нужны, чтобы генератор разметки не мог скрыть подмену teacher.
+        # Эти поля переопределяются реестром при разрешении псевдонима/резервного алгоритма.
+        # Они нужны, чтобы генератор разметки не мог скрыть подмену алгоритма-учителя.
         self.requested_algorithm_id = self.algorithm_id
         self.resolved_algorithm_id = self.algorithm_id
         self.fallback_applied = False

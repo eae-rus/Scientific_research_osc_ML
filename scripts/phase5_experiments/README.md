@@ -3,19 +3,26 @@
 Файлы остаются в одной папке: разнесение по подпапкам сломало бы
 сложившиеся IDE/командные запуски и Python-импорты. Ниже — карта файлов.
 
-## PDR: ручной pipeline
+## РНМ: ручной порядок запуска
 
 1. `run_pdr_dataset_study.py` — единственный длительный прогон пяти РНМ,
-   shards, resume, progress/rate/ETA. Снача `SMOKE=True`, затем `False`.
+   фрагментированные файлы, продолжение расчёта, прогресс/скорость/оставшееся
+   время. Сначала `SMOKE=True`, затем `False`.
 2. `analyze_pdr_dataset_study.py` — основная статистика, фактическая маска
-   пригодности 2I+2U, signals, exact agreement, кластеры и PNG/CSV-диагностика.
+   пригодности 2I+2U, сигналы, точное согласие, кластеры и PNG/CSV-диагностика.
    Обычно `MODE="all"`; отдельный быстрый повтор маски — `MODE="eligibility"`.
 3. `review_pdr_analysis_results.py` — воспроизводимый научный
-   слой над готовыми CSV: current-bin/split/source profiles, bootstrap,
-   duplicate sensitivity, source×SPP, сравнение record/time/point weighting,
+   слой над готовыми CSV: профили по току/разбиению/источнику, бутстреп,
+   чувствительность к дубликатам, источник×SPP, сравнение взвешивания по
+   записям/времени/точкам,
    пояснение метрик, ECDF/heatmap/state-pattern figures, PCA, устойчивость
-   KMeans, source-classifier, Isolation Forest, FDR-корреляции и кандидаты
+   KMeans, классификатор источника, изолирующий лес, FDR-корреляции и кандидаты
    устойчивых расхождений. На полном v4 занимает около минуты.
+4. `export_pdr_manual_review_comtrade.py` — квотированный отбор разнообразных новых
+   случаев и экспорт полной осциллограммы в COMTRADE 1999 ASCII. Первый запуск
+   создаёт только `selection_preview.csv`; большой экспорт включается явным
+   `EXPORT_COMTRADE=True`. Сопроводительный JSON-файл позволяет исключать уже просмотренные
+   записи даже после их переноса по подпапкам.
 
 `review_pdr_analysis_results.py` не временный: он нужен для повтора
 одинаковых научных таблиц после каждой версии разметки. Одноразовый
@@ -28,20 +35,21 @@
 - `scan_open_ee_dataset.py`, `scan_french_dataset.py` — первичный аудит источников.
 - `prepare_open_ee_shards.py`, `prepare_french_rte_npy.py` — подготовленные
   ленивые форматы.
-- `build_phase5_splits.py` — strict split по хэшам целых осциллограмм.
+- `build_phase5_splits.py` — строгое разбиение по хэшам целых осциллограмм.
 - `build_real_ozz_exclusion.py` — слой исключений реальных ОЗЗ.
 
 ## SSL/pretrain и служебные сценарии
 
 - `run_phase5_pretrain.py`, `eval_phase5_pretrain.py` — обучение и оценка backbone.
 - `benchmark_phase5_storage.py` — оценка RAM/диска/скорости.
-- `compare_phase5_smokes.py` — сравнение smoke-прогонов pretrain.
-- `progress.py` — общий индикатор прогресса, не ручной entrypoint.
+- `compare_phase5_smokes.py` — сравнение пробных прогонов предобучения.
+- `progress.py` — общий индикатор прогресса, не отдельный сценарий ручного запуска.
 
 Старый `audit_pdr_signals.py` удалён: он проверял только provenance Open_EE
 и дублировал более полные coverage/signal-проверки двух актуальных
 PDR-сценариев.
 
 Новый файл следует добавлять только если он воспроизводим и не дублирует один
-из трёх PDR-entrypoint. Одноразовые migration/render/debug-сценарии удаляются
+из четырёх сценариев запуска РНМ. Одноразовые сценарии миграции, визуализации и
+отладки удаляются
 после применения.

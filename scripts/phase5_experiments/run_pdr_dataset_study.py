@@ -50,9 +50,9 @@ PROGRESS_WRITE_INTERVAL_SECONDS = 5.0
 ATOMIC_REPLACE_ATTEMPTS = 20
 PROGRESS_REPLACE_ATTEMPTS = 6
 DATASET_SCALE_PROFILE = "dataset_peak_phasor"
-PDR_ALGORITHM_CONTRACT_VERSION = 4
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v4"
-DEFAULT_SMOKE_OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v4_smoke"
+PDR_ALGORITHM_CONTRACT_VERSION = 5
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v5"
+DEFAULT_SMOKE_OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v5_smoke"
 
 
 def create_algorithms(algorithm_ids: Sequence[str]) -> list[PDRAlgorithm]:
@@ -751,7 +751,7 @@ def main() -> int:
         "--output-dir",
         type=Path,
         default=None,
-        help="По умолчанию pdr_labels_v4, а с --smoke — pdr_labels_v4_smoke",
+        help="По умолчанию pdr_labels_v5, а с --smoke — pdr_labels_v5_smoke",
     )
     parser.add_argument("--sources", nargs="+", choices=("open_ee", "french_rte"), default=["open_ee", "french_rte"])
     parser.add_argument("--algorithms", nargs="+", default=list(DEFAULT_ALGORITHMS))

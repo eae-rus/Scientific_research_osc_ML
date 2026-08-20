@@ -17,7 +17,7 @@ from scipy.stats import ks_2samp, mannwhitneyu, wasserstein_distance
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-DEFAULT_ANALYSIS_DIR = PROJECT_ROOT / "data/phase5/pdr_analysis_v4"
+DEFAULT_ANALYSIS_DIR = PROJECT_ROOT / "data/phase5/pdr_analysis_v5"
 ALGORITHMS = (
     "adaptive_pdr_mir",
     "phase_pdr_basic",
