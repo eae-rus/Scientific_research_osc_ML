@@ -11,7 +11,9 @@
    agreement, кластеры и PNG/CSV-диагностика. Обычно `MODE="all"`.
 3. `review_pdr_analysis_results.py` — компактный воспроизводимый научный
    слой над готовыми CSV: current-bin/split/source profiles, bootstrap,
-   duplicate sensitivity и кандидаты устойчивых расхождений.
+   duplicate sensitivity, source×SPP, сравнение record/time/point weighting,
+   пояснение метрик, ECDF/heatmap/state-pattern figures и кандидаты устойчивых
+   расхождений.
 
 `review_pdr_analysis_results.py` не временный: он нужен для повтора
 одинаковых научных таблиц после каждой версии разметки. Одноразовый

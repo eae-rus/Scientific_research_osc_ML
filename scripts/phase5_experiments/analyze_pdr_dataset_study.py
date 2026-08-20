@@ -369,6 +369,9 @@ def build_summary(
             "duplicates": "duplicate_groups.csv",
             "source_shift": "source_shift.csv",
             "candidates": "plot_candidates.csv",
+            "pointwise_agreement": "pairwise_pointwise_agreement.csv",
+            "teacher_temporal": "teacher_temporal_statistics.csv",
+            "state_patterns": "algorithm_state_patterns.csv",
         },
     })
     return candidates
@@ -506,10 +509,155 @@ def _diverse_subset(records: Sequence[dict[str, Any]], count: int) -> list[dict[
     return [records[index] for index in chosen]
 
 
+def _safe_ratio(numerator: float, denominator: float) -> float:
+    return float(numerator / denominator) if denominator else float("nan")
+
+
+def _agreement_metrics(confusion: np.ndarray) -> dict[str, float]:
+    """Метрики двух бинарных органов без назначения одного из них ground truth."""
+
+    matrix = np.asarray(confusion, dtype=np.float64)
+    if matrix.shape != (2, 2):
+        raise ValueError("confusion должна иметь форму (2, 2)")
+    n00, n01, n10, n11 = matrix.ravel()
+    total = float(matrix.sum())
+    observed = _safe_ratio(n00 + n11, total)
+    row = matrix.sum(axis=1)
+    column = matrix.sum(axis=0)
+    expected = _safe_ratio(float(row @ column), total * total)
+    kappa = _safe_ratio(observed - expected, 1.0 - expected)
+    denominator = math.sqrt(float(row[0] * row[1] * column[0] * column[1]))
+    mcc = _safe_ratio(n11 * n00 - n10 * n01, denominator)
+    balanced_values = [
+        _safe_ratio(n00, n00 + n01),
+        _safe_ratio(n11, n10 + n11),
+        _safe_ratio(n00, n00 + n10),
+        _safe_ratio(n11, n01 + n11),
+    ]
+    finite_balanced = [value for value in balanced_values if np.isfinite(value)]
+    balanced_symmetric = (
+        float(np.mean(finite_balanced)) if finite_balanced else float("nan")
+    )
+    return {
+        "agreement": observed,
+        "disagreement": 1.0 - observed if np.isfinite(observed) else float("nan"),
+        "cohen_kappa": kappa,
+        "mcc": mcc,
+        "balanced_agreement_symmetric": balanced_symmetric,
+        "jaccard_reverse": _safe_ratio(n00, n00 + n01 + n10),
+        "jaccard_forward": _safe_ratio(n11, n11 + n01 + n10),
+        "forward_prevalence_left": _safe_ratio(n10 + n11, total),
+        "forward_prevalence_right": _safe_ratio(n01 + n11, total),
+    }
+
+
+def _entropy_from_counts(counts: np.ndarray) -> float:
+    counts = np.asarray(counts, dtype=np.float64)
+    total = float(counts.sum())
+    if total <= 0:
+        return float("nan")
+    probabilities = counts[counts > 0] / total
+    return float(-np.sum(probabilities * np.log2(probabilities)))
+
+
+def _maximum_events_in_window(event_samples: np.ndarray, window_samples: int) -> int:
+    if event_samples.size == 0:
+        return 0
+    right = np.searchsorted(event_samples, event_samples + window_samples, side="right")
+    return int(np.max(right - np.arange(event_samples.size)))
+
+
+def _temporal_metrics(
+    labels: np.ndarray,
+    samples: np.ndarray,
+    f_adc: float,
+    *,
+    chatter_seconds: float = 0.10,
+) -> dict[str, float | int]:
+    """Record-level временная структура с сохранением разрывов UNLABELED."""
+
+    labels = np.asarray(labels)
+    samples = np.asarray(samples, dtype=np.int64)
+    valid = (labels == 0) | (labels == 1)
+    valid_count = int(valid.sum())
+    result: dict[str, float | int] = {
+        "valid_windows": valid_count,
+        "state_entropy_bits": float("nan"),
+        "transition_entropy_bits": float("nan"),
+        "lag1_autocorrelation": float("nan"),
+        "transitions": 0,
+        "first_transition_sec": float("nan"),
+        "last_transition_sec": float("nan"),
+        "first_transition_edge_distance_sec": float("nan"),
+        "last_transition_edge_distance_sec": float("nan"),
+        "median_run_duration_sec": float("nan"),
+        "p05_run_duration_sec": float("nan"),
+        "p95_run_duration_sec": float("nan"),
+        "short_runs_le_20ms": 0,
+        "short_runs_le_100ms": 0,
+        "chatter_returns_le_100ms": 0,
+        "max_switches_in_0_5s": 0,
+        "max_switches_in_1_0s": 0,
+    }
+    if valid_count == 0 or not np.isfinite(f_adc) or f_adc <= 0:
+        return result
+
+    state_counts = np.bincount(labels[valid].astype(np.int8), minlength=2)
+    result["state_entropy_bits"] = _entropy_from_counts(state_counts)
+    adjacent = valid[:-1] & valid[1:] & (np.diff(samples) == 1)
+    left = labels[:-1][adjacent].astype(np.int8)
+    right = labels[1:][adjacent].astype(np.int8)
+    if left.size:
+        transition_counts = np.bincount(2 * left + right, minlength=4)
+        result["transition_entropy_bits"] = _entropy_from_counts(transition_counts)
+        if np.std(left) > 0 and np.std(right) > 0:
+            result["lag1_autocorrelation"] = float(np.corrcoef(left, right)[0, 1])
+
+    transition_mask = adjacent & (labels[:-1] != labels[1:])
+    transition_samples = samples[1:][transition_mask]
+    result["transitions"] = int(transition_samples.size)
+    if transition_samples.size:
+        origin = int(samples[0])
+        end = int(samples[-1])
+        result["first_transition_sec"] = float((transition_samples[0] - origin) / f_adc)
+        result["last_transition_sec"] = float((transition_samples[-1] - origin) / f_adc)
+        result["first_transition_edge_distance_sec"] = float(
+            min(transition_samples[0] - origin, end - transition_samples[0]) / f_adc
+        )
+        result["last_transition_edge_distance_sec"] = float(
+            min(transition_samples[-1] - origin, end - transition_samples[-1]) / f_adc
+        )
+        chatter_samples = max(1, int(round(chatter_seconds * f_adc)))
+        result["chatter_returns_le_100ms"] = int(
+            np.count_nonzero(np.diff(transition_samples) <= chatter_samples)
+        )
+        result["max_switches_in_0_5s"] = _maximum_events_in_window(
+            transition_samples, max(1, int(round(0.5 * f_adc)))
+        )
+        result["max_switches_in_1_0s"] = _maximum_events_in_window(
+            transition_samples, max(1, int(round(1.0 * f_adc)))
+        )
+
+    run_starts = valid & np.r_[True, (~adjacent) | (labels[1:] != labels[:-1])]
+    run_ends = valid & np.r_[(~adjacent) | (labels[:-1] != labels[1:]), True]
+    starts = samples[run_starts]
+    ends = samples[run_ends]
+    if starts.size and starts.size == ends.size:
+        durations = (ends - starts + 1) / f_adc
+        result["median_run_duration_sec"] = float(np.median(durations))
+        result["p05_run_duration_sec"] = float(np.quantile(durations, 0.05))
+        result["p95_run_duration_sec"] = float(np.quantile(durations, 0.95))
+        result["short_runs_le_20ms"] = int(np.count_nonzero(durations <= 0.020))
+        result["short_runs_le_100ms"] = int(np.count_nonzero(durations <= 0.100))
+    return result
+
+
 def scan_exact_agreement(label_dir: Path, output_dir: Path, sources: Sequence[str]) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     all_rows: list[dict[str, Any]] = []
     record_rows: list[dict[str, Any]] = []
+    temporal_rows: list[dict[str, Any]] = []
+    pattern_rows: list[dict[str, Any]] = []
     focused_pairs = {
         frozenset(("phase_pdr_basic", "pos_seq_pdr_basic")),
         frozenset(("phase_power_pdr_basic", "pos_seq_power_pdr_basic")),
@@ -523,11 +671,20 @@ def scan_exact_agreement(label_dir: Path, output_dir: Path, sources: Sequence[st
             for left in range(len(algorithm_ids))
             for right in range(left + 1, len(algorithm_ids))
         }
-        common_counts = Counter()
+        point_pattern_counts = np.zeros(1 << len(algorithm_ids), dtype=np.int64)
+        record_pattern_sums = np.zeros_like(point_pattern_counts, dtype=np.float64)
+        record_pattern_presence = np.zeros_like(point_pattern_counts, dtype=np.int64)
+        records_with_all_algorithms = 0
+        teacher_index = algorithm_ids.index(TEACHER_ID)
+        summary_by_id = {
+            int(record["record_id"]): record
+            for record in load_records(label_dir, (source,))
+        }
         progress = ProgressReporter(f"Agreement {source}", len(manifest["shards"]), unit="shard")
         for shard_number, shard in enumerate(manifest["shards"], start=1):
             with np.load(label_dir / source / shard["file"], allow_pickle=False) as archive:
                 directions = archive["directions"].copy()
+                samples = archive["samples"]
                 offsets = archive["offsets"]
                 record_ids = archive["record_ids"]
                 for algorithm_index, algorithm_id in enumerate(algorithm_ids):
@@ -539,10 +696,43 @@ def scan_exact_agreement(label_dir: Path, output_dir: Path, sources: Sequence[st
                             start = int(offsets[local_index])
                             stop = int(offsets[local_index + 1])
                             directions[algorithm_index, start:stop] = int(PDRDirection.UNLABELED)
+                for local_index, record_id_raw in enumerate(record_ids):
+                    record_id = int(record_id_raw)
+                    start = int(offsets[local_index])
+                    stop = int(offsets[local_index + 1])
+                    local_directions = directions[:, start:stop]
+                    local_samples = samples[start:stop]
+                    all_valid = np.all(
+                        local_directions != int(PDRDirection.UNLABELED), axis=0
+                    )
+                    if np.any(all_valid):
+                        codes = np.sum(
+                            local_directions[:, all_valid].astype(np.int64)
+                            * (1 << np.arange(len(algorithm_ids), dtype=np.int64))[:, None],
+                            axis=0,
+                        )
+                        counts = np.bincount(codes, minlength=len(point_pattern_counts))
+                        point_pattern_counts += counts
+                        fractions = counts / counts.sum()
+                        record_pattern_sums += fractions
+                        record_pattern_presence += counts > 0
+                        records_with_all_algorithms += 1
+                    summary = summary_by_id.get(record_id, {})
+                    temporal_rows.append({
+                        "source": source,
+                        "record_id": record_id,
+                        "algorithm_id": TEACHER_ID,
+                        "f_adc": summary.get("f_adc", float("nan")),
+                        "duration_sec": summary.get("duration_sec", float("nan")),
+                        **_temporal_metrics(
+                            local_directions[teacher_index],
+                            local_samples,
+                            float(summary.get("f_adc", float("nan"))),
+                        ),
+                    })
                 for (left, right), confusion in pair_counts.items():
                     a, b = directions[left], directions[right]
                     common = (a != int(PDRDirection.UNLABELED)) & (b != int(PDRDirection.UNLABELED))
-                    common_counts[(left, right)] += int(common.sum())
                     for av in (0, 1):
                         for bv in (0, 1):
                             confusion[av, bv] += int(np.count_nonzero(common & (a == av) & (b == bv)))
@@ -554,7 +744,11 @@ def scan_exact_agreement(label_dir: Path, output_dir: Path, sources: Sequence[st
                             local_common = common[start:stop]
                             local_count = int(local_common.sum())
                             local_disagreement = (a[start:stop] != b[start:stop]) & local_common
-                            valid_disagreement = local_disagreement[local_common]
+                            disagreement_change = (
+                                local_common[:-1]
+                                & local_common[1:]
+                                & (local_disagreement[1:] != local_disagreement[:-1])
+                            )
                             record_rows.append({
                                 "source": source,
                                 "record_id": int(record_id),
@@ -565,38 +759,38 @@ def scan_exact_agreement(label_dir: Path, output_dir: Path, sources: Sequence[st
                                     float(local_disagreement.sum() / local_count) if local_count else 0.0
                                 ),
                                 "disagreement_transitions": int(
-                                    np.count_nonzero(valid_disagreement[1:] != valid_disagreement[:-1])
+                                    np.count_nonzero(disagreement_change)
                                 ),
                             })
             progress.update(shard_number)
         progress.finish()
+        total_patterns = int(point_pattern_counts.sum())
+        for code, count in enumerate(point_pattern_counts):
+            if count == 0:
+                continue
+            pattern_rows.append({
+                "source": source,
+                "state_pattern": format(code, f"0{len(algorithm_ids)}b")[::-1],
+                "algorithm_order": "|".join(algorithm_ids),
+                "point_count": int(count),
+                "point_fraction": float(count / max(1, total_patterns)),
+                "records_with_pattern": int(record_pattern_presence[code]),
+                "record_presence_fraction": float(
+                    record_pattern_presence[code] / max(1, records_with_all_algorithms)
+                ),
+                "mean_record_fraction": float(
+                    record_pattern_sums[code] / max(1, records_with_all_algorithms)
+                ),
+                "records_with_all_algorithms": records_with_all_algorithms,
+            })
         for (left, right), confusion in pair_counts.items():
             total = int(confusion.sum())
-            agreement = int(confusion[0, 0] + confusion[1, 1])
-            expected = (
-                float(confusion.sum(axis=1) @ confusion.sum(axis=0)) / max(total * total, 1)
-            )
-            observed = agreement / max(total, 1)
-            row_forward = int(confusion[1, :].sum())
-            row_reverse = int(confusion[0, :].sum())
-            column_forward = int(confusion[:, 1].sum())
-            column_reverse = int(confusion[:, 0].sum())
-            denominator = math.sqrt(float(
-                row_forward * row_reverse * column_forward * column_reverse
-            ))
-            mcc = float(
-                (confusion[1, 1] * confusion[0, 0] - confusion[1, 0] * confusion[0, 1])
-                / denominator
-            ) if denominator else 0.0
             all_rows.append({
                 "source": source,
                 "left": algorithm_ids[left],
                 "right": algorithm_ids[right],
                 "common_windows": total,
-                "agreement": observed,
-                "disagreement": 1.0 - observed,
-                "cohen_kappa": (observed - expected) / max(1.0 - expected, 1e-12),
-                "mcc": mcc,
+                **_agreement_metrics(confusion),
                 "n_reverse_reverse": int(confusion[0, 0]),
                 "n_reverse_forward": int(confusion[0, 1]),
                 "n_forward_reverse": int(confusion[1, 0]),
@@ -604,6 +798,8 @@ def scan_exact_agreement(label_dir: Path, output_dir: Path, sources: Sequence[st
             })
     _write_csv(output_dir / "pairwise_pointwise_agreement.csv", all_rows)
     _write_csv(output_dir / "pairwise_record_agreement.csv", record_rows)
+    _write_csv(output_dir / "teacher_temporal_statistics.csv", temporal_rows)
+    _write_csv(output_dir / "algorithm_state_patterns.csv", pattern_rows)
     _append_pair_candidates(output_dir, record_rows, per_group=4)
 
 
@@ -1257,6 +1453,10 @@ def _write_report(
         "не физические классы и не целевые метки.",
         "- `pairwise_pointwise_agreement.csv` появляется после режима `agreement`; для статьи "
         "основной единицей bootstrap/доверительных интервалов должна оставаться осциллограмма.",
+        "- `teacher_temporal_statistics.csv` описывает серии, энтропию, локальную плотность "
+        "переключений и chatter адаптивного teacher на уровне осциллограмм.",
+        "- `algorithm_state_patterns.csv` хранит комбинации пяти РНМ одновременно как "
+        "point-weighted и record-weighted доли.",
     ])
     (output_dir / "PRIMARY_ANALYSIS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -1371,7 +1571,7 @@ def main() -> int:
 
 
 def run_manual() -> None:
-    # Рекомендуемый порядок: summary -> signals -> agreement -> plots.
+    # MODE="all": summary -> agreement/temporal/patterns -> signals -> plots.
     MODE = "all"               # summary | plots | agreement | all
     LABEL_DIR = DEFAULT_LABEL_DIR
     OUTPUT_DIR = DEFAULT_OUTPUT_DIR

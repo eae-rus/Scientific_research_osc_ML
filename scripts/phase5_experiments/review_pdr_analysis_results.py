@@ -50,12 +50,163 @@ def _quantiles(values: pd.Series) -> dict[str, float]:
     }
 
 
+def _weighted_mean(values: pd.Series, weights: pd.Series) -> float:
+    numeric_values = pd.to_numeric(values, errors="coerce")
+    numeric_weights = pd.to_numeric(weights, errors="coerce")
+    valid = numeric_values.notna() & numeric_weights.notna() & (numeric_weights > 0)
+    if not valid.any():
+        return np.nan
+    return float(np.average(numeric_values[valid], weights=numeric_weights[valid]))
+
+
+def _write_metric_guide(path: Path) -> None:
+    path.write_text("""# Как читать статистику PDR
+
+## Единицы усреднения
+
+- `record_mean`: каждая осциллограмма имеет один голос независимо от длины и SPP.
+- `duration_weighted`: вклад пропорционален физической длительности записи.
+- `point_weighted`: вклад пропорционален числу подходящих точек. Для доли
+  FORWARD весом служит число валидных точек конкретного РНМ.
+- Доверительные интервалы следует строить по осциллограммам или семействам
+  одинаковых SHA-256, а не по соседним точкам одной записи.
+
+## Согласие органов
+
+- `agreement`: обычная доля совпавших решений. Может быть завышена, если почти
+  всё время встречается один класс.
+- `balanced_agreement_symmetric`: совпадение, в котором REVERSE и FORWARD имеют
+  равный вес; дополнительно симметризовано относительно двух органов.
+- `cohen_kappa`: совпадение сверх ожидаемого при наблюдаемых долях классов.
+  При сильном дисбалансе читать только вместе с матрицей 00/01/10/11.
+- `mcc`: корреляция двух бинарных решений от -1 до 1; 1 — полное совпадение,
+  0 — отсутствие бинарной связи, -1 — противоположные решения.
+- `jaccard_forward/reverse`: пересечение выбранного состояния относительно
+  объединения точек, где хотя бы один орган выбрал это состояние.
+- `forward_prevalence_left/right`: доли FORWARD каждого органа; объясняют,
+  вызвано ли расхождение разными рабочими порогами.
+
+## Временные показатели
+
+- `state_entropy_bits`: разнообразие 0/1 внутри записи; ноль означает одно
+  постоянное состояние, максимум 1 бит — близкие доли двух состояний.
+- `transition_entropy_bits`: разнообразие переходов 00/01/10/11.
+- `lag1_autocorrelation`: сохранение состояния между соседними точками.
+- `chatter_returns_le_100ms`: пары быстрых возвратных переключений за 100 мс.
+- `max_switches_in_0_5s/1_0s`: локальная плотность переключений, отделяющая
+  короткий содержательный эпизод от равномерного шума по всей записи.
+
+## Комбинации пяти органов
+
+`state_pattern` содержит биты в порядке из `algorithm_order`. Например, `10100`
+означает FORWARD у первого и третьего органов. Сравнение `point_fraction` с
+`mean_record_fraction` показывает влияние длинных осциллограмм и высокого SPP.
+""", encoding="utf-8")
+
+
+def _build_review_figures(
+    analysis_dir: Path,
+    merged: pd.DataFrame,
+    pointwise: pd.DataFrame,
+    patterns: pd.DataFrame,
+) -> list[Path]:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    figure_dir = analysis_dir / "review_figures"
+    figure_dir.mkdir(parents=True, exist_ok=True)
+    outputs: list[Path] = []
+
+    figure, axes = plt.subplots(1, 2, figsize=(13, 5))
+    for source, group in merged.groupby("source"):
+        current = pd.to_numeric(group["current_rms_physical_pu"], errors="coerce").dropna().sort_values()
+        transitions = pd.to_numeric(group["total_transitions"], errors="coerce").dropna().sort_values()
+        if len(current):
+            axes[0].step(current, np.arange(1, len(current) + 1) / len(current), where="post", label=source)
+        if len(transitions):
+            axes[1].step(transitions, np.arange(1, len(transitions) + 1) / len(transitions), where="post", label=source)
+    axes[0].set_xscale("symlog", linthresh=0.01)
+    axes[0].set_xlabel("RMS тока, I/Iном")
+    axes[0].set_ylabel("Доля осциллограмм ≤ x")
+    axes[0].set_title("ECDF тока: один голос на осциллограмму")
+    axes[1].set_xscale("symlog", linthresh=1.0)
+    axes[1].set_xlabel("Число переключений всех РНМ")
+    axes[1].set_ylabel("Доля осциллограмм ≤ x")
+    axes[1].set_title("ECDF временной активности")
+    for axis in axes:
+        axis.grid(alpha=0.25)
+        axis.legend()
+    figure.tight_layout()
+    path = figure_dir / "record_ecdf.png"
+    figure.savefig(path, dpi=170)
+    plt.close(figure)
+    outputs.append(path)
+
+    if not pointwise.empty:
+        agreement_metric = (
+            "balanced_agreement_symmetric"
+            if "balanced_agreement_symmetric" in pointwise.columns else "agreement"
+        )
+        sources = list(pointwise["source"].drop_duplicates())
+        figure, axes = plt.subplots(1, len(sources), figsize=(7 * len(sources), 6), squeeze=False)
+        for axis, source in zip(axes[0], sources):
+            subset = pointwise[pointwise["source"] == source]
+            matrix = pd.DataFrame(np.eye(len(ALGORITHMS)), index=ALGORITHMS, columns=ALGORITHMS)
+            for row in subset.itertuples():
+                value = getattr(row, agreement_metric)
+                matrix.loc[row.left, row.right] = value
+                matrix.loc[row.right, row.left] = value
+            image = axis.imshow(matrix.to_numpy(dtype=float), vmin=0.0, vmax=1.0, cmap="viridis")
+            axis.set_xticks(range(len(ALGORITHMS)), [name.replace("_pdr_basic", "").replace("adaptive_pdr_mir", "adaptive") for name in ALGORITHMS], rotation=35, ha="right")
+            axis.set_yticks(range(len(ALGORITHMS)), [name.replace("_pdr_basic", "").replace("adaptive_pdr_mir", "adaptive") for name in ALGORITHMS])
+            axis.set_title(f"Balanced agreement — {source}")
+            for row_index in range(len(ALGORITHMS)):
+                for column_index in range(len(ALGORITHMS)):
+                    axis.text(column_index, row_index, f"{matrix.iloc[row_index, column_index]:.2f}", ha="center", va="center", color="white" if matrix.iloc[row_index, column_index] < 0.55 else "black")
+        figure.colorbar(image, ax=axes.ravel().tolist(), shrink=0.75, label="Симметричное balanced agreement")
+        figure.subplots_adjust(bottom=0.22, wspace=0.35)
+        path = figure_dir / "balanced_agreement_heatmap.png"
+        figure.savefig(path, dpi=170)
+        plt.close(figure)
+        outputs.append(path)
+
+    if not patterns.empty:
+        for source, group in patterns.groupby("source"):
+            subset = group.sort_values("mean_record_fraction", ascending=False).head(12).iloc[::-1]
+            y = np.arange(len(subset))
+            figure, axis = plt.subplots(figsize=(10, 6))
+            axis.barh(y - 0.18, subset["mean_record_fraction"], height=0.34, label="среднее по осциллограммам")
+            axis.barh(y + 0.18, subset["point_fraction"], height=0.34, label="по всем точкам")
+            axis.set_yticks(y, subset["state_pattern"])
+            axis.set_xlabel("Доля")
+            axis.set_ylabel("Состояния органов в порядке algorithm_order")
+            axis.set_title(f"Частые комбинации пяти РНМ — {source}")
+            axis.legend()
+            axis.grid(axis="x", alpha=0.25)
+            figure.tight_layout()
+            path = figure_dir / f"state_patterns__{source}.png"
+            figure.savefig(path, dpi=170)
+            plt.close(figure)
+            outputs.append(path)
+    return outputs
+
+
 def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
     analysis_dir = Path(analysis_dir)
     records = pd.read_csv(analysis_dir / "record_statistics.csv", low_memory=False)
     signals = pd.read_csv(analysis_dir / "signal_record_statistics.csv", low_memory=False)
     pair_records = pd.read_csv(analysis_dir / "pairwise_record_agreement.csv")
     duplicates = pd.read_csv(analysis_dir / "duplicate_groups.csv")
+    pointwise_path = analysis_dir / "pairwise_pointwise_agreement.csv"
+    patterns_path = analysis_dir / "algorithm_state_patterns.csv"
+    temporal_path = analysis_dir / "teacher_temporal_statistics.csv"
+    pointwise = pd.read_csv(pointwise_path) if pointwise_path.exists() else pd.DataFrame()
+    patterns = (
+        pd.read_csv(patterns_path, dtype={"state_pattern": str})
+        if patterns_path.exists() else pd.DataFrame()
+    )
+    temporal = pd.read_csv(temporal_path) if temporal_path.exists() else pd.DataFrame()
 
     merged = records.merge(
         signals.drop(columns=["file_name", "f_adc", "voltage_basis"], errors="ignore"),
@@ -63,6 +214,12 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
         how="left",
         validate="one_to_one",
     )
+    for column in ("missing_current_group", "missing_voltage_group"):
+        if column in merged:
+            merged[column] = merged[column].map(
+                lambda value: str(value).strip().lower() in {"1", "true", "yes"}
+                if isinstance(value, str) else bool(value)
+            )
     merged["current_rms_physical_pu"] = merged["current_rms"] * 20.0
     current_edges = [-np.inf, 0.01, 0.05, 0.20, 0.50, 1.0, 2.0, np.inf]
     current_labels = ["<0.01", "0.01-0.05", "0.05-0.20", "0.20-0.50", "0.50-1.00", "1.00-2.00", ">=2.00"]
@@ -70,6 +227,88 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
         merged["current_rms_physical_pu"], current_edges, labels=current_labels, right=False
     ).astype("object")
     merged.loc[merged["current_rms_physical_pu"].isna(), "current_bin_physical_pu"] = "missing"
+
+    sampling_profiles = (
+        merged.groupby(["source", "spp", "f_adc"], dropna=False, as_index=False)
+        .agg(
+            records=("record_id", "size"),
+            duration_hours=("duration_sec", lambda value: value.sum() / 3600.0),
+            median_duration_sec=("duration_sec", "median"),
+            median_current_rms_physical_pu=("current_rms_physical_pu", "median"),
+            missing_current_fraction=("missing_current_group", "mean"),
+            missing_voltage_fraction=("missing_voltage_group", "mean"),
+            mean_disagreement_fraction=("disagreement_fraction", "mean"),
+            teacher_mean_coverage=(f"{ALGORITHMS[0]}__coverage_fraction", "mean"),
+            teacher_mean_forward=(f"{ALGORITHMS[0]}__forward_fraction", "mean"),
+            teacher_median_transitions=(f"{ALGORITHMS[0]}__transitions", "median"),
+        )
+    )
+    sampling_profiles["fraction_of_source_records"] = sampling_profiles["records"] / sampling_profiles.groupby(
+        "source"
+    )["records"].transform("sum")
+
+    weighting_rows: list[dict[str, object]] = []
+    weighting_groups = [("all", merged)] + list(merged.groupby("source"))
+    for source, group in weighting_groups:
+        metric_specs: list[tuple[str, str]] = [
+            ("disagreement_fraction", "n_windows"),
+        ]
+        for algorithm in ALGORITHMS:
+            metric_specs.extend([
+                (f"{algorithm}__coverage_fraction", "n_windows"),
+                (f"{algorithm}__forward_fraction", f"{algorithm}__valid_windows"),
+                (f"{algorithm}__transitions_per_second", "duration_sec"),
+            ])
+        for metric, point_weight in metric_specs:
+            values = pd.to_numeric(group[metric], errors="coerce")
+            include = values.notna()
+            if metric.endswith("__forward_fraction"):
+                include &= pd.to_numeric(group[point_weight], errors="coerce").fillna(0) > 0
+            weighting_rows.append({
+                "source": source,
+                "metric": metric,
+                "records_included": int(include.sum()),
+                "record_mean": float(values[include].mean()) if include.any() else np.nan,
+                "duration_weighted_mean": _weighted_mean(values[include], group.loc[include, "duration_sec"]),
+                "point_weighted_mean": _weighted_mean(values[include], group.loc[include, point_weight]),
+                "point_weight": point_weight,
+            })
+    weighting_sensitivity = pd.DataFrame(weighting_rows)
+
+    temporal_profiles = pd.DataFrame()
+    chatter_candidates = pd.DataFrame()
+    if not temporal.empty:
+        temporal_metrics = (
+            "transitions", "state_entropy_bits", "transition_entropy_bits",
+            "lag1_autocorrelation", "median_run_duration_sec",
+            "p05_run_duration_sec", "p95_run_duration_sec",
+            "short_runs_le_20ms", "short_runs_le_100ms",
+            "chatter_returns_le_100ms", "max_switches_in_0_5s",
+            "max_switches_in_1_0s", "first_transition_edge_distance_sec",
+            "last_transition_edge_distance_sec",
+        )
+        temporal_rows: list[dict[str, object]] = []
+        temporal_groups = [("all", temporal)] + list(temporal.groupby("source"))
+        for source, group in temporal_groups:
+            for metric in temporal_metrics:
+                values = pd.to_numeric(group[metric], errors="coerce")
+                row = {
+                    "source": source,
+                    "metric": metric,
+                    "records_included": int(values.notna().sum()),
+                }
+                row.update(_quantiles(values))
+                temporal_rows.append(row)
+        temporal_profiles = pd.DataFrame(temporal_rows)
+        chatter_candidates = temporal.merge(
+            records[["source", "record_id", "file_name", "split", "input_sha256"]],
+            on=["source", "record_id"],
+            how="left",
+            validate="one_to_one",
+        ).sort_values(
+            ["chatter_returns_le_100ms", "max_switches_in_0_5s", "transitions"],
+            ascending=False,
+        )
 
     current_rows: list[dict[str, object]] = []
     for (source, current_bin), group in merged.groupby(
@@ -284,6 +523,11 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
         "persistent_candidates": analysis_dir / "review_persistent_disagreement_candidates.csv",
         "signal_shift": analysis_dir / "review_signal_source_shift.csv",
         "algorithm_bootstrap": analysis_dir / "review_algorithm_record_bootstrap.csv",
+        "sampling_profiles": analysis_dir / "review_sampling_profiles.csv",
+        "weighting_sensitivity": analysis_dir / "review_weighting_sensitivity.csv",
+        "metric_guide": analysis_dir / "STATISTICAL_METRICS_GUIDE.md",
+        "temporal_profiles": analysis_dir / "review_temporal_profiles.csv",
+        "chatter_candidates": analysis_dir / "review_chatter_candidates.csv",
     }
     current_profiles.to_csv(outputs["current_profiles"], index=False)
     split_profiles.to_csv(outputs["split_profiles"], index=False)
@@ -294,6 +538,13 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
     persistent_candidates.to_csv(outputs["persistent_candidates"], index=False)
     signal_shift.to_csv(outputs["signal_shift"], index=False)
     algorithm_bootstrap.to_csv(outputs["algorithm_bootstrap"], index=False)
+    sampling_profiles.to_csv(outputs["sampling_profiles"], index=False)
+    weighting_sensitivity.to_csv(outputs["weighting_sensitivity"], index=False)
+    _write_metric_guide(outputs["metric_guide"])
+    temporal_profiles.to_csv(outputs["temporal_profiles"], index=False)
+    chatter_candidates.to_csv(outputs["chatter_candidates"], index=False)
+    for index, path in enumerate(_build_review_figures(analysis_dir, merged, pointwise, patterns), start=1):
+        outputs[f"figure_{index}"] = path
     return outputs
 
 
