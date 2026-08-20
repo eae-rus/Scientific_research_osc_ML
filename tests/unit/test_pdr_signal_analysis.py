@@ -67,3 +67,16 @@ def test_line_basis_without_two_voltage_channels_is_insufficient():
 
     assert res.can_run_phase_pdr is False
     assert res.can_run_pos_seq_pdr is False
+
+
+def test_empty_numeric_channel_overrides_formal_measured_provenance():
+    signals = np.zeros((8, 16), dtype=np.float32)
+    signals[CHANNEL_ORDER.index("IB")] = np.nan
+    signals[CHANNEL_ORDER.index("UA")] = np.nan
+    provenance = np.full(8, int(ChannelProvenance.MEASURED), dtype=np.uint8)
+
+    _, prepared = derive_missing_currents(signals, provenance)
+
+    assert prepared[CHANNEL_ORDER.index("IB")] == int(ChannelProvenance.DERIVED)
+    assert prepared[CHANNEL_ORDER.index("UA")] == int(ChannelProvenance.MISSING)
+    assert np.count_nonzero(prepared[:3] != int(ChannelProvenance.MISSING)) == 3

@@ -6,19 +6,24 @@
 
 | Блок | Статус | Реализованные результаты |
 |---|---|---|
-| A. Качество/наблюдаемость | частично | signal audit, наличие групп I/U, RMS, разбаланс фаз, crest, provenance, coverage/UNLABELED; расширенный THD/clipping ещё не сделан |
-| B. Описательная статистика | частично | record-level квантили, профили токов, источников, split и SPP; добавлено сравнение record/duration/point weighting |
+| A. Качество/наблюдаемость | существенно реализован | signal audit, фактическая маска 2I+2U поверх provenance, RMS, разбаланс фаз, crest, coverage/UNLABELED; THD/clipping/разрывы ещё не сделаны |
+| B. Описательная статистика | существенно реализован | record-level квантили, профили токов, источников, split и source×f_network×SPP×f_adc; record/duration/point weighting и data dictionary |
 | C. Временная структура | существенно расширен для v4 | переходы, частота и short-run уже были; добавлены серии, entropy, lag-1, локальная switch density, положение переходов и chatter адаптивного teacher |
 | D. Согласие РНМ | существенно реализован | 00/01/10/11, agreement, kappa, MCC; добавлены balanced agreement, Jaccard, prevalence и комбинации пяти органов |
-| E. Dataset shift | частично | KS, Cliff's delta, Wasserstein, robust/winsorized effect sizes; classifier two-sample/MMD ещё не сделаны |
-| F. Кластеры/аномалии | базовый вариант | robust scaling + KMeans, silhouette и профили; PCA/HDBSCAN/anomaly/stability остаются отдельным этапом после проверки v4 |
-| G. Сложные случаи | частично | все record metrics сохраняются, картинки выбираются квотами по стратам и farthest-point diversity; физическая пригодность/редкость будет усилена после v4 |
-| H. Чувствительность | частично | phase/line синтетические проверки, RMS/peak, анализ с/без точных дублей, record bootstrap; sweep уставок и FDR ещё не сделаны |
+| E. Dataset shift | существенно реализован | KS, Cliff's delta, Wasserstein, raw/log robust effects и classifier two-sample с calibration/коэффициентами; MMD/energy ещё не сделаны |
+| F. Кластеры/аномалии | существенно расширен | PCA/loadings, KMeans k=2…12, пять seed, silhouette/DB/CH/ARI, профили и Isolation Forest; HDBSCAN/LOF/bootstrap остаются |
+| G. Сложные случаи | существенно расширен | все record metrics, farthest-point diversity, отдельные extreme/moderate/local chatter-страты и anomaly catalog; COMTRADE/ручной эталон остаются |
+| H. Чувствительность | частично | phase/line, RMS/peak, дубли, record bootstrap, три weighting и Spearman с BH-FDR; sweep уставок/MTA ещё не сделан |
 | Ручная проверка | частично | короткие PNG/CSV и полный каталог кандидатов; полный COMTRADE-экспорт проектируется отдельно |
 
 Основные сценарии: `analyze_pdr_dataset_study.py` формирует первичный аудит и
 точные shard-level таблицы, `review_pdr_analysis_results.py` — производные
 научные профили, пояснение метрик и публикационные графики.
+
+Подробный результат фактического v4-прогона зафиксирован в
+`PHASE_5_PDR_V4_REVIEW.md`. Для научных выводов основной популяцией теперь
+является `pdr_eligible_2i2u`; все входные записи сохраняются отдельным паспортом
+качества. Legacy-кластеры, рассчитанные до этой фильтрации, не используются.
 
 **Назначение:** отделить проверку корректности автоматической разметки от
 научного описания датасетов и от последующей оценки обучаемых моделей.
@@ -343,12 +348,12 @@ margins и вертикальные линии переходов. Число и
 
 ## 13. Рекомендуемый порядок внедрения после согласования
 
-1. Завершить и проверить исправленную разметку.
-2. Зафиксировать data dictionary всех полей и единиц.
-3. Расширить таблицу признаков осциллограмм и событий.
-4. Реализовать описательную и временную статистику.
-5. Реализовать agreement/sensitivity/source-shift.
-6. Добавить устойчивую кластеризацию и anomaly detection.
+1. **Выполнено для v4:** завершить и проверить исправленную разметку.
+2. **Выполнено для record-level:** зафиксировать data dictionary полей и единиц.
+3. **Частично:** расширить таблицу признаков осциллограмм; event/sequence/THD ещё нужны.
+4. **Существенно выполнено:** описательная и временная статистика teacher.
+5. **Частично:** agreement/source-shift реализованы; sensitivity sweep остаётся.
+6. **Базовый воспроизводимый уровень выполнен:** PCA, устойчивость KMeans и Isolation Forest; HDBSCAN/LOF остаются.
 7. Сделать стратифицированный экспорт изображений и CSV для ручной разметки.
 8. После ручной проверки повторить статистику отдельно для подтверждённых и
    спорных случаев.

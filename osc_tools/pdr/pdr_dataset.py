@@ -29,7 +29,7 @@ from osc_tools.ml.phase5_contracts import (
 from osc_tools.ml.phase5_sources import DatasetSource
 from osc_tools.ml.spectral_features import SpectralFeatureBuilder, SpectralFeatureConfig
 from .base import PDRDirection
-from .signal_analysis import derive_missing_currents
+from .signal_analysis import check_pdr_signal_sufficiency, derive_missing_currents
 from .study import PDRStudyLabelStore
 
 
@@ -47,6 +47,7 @@ class PDRTaskDataset(Dataset):
         include_warmup: bool = False,
         teacher_algorithm_id: Optional[str] = None,
         include_unlabeled_for_applicability: bool = True,
+        exclude_structurally_insufficient: bool = True,
     ) -> None:
         if not HAS_TORCH:
             raise RuntimeError("PyTorch не установлен в текущем окружении.")
@@ -59,6 +60,7 @@ class PDRTaskDataset(Dataset):
         self.feature_version = feature_version
         self.include_warmup = include_warmup
         self.include_unlabeled_for_applicability = include_unlabeled_for_applicability
+        self.exclude_structurally_insufficient = exclude_structurally_insufficient
 
         # Legacy single-NPZ остаётся совместимым; новый массовый формат читается
         # лениво по shards и не загружает сотни миллионов меток в RAM.
@@ -90,6 +92,19 @@ class PDRTaskDataset(Dataset):
             record_labels = self._record_labels(rec_idx)
             if record_labels is None:
                 continue
+            # Недостаток исходных каналов (<2I либо <2U) означает, что РНМ
+            # невозможно рассчитать вообще. Такие записи не являются
+            # отрицательными примерами головы применимости и не индексируются.
+            if self.exclude_structurally_insufficient:
+                if self.label_store is not None and not self.label_store.is_structurally_eligible(rec_idx):
+                    continue
+                provenance = np.asarray(
+                    record_labels.get("provenance", self.source.get_provenance(rec_idx))
+                )
+                voltage_basis = str(self.source.get_metadata(rec_idx).get("voltage_basis", "phase"))
+                sufficiency = check_pdr_signal_sufficiency(provenance, voltage_basis)
+                if not sufficiency.can_run_phase_pdr:
+                    continue
             dirs = record_labels["directions"]
             warmup = record_labels["warmup"]
             sample_indices = record_labels["samples"]
@@ -223,4 +238,7 @@ class PDRTaskDataset(Dataset):
             ),
             "warmup": self.labels_dict[f"{prefix}_warmup"],
             "samples": self.labels_dict[f"{prefix}_samples"],
+            "provenance": self.labels_dict.get(
+                f"{prefix}_prov", self.source.get_provenance(rec_idx)
+            ),
         }

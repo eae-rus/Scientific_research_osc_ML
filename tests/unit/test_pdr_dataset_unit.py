@@ -140,3 +140,33 @@ def test_dataset_reads_new_sharded_teacher_format(tmp_path: Path) -> None:
     assert sample["target_applicable"].item() is True
     assert sample["pdr_margin"].item() == pytest.approx(0.75)
     assert sample["pdr_confidence"].item() == pytest.approx(0.625)
+
+
+def test_dataset_excludes_record_with_fewer_than_two_currents(tmp_path: Path) -> None:
+    spp = 24
+    signal = np.zeros((8, 20 * spp), dtype=np.float32)
+    labels = tmp_path / "labels.npz"
+    provenance = np.asarray([
+        ChannelProvenance.MEASURED,
+        ChannelProvenance.MISSING,
+        ChannelProvenance.MISSING,
+        ChannelProvenance.MISSING,
+        ChannelProvenance.MEASURED,
+        ChannelProvenance.MEASURED,
+        ChannelProvenance.MEASURED,
+        ChannelProvenance.MISSING,
+    ], dtype=np.uint8)
+    np.savez_compressed(
+        labels,
+        rec_0_dir=np.asarray([-999], dtype=np.int16),
+        rec_0_margin=np.asarray([0.0], dtype=np.float32),
+        rec_0_warmup=np.asarray([False]),
+        rec_0_samples=np.asarray([20 * spp - 1], dtype=np.int32),
+        rec_0_prov=provenance,
+    )
+
+    source = _SingleRecordSource(signal, spp)
+    source.get_provenance = lambda idx: provenance.copy()  # type: ignore[method-assign]
+    dataset = PDRTaskDataset(source, [0], labels, TimebaseContract.create(spp * 50, 50))
+
+    assert len(dataset) == 0

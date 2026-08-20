@@ -372,6 +372,13 @@ class PDRStudyLabelStore:
                 int(record_id)
                 for record_id in correction.get("algorithm_record_masks", {}).get(selected, ())
             }
+        structural_path = path.parent / "STRUCTURALLY_INELIGIBLE_RECORDS.json"
+        self._structurally_ineligible_record_ids: set[int] = set()
+        if structural_path.exists():
+            structural = json.loads(structural_path.read_text(encoding="utf-8"))
+            self._structurally_ineligible_record_ids = {
+                int(record_id) for record_id in structural.get("record_ids", ())
+            }
         self._record_map: dict[int, tuple[Path, int]] = {}
         for shard in self.manifest["shards"]:
             shard_path = path.parent / str(shard["file"])
@@ -382,6 +389,9 @@ class PDRStudyLabelStore:
 
     def has_record(self, record_id: int) -> bool:
         return int(record_id) in self._record_map
+
+    def is_structurally_eligible(self, record_id: int) -> bool:
+        return int(record_id) not in self._structurally_ineligible_record_ids
 
     def get_record(self, record_id: int) -> dict[str, np.ndarray]:
         shard_path, local_index = self._record_map[int(record_id)]
@@ -417,6 +427,7 @@ class PDRStudyLabelStore:
             "confidences": confidences,
             "warmup": warmup,
             "samples": np.asarray(shard["samples"][start:stop]),
+            "provenance": np.asarray(shard["provenance"][local_index]),
         }
 
     def close(self) -> None:

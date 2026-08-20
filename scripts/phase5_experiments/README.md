@@ -7,13 +7,15 @@
 
 1. `run_pdr_dataset_study.py` — единственный длительный прогон пяти РНМ,
    shards, resume, progress/rate/ETA. Снача `SMOKE=True`, затем `False`.
-2. `analyze_pdr_dataset_study.py` — основная статистика, signals, exact
-   agreement, кластеры и PNG/CSV-диагностика. Обычно `MODE="all"`.
-3. `review_pdr_analysis_results.py` — компактный воспроизводимый научный
+2. `analyze_pdr_dataset_study.py` — основная статистика, фактическая маска
+   пригодности 2I+2U, signals, exact agreement, кластеры и PNG/CSV-диагностика.
+   Обычно `MODE="all"`; отдельный быстрый повтор маски — `MODE="eligibility"`.
+3. `review_pdr_analysis_results.py` — воспроизводимый научный
    слой над готовыми CSV: current-bin/split/source profiles, bootstrap,
    duplicate sensitivity, source×SPP, сравнение record/time/point weighting,
-   пояснение метрик, ECDF/heatmap/state-pattern figures и кандидаты устойчивых
-   расхождений.
+   пояснение метрик, ECDF/heatmap/state-pattern figures, PCA, устойчивость
+   KMeans, source-classifier, Isolation Forest, FDR-корреляции и кандидаты
+   устойчивых расхождений. На полном v4 занимает около минуты.
 
 `review_pdr_analysis_results.py` не временный: он нужен для повтора
 одинаковых научных таблиц после каждой версии разметки. Одноразовый

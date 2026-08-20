@@ -30,6 +30,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from osc_tools.ml.phase5_contracts import CHANNEL_ORDER
 from osc_tools.ml.phase5_sources import FrenchRTESource, OpenEEShardedSource
 from osc_tools.pdr.base import PDRDirection
+from osc_tools.pdr.signal_analysis import check_pdr_signal_sufficiency
 from scripts.phase5_experiments.progress import ProgressReporter
 
 
@@ -103,7 +104,19 @@ class StudyArchive:
             "margins": margins,
             "confidences": confidences,
             "warmup": warmup,
+            "provenance": self._cached["provenance"][local_index],
         }
+
+    def get_provenance(self, record_id: int) -> np.ndarray:
+        """Прочитать только компактный provenance, не копируя временные метки."""
+
+        path, local_index = self.record_map[int(record_id)]
+        if path != self._cached_path:
+            with np.load(path, allow_pickle=False) as archive:
+                self._cached = {name: archive[name] for name in archive.files}
+            self._cached_path = path
+        assert self._cached is not None
+        return np.asarray(self._cached["provenance"][local_index], dtype=np.uint8)
 
 
 def _load_record_masks(source_root: Path) -> dict[str, set[int]]:
@@ -299,7 +312,23 @@ def build_summary(
 ) -> list[dict[str, Any]]:
     output_dir.mkdir(parents=True, exist_ok=True)
     records = load_records(label_dir, sources)
-    assignments = cluster_records(records, output_dir) if enable_clusters else {}
+    eligibility_path = output_dir / "record_signal_eligibility.csv"
+    eligible_keys: set[tuple[str, int]] | None = None
+    if eligibility_path.exists():
+        with eligibility_path.open("r", encoding="utf-8-sig", newline="") as stream:
+            eligible_keys = {
+                (str(row["source"]), int(row["record_id"]))
+                for row in csv.DictReader(stream)
+                if _as_bool(row["pdr_structurally_eligible"])
+            }
+    analysis_records = (
+        [
+            record for record in records
+            if (str(record["source"]), int(record["record_id"])) in eligible_keys
+        ]
+        if eligible_keys is not None else records
+    )
+    assignments = cluster_records(analysis_records, output_dir) if enable_clusters else {}
     flat = [
         flatten_record(record, assignments.get((str(record["source"]), int(record["record_id"]))))
         for record in records
@@ -309,8 +338,8 @@ def build_summary(
     transition_rows: list[dict[str, Any]] = []
     algorithm_rows: list[dict[str, Any]] = []
     dataset_rows: list[dict[str, Any]] = []
-    analysis_groups = [("all", records)] + [
-        (source, [record for record in records if record["source"] == source])
+    analysis_groups = [("all", analysis_records)] + [
+        (source, [record for record in analysis_records if record["source"] == source])
         for source in sources
     ]
     for source, subset in analysis_groups:
@@ -350,13 +379,14 @@ def build_summary(
     _write_csv(output_dir / "transition_groups.csv", transition_rows)
     _write_csv(output_dir / "algorithm_record_distributions.csv", algorithm_rows)
     _write_duplicates(records, output_dir)
-    _write_source_shift(records, sources, output_dir)
-    candidates = select_candidates(records, plots_per_group)
+    _write_source_shift(analysis_records, sources, output_dir)
+    candidates = select_candidates(analysis_records, plots_per_group)
     _write_csv(output_dir / "plot_candidates.csv", candidates)
-    _plot_overview(records, sources, output_dir / "figures")
+    _plot_overview(analysis_records, sources, output_dir / "figures")
     _write_report(dataset_rows, transition_rows, output_dir)
     _atomic_json(output_dir / "summary.json", {
         "records": len(records),
+        "pdr_eligible_records": len(analysis_records),
         "sources": list(sources),
         "label_dir": str(label_dir),
         "clusters_enabled": enable_clusters,
@@ -381,6 +411,7 @@ def _dataset_summary(source: str, records: Sequence[dict[str, Any]]) -> dict[str
     hashes = Counter(str(record["input_sha256"]) for record in records)
     duplicate_records = sum(count for count in hashes.values() if count > 1)
     return {
+        "population": "pdr_eligible_2i2u",
         "source": source,
         "records": len(records),
         "windows": sum(int(record["n_windows"]) for record in records),
@@ -950,6 +981,86 @@ def scan_signal_statistics(
     _write_csv(output_dir / "signal_summary.csv", summary_rows)
 
 
+def scan_structural_eligibility(
+    label_dir: Path,
+    output_dir: Path,
+    sources: Sequence[str],
+) -> None:
+    """Отделить невозможность расчёта записи от временного UNLABELED.
+
+    Provenance хранится по восемь байт на запись. Если уже выполнен signal
+    audit, дополнительно учитываются группы, в которых фактически нет ни
+    одного конечного значения несмотря на формальный provenance.
+    """
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    rows: list[dict[str, Any]] = []
+    signal_quality: dict[tuple[str, int], tuple[bool, bool]] = {}
+    signal_path = output_dir / "signal_record_statistics.csv"
+    if signal_path.exists():
+        with signal_path.open("r", encoding="utf-8-sig", newline="") as stream:
+            for row in csv.DictReader(stream):
+                signal_quality[(str(row["source"]), int(row["record_id"]))] = (
+                    _as_bool(row["missing_current_group"]),
+                    _as_bool(row["missing_voltage_group"]),
+                )
+    channel_groups = {
+        "current": ("IA", "IB", "IC"),
+        "voltage": ("UA", "UB", "UC"),
+    }
+    for source in sources:
+        archive = StudyArchive(label_dir / source)
+        reporter = ProgressReporter(f"Eligibility {source}", len(archive.record_map), unit="зап.")
+        for processed, record_id in enumerate(sorted(archive.record_map), start=1):
+            provenance = archive.get_provenance(record_id)
+            counts = {
+                name: sum(
+                    int(provenance[CHANNEL_ORDER.index(channel)]) != 0
+                    for channel in channels
+                )
+                for name, channels in channel_groups.items()
+            }
+            audit = check_pdr_signal_sufficiency(provenance)
+            missing_current_group, missing_voltage_group = signal_quality.get(
+                (source, record_id), (False, False)
+            )
+            structurally_eligible = bool(
+                audit.can_run_phase_pdr
+                and not missing_current_group
+                and not missing_voltage_group
+            )
+            if missing_current_group:
+                counts["current"] = 0
+            if missing_voltage_group:
+                counts["voltage"] = 0
+            rows.append({
+                "source": source,
+                "record_id": record_id,
+                "available_current_channels": counts["current"],
+                "available_voltage_channels": counts["voltage"],
+                "pdr_structurally_eligible": structurally_eligible,
+                "missing_finite_current_group": missing_current_group,
+                "missing_finite_voltage_group": missing_voltage_group,
+                "missing_channels": "|".join(audit.missing_channels),
+                "derived_channels": "|".join(audit.derived_channels),
+            })
+            reporter.update(processed)
+        reporter.finish()
+        ineligible = [
+            int(row["record_id"])
+            for row in rows
+            if row["source"] == source and not row["pdr_structurally_eligible"]
+        ]
+        _atomic_json(label_dir / source / "STRUCTURALLY_INELIGIBLE_RECORDS.json", {
+            "schema_version": 1,
+            "policy": "exclude_record_if_fewer_than_2I_or_2U_are_available",
+            "source": source,
+            "record_ids": ineligible,
+            "record_count": len(ineligible),
+            "evidence": "stored provenance plus signal_record_statistics finite-group audit",
+        })
+    _write_csv(output_dir / "record_signal_eligibility.csv", rows)
+
 def _channel_rms(values: np.ndarray) -> np.ndarray:
     finite = np.isfinite(values)
     counts = finite.sum(axis=1)
@@ -1501,13 +1612,6 @@ def run_analysis(
     low_current_rms_threshold: float = DEFAULT_LOW_CURRENT_RMS_THRESHOLD,
     forced_cases: Sequence[tuple[str, int]] = (),
 ) -> None:
-    if mode in {"summary", "all"}:
-        build_summary(label_dir, output_dir, sources, enable_clusters=enable_clusters,
-                      plots_per_group=plots_per_group)
-    if mode in {"agreement", "all"}:
-        scan_exact_agreement(label_dir, output_dir, sources)
-    if mode in {"summary", "agreement", "plots", "all"}:
-        _append_forced_candidates(output_dir, forced_cases)
     if mode in {"signals", "all"}:
         scan_signal_statistics(
             label_dir,
@@ -1515,6 +1619,15 @@ def run_analysis(
             sources,
             low_current_rms_threshold=low_current_rms_threshold,
         )
+    if mode in {"eligibility", "all"}:
+        scan_structural_eligibility(label_dir, output_dir, sources)
+    if mode in {"summary", "all"}:
+        build_summary(label_dir, output_dir, sources, enable_clusters=enable_clusters,
+                      plots_per_group=plots_per_group)
+    if mode in {"agreement", "all"}:
+        scan_exact_agreement(label_dir, output_dir, sources)
+    if mode in {"summary", "agreement", "plots", "all"}:
+        _append_forced_candidates(output_dir, forced_cases)
     if mode in {"plots", "all"}:
         build_diagnostic_plots(label_dir, output_dir, sources,
                                window_seconds=window_seconds, export_csv=export_csv)
@@ -1523,7 +1636,7 @@ def run_analysis(
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--mode", choices=("summary", "signals", "agreement", "plots", "all"), default="summary"
+        "--mode", choices=("summary", "eligibility", "signals", "agreement", "plots", "all"), default="summary"
     )
     parser.add_argument("--label-dir", type=Path, default=DEFAULT_LABEL_DIR)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
@@ -1572,7 +1685,7 @@ def main() -> int:
 
 def run_manual() -> None:
     # MODE="all": summary -> agreement/temporal/patterns -> signals -> plots.
-    MODE = "all"               # summary | plots | agreement | all
+    MODE = "all"               # summary | eligibility | signals | agreement | plots | all
     LABEL_DIR = DEFAULT_LABEL_DIR
     OUTPUT_DIR = DEFAULT_OUTPUT_DIR
     SOURCES = DEFAULT_SOURCES

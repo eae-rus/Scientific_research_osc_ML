@@ -44,6 +44,14 @@ def derive_missing_currents(
     signals = np.copy(signals)
     provenance = np.copy(provenance)
 
+    # Наличие имени/колонки в исходном файле не делает канал измеренным, если
+    # во всей записи нет ни одного конечного значения. Это важно и для токов,
+    # и для напряжений: иначе структурно пустая запись превращается в ложный
+    # отрицательный пример головы применимости.
+    for channel_index in range(min(len(provenance), signals.shape[0])):
+        if not np.isfinite(signals[channel_index]).any():
+            provenance[channel_index] = int(ChannelProvenance.MISSING)
+
     idx_ia = CHANNEL_ORDER.index("IA")
     idx_ib = CHANNEL_ORDER.index("IB")
     idx_ic = CHANNEL_ORDER.index("IC")

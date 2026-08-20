@@ -36,6 +36,26 @@ SIGNAL_METRICS = (
     "mean_three_phase_power_proxy",
 )
 
+MULTIVARIATE_FEATURES = (
+    "duration_sec", "f_network", "spp", "f_adc",
+    "current_rms_physical_pu", "voltage_rms", "current_to_voltage_rms",
+    "current_phase_unbalance_cv", "voltage_phase_unbalance_cv",
+    "current_rms_last_over_first", "current_crest_p99_over_rms",
+    "disagreement_fraction", "localized_disagreement",
+    "adaptive_pdr_mir__coverage_fraction", "adaptive_pdr_mir__forward_fraction",
+    "adaptive_pdr_mir__transitions_per_second",
+    "phase_pdr_basic__forward_fraction", "pos_seq_pdr_basic__forward_fraction",
+    "phase_power_pdr_basic__forward_fraction",
+    "pos_seq_power_pdr_basic__forward_fraction",
+)
+
+SOURCE_SHIFT_FEATURES = (
+    "duration_sec", "current_rms_physical_pu", "voltage_rms",
+    "current_to_voltage_rms", "current_phase_unbalance_cv",
+    "voltage_phase_unbalance_cv", "current_rms_last_over_first",
+    "current_crest_p99_over_rms",
+)
+
 
 def _quantiles(values: pd.Series) -> dict[str, float]:
     clean = pd.to_numeric(values, errors="coerce").dropna()
@@ -192,6 +212,362 @@ def _build_review_figures(
     return outputs
 
 
+def _bh_adjust(pvalues: np.ndarray) -> np.ndarray:
+    """Benjamini–Hochberg FDR внутри одной заранее заданной семьи тестов."""
+
+    values = np.asarray(pvalues, dtype=np.float64)
+    result = np.full_like(values, np.nan)
+    finite_mask = np.isfinite(values)
+    finite_values = values[finite_mask]
+    if not finite_values.size:
+        return result
+    order = np.argsort(finite_values)
+    ranked = finite_values[order]
+    adjusted = np.minimum.accumulate(
+        (ranked * len(ranked) / np.arange(1, len(ranked) + 1))[::-1]
+    )[::-1]
+    finite_result = np.empty_like(adjusted)
+    finite_result[order] = np.minimum(adjusted, 1.0)
+    result[finite_mask] = finite_result
+    return result
+
+
+def _research_matrix(frame: pd.DataFrame, columns: tuple[str, ...]):
+    """Median-impute + robust-scale с логарифмом положительных heavy-tail полей."""
+
+    from sklearn.impute import SimpleImputer
+    from sklearn.preprocessing import RobustScaler
+
+    raw = frame.loc[:, columns].apply(pd.to_numeric, errors="coerce").copy()
+    log_columns = {
+        "duration_sec", "spp", "f_adc", "current_rms_physical_pu", "voltage_rms",
+        "current_to_voltage_rms", "current_phase_unbalance_cv",
+        "voltage_phase_unbalance_cv", "current_rms_last_over_first",
+        "current_crest_p99_over_rms", "adaptive_pdr_mir__transitions_per_second",
+    }
+    for column in columns:
+        if column in log_columns:
+            raw[column] = np.log10(np.clip(raw[column], 0.0, None) + 1e-6)
+    imputer = SimpleImputer(strategy="median")
+    scaler = RobustScaler(quantile_range=(10.0, 90.0))
+    return scaler.fit_transform(imputer.fit_transform(raw)), raw
+
+
+def _build_multivariate_research(
+    analysis_dir: Path,
+    eligible: pd.DataFrame,
+    temporal: pd.DataFrame,
+) -> dict[str, Path]:
+    """Продолжение слоёв E/F/H: shift, PCA, устойчивость и аномалии."""
+
+    from itertools import combinations
+    from scipy.stats import spearmanr
+    from sklearn.calibration import calibration_curve
+    from sklearn.cluster import KMeans
+    from sklearn.decomposition import PCA
+    from sklearn.ensemble import IsolationForest
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.metrics import (
+        adjusted_rand_score, balanced_accuracy_score, brier_score_loss,
+        calinski_harabasz_score, davies_bouldin_score, log_loss,
+        roc_auc_score, silhouette_score,
+    )
+    from sklearn.model_selection import StratifiedKFold
+
+    outputs: dict[str, Path] = {}
+    feature_columns = tuple(column for column in MULTIVARIATE_FEATURES if column in eligible)
+    matrix, _ = _research_matrix(eligible, feature_columns)
+
+    # PCA — воспроизводимый линейный baseline, а не доказательство кластеров.
+    pca = PCA(n_components=min(10, matrix.shape[1]), random_state=20260820)
+    coordinates = pca.fit_transform(matrix)
+    coordinate_rows = eligible[["source", "record_id", "input_sha256"]].copy()
+    for index in range(coordinates.shape[1]):
+        coordinate_rows[f"PC{index + 1}"] = coordinates[:, index]
+    coordinate_rows["pdr_structurally_eligible"] = True
+    pca_path = analysis_dir / "research_pca_coordinates.csv"
+    coordinate_rows.to_csv(pca_path, index=False)
+    outputs["pca_coordinates"] = pca_path
+    variance_path = analysis_dir / "research_pca_explained_variance.csv"
+    pd.DataFrame({
+        "component": np.arange(1, len(pca.explained_variance_ratio_) + 1),
+        "explained_variance_ratio": pca.explained_variance_ratio_,
+        "cumulative_explained_variance": np.cumsum(pca.explained_variance_ratio_),
+    }).to_csv(variance_path, index=False)
+    outputs["pca_variance"] = variance_path
+
+    loading_path = analysis_dir / "research_pca_loadings.csv"
+    pd.DataFrame(
+        pca.components_,
+        columns=feature_columns,
+        index=[f"PC{index + 1}" for index in range(pca.components_.shape[0])],
+    ).rename_axis("component").reset_index().to_csv(loading_path, index=False)
+    outputs["pca_loadings"] = loading_path
+
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    rng = np.random.default_rng(20260820)
+    sample_indices = rng.choice(len(eligible), size=min(12000, len(eligible)), replace=False)
+    figure, axis = plt.subplots(figsize=(8, 6))
+    for source in sorted(eligible["source"].unique()):
+        mask = eligible.iloc[sample_indices]["source"].to_numpy() == source
+        axis.scatter(coordinates[sample_indices[mask], 0], coordinates[sample_indices[mask], 1],
+                     s=5, alpha=0.28, label=source, rasterized=True)
+    axis.set_xlabel(f"PC1 ({100*pca.explained_variance_ratio_[0]:.1f}%)")
+    axis.set_ylabel(f"PC2 ({100*pca.explained_variance_ratio_[1]:.1f}%)")
+    axis.set_title("PCA применимых PDR-записей (robust-scaled record features)")
+    axis.grid(alpha=0.2)
+    axis.legend()
+    figure.tight_layout()
+    pca_figure = analysis_dir / "review_figures" / "research_pca_sources.png"
+    pca_figure.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(pca_figure, dpi=180)
+    plt.close(figure)
+    outputs["pca_figure"] = pca_figure
+
+    # Устойчивость KMeans проверяется отдельно внутри источников.
+    diagnostics: list[dict[str, object]] = []
+    assignments: list[pd.DataFrame] = []
+    profiles: list[dict[str, object]] = []
+    for source, source_frame in eligible.groupby("source"):
+        source_matrix, _ = _research_matrix(source_frame, feature_columns)
+        evaluation_indices = rng.choice(
+            len(source_frame), size=min(5000, len(source_frame)), replace=False
+        )
+        source_results: list[dict[str, object]] = []
+        labels_by_k: dict[int, list[np.ndarray]] = {}
+        for k in range(2, 13):
+            seed_labels = []
+            seed_silhouettes = []
+            for seed in range(5):
+                labels = KMeans(n_clusters=k, n_init=1, random_state=20260820 + seed).fit_predict(
+                    source_matrix
+                )
+                seed_labels.append(labels)
+                seed_silhouettes.append(silhouette_score(
+                    source_matrix[evaluation_indices], labels[evaluation_indices]
+                ))
+            ari_values = [
+                adjusted_rand_score(seed_labels[left], seed_labels[right])
+                for left, right in combinations(range(len(seed_labels)), 2)
+            ]
+            row = {
+                "source": source,
+                "k": k,
+                "silhouette_mean": float(np.mean(seed_silhouettes)),
+                "silhouette_std": float(np.std(seed_silhouettes)),
+                "seed_stability_ari_mean": float(np.mean(ari_values)),
+                "seed_stability_ari_min": float(np.min(ari_values)),
+                "davies_bouldin": float(davies_bouldin_score(source_matrix, seed_labels[0])),
+                "calinski_harabasz": float(calinski_harabasz_score(source_matrix, seed_labels[0])),
+            }
+            diagnostics.append(row)
+            source_results.append(row)
+            labels_by_k[k] = seed_labels
+        stable = [row for row in source_results if row["seed_stability_ari_mean"] >= 0.80]
+        selected = max(stable or source_results, key=lambda row: row["silhouette_mean"])
+        selected_k = int(selected["k"])
+        selected_labels = labels_by_k[selected_k][0]
+        assignment = source_frame[["source", "record_id", "input_sha256"]].copy()
+        assignment["selected_k"] = selected_k
+        assignment["cluster"] = selected_labels
+        assignments.append(assignment)
+        for cluster in range(selected_k):
+            mask = selected_labels == cluster
+            row = {
+                "source": source,
+                "selected_k": selected_k,
+                "cluster": cluster,
+                "records": int(mask.sum()),
+                "fraction": float(mask.mean()),
+                "silhouette_mean": selected["silhouette_mean"],
+                "seed_stability_ari_mean": selected["seed_stability_ari_mean"],
+            }
+            for column in feature_columns:
+                row[f"median__{column}"] = pd.to_numeric(
+                    source_frame.loc[mask, column], errors="coerce"
+                ).median()
+            profiles.append(row)
+    cluster_diagnostics_path = analysis_dir / "research_cluster_stability.csv"
+    pd.DataFrame(diagnostics).to_csv(cluster_diagnostics_path, index=False)
+    outputs["cluster_stability"] = cluster_diagnostics_path
+    cluster_assignment_path = analysis_dir / "research_cluster_assignments.csv"
+    pd.concat(assignments, ignore_index=True).to_csv(cluster_assignment_path, index=False)
+    outputs["cluster_assignments"] = cluster_assignment_path
+    cluster_profile_path = analysis_dir / "research_stable_cluster_profiles.csv"
+    pd.DataFrame(profiles).to_csv(cluster_profile_path, index=False)
+    outputs["cluster_profiles"] = cluster_profile_path
+
+    # Isolation Forest — только рейтинг кандидатов, не физический класс.
+    anomaly_rows: list[pd.DataFrame] = []
+    for source, source_frame in eligible.groupby("source"):
+        source_matrix, _ = _research_matrix(source_frame, feature_columns)
+        model = IsolationForest(
+            n_estimators=200, max_samples=min(4096, len(source_frame)),
+            contamination="auto", random_state=20260820, n_jobs=-1,
+        ).fit(source_matrix)
+        result = source_frame[[
+            "source", "record_id", "file_name", "input_sha256", "split",
+            "current_rms_physical_pu", "voltage_rms", "disagreement_fraction",
+            "total_transitions",
+        ]].copy()
+        result["anomaly_score"] = -model.score_samples(source_matrix)
+        result = result.sort_values("anomaly_score", ascending=False)
+        result["anomaly_rank_within_source"] = np.arange(1, len(result) + 1)
+        anomaly_rows.append(result)
+    anomaly_path = analysis_dir / "research_anomaly_candidates.csv"
+    pd.concat(anomaly_rows, ignore_index=True).to_csv(anomaly_path, index=False)
+    outputs["anomaly_candidates"] = anomaly_path
+
+    # Classifier two-sample test: насколько источник восстанавливается из
+    # инженерных признаков. Считаем на уникальных hashes, чтобы не учить копии.
+    source_frame = eligible.sort_values(["source", "record_id"]).drop_duplicates(
+        "input_sha256", keep="first"
+    )
+    classifier_rows: list[dict[str, object]] = []
+    calibration_rows: list[dict[str, object]] = []
+    importance_rows: list[dict[str, object]] = []
+    for feature_set, columns in (
+        ("physical_only", SOURCE_SHIFT_FEATURES),
+        ("physical_plus_acquisition", SOURCE_SHIFT_FEATURES + ("f_network", "spp", "f_adc")),
+    ):
+        columns = tuple(column for column in columns if column in source_frame)
+        x, _ = _research_matrix(source_frame, columns)
+        y = (source_frame["source"].to_numpy() == "french_rte").astype(np.int8)
+        predicted = np.zeros(len(y), dtype=np.float64)
+        coefficient_rows = []
+        splitter = StratifiedKFold(n_splits=5, shuffle=True, random_state=20260820)
+        for fold, (train, test) in enumerate(splitter.split(x, y), start=1):
+            model = LogisticRegression(
+                max_iter=2000, class_weight="balanced", random_state=20260820 + fold
+            ).fit(x[train], y[train])
+            predicted[test] = model.predict_proba(x[test])[:, 1]
+            coefficient_rows.append(model.coef_[0])
+        classifier_rows.append({
+            "feature_set": feature_set,
+            "unique_input_hashes": len(y),
+            "french_fraction": float(y.mean()),
+            "roc_auc": float(roc_auc_score(y, predicted)),
+            "balanced_accuracy_at_0_5": float(balanced_accuracy_score(y, predicted >= 0.5)),
+            "log_loss": float(log_loss(y, predicted)),
+            "brier_score": float(brier_score_loss(y, predicted)),
+        })
+        prob_true, prob_pred = calibration_curve(y, predicted, n_bins=10, strategy="quantile")
+        for bin_index, (observed, predicted_mean) in enumerate(zip(prob_true, prob_pred), start=1):
+            calibration_rows.append({
+                "feature_set": feature_set, "quantile_bin": bin_index,
+                "mean_predicted_french_probability": predicted_mean,
+                "observed_french_fraction": observed,
+            })
+        coefficients = np.asarray(coefficient_rows)
+        for column_index, column in enumerate(columns):
+            importance_rows.append({
+                "feature_set": feature_set,
+                "feature": column,
+                "mean_standardized_logit_coefficient": float(coefficients[:, column_index].mean()),
+                "mean_abs_standardized_logit_coefficient": float(
+                    np.abs(coefficients[:, column_index]).mean()
+                ),
+                "fold_std": float(coefficients[:, column_index].std()),
+            })
+    classifier_path = analysis_dir / "research_source_classifier.csv"
+    pd.DataFrame(classifier_rows).to_csv(classifier_path, index=False)
+    outputs["source_classifier"] = classifier_path
+    calibration_path = analysis_dir / "research_source_classifier_calibration.csv"
+    pd.DataFrame(calibration_rows).to_csv(calibration_path, index=False)
+    outputs["source_calibration"] = calibration_path
+    importance_path = analysis_dir / "research_source_classifier_coefficients.csv"
+    pd.DataFrame(importance_rows).sort_values(
+        ["feature_set", "mean_abs_standardized_logit_coefficient"], ascending=[True, False]
+    ).to_csv(importance_path, index=False)
+    outputs["source_coefficients"] = importance_path
+
+    # Spearman + BH-FDR по независимой единице "уникальная осциллограмма".
+    correlation_frame = eligible.merge(
+        temporal[["source", "record_id", "state_entropy_bits"]],
+        on=["source", "record_id"], how="left", validate="one_to_one",
+    ).sort_values(["source", "record_id"]).drop_duplicates("input_sha256", keep="first")
+    predictors = tuple(column for column in SOURCE_SHIFT_FEATURES + ("spp", "f_adc") if column in correlation_frame)
+    targets = (
+        "disagreement_fraction", "adaptive_pdr_mir__transitions_per_second",
+        "state_entropy_bits",
+    )
+    correlation_rows: list[dict[str, object]] = []
+    for (source, target), group in [
+        ((source, target), group)
+        for source, source_group in correlation_frame.groupby("source")
+        for target in targets
+        for group in [source_group]
+    ]:
+        family_start = len(correlation_rows)
+        pvalues = []
+        for predictor in predictors:
+            pair = group[[predictor, target]].apply(pd.to_numeric, errors="coerce").dropna()
+            rho, pvalue = spearmanr(pair[predictor], pair[target])
+            correlation_rows.append({
+                "source": source, "target": target, "predictor": predictor,
+                "records": len(pair), "spearman_rho": float(rho),
+                "pvalue": float(pvalue),
+            })
+            pvalues.append(float(pvalue))
+        adjusted = _bh_adjust(np.asarray(pvalues))
+        for offset, value in enumerate(adjusted):
+            correlation_rows[family_start + offset]["fdr_bh_qvalue"] = float(value)
+    correlation_path = analysis_dir / "research_spearman_fdr.csv"
+    pd.DataFrame(correlation_rows).to_csv(correlation_path, index=False)
+    outputs["spearman_fdr"] = correlation_path
+    return outputs
+
+
+def _write_data_dictionary(path: Path, frame: pd.DataFrame) -> None:
+    """Сформировать проверяемый словарь полей основной record-level таблицы."""
+
+    known = {
+        "source": ("Источник датасета", "category"),
+        "record_id": ("Идентификатор записи внутри источника", "id"),
+        "input_sha256": ("SHA-256 нормализованного входа; ключ точных дублей", "hash"),
+        "duration_sec": ("Физическая длительность записи", "s"),
+        "n_windows": ("Число causal-точек РНМ в записи", "points"),
+        "f_network": ("Номинальная частота сети", "Hz"),
+        "f_adc": ("Частота дискретизации", "Hz"),
+        "spp": ("Отсчётов на период сети", "samples/period"),
+        "current_rms": ("Медиана фазных waveform RMS во внутреннем масштабе", "internal p.u."),
+        "current_rms_physical_pu": ("current_rms после восстановления current_reserve=20", "I/Iном"),
+        "voltage_rms": ("Медиана фазных waveform RMS во внутреннем масштабе", "internal p.u."),
+        "disagreement_fraction": ("Доля общих валидных точек, где не все РНМ совпали", "fraction"),
+        "pdr_structurally_eligible": ("Есть минимум 2I и 2U для восстановления", "boolean"),
+        "current_bin_physical_pu": ("Диапазон waveform RMS тока в физических номиналах", "I/Iном"),
+        "total_transitions": ("Сумма переходов всех пяти РНМ", "count"),
+        "interest_score": ("Эвристический рейтинг динамики/расхождения для навигации", "dimensionless"),
+    }
+    suffixes = {
+        "valid_windows": ("Число точек с решением данного РНМ", "points"),
+        "coverage_fraction": ("Доля точек не UNLABELED у данного РНМ", "fraction"),
+        "forward_fraction": ("Доля FORWARD среди валидных точек данного РНМ", "fraction"),
+        "transitions": ("Число смен 0↔1 данного РНМ", "count"),
+        "transitions_per_second": ("Частота смен 0↔1 данного РНМ", "1/s"),
+        "short_run_fraction": ("Доля коротких серий решений данного РНМ", "fraction"),
+        "near_boundary_fraction": ("Доля валидных точек около нулевого margin", "fraction"),
+        "mean_confidence": ("Средняя эвристическая confidence данного РНМ", "fraction"),
+    }
+    lines = [
+        "# Data dictionary record-level PDR-анализа", "",
+        "Основная независимая единица — осциллограмма. `internal p.u.` нельзя ",
+        "смешивать с физическими номиналами без явно указанного scale profile.", "",
+        "| Поле | Тип | Единица | Определение |", "|---|---|---|---|",
+    ]
+    for column in frame.columns:
+        definition, unit = known.get(column, ("Производное или исходное поле record audit", "see source"))
+        if "__" in column:
+            algorithm, suffix = column.split("__", 1)
+            if suffix in suffixes:
+                suffix_definition, unit = suffixes[suffix]
+                definition = f"{suffix_definition}; algorithm_id={algorithm}"
+        lines.append(f"| `{column}` | `{frame[column].dtype}` | {unit} | {definition} |")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
     analysis_dir = Path(analysis_dir)
     records = pd.read_csv(analysis_dir / "record_statistics.csv", low_memory=False)
@@ -201,12 +577,14 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
     pointwise_path = analysis_dir / "pairwise_pointwise_agreement.csv"
     patterns_path = analysis_dir / "algorithm_state_patterns.csv"
     temporal_path = analysis_dir / "teacher_temporal_statistics.csv"
+    eligibility_path = analysis_dir / "record_signal_eligibility.csv"
     pointwise = pd.read_csv(pointwise_path) if pointwise_path.exists() else pd.DataFrame()
     patterns = (
         pd.read_csv(patterns_path, dtype={"state_pattern": str})
         if patterns_path.exists() else pd.DataFrame()
     )
     temporal = pd.read_csv(temporal_path) if temporal_path.exists() else pd.DataFrame()
+    eligibility = pd.read_csv(eligibility_path) if eligibility_path.exists() else pd.DataFrame()
 
     merged = records.merge(
         signals.drop(columns=["file_name", "f_adc", "voltage_basis"], errors="ignore"),
@@ -220,6 +598,24 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
                 lambda value: str(value).strip().lower() in {"1", "true", "yes"}
                 if isinstance(value, str) else bool(value)
             )
+    if not eligibility.empty:
+        eligibility["pdr_structurally_eligible"] = eligibility["pdr_structurally_eligible"].map(
+            lambda value: str(value).strip().lower() in {"1", "true", "yes"}
+            if isinstance(value, str) else bool(value)
+        )
+        merged = merged.merge(
+            eligibility,
+            on=["source", "record_id"],
+            how="left",
+            validate="one_to_one",
+        )
+    else:
+        # Совместимость со старыми результатами анализа. Для v4 и новее
+        # следует сначала выполнить MODE="eligibility".
+        merged["pdr_structurally_eligible"] = ~(
+            merged["missing_current_group"] | merged["missing_voltage_group"]
+        )
+    merged["pdr_structurally_eligible"] = merged["pdr_structurally_eligible"].fillna(False)
     merged["current_rms_physical_pu"] = merged["current_rms"] * 20.0
     current_edges = [-np.inf, 0.01, 0.05, 0.20, 0.50, 1.0, 2.0, np.inf]
     current_labels = ["<0.01", "0.01-0.05", "0.05-0.20", "0.20-0.50", "0.50-1.00", "1.00-2.00", ">=2.00"]
@@ -227,9 +623,28 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
         merged["current_rms_physical_pu"], current_edges, labels=current_labels, right=False
     ).astype("object")
     merged.loc[merged["current_rms_physical_pu"].isna(), "current_bin_physical_pu"] = "missing"
+    eligible = merged[merged["pdr_structurally_eligible"]].copy()
+
+    population_rows: list[dict[str, object]] = []
+    for population, population_frame in (("all_input", merged), ("pdr_eligible_2i2u", eligible)):
+        for source, group in [("all", population_frame), *list(population_frame.groupby("source"))]:
+            row: dict[str, object] = {
+                "population": population,
+                "source": source,
+                "records": len(group),
+                "duration_hours": group["duration_sec"].sum() / 3600.0,
+                "windows": group["n_windows"].sum(),
+                "mean_disagreement_fraction": group["disagreement_fraction"].mean(),
+            }
+            for algorithm in ALGORITHMS:
+                row[f"{algorithm}__record_mean_coverage"] = group[
+                    f"{algorithm}__coverage_fraction"
+                ].mean()
+            population_rows.append(row)
+    population_summary = pd.DataFrame(population_rows)
 
     sampling_profiles = (
-        merged.groupby(["source", "spp", "f_adc"], dropna=False, as_index=False)
+        eligible.groupby(["source", "f_network", "spp", "f_adc"], dropna=False, as_index=False)
         .agg(
             records=("record_id", "size"),
             duration_hours=("duration_sec", lambda value: value.sum() / 3600.0),
@@ -241,6 +656,8 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
             teacher_mean_coverage=(f"{ALGORITHMS[0]}__coverage_fraction", "mean"),
             teacher_mean_forward=(f"{ALGORITHMS[0]}__forward_fraction", "mean"),
             teacher_median_transitions=(f"{ALGORITHMS[0]}__transitions", "median"),
+            teacher_p90_transitions=(f"{ALGORITHMS[0]}__transitions", lambda value: value.quantile(0.90)),
+            teacher_p95_transitions=(f"{ALGORITHMS[0]}__transitions", lambda value: value.quantile(0.95)),
         )
     )
     sampling_profiles["fraction_of_source_records"] = sampling_profiles["records"] / sampling_profiles.groupby(
@@ -248,8 +665,12 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
     )["records"].transform("sum")
 
     weighting_rows: list[dict[str, object]] = []
-    weighting_groups = [("all", merged)] + list(merged.groupby("source"))
-    for source, group in weighting_groups:
+    weighting_groups = [
+        (population, source, group)
+        for population, frame in (("all_input", merged), ("pdr_eligible_2i2u", eligible))
+        for source, group in [("all", frame), *list(frame.groupby("source"))]
+    ]
+    for population, source, group in weighting_groups:
         metric_specs: list[tuple[str, str]] = [
             ("disagreement_fraction", "n_windows"),
         ]
@@ -265,6 +686,7 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
             if metric.endswith("__forward_fraction"):
                 include &= pd.to_numeric(group[point_weight], errors="coerce").fillna(0) > 0
             weighting_rows.append({
+                "population": population,
                 "source": source,
                 "metric": metric,
                 "records_included": int(include.sum()),
@@ -277,7 +699,14 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
 
     temporal_profiles = pd.DataFrame()
     chatter_candidates = pd.DataFrame()
+    temporal_shortlist = pd.DataFrame()
     if not temporal.empty:
+        temporal = temporal.merge(
+            eligible[["source", "record_id"]],
+            on=["source", "record_id"],
+            how="inner",
+            validate="one_to_one",
+        )
         temporal_metrics = (
             "transitions", "state_entropy_bits", "transition_entropy_bits",
             "lag1_autocorrelation", "median_run_duration_sec",
@@ -309,16 +738,36 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
             ["chatter_returns_le_100ms", "max_switches_in_0_5s", "transitions"],
             ascending=False,
         )
+        strata_rows: list[pd.DataFrame] = []
+        for source, group in chatter_candidates.groupby("source"):
+            transition_p99 = group["transitions"].quantile(0.99)
+            burst_p99 = group["max_switches_in_0_5s"].quantile(0.99)
+            stratum_masks = {
+                "extreme_global_chatter": group["transitions"] >= transition_p99,
+                "extreme_local_burst": group["max_switches_in_0_5s"] >= burst_p99,
+                "moderate_10_100_transitions": group["transitions"].between(10, 100),
+                "rapid_returns": group["chatter_returns_le_100ms"] > 0,
+            }
+            for stratum, mask in stratum_masks.items():
+                selected = group.loc[mask].copy()
+                selected["candidate_stratum"] = stratum
+                selected["stratum_rank"] = np.arange(1, len(selected) + 1)
+                strata_rows.append(selected)
+        if strata_rows:
+            temporal_shortlist = pd.concat(strata_rows, ignore_index=True)
+            temporal_shortlist = temporal_shortlist[
+                temporal_shortlist["stratum_rank"] <= 20
+            ].sort_values(["source", "candidate_stratum", "stratum_rank"])
 
     current_rows: list[dict[str, object]] = []
-    for (source, current_bin), group in merged.groupby(
+    for (source, current_bin), group in eligible.groupby(
         ["source", "current_bin_physical_pu"], observed=False, dropna=False
     ):
         row: dict[str, object] = {
             "source": source,
             "current_bin_physical_pu": current_bin,
             "records": len(group),
-            "fraction_of_source": len(group) / int((merged["source"] == source).sum()),
+            "fraction_of_source": len(group) / int((eligible["source"] == source).sum()),
             "median_current_rms_physical_pu": group["current_rms_physical_pu"].median(),
             "mean_disagreement_fraction": group["disagreement_fraction"].mean(),
             "switching_record_fraction": (group["total_transitions"] > 0).mean(),
@@ -336,7 +785,7 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
     current_profiles = pd.DataFrame(current_rows)
 
     split_rows: list[dict[str, object]] = []
-    for (source, split), group in merged.groupby(["source", "split"], dropna=False):
+    for (source, split), group in eligible.groupby(["source", "split"], dropna=False):
         row = {
             "source": source,
             "split": split,
@@ -355,6 +804,12 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
     split_profiles = pd.DataFrame(split_rows)
 
     pair_rows: list[dict[str, object]] = []
+    pair_records = pair_records.merge(
+        eligible[["source", "record_id"]],
+        on=["source", "record_id"],
+        how="inner",
+        validate="many_to_one",
+    )
     for (source, left, right), group in pair_records.groupby(["source", "left", "right"]):
         row = {"source": source, "left": left, "right": right, "records": len(group)}
         row.update({f"disagreement_{key}": value for key, value in _quantiles(group["disagreement_fraction"]).items()})
@@ -368,10 +823,10 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
 
     duplicate_hashes = set(duplicates.loc[duplicates["records"] > 1, "input_sha256"].astype(str))
     merged["is_duplicate_record"] = merged["input_sha256"].astype(str).isin(duplicate_hashes)
-    unique_records = merged.sort_values(["source", "record_id"]).drop_duplicates("input_sha256", keep="first")
+    unique_records = eligible.sort_values(["source", "record_id"]).drop_duplicates("input_sha256", keep="first")
     duplicate_rows: list[dict[str, object]] = []
     for source in ("open_ee", "french_rte", "all"):
-        full = merged if source == "all" else merged[merged["source"] == source]
+        full = eligible if source == "all" else eligible[eligible["source"] == source]
         unique = unique_records if source == "all" else unique_records[unique_records["source"] == source]
         row = {
             "source": source,
@@ -394,6 +849,7 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
         row: dict[str, object] = {
             "source": source,
             "records": len(group),
+            "structurally_ineligible_records": int((~group["pdr_structurally_eligible"]).sum()),
             "missing_current_records": int(group["missing_current_group"].sum()),
             "missing_voltage_records": int(group["missing_voltage_group"].sum()),
             "nonfinite_interest_score": int((~np.isfinite(group["interest_score"])).sum()),
@@ -409,11 +865,21 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
     quality = pd.DataFrame(quality_rows)
 
     shift_rows: list[dict[str, object]] = []
-    open_signals = merged[merged["source"] == "open_ee"]
-    french_signals = merged[merged["source"] == "french_rte"]
-    for metric in SIGNAL_METRICS:
+    open_signals = eligible[eligible["source"] == "open_ee"]
+    french_signals = eligible[eligible["source"] == "french_rte"]
+    log_metrics = {
+        "current_rms", "voltage_rms", "current_to_voltage_rms",
+        "current_rms_last_over_first", "current_crest_p99_over_rms",
+    }
+    shift_specs = [(metric, "raw") for metric in SIGNAL_METRICS] + [
+        (metric, "log10_positive") for metric in SIGNAL_METRICS if metric in log_metrics
+    ]
+    for metric, transform in shift_specs:
         left = pd.to_numeric(open_signals[metric], errors="coerce").dropna().to_numpy()
         right = pd.to_numeric(french_signals[metric], errors="coerce").dropna().to_numpy()
+        if transform == "log10_positive":
+            left = np.log10(left[left > 0])
+            right = np.log10(right[right > 0])
         ks = ks_2samp(left, right, method="asymp")
         mw = mannwhitneyu(left, right, alternative="two-sided", method="asymptotic")
         pooled = np.concatenate([left, right])
@@ -427,6 +893,7 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
         )
         shift_rows.append({
             "metric": metric,
+            "transform": transform,
             "records_open_ee": len(left),
             "records_french_rte": len(right),
             "median_open_ee": float(np.median(left)),
@@ -448,7 +915,7 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
 
     rng = np.random.default_rng(20260818)
     bootstrap_rows: list[dict[str, object]] = []
-    for source, group in merged.groupby("source"):
+    for source, group in eligible.groupby("source"):
         # Один голос на уникальный входной hash; это не позволяет французским
         # точным дубликатам искусственно сужать интервал.
         unique_hash = group.groupby("input_sha256", as_index=False).mean(numeric_only=True)
@@ -491,8 +958,9 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
         default="unclassified",
     )
     merged["review_category"] = review_category
+    eligible = merged[merged["pdr_structurally_eligible"]].copy()
     category_profiles = (
-        merged.groupby(["source", "review_category"], as_index=False)
+        eligible.groupby(["source", "review_category"], as_index=False)
         .agg(
             records=("record_id", "size"),
             median_disagreement=("disagreement_fraction", "median"),
@@ -504,8 +972,8 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
     category_profiles["fraction_of_source"] = category_profiles["records"] / category_profiles.groupby(
         "source"
     )["records"].transform("sum")
-    persistent_candidates = merged.loc[
-        merged["review_category"] == "persistent_major_disagreement",
+    persistent_candidates = eligible.loc[
+        eligible["review_category"] == "persistent_major_disagreement",
         [
             "source", "record_id", "file_name", "split", "input_sha256",
             "duration_sec", "disagreement_fraction", "interest_score", "categories",
@@ -513,7 +981,13 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
         ] + [f"{algorithm}__forward_fraction" for algorithm in ALGORITHMS],
     ].sort_values(["disagreement_fraction", "duration_sec"], ascending=[False, False])
 
+    research_outputs = _build_multivariate_research(analysis_dir, eligible, temporal)
+    data_dictionary_path = analysis_dir / "PDR_RECORD_DATA_DICTIONARY.md"
+    _write_data_dictionary(data_dictionary_path, merged)
+
     outputs = {
+        "population_summary": analysis_dir / "review_population_summary.csv",
+        "data_dictionary": data_dictionary_path,
         "current_profiles": analysis_dir / "review_current_profiles.csv",
         "split_profiles": analysis_dir / "review_split_profiles.csv",
         "pair_profiles": analysis_dir / "review_pairwise_record_profiles.csv",
@@ -528,7 +1002,10 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
         "metric_guide": analysis_dir / "STATISTICAL_METRICS_GUIDE.md",
         "temporal_profiles": analysis_dir / "review_temporal_profiles.csv",
         "chatter_candidates": analysis_dir / "review_chatter_candidates.csv",
+        "temporal_shortlist": analysis_dir / "review_temporal_candidate_shortlist.csv",
     }
+    outputs.update(research_outputs)
+    population_summary.to_csv(outputs["population_summary"], index=False)
     current_profiles.to_csv(outputs["current_profiles"], index=False)
     split_profiles.to_csv(outputs["split_profiles"], index=False)
     pair_profiles.to_csv(outputs["pair_profiles"], index=False)
@@ -543,7 +1020,8 @@ def build_review_tables(analysis_dir: Path) -> dict[str, Path]:
     _write_metric_guide(outputs["metric_guide"])
     temporal_profiles.to_csv(outputs["temporal_profiles"], index=False)
     chatter_candidates.to_csv(outputs["chatter_candidates"], index=False)
-    for index, path in enumerate(_build_review_figures(analysis_dir, merged, pointwise, patterns), start=1):
+    temporal_shortlist.to_csv(outputs["temporal_shortlist"], index=False)
+    for index, path in enumerate(_build_review_figures(analysis_dir, eligible, pointwise, patterns), start=1):
         outputs[f"figure_{index}"] = path
     return outputs
 

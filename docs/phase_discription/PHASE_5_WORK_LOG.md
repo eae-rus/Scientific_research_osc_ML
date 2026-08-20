@@ -1,5 +1,27 @@
 # Журнал работ Phase 5
 
+## 20.08.2026 — Повторный аудит v4 и многомерное исследование
+
+- Подтверждена целостность 56 826 записей / 485,37 млн точек. Критической
+  массовой формульной аномалии v4 не найдено; подробный отчёт —
+  `PHASE_5_PDR_V4_REVIEW.md`.
+- Выделено 7 965 Open_EE-записей без фактически конечной группы I и/или U.
+  Provenance один находил только 19, поэтому создана структурная маска 2I+2U,
+  объединяющая provenance и signal audit. PDRTaskDataset исключает такие записи,
+  но сохраняет временной `UNLABELED` как цель отдельной головы применимости.
+- Содержательные таблицы пересчитаны по 48 861 применимой записи; паспорт всех
+  входов оставлен отдельно. Open_EE record-level disagreement после честной
+  фильтрации равен 19,74%, adaptive coverage — 88,83%.
+- Добавлены PCA/loadings, KMeans k=2…12 с пятью seed и ARI, Davies–Bouldin/
+  Calinski–Harabasz, Isolation Forest, source classifier с calibration,
+  log-robust shift и Spearman с BH-FDR.
+- Сформированы data dictionary, temporal shortlist по независимым стратам и
+  11 `research_*.csv`. Physical-only source classifier дал ROC-AUC=0,849, а
+  с SPP/f_adc — 0,99985, что подтверждает сильный acquisition confounder.
+- Целевые PDR-тесты: **13 passed, 1 skipped**; синтаксис и `git diff --check`
+  прошли. Предупреждения pytest относятся к недоступному cache/temp в системном
+  Windows-профиле, тестовый каталог внутри workspace удалён.
+
 ## 19.08.2026 — PDR contract v4: ранняя память и точная семантика UNLABELED
 
 - Статистический v4-анализ расширен record-level временными признаками adaptive
