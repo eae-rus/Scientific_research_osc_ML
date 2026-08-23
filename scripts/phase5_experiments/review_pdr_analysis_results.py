@@ -330,6 +330,7 @@ def _build_multivariate_research(
     diagnostics: list[dict[str, object]] = []
     assignments: list[pd.DataFrame] = []
     profiles: list[dict[str, object]] = []
+    selections: list[dict[str, object]] = []
     for source, source_frame in eligible.groupby("source"):
         source_matrix, _ = _research_matrix(source_frame, feature_columns)
         evaluation_indices = rng.choice(
@@ -366,8 +367,26 @@ def _build_multivariate_research(
             source_results.append(row)
             labels_by_k[k] = seed_labels
         stable = [row for row in source_results if row["seed_stability_ari_mean"] >= 0.80]
-        selected = max(stable or source_results, key=lambda row: row["silhouette_mean"])
+        if not stable:
+            selections.append({
+                "source": source,
+                "selection_status": "no_stable_solution",
+                "selected_k": pd.NA,
+                "silhouette_mean": pd.NA,
+                "seed_stability_ari_mean": pd.NA,
+                "stability_threshold": 0.80,
+            })
+            continue
+        selected = max(stable, key=lambda row: row["silhouette_mean"])
         selected_k = int(selected["k"])
+        selections.append({
+            "source": source,
+            "selection_status": "stable_solution_selected",
+            "selected_k": selected_k,
+            "silhouette_mean": selected["silhouette_mean"],
+            "seed_stability_ari_mean": selected["seed_stability_ari_mean"],
+            "stability_threshold": 0.80,
+        })
         selected_labels = labels_by_k[selected_k][0]
         assignment = source_frame[["source", "record_id", "input_sha256"]].copy()
         assignment["selected_k"] = selected_k
@@ -392,6 +411,9 @@ def _build_multivariate_research(
     cluster_diagnostics_path = analysis_dir / "research_cluster_stability.csv"
     pd.DataFrame(diagnostics).to_csv(cluster_diagnostics_path, index=False)
     outputs["cluster_stability"] = cluster_diagnostics_path
+    cluster_selection_path = analysis_dir / "research_cluster_selection.csv"
+    pd.DataFrame(selections).to_csv(cluster_selection_path, index=False)
+    outputs["cluster_selection"] = cluster_selection_path
     cluster_assignment_path = analysis_dir / "research_cluster_assignments.csv"
     pd.concat(assignments, ignore_index=True).to_csv(cluster_assignment_path, index=False)
     outputs["cluster_assignments"] = cluster_assignment_path
