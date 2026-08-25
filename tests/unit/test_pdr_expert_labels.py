@@ -11,6 +11,8 @@ from osc_tools.io.comtrade_ascii import AnalogChannel, DigitalChannel, ExportRec
 from osc_tools.pdr.base import PDRDirection
 from osc_tools.pdr.expert_labels import (
     ALGORITHM_IDS,
+    ImportedExpertRecord,
+    aggregate_algorithm_comparison,
     build_transition_masks,
     import_expert_tree,
     read_comtrade_1999_ascii,
@@ -133,3 +135,37 @@ def test_ascii_reader_accepts_one_microsecond_timestamp_reformat(tmp_path: Path)
     write_comtrade_ascii(record, cfg, dat)
     parsed = read_comtrade_1999_ascii(cfg)
     assert parsed.n_samples == n
+
+
+def test_algorithm_comparison_reports_record_distribution() -> None:
+    def imported(record_id: int, automatic: np.ndarray) -> ImportedExpertRecord:
+        n = len(automatic)
+        expert = np.ones(n, dtype=np.int8)
+        return ImportedExpertRecord(
+            source="open_ee",
+            record_id=record_id,
+            status="completed",
+            stratum="test",
+            input_sha256=f"hash-{record_id}",
+            f_adc=1000.0,
+            directions=expert,
+            applicable=np.ones(n, dtype=bool),
+            train_mask=np.ones(n, dtype=bool),
+            transition_eval_mask=np.zeros(n, dtype=bool),
+            automatic_directions={algorithm_id: automatic for algorithm_id in ALGORITHM_IDS},
+            ignored_analog_channels=(),
+            ignored_digital_channels=(),
+            cfg_path=Path(f"record-{record_id}.cfg"),
+        )
+
+    rows = aggregate_algorithm_comparison([
+        imported(1, np.ones(4, dtype=np.int8)),
+        imported(2, np.zeros(4, dtype=np.int8)),
+    ])
+    row = next(item for item in rows if item["group"] == "all")
+    assert row["sample_accuracy"] == 0.5
+    assert row["record_macro_accuracy"] == 0.5
+    assert row["record_accuracy_std"] == np.sqrt(0.5)
+    assert row["record_accuracy_q25"] == 0.25
+    assert row["record_accuracy_median"] == 0.5
+    assert row["record_accuracy_q75"] == 0.75

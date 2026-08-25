@@ -403,6 +403,7 @@ def aggregate_algorithm_comparison(records: Sequence[ImportedExpertRecord]) -> l
             app_count = app_tp + app_tn + app_fp + app_fn
             sample_ci = _cluster_bootstrap_accuracy(per_record_counts, macro=False, seed=_stable_seed(group, algorithm_id))
             macro_ci = _cluster_bootstrap_accuracy(per_record_counts, macro=True, seed=_stable_seed(group, algorithm_id) + 1)
+            record_accuracy_array = np.asarray(per_record_accuracy, dtype=np.float64)
             rows.append({
                 "group": group,
                 "algorithm_id": algorithm_id,
@@ -411,9 +412,22 @@ def aggregate_algorithm_comparison(records: Sequence[ImportedExpertRecord]) -> l
                 "sample_accuracy": agree_total / comparable_total if comparable_total else "",
                 "sample_accuracy_ci95_low": sample_ci[0] if sample_ci else "",
                 "sample_accuracy_ci95_high": sample_ci[1] if sample_ci else "",
-                "record_macro_accuracy": float(np.mean(per_record_accuracy)) if per_record_accuracy else "",
+                "record_macro_accuracy": float(np.mean(record_accuracy_array)) if per_record_accuracy else "",
                 "record_macro_accuracy_ci95_low": macro_ci[0] if macro_ci else "",
                 "record_macro_accuracy_ci95_high": macro_ci[1] if macro_ci else "",
+                "record_accuracy_std": (
+                    float(np.std(record_accuracy_array, ddof=1))
+                    if len(per_record_accuracy) > 1 else 0.0 if per_record_accuracy else ""
+                ),
+                "record_accuracy_q25": (
+                    float(np.quantile(record_accuracy_array, 0.25)) if per_record_accuracy else ""
+                ),
+                "record_accuracy_median": (
+                    float(np.median(record_accuracy_array)) if per_record_accuracy else ""
+                ),
+                "record_accuracy_q75": (
+                    float(np.quantile(record_accuracy_array, 0.75)) if per_record_accuracy else ""
+                ),
                 "expert_forward_fraction": expert_forward / comparable_total if comparable_total else "",
                 "automatic_forward_fraction": auto_forward / comparable_total if comparable_total else "",
                 "applicability_accuracy": (app_tp + app_tn) / app_count if app_count else "",
@@ -436,7 +450,13 @@ def _cluster_bootstrap_accuracy(
     seed: int,
     iterations: int = 2000,
 ) -> tuple[float, float] | None:
-    """95% cluster-bootstrap CI, где кластером служит целая осциллограмма."""
+    """95% cluster-bootstrap CI, где кластером служит целая осциллограмма.
+
+    Каждая бутстрэп-выборка содержит столько же целых записей, сколько
+    было в исходном наборе, но записи выбираются с возвращением. Отсчёты
+    внутри выбранной осциллограммы не перевыбираются: используются их полные
+    счётчики совпадений и сопоставимых точек.
+    """
 
     if not counts:
         return None

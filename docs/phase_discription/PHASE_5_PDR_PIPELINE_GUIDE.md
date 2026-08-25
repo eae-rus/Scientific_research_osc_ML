@@ -225,7 +225,9 @@ BATCH_NAME = "pilot"
 Основные таблицы:
 
 - `record_audit.csv` — фактическая разметка каждой записи;
-- `algorithm_comparison.csv` — сравнение с пятью РНМ и 95% cluster-bootstrap;
+- `algorithm_comparison.csv` — сравнение с пятью РНМ: полная доля совпадений
+  по отсчётам, среднее, медиана, квартили и стандартное отклонение по
+  осциллограммам, а также 95%-е кластерные бутстрэп-ДИ;
 - `record_algorithm_comparison.csv` — полный пофайловый рейтинг;
 - `expert_quality_flags.csv` — кандидаты слепой перепроверки;
 - `expert_group_summary.csv` — сводка по источникам, статусам, split и стратам;
