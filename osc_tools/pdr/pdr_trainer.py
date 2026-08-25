@@ -85,15 +85,24 @@ def pdr_combined_loss(
     target_applicable = targets.get("target_applicable")
     if target_applicable is None:
         target_applicable = torch.ones_like(target_class, dtype=torch.bool)
-    valid = target_applicable.to(device=logits.device, dtype=torch.bool)
+    supervised = targets.get("supervised_mask")
+    if supervised is None:
+        supervised = torch.ones_like(target_class, dtype=torch.bool)
+    supervised = supervised.to(device=logits.device, dtype=torch.bool)
+    valid = target_applicable.to(device=logits.device, dtype=torch.bool) & supervised
 
     applicability_logit = outputs.get("applicability_logit")
     if applicability_logit is None:
         loss_applicability = logits.sum() * 0.0
     else:
-        loss_applicability = F.binary_cross_entropy_with_logits(
+        applicability_per_sample = F.binary_cross_entropy_with_logits(
             applicability_logit,
-            valid.to(dtype=applicability_logit.dtype),
+            target_applicable.to(device=logits.device, dtype=applicability_logit.dtype),
+            reduction="none",
+        )
+        loss_applicability = (
+            (applicability_per_sample * supervised).sum()
+            / supervised.sum().clamp(min=1)
         )
 
     sample_weight = targets.get("pdr_confidence")
@@ -189,6 +198,8 @@ def train_pdr_epoch(
         }
         if "pdr_confidence" in batch:
             targets["pdr_confidence"] = batch["pdr_confidence"].to(device)
+        if "expert_train_mask" in batch:
+            targets["supervised_mask"] = batch["expert_train_mask"].to(device)
         loss = pdr_combined_loss(outputs, targets, margin_loss_weight)
         loss.backward()
         optimizer.step()

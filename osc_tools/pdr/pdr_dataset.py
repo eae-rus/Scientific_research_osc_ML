@@ -48,6 +48,11 @@ class PDRTaskDataset(Dataset):
         teacher_algorithm_id: Optional[str] = None,
         include_unlabeled_for_applicability: bool = True,
         exclude_structurally_insufficient: bool = True,
+        sample_subset: str = "train",
+        index_stride_samples: int = 1,
+        max_samples_per_record: Optional[int] = None,
+        augmentation_seed: Optional[int] = None,
+        augmentation_probability: float = 0.0,
     ) -> None:
         if not HAS_TORCH:
             raise RuntimeError("PyTorch не установлен в текущем окружении.")
@@ -61,6 +66,20 @@ class PDRTaskDataset(Dataset):
         self.include_warmup = include_warmup
         self.include_unlabeled_for_applicability = include_unlabeled_for_applicability
         self.exclude_structurally_insufficient = exclude_structurally_insufficient
+        if sample_subset not in ("train", "transition", "all"):
+            raise ValueError("sample_subset должен быть train, transition или all")
+        if index_stride_samples <= 0:
+            raise ValueError("index_stride_samples должен быть положительным")
+        if max_samples_per_record is not None and max_samples_per_record <= 0:
+            raise ValueError("max_samples_per_record должен быть положительным")
+        self.sample_subset = sample_subset
+        self.index_stride_samples = int(index_stride_samples)
+        self.max_samples_per_record = max_samples_per_record
+        if not 0.0 <= augmentation_probability <= 1.0:
+            raise ValueError("augmentation_probability должен быть в диапазоне [0, 1]")
+        self.augmentation_seed = augmentation_seed
+        self.augmentation_probability = float(augmentation_probability)
+        self.augmentation_epoch = 0
 
         # Legacy single-NPZ остаётся совместимым; новый массовый формат читается
         # лениво по shards и не загружает сотни миллионов меток в RAM.
@@ -122,11 +141,37 @@ class PDRTaskDataset(Dataset):
                 valid_mask = (dirs != int(PDRDirection.UNLABELED))
             if not self.include_warmup:
                 valid_mask &= ~warmup
+            train_mask = np.asarray(
+                record_labels.get("train_mask", np.ones_like(dirs, dtype=bool)),
+                dtype=bool,
+            )
+            transition_mask = np.asarray(
+                record_labels.get("transition_eval_mask", np.zeros_like(dirs, dtype=bool)),
+                dtype=bool,
+            )
+            if train_mask.shape != dirs.shape or transition_mask.shape != dirs.shape:
+                raise ValueError(f"Маски экспертного слоя имеют неверную форму: record={rec_idx}")
+            if self.sample_subset == "train":
+                valid_mask &= train_mask
+            elif self.sample_subset == "transition":
+                valid_mask &= transition_mask
             # Для совместимости с SSL backbone нужен полный causal-фрагмент:
             # feature history (до 10 периодов для lp10) + 10 периодов модели.
             valid_mask &= sample_indices >= (required_samples - 1)
+            valid_mask &= (sample_indices % self.index_stride_samples) == 0
 
             valid_w_indices = np.where(valid_mask)[0]
+            if (
+                self.max_samples_per_record is not None
+                and valid_w_indices.size > self.max_samples_per_record
+            ):
+                positions = np.linspace(
+                    0,
+                    valid_w_indices.size - 1,
+                    self.max_samples_per_record,
+                    dtype=np.int64,
+                )
+                valid_w_indices = valid_w_indices[np.unique(positions)]
             for w_idx in valid_w_indices:
                 self.samples.append((rec_idx, int(w_idx)))
 
@@ -146,6 +191,10 @@ class PDRTaskDataset(Dataset):
 
     def __len__(self) -> int:
         return len(self.samples)
+
+    def set_epoch(self, epoch: int) -> None:
+        """Сделать детерминированную аугментацию различной между эпохами."""
+        self.augmentation_epoch = int(epoch)
 
     def __getitem__(self, idx: int) -> Dict[str, Any]:
         rec_idx, w_idx = self.samples[idx]
@@ -176,6 +225,11 @@ class PDRTaskDataset(Dataset):
         sub_signal_raw = signal[:, start_idx : sample_end_idx + 1]
         if sub_signal_raw.shape[1] != total_samples:
             raise RuntimeError("Длина causal-фрагмента не совпадает с временным контрактом записи")
+        augmentation_code = "none"
+        if self.augmentation_seed is not None and self.augmentation_probability > 0:
+            sub_signal_raw, provenance, augmentation_code = self._augment_invariant(
+                sub_signal_raw, provenance, rec_idx, w_idx
+            )
         positions = spectral_positions(
             total_samples,
             record_timebase.spp,
@@ -213,10 +267,59 @@ class PDRTaskDataset(Dataset):
             "pdr_margin": torch.tensor(margin_val, dtype=torch.float32),
             "pdr_confidence": torch.tensor(confidence_val, dtype=torch.float32),
             "warmup_mask": torch.tensor(warmup_val, dtype=torch.bool),
+            "expert_train_mask": torch.tensor(
+                bool(record_labels.get("train_mask", np.ones_like(record_labels["directions"], dtype=bool))[w_idx]),
+                dtype=torch.bool,
+            ),
+            "expert_transition_eval_mask": torch.tensor(
+                bool(record_labels.get("transition_eval_mask", np.zeros_like(record_labels["directions"], dtype=bool))[w_idx]),
+                dtype=torch.bool,
+            ),
             "channel_provenance": torch.tensor(provenance, dtype=torch.long),
             "record_id": rec_idx,
             "window_idx": w_idx,
+            "augmentation_code": augmentation_code,
         }
+
+    def _augment_invariant(
+        self,
+        signal: np.ndarray,
+        provenance: np.ndarray,
+        rec_idx: int,
+        w_idx: int,
+    ) -> tuple[np.ndarray, np.ndarray, str]:
+        """Применить только физически инвариантные аугментации направления.
+
+        Совместная циклическая перестановка фаз и одновременная смена полярности
+        U/I не меняют взаимный угол и знак мощности. Масштабирование и шум здесь
+        намеренно не используются: около уставки они способны изменить истинную
+        целевую метку.
+        """
+
+        token = (
+            int(self.augmentation_seed)
+            + int(rec_idx) * 1_000_003
+            + int(w_idx) * 97
+            + int(self.augmentation_epoch) * 10_000_019
+        ) & 0xFFFFFFFFFFFFFFFF
+        rng = np.random.default_rng(token)
+        if rng.random() >= self.augmentation_probability:
+            return signal, provenance, "none"
+        result = np.asarray(signal, dtype=np.float32).copy()
+        result_provenance = np.asarray(provenance, dtype=np.uint8).copy()
+        operations: list[str] = []
+        shift = int(rng.integers(0, 3))
+        if shift:
+            for start in (0, 4):
+                result[start : start + 3] = np.roll(result[start : start + 3], shift, axis=0)
+                result_provenance[start : start + 3] = np.roll(
+                    result_provenance[start : start + 3], shift
+                )
+            operations.append(f"phase_roll_{shift}")
+        if bool(rng.integers(0, 2)):
+            result *= -1.0
+            operations.append("global_polarity")
+        return result, result_provenance, "+".join(operations) if operations else "identity"
 
     def _record_labels(self, rec_idx: int) -> Optional[Dict[str, np.ndarray]]:
         """Получить одну запись из legacy NPZ либо lazy sharded store."""

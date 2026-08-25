@@ -46,6 +46,7 @@ ALGORITHMS = (
 DEFAULT_ANALYSIS_DIR = PROJECT_ROOT / "data/phase5/pdr_analysis_v5"
 DEFAULT_LABEL_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v5"
 DEFAULT_REVIEW_ROOT = PROJECT_ROOT / "data/phase5/pdr_manual_review_v5"
+DEFAULT_MANUAL_LABEL_ROOT = PROJECT_ROOT / "data/phase5/pdr_manual_labels_v1"
 DEFAULT_NORM_CSV = PROJECT_ROOT / "data/norm_coef_all_v1.4.csv"
 DEFAULT_QUOTAS = {
     "persistent_disagreement": 10,
@@ -58,6 +59,12 @@ DEFAULT_QUOTAS = {
     "high_current": 10,
     "multivariate_anomaly": 10,
     "blind_control": 10,
+}
+DEFAULT_SOURCE_QUOTA_MULTIPLIERS = {
+    # Open_EE ближе к целевой задаче БАВР. French/RTE сохраняется как внешний
+    # домен и источник нетипичных режимов, но не занимает половину новой сессии.
+    "open_ee": 1.0,
+    "french_rte": 0.5,
 }
 
 
@@ -142,6 +149,8 @@ def select_review_cases(
     review_root: Path,
     quotas: dict[str, int],
     sources: Sequence[str] = ("open_ee", "french_rte"),
+    additional_exclusion_roots: Sequence[Path] = (),
+    source_quota_multipliers: dict[str, float] | None = None,
 ) -> tuple[list[SelectedCase], list[dict[str, Any]]]:
     """Построить полный каталог и разнообразный пакет без повторов записей."""
 
@@ -154,6 +163,9 @@ def select_review_cases(
         predicate=lambda row: row.get("algorithm_id") == "adaptive_pdr_mir",
     )
     excluded = discover_previously_exported(review_root)
+    for root in additional_exclusion_roots:
+        excluded.update(discover_previously_exported(root))
+    multipliers = source_quota_multipliers or {source: 1.0 for source in sources}
     rows: list[dict[str, Any]] = []
     for key, record in records.items():
         if key[0] not in sources or _as_bool(eligibility.get(key, {}).get("pdr_structurally_eligible")) is not True:
@@ -190,9 +202,10 @@ def select_review_cases(
     used = set(excluded)
     for source in sources:
         for stratum, quota in quotas.items():
+            source_quota = int(math.ceil(max(0.0, float(multipliers.get(source, 1.0))) * quota))
             pool = [row for row in candidates_by_group.get((source, stratum), ())
                     if (source, int(row["record_id"])) not in used]
-            chosen = _diverse_subset(pool, quota, stratum)
+            chosen = _diverse_subset(pool, source_quota, stratum)
             for rank, row in enumerate(chosen, start=1):
                 key = (source, int(row["record_id"]))
                 used.add(key)
@@ -229,41 +242,63 @@ def export_batch(
                 f"{archive.algorithm_ids!r}"
             )
     manifest_rows: list[dict[str, Any]] = []
+    failure_rows: list[dict[str, Any]] = []
     progress = ProgressReporter("COMTRADE manual-review export", max(1, len(selected)), unit="файл")
     try:
         for index, case in enumerate(selected, start=1):
-            source = source_objects[case.source]
-            metadata = source.get_metadata(case.record_id)
-            signal = np.asarray(source.load_signal(case.record_id), dtype=np.float64)
-            labels = archives[case.source].get(case.record_id)
-            record, scaling = _build_export_record(case, signal, metadata, labels, resolver)
-            case_dir = batch_dir / case.stratum / case.source
-            stem = f"{case.source}__record_{case.record_id:05d}"
-            cfg_path, dat_path = case_dir / f"{stem}.cfg", case_dir / f"{stem}.dat"
-            write_comtrade_ascii(record, cfg_path, dat_path)
-            sidecar = {
-                "kind": "phase5_pdr_manual_review_case", "schema_version": 1,
-                "source": case.source, "record_id": case.record_id,
-                "input_sha256": case.row.get("input_sha256"), "file_name": metadata.get("file_name"),
-                "stratum": case.stratum, "all_selection_reasons": list(case.reasons),
-                "selection_rank": case.rank, "selection_score": case.selection_score,
-                "full_record": True, "analog_units": "physical_A_V",
-                "physical_scaling": scaling, "voltage_basis": metadata.get("voltage_basis", "phase"),
-                "algorithm_ids": list(archives[case.source].algorithm_ids),
-                "expert_channels": {"direction": 0, "applicable": 0},
-                "cfg_sha256": _sha256(cfg_path), "dat_sha256": _sha256(dat_path),
-                "cfg": cfg_path.name, "dat": dat_path.name,
-            }
-            sidecar_path = case_dir / f"{stem}.json"
-            _atomic_json(sidecar_path, sidecar)
-            manifest_rows.append({
-                "source": case.source, "record_id": case.record_id, "stratum": case.stratum,
-                "rank": case.rank, "selection_score": case.selection_score,
-                "all_reasons": "|".join(case.reasons),
-                "cfg": str(cfg_path.relative_to(batch_dir)), "dat": str(dat_path.relative_to(batch_dir)),
-                "sidecar": str(sidecar_path.relative_to(batch_dir)),
-            })
-            progress.update(index)
+            try:
+                source = source_objects[case.source]
+                metadata = source.get_metadata(case.record_id)
+                signal = np.asarray(source.load_signal(case.record_id), dtype=np.float64)
+                labels = archives[case.source].get(case.record_id)
+                record, scaling = _build_export_record(case, signal, metadata, labels, resolver)
+                case_dir = batch_dir / case.stratum / case.source
+                stem = f"{case.source}__record_{case.record_id:05d}"
+                cfg_path, dat_path = case_dir / f"{stem}.cfg", case_dir / f"{stem}.dat"
+                write_comtrade_ascii(record, cfg_path, dat_path)
+                sidecar = {
+                    "kind": "phase5_pdr_manual_review_case", "schema_version": 1,
+                    "source": case.source, "record_id": case.record_id,
+                    "input_sha256": case.row.get("input_sha256"), "file_name": metadata.get("file_name"),
+                    "stratum": case.stratum, "all_selection_reasons": list(case.reasons),
+                    "selection_rank": case.rank, "selection_score": case.selection_score,
+                    "full_record": True, "analog_units": "physical_A_V",
+                    "physical_scaling": scaling, "voltage_basis": metadata.get("voltage_basis", "phase"),
+                    "algorithm_ids": list(archives[case.source].algorithm_ids),
+                    "expert_channels": {"direction": 0, "applicable": 0},
+                    "cfg_sha256": _sha256(cfg_path), "dat_sha256": _sha256(dat_path),
+                    "cfg": cfg_path.name, "dat": dat_path.name,
+                }
+                sidecar_path = case_dir / f"{stem}.json"
+                _atomic_json(sidecar_path, sidecar)
+                manifest_rows.append({
+                    "source": case.source, "record_id": case.record_id, "stratum": case.stratum,
+                    "rank": case.rank, "selection_score": case.selection_score,
+                    "all_reasons": "|".join(case.reasons),
+                    "cfg": str(cfg_path.relative_to(batch_dir)), "dat": str(dat_path.relative_to(batch_dir)),
+                    "sidecar": str(sidecar_path.relative_to(batch_dir)),
+                })
+                _write_csv(batch_dir / "batch_manifest.csv", manifest_rows)
+            except (ValueError, KeyError, FileNotFoundError) as exc:
+                failure = {
+                    "source": case.source,
+                    "record_id": case.record_id,
+                    "stratum": case.stratum,
+                    "error_type": type(exc).__name__,
+                    "error": str(exc),
+                }
+                failure_rows.append(failure)
+                failure_path = batch_dir / "export_failures" / f"{case.source}__record_{case.record_id:05d}.json"
+                failure_path.parent.mkdir(parents=True, exist_ok=True)
+                _atomic_json(failure_path, {
+                    "kind": "phase5_pdr_manual_review_export_failure",
+                    "schema_version": 1,
+                    **failure,
+                })
+                _write_csv(batch_dir / "export_failures.csv", failure_rows)
+                print(f"\nПропущен {case.source}:{case.record_id}: {exc}")
+            finally:
+                progress.update(index)
     finally:
         for source in source_objects.values():
             close = getattr(source, "close", None)
@@ -271,9 +306,13 @@ def export_batch(
                 close()
     progress.finish()
     _write_csv(batch_dir / "batch_manifest.csv", manifest_rows)
+    _write_csv(batch_dir / "export_failures.csv", failure_rows)
     _atomic_json(batch_dir / "batch_summary.json", {
         "kind": "phase5_pdr_manual_review_batch", "schema_version": 1,
-        "created_at": datetime.now().isoformat(), "records": len(manifest_rows),
+        "created_at": datetime.now().isoformat(),
+        "selected_records": len(selected),
+        "exported_records": len(manifest_rows),
+        "failed_records": len(failure_rows),
         "label_dir": str(Path(label_dir)), "selection_is_without_replacement": True,
     })
     return batch_dir
@@ -289,7 +328,10 @@ def discover_previously_exported(review_root: Path) -> set[tuple[str, int]]:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, UnicodeDecodeError, json.JSONDecodeError):
             continue
-        if payload.get("kind") == "phase5_pdr_manual_review_case":
+        if payload.get("kind") in (
+            "phase5_pdr_manual_review_case",
+            "phase5_pdr_manual_review_export_failure",
+        ):
             result.add((str(payload["source"]), int(payload["record_id"])))
     pattern = re.compile(r"(open_ee|french_rte)__record_(\d+)\.cfg$", re.IGNORECASE)
     for path in root.rglob("*.cfg"):
@@ -297,6 +339,57 @@ def discover_previously_exported(review_root: Path) -> set[tuple[str, int]]:
         if match:
             result.add((match.group(1).lower(), int(match.group(2))))
     return result
+
+
+def recover_incomplete_batches(review_root: Path) -> list[Path]:
+    """Восстановить манифесты пакетов, прерванных после записи отдельных пар."""
+
+    recovered: list[Path] = []
+    for batch_dir in sorted(Path(review_root).glob("batch_*")):
+        if not batch_dir.is_dir() or (batch_dir / "batch_summary.json").exists():
+            continue
+        manifest_rows: list[dict[str, Any]] = []
+        failure_rows: list[dict[str, Any]] = []
+        for path in sorted(batch_dir.rglob("*.json")):
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+                continue
+            if payload.get("kind") == "phase5_pdr_manual_review_case":
+                cfg = path.with_name(str(payload["cfg"]))
+                dat = path.with_name(str(payload["dat"]))
+                if not cfg.exists() or not dat.exists():
+                    continue
+                manifest_rows.append({
+                    "source": payload["source"], "record_id": payload["record_id"],
+                    "stratum": payload.get("stratum", path.parent.parent.name),
+                    "rank": payload.get("selection_rank", ""),
+                    "selection_score": payload.get("selection_score", ""),
+                    "all_reasons": "|".join(payload.get("all_selection_reasons", ())),
+                    "cfg": str(cfg.relative_to(batch_dir)),
+                    "dat": str(dat.relative_to(batch_dir)),
+                    "sidecar": str(path.relative_to(batch_dir)),
+                })
+            elif payload.get("kind") == "phase5_pdr_manual_review_export_failure":
+                failure_rows.append({
+                    key: payload.get(key, "")
+                    for key in ("source", "record_id", "stratum", "error_type", "error")
+                })
+        if not manifest_rows and not failure_rows:
+            continue
+        _write_csv(batch_dir / "batch_manifest.csv", manifest_rows)
+        _write_csv(batch_dir / "export_failures.csv", failure_rows)
+        _atomic_json(batch_dir / "batch_summary.json", {
+            "kind": "phase5_pdr_manual_review_batch",
+            "schema_version": 1,
+            "recovered_at": datetime.now().isoformat(),
+            "recovered_after_interruption": True,
+            "exported_records": len(manifest_rows),
+            "failed_records": len(failure_rows),
+            "selection_is_without_replacement": True,
+        })
+        recovered.append(batch_dir)
+    return recovered
 
 
 def _build_export_record(case, signal, metadata, labels, resolver):
@@ -467,10 +560,14 @@ def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
 
 def _write_csv(path: Path, rows: Iterable[dict[str, Any]]) -> None:
     rows = list(rows)
-    if not rows: return
-    with path.open("w", encoding="utf-8-sig", newline="") as stream:
+    if not rows:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.tmp")
+    with temporary.open("w", encoding="utf-8-sig", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
         writer.writeheader(); writer.writerows(rows)
+    temporary.replace(path)
 
 
 def run_manual() -> None:
@@ -482,7 +579,16 @@ def run_manual() -> None:
     EXPORT_COMTRADE = True  # Сначала проверить файл selection_preview.csv, затем включить экспорт.
     BATCH_NAME: str | None = None
 
-    selected, catalog = select_review_cases(ANALYSIS_DIR, REVIEW_ROOT, QUOTAS_PER_SOURCE)
+    recovered = recover_incomplete_batches(REVIEW_ROOT)
+    if recovered:
+        print("Восстановлены прерванные пакеты: " + ", ".join(path.name for path in recovered))
+    selected, catalog = select_review_cases(
+        ANALYSIS_DIR,
+        REVIEW_ROOT,
+        QUOTAS_PER_SOURCE,
+        additional_exclusion_roots=(DEFAULT_MANUAL_LABEL_ROOT,),
+        source_quota_multipliers=DEFAULT_SOURCE_QUOTA_MULTIPLIERS,
+    )
     REVIEW_ROOT.mkdir(parents=True, exist_ok=True)
     _write_csv(REVIEW_ROOT / "candidate_catalog.csv", catalog)
     _write_csv(REVIEW_ROOT / "selection_preview.csv", [{

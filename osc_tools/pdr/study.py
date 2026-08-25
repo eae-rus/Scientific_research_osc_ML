@@ -337,10 +337,16 @@ class PDRStudyLabelStore:
             path = path / "manifest.json"
         self.manifest_path = path
         self.manifest = json.loads(path.read_text(encoding="utf-8"))
-        if self.manifest.get("kind") != "pdr_study_sharded":
-            raise ValueError("Manifest не является pdr_study_sharded")
-        self.algorithm_ids = tuple(self.manifest["algorithm_ids"])
-        selected = algorithm_id or str(self.manifest["teacher_algorithm_id"])
+        self.kind = str(self.manifest.get("kind"))
+        if self.kind not in ("pdr_study_sharded", "pdr_expert_labels_sharded"):
+            raise ValueError("Manifest не является архивом PDR-разметки")
+        self.is_expert = self.kind == "pdr_expert_labels_sharded"
+        self.algorithm_ids = (
+            ("expert",) if self.is_expert else tuple(self.manifest["algorithm_ids"])
+        )
+        selected = algorithm_id or (
+            "expert" if self.is_expert else str(self.manifest["teacher_algorithm_id"])
+        )
         if selected not in self.algorithm_ids:
             raise KeyError(f"Алгоритм {selected!r} отсутствует в разметке")
         invalidation_path = next(
@@ -399,16 +405,22 @@ class PDRStudyLabelStore:
         offsets = shard["offsets"]
         start = int(offsets[local_index])
         stop = int(offsets[local_index + 1])
-        directions = shard["directions"][self.algorithm_index, start:stop]
-        if "all_margins" in shard:
+        if self.is_expert:
+            directions = shard["directions"][start:stop]
+            margins = np.full(stop - start, np.nan, dtype=np.float32)
+            confidences = np.ones(stop - start, dtype=np.float32)
+            warmup = np.zeros(stop - start, dtype=bool)
+        else:
+            directions = shard["directions"][self.algorithm_index, start:stop]
+        if not self.is_expert and "all_margins" in shard:
             margins = shard["all_margins"][self.algorithm_index, start:stop]
             confidences = shard["all_confidences"][self.algorithm_index, start:stop]
             warmup = shard["all_warmup"][self.algorithm_index, start:stop]
-        elif self.algorithm_id == self.manifest["teacher_algorithm_id"]:
+        elif not self.is_expert and self.algorithm_id == self.manifest["teacher_algorithm_id"]:
             margins = shard["teacher_margin"][start:stop]
             confidences = shard["teacher_confidence"][start:stop]
             warmup = shard["teacher_warmup"][start:stop]
-        else:
+        elif not self.is_expert:
             margins = np.zeros(stop - start, dtype=np.float32)
             confidences = np.ones(stop - start, dtype=np.float32)
             warmup = directions == int(PDRDirection.UNLABELED)
@@ -421,14 +433,22 @@ class PDRStudyLabelStore:
             margins = np.zeros_like(margins)
             confidences = np.zeros_like(confidences)
             warmup = np.ones_like(warmup, dtype=bool)
-        return {
+        result = {
             "directions": directions,
             "margins": margins,
             "confidences": confidences,
             "warmup": warmup,
             "samples": np.asarray(shard["samples"][start:stop]),
-            "provenance": np.asarray(shard["provenance"][local_index]),
         }
+        if "provenance" in shard:
+            result["provenance"] = np.asarray(shard["provenance"][local_index])
+        if "train_mask" in shard:
+            result["train_mask"] = np.asarray(shard["train_mask"][start:stop], dtype=bool)
+        if "transition_eval_mask" in shard:
+            result["transition_eval_mask"] = np.asarray(
+                shard["transition_eval_mask"][start:stop], dtype=bool
+            )
+        return result
 
     def close(self) -> None:
         self._cached_npz = None
