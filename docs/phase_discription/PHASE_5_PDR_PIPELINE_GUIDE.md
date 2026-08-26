@@ -237,6 +237,49 @@ BATCH_NAME = "pilot"
 
 Сценарий: `scripts/phase5_experiments/run_phase5_pdr_training.py`.
 
+Для запуска из VS Code/F5 все основные параметры собраны в начале функции
+`run_manual()`. Полный weak-запуск по умолчанию имеет следующий объём:
+
+| Параметр | Значение | Смысл |
+|---|---:|---|
+| `EPOCHS` | 40 | число завершённых проходов обучения |
+| `SAMPLES_PER_EPOCH` | 20 000 | число случайно выбранных целевых точек на эпоху |
+| `BATCH_SIZE` | 32 | число примеров в одном шаге оптимизатора |
+| `MAX_SAMPLES_PER_RECORD` | 64 | максимум индексируемых train-точек одной осциллограммы |
+| `VALIDATION_MAX_SAMPLES_PER_RECORD` | 32 | максимум validation-точек одной осциллограммы |
+| `EXPERT_VALIDATION_MAX_SAMPLES_PER_RECORD` | 256 | более плотная expert-validation; число файлов всё равно важнее числа точек |
+| `WEAK_OPEN_RECORDS` | 4 000 | число train-осциллограмм Open_EE |
+| `WEAK_FRENCH_RECORDS` | 1 000 | число train-осциллограмм French/RTE |
+| `VALIDATION_RECORDS_PER_SOURCE` | 400 | validation-осциллограмм каждого источника |
+| `LABEL_STRIDE_SAMPLES` | 5 | шаг отбора доступных целевых точек исходной разметки |
+
+`LABEL_STRIDE_SAMPLES` не прореживает сохранённую v5-разметку: она остаётся
+поточечной. Параметр только уменьшает число кандидатов для обучающего индекса.
+После этого `MAX_SAMPLES_PER_RECORD` равномерно ограничивает вклад одной длинной
+осциллограммы. `WeightedRandomSampler` формирует из полученного индекса ровно
+`SAMPLES_PER_EPOCH` примеров с возвращением, поэтому это и есть управляемый
+объём эпохи.
+
+Сырые сигналы не загружаются целиком в память. На старте читаются sharded-метки
+и строится компактный список `(record_id, window_idx)`, а исходная
+осциллограмма и спектральные признаки загружаются лениво при запросе batch.
+Подготовка индекса теперь отображает прогресс отдельно для каждого источника и
+split. Выбранные записи сортируются по `record_id`, чтобы не перечитывать одни
+и те же shard-файлы в псевдослучайном порядке.
+
+На Windows рекомендуется первый полный запуск выполнять с `NUM_WORKERS = 0`,
+а затем отдельно сравнить скорость с `2` и `4`. Open_EE reader очищает кэш
+открытых NPZ-файлов перед передачей dataset дочернему процессу, поэтому
+`NUM_WORKERS > 0` поддерживается. При большом числе workers каждый процесс
+держит собственный небольшой LRU-кэш и тем самым увеличивает расход RAM и число
+одновременных чтений с диска; French/RTE memmap при этом переоткрывается по
+пути, а не копируется целиком. Ускорение поэтому не гарантируется.
+Workers сохраняются между эпохами (`persistent_workers`), чтобы Windows не
+повторял их дорогостоящий запуск на каждой эпохе. Если новый weak-цикл оборвался
+до первой эпохи уже после архивирования прежнего результата, повторный запуск
+`RESTART_WEAK_FROM` автоматически найдёт выбранный checkpoint в последнем
+`archive_*`.
+
 Сначала проверить weak-stage:
 
 ```powershell
@@ -249,6 +292,90 @@ python scripts/phase5_experiments/run_phase5_pdr_training.py `
 SSL-checkpoint `experiments/phase5/pretrain_b_small/best_model.pt`; Open_EE
 получает вес 0,8, French/RTE — 0,2.
 
+Из командной строки объём можно задать явно:
+
+```powershell
+python scripts/phase5_experiments/run_phase5_pdr_training.py `
+  --stage weak --temporal-mode snapshot_5 `
+  --label-stride-samples 5 --model-preset small `
+  --epochs 40 --samples-per-epoch 20000 --batch-size 32 `
+  --weak-open-records 4000 --weak-french-records 1000 `
+  --validation-records-per-source 400 `
+  --max-samples-per-record 64 `
+  --validation-max-samples-per-record 32
+```
+
+Во время работы отображаются:
+
+1. полный фактический конфиг и выбранное устройство;
+2. прогресс построения индексов по записям;
+3. число индексированных train/validation-точек;
+4. прогресс каждого train и validation batch;
+5. loss, обе группы validation-метрик, скорость и пиковая память GPU после
+   каждой эпохи.
+
+История сохраняется после каждой эпохи:
+
+- `training_log.jsonl` — одна машинно-читаемая строка на эпоху;
+- `training_history.json` — тот же журнал одним JSON-массивом;
+- `training_history.png` — loss и метрики направления/применимости;
+- `latest_checkpoint.pt` — точка безопасного продолжения;
+- `best_model.pt` — лучшая сумма F1 направления и F1 применимости;
+- `config.json` — точный контракт запуска.
+
+Название `best_model.pt` означает только максимум заранее выбранной суммы двух
+F1 на validation, а не безусловно лучшую инженерную модель. Поэтому для
+следующего этапа можно независимо выбрать:
+
+- `SSL_CHECKPOINT_KIND = "best"` или `"latest"` — инициализация weak-stage из
+  предыдущего спектрального предобучения;
+- `WEAK_CHECKPOINT_KIND = "best"` или `"latest"` — инициализация expert-stage
+  из weak-stage.
+
+Для CLI используются `--ssl-checkpoint-kind best|latest` и
+`--weak-checkpoint-kind best|latest`. Параметры `--ssl-checkpoint PATH` и
+`--weak-checkpoint PATH` имеют более высокий приоритет и позволяют указать
+любой конкретный checkpoint. Для научного сравнения желательно прогнать
+expert-stage от обоих weak-checkpoint при одинаковом seed и не выбирать вариант
+по тому же holdout, на котором затем заявляется итоговое качество.
+
+Для продолжения прерванного запуска установить `RESUME=True` в `run_manual()`
+либо добавить `--resume`. При свежем запуске (`RESUME=False`) прежние файлы
+автоматически переносятся в подпапку `archive_YYYYMMDD_HHMMSS`, поэтому история
+не смешивается и не теряется.
+
+Продолжение полностью поддерживается и для `weak`. Нужно оставить
+`STAGE="weak"`, установить `RESUME=True` и задать в `EPOCHS` общее желаемое
+число эпох. Например, при checkpoint после 12-й эпохи и `EPOCHS=40` будут
+выполнены эпохи 13–40. Восстанавливаются backbone, PDR-голова, оптимизатор и
+scheduler. Если процесс остановлен до завершения первой эпохи и
+`latest_checkpoint.pt` ещё не создан, продолжать пока не из чего — такой запуск
+начинается заново, но уже с отображением прогресса подготовки индекса.
+
+Есть и третий вариант — начать новый weak-цикл с уже обученных весов:
+
+```python
+STAGE = "weak"
+RESUME = False
+RESTART_WEAK_FROM = "latest"  # либо "best"
+EPOCHS = 40
+```
+
+При этом backbone и PDR-голова загружаются из предыдущего checkpoint, но счётчик
+эпох, оптимизатор и scheduler начинают новый цикл. Внутренний индекс первой
+эпохи снова равен 0 (в пользовательском прогрессе она показывается как `1/40`).
+Если используется тот же выходной каталог, прежний запуск сначала переносится
+в `archive_*`, после чего выбранный checkpoint загружается уже из архива.
+Эквивалент CLI: `--stage weak --restart-weak-from latest --epochs 40`.
+
+Итого:
+
+| Требуемое действие | Настройки |
+|---|---|
+| новый weak из SSL-pretrain | `RESUME=False`, `RESTART_WEAK_FROM=None` |
+| продолжить оборванный weak | `RESUME=True`, `RESTART_WEAK_FROM=None` |
+| новый цикл из прежнего weak | `RESUME=False`, `RESTART_WEAK_FROM="best"` или `"latest"` |
+
 После появления `best_model.pt` выполнить smoke и полный expert-stage:
 
 ```powershell
@@ -259,9 +386,43 @@ python scripts/phase5_experiments/run_phase5_pdr_training.py `
   --smoke
 ```
 
+По умолчанию экспертный слой берётся из
+`data/phase5/pdr_expert_labels_v1`. Если ручная разметка расположена в другом
+каталоге с той же структурой (`records.csv` и подпапки `open_ee`/`french_rte`),
+путь можно задать параметром:
+
+```powershell
+python scripts/phase5_experiments/run_phase5_pdr_training.py `
+  --stage expert `
+  --weak-checkpoint experiments/phase5/pdr_weak_snapshot_5_stride5/best_model.pt `
+  --expert-labels-root D:\путь\к\pdr_expert_labels_v1 `
+  --smoke
+```
+
+В `run_manual()` тот же параметр называется `EXPERT_LABELS_ROOT`. Там же можно
+явно задать checkpoint weak-модели через `WEAK_CHECKPOINT_PATH`, например:
+
+```python
+WEAK_CHECKPOINT_PATH = (
+    "experiments/phase5/pdr_weak_snapshot_5_stride5/latest_checkpoint.pt"
+)
+```
+
+Если `WEAK_CHECKPOINT_PATH = None`, путь формируется автоматически из
+`TEMPORAL_MODE`, `LABEL_STRIDE_SAMPLES` и `WEAK_CHECKPOINT_KIND`.
+
 Для полного expert запуска убрать `--smoke`. Он использует 75% экспертных
 примеров и 25% replay Open_EE; внутри экспертной части Open_EE получает 75%,
 French/RTE — 25%. Исходные validation/holdout не переносятся в train.
+
+После завершения expert-stage нельзя сопоставлять его training-history с weak
+напрямую: validation и эталоны у этапов различаются. Для общей оценки открыть
+`scripts/phase5_experiments/evaluate_pdr_expert_holdout.py` и запустить
+`run_manual()`. По умолчанию он последовательно проверяет weak/latest,
+expert/best и expert/latest только на одинаковой экспертной validation,
+сохраняя JSON в `experiments/phase5/pdr_expert_evaluation_v1`. Holdout
+добавляется в `SPLITS` однократно после фиксации архитектуры и порогов; для
+выбора эпохи или модели он не используется.
 
 После базовой пары повторить абляции:
 

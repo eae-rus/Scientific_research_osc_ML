@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Callable, Dict, Any, Optional
 import numpy as np
 
 try:
@@ -20,6 +20,46 @@ except ImportError:
     HAS_TORCH = False
 
 logger = logging.getLogger(__name__)
+
+
+def _binary_metrics(targets: np.ndarray, predictions: np.ndarray) -> Dict[str, float]:
+    """Полный набор бинарных метрик без зависимости от sklearn."""
+
+    targets = np.asarray(targets, dtype=np.int8)
+    predictions = np.asarray(predictions, dtype=np.int8)
+    tp = float(np.sum((predictions == 1) & (targets == 1)))
+    tn = float(np.sum((predictions == 0) & (targets == 0)))
+    fp = float(np.sum((predictions == 1) & (targets == 0)))
+    fn = float(np.sum((predictions == 0) & (targets == 1)))
+
+    def ratio(numerator: float, denominator: float) -> float:
+        return numerator / denominator if denominator > 0 else 0.0
+
+    precision_1 = ratio(tp, tp + fp)
+    recall_1 = ratio(tp, tp + fn)
+    f1_1 = ratio(2.0 * precision_1 * recall_1, precision_1 + recall_1)
+    precision_0 = ratio(tn, tn + fn)
+    recall_0 = ratio(tn, tn + fp)
+    f1_0 = ratio(2.0 * precision_0 * recall_0, precision_0 + recall_0)
+    mcc_denominator = np.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+    return {
+        "accuracy": float(np.mean(predictions == targets)) if targets.size else 0.0,
+        "precision": precision_1,
+        "recall": recall_1,
+        "f1": f1_1,
+        "negative_precision": precision_0,
+        "specificity": recall_0,
+        "negative_f1": f1_0,
+        "macro_f1": 0.5 * (f1_0 + f1_1),
+        "balanced_accuracy": 0.5 * (recall_0 + recall_1),
+        "mcc": ratio(tp * tn - fp * fn, float(mcc_denominator)),
+        "tp": tp,
+        "tn": tn,
+        "fp": fp,
+        "fn": fn,
+        "positive_support": tp + fn,
+        "negative_support": tn + fp,
+    }
 
 
 def decode_pdr_predictions(
@@ -213,6 +253,7 @@ def evaluate_pdr_metrics(
     head: PDRTaskHead,
     dataloader: DataLoader,
     device: str = "cpu",
+    progress_callback: Optional[Callable[[int], None]] = None,
 ) -> Dict[str, float]:
     """Оценка качества модели на тестовом/валидационном датасете РНМ."""
     if not HAS_TORCH:
@@ -227,9 +268,11 @@ def evaluate_pdr_metrics(
     margin_errors: list[float] = []
     all_applicable_preds: list[int] = []
     all_applicable_targets: list[int] = []
+    all_direction_record_ids: list[int] = []
+    all_applicability_record_ids: list[int] = []
 
     with torch.no_grad():
-        for batch in dataloader:
+        for batch_index, batch in enumerate(dataloader, start=1):
             target_cls = batch["target_class"].to(device)
             target_applicable = batch.get("target_applicable")
             if target_applicable is None:
@@ -244,12 +287,22 @@ def evaluate_pdr_metrics(
             preds = torch.argmax(out["logits"], dim=-1)
             all_preds.extend(preds[target_applicable].cpu().tolist())
             all_targets.extend(target_cls[target_applicable].cpu().tolist())
+            record_ids = batch.get("record_id")
+            if record_ids is not None:
+                record_ids = torch.as_tensor(record_ids, device=device)
+                source_ids = batch.get("source_id")
+                if source_ids is not None:
+                    source_ids = torch.as_tensor(source_ids, device=device)
+                    record_ids = record_ids + source_ids * 1_000_000_000
+                all_direction_record_ids.extend(record_ids[target_applicable].cpu().tolist())
 
             applicable_preds = (
                 torch.sigmoid(out["applicability_logit"]) >= 0.5
             )
             all_applicable_preds.extend(applicable_preds.cpu().to(torch.int8).tolist())
             all_applicable_targets.extend(target_applicable.cpu().to(torch.int8).tolist())
+            if record_ids is not None:
+                all_applicability_record_ids.extend(record_ids.cpu().tolist())
 
             if "margin" in out:
                 margin_valid = target_applicable & torch.isfinite(target_margin)
@@ -258,48 +311,77 @@ def evaluate_pdr_metrics(
                     - target_margin[margin_valid]
                 ).abs().cpu().tolist()
                 margin_errors.extend(err)
+            if progress_callback is not None:
+                progress_callback(batch_index)
 
     all_preds_arr = np.array(all_preds)
     all_targets_arr = np.array(all_targets)
     applicable_preds_arr = np.asarray(all_applicable_preds, dtype=np.int8)
     applicable_targets_arr = np.asarray(all_applicable_targets, dtype=np.int8)
 
-    acc = float(np.mean(all_preds_arr == all_targets_arr)) if len(all_targets_arr) > 0 else 0.0
+    direction_metrics = _binary_metrics(all_targets_arr, all_preds_arr)
+    applicability_metrics = _binary_metrics(applicable_targets_arr, applicable_preds_arr)
     mae_margin = float(np.mean(margin_errors)) if margin_errors else 0.0
 
-    # Вычисление Precision, Recall и F1-score для класса FORWARD (1)
-    tp = float(np.sum((all_preds_arr == 1) & (all_targets_arr == 1)))
-    fp = float(np.sum((all_preds_arr == 1) & (all_targets_arr == 0)))
-    fn = float(np.sum((all_preds_arr == 0) & (all_targets_arr == 1)))
+    def record_macro(
+        record_ids: list[int], targets: np.ndarray, predictions: np.ndarray,
+    ) -> tuple[float, float, int]:
+        if not record_ids:
+            return 0.0, 0.0, 0
+        ids = np.asarray(record_ids, dtype=np.int64)
+        per_record = [
+            _binary_metrics(targets[ids == record_id], predictions[ids == record_id])
+            for record_id in np.unique(ids)
+        ]
+        return (
+            float(np.mean([item["accuracy"] for item in per_record])),
+            float(np.mean([item["macro_f1"] for item in per_record])),
+            len(per_record),
+        )
 
-    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-    recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-    f1 = 2.0 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
-    applicability_accuracy = (
-        float(np.mean(applicable_preds_arr == applicable_targets_arr))
-        if len(applicable_targets_arr) > 0 else 0.0
+    record_accuracy, record_macro_f1, direction_record_count = record_macro(
+        all_direction_record_ids, all_targets_arr, all_preds_arr
     )
-    app_tp = float(np.sum((applicable_preds_arr == 1) & (applicable_targets_arr == 1)))
-    app_fp = float(np.sum((applicable_preds_arr == 1) & (applicable_targets_arr == 0)))
-    app_fn = float(np.sum((applicable_preds_arr == 0) & (applicable_targets_arr == 1)))
-    applicability_precision = app_tp / (app_tp + app_fp) if (app_tp + app_fp) > 0 else 0.0
-    applicability_recall = app_tp / (app_tp + app_fn) if (app_tp + app_fn) > 0 else 0.0
-    applicability_f1 = (
-        2.0 * applicability_precision * applicability_recall
-        / (applicability_precision + applicability_recall)
-        if (applicability_precision + applicability_recall) > 0 else 0.0
+    app_record_accuracy, app_record_macro_f1, applicability_record_count = record_macro(
+        all_applicability_record_ids, applicable_targets_arr, applicable_preds_arr
     )
 
     return {
-        "accuracy": acc,
-        "precision": precision,
-        "recall": recall,
-        "f1_score": f1,
+        "accuracy": direction_metrics["accuracy"],
+        "precision": direction_metrics["precision"],
+        "recall": direction_metrics["recall"],
+        "f1_score": direction_metrics["f1"],
+        "specificity": direction_metrics["specificity"],
+        "negative_f1_score": direction_metrics["negative_f1"],
+        "macro_f1_score": direction_metrics["macro_f1"],
+        "balanced_accuracy": direction_metrics["balanced_accuracy"],
+        "mcc": direction_metrics["mcc"],
+        "tp": direction_metrics["tp"],
+        "tn": direction_metrics["tn"],
+        "fp": direction_metrics["fp"],
+        "fn": direction_metrics["fn"],
+        "forward_support": direction_metrics["positive_support"],
+        "reverse_support": direction_metrics["negative_support"],
+        "record_macro_accuracy": record_accuracy,
+        "record_macro_f1_score": record_macro_f1,
+        "n_direction_records": direction_record_count,
         "mae_margin": mae_margin,
         "n_samples": len(all_targets),
         "n_applicability_samples": len(applicable_targets_arr),
-        "applicability_accuracy": applicability_accuracy,
-        "applicability_precision": applicability_precision,
-        "applicability_recall": applicability_recall,
-        "applicability_f1_score": applicability_f1,
+        "applicability_accuracy": applicability_metrics["accuracy"],
+        "applicability_precision": applicability_metrics["precision"],
+        "applicability_recall": applicability_metrics["recall"],
+        "applicability_f1_score": applicability_metrics["f1"],
+        "applicability_specificity": applicability_metrics["specificity"],
+        "applicability_negative_f1_score": applicability_metrics["negative_f1"],
+        "applicability_macro_f1_score": applicability_metrics["macro_f1"],
+        "applicability_balanced_accuracy": applicability_metrics["balanced_accuracy"],
+        "applicability_mcc": applicability_metrics["mcc"],
+        "applicability_tp": applicability_metrics["tp"],
+        "applicability_tn": applicability_metrics["tn"],
+        "applicability_fp": applicability_metrics["fp"],
+        "applicability_fn": applicability_metrics["fn"],
+        "applicability_record_macro_accuracy": app_record_accuracy,
+        "applicability_record_macro_f1_score": app_record_macro_f1,
+        "n_applicability_records": applicability_record_count,
     }

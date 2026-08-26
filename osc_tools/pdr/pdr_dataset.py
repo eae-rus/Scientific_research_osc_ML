@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Callable, Dict, Any, List, Optional, Tuple
 import numpy as np
 
 try:
@@ -53,6 +53,7 @@ class PDRTaskDataset(Dataset):
         max_samples_per_record: Optional[int] = None,
         augmentation_seed: Optional[int] = None,
         augmentation_probability: float = 0.0,
+        index_progress_callback: Optional[Callable[[int, int], None]] = None,
     ) -> None:
         if not HAS_TORCH:
             raise RuntimeError("PyTorch не установлен в текущем окружении.")
@@ -80,6 +81,7 @@ class PDRTaskDataset(Dataset):
         self.augmentation_seed = augmentation_seed
         self.augmentation_probability = float(augmentation_probability)
         self.augmentation_epoch = 0
+        self.index_progress_callback = index_progress_callback
 
         # Legacy single-NPZ остаётся совместимым; новый массовый формат читается
         # лениво по shards и не загружает сотни миллионов меток в RAM.
@@ -104,18 +106,26 @@ class PDRTaskDataset(Dataset):
         # Индексация валидных окон для обучения
         self.samples: List[Tuple[int, int]] = []  # (record_idx, window_idx)
         self._build_sample_index()
+        # Callback нужен только в главном процессе при построении индекса.
+        # Не переносим лишнее состояние ProgressReporter в DataLoader workers.
+        self.index_progress_callback = None
 
     def _build_sample_index(self) -> None:
         """Построение индекса направления и применимости по causal-окнам."""
-        for rec_idx in self.indices:
+        total_records = len(self.indices)
+        for position, rec_idx in enumerate(self.indices, start=1):
             record_labels = self._record_labels(rec_idx)
             if record_labels is None:
+                if self.index_progress_callback is not None:
+                    self.index_progress_callback(position, total_records)
                 continue
             # Недостаток исходных каналов (<2I либо <2U) означает, что РНМ
             # невозможно рассчитать вообще. Такие записи не являются
             # отрицательными примерами головы применимости и не индексируются.
             if self.exclude_structurally_insufficient:
                 if self.label_store is not None and not self.label_store.is_structurally_eligible(rec_idx):
+                    if self.index_progress_callback is not None:
+                        self.index_progress_callback(position, total_records)
                     continue
                 provenance = np.asarray(
                     record_labels.get("provenance", self.source.get_provenance(rec_idx))
@@ -123,6 +133,8 @@ class PDRTaskDataset(Dataset):
                 voltage_basis = str(self.source.get_metadata(rec_idx).get("voltage_basis", "phase"))
                 sufficiency = check_pdr_signal_sufficiency(provenance, voltage_basis)
                 if not sufficiency.can_run_phase_pdr:
+                    if self.index_progress_callback is not None:
+                        self.index_progress_callback(position, total_records)
                     continue
             dirs = record_labels["directions"]
             warmup = record_labels["warmup"]
@@ -174,6 +186,8 @@ class PDRTaskDataset(Dataset):
                 valid_w_indices = valid_w_indices[np.unique(positions)]
             for w_idx in valid_w_indices:
                 self.samples.append((rec_idx, int(w_idx)))
+            if self.index_progress_callback is not None:
+                self.index_progress_callback(position, total_records)
 
     def _record_timebase(self, rec_idx: int) -> TimebaseContract:
         """Получить временной контракт конкретной записи, а не всего источника."""
@@ -276,6 +290,7 @@ class PDRTaskDataset(Dataset):
                 dtype=torch.bool,
             ),
             "channel_provenance": torch.tensor(provenance, dtype=torch.long),
+            "source_id": 0 if self.source.name == "open_ee" else 1 if self.source.name == "french_rte" else 2,
             "record_id": rec_idx,
             "window_idx": w_idx,
             "augmentation_code": augmentation_code,

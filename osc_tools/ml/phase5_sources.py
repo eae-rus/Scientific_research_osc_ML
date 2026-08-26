@@ -115,6 +115,25 @@ class OpenEEShardedSource(DatasetSource):
             shard.close()
         self._cache.clear()
 
+    def __getstate__(self) -> dict[str, object]:
+        """Не передавать открытые NPZ/ZIP-дескрипторы DataLoader workers.
+
+        На Windows multiprocessing использует ``spawn`` и сериализует dataset.
+        Объекты ``numpy.lib.npyio.NpzFile`` внутри LRU-кэша содержат
+        ``BufferedReader`` и не поддерживают pickle. Каждый worker безопасно
+        создаст собственный ленивый кэш при первом обращении к shard.
+        """
+
+        state = self.__dict__.copy()
+        state["_cache"] = OrderedDict()
+        state["cache_hits"] = 0
+        state["cache_misses"] = 0
+        return state
+
+    def __setstate__(self, state: dict[str, object]) -> None:
+        self.__dict__.update(state)
+        self._cache = OrderedDict()
+
 
 class FrenchRTESource(DatasetSource):
     """Lazy mmap reader French/RTE; без тока per-unit источник не считается нормированным."""
@@ -162,6 +181,17 @@ class FrenchRTESource(DatasetSource):
             ChannelProvenance.MEASURED,
             ChannelProvenance.MISSING,
         ], dtype=np.uint8)
+
+    def __getstate__(self) -> dict[str, object]:
+        """Передать worker только путь, не сериализовать содержимое memmap."""
+
+        state = self.__dict__.copy()
+        state["data"] = None
+        return state
+
+    def __setstate__(self, state: dict[str, object]) -> None:
+        self.__dict__.update(state)
+        self.data = np.load(self.prepared_path, mmap_mode="r", allow_pickle=False)
 
 
 def adapt_open_ee_rows(rows: Sequence[Mapping[str, str]]) -> AdaptedOpenEERecord:
