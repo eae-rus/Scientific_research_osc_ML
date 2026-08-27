@@ -1,9 +1,11 @@
 # План Фазы 5: предобучение на реальных осциллограммах и дообучение под задачи
 
-> **Статус:** в работе; infrastructure, feature contract v2 и первый
-> `research_strict` full SSL pretrain Version B завершены. На 09.08.2026
-> закончен повторный code review PDR-контура и устранены блокирующие дефекты
-> разметки/dataset/trainer; следующий этап — статистика teacher и PDR probe.
+> **Статус 27.08.2026:** infrastructure, feature contract v2, SSL pretrain
+> Version B (`small` и `heavy`) и первый `snapshot_5/small` weak→expert PDR-пилот
+> завершены. Выполнены массовая разметка v5, статистический аудит, COMTRADE-
+> контур и экспертная итерация v1; идёт ручная итерация v2. После аудита первого
+> обучения weak-пулы переведены на поэпоховую ротацию полного train-split.
+> Универсальный task API и Phase 5-ветка ОЗЗ пока не завершены.
 **Цель:** продолжить Фазу 4/4.5, модернизировать признаковое пространство Physical KAN-Transformer по результатам нового исследования и предобучить общий backbone на большом наборе реальных осциллограмм. Главной прикладной демонстрацией Фазы 5 становится интеллектуальный орган направления мощности (РНМ/PDR): сначала воспроизведение и сравнение аналитических органов, затем обучение по их псевдоразметке реальных данных и пост-обучение на сложных размеченных случаях. ДПОЗЗ/ОЗЗ остаётся подключаемой демонстрационной задачей, но не входит в первую очередь работ.
 
 **Фактическая точка продолжения:** см. `PHASE_5_WORK_LOG.md`. Уже существуют
@@ -847,6 +849,13 @@ Validation-набор должен быть стабильным:
 
 Task-head не должен знать, из Open_EE или French пришёл сигнал. Dataset adapter приводит данные к общему feature contract, а task adapter задаёт цель и правила оценки.
 
+**Статус 27.08.2026:** необходимые механизмы фактически проверены внутри
+PDR-специфичного `run_phase5_pdr_training.py`, но универсальные
+`run_phase5_finetune.py`/task registry из плана не созданы. После завершения
+основного PDR-цикла это следующий инфраструктурный этап перед возвратом к ОЗЗ:
+общие checkpoint, lazy sampler, головы, маски, resume и отчёты следует вынести
+без изменения уже проверенной физической логики РНМ.
+
 ---
 
 ## 11. Этап 7: РНМ/PDR как основная прикладная демонстрация
@@ -989,14 +998,27 @@ Task-head не должен знать, из Open_EE или French пришёл 
 
 Основная постановка:
 
-**Статус 26.08.2026:** завершён первый полный GPU-цикл `snapshot_5/stride5`
+**Статус 27.08.2026:** завершён первый полный GPU-цикл `snapshot_5/stride5`
 модели `small`: 50 эпох weak-stage и 50 эпох expert-stage с replay. Сквозной
 тракт признан работоспособным. Weak-best достигнут на эпохе 40; expert-best —
 впервые на эпохе 12. Кажущиеся 100% направления expert-validation относятся
 только к 159 применимым точкам семи осциллограмм, причём все 32 точки
 `FORWARD` принадлежат одному файлу. До абляций необходимо одинаково проверить
-weak/expert best/latest на экспертных validation и holdout; затем выполнить
+weak/expert best/latest на экспертной validation; затем выполнить
 `snapshot_2`, `snapshot_5/stride2`, `sequence_1_8` и сравнение размеров модели.
+
+Единая expert-validation уже выполнена с лимитом 256 точек на файл. Weak/latest
+получил F1 `FORWARD=0,643`, balanced accuracy `0,737`, MCC `0,664`; expert/best —
+соответственно `0,993`, `0,996`, `0,992`. Это подтверждает эффект первого
+fine-tuning на семи экспертных файлах, но не заменяет расширение ручного эталона.
+Holdout намеренно не использован.
+
+Аудит охвата выявил, что первый weak-run все эпохи использовал одни и те же
+4000/1000 train-записей. Теперь это размеры ротационного пула одной эпохи: при
+текущем бюджете все 38 473 Open_EE и 9643 French/RTE train-записи покрываются
+за 10 эпох, а подвыборка временных точек меняется между циклами. Быстрая
+monitoring-validation остаётся фиксированной; отдельный read-only сценарий
+оценивает checkpoint по всем 1823+1205 validation-записям.
 
 - вход: последовательность спектральных токенов за 10 периодов;
 - выход: решение в последней точке (`last_state`), опционально короткая конечная область;
@@ -1098,6 +1120,12 @@ causal-модель в точке перехода видит только пр�
 - unknown real records из текущего inference-контура;
 - сравнение random init vs Phase 5 pretrain.
 
+**Статус 27.08.2026:** сформированы real-OZZ exclusion и общие источники Phase 5,
+а Phase 4/4.5 SimOZZ-контур сохранён как baseline. Загрузка Phase 5 checkpoint в
+этот task, единый Phase 5 fine-tuning runner и сравнение `Phase 4.5 baseline ↔
+Phase 5 small/heavy` ещё не выполнялись. Возврат к ОЗЗ разумно начинать после
+выделения общего task API из работающего PDR-контура.
+
 Другие будущие задачи:
 
 Заложить структуру, но не реализовывать преждевременно:
@@ -1179,25 +1207,25 @@ causal-модель в точке перехода видит только пр�
    - legacy smoke со `sklearn` остаётся для пользовательского окружения;
    - compatibility fixtures/checkpoint migration расширять по мере изменения feature schema.
 
-2. **Dataset scans — инструменты готовы, полные проходы не завершены**
+2. **Dataset scans — основная подготовка завершена, расширенный quality-аудит частичен**
    - выполнить полный Open_EE scan подготовленным потоковым скриптом;
    - согласовать extraction/формат French и выполнить полный RMS scan;
    - сформировать отчёт по нормировке French после RMS;
    - исключения real_OZZ из Open_EE.
 
-3. **Small prototype**
+3. **Small prototype — выполнен**
    - сделать Open_EE shards на малом поднаборе;
    - сделать French adapter;
    - проверить 8-канальный контракт;
    - проверить `compute_spectral_from_raw` на Open_EE и French.
 
-4. **Registry + LazyMultiDataset**
+4. **Registry + LazyMultiDataset — выполнен для SSL/PDR**
    - общий индекс;
    - weighted sampling;
    - batch grouping по SPP;
    - тесты.
 
-5. **Feature contract v2 + PhysicalStem v2**
+5. **Feature contract v2 + PhysicalStem v2 — базовая реализация выполнена**
    - Version A: `phase-polar + h1 symmetric`;
    - Version B: `symmetric-polar h1-h9` без фазных polar-признаков;
    - низшие гармоники в обеих версиях;
@@ -1205,29 +1233,29 @@ causal-модель в точке перехода видит только пр�
    - masks и feature schema;
    - малые архитектурные абляции.
 
-6. **Phase 5 pretrain smoke**
+6. **Phase 5 pretrain smoke — выполнен**
    - 1-2 источника;
    - маленький `max_windows_per_epoch`;
    - проверка resume;
    - визуализация реконструкции.
 
-7. **Полный pretrain**
+7. **Полный pretrain — выполнен для `small` и `heavy` Version B**
    - стартовые веса Open_EE/French = 2/3 и 1/3;
    - per-source validation;
    - сохранение checkpoint-паспорта.
 
-8. **Формализация и исследование PDR**
+8. **Формализация и исследование PDR — выполнены для контракта v5**
    - получить от исследователя математику органов;
    - реализовать и протестировать органы;
    - собрать статистику и случаи расхождения;
    - исследователь выбирает teacher по инженерному опыту с учётом собранной статистики.
 
-9. **Pseudo-label PDR fine-tuning**
+9. **Pseudo-label PDR fine-tuning — первый `snapshot_5/small` пилот выполнен**
    - разметить реальные данные teacher-органом;
    - сравнить last-state sequence и snapshot baselines;
    - сохранить confidence/margins.
 
-10. **PDR post-training**
+10. **PDR post-training — expert v1 выполнен, manual v2 формируется**
    - RTDS и/или ручная COMTRADE-разметка сложных случаев;
    - итоговое сравнение аналитических и нейросетевых органов.
 
@@ -1248,7 +1276,7 @@ causal-модель в точке перехода видит только пр�
 | `scripts/phase5_experiments/build_real_ozz_exclusion.py` | исключение известных ОЗЗ из real_no_OZZ |
 | `scripts/phase5_experiments/prepare_open_ee_shards.py` | подготовка Open_EE shards |
 | `scripts/phase5_experiments/run_phase5_pretrain.py` | SSL pretrain |
-| `scripts/phase5_experiments/run_phase5_finetune.py` | общий fine-tuning |
+| `scripts/phase5_experiments/run_phase5_finetune.py` | общий fine-tuning; пока не реализован |
 | `osc_tools/ml/dataset_registry.py` | реестр источников |
 | `osc_tools/ml/phase5_sources.py` | adapters Open_EE/French |
 | `osc_tools/ml/lazy_multi_dataset.py` | общий lazy SSL dataset |
@@ -1258,7 +1286,7 @@ causal-модель в точке перехода видит только пр�
 | `osc_tools/pdr/pdr_dataset.py` | pseudo/high-quality PDR dataset adapter |
 | `osc_tools/pdr/study.py` | multi-PDR разметка, sharded reader и метрики интересности |
 | `scripts/phase5_experiments/run_pdr_dataset_study.py` | статистика органов и воспроизводимая teacher-разметка |
-| `scripts/phase5_experiments/pdr/run_phase5_pdr_finetune.py` | PDR fine-tuning и post-training |
+| `scripts/phase5_experiments/run_phase5_pdr_training.py` | реализованный PDR fine-tuning и post-training |
 | `docs/phase_discription/PHASE_5_PDR_ALGORITHMS.md` | математика и версии органов |
 | `docs/phase_discription/PHASE_5_PDR_PIPELINE_GUIDE.md` | разметка, мониторинг, анализ и отбор сложных записей |
 | `scripts/phase5_experiments/README.md` | карта ручных сценариев Phase 5 |

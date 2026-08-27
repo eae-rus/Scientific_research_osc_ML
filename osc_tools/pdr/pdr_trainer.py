@@ -325,24 +325,45 @@ def evaluate_pdr_metrics(
 
     def record_macro(
         record_ids: list[int], targets: np.ndarray, predictions: np.ndarray,
-    ) -> tuple[float, float, int]:
+    ) -> tuple[float, float, float, int]:
         if not record_ids:
-            return 0.0, 0.0, 0
+            return 0.0, 0.0, 0.0, 0
         ids = np.asarray(record_ids, dtype=np.int64)
         per_record = [
             _binary_metrics(targets[ids == record_id], predictions[ids == record_id])
             for record_id in np.unique(ids)
         ]
+        # Обычный binary macro-F1 назначает нулевой F1 отсутствующему в записи
+        # классу. Поэтому безошибочная осциллограмма только с REVERSE получила бы
+        # 0.5. Отдельно сохраняем средний F1 лишь по фактически присутствующим в
+        # каждой записи классам — он пригоднее для пофайловой интерпретации.
+        present_class_f1 = []
+        for item in per_record:
+            scores = []
+            if item["positive_support"] > 0:
+                scores.append(item["f1"])
+            if item["negative_support"] > 0:
+                scores.append(item["negative_f1"])
+            present_class_f1.append(float(np.mean(scores)) if scores else 0.0)
         return (
             float(np.mean([item["accuracy"] for item in per_record])),
             float(np.mean([item["macro_f1"] for item in per_record])),
+            float(np.mean(present_class_f1)),
             len(per_record),
         )
 
-    record_accuracy, record_macro_f1, direction_record_count = record_macro(
-        all_direction_record_ids, all_targets_arr, all_preds_arr
-    )
-    app_record_accuracy, app_record_macro_f1, applicability_record_count = record_macro(
+    (
+        record_accuracy,
+        record_macro_f1,
+        record_present_class_f1,
+        direction_record_count,
+    ) = record_macro(all_direction_record_ids, all_targets_arr, all_preds_arr)
+    (
+        app_record_accuracy,
+        app_record_macro_f1,
+        app_record_present_class_f1,
+        applicability_record_count,
+    ) = record_macro(
         all_applicability_record_ids, applicable_targets_arr, applicable_preds_arr
     )
 
@@ -364,8 +385,10 @@ def evaluate_pdr_metrics(
         "reverse_support": direction_metrics["negative_support"],
         "record_macro_accuracy": record_accuracy,
         "record_macro_f1_score": record_macro_f1,
+        "record_present_class_f1_score": record_present_class_f1,
         "n_direction_records": direction_record_count,
         "mae_margin": mae_margin,
+        "n_margin_samples": len(margin_errors),
         "n_samples": len(all_targets),
         "n_applicability_samples": len(applicable_targets_arr),
         "applicability_accuracy": applicability_metrics["accuracy"],
@@ -383,5 +406,6 @@ def evaluate_pdr_metrics(
         "applicability_fn": applicability_metrics["fn"],
         "applicability_record_macro_accuracy": app_record_accuracy,
         "applicability_record_macro_f1_score": app_record_macro_f1,
+        "applicability_record_present_class_f1_score": app_record_present_class_f1,
         "n_applicability_records": applicability_record_count,
     }

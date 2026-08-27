@@ -33,6 +33,10 @@
    checkpoint на одинаковых экспертных validation/holdout, в том числе
    отдельно по источникам. По умолчанию включена только validation; holdout
    добавляется после фиксации финальной модели и не используется для подбора.
+8. `evaluate_pdr_full_weak_validation.py` — однократная teacher-оценка
+   checkpoint по всем Open_EE/French записям research-strict validation.
+   Holdout не читает; пофайловый лимит защищает от доминирования длинных
+   осциллограмм.
 
 `review_pdr_analysis_results.py` не временный: он нужен для повтора
 одинаковых научных таблиц после каждой версии разметки. Одноразовый

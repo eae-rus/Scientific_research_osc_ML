@@ -33,6 +33,69 @@ from .signal_analysis import check_pdr_signal_sufficiency, derive_missing_curren
 from .study import PDRStudyLabelStore
 
 
+def _select_stratified_window_indices(
+    valid_w_indices: np.ndarray,
+    directions: np.ndarray,
+    sample_indices: np.ndarray,
+    *,
+    limit: int,
+    seed: int,
+    transition_radius_samples: int,
+    transition_fraction: float,
+) -> tuple[np.ndarray, int, int, int]:
+    """Выбрать точки из переходных зон и устойчивых участков с квотами.
+
+    Возвращает выбранные индексы окон, число выбранных переходных точек,
+    доступных переходных кандидатов и число границ состояний. Сырые сигналы не
+    читаются: границы определяются по уже сохранённой последовательности меток.
+    """
+
+    valid_w_indices = np.asarray(valid_w_indices, dtype=np.int64)
+    if valid_w_indices.size == 0:
+        return valid_w_indices, 0, 0, 0
+    switches = np.flatnonzero(directions[1:] != directions[:-1]) + 1
+    if switches.size == 0:
+        if valid_w_indices.size <= limit:
+            return valid_w_indices, 0, 0, 0
+        rng = np.random.default_rng(seed)
+        selected = np.sort(rng.choice(valid_w_indices, size=limit, replace=False))
+        return selected, 0, 0, 0
+
+    switch_samples = np.asarray(sample_indices[switches], dtype=np.int64)
+    candidate_samples = np.asarray(sample_indices[valid_w_indices], dtype=np.int64)
+    insertion = np.searchsorted(switch_samples, candidate_samples)
+    left = np.maximum(insertion - 1, 0)
+    right = np.minimum(insertion, switch_samples.size - 1)
+    distance = np.minimum(
+        np.abs(candidate_samples - switch_samples[left]),
+        np.abs(candidate_samples - switch_samples[right]),
+    )
+    near_mask = distance <= int(transition_radius_samples)
+    near = valid_w_indices[near_mask]
+    stable = valid_w_indices[~near_mask]
+    if valid_w_indices.size <= limit:
+        return valid_w_indices, int(near.size), int(near.size), int(switches.size)
+
+    rng = np.random.default_rng(seed)
+    near_quota = min(int(round(limit * transition_fraction)), int(near.size))
+    stable_quota = min(limit - near_quota, int(stable.size))
+    remaining = limit - near_quota - stable_quota
+    if remaining:
+        additional_near = min(remaining, int(near.size) - near_quota)
+        near_quota += additional_near
+        remaining -= additional_near
+    if remaining:
+        stable_quota += min(remaining, int(stable.size) - stable_quota)
+
+    parts = []
+    if near_quota:
+        parts.append(rng.choice(near, size=near_quota, replace=False))
+    if stable_quota:
+        parts.append(rng.choice(stable, size=stable_quota, replace=False))
+    selected = np.sort(np.concatenate(parts).astype(np.int64, copy=False))
+    return selected, near_quota, int(near.size), int(switches.size)
+
+
 class PDRTaskDataset(Dataset):
     """PyTorch датасет для дообучения KAN-Transformer на задачу РНМ."""
 
@@ -51,6 +114,9 @@ class PDRTaskDataset(Dataset):
         sample_subset: str = "train",
         index_stride_samples: int = 1,
         max_samples_per_record: Optional[int] = None,
+        index_selection_seed: Optional[int] = None,
+        transition_sampling_fraction: float = 0.5,
+        transition_sampling_radius_ms: float = 20.0,
         augmentation_seed: Optional[int] = None,
         augmentation_probability: float = 0.0,
         index_progress_callback: Optional[Callable[[int, int], None]] = None,
@@ -76,6 +142,20 @@ class PDRTaskDataset(Dataset):
         self.sample_subset = sample_subset
         self.index_stride_samples = int(index_stride_samples)
         self.max_samples_per_record = max_samples_per_record
+        self.index_selection_seed = index_selection_seed
+        if not 0.0 <= transition_sampling_fraction <= 1.0:
+            raise ValueError("transition_sampling_fraction должен быть в диапазоне [0, 1]")
+        if transition_sampling_radius_ms < 0:
+            raise ValueError("transition_sampling_radius_ms не может быть отрицательным")
+        self.transition_sampling_fraction = float(transition_sampling_fraction)
+        self.transition_sampling_radius_ms = float(transition_sampling_radius_ms)
+        self.index_selection_stats = {
+            "records_with_switches": 0,
+            "switch_boundaries": 0,
+            "available_transition_candidates": 0,
+            "selected_transition_candidates": 0,
+            "selected_stable_candidates": 0,
+        }
         if not 0.0 <= augmentation_probability <= 1.0:
             raise ValueError("augmentation_probability должен быть в диапазоне [0, 1]")
         self.augmentation_seed = augmentation_seed
@@ -177,13 +257,49 @@ class PDRTaskDataset(Dataset):
                 self.max_samples_per_record is not None
                 and valid_w_indices.size > self.max_samples_per_record
             ):
-                positions = np.linspace(
-                    0,
-                    valid_w_indices.size - 1,
-                    self.max_samples_per_record,
-                    dtype=np.int64,
-                )
-                valid_w_indices = valid_w_indices[np.unique(positions)]
+                if self.index_selection_seed is None:
+                    positions = np.linspace(
+                        0,
+                        valid_w_indices.size - 1,
+                        self.max_samples_per_record,
+                        dtype=np.int64,
+                    )
+                    valid_w_indices = valid_w_indices[np.unique(positions)]
+                else:
+                    token = (
+                        int(self.index_selection_seed)
+                        + int(rec_idx) * 1_000_003
+                    ) & 0xFFFFFFFFFFFFFFFF
+                    radius_samples = int(round(
+                        self.transition_sampling_radius_ms
+                        * record_timebase.sampling_rate_hz / 1000.0
+                    ))
+                    (
+                        valid_w_indices,
+                        selected_transition,
+                        available_transition,
+                        switch_count,
+                    ) = _select_stratified_window_indices(
+                        valid_w_indices,
+                        dirs,
+                        sample_indices,
+                        limit=self.max_samples_per_record,
+                        seed=token,
+                        transition_radius_samples=radius_samples,
+                        transition_fraction=self.transition_sampling_fraction,
+                    )
+                    if switch_count:
+                        self.index_selection_stats["records_with_switches"] += 1
+                    self.index_selection_stats["switch_boundaries"] += switch_count
+                    self.index_selection_stats[
+                        "available_transition_candidates"
+                    ] += available_transition
+                    self.index_selection_stats[
+                        "selected_transition_candidates"
+                    ] += selected_transition
+                    self.index_selection_stats["selected_stable_candidates"] += (
+                        int(valid_w_indices.size) - selected_transition
+                    )
             for w_idx in valid_w_indices:
                 self.samples.append((rec_idx, int(w_idx)))
             if self.index_progress_callback is not None:
