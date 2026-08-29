@@ -1180,7 +1180,7 @@ def run_manual() -> None:
     """
     # Основной контракт опыта.
     STAGE = "weak"                  # weak, затем expert
-    TEMPORAL_MODE = "snapshot_5"   # затем snapshot_2 и sequence_1_8
+    TEMPORAL_MODE = "snapshot_2"   #  snapshot_2, snapshot_5 и sequence_1_8
     LABEL_STRIDE_SAMPLES = 5        # основной; абляция 2 и 1
     MODEL_PRESET = "small"          # small, medium, heavy
     SMOKE = False                   # True: короткая проверка перед full

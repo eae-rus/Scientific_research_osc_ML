@@ -613,6 +613,284 @@ def expert_group_summary(
     return rows
 
 
+def compare_expert_repeatability(
+    original_records: Sequence[ImportedExpertRecord],
+    repeated_records: Sequence[ImportedExpertRecord],
+) -> tuple[list[dict[str, object]], list[dict[str, object]], list[dict[str, object]]]:
+    """Сравнить две независимые разметки одних и тех же осциллограмм.
+
+    Повторная оценка не выбирается автоматически как более правильная. Функция
+    возвращает пофайловые метрики, агрегаты и очередь инженерного согласования.
+    Переходные зоны обеих версий исключаются только из steady-state метрик, но
+    полное сырое согласие и сдвиги границ сохраняются отдельно.
+    """
+
+    originals = {(record.source, record.record_id): record for record in original_records}
+    repeated = {(record.source, record.record_id): record for record in repeated_records}
+    if len(originals) != len(original_records) or len(repeated) != len(repeated_records):
+        raise ValueError("В одной версии повторяются source/record_id")
+
+    rows: list[dict[str, object]] = []
+    for key in sorted(repeated):
+        if key not in originals:
+            raise ValueError(f"Для повторной разметки нет исходной версии: {key}")
+        first, second = originals[key], repeated[key]
+        if first.input_sha256 != second.input_sha256:
+            raise ValueError(f"input_sha256 различается между версиями: {key}")
+        if first.directions.shape != second.directions.shape or not np.isclose(first.f_adc, second.f_adc):
+            raise ValueError(f"Временная сетка различается между версиями: {key}")
+
+        steady = ~(first.transition_eval_mask | second.transition_eval_mask)
+        both_valid = steady & first.applicable & second.applicable
+        raw_equal = first.directions == second.directions
+        state_equal = steady & raw_equal
+        valid_equal = steady & (first.applicable == second.applicable)
+        direction_equal = both_valid & raw_equal
+        first_valid_count = int(np.count_nonzero(steady & first.applicable))
+        second_valid_count = int(np.count_nonzero(steady & second.applicable))
+        common_valid_count = int(np.count_nonzero(both_valid))
+        steady_count = int(np.count_nonzero(steady))
+
+        first_transitions = _state_transition_indices(first.directions)
+        second_transitions = _state_transition_indices(second.directions)
+        boundary_distances = _symmetric_nearest_distances(first_transitions, second_transitions)
+        boundary_ms = boundary_distances * 1000.0 / first.f_adc
+        disagreement = steady & ~raw_equal
+        disagreement_runs = _true_run_lengths(disagreement)
+
+        first_forward_fraction = _masked_forward_fraction(first.directions, steady & first.applicable)
+        second_forward_fraction = _masked_forward_fraction(second.directions, steady & second.applicable)
+        valid_agreement = float(np.count_nonzero(valid_equal) / steady_count) if steady_count else np.nan
+        direction_agreement = (
+            float(np.count_nonzero(direction_equal) / common_valid_count)
+            if common_valid_count else np.nan
+        )
+        state_agreement = float(np.count_nonzero(state_equal) / steady_count) if steady_count else np.nan
+        state_kappa = _cohen_kappa(
+            first.directions,
+            second.directions,
+            steady,
+            (int(PDRDirection.UNLABELED), int(PDRDirection.REVERSE), int(PDRDirection.FORWARD)),
+        )
+        valid_kappa = _cohen_kappa(
+            first.applicable.astype(np.int8),
+            second.applicable.astype(np.int8),
+            steady,
+            (0, 1),
+        )
+        direction_kappa = _cohen_kappa(
+            first.directions,
+            second.directions,
+            both_valid,
+            (int(PDRDirection.REVERSE), int(PDRDirection.FORWARD)),
+        )
+        stable_opposite = bool(
+            common_valid_count
+            and (
+                (first_forward_fraction >= 0.90 and second_forward_fraction <= 0.10)
+                or (first_forward_fraction <= 0.10 and second_forward_fraction >= 0.90)
+            )
+        )
+        if stable_opposite:
+            priority, action = "critical", "повторно изучить физику и принять третье согласованное решение"
+        elif np.isfinite(valid_agreement) and valid_agreement < 0.90:
+            priority, action = "high", "согласовать критерий VALID и границы невалидности"
+        elif np.isfinite(direction_agreement) and direction_agreement < 0.90:
+            priority, action = "high", "согласовать направление на общих валидных участках"
+        elif boundary_ms.size and float(np.max(boundary_ms)) > 5.0:
+            priority, action = "medium", "проверить времена переходов и причинную неопределённость"
+        elif not bool(np.all(raw_equal)):
+            priority, action = "low", "проверить локальные расхождения"
+        else:
+            priority, action = "none", "согласование не требуется"
+
+        rows.append({
+            "source": first.source,
+            "record_id": first.record_id,
+            "stratum": first.stratum,
+            "first_status": first.status,
+            "repeat_status": second.status,
+            "samples": first.directions.size,
+            "duration_sec": first.directions.size / first.f_adc,
+            "raw_exact_match": bool(np.all(raw_equal)),
+            "raw_state_agreement": float(np.mean(raw_equal)),
+            "steady_samples": steady_count,
+            "steady_state_agreement": state_agreement,
+            "steady_state_cohen_kappa": state_kappa,
+            "valid_agreement": valid_agreement,
+            "valid_cohen_kappa": valid_kappa,
+            "common_valid_samples": common_valid_count,
+            "direction_agreement_when_both_valid": direction_agreement,
+            "direction_cohen_kappa_when_both_valid": direction_kappa,
+            "first_applicable_fraction": first_valid_count / steady_count if steady_count else np.nan,
+            "repeat_applicable_fraction": second_valid_count / steady_count if steady_count else np.nan,
+            "first_forward_fraction_when_valid": first_forward_fraction,
+            "repeat_forward_fraction_when_valid": second_forward_fraction,
+            "first_transitions": int(first_transitions.size),
+            "repeat_transitions": int(second_transitions.size),
+            "boundary_nearest_median_ms": float(np.median(boundary_ms)) if boundary_ms.size else np.nan,
+            "boundary_nearest_max_ms": float(np.max(boundary_ms)) if boundary_ms.size else np.nan,
+            "disagreement_runs": int(disagreement_runs.size),
+            "longest_disagreement_ms": (
+                float(np.max(disagreement_runs) * 1000.0 / first.f_adc)
+                if disagreement_runs.size else 0.0
+            ),
+            "stable_opposite_candidate": stable_opposite,
+            "adjudication_priority": priority,
+            "recommended_action": action,
+        })
+
+    summaries = _expert_repeatability_summaries(rows)
+    order = {"critical": 0, "high": 1, "medium": 2, "low": 3, "none": 4}
+    queue = []
+    for row in sorted(rows, key=lambda item: (
+        order[str(item["adjudication_priority"])],
+        _finite_sort_value(item["steady_state_agreement"]),
+        str(item["source"]),
+        int(item["record_id"]),
+    )):
+        if row["adjudication_priority"] == "none":
+            continue
+        queue.append({
+            **row,
+            "adjudication_status": "pending",
+            "accepted_version": "",
+            "engineering_reason": "",
+            "reviewer_comment": "",
+        })
+    return rows, summaries, queue
+
+
+def write_expert_repeatability_audit(
+    output_root: Path,
+    record_rows: Sequence[dict[str, object]],
+    summary_rows: Sequence[dict[str, object]],
+    adjudication_rows: Sequence[dict[str, object]],
+) -> None:
+    """Сохранить аудит самосогласованности без создания обучающего архива."""
+
+    output_root = Path(output_root)
+    output_root.mkdir(parents=True, exist_ok=True)
+    _write_csv(output_root / "repeatability_record_comparison.csv", record_rows)
+    _write_csv(output_root / "repeatability_summary.csv", summary_rows)
+    _write_csv(output_root / "adjudication_queue.csv", adjudication_rows)
+    _atomic_json(output_root / "repeatability_summary.json", {
+        "kind": "pdr_expert_repeatability_audit",
+        "schema_version": 1,
+        "paired_records": len(record_rows),
+        "adjudication_records": len(adjudication_rows),
+        "does_not_modify_training_labels": True,
+        "files": {
+            "record_comparison": "repeatability_record_comparison.csv",
+            "summary": "repeatability_summary.csv",
+            "adjudication_queue": "adjudication_queue.csv",
+        },
+    })
+
+
+def _expert_repeatability_summaries(rows: Sequence[dict[str, object]]) -> list[dict[str, object]]:
+    groups: list[tuple[str, Sequence[dict[str, object]]]] = [("all", rows)]
+    groups.extend((source, [row for row in rows if row["source"] == source])
+                  for source in sorted({str(row["source"]) for row in rows}))
+    result: list[dict[str, object]] = []
+    for group, subset in groups:
+        steady = sum(int(row["steady_samples"]) for row in subset)
+        common = sum(int(row["common_valid_samples"]) for row in subset)
+        state_agree = sum(
+            float(row["steady_state_agreement"]) * int(row["steady_samples"])
+            for row in subset if np.isfinite(float(row["steady_state_agreement"]))
+        )
+        direction_agree = sum(
+            float(row["direction_agreement_when_both_valid"]) * int(row["common_valid_samples"])
+            for row in subset if np.isfinite(float(row["direction_agreement_when_both_valid"]))
+        )
+        result.append({
+            "group": group,
+            "records": len(subset),
+            "exact_record_agreement_fraction": (
+                sum(bool(row["raw_exact_match"]) for row in subset) / len(subset) if subset else np.nan
+            ),
+            "steady_state_micro_agreement": state_agree / steady if steady else np.nan,
+            "steady_state_record_macro_agreement": _nanmean_rows(subset, "steady_state_agreement"),
+            "steady_state_record_macro_cohen_kappa": _nanmean_rows(
+                subset, "steady_state_cohen_kappa"
+            ),
+            "valid_record_macro_agreement": _nanmean_rows(subset, "valid_agreement"),
+            "valid_record_macro_cohen_kappa": _nanmean_rows(subset, "valid_cohen_kappa"),
+            "direction_micro_agreement_when_both_valid": direction_agree / common if common else np.nan,
+            "direction_record_macro_agreement_when_both_valid": _nanmean_rows(
+                subset, "direction_agreement_when_both_valid"
+            ),
+            "direction_record_macro_cohen_kappa_when_both_valid": _nanmean_rows(
+                subset, "direction_cohen_kappa_when_both_valid"
+            ),
+            "stable_opposite_records": sum(bool(row["stable_opposite_candidate"]) for row in subset),
+            "records_requiring_adjudication": sum(
+                row["adjudication_priority"] != "none" for row in subset
+            ),
+            "critical_records": sum(row["adjudication_priority"] == "critical" for row in subset),
+        })
+    return result
+
+
+def _state_transition_indices(states: np.ndarray) -> np.ndarray:
+    states = np.asarray(states)
+    return np.flatnonzero(states[1:] != states[:-1]) + 1 if states.size > 1 else np.asarray([], dtype=int)
+
+
+def _symmetric_nearest_distances(first: np.ndarray, second: np.ndarray) -> np.ndarray:
+    if first.size == 0 and second.size == 0:
+        return np.asarray([], dtype=np.float64)
+    if first.size == 0 or second.size == 0:
+        return np.asarray([np.inf], dtype=np.float64)
+    first_to_second = np.min(np.abs(first[:, None] - second[None, :]), axis=1)
+    second_to_first = np.min(np.abs(second[:, None] - first[None, :]), axis=1)
+    return np.concatenate((first_to_second, second_to_first)).astype(np.float64)
+
+
+def _true_run_lengths(mask: np.ndarray) -> np.ndarray:
+    padded = np.pad(np.asarray(mask, dtype=np.int8), (1, 1))
+    edges = np.flatnonzero(np.diff(padded))
+    return (edges[1::2] - edges[::2]).astype(np.int64)
+
+
+def _masked_forward_fraction(states: np.ndarray, mask: np.ndarray) -> float:
+    count = int(np.count_nonzero(mask))
+    return float(np.count_nonzero((states == int(PDRDirection.FORWARD)) & mask) / count) if count else np.nan
+
+
+def _cohen_kappa(
+    first: np.ndarray,
+    second: np.ndarray,
+    mask: np.ndarray,
+    classes: Sequence[int],
+) -> float:
+    count = int(np.count_nonzero(mask))
+    if not count:
+        return np.nan
+    first_values = np.asarray(first)[mask]
+    second_values = np.asarray(second)[mask]
+    observed = float(np.mean(first_values == second_values))
+    expected = sum(
+        float(np.mean(first_values == value)) * float(np.mean(second_values == value))
+        for value in classes
+    )
+    if np.isclose(expected, 1.0):
+        return 1.0 if np.isclose(observed, 1.0) else 0.0
+    return float((observed - expected) / (1.0 - expected))
+
+
+def _nanmean_rows(rows: Sequence[dict[str, object]], field: str) -> float:
+    values = np.asarray([float(row[field]) for row in rows], dtype=np.float64)
+    finite = values[np.isfinite(values)]
+    return float(np.mean(finite)) if finite.size else np.nan
+
+
+def _finite_sort_value(value: object) -> float:
+    number = float(value)
+    return number if np.isfinite(number) else float("inf")
+
+
 def _assert_preserved(
     reference: ParsedAsciiComtrade,
     edited: ParsedAsciiComtrade,

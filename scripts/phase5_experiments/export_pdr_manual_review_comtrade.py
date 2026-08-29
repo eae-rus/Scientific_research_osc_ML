@@ -8,6 +8,7 @@ JSON-файл. Последующие запуски рекурсивно про
 
 from __future__ import annotations
 
+import argparse
 import csv
 from dataclasses import dataclass
 from datetime import datetime
@@ -47,6 +48,10 @@ DEFAULT_ANALYSIS_DIR = PROJECT_ROOT / "data/phase5/pdr_analysis_v5"
 DEFAULT_LABEL_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v5"
 DEFAULT_REVIEW_ROOT = PROJECT_ROOT / "data/phase5/pdr_manual_review_v5"
 DEFAULT_MANUAL_LABEL_ROOT = PROJECT_ROOT / "data/phase5/pdr_manual_labels_v1"
+DEFAULT_BLIND_AUDIT_ROOT = PROJECT_ROOT / "data/phase5/pdr_manual_blind_audit_v1"
+DEFAULT_STANDARD_NEW_ROOT = (
+    DEFAULT_REVIEW_ROOT / "batch_20260827_standard_diverse_takt3"
+)
 DEFAULT_NORM_CSV = PROJECT_ROOT / "data/norm_coef_all_v1.4.csv"
 DEFAULT_QUOTAS = {
     "persistent_disagreement": 10,
@@ -151,6 +156,8 @@ def select_review_cases(
     sources: Sequence[str] = ("open_ee", "french_rte"),
     additional_exclusion_roots: Sequence[Path] = (),
     source_quota_multipliers: dict[str, float] | None = None,
+    source_quotas: dict[str, dict[str, int]] | None = None,
+    include_only_keys: set[tuple[str, int]] | None = None,
 ) -> tuple[list[SelectedCase], list[dict[str, Any]]]:
     """Построить полный каталог и разнообразный пакет без повторов записей."""
 
@@ -169,6 +176,8 @@ def select_review_cases(
     rows: list[dict[str, Any]] = []
     for key, record in records.items():
         if key[0] not in sources or _as_bool(eligibility.get(key, {}).get("pdr_structurally_eligible")) is not True:
+            continue
+        if include_only_keys is not None and key not in include_only_keys:
             continue
         merged = dict(record)
         merged.update({f"signal__{k}": v for k, v in signals.get(key, {}).items()})
@@ -202,7 +211,10 @@ def select_review_cases(
     used = set(excluded)
     for source in sources:
         for stratum, quota in quotas.items():
-            source_quota = int(math.ceil(max(0.0, float(multipliers.get(source, 1.0))) * quota))
+            if source_quotas is not None:
+                source_quota = max(0, int(source_quotas.get(source, {}).get(stratum, 0)))
+            else:
+                source_quota = int(math.ceil(max(0.0, float(multipliers.get(source, 1.0))) * quota))
             pool = [row for row in candidates_by_group.get((source, stratum), ())
                     if (source, int(row["record_id"])) not in used]
             chosen = _diverse_subset(pool, source_quota, stratum)
@@ -570,32 +582,119 @@ def _write_csv(path: Path, rows: Iterable[dict[str, Any]]) -> None:
     temporary.replace(path)
 
 
-def run_manual() -> None:
-    """Ручной запуск F5: сначала предпросмотр, затем явное включение экспорта."""
-    ANALYSIS_DIR = DEFAULT_ANALYSIS_DIR
-    LABEL_DIR = DEFAULT_LABEL_DIR
-    REVIEW_ROOT = DEFAULT_REVIEW_ROOT
-    QUOTAS_PER_SOURCE = dict(DEFAULT_QUOTAS)
-    EXPORT_COMTRADE = True  # Сначала проверить файл selection_preview.csv, затем включить экспорт.
-    BATCH_NAME: str | None = None
+def _selection_profile(
+    profile: str,
+    count: int,
+) -> tuple[dict[str, int], dict[str, float], dict[str, dict[str, int]] | None]:
+    """Вернуть воспроизводимые квоты обычного или слепого пакета."""
 
-    recovered = recover_incomplete_batches(REVIEW_ROOT)
+    if profile != "standard":
+        raise ValueError(f"Неизвестный обычный профиль отбора: {profile!r}")
+    return dict(DEFAULT_QUOTAS), dict(DEFAULT_SOURCE_QUOTA_MULTIPLIERS), None
+
+
+def select_blind_audit_cases(
+    analysis_dir: Path,
+    review_root: Path,
+    new_cases_root: Path,
+    count: int,
+) -> tuple[list[SelectedCase], list[dict[str, Any]]]:
+    """Случайно выбрать без повторов из объединения старых и новых записей."""
+
+    if count <= 0:
+        raise ValueError("Размер контрольного пакета должен быть положительным")
+    old_keys = discover_previously_exported(DEFAULT_MANUAL_LABEL_ROOT / "completed")
+    new_keys = discover_previously_exported(new_cases_root)
+    overlap = old_keys & new_keys
+    if overlap:
+        raise ValueError(f"Новые и прежние completed пересекаются: {sorted(overlap)[:5]}")
+    origins = {key: "previously_labeled" for key in old_keys}
+    origins.update({key: "new_standard" for key in new_keys})
+    pool_keys = set(origins)
+    if count > len(pool_keys):
+        raise ValueError(f"Запрошено {count}, но в объединённом пуле только {len(pool_keys)} записей")
+
+    source_quotas = {
+        source: {"blind_control": sum(key[0] == source for key in pool_keys)}
+        for source in ("open_ee", "french_rte")
+    }
+    quotas = {name: 0 for name in DEFAULT_QUOTAS}
+    quotas["blind_control"] = len(pool_keys)
+    all_cases, catalog = select_review_cases(
+        analysis_dir,
+        review_root,
+        quotas,
+        source_quota_multipliers={"open_ee": 1.0, "french_rte": 1.0},
+        source_quotas=source_quotas,
+        include_only_keys=pool_keys,
+    )
+    # blind_control score является детерминированным SHA-256 псевдослучайным
+    # числом. Сортировка по нему даёт воспроизводимую простую случайную
+    # подвыборку, не зависящую от сложности, источника или прежней метки.
+    chosen = sorted(
+        all_cases,
+        key=lambda case: (case.selection_score, case.source, case.record_id),
+        reverse=True,
+    )[:count]
+    selected: list[SelectedCase] = []
+    for rank, case in enumerate(chosen, start=1):
+        key = (case.source, case.record_id)
+        selected.append(SelectedCase(
+            source=case.source,
+            record_id=case.record_id,
+            stratum="blind_control",
+            rank=rank,
+            selection_score=case.selection_score,
+            reasons=case.reasons,
+            row={**case.row, "blind_audit_origin": origins[key]},
+        ))
+    return selected, catalog
+
+
+def run_export(
+    *,
+    profile: str,
+    count: int = 50,
+    export_comtrade: bool,
+    batch_name: str | None = None,
+    audit_new_root: Path = DEFAULT_STANDARD_NEW_ROOT,
+) -> Path | None:
+    """Построить предпросмотр и при явном запросе экспортировать COMTRADE."""
+
+    analysis_dir = DEFAULT_ANALYSIS_DIR
+    label_dir = DEFAULT_LABEL_DIR
+    review_root = DEFAULT_BLIND_AUDIT_ROOT / "reference" if profile == "audit" else DEFAULT_REVIEW_ROOT
+
+    recovered = recover_incomplete_batches(review_root)
     if recovered:
         print("Восстановлены прерванные пакеты: " + ", ".join(path.name for path in recovered))
-    selected, catalog = select_review_cases(
-        ANALYSIS_DIR,
-        REVIEW_ROOT,
-        QUOTAS_PER_SOURCE,
-        additional_exclusion_roots=(DEFAULT_MANUAL_LABEL_ROOT,),
-        source_quota_multipliers=DEFAULT_SOURCE_QUOTA_MULTIPLIERS,
-    )
-    REVIEW_ROOT.mkdir(parents=True, exist_ok=True)
-    _write_csv(REVIEW_ROOT / "candidate_catalog.csv", catalog)
-    _write_csv(REVIEW_ROOT / "selection_preview.csv", [{
+    if profile == "audit":
+        selected, catalog = select_blind_audit_cases(
+            analysis_dir, review_root, audit_new_root, count
+        )
+    else:
+        quotas, multipliers, source_quotas = _selection_profile(profile, count)
+        selected, catalog = select_review_cases(
+            analysis_dir,
+            review_root,
+            quotas,
+            additional_exclusion_roots=(DEFAULT_MANUAL_LABEL_ROOT,),
+            source_quota_multipliers=multipliers,
+            source_quotas=source_quotas,
+        )
+    review_root.mkdir(parents=True, exist_ok=True)
+    _write_csv(review_root / "candidate_catalog.csv", catalog)
+    _write_csv(review_root / "selection_preview.csv", [{
         "source": case.source, "record_id": case.record_id, "stratum": case.stratum,
         "rank": case.rank, "selection_score": case.selection_score,
         "all_reasons": "|".join(case.reasons), "file_name": case.row.get("file_name", ""),
     } for case in selected])
+    if profile == "audit":
+        _write_csv(review_root / "_service" / "blind_audit_assignment.csv", [{
+            "source": case.source,
+            "record_id": case.record_id,
+            "origin": case.row["blind_audit_origin"],
+        } for case in selected])
     print(f"Выбрано новых записей: {len(selected)}; полный каталог: {len(catalog)} строк")
     estimated_samples = sum(
         int(_number(case.row.get("signal__samples"), 0.0)) for case in selected
@@ -604,13 +703,58 @@ def run_manual() -> None:
     # приблизительна: 6 аналоговых, 12 дискретных каналов и разделители CSV.
     estimated_gib = estimated_samples * 180.0 / (1024.0 ** 3)
     print(f"Грубая оценка объёма выбранных ASCII DAT: {estimated_gib:.2f} ГиБ")
-    if EXPORT_COMTRADE:
-        output = export_batch(selected, label_dir=LABEL_DIR, review_root=REVIEW_ROOT,
-                              norm_csv=DEFAULT_NORM_CSV, batch_name=BATCH_NAME)
+    if export_comtrade:
+        output = export_batch(selected, label_dir=label_dir, review_root=review_root,
+                              norm_csv=DEFAULT_NORM_CSV, batch_name=batch_name)
         print(f"COMTRADE-пакет: {output}")
+        return output
     else:
         print("Предпросмотр готов. Для экспорта установите EXPORT_COMTRADE=True.")
+        return None
+
+
+def run_manual() -> None:
+    """Ручной запуск F5: сначала предпросмотр, затем явное включение экспорта."""
+
+    PROFILE = "standard"  # "standard" либо "audit"
+    AUDIT_COUNT = 100
+    EXPORT_COMTRADE = False
+    BATCH_NAME: str | None = None
+    run_export(
+        profile=PROFILE,
+        count=AUDIT_COUNT,
+        export_comtrade=EXPORT_COMTRADE,
+        batch_name=BATCH_NAME,
+    )
+
+
+def _main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--profile",
+        choices=("standard", "audit"),
+        default="standard",
+    )
+    parser.add_argument("--count", type=int, default=100,
+                        help="Точное общее число записей для профиля audit")
+    parser.add_argument("--export", action="store_true",
+                        help="Создать CFG/DAT; без флага строится только предпросмотр")
+    parser.add_argument("--batch-name", default=None,
+                        help="Необязательное уникальное имя каталога пакета")
+    parser.add_argument("--audit-new-root", type=Path, default=DEFAULT_STANDARD_NEW_ROOT,
+                        help="Стандартный пакет новых записей для профиля audit")
+    args = parser.parse_args()
+    run_export(
+        profile=args.profile,
+        count=args.count,
+        export_comtrade=args.export,
+        batch_name=args.batch_name,
+        audit_new_root=args.audit_new_root,
+    )
 
 
 if __name__ == "__main__":
-    run_manual()
+    if len(sys.argv) == 1:
+        run_manual()
+    else:
+        _main()

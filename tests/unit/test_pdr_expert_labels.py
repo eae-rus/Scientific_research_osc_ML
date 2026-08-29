@@ -14,6 +14,7 @@ from osc_tools.pdr.expert_labels import (
     ImportedExpertRecord,
     aggregate_algorithm_comparison,
     build_transition_masks,
+    compare_expert_repeatability,
     import_expert_tree,
     read_comtrade_1999_ascii,
     write_expert_archive,
@@ -169,3 +170,64 @@ def test_algorithm_comparison_reports_record_distribution() -> None:
     assert row["record_accuracy_q25"] == 0.25
     assert row["record_accuracy_median"] == 0.5
     assert row["record_accuracy_q75"] == 0.75
+
+
+def test_expert_repeatability_flags_stable_opposite_without_changing_versions() -> None:
+    def imported(record_id: int, direction: int) -> ImportedExpertRecord:
+        states = np.full(20, direction, dtype=np.int16)
+        return ImportedExpertRecord(
+            source="open_ee",
+            record_id=record_id,
+            status="completed",
+            stratum="blind_control",
+            input_sha256=f"hash-{record_id}",
+            f_adc=1000.0,
+            directions=states,
+            applicable=np.ones(20, dtype=bool),
+            train_mask=np.ones(20, dtype=bool),
+            transition_eval_mask=np.zeros(20, dtype=bool),
+            automatic_directions={algorithm_id: states for algorithm_id in ALGORITHM_IDS},
+            ignored_analog_channels=(),
+            ignored_digital_channels=(),
+            cfg_path=Path(f"record-{record_id}.cfg"),
+        )
+
+    first = imported(1, int(PDRDirection.REVERSE))
+    second = imported(1, int(PDRDirection.FORWARD))
+    rows, summaries, queue = compare_expert_repeatability([first], [second])
+    assert rows[0]["stable_opposite_candidate"] is True
+    assert rows[0]["adjudication_priority"] == "critical"
+    assert rows[0]["direction_agreement_when_both_valid"] == 0.0
+    assert rows[0]["direction_cohen_kappa_when_both_valid"] == 0.0
+    assert summaries[0]["critical_records"] == 1
+    assert queue[0]["accepted_version"] == ""
+    assert np.all(first.directions == int(PDRDirection.REVERSE))
+    assert np.all(second.directions == int(PDRDirection.FORWARD))
+
+
+def test_expert_repeatability_reports_shifted_boundary_in_ms() -> None:
+    def imported(record_id: int, boundary: int) -> ImportedExpertRecord:
+        states = np.zeros(100, dtype=np.int16)
+        states[boundary:] = int(PDRDirection.FORWARD)
+        return ImportedExpertRecord(
+            source="french_rte",
+            record_id=record_id,
+            status="completed",
+            stratum="blind_control",
+            input_sha256=f"hash-{record_id}",
+            f_adc=1000.0,
+            directions=states,
+            applicable=np.ones(100, dtype=bool),
+            train_mask=np.ones(100, dtype=bool),
+            transition_eval_mask=np.zeros(100, dtype=bool),
+            automatic_directions={algorithm_id: states for algorithm_id in ALGORITHM_IDS},
+            ignored_analog_channels=(),
+            ignored_digital_channels=(),
+            cfg_path=Path(f"record-{record_id}.cfg"),
+        )
+
+    rows, _, queue = compare_expert_repeatability([imported(2, 10)], [imported(2, 17)])
+    assert rows[0]["boundary_nearest_median_ms"] == 7.0
+    assert rows[0]["boundary_nearest_max_ms"] == 7.0
+    assert rows[0]["adjudication_priority"] == "medium"
+    assert len(queue) == 1
