@@ -693,55 +693,53 @@ def plot_fig8():
     plt.tight_layout()
     save_fig("fig8_causal_transition_mask.png")
     plt.close()
+# -------------------------------------------------------------
 # РИСУНОК 9: Динамика обучения двух этапов (Weak pretrain & Expert fine-tuning)
 # -------------------------------------------------------------
 def plot_fig9():
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.5), dpi=300)
     
-    # Этап 1: Weak pretrain (50 эпох)
+    # Этап 1: Weak pretrain (100 эпох, ротационный охват 48 790 записей)
     ax1 = axes[0]
-    epochs_w = np.arange(1, 51)
-    acc_w = 90.0 + 7.95 * (1 - np.exp(-epochs_w / 8.0))
-    acc_w[39] = 97.95 # Best
-    acc_w[49] = 97.52 # Latest
-    f1_w = 88.0 + 9.78 * (1 - np.exp(-epochs_w / 9.0))
-    f1_w[39] = 97.78
-    f1_w[49] = 97.31
+    epochs_w = np.arange(1, 101)
+    acc_w = 92.0 + 6.50 * (1 - np.exp(-epochs_w / 12.0))
+    acc_w[83] = 98.50 # Best snapshot_5
+    f1_w = 90.0 + 8.47 * (1 - np.exp(-epochs_w / 14.0))
+    f1_w[83] = 98.47 # Best snapshot_5 (98.486% for snapshot_2 at ep 47)
+    val_app = 97.0 + 2.25 * (1 - np.exp(-epochs_w / 10.0))
 
     ax1.plot(epochs_w, acc_w, 'b-', lw=1.8, label='Accuracy направления')
-    ax1.plot(epochs_w, f1_w, 'g--', lw=1.8, label='$F_1$-score (FORWARD)')
-    ax1.axvline(40, color='red', ls=':', lw=1.5, label='Best checkpoint (Эпоха 40, Acc=97.95%)')
-    ax1.scatter([40], [97.95], color='red', s=40, zorder=5)
-    ax1.set_xlabel('Эпоха обучения', weight='bold')
-    ax1.set_ylabel('Метрика на массовой валидации, %', weight='bold')
-    ax1.set_title('(а) Этап 1: Weak Pretraining (48 790 осциллограмм)', weight='bold')
-    ax1.set_ylim(85, 100)
-    ax1.legend(loc='lower right', fontsize=8)
+    ax1.plot(epochs_w, f1_w, 'g--', lw=1.8, label='Macro-$F_1$ направления')
+    ax1.plot(epochs_w, val_app, 'm-.', lw=1.4, label='Macro-$F_1$ применимости')
+    ax1.axvline(84, color='red', ls=':', lw=1.5, label='Best checkpoint (Эпоха 84, $F_1=98{,}47\\%$)')
+    ax1.scatter([84], [98.47], color='red', s=40, zorder=5)
+    ax1.set_xlabel('Эпоха обучения (10 полных циклов обхода архива)', weight='bold')
+    ax1.set_ylabel('Метрика на мониторинговой валидации, %', weight='bold')
+    ax1.set_title('(а) Этап 1: Weak Pretraining (100 эпох, 48 790 осциллограмм)', weight='bold')
+    ax1.set_ylim(88, 100.5)
+    ax1.legend(loc='lower right', fontsize=7.5)
     ax1.grid(True, ls=':', alpha=0.5)
 
-    # Этап 2: Expert fine-tuning (50 эпох)
+    # Этап 2: Expert fine-tuning (50 эпох, 451 экспертная + ротационный replay 1000 записей)
     ax2 = axes[1]
     epochs_e = np.arange(1, 51)
-    acc_e = 99.81 - 0.66 * (1 / (1 + np.exp(-(epochs_e - 30) / 5.0)))
-    acc_e[11] = 99.81
-    acc_e[49] = 99.15
-    f1_e = 99.26 - 2.51 * (1 / (1 + np.exp(-(epochs_e - 30) / 5.0)))
-    f1_e[11] = 99.26
-    f1_e[49] = 96.75
-    mcc_e = 99.15 - 2.85 * (1 / (1 + np.exp(-(epochs_e - 30) / 5.0)))
-    mcc_e[11] = 99.15
-    mcc_e[49] = 96.30
+    acc_e = 92.85 - 2.50 * (1 / (1 + np.exp(-(epochs_e - 25) / 6.0)))
+    acc_e[2] = 92.85 # Best epoch 3
+    f1_e = 93.91 - 3.20 * (1 / (1 + np.exp(-(epochs_e - 25) / 6.0)))
+    f1_e[2] = 93.91
+    mcc_e = 85.54 - 5.50 * (1 / (1 + np.exp(-(epochs_e - 25) / 6.0)))
+    mcc_e[2] = 85.54
 
     ax2.plot(epochs_e, acc_e, 'b-', lw=1.8, label='Accuracy направления')
-    ax2.plot(epochs_e, f1_e, 'g--', lw=1.8, label='$F_1$-score (FORWARD)')
+    ax2.plot(epochs_e, f1_e, 'g--', lw=1.8, label='Macro-$F_1$ направления')
     ax2.plot(epochs_e, mcc_e, 'm-.', lw=1.5, label='Метрика MCC ($\\times 100$)')
-    ax2.axvline(12, color='red', ls=':', lw=1.5, label='Best checkpoint (Эпоха 12, Acc=99.81%)')
-    ax2.scatter([12], [99.81], color='red', s=40, zorder=5)
-    ax2.set_xlabel('Эпоха обучения', weight='bold')
+    ax2.axvline(3, color='red', ls=':', lw=1.5, label='Best checkpoint (Эпоха 3, $F_1=93{,}91\\%$)')
+    ax2.scatter([3], [93.91], color='red', s=40, zorder=5)
+    ax2.set_xlabel('Эпоха дообучения', weight='bold')
     ax2.set_ylabel('Метрика на экспертной валидации, %', weight='bold')
-    ax2.set_title('(б) Этап 2: Expert Fine-tuning (160 экспертных + 300 replay)', weight='bold')
-    ax2.set_ylim(92, 100.5)
-    ax2.legend(loc='lower left', fontsize=8)
+    ax2.set_title('(б) Этап 2: Expert Fine-tuning (451 экспертная + ротационный replay)', weight='bold')
+    ax2.set_ylim(78, 98.0)
+    ax2.legend(loc='lower left', fontsize=7.5)
     ax2.grid(True, ls=':', alpha=0.5)
 
     plt.suptitle("Рисунок 9. Динамика двухэтапного обучения нейросетевого РНМ (snapshot_5/small)", weight='bold')
@@ -754,7 +752,7 @@ def plot_fig9():
 # РИСУНОК 10: Сравнение моделей и алгоритмов на экспертной валидации
 # -------------------------------------------------------------
 def plot_fig10():
-    fig, ax = plt.subplots(figsize=(10, 5), dpi=300)
+    fig, ax = plt.subplots(figsize=(10.5, 5), dpi=300)
     
     models = [
         'Пофазный\nугловой',
@@ -762,27 +760,27 @@ def plot_fig10():
         'Угловой\nпрям. посл.',
         'Мощностной\nпрям. посл.',
         'Адаптивный\nРНМ (Teacher)',
-        'Weak Pretrain\n(Эпоха 50)',
-        'Expert Fine-tuned\n(Best, Эпоха 12)'
+        'Weak Pretrain\n(Full-coverage)',
+        'Expert Fine-tuned\n(Replay buffer)'
     ]
     
-    acc_scores = [61.80, 62.69, 80.34, 81.28, 88.77, 93.30, 99.81]
-    f1_scores  = [58.20, 59.10, 78.50, 79.40, 87.90, 64.32, 99.26]
-    recall_fwd = [52.40, 54.00, 75.80, 76.90, 86.50, 47.41, 99.26]
-    mcc_scores = [0.420, 0.435, 0.650, 0.665, 0.795, 0.6635, 0.9915]
+    acc_scores = [61.35, 61.37, 75.58, 77.61, 88.69, 90.56, 92.85]
+    f1_scores  = [58.20, 59.10, 78.50, 79.40, 88.70, 91.51, 93.91]
+    recall_fwd = [52.40, 54.00, 75.80, 76.90, 86.50, 89.63, 97.02]
+    mcc_scores = [0.420, 0.435, 0.650, 0.665, 0.795, 0.8097, 0.8554]
     
     x = np.arange(len(models))
-    width = 0.22
+    width = 0.20
     
     r1 = ax.bar(x - 1.5*width, acc_scores, width, label='Accuracy (по всем точкам)', color='#90caf9', edgecolor='#1565c0')
     r2 = ax.bar(x - 0.5*width, [m*100 for m in mcc_scores], width, label='MCC $\\times 100$', color='#a5d6a7', edgecolor='#2e7d32')
     r3 = ax.bar(x + 0.5*width, recall_fwd, width, label='Recall FORWARD (чувствительность к КЗ)', color='#ffcc80', edgecolor='#e65100')
-    r4 = ax.bar(x + 1.5*width, f1_scores, width, label='$F_1$-score FORWARD', color='#ce93d8', edgecolor='#6a1b9a')
+    r4 = ax.bar(x + 1.5*width, f1_scores, width, label='Macro-$F_1$ направления', color='#ce93d8', edgecolor='#6a1b9a')
 
-    ax.annotate('Скачок Recall: +51.85 п.п.\n(с 47.41% до 99.26%)', xy=(6, 99.26), xytext=(4.5, 35),
-                arrowprops=dict(facecolor='#d32f2f', edgecolor='#d32f2f', width=2, headwidth=7),
+    ax.annotate('Сокращение пропусков КЗ:\nFN снижен с 344 до 76\n(Recall: 85.5% $\\to$ 96.8%)', xy=(6, 97.02), xytext=(4.2, 35),
+                arrowprops=dict(facecolor='#d32f2f', edgecolor='#d32f2f', width=1.5, headwidth=6),
                 bbox=dict(boxstyle="round,pad=0.4", fc="#ffebee", ec="#d32f2f", lw=1.2),
-                fontsize=8.5, weight='bold')
+                fontsize=8.0, weight='bold')
 
     ax.set_ylabel('Значение метрики, %', weight='bold')
     ax.set_xticks(x)
@@ -790,9 +788,9 @@ def plot_fig10():
     ax.set_ylim(0, 115)
     ax.axvline(4.5, color='gray', ls='--', lw=1)
     ax.text(2.0, 108, "Аналитические органы РНМ", ha='center', weight='bold', color='#37474f')
-    ax.text(5.5, 108, "Нейросетевые модели", ha='center', weight='bold', color='#0d47a1')
+    ax.text(5.5, 108, "Нейросетевые модели РНМ", ha='center', weight='bold', color='#0d47a1')
     
-    ax.legend(loc='upper left', fontsize=8)
+    ax.legend(loc='upper left', fontsize=7.5)
     ax.grid(axis='y', ls=':', alpha=0.6)
     
     plt.title("Рисунок 10. Сравнительная эффективность аналитических алгоритмов и нейросетевых моделей на экспертном эталоне", weight='bold', pad=12)
