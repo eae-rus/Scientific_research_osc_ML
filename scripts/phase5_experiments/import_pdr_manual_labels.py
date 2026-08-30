@@ -124,19 +124,27 @@ def run_blind_audit(
         DEFAULT_REFERENCE_ROOT,
         transition_ms=transition_ms,
     )
+    # Неизменяемые исходные экспорты всех слепых случаев также хранятся в
+    # общем дереве manual-review. Рабочий blind/reference может содержать
+    # только манифест и скрытое назначение после переноса файлов экспертом.
     audited, audit_rows = import_expert_tree(
         audit_labels_root,
-        audit_reference_root,
+        DEFAULT_REFERENCE_ROOT,
         transition_ms=transition_ms,
     )
     origins = _blind_audit_origins(audit_reference_root)
+    # ``origin`` описывает состояние записи в момент формирования слепого
+    # пакета. К моменту импорта новый стандартный пакет уже может быть размечен
+    # независимо и добавлен в основное дерево. Тогда это тоже полноценная пара
+    # для проверки повторяемости, а не новый одиночный случай.
+    original_keys = {(record.source, record.record_id) for record in original}
     old_records = [
         record for record in audited
-        if origins[(record.source, record.record_id)] == "previously_labeled"
+        if (record.source, record.record_id) in original_keys
     ]
     new_records = [
         record for record in audited
-        if origins[(record.source, record.record_id)] == "new_standard"
+        if (record.source, record.record_id) not in original_keys
     ]
     record_rows, summary_rows, adjudication_rows = compare_expert_repeatability(
         original,
@@ -170,6 +178,10 @@ def run_blind_audit(
         "audited_records": len(audited),
         "repeatability_records": len(old_records),
         "new_records": len(new_records),
+        "selection_origins": {
+            origin: sum(value == origin for value in origins.values())
+            for origin in sorted(set(origins.values()))
+        },
         "adjudication_records": len(adjudication_rows),
         "output": str(output_root),
         "training_labels_modified": False,

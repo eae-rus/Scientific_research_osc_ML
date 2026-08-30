@@ -537,9 +537,11 @@ def expert_quality_flags(records: Sequence[ImportedExpertRecord]) -> list[dict[s
         transition_count = _direction_transition_count(record.directions, record.applicable)
         if transition_count >= 20:
             flags.append("many_expert_transitions")
-        minimum_run_ms = _minimum_run_ms(record.directions, record.applicable, record.f_adc)
+        minimum_run_ms = _minimum_internal_run_ms(
+            record.directions, record.applicable, record.f_adc
+        )
         if minimum_run_ms is not None and minimum_run_ms < 5.0:
-            flags.append("expert_run_shorter_than_5ms")
+            flags.append("expert_internal_run_shorter_than_5ms")
         adaptive = record.automatic_directions["adaptive_pdr_mir"]
         comparable = (
             record.train_mask
@@ -560,7 +562,9 @@ def expert_quality_flags(records: Sequence[ImportedExpertRecord]) -> list[dict[s
                 "flags": "|".join(flags),
                 "applicable_fraction": applicable_fraction,
                 "expert_transitions": transition_count,
-                "minimum_expert_run_ms": minimum_run_ms if minimum_run_ms is not None else "",
+                "minimum_internal_expert_run_ms": (
+                    minimum_run_ms if minimum_run_ms is not None else ""
+                ),
                 "adaptive_accuracy": adaptive_accuracy if adaptive_accuracy is not None else "",
                 "cfg": str(record.cfg_path),
             })
@@ -653,8 +657,22 @@ def compare_expert_repeatability(
 
         first_transitions = _state_transition_indices(first.directions)
         second_transitions = _state_transition_indices(second.directions)
+        first_valid_transitions = _state_transition_indices(first.applicable.astype(np.int8))
+        second_valid_transitions = _state_transition_indices(second.applicable.astype(np.int8))
+        first_direction_transitions = _direction_transition_count(
+            first.directions, first.applicable
+        )
+        second_direction_transitions = _direction_transition_count(
+            second.directions, second.applicable
+        )
         boundary_distances = _symmetric_nearest_distances(first_transitions, second_transitions)
         boundary_ms = boundary_distances * 1000.0 / first.f_adc
+        maximum_boundary_shift_ms = (
+            float(np.max(boundary_ms)) if boundary_ms.size else 0.0
+        )
+        transition_count_difference = abs(
+            int(first_transitions.size) - int(second_transitions.size)
+        )
         disagreement = steady & ~raw_equal
         disagreement_runs = _true_run_lengths(disagreement)
 
@@ -693,14 +711,16 @@ def compare_expert_repeatability(
         )
         if stable_opposite:
             priority, action = "critical", "повторно изучить физику и принять третье согласованное решение"
+        elif transition_count_difference:
+            priority, action = "high", "согласовать число переключений и лишние/пропущенные границы"
+        elif maximum_boundary_shift_ms > 20.0:
+            priority, action = "high", "согласовать границы, сдвинутые более чем на 20 мс"
         elif np.isfinite(valid_agreement) and valid_agreement < 0.90:
             priority, action = "high", "согласовать критерий VALID и границы невалидности"
         elif np.isfinite(direction_agreement) and direction_agreement < 0.90:
             priority, action = "high", "согласовать направление на общих валидных участках"
-        elif boundary_ms.size and float(np.max(boundary_ms)) > 5.0:
-            priority, action = "medium", "проверить времена переходов и причинную неопределённость"
         elif not bool(np.all(raw_equal)):
-            priority, action = "low", "проверить локальные расхождения"
+            priority, action = "low", "локальное расхождение либо сдвиг границы не более 20 мс"
         else:
             priority, action = "none", "согласование не требуется"
 
@@ -728,8 +748,15 @@ def compare_expert_repeatability(
             "repeat_forward_fraction_when_valid": second_forward_fraction,
             "first_transitions": int(first_transitions.size),
             "repeat_transitions": int(second_transitions.size),
+            "transition_count_difference": transition_count_difference,
+            "transition_count_match": transition_count_difference == 0,
+            "first_valid_transitions": int(first_valid_transitions.size),
+            "repeat_valid_transitions": int(second_valid_transitions.size),
+            "first_direction_transitions_when_valid": first_direction_transitions,
+            "repeat_direction_transitions_when_valid": second_direction_transitions,
             "boundary_nearest_median_ms": float(np.median(boundary_ms)) if boundary_ms.size else np.nan,
-            "boundary_nearest_max_ms": float(np.max(boundary_ms)) if boundary_ms.size else np.nan,
+            "boundary_nearest_max_ms": maximum_boundary_shift_ms,
+            "large_boundary_shift_over_20ms": maximum_boundary_shift_ms > 20.0,
             "disagreement_runs": int(disagreement_runs.size),
             "longest_disagreement_ms": (
                 float(np.max(disagreement_runs) * 1000.0 / first.f_adc)
@@ -749,7 +776,7 @@ def compare_expert_repeatability(
         str(item["source"]),
         int(item["record_id"]),
     )):
-        if row["adjudication_priority"] == "none":
+        if row["adjudication_priority"] not in ("critical", "high"):
             continue
         queue.append({
             **row,
@@ -825,10 +852,22 @@ def _expert_repeatability_summaries(rows: Sequence[dict[str, object]]) -> list[d
                 subset, "direction_cohen_kappa_when_both_valid"
             ),
             "stable_opposite_records": sum(bool(row["stable_opposite_candidate"]) for row in subset),
+            "matching_transition_count_records": sum(
+                bool(row["transition_count_match"]) for row in subset
+            ),
+            "records_with_boundary_shift_over_20ms": sum(
+                bool(row["large_boundary_shift_over_20ms"]) for row in subset
+            ),
             "records_requiring_adjudication": sum(
-                row["adjudication_priority"] != "none" for row in subset
+                row["adjudication_priority"] in ("critical", "high") for row in subset
             ),
             "critical_records": sum(row["adjudication_priority"] == "critical" for row in subset),
+            "high_priority_records": sum(
+                row["adjudication_priority"] == "high" for row in subset
+            ),
+            "low_local_difference_records": sum(
+                row["adjudication_priority"] == "low" for row in subset
+            ),
         })
     return result
 
@@ -982,17 +1021,25 @@ def _direction_transition_count(directions: np.ndarray, applicable: np.ndarray) 
     ))
 
 
-def _minimum_run_ms(
+def _minimum_internal_run_ms(
     directions: np.ndarray,
     applicable: np.ndarray,
     sample_rate_hz: float,
 ) -> float | None:
+    """Минимальная длительность состояния между двумя реальными границами.
+
+    Первый и последний сегменты не учитываются: короткий край записи часто
+    возникает из-за положения курсора редактора и уже исключается переходной
+    маской. Он не свидетельствует о дребезге экспертного решения внутри файла.
+    """
+
     states = np.where(applicable, directions, int(PDRDirection.UNLABELED))
     if states.size == 0:
         return None
     boundaries = np.flatnonzero(states[1:] != states[:-1]) + 1
     lengths = np.diff(np.concatenate(([0], boundaries, [states.size])))
-    return float(lengths.min() * 1000.0 / sample_rate_hz) if lengths.size else None
+    internal = lengths[1:-1]
+    return float(internal.min() * 1000.0 / sample_rate_hz) if internal.size else None
 
 
 def _read_text(path: Path) -> str:

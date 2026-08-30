@@ -350,6 +350,17 @@ def discover_previously_exported(review_root: Path) -> set[tuple[str, int]]:
         match = pattern.fullmatch(path.name)
         if match:
             result.add((match.group(1).lower(), int(match.group(2))))
+    # Манифесты сохраняют историю отбора даже после переноса самих комплектов
+    # CFG/DAT/JSON в рабочее дерево ручной разметки.
+    for name in ("batch_manifest.csv", "blind_audit_assignment.csv"):
+        for path in root.rglob(name):
+            try:
+                with path.open("r", encoding="utf-8-sig", newline="") as stream:
+                    for row in csv.DictReader(stream):
+                        if row.get("source") and row.get("record_id"):
+                            result.add((str(row["source"]), int(row["record_id"])))
+            except (OSError, UnicodeDecodeError, csv.Error, ValueError):
+                continue
     return result
 
 
@@ -620,10 +631,15 @@ def select_blind_audit_cases(
     }
     quotas = {name: 0 for name in DEFAULT_QUOTAS}
     quotas["blind_control"] = len(pool_keys)
+    audit_history_roots = tuple(
+        root for root in DEFAULT_BLIND_AUDIT_ROOT.parent.glob("pdr_manual_blind_audit_v*")
+        if root.resolve() != Path(review_root).parent.resolve()
+    )
     all_cases, catalog = select_review_cases(
         analysis_dir,
         review_root,
         quotas,
+        additional_exclusion_roots=audit_history_roots,
         source_quota_multipliers={"open_ee": 1.0, "french_rte": 1.0},
         source_quotas=source_quotas,
         include_only_keys=pool_keys,
@@ -658,12 +674,13 @@ def run_export(
     export_comtrade: bool,
     batch_name: str | None = None,
     audit_new_root: Path = DEFAULT_STANDARD_NEW_ROOT,
+    blind_audit_root: Path = DEFAULT_BLIND_AUDIT_ROOT,
 ) -> Path | None:
     """Построить предпросмотр и при явном запросе экспортировать COMTRADE."""
 
     analysis_dir = DEFAULT_ANALYSIS_DIR
     label_dir = DEFAULT_LABEL_DIR
-    review_root = DEFAULT_BLIND_AUDIT_ROOT / "reference" if profile == "audit" else DEFAULT_REVIEW_ROOT
+    review_root = Path(blind_audit_root) / "reference" if profile == "audit" else DEFAULT_REVIEW_ROOT
 
     recovered = recover_incomplete_batches(review_root)
     if recovered:
@@ -725,6 +742,7 @@ def run_manual() -> None:
         count=AUDIT_COUNT,
         export_comtrade=EXPORT_COMTRADE,
         batch_name=BATCH_NAME,
+        blind_audit_root=DEFAULT_BLIND_AUDIT_ROOT,
     )
 
 
@@ -743,6 +761,8 @@ def _main() -> None:
                         help="Необязательное уникальное имя каталога пакета")
     parser.add_argument("--audit-new-root", type=Path, default=DEFAULT_STANDARD_NEW_ROOT,
                         help="Стандартный пакет новых записей для профиля audit")
+    parser.add_argument("--blind-audit-root", type=Path, default=DEFAULT_BLIND_AUDIT_ROOT,
+                        help="Корень независимого раунда слепого аудита")
     args = parser.parse_args()
     run_export(
         profile=args.profile,
@@ -750,6 +770,7 @@ def _main() -> None:
         export_comtrade=args.export,
         batch_name=args.batch_name,
         audit_new_root=args.audit_new_root,
+        blind_audit_root=args.blind_audit_root,
     )
 
 

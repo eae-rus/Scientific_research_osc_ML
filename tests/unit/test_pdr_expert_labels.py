@@ -15,6 +15,7 @@ from osc_tools.pdr.expert_labels import (
     aggregate_algorithm_comparison,
     build_transition_masks,
     compare_expert_repeatability,
+    expert_quality_flags,
     import_expert_tree,
     read_comtrade_1999_ascii,
     write_expert_archive,
@@ -205,7 +206,7 @@ def test_expert_repeatability_flags_stable_opposite_without_changing_versions() 
     assert np.all(second.directions == int(PDRDirection.FORWARD))
 
 
-def test_expert_repeatability_reports_shifted_boundary_in_ms() -> None:
+def test_expert_repeatability_tolerates_small_shift_and_flags_large_shift() -> None:
     def imported(record_id: int, boundary: int) -> ImportedExpertRecord:
         states = np.zeros(100, dtype=np.int16)
         states[boundary:] = int(PDRDirection.FORWARD)
@@ -229,5 +230,86 @@ def test_expert_repeatability_reports_shifted_boundary_in_ms() -> None:
     rows, _, queue = compare_expert_repeatability([imported(2, 10)], [imported(2, 17)])
     assert rows[0]["boundary_nearest_median_ms"] == 7.0
     assert rows[0]["boundary_nearest_max_ms"] == 7.0
-    assert rows[0]["adjudication_priority"] == "medium"
+    assert rows[0]["transition_count_match"] is True
+    assert rows[0]["adjudication_priority"] == "low"
+    assert len(queue) == 0
+
+    rows, summaries, queue = compare_expert_repeatability(
+        [imported(3, 10)], [imported(3, 35)]
+    )
+    assert rows[0]["boundary_nearest_max_ms"] == 25.0
+    assert rows[0]["large_boundary_shift_over_20ms"] is True
+    assert rows[0]["adjudication_priority"] == "high"
+    assert summaries[0]["records_with_boundary_shift_over_20ms"] == 1
     assert len(queue) == 1
+
+
+def test_expert_repeatability_flags_different_transition_count() -> None:
+    first_states = np.zeros(100, dtype=np.int16)
+    first_states[20:] = int(PDRDirection.FORWARD)
+    second_states = first_states.copy()
+    second_states[50:60] = int(PDRDirection.REVERSE)
+
+    def imported(record_id: int, states: np.ndarray) -> ImportedExpertRecord:
+        return ImportedExpertRecord(
+            source="open_ee",
+            record_id=record_id,
+            status="completed",
+            stratum="blind_control",
+            input_sha256=f"hash-{record_id}",
+            f_adc=1000.0,
+            directions=states,
+            applicable=np.ones(states.size, dtype=bool),
+            train_mask=np.ones(states.size, dtype=bool),
+            transition_eval_mask=np.zeros(states.size, dtype=bool),
+            automatic_directions={algorithm_id: states for algorithm_id in ALGORITHM_IDS},
+            ignored_analog_channels=(),
+            ignored_digital_channels=(),
+            cfg_path=Path(f"record-{record_id}.cfg"),
+        )
+
+    rows, summaries, queue = compare_expert_repeatability(
+        [imported(4, first_states)], [imported(4, second_states)]
+    )
+    assert rows[0]["first_transitions"] == 1
+    assert rows[0]["repeat_transitions"] == 3
+    assert rows[0]["transition_count_difference"] == 2
+    assert rows[0]["adjudication_priority"] == "high"
+    assert summaries[0]["matching_transition_count_records"] == 0
+    assert len(queue) == 1
+
+
+def test_quality_flags_ignore_short_edge_but_keep_short_internal_run() -> None:
+    def imported(record_id: int, directions: np.ndarray, applicable: np.ndarray) -> ImportedExpertRecord:
+        automatic = np.where(applicable, directions, int(PDRDirection.UNLABELED))
+        return ImportedExpertRecord(
+            source="open_ee",
+            record_id=record_id,
+            status="completed",
+            stratum="test",
+            input_sha256=f"hash-{record_id}",
+            f_adc=1000.0,
+            directions=directions,
+            applicable=applicable,
+            train_mask=np.ones(directions.size, dtype=bool),
+            transition_eval_mask=np.zeros(directions.size, dtype=bool),
+            automatic_directions={algorithm_id: automatic for algorithm_id in ALGORITHM_IDS},
+            ignored_analog_channels=(),
+            ignored_digital_channels=(),
+            cfg_path=Path(f"record-{record_id}.cfg"),
+        )
+
+    edge_directions = np.zeros(20, dtype=np.int16)
+    edge_applicable = np.ones(20, dtype=bool)
+    edge_applicable[-1] = False
+    internal_directions = np.zeros(20, dtype=np.int16)
+    internal_directions[10:12] = int(PDRDirection.FORWARD)
+    internal_applicable = np.ones(20, dtype=bool)
+
+    rows = expert_quality_flags([
+        imported(1, edge_directions, edge_applicable),
+        imported(2, internal_directions, internal_applicable),
+    ])
+    assert [row["record_id"] for row in rows] == [2]
+    assert rows[0]["flags"] == "expert_internal_run_shorter_than_5ms"
+    assert rows[0]["minimum_internal_expert_run_ms"] == 2.0

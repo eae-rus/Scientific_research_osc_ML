@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import argparse
+import bisect
 from dataclasses import asdict, dataclass
 from datetime import datetime
 import hashlib
@@ -54,7 +55,9 @@ class PDRTrainingConfig:
     transition_sampling_fraction: float = 0.5
     transition_sampling_radius_ms: float = 20.0
     weak_validation_records_per_source: int = 400
-    expert_replay_open_records: int = 300
+    expert_replay_open_records: int = 1_000
+    rotate_expert_samples_each_epoch: bool = True
+    rotate_expert_replay_records_each_epoch: bool = True
     expert_fraction: float = 0.75
     open_ee_fraction_within_expert: float = 0.75
     expert_labels_root: str = "data/phase5/pdr_expert_labels_v1"
@@ -362,11 +365,19 @@ def _weak_pool_summary(cfg: PDRTrainingConfig, epoch: int) -> dict[str, dict[str
     return result
 
 
-def _expert_groups(cfg: PDRTrainingConfig, split: str, augment: bool):
+def _expert_groups(
+    cfg: PDRTrainingConfig,
+    split: str,
+    augment: bool,
+    *,
+    epoch: int | None = None,
+):
     expert_root = _expert_root(cfg)
     if not expert_root.exists():
         raise FileNotFoundError(f"Папка ручной разметки не найдена: {expert_root}")
     groups = []
+    if split == "train" and cfg.rotate_expert_samples_each_epoch and epoch is None:
+        raise ValueError("Для ротации expert train-точек требуется номер эпохи")
     for source in ("open_ee", "french_rte"):
         indices = _expert_indices(expert_root, source, split)
         if indices:
@@ -377,14 +388,48 @@ def _expert_groups(cfg: PDRTrainingConfig, split: str, augment: bool):
             groups.append((f"expert_{source}", _dataset(
                 cfg, source, indices, expert_root / source, augment=augment,
                 max_samples_per_record=per_record_limit,
+                index_selection_seed=(
+                    cfg.seed
+                    + int(epoch) * 10_000_019
+                    + (0 if source == "open_ee" else 97_409)
+                    if split == "train" and cfg.rotate_expert_samples_each_epoch
+                    else None
+                ),
             )))
     if split == "train" and cfg.expert_replay_open_records > 0:
         splits = _load_splits()["sources"]
-        replay_ids = _stable_subset(
-            splits["open_ee"]["splits"]["train"],
-            cfg.expert_replay_open_records,
-            cfg.seed + 700,
-            "expert:replay:open_ee",
+        expert_open_train = set(_expert_indices(expert_root, "open_ee", "train"))
+        replay_train = [
+            int(record_id)
+            for record_id in splits["open_ee"]["splits"]["train"]
+            if int(record_id) not in expert_open_train
+        ]
+        if cfg.rotate_expert_replay_records_each_epoch:
+            if epoch is None:
+                raise ValueError("Для ротации expert replay-пула требуется номер эпохи")
+            replay_ids, replay_pool_index, replay_pool_count = _epoch_record_pool(
+                replay_train,
+                cfg.expert_replay_open_records,
+                cfg.seed + 700,
+                "expert:replay:open_ee",
+                epoch,
+            )
+            replay_policy = "rotating_epoch_pool"
+        else:
+            replay_ids = _stable_subset(
+                replay_train,
+                cfg.expert_replay_open_records,
+                cfg.seed + 700,
+                "expert:replay:open_ee",
+            )
+            replay_pool_index, replay_pool_count = 0, 1
+            replay_policy = "fixed_subset"
+        print(
+            f"[Пул] expert replay open_ee/train: {len(replay_ids):,} из "
+            f"{len(replay_train):,}; политика={replay_policy}; "
+            f"часть={replay_pool_index + 1}/{replay_pool_count}; "
+            f"исключено expert train={len(expert_open_train):,}",
+            flush=True,
         )
         # Вторая стадия читает автоматический архив явно через временную копию
         # конфигурации stage, иначе teacher_algorithm_id не был бы выбран.
@@ -395,11 +440,61 @@ def _expert_groups(cfg: PDRTrainingConfig, split: str, augment: bool):
                 cfg, "open_ee", replay_ids,
                 PROJECT_ROOT / "data/phase5/pdr_labels_v5/open_ee",
                 augment=augment,
+                index_selection_seed=(
+                    cfg.seed + int(epoch) * 10_000_019 + 700
+                    if cfg.rotate_expert_samples_each_epoch
+                    else None
+                ),
             )
         finally:
             cfg.stage = original_stage
         groups.append(("replay_open_ee", replay))
     return groups
+
+
+def _expert_replay_pool_summary(
+    cfg: PDRTrainingConfig, epoch: int
+) -> dict[str, int | float | str] | None:
+    """План и накопленный охват непересекающегося с expert Open_EE replay."""
+
+    if cfg.expert_replay_open_records <= 0:
+        return None
+    expert_root = _expert_root(cfg)
+    excluded = set(_expert_indices(expert_root, "open_ee", "train"))
+    split_values = _load_splits()["sources"]["open_ee"]["splits"]["train"]
+    population = [int(value) for value in split_values if int(value) not in excluded]
+    if cfg.rotate_expert_replay_records_each_epoch:
+        pool, pool_index, pool_count = _epoch_record_pool(
+            population,
+            cfg.expert_replay_open_records,
+            cfg.seed + 700,
+            "expert:replay:open_ee",
+            epoch,
+        )
+        covered = _scheduled_unique_records(
+            len(population), cfg.expert_replay_open_records, epoch + 1
+        )
+        policy = "rotating_epoch_pool"
+    else:
+        pool = _stable_subset(
+            population,
+            cfg.expert_replay_open_records,
+            cfg.seed + 700,
+            "expert:replay:open_ee",
+        )
+        pool_index, pool_count = 0, 1
+        covered = len(pool)
+        policy = "fixed_subset"
+    return {
+        "policy": policy,
+        "population_records": len(population),
+        "excluded_expert_train_records": len(excluded),
+        "scheduled_records": len(pool),
+        "pool_index": pool_index,
+        "pool_count": pool_count,
+        "scheduled_unique_records_through_epoch": covered,
+        "scheduled_coverage_fraction": covered / max(1, len(population)),
+    }
 
 
 def _collate(samples):
@@ -476,7 +571,17 @@ def _training_sampler(
 ):
     weights = torch.tensor(_group_weights(cfg, groups, cfg.stage), dtype=torch.double)
     generator = torch.Generator().manual_seed(cfg.seed + epoch)
-    if cfg.stage != "weak" or not cfg.rotate_weak_records_each_epoch:
+    use_mandatory_coverage = (
+        (cfg.stage == "weak" and cfg.rotate_weak_records_each_epoch)
+        or (
+            cfg.stage == "expert"
+            and (
+                cfg.rotate_expert_samples_each_epoch
+                or cfg.rotate_expert_replay_records_each_epoch
+            )
+        )
+    )
+    if not use_mandatory_coverage:
         return weighted_sampler_class(
             weights,
             num_samples=cfg.samples_per_epoch,
@@ -491,10 +596,10 @@ def _training_sampler(
     )
     if len(mandatory) > cfg.samples_per_epoch:
         raise ValueError(
-            "SAMPLES_PER_EPOCH меньше обязательной квоты текущего weak-пула: "
+            "SAMPLES_PER_EPOCH меньше обязательной квоты текущего train-пула: "
             f"{cfg.samples_per_epoch:,} < {len(mandatory):,}. Увеличьте объём "
             "эпохи, уменьшите MIN_SAMPLES_PER_RECORD_PER_EPOCH либо "
-            "уменьшите WEAK_*_RECORDS."
+            "уменьшите размер индексируемого пула."
         )
     remaining = cfg.samples_per_epoch - len(mandatory)
     sampled = list(mandatory)
@@ -509,6 +614,39 @@ def _training_sampler(
     # Обязательные точки не должны образовывать отдельную первую часть эпохи.
     permutation = torch.randperm(len(sampled), generator=generator).tolist()
     return [sampled[index] for index in permutation]
+
+
+def _planned_group_coverage(groups, sampler) -> dict[str, dict[str, int | float]]:
+    """Описать гарантированный охват записей для явного epoch-sampler."""
+
+    if not isinstance(sampler, list):
+        return {}
+    ends: list[int] = []
+    total = 0
+    for _, dataset in groups:
+        total += len(dataset)
+        ends.append(total)
+    sampled: list[dict[int, int]] = [dict() for _ in groups]
+    for global_index in sampler:
+        group_index = bisect.bisect_right(ends, int(global_index))
+        start = 0 if group_index == 0 else ends[group_index - 1]
+        record_id, _ = groups[group_index][1].samples[int(global_index) - start]
+        counts = sampled[group_index]
+        counts[int(record_id)] = counts.get(int(record_id), 0) + 1
+    result: dict[str, dict[str, int | float]] = {}
+    for group_index, (name, dataset) in enumerate(groups):
+        indexed_records = len({int(record_id) for record_id, _ in dataset.samples})
+        counts = list(sampled[group_index].values())
+        result[name] = {
+            "indexed_records": indexed_records,
+            "indexed_target_points": len(dataset),
+            "sampled_records": len(counts),
+            "record_coverage_fraction": len(counts) / max(1, indexed_records),
+            "sampled_points_per_record_min": min(counts) if counts else 0,
+            "sampled_points_per_record_median": float(np.median(counts)) if counts else 0.0,
+            "sampled_points_per_record_max": max(counts) if counts else 0,
+        }
+    return result
 
 
 def _export_training_history(log_path: Path, output_dir: Path) -> None:
@@ -691,17 +829,26 @@ def run(
         "максимум_train_записей_French_RTE_на_эпоху": (
             cfg.weak_french_records if cfg.stage == "weak" else None
         ),
+        "максимум_expert_replay_Open_EE_на_эпоху": (
+            cfg.expert_replay_open_records if cfg.stage == "expert" else None
+        ),
         "ротация_weak_train_между_эпохами": (
             cfg.rotate_weak_records_each_epoch if cfg.stage == "weak" else None
         ),
-        "минимум_точек_каждой_weak_записи_на_эпоху": (
-            cfg.min_samples_per_record_per_epoch if cfg.stage == "weak" else None
+        "ротация_expert_точек_между_эпохами": (
+            cfg.rotate_expert_samples_each_epoch if cfg.stage == "expert" else None
+        ),
+        "ротация_expert_replay_записей_между_эпохами": (
+            cfg.rotate_expert_replay_records_each_epoch if cfg.stage == "expert" else None
+        ),
+        "минимум_точек_каждой_train_записи_на_эпоху": (
+            cfg.min_samples_per_record_per_epoch
         ),
         "доля_кандидатов_около_переключений": (
-            cfg.transition_sampling_fraction if cfg.stage == "weak" else None
+            cfg.transition_sampling_fraction
         ),
         "радиус_зоны_переключения_мс": (
-            cfg.transition_sampling_radius_ms if cfg.stage == "weak" else None
+            cfg.transition_sampling_radius_ms
         ),
         "validation_записей_на_источник": cfg.weak_validation_records_per_source,
         "num_workers": cfg.num_workers,
@@ -720,7 +867,7 @@ def run(
     initial_train_pool_started = time.time()
     train_groups = (
         _weak_groups(cfg, "train", True, epoch=resume_epoch_hint) if cfg.stage == "weak"
-        else _expert_groups(cfg, "train", True)
+        else _expert_groups(cfg, "train", True, epoch=resume_epoch_hint)
     )
     initial_train_pool_prepare_seconds = time.time() - initial_train_pool_started
     validation_groups = (
@@ -776,6 +923,10 @@ def run(
         "weak_record_pool_plan": (
             _weak_pool_summary(cfg, resume_epoch_hint) if cfg.stage == "weak" else None
         ),
+        "expert_replay_pool_plan": (
+            _expert_replay_pool_summary(cfg, resume_epoch_hint)
+            if cfg.stage == "expert" else None
+        ),
         "transition_exclusion_ms": 5.0,
         "direction_classes": {"REVERSE": 0, "FORWARD": 1},
         "unlabeled_is_applicability_target": True,
@@ -794,6 +945,12 @@ def run(
             contract_keys += (
                 "expert_labels_root",
                 "expert_validation_max_samples_per_record",
+                "expert_replay_open_records",
+                "rotate_expert_samples_each_epoch",
+                "rotate_expert_replay_records_each_epoch",
+                "min_samples_per_record_per_epoch",
+                "transition_sampling_fraction",
+                "transition_sampling_radius_ms",
             )
         else:
             contract_keys += (
@@ -852,22 +1009,24 @@ def run(
         pool_prepare_seconds = (
             initial_train_pool_prepare_seconds if epoch == resume_epoch_hint else 0.0
         )
-        if (
-            cfg.stage == "weak"
-            and cfg.rotate_weak_records_each_epoch
-            and epoch != resume_epoch_hint
-        ):
+        rotate_train_pool = (
+            (cfg.stage == "weak" and cfg.rotate_weak_records_each_epoch)
+            or (cfg.stage == "expert" and cfg.rotate_expert_samples_each_epoch)
+            or (cfg.stage == "expert" and cfg.rotate_expert_replay_records_each_epoch)
+        )
+        if rotate_train_pool and epoch != resume_epoch_hint:
             # Индекс остаётся ограниченным по размеру, но набор записей меняется
             # между эпохами. DataLoader пересоздаётся, чтобы Windows workers не
             # удерживали dataset предыдущего пула.
             pool_prepare_started = time.time()
-            train_groups = [
-                (name, dataset)
-                for name, dataset in _weak_groups(cfg, "train", True, epoch=epoch)
-                if len(dataset)
-            ]
+            rebuilt_groups = (
+                _weak_groups(cfg, "train", True, epoch=epoch)
+                if cfg.stage == "weak"
+                else _expert_groups(cfg, "train", True, epoch=epoch)
+            )
+            train_groups = [(name, dataset) for name, dataset in rebuilt_groups if len(dataset)]
             if not train_groups:
-                raise RuntimeError(f"Пустой weak train-пул на эпохе {epoch + 1}")
+                raise RuntimeError(f"Пустой {cfg.stage} train-пул на эпохе {epoch + 1}")
             train_dataset = ConcatDataset([dataset for _, dataset in train_groups])
             sampler = _training_sampler(
                 torch,
@@ -958,6 +1117,9 @@ def run(
                 if device.type == "cuda" else 0.0
             ),
         }
+        record["train_group_coverage"] = _planned_group_coverage(train_groups, sampler)
+        if cfg.stage == "expert":
+            record["expert_replay_pool"] = _expert_replay_pool_summary(cfg, epoch)
         if cfg.stage == "weak":
             pool_summary = _weak_pool_summary(cfg, epoch)
             source_ids = {"open_ee": 0, "french_rte": 1}
@@ -1038,6 +1200,7 @@ def main() -> int:
     parser.add_argument("--expert-validation-max-samples-per-record", type=int, default=None)
     parser.add_argument("--weak-open-records", type=int, default=None)
     parser.add_argument("--weak-french-records", type=int, default=None)
+    parser.add_argument("--expert-replay-open-records", type=int, default=None)
     parser.add_argument(
         "--min-samples-per-record-per-epoch",
         type=int,
@@ -1063,6 +1226,16 @@ def main() -> int:
             "Не ротировать ограниченный weak train-пул между эпохами. "
             "Нужно только для точного воспроизведения старого пилота."
         ),
+    )
+    parser.add_argument(
+        "--fixed-expert-sampling",
+        action="store_true",
+        help="Не менять ограниченный индекс expert-точек между эпохами",
+    )
+    parser.add_argument(
+        "--fixed-expert-replay-pool",
+        action="store_true",
+        help="Не ротировать weak replay-пул на expert-stage",
     )
     parser.add_argument("--validation-records-per-source", type=int, default=None)
     parser.add_argument("--num-workers", type=int, default=None)
@@ -1097,6 +1270,10 @@ def main() -> int:
         cfg.weak_validation_records_per_source = 4
         cfg.expert_replay_open_records = 4
         cfg.max_samples_per_record = 4
+        # Smoke проверяет тракт на 64 примерах, а не полноту покрытия сотен
+        # expert-записей; обязательная пофайловая квота действует в full-run.
+        cfg.rotate_expert_samples_each_epoch = False
+        cfg.rotate_expert_replay_records_each_epoch = False
     if args.epochs is not None:
         cfg.epochs = args.epochs
     for argument, attribute in (
@@ -1110,6 +1287,7 @@ def main() -> int:
         ),
         (args.weak_open_records, "weak_open_records"),
         (args.weak_french_records, "weak_french_records"),
+        (args.expert_replay_open_records, "expert_replay_open_records"),
         (args.min_samples_per_record_per_epoch, "min_samples_per_record_per_epoch"),
         (args.validation_records_per_source, "weak_validation_records_per_source"),
         (args.num_workers, "num_workers"),
@@ -1124,6 +1302,10 @@ def main() -> int:
         cfg.transition_sampling_radius_ms = args.transition_sampling_radius_ms
     if args.fixed_weak_record_pool:
         cfg.rotate_weak_records_each_epoch = False
+    if args.fixed_expert_sampling:
+        cfg.rotate_expert_samples_each_epoch = False
+    if args.fixed_expert_replay_pool:
+        cfg.rotate_expert_replay_records_each_epoch = False
     if args.expert_labels_root is not None:
         cfg.expert_labels_root = str(args.expert_labels_root)
     ssl_checkpoint = args.ssl_checkpoint or (
@@ -1167,9 +1349,11 @@ def run_manual() -> None:
     Разметка v5 остаётся доступной в каждой точке. LABEL_STRIDE_SAMPLES лишь
     задаёт шаг отбора целевых точек в обучающий индекс. Сырые осциллограммы
     загружаются лениво по batch; при старте в RAM строится только ограниченный
-    индекс меток (не более MAX_SAMPLES_PER_RECORD точек от записи). На weak-stage
-    ограниченный пул записей по умолчанию меняется между эпохами, пока не будет
-    покрыт весь research-strict train-split.
+    индекс меток (не более заданного числа точек от записи). На weak-stage
+    ограниченный пул записей меняется между эпохами до покрытия research-strict
+    train-split. На expert-stage используются все экспертные train-записи в
+    каждой эпохе, точки внутри них динамически переотбираются, а replay-пул
+    последовательно обходит weak Open_EE.
 
     После каждой эпохи создаются training_log.jsonl, training_history.json,
     training_history.png, latest_checkpoint.pt и best_model.pt. Для продолжения
@@ -1179,22 +1363,20 @@ def run_manual() -> None:
     но с нулевого внутреннего индекса эпохи и новым optimizer/scheduler.
     """
     # Основной контракт опыта.
-    STAGE = "weak"                  # weak, затем expert
-    TEMPORAL_MODE = "snapshot_2"   #  snapshot_2, snapshot_5 и sequence_1_8
+    STAGE = "expert"                  # weak, затем expert
+    TEMPORAL_MODE = "sequence_1_8"   #  snapshot_2, snapshot_5 и sequence_1_8
     LABEL_STRIDE_SAMPLES = 5        # основной; абляция 2 и 1
     MODEL_PRESET = "small"          # small, medium, heavy
     SMOKE = False                   # True: короткая проверка перед full
     RESUME = False                  # True: продолжить latest_checkpoint.pt
     SSL_CHECKPOINT_KIND = "best"    # best или latest для инициализации weak
-    WEAK_CHECKPOINT_KIND = "latest" # best или latest, если путь не задан
-    WEAK_CHECKPOINT_PATH = (         # явный checkpoint для expert-stage; None = авто
-        "experiments/phase5/pdr_weak_snapshot_5_stride5/latest_checkpoint.pt"
-    )
+    WEAK_CHECKPOINT_KIND = "best"   # best рекомендуется; latest остаётся доступен
+    WEAK_CHECKPOINT_PATH = None      # None = путь автоматически совпадает с TEMPORAL_MODE
     EXPERT_LABELS_ROOT = "data/phase5/pdr_expert_labels_v1"
     RESTART_WEAK_FROM = None         # None, best или latest: новый weak-цикл с готовых весов
 
     # Объём и длительность обучения.
-    EPOCHS = 100
+    EPOCHS = 50
     SAMPLES_PER_EPOCH = 20_000      # случайных целевых точек с возвращением
     BATCH_SIZE = 32                 # число примеров в одном шаге оптимизатора
     MAX_SAMPLES_PER_RECORD = 64     # ограничение train-индекса на осциллограмму
@@ -1205,7 +1387,7 @@ def run_manual() -> None:
     WEAK_OPEN_RECORDS = 4_000      # верхний размер ротационного пула Open_EE одной эпохи
     WEAK_FRENCH_RECORDS = 1_000    # верхний размер ротационного пула French/RTE одной эпохи
     ROTATE_WEAK_RECORDS_EACH_EPOCH = True # обходить весь train-split последовательными пулами
-    MIN_SAMPLES_PER_RECORD_PER_EPOCH = 4  # гарантированное число используемых точек пригодной записи
+    MIN_SAMPLES_PER_RECORD_PER_EPOCH = 4  # гарантированный минимум точек каждой записи на weak и expert
     TRANSITION_SAMPLING_FRACTION = 0.5    # целевая доля индексных кандидатов из зон переключений
     TRANSITION_SAMPLING_RADIUS_MS = 50.0  # полуширина переходной зоны вокруг смены метки в мс
     VALIDATION_RECORDS_PER_SOURCE = 400   # validation-осциллограмм каждого источника
@@ -1218,7 +1400,11 @@ def run_manual() -> None:
     AUGMENTATION_PROBABILITY = 0.5
 
     # Expert-stage: 75% экспертных примеров + 25% replay обычных Open_EE.
-    EXPERT_REPLAY_OPEN_RECORDS = 300
+    # При 1000 записях/эпоху Open_EE train без expert-файлов обходится за
+    # 39 эпох; точное число частей печатается при запуске.
+    EXPERT_REPLAY_OPEN_RECORDS = 1_000
+    ROTATE_EXPERT_SAMPLES_EACH_EPOCH = True  # переотбирать точки всех expert-записей
+    ROTATE_EXPERT_REPLAY_RECORDS_EACH_EPOCH = True # обходить весь weak replay-архив
     EXPERT_FRACTION = 0.75
     OPEN_EE_FRACTION_WITHIN_EXPERT = 0.75
 
@@ -1246,6 +1432,8 @@ def run_manual() -> None:
         device=DEVICE,
         augmentation_probability=AUGMENTATION_PROBABILITY,
         expert_replay_open_records=EXPERT_REPLAY_OPEN_RECORDS,
+        rotate_expert_samples_each_epoch=ROTATE_EXPERT_SAMPLES_EACH_EPOCH,
+        rotate_expert_replay_records_each_epoch=ROTATE_EXPERT_REPLAY_RECORDS_EACH_EPOCH,
         expert_fraction=EXPERT_FRACTION,
         open_ee_fraction_within_expert=OPEN_EE_FRACTION_WITHIN_EXPERT,
         expert_labels_root=EXPERT_LABELS_ROOT,
@@ -1255,6 +1443,8 @@ def run_manual() -> None:
         cfg.weak_open_records = 8; cfg.weak_french_records = 4
         cfg.weak_validation_records_per_source = 4
         cfg.expert_replay_open_records = 4; cfg.max_samples_per_record = 4
+        cfg.rotate_expert_samples_each_epoch = False
+        cfg.rotate_expert_replay_records_each_epoch = False
     ssl_checkpoint = (
         PROJECT_ROOT
         / f"experiments/phase5/pretrain_b_{MODEL_PRESET}"
