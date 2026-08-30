@@ -19,6 +19,9 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from scripts.phase5_experiments.progress import ProgressReporter
+from scripts.phase5_experiments.evaluate_pdr_full_weak_validation import (
+    _combine_source_metrics,
+)
 from scripts.phase5_experiments.run_phase5_pdr_training import (
     PDRTrainingConfig,
     _build_model,
@@ -44,7 +47,7 @@ def evaluate_checkpoint(
     num_workers: int = 0,
 ) -> dict[str, object]:
     (
-        torch, ConcatDataset, DataLoader, _, _, _, evaluate_pdr_metrics, _, _,
+        torch, _, DataLoader, _, _, _, evaluate_pdr_metrics, _, _,
     ) = _imports()
     checkpoint_path = checkpoint_path.resolve()
     config_path = config_path.resolve()
@@ -71,23 +74,6 @@ def evaluate_checkpoint(
         if not groups:
             raise RuntimeError(f"Нет экспертных данных для split={split}")
 
-        combined = ConcatDataset([dataset for _, dataset in groups])
-        combined_loader = DataLoader(
-            combined,
-            batch_size=cfg.batch_size,
-            shuffle=False,
-            num_workers=cfg.num_workers,
-            collate_fn=_collate,
-            persistent_workers=cfg.num_workers > 0,
-        )
-        progress = ProgressReporter(
-            f"Экспертная оценка {split}", len(combined_loader), unit="batch"
-        )
-        overall = evaluate_pdr_metrics(
-            model, head, combined_loader, str(device), progress_callback=progress.update
-        )
-        progress.finish()
-
         by_source: dict[str, object] = {}
         for name, dataset in groups:
             loader = DataLoader(
@@ -98,9 +84,15 @@ def evaluate_checkpoint(
                 collate_fn=_collate,
                 persistent_workers=cfg.num_workers > 0,
             )
-            by_source[name.removeprefix("expert_")] = evaluate_pdr_metrics(
-                model, head, loader, str(device)
+            source_name = name.removeprefix("expert_")
+            progress = ProgressReporter(
+                f"Экспертная оценка {split}/{source_name}", len(loader), unit="batch"
             )
+            by_source[source_name] = evaluate_pdr_metrics(
+                model, head, loader, str(device), progress_callback=progress.update
+            )
+            progress.finish()
+        overall = _combine_source_metrics(by_source)
         split_results[split] = {
             "overall": overall,
             "by_source": by_source,
@@ -163,22 +155,39 @@ def run_manual() -> None:
     SPLITS = ("validation",)
     RUNS = (
         (
-            "weak_latest",
-            "experiments/phase5/pdr_weak_snapshot_5_stride5/latest_checkpoint.pt",
+            "snapshot_2_weak_best",
+            "experiments/phase5/pdr_weak_snapshot_2_stride5/best_model.pt",
+            "experiments/phase5/pdr_weak_snapshot_2_stride5/config.json",
+        ),
+        (
+            "snapshot_2_expert_best",
+            "experiments/phase5/pdr_expert_snapshot_2_stride5/best_model.pt",
+            "experiments/phase5/pdr_expert_snapshot_2_stride5/config.json",
+        ),
+        (
+            "snapshot_5_weak_best",
+            "experiments/phase5/pdr_weak_snapshot_5_stride5/best_model.pt",
             "experiments/phase5/pdr_weak_snapshot_5_stride5/config.json",
         ),
         (
-            "expert_best",
-            "experiments/phase5/pdr_expert_snapshot_5_stride5/best_model.pt",
-            "experiments/phase5/pdr_expert_snapshot_5_stride5/config.json",
+            "snapshot_5_expert_best",
+            "experiments/phase5/pdr_expert_snapshot_5_stride5/"
+            "archive_20260830_131809/best_model.pt",
+            "experiments/phase5/pdr_expert_snapshot_5_stride5/"
+            "archive_20260830_131809/config.json",
         ),
         (
-            "expert_latest",
-            "experiments/phase5/pdr_expert_snapshot_5_stride5/latest_checkpoint.pt",
-            "experiments/phase5/pdr_expert_snapshot_5_stride5/config.json",
+            "sequence_1_8_weak_best",
+            "experiments/phase5/pdr_weak_sequence_1_8_stride5/best_model.pt",
+            "experiments/phase5/pdr_weak_sequence_1_8_stride5/config.json",
+        ),
+        (
+            "sequence_1_8_expert_best",
+            "experiments/phase5/pdr_expert_sequence_1_8_stride5/best_model.pt",
+            "experiments/phase5/pdr_expert_sequence_1_8_stride5/config.json",
         ),
     )
-    output_root = PROJECT_ROOT / "experiments/phase5/pdr_expert_evaluation_v1"
+    output_root = PROJECT_ROOT / "experiments/phase5/pdr_expert_evaluation_v2"
     for name, checkpoint, config in RUNS:
         evaluate_checkpoint(
             PROJECT_ROOT / checkpoint,
