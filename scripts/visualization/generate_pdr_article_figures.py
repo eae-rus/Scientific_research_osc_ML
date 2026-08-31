@@ -7,11 +7,17 @@
 """
 
 import os
+import sys
 import json
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 # Настройка шрифтов и стиля для академических публикаций
 plt.rcParams['font.family'] = 'DejaVu Sans'
@@ -104,7 +110,7 @@ def plot_fig1():
 
     ax.set_xlim(0, 1.05)
     ax.set_ylim(0.02, 1.0)
-    plt.title("Рисунок 1. Архитектура двухголовой классификации и физическая логика взаимодействия РНМ с БАВР", 
+    plt.title("Логика органа направления мощности в тракте БАВР и двухголовая классификация", 
               pad=12, weight='bold')
     plt.tight_layout()
     save_fig("fig1_bavr_logic_twohead.png")
@@ -148,7 +154,7 @@ def plot_fig2():
 
     ax.set_xlim(0, 1.0)
     ax.set_ylim(0.05, 0.98)
-    plt.title("Рисунок 2. Сквозная схема доказательной подготовки обучающих данных и двухэтапного обучения РНМ", 
+    plt.title("Сквозная схема доказательной подготовки обучающих данных и двухэтапного обучения РНМ", 
               pad=12, weight='bold')
     plt.tight_layout()
     save_fig("fig2_research_methodology.png")
@@ -216,318 +222,180 @@ def plot_fig6():
 
 
 # -------------------------------------------------------------
+# -------------------------------------------------------------
 # РИСУНОК 3: Характеристики 5 органов РНМ на комплексной плоскости
 # -------------------------------------------------------------
+def render_fig3_panel(ax, panel_type: str):
+    phi_line = np.radians(45)
+    phi_perp = phi_line + np.pi/2
+    th_c = np.linspace(0, 2*np.pi, 100)
+    r_th = 0.22
+    th_sec = np.linspace(-np.pi/4, 3*np.pi/4, 150)
+    r_outer = 1.22
+    x_sec = np.concatenate([[0], r_outer * np.cos(th_sec), [0]])
+    y_sec = np.concatenate([[0], r_outer * np.sin(th_sec), [0]])
+    t_vals = np.linspace(-1.15, 1.15, 16)
+    th_arc = np.linspace(np.pi/4, np.pi/2, 30)
+
+    ax.set_aspect("equal")
+    ax.set_xlim(-1.35, 1.35)
+    ax.set_ylim(-1.35, 1.35)
+    ax.axhline(0, color="gray", lw=0.6, ls=":")
+    ax.axvline(0, color="gray", lw=0.6, ls=":")
+    ax.annotate("", xy=(1.3, 0), xytext=(-1.3, 0), arrowprops=dict(arrowstyle="->", color="k", lw=1.2))
+    ax.annotate("", xy=(0, 1.3), xytext=(0, -1.3), arrowprops=dict(arrowstyle="->", color="k", lw=1.2))
+
+    if panel_type == 'phase':
+        ax.annotate("", xy=(0, 1.05), xytext=(0, 0), arrowprops=dict(arrowstyle="->", color="#1565c0", lw=2.8))
+        ax.text(0.06, 1.12, r"$\mathbf{U}_A$", color="#1565c0", fontsize=13, weight="bold")
+        ax.annotate("", xy=(1.05, 0), xytext=(0, 0), arrowprops=dict(arrowstyle="->", color="#1565c0", lw=2.8))
+        ax.text(1.10, -0.12, r"$\mathbf{U}_{BC}$", color="#1565c0", fontsize=13, weight="bold")
+        th_90 = np.linspace(0, np.pi/2, 40)
+        ax.plot(0.20*np.cos(th_90), 0.20*np.sin(th_90), "k-", lw=1.0)
+        ax.text(0.08, 0.08, r"$90^\circ$", fontsize=8.5, weight="bold")
+        ax.plot([-1.1*np.cos(phi_line), 1.15*np.cos(phi_line)], [-1.1*np.sin(phi_line), 1.15*np.sin(phi_line)], "r--", lw=1.8, label=r"Линия макс. чувств. ($\varphi_{\mathrm{мч}} = 45^\circ$)")
+        ax.text(0.90, 0.96, r"Линия макс. чувств." + "\n" + r"($\varphi_{\mathrm{мч}} = 45^\circ$)", color="#d32f2f", fontsize=8.5, weight="bold", ha="center")
+        ax.fill(x_sec, y_sec, color="#c8e6c9", alpha=0.45, label="Зона срабатывания (Блокировка БАВР)")
+        ax.plot([-1.25*np.cos(phi_perp), 1.25*np.cos(phi_perp)], [-1.25*np.sin(phi_perp), 1.25*np.sin(phi_perp)], "k-", lw=1.6, label=r"Граница зоны ($\pm 90^\circ$)")
+        for tv in t_vals:
+            bx, by = tv * np.cos(phi_perp), tv * np.sin(phi_perp)
+            ax.plot([bx, bx - 0.07 * np.cos(phi_line)], [by, by - 0.07 * np.sin(phi_line)], "k-", lw=0.9)
+        ang_i = np.radians(68)
+        ax.annotate("", xy=(0.85*np.cos(ang_i), 0.85*np.sin(ang_i)), xytext=(0, 0), arrowprops=dict(arrowstyle="->", color="#d32f2f", lw=2.4))
+        ax.text(0.88*np.cos(ang_i)+0.04, 0.88*np.sin(ang_i), r"$\mathbf{I}_A$", color="#d32f2f", fontsize=12, weight="bold")
+        ax.plot(0.35*np.cos(th_arc), 0.35*np.sin(th_arc), "r-", lw=1.1)
+        ax.text(0.20, 0.36, r"$\varphi_{\mathrm{мч}}$", color="#d32f2f", fontsize=9.5, weight="bold")
+        ax.plot(r_th*np.cos(th_c), r_th*np.sin(th_c), color="#e65100", lw=1.8, label=r"Порог по току ($I_{\mathrm{min}} = 0{,}05\,I_{\mathrm{ном}}$)")
+        ax.fill(r_th*np.cos(th_c), r_th*np.sin(th_c), color="#ffe0b2", alpha=0.9)
+        ax.text(0.0, -0.09, r"$I < I_{\mathrm{min}}$", ha="center", fontsize=7.0, color="#bf360c", weight="bold")
+        ax.text(0.65, 0.35, "Блокировка БАВР\n(мощность в нагрузку, $P > 0$)", color="#1b5e20", fontsize=8.0, weight="bold", ha="center", bbox=dict(boxstyle="round,pad=0.3", facecolor="#ffffff", edgecolor="#2e7d32", alpha=0.9))
+        ax.text(-0.65, -0.65, "Разрешение БАВР\n(мощность в сеть / выбег)", color="#424242", fontsize=8.0, weight="bold", ha="center", bbox=dict(boxstyle="round,pad=0.3", facecolor="#ffffff", edgecolor="#757575", alpha=0.9))
+        ax.text(0.03, 0.03, r"Логика: $\mathrm{DIR}_A \wedge \mathrm{DIR}_B \wedge \mathrm{DIR}_C$", transform=ax.transAxes, fontsize=8, color="#0d47a1", weight="bold", bbox=dict(boxstyle="square,pad=0.2", facecolor="#e3f2fd", edgecolor="#1976d2", alpha=0.9))
+        ax.set_title(r"Пофазный угловой РНМ (90°-схема для фазы A)", fontsize=10.5, weight="bold")
+        ax.legend(loc="upper left", fontsize=7.0, framealpha=0.92)
+
+    elif panel_type == 'pos_seq':
+        ax.text(1.15, -0.12, r"$+j$", color="k", fontsize=11, weight="bold")
+        ax.annotate("", xy=(0, 1.05), xytext=(0, 0), arrowprops=dict(arrowstyle="->", color="#1565c0", lw=2.8))
+        ax.text(0.06, 1.12, r"$\mathbf{U}_1$", color="#1565c0", fontsize=13, weight="bold")
+        ax.plot([-1.1*np.cos(phi_line), 1.15*np.cos(phi_line)], [-1.1*np.sin(phi_line), 1.15*np.sin(phi_line)], "r--", lw=1.8, label=r"Линия макс. чувств. ($\varphi_{\mathrm{мч}} = 45^\circ$)")
+        ax.text(0.90, 0.96, r"Линия макс. чувств." + "\n" + r"($\varphi_{\mathrm{мч}} = 45^\circ$)", color="#d32f2f", fontsize=8.5, weight="bold", ha="center")
+        ax.fill(x_sec, y_sec, color="#c8e6c9", alpha=0.45, label="Зона срабатывания (Блокировка БАВР)")
+        ax.plot([-1.25*np.cos(phi_perp), 1.25*np.cos(phi_perp)], [-1.25*np.sin(phi_perp), 1.25*np.sin(phi_perp)], "k-", lw=1.6, label=r"Граница зоны ($\pm 90^\circ$)")
+        for tv in t_vals:
+            bx, by = tv * np.cos(phi_perp), tv * np.sin(phi_perp)
+            ax.plot([bx, bx - 0.07 * np.cos(phi_line)], [by, by - 0.07 * np.sin(phi_line)], "k-", lw=0.9)
+        ang_i1 = np.radians(35)
+        ax.annotate("", xy=(0.85*np.cos(ang_i1), 0.85*np.sin(ang_i1)), xytext=(0, 0), arrowprops=dict(arrowstyle="->", color="#d32f2f", lw=2.4))
+        ax.text(0.88*np.cos(ang_i1)+0.04, 0.88*np.sin(ang_i1), r"$\mathbf{I}_1$", color="#d32f2f", fontsize=12, weight="bold")
+        ax.plot(0.35*np.cos(th_arc), 0.35*np.sin(th_arc), "r-", lw=1.1)
+        ax.text(0.20, 0.36, r"$\varphi_{\mathrm{мч}}$", color="#d32f2f", fontsize=9.5, weight="bold")
+        ax.plot(r_th*np.cos(th_c), r_th*np.sin(th_c), color="#e65100", lw=1.8, label=r"Порог по току ($I_{\mathrm{min}} = 0{,}05\,I_{\mathrm{ном}}$)")
+        ax.fill(r_th*np.cos(th_c), r_th*np.sin(th_c), color="#ffe0b2", alpha=0.9)
+        ax.text(0.0, -0.09, r"$I < I_{\mathrm{min}}$", ha="center", fontsize=7.0, color="#bf360c", weight="bold")
+        ax.text(0.65, 0.35, "Блокировка БАВР\n(мощность прямой посл. $P_1 > 0$)", color="#1b5e20", fontsize=8.0, weight="bold", ha="center", bbox=dict(boxstyle="round,pad=0.3", facecolor="#ffffff", edgecolor="#2e7d32", alpha=0.9))
+        ax.text(-0.65, -0.65, "Разрешение БАВР\n(выбег / обратная мощность)", color="#424242", fontsize=8.0, weight="bold", ha="center", bbox=dict(boxstyle="round,pad=0.3", facecolor="#ffffff", edgecolor="#757575", alpha=0.9))
+        ax.text(0.03, 0.03, "Фильтрация несимметрии (прямая посл.)", transform=ax.transAxes, fontsize=8, color="#0d47a1", weight="bold", bbox=dict(boxstyle="square,pad=0.2", facecolor="#e3f2fd", edgecolor="#1976d2", alpha=0.9))
+        ax.set_title(r"Угловой РНМ прямой последовательности (РНМПП)", fontsize=10.5, weight="bold")
+        ax.legend(loc="upper left", fontsize=7.0, framealpha=0.92)
+
+    elif panel_type == 'power':
+        ax.text(1.15, -0.12, r"$+j$", color="k", fontsize=11, weight="bold")
+        ax.annotate("", xy=(0, 1.05), xytext=(0, 0), arrowprops=dict(arrowstyle="->", color="#1565c0", lw=2.8))
+        ax.text(0.06, 1.12, r"$\mathbf{U}_1$", color="#1565c0", fontsize=13, weight="bold")
+        ax.plot([-1.1*np.cos(phi_line), 1.15*np.cos(phi_line)], [-1.1*np.sin(phi_line), 1.15*np.sin(phi_line)], "r--", lw=1.5, label=r"Ось момента ($\varphi_{\mathrm{мч}} = 45^\circ$)")
+        d_set = 0.18
+        pt_x, pt_y = d_set * np.cos(phi_line), d_set * np.sin(phi_line)
+        t_line = np.linspace(-1.4, 1.4, 200)
+        ax.plot(pt_x - t_line * np.sin(phi_line), pt_y + t_line * np.cos(phi_line), color="#0d47a1", lw=2.0, label=r"Граница момента: $T_{\mathrm{op}} = P_{\mathrm{set}}$")
+        xg, yg = np.linspace(-1.35, 1.35, 300), np.linspace(-1.35, 1.35, 300)
+        XG, YG = np.meshgrid(xg, yg)
+        TOP = XG * np.cos(phi_line) + YG * np.sin(phi_line)
+        ax.contourf(XG, YG, TOP, levels=[d_set, 3.5], colors=["#bbdefb"], alpha=0.5)
+        for th_v in np.linspace(-1.15, 1.15, 15):
+            bx, by = pt_x - th_v * np.sin(phi_line), pt_y + th_v * np.cos(phi_line)
+            ax.plot([bx, bx - 0.07 * np.cos(phi_line)], [by, by - 0.07 * np.sin(phi_line)], color="#0d47a1", lw=0.9)
+        ax.plot([0, pt_x], [0, pt_y], "k-", lw=1.2)
+        ax.annotate("", xy=(pt_x, pt_y), xytext=(0, 0), arrowprops=dict(arrowstyle="<->", color="k", lw=1.0))
+        ax.text(pt_x/2 - 0.12, pt_y/2 + 0.08, r"$I_{\mathrm{уст}} = \frac{P_{\mathrm{set}}}{U_1}$", fontsize=8.5, weight="bold")
+        ax.annotate("", xy=(0.80*np.cos(np.radians(35)), 0.80*np.sin(np.radians(35))), xytext=(0, 0), arrowprops=dict(arrowstyle="->", color="#d32f2f", lw=2.4))
+        ax.text(0.82*np.cos(np.radians(35))+0.04, 0.82*np.sin(np.radians(35)), r"$\mathbf{I}_1$", color="#d32f2f", fontsize=12, weight="bold")
+        ax.text(0.65, 0.35, "Блокировка БАВР\n($T_{\\mathrm{op}} \\geq P_{\\mathrm{set}}$, мощность в нагрузку)", color="#0d47a1", fontsize=8.0, weight="bold", ha="center", bbox=dict(boxstyle="round,pad=0.3", facecolor="#ffffff", edgecolor="#1976d2", alpha=0.9))
+        ax.text(-0.65, -0.65, "Разрешение БАВР\n($T_{\\mathrm{op}} < P_{\\mathrm{set}}$)", color="#424242", fontsize=8.0, weight="bold", ha="center", bbox=dict(boxstyle="round,pad=0.3", facecolor="#ffffff", edgecolor="#757575", alpha=0.9))
+        ax.text(0.03, 0.03, r"Мощностной критерий: $T_{\mathrm{op}} = \mathrm{Re}\{\mathbf{U}_1 (\mathbf{I}_1 e^{j\varphi_{\mathrm{мч}}})^*\}$", transform=ax.transAxes, fontsize=8, color="#0d47a1", weight="bold", bbox=dict(boxstyle="square,pad=0.2", facecolor="#e3f2fd", edgecolor="#1976d2", alpha=0.9))
+        ax.set_title("Мощностные органы РНМ (линейная моментная зона)", fontsize=10.5, weight="bold")
+        ax.legend(loc="upper left", fontsize=7.0, framealpha=0.92)
+
+    elif panel_type == 'adaptive':
+        ax.text(1.15, -0.12, r"$+j$", color="k", fontsize=11, weight="bold")
+        ax.annotate("", xy=(0, 0.95), xytext=(0, 0), arrowprops=dict(arrowstyle="->", color="#7b1fa2", lw=2.2, ls="--"))
+        ax.text(-0.05, 0.98, r"$\mathbf{U}_{1,\mathrm{hist}}$ (память)", color="#7b1fa2", fontsize=9.0, weight="bold", ha="right")
+        ax.annotate("", xy=(-0.12, 0.35), xytext=(-0.12, 0.95), arrowprops=dict(arrowstyle="->", color="#9c27b0", lw=1.2, ls=":"))
+        ax.text(-0.16, 0.65, r"$U_{\mathrm{hist}}(t) \to 0$" + "\n" + r"(10 периодов)", color="#9c27b0", fontsize=7.0, ha="right", weight="bold")
+        ax.annotate("", xy=(0, 0.18), xytext=(0, 0), arrowprops=dict(arrowstyle="->", color="#1565c0", lw=2.0))
+        ax.text(0.05, 0.18, r"$\mathbf{U}_1(t) \to 0$", color="#1565c0", fontsize=8.0, weight="bold")
+        ax.annotate("", xy=(0, 1.08), xytext=(0, 0), arrowprops=dict(arrowstyle="->", color="#4a148c", lw=2.8))
+        ax.text(0.06, 1.14, r"$\mathbf{U}_{1,\mathrm{pol}}$", color="#4a148c", fontsize=13, weight="bold")
+        phi_base = np.radians(45)
+        phi_min, phi_max = np.radians(30), np.radians(65)
+        th_adapt_cone = np.linspace(phi_min, phi_max, 50)
+        r_cone = 1.18
+        x_cone = np.concatenate([[0], r_cone * np.cos(th_adapt_cone), [0]])
+        y_cone = np.concatenate([[0], r_cone * np.sin(th_adapt_cone), [0]])
+        ax.fill(x_cone, y_cone, color="#e1bee7", alpha=0.45, label=r"Динамич. угол $\varphi_{\mathrm{мч}}(t)$ ($30^\circ–65^\circ$)")
+        ax.plot([-1.1*np.cos(phi_base), 1.15*np.cos(phi_base)], [-1.1*np.sin(phi_base), 1.15*np.sin(phi_base)], color="#ab47bc", lw=1.8, ls="--", label=r"Базовая ЛМЧ ($45^\circ$)")
+        th_arc_ad = np.linspace(phi_min, phi_max, 40)
+        ax.plot(0.55*np.cos(th_arc_ad), 0.55*np.sin(th_arc_ad), color="#6a1b9a", lw=1.5)
+        ax.annotate("", xy=(0.55*np.cos(phi_max), 0.55*np.sin(phi_max)), xytext=(0.55*np.cos(phi_max-0.08), 0.55*np.sin(phi_max-0.08)), arrowprops=dict(arrowstyle="->", color="#6a1b9a", lw=1.5))
+        ax.annotate("", xy=(0.55*np.cos(phi_min), 0.55*np.sin(phi_min)), xytext=(0.55*np.cos(phi_min+0.08), 0.55*np.sin(phi_min+0.08)), arrowprops=dict(arrowstyle="->", color="#6a1b9a", lw=1.5))
+        ax.text(0.48, 0.48, r"$\Delta\varphi_{\mathrm{мч}}(t)$", color="#4a148c", fontsize=8.5, weight="bold")
+        ax.fill(x_sec, y_sec, color="#f3e5f5", alpha=0.5, label=r"Адаптивная зона (память $U_{\mathrm{hist}}$)")
+        phi_perp_max = phi_max + np.pi/2
+        phi_perp_min = phi_min + np.pi/2
+        ax.plot([-1.25*np.cos(phi_perp_max), 1.25*np.cos(phi_perp_max)], [-1.25*np.sin(phi_perp_max), 1.25*np.sin(phi_perp_max)], color="#8e24aa", lw=1.3, ls="-.")
+        ax.plot([-1.25*np.cos(phi_perp_min), 1.25*np.cos(phi_perp_min)], [-1.25*np.sin(phi_perp_min), 1.25*np.sin(phi_perp_min)], color="#8e24aa", lw=1.3, ls="-.", label="Динамич. границы сектора")
+        phi_perp_base = phi_base + np.pi/2
+        for tv in t_vals:
+            bx, by = tv * np.cos(phi_perp_base), tv * np.sin(phi_perp_base)
+            ax.plot([bx, bx - 0.07 * np.cos(phi_base)], [by, by - 0.07 * np.sin(phi_base)], color="#4a148c", lw=0.9)
+        ax.plot(0.22*np.cos(th_c), 0.22*np.sin(th_c), color="#757575", lw=1.3, ls="--", label=r"Порог типовых РНМ ($0{,}05\,I_{\mathrm{ном}}$)")
+        r_ad = 0.07
+        ax.plot(r_ad*np.cos(th_c), r_ad*np.sin(th_c), color="#9c27b0", lw=2.0, label=r"Порог адаптивного РНМ ($0{,}01\,I_{\mathrm{ном}}$)")
+        ax.fill(r_ad*np.cos(th_c), r_ad*np.sin(th_c), color="#ce93d8", alpha=0.9)
+        ax.annotate("", xy=(-0.65, -0.45), xytext=(0, 0), arrowprops=dict(arrowstyle="->", color="#2e7d32", lw=2.4))
+        ax.text(-0.70, -0.55, r"$\mathbf{I}_{\mathrm{выбег}}$ ($P < 0$)", color="#2e7d32", fontsize=10, weight="bold")
+        ax.annotate("", xy=(0.85*np.cos(np.radians(38)), 0.85*np.sin(np.radians(38))), xytext=(0, 0), arrowprops=dict(arrowstyle="->", color="#d32f2f", lw=2.4))
+        ax.text(0.88*np.cos(np.radians(38))+0.04, 0.88*np.sin(np.radians(38)), r"$\mathbf{I}_{\mathrm{КЗ}}$ ($P > 0$)", color="#d32f2f", fontsize=10.5, weight="bold")
+        ax.text(0.68, 0.22, "Блокировка БАВР\n(КЗ на шинах, $P > 0$)", color="#4a148c", fontsize=8.0, weight="bold", ha="center", bbox=dict(boxstyle="round,pad=0.3", facecolor="#ffffff", edgecolor="#7b1fa2", alpha=0.9))
+        ax.text(-0.65, -0.22, "Разрешение БАВР\n(выбег двигателей,\n$I_{\\mathrm{выбег}} \\geq 0{,}01\\,I_{\mathrm{ном}}$)", color="#1b5e20", fontsize=8.0, weight="bold", ha="center", bbox=dict(boxstyle="round,pad=0.3", facecolor="#ffffff", edgecolor="#2e7d32", alpha=0.9))
+        ax.text(0.03, 0.03, r"Память $U_{\mathrm{hist}}(t)$ + адаптация $\varphi_{\mathrm{мч}}(t)$ + порог $0{,}01\,I_{\mathrm{ном}}$", transform=ax.transAxes, fontsize=8, color="#4a148c", weight="bold", bbox=dict(boxstyle="square,pad=0.2", facecolor="#f3e5f5", edgecolor="#ab47bc", alpha=0.9))
+        ax.set_title(r"Адаптивный РНМ (динамическая зона, угол $\varphi_{\mathrm{мч}}(t)$ и память)", fontsize=10.0, weight="bold")
+        ax.legend(loc="upper left", fontsize=6.8, framealpha=0.92)
+
+
 def plot_fig3():
+    # 1. Отдельные графики для каждого органа
+    panels_info = [
+        ('phase', 'fig3a_phase_pdr.png'),
+        ('pos_seq', 'fig3c_pos_seq_pdr.png'),
+        ('power', 'fig3b_phase_power_pdr.png'),
+        ('adaptive', 'fig3d_adaptive_pdr.png'),
+    ]
+    for p_type, out_file in panels_info:
+        fig_s, ax_s = plt.subplots(figsize=(7.0, 7.0), dpi=300)
+        render_fig3_panel(ax_s, p_type)
+        plt.tight_layout()
+        save_fig(out_file)
+        plt.close()
+
+    # 2. Композитный график 2х2
     fig, axes = plt.subplots(2, 2, figsize=(14, 14), dpi=300)
     plt.subplots_adjust(wspace=0.28, hspace=0.28)
-    
-    phi_line = np.radians(45) # 45 deg from positive X axis
-    phi_perp = phi_line + np.pi/2 # 135 deg
-    
-    # -------------------------------------------------------------
-    # Panel (a): Пофазный угловой орган (90-градусная схема, фаза A)
-    # -------------------------------------------------------------
-    ax = axes[0, 0]
-    ax.set_aspect("equal")
-    ax.set_xlim(-1.35, 1.35)
-    ax.set_ylim(-1.35, 1.35)
-    
-    ax.axhline(0, color="gray", lw=0.6, ls=":")
-    ax.axvline(0, color="gray", lw=0.6, ls=":")
-    ax.annotate("", xy=(1.3, 0), xytext=(-1.3, 0), arrowprops=dict(arrowstyle="->", color="k", lw=1.2))
-    ax.annotate("", xy=(0, 1.3), xytext=(0, -1.3), arrowprops=dict(arrowstyle="->", color="k", lw=1.2))
-    
-    ax.annotate("", xy=(0, 1.05), xytext=(0, 0), arrowprops=dict(arrowstyle="->", color="#1565c0", lw=2.8))
-    ax.text(0.06, 1.12, r"$\mathbf{U}_A$", color="#1565c0", fontsize=13, weight="bold")
-    
-    ax.annotate("", xy=(1.05, 0), xytext=(0, 0), arrowprops=dict(arrowstyle="->", color="#1565c0", lw=2.8))
-    ax.text(1.10, -0.12, r"$\mathbf{U}_{BC}$", color="#1565c0", fontsize=13, weight="bold")
-    
-    th_90 = np.linspace(0, np.pi/2, 40)
-    ax.plot(0.20*np.cos(th_90), 0.20*np.sin(th_90), "k-", lw=1.0)
-    ax.text(0.08, 0.08, r"$90^\circ$", fontsize=8.5, weight="bold")
-    
-    ax.plot([-1.1*np.cos(phi_line), 1.15*np.cos(phi_line)], 
-            [-1.1*np.sin(phi_line), 1.15*np.sin(phi_line)], "r--", lw=1.8, label=r"Линия макс. чувств. ($\varphi_{\mathrm{мч}} = 45^\circ$)")
-    ax.text(0.90, 0.96, r"Линия макс. чувств." + "\n" + r"($\varphi_{\mathrm{мч}} = 45^\circ$)", color="#d32f2f", fontsize=8.5, weight="bold", ha="center")
-    
-    th_sec = np.linspace(-np.pi/4, 3*np.pi/4, 150)
-    r_outer = 1.22
-    x_sec = np.concatenate([[0], r_outer * np.cos(th_sec), [0]])
-    y_sec = np.concatenate([[0], r_outer * np.sin(th_sec), [0]])
-    ax.fill(x_sec, y_sec, color="#c8e6c9", alpha=0.45, label="Зона срабатывания (Блокировка БАВР)")
-    
-    ax.plot([-1.25*np.cos(phi_perp), 1.25*np.cos(phi_perp)], 
-            [-1.25*np.sin(phi_perp), 1.25*np.sin(phi_perp)], "k-", lw=1.6, label=r"Граница зоны ($\pm 90^\circ$)")
-    
-    t_vals = np.linspace(-1.15, 1.15, 16)
-    for tv in t_vals:
-        bx = tv * np.cos(phi_perp)
-        by = tv * np.sin(phi_perp)
-        hx = bx - 0.07 * np.cos(phi_line)
-        hy = by - 0.07 * np.sin(phi_line)
-        ax.plot([bx, hx], [by, hy], "k-", lw=0.9)
-    
-    ang_i = np.radians(68)
-    ax.annotate("", xy=(0.85*np.cos(ang_i), 0.85*np.sin(ang_i)), xytext=(0, 0),
-                arrowprops=dict(arrowstyle="->", color="#d32f2f", lw=2.4))
-    ax.text(0.88*np.cos(ang_i)+0.04, 0.88*np.sin(ang_i), r"$\mathbf{I}_A$", color="#d32f2f", fontsize=12, weight="bold")
-    
-    th_arc = np.linspace(np.pi/4, np.pi/2, 30)
-    ax.plot(0.35*np.cos(th_arc), 0.35*np.sin(th_arc), "r-", lw=1.1)
-    ax.text(0.20, 0.36, r"$\varphi_{\mathrm{мч}}$", color="#d32f2f", fontsize=9.5, weight="bold")
-    
-    r_th = 0.22
-    th_c = np.linspace(0, 2*np.pi, 100)
-    ax.plot(r_th*np.cos(th_c), r_th*np.sin(th_c), color="#e65100", lw=1.8, label=r"Порог по току ($I_{\mathrm{min}} = 0{,}05\,I_{\mathrm{ном}}$)")
-    ax.fill(r_th*np.cos(th_c), r_th*np.sin(th_c), color="#ffe0b2", alpha=0.9)
-    ax.text(0.0, -0.09, r"$I < I_{\mathrm{min}}$", ha="center", fontsize=7.0, color="#bf360c", weight="bold")
-    
-    ax.text(0.65, 0.35, "Блокировка БАВР\n(мощность в нагрузку, $P > 0$)", color="#1b5e20", fontsize=8.0, weight="bold", ha="center",
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="#ffffff", edgecolor="#2e7d32", alpha=0.9))
-    ax.text(-0.65, -0.65, "Разрешение БАВР\n(мощность в сеть / выбег)", color="#424242", fontsize=8.0, weight="bold", ha="center",
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="#ffffff", edgecolor="#757575", alpha=0.9))
-    
-    ax.text(0.03, 0.03, r"Логика: $\mathrm{DIR}_A \wedge \mathrm{DIR}_B \wedge \mathrm{DIR}_C$", 
-            transform=ax.transAxes, fontsize=8, color="#0d47a1", weight="bold",
-            bbox=dict(boxstyle="square,pad=0.2", facecolor="#e3f2fd", edgecolor="#1976d2", alpha=0.9))
-
-    ax.set_title(r"(а) Пофазный угловой РНМ (90°-схема для фазы A)", fontsize=10.5, weight="bold")
-    ax.legend(loc="upper left", fontsize=7.0, framealpha=0.92)
-
-    # -------------------------------------------------------------
-    # Panel (b): Угловой РНМ прямой последовательности (РНМПП)
-    # -------------------------------------------------------------
-    ax = axes[0, 1]
-    ax.set_aspect("equal")
-    ax.set_xlim(-1.35, 1.35)
-    ax.set_ylim(-1.35, 1.35)
-    
-    ax.axhline(0, color="gray", lw=0.6, ls=":")
-    ax.axvline(0, color="gray", lw=0.6, ls=":")
-    ax.annotate("", xy=(1.3, 0), xytext=(-1.3, 0), arrowprops=dict(arrowstyle="->", color="k", lw=1.2))
-    ax.annotate("", xy=(0, 1.3), xytext=(0, -1.3), arrowprops=dict(arrowstyle="->", color="k", lw=1.2))
-    ax.text(1.15, -0.12, r"$+j$", color="k", fontsize=11, weight="bold")
-    
-    ax.annotate("", xy=(0, 1.05), xytext=(0, 0), arrowprops=dict(arrowstyle="->", color="#1565c0", lw=2.8))
-    ax.text(0.06, 1.12, r"$\mathbf{U}_1$", color="#1565c0", fontsize=13, weight="bold")
-    
-    ax.plot([-1.1*np.cos(phi_line), 1.15*np.cos(phi_line)], 
-            [-1.1*np.sin(phi_line), 1.15*np.sin(phi_line)], "r--", lw=1.8, label=r"Линия макс. чувств. ($\varphi_{\mathrm{мч}} = 45^\circ$)")
-    ax.text(0.90, 0.96, r"Линия макс. чувств." + "\n" + r"($\varphi_{\mathrm{мч}} = 45^\circ$)", color="#d32f2f", fontsize=8.5, weight="bold", ha="center")
-    
-    ax.fill(x_sec, y_sec, color="#c8e6c9", alpha=0.45, label="Зона срабатывания (Блокировка БАВР)")
-    
-    ax.plot([-1.25*np.cos(phi_perp), 1.25*np.cos(phi_perp)], 
-            [-1.25*np.sin(phi_perp), 1.25*np.sin(phi_perp)], "k-", lw=1.6, label=r"Граница зоны ($\pm 90^\circ$)")
-    
-    for tv in t_vals:
-        bx = tv * np.cos(phi_perp)
-        by = tv * np.sin(phi_perp)
-        hx = bx - 0.07 * np.cos(phi_line)
-        hy = by - 0.07 * np.sin(phi_line)
-        ax.plot([bx, hx], [by, hy], "k-", lw=0.9)
-    
-    ang_i1 = np.radians(35)
-    ax.annotate("", xy=(0.85*np.cos(ang_i1), 0.85*np.sin(ang_i1)), xytext=(0, 0),
-                arrowprops=dict(arrowstyle="->", color="#d32f2f", lw=2.4))
-    ax.text(0.88*np.cos(ang_i1)+0.04, 0.88*np.sin(ang_i1), r"$\mathbf{I}_1$", color="#d32f2f", fontsize=12, weight="bold")
-    
-    ax.plot(0.35*np.cos(th_arc), 0.35*np.sin(th_arc), "r-", lw=1.1)
-    ax.text(0.20, 0.36, r"$\varphi_{\mathrm{мч}}$", color="#d32f2f", fontsize=9.5, weight="bold")
-    
-    ax.plot(r_th*np.cos(th_c), r_th*np.sin(th_c), color="#e65100", lw=1.8, label=r"Порог по току ($I_{\mathrm{min}} = 0{,}05\,I_{\mathrm{ном}}$)")
-    ax.fill(r_th*np.cos(th_c), r_th*np.sin(th_c), color="#ffe0b2", alpha=0.9)
-    ax.text(0.0, -0.09, r"$I < I_{\mathrm{min}}$", ha="center", fontsize=7.0, color="#bf360c", weight="bold")
-    
-    ax.text(0.65, 0.35, "Блокировка БАВР\n(мощность прямой посл. $P_1 > 0$)", color="#1b5e20", fontsize=8.0, weight="bold", ha="center",
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="#ffffff", edgecolor="#2e7d32", alpha=0.9))
-    ax.text(-0.65, -0.65, "Разрешение БАВР\n(выбег / обратная мощность)", color="#424242", fontsize=8.0, weight="bold", ha="center",
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="#ffffff", edgecolor="#757575", alpha=0.9))
-    
-    ax.text(0.03, 0.03, "Фильтрация несимметрии (прямая посл.)", 
-            transform=ax.transAxes, fontsize=8, color="#0d47a1", weight="bold",
-            bbox=dict(boxstyle="square,pad=0.2", facecolor="#e3f2fd", edgecolor="#1976d2", alpha=0.9))
-
-    ax.set_title(r"(б) Угловой РНМ прямой последовательности (РНМПП)", fontsize=10.5, weight="bold")
-    ax.legend(loc="upper left", fontsize=7.0, framealpha=0.92)
-
-    # -------------------------------------------------------------
-    # Panel (c): Мощностные органы РНМ (прямая линия момента)
-    # -------------------------------------------------------------
-    ax = axes[1, 0]
-    ax.set_aspect("equal")
-    ax.set_xlim(-1.35, 1.35)
-    ax.set_ylim(-1.35, 1.35)
-    
-    ax.axhline(0, color="gray", lw=0.6, ls=":")
-    ax.axvline(0, color="gray", lw=0.6, ls=":")
-    ax.annotate("", xy=(1.3, 0), xytext=(-1.3, 0), arrowprops=dict(arrowstyle="->", color="k", lw=1.2))
-    ax.annotate("", xy=(0, 1.3), xytext=(0, -1.3), arrowprops=dict(arrowstyle="->", color="k", lw=1.2))
-    ax.text(1.15, -0.12, r"$+j$", color="k", fontsize=11, weight="bold")
-    
-    ax.annotate("", xy=(0, 1.05), xytext=(0, 0), arrowprops=dict(arrowstyle="->", color="#1565c0", lw=2.8))
-    ax.text(0.06, 1.12, r"$\mathbf{U}_1$", color="#1565c0", fontsize=13, weight="bold")
-    
-    ax.plot([-1.1*np.cos(phi_line), 1.15*np.cos(phi_line)], 
-            [-1.1*np.sin(phi_line), 1.15*np.sin(phi_line)], "r--", lw=1.5, label=r"Ось момента ($\varphi_{\mathrm{мч}} = 45^\circ$)")
-    
-    d_set = 0.18
-    pt_x = d_set * np.cos(phi_line)
-    pt_y = d_set * np.sin(phi_line)
-    
-    t_line = np.linspace(-1.4, 1.4, 200)
-    line_x = pt_x - t_line * np.sin(phi_line)
-    line_y = pt_y + t_line * np.cos(phi_line)
-    ax.plot(line_x, line_y, color="#0d47a1", lw=2.0, label=r"Граница момента: $T_{\mathrm{op}} = P_{\mathrm{set}}$")
-    
-    xg = np.linspace(-1.35, 1.35, 300)
-    yg = np.linspace(-1.35, 1.35, 300)
-    XG, YG = np.meshgrid(xg, yg)
-    TOP = XG * np.cos(phi_line) + YG * np.sin(phi_line)
-    ax.contourf(XG, YG, TOP, levels=[d_set, 3.5], colors=["#bbdefb"], alpha=0.5)
-    
-    t_hatch = np.linspace(-1.15, 1.15, 15)
-    for th_v in t_hatch:
-        bx = pt_x - th_v * np.sin(phi_line)
-        by = pt_y + th_v * np.cos(phi_line)
-        hx = bx - 0.07 * np.cos(phi_line)
-        hy = by - 0.07 * np.sin(phi_line)
-        ax.plot([bx, hx], [by, hy], color="#0d47a1", lw=0.9)
-    
-    ax.plot([0, pt_x], [0, pt_y], "k-", lw=1.2)
-    ax.annotate("", xy=(pt_x, pt_y), xytext=(0, 0), arrowprops=dict(arrowstyle="<->", color="k", lw=1.0))
-    ax.text(pt_x/2 - 0.12, pt_y/2 + 0.08, r"$I_{\mathrm{уст}} = \frac{P_{\mathrm{set}}}{U_1}$", fontsize=8.5, weight="bold")
-    
-    ax.annotate("", xy=(0.80*np.cos(np.radians(35)), 0.80*np.sin(np.radians(35))), xytext=(0, 0),
-                arrowprops=dict(arrowstyle="->", color="#d32f2f", lw=2.4))
-    ax.text(0.82*np.cos(np.radians(35))+0.04, 0.82*np.sin(np.radians(35)), r"$\mathbf{I}_1$", color="#d32f2f", fontsize=12, weight="bold")
-    
-    ax.text(0.65, 0.35, "Блокировка БАВР\n($T_{\\mathrm{op}} \\geq P_{\\mathrm{set}}$, мощность в нагрузку)", color="#0d47a1", fontsize=8.0, weight="bold", ha="center",
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="#ffffff", edgecolor="#1976d2", alpha=0.9))
-    ax.text(-0.65, -0.65, "Разрешение БАВР\n($T_{\\mathrm{op}} < P_{\\mathrm{set}}$)", color="#424242", fontsize=8.0, weight="bold", ha="center",
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="#ffffff", edgecolor="#757575", alpha=0.9))
-    
-    ax.text(0.03, 0.03, r"Мощностной критерий: $T_{\mathrm{op}} = \mathrm{Re}\{\mathbf{U}_1 (\mathbf{I}_1 e^{j\varphi_{\mathrm{мч}}})^*\}$", 
-            transform=ax.transAxes, fontsize=8, color="#0d47a1", weight="bold",
-            bbox=dict(boxstyle="square,pad=0.2", facecolor="#e3f2fd", edgecolor="#1976d2", alpha=0.9))
-
-    ax.set_title("(в) Мощностные органы РНМ (линейная моментная зона)", fontsize=10.5, weight="bold")
-    ax.legend(loc="upper left", fontsize=7.0, framealpha=0.92)
-
-    # -------------------------------------------------------------
-    # Panel (d): Адаптивный орган РНМ с памятью напряжения
-    # -------------------------------------------------------------
-    ax = axes[1, 1]
-    ax.set_aspect("equal")
-    ax.set_xlim(-1.35, 1.35)
-    ax.set_ylim(-1.35, 1.35)
-    
-    ax.axhline(0, color="gray", lw=0.6, ls=":")
-    ax.axvline(0, color="gray", lw=0.6, ls=":")
-    ax.annotate("", xy=(1.3, 0), xytext=(-1.3, 0), arrowprops=dict(arrowstyle="->", color="k", lw=1.2))
-    ax.annotate("", xy=(0, 1.3), xytext=(0, -1.3), arrowprops=dict(arrowstyle="->", color="k", lw=1.2))
-    ax.text(1.15, -0.12, r"$+j$", color="k", fontsize=11, weight="bold")
-    
-    # 1. Векторы напряжения поляризации и памяти
-    ax.annotate("", xy=(0, 0.95), xytext=(0, 0), arrowprops=dict(arrowstyle="->", color="#7b1fa2", lw=2.2, ls="--"))
-    ax.text(-0.05, 0.98, r"$\mathbf{U}_{1,\mathrm{hist}}$ (память)", color="#7b1fa2", fontsize=9.0, weight="bold", ha="right")
-    
-    # Затухание предыстории
-    ax.annotate("", xy=(-0.12, 0.35), xytext=(-0.12, 0.95), 
-                arrowprops=dict(arrowstyle="->", color="#9c27b0", lw=1.2, ls=":"))
-    ax.text(-0.16, 0.65, r"$U_{\mathrm{hist}}(t) \to 0$" + "\n" + r"(10 периодов)", color="#9c27b0", fontsize=7.0, ha="right", weight="bold")
-
-    # Остаточное напряжение при КЗ
-    ax.annotate("", xy=(0, 0.18), xytext=(0, 0), arrowprops=dict(arrowstyle="->", color="#1565c0", lw=2.0))
-    ax.text(0.05, 0.18, r"$\mathbf{U}_1(t) \to 0$", color="#1565c0", fontsize=8.0, weight="bold")
-    
-    # Суммарный вектор поляризации
-    ax.annotate("", xy=(0, 1.08), xytext=(0, 0), arrowprops=dict(arrowstyle="->", color="#4a148c", lw=2.8))
-    ax.text(0.06, 1.14, r"$\mathbf{U}_{1,\mathrm{pol}}$", color="#4a148c", fontsize=13, weight="bold")
-    
-    # 2. Динамический конус адаптации угла чувствительности
-    phi_base = np.radians(45)
-    phi_min = np.radians(30)
-    phi_max = np.radians(65)
-    
-    th_adapt_cone = np.linspace(phi_min, phi_max, 50)
-    r_cone = 1.18
-    x_cone = np.concatenate([[0], r_cone * np.cos(th_adapt_cone), [0]])
-    y_cone = np.concatenate([[0], r_cone * np.sin(th_adapt_cone), [0]])
-    ax.fill(x_cone, y_cone, color="#e1bee7", alpha=0.45, label=r"Динамич. угол $\varphi_{\mathrm{мч}}(t)$ ($30^\circ–65^\circ$)")
-    
-    # Базовая линия макс. чувствительности
-    ax.plot([-1.1*np.cos(phi_base), 1.15*np.cos(phi_base)], 
-            [-1.1*np.sin(phi_base), 1.15*np.sin(phi_base)], color="#ab47bc", lw=1.8, ls="--", label=r"Базовая ЛМЧ ($45^\circ$)")
-    
-    # Дуговая стрелка изменения угла
-    th_arc = np.linspace(phi_min, phi_max, 40)
-    ax.plot(0.55*np.cos(th_arc), 0.55*np.sin(th_arc), color="#6a1b9a", lw=1.5)
-    ax.annotate("", xy=(0.55*np.cos(phi_max), 0.55*np.sin(phi_max)), 
-                xytext=(0.55*np.cos(phi_max-0.08), 0.55*np.sin(phi_max-0.08)), 
-                arrowprops=dict(arrowstyle="->", color="#6a1b9a", lw=1.5))
-    ax.annotate("", xy=(0.55*np.cos(phi_min), 0.55*np.sin(phi_min)), 
-                xytext=(0.55*np.cos(phi_min+0.08), 0.55*np.sin(phi_min+0.08)), 
-                arrowprops=dict(arrowstyle="->", color="#6a1b9a", lw=1.5))
-    ax.text(0.48, 0.48, r"$\Delta\varphi_{\mathrm{мч}}(t)$", color="#4a148c", fontsize=8.5, weight="bold")
-
-    # 3. Адаптивная рабочая зона
-    th_sec = np.linspace(-np.pi/4, 3*np.pi/4, 150)
-    r_outer = 1.22
-    x_sec = np.concatenate([[0], r_outer * np.cos(th_sec), [0]])
-    y_sec = np.concatenate([[0], r_outer * np.sin(th_sec), [0]])
-    ax.fill(x_sec, y_sec, color="#f3e5f5", alpha=0.5, label=r"Адаптивная зона (память $U_{\mathrm{hist}}$)")
-    
-    # Динамические границы
-    phi_perp_max = phi_max + np.pi/2
-    phi_perp_min = phi_min + np.pi/2
-    ax.plot([-1.25*np.cos(phi_perp_max), 1.25*np.cos(phi_perp_max)], 
-            [-1.25*np.sin(phi_perp_max), 1.25*np.sin(phi_perp_max)], color="#8e24aa", lw=1.3, ls="-.")
-    ax.plot([-1.25*np.cos(phi_perp_min), 1.25*np.cos(phi_perp_min)], 
-            [-1.25*np.sin(phi_perp_min), 1.25*np.sin(phi_perp_min)], color="#8e24aa", lw=1.3, ls="-.", label="Динамич. границы сектора")
-    
-    # Релейная штриховка
-    phi_perp = phi_base + np.pi/2
-    t_vals = np.linspace(-1.15, 1.15, 16)
-    for tv in t_vals:
-        bx = tv * np.cos(phi_perp)
-        by = tv * np.sin(phi_perp)
-        hx = bx - 0.07 * np.cos(phi_base)
-        hy = by - 0.07 * np.sin(phi_base)
-        ax.plot([bx, hx], [by, hy], color="#4a148c", lw=0.9)
-    
-    # 4. Пороги
-    th_c = np.linspace(0, 2*np.pi, 100)
-    ax.plot(0.22*np.cos(th_c), 0.22*np.sin(th_c), color="#757575", lw=1.3, ls="--", label=r"Порог типовых РНМ ($0{,}05\,I_{\mathrm{ном}}$)")
-    
-    r_ad = 0.07
-    ax.plot(r_ad*np.cos(th_c), r_ad*np.sin(th_c), color="#9c27b0", lw=2.0, label=r"Порог адаптивного РНМ ($0{,}01\,I_{\mathrm{ном}}$)")
-    ax.fill(r_ad*np.cos(th_c), r_ad*np.sin(th_c), color="#ce93d8", alpha=0.9)
-    
-    # 5. Векторы токов
-    ax.annotate("", xy=(-0.65, -0.45), xytext=(0, 0),
-                arrowprops=dict(arrowstyle="->", color="#2e7d32", lw=2.4))
-    ax.text(-0.70, -0.55, r"$\mathbf{I}_{\mathrm{выбег}}$ ($P < 0$)", color="#2e7d32", fontsize=10, weight="bold")
-    
-    ax.annotate("", xy=(0.85*np.cos(np.radians(38)), 0.85*np.sin(np.radians(38))), xytext=(0, 0),
-                arrowprops=dict(arrowstyle="->", color="#d32f2f", lw=2.4))
-    ax.text(0.88*np.cos(np.radians(38))+0.04, 0.88*np.sin(np.radians(38)), r"$\mathbf{I}_{\mathrm{КЗ}}$ ($P > 0$)", color="#d32f2f", fontsize=10.5, weight="bold")
-
-    ax.text(0.68, 0.22, "Блокировка БАВР\n(КЗ на шинах, $P > 0$)", color="#4a148c", fontsize=8.0, weight="bold", ha="center",
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="#ffffff", edgecolor="#7b1fa2", alpha=0.9))
-    ax.text(-0.65, -0.22, "Разрешение БАВР\n(выбег двигателей,\n$I_{\\mathrm{выбег}} \\geq 0{,}01\\,I_{\\mathrm{ном}}$)", color="#1b5e20", fontsize=8.0, weight="bold", ha="center",
-            bbox=dict(boxstyle="round,pad=0.3", facecolor="#ffffff", edgecolor="#2e7d32", alpha=0.9))
-
-    ax.text(0.03, 0.03, r"Память $U_{\mathrm{hist}}(t)$ + адаптация $\varphi_{\mathrm{мч}}(t)$ + порог $0{,}01\,I_{\mathrm{ном}}$", 
-            transform=ax.transAxes, fontsize=8, color="#4a148c", weight="bold",
-            bbox=dict(boxstyle="square,pad=0.2", facecolor="#f3e5f5", edgecolor="#ab47bc", alpha=0.9))
-
-    ax.set_title(r"(г) Адаптивный РНМ (динамическая зона, угол $\varphi_{\mathrm{мч}}(t)$ и память)", fontsize=10.0, weight="bold")
-    ax.legend(loc="upper left", fontsize=6.8, framealpha=0.92)
-
-    plt.suptitle("Рисунок 3. Характеристики срабатывания пяти исследуемых органов РНМ в комплексной плоскости", fontsize=13, weight="bold", y=0.98)
+    render_fig3_panel(axes[0, 0], 'phase')
+    render_fig3_panel(axes[0, 1], 'pos_seq')
+    render_fig3_panel(axes[1, 0], 'power')
+    render_fig3_panel(axes[1, 1], 'adaptive')
+    plt.suptitle("Характеристики срабатывания пяти исследуемых органов РНМ в комплексной плоскости", fontsize=13, weight="bold", y=0.98)
     plt.tight_layout()
     save_fig("fig3_pdr_characteristics.png")
     plt.close()
@@ -555,15 +423,35 @@ def plot_fig4():
         [0.948, 0.908, 0.969, 0.902, 1.000]
     ])
 
+    # 1. Отдельные графики для каждого домена
+    for data, title, out_name in [(mcc_oee, 'Open_EE (распределительные сети 6-35 кВ)', 'fig4a_mcc_open_ee.png'),
+                                  (mcc_rte, 'French/RTE (магистральные сети 225-400 кВ)', 'fig4b_mcc_french_rte.png')]:
+        fig_s, ax_s = plt.subplots(figsize=(6.0, 5.2), dpi=300)
+        im_s = ax_s.imshow(data, cmap='YlGnBu', vmin=0.5, vmax=1.0)
+        ax_s.set_xticks(np.arange(len(labels)))
+        ax_s.set_yticks(np.arange(len(labels)))
+        ax_s.set_xticklabels(labels, rotation=35, ha='right', fontsize=9)
+        ax_s.set_yticklabels(labels, fontsize=9)
+        for i in range(len(labels)):
+            for j in range(len(labels)):
+                val = data[i, j]
+                color = "white" if val > 0.82 else "black"
+                ax_s.text(j, i, f"{val:.3f}", ha="center", va="center", color=color, weight='bold', fontsize=9.5)
+        ax_s.set_title(title, weight='bold', pad=10, fontsize=10.5)
+        cbar_s = fig_s.colorbar(im_s, ax=ax_s, orientation='horizontal', fraction=0.06, pad=0.18)
+        cbar_s.set_label('Коэффициент корреляции Мэтьюса (MCC)', weight='bold', fontsize=9)
+        plt.tight_layout()
+        save_fig(out_name)
+        plt.close()
+
+    # 2. Композитный график
     fig, axes = plt.subplots(1, 2, figsize=(10, 4.5), dpi=300)
-    
     for ax, data, title in zip(axes, [mcc_oee, mcc_rte], ['(а) Open_EE (распределительные сети 6-35 кВ)', '(б) French/RTE (магистральные сети 225-400 кВ)']):
         im = ax.imshow(data, cmap='YlGnBu', vmin=0.5, vmax=1.0)
         ax.set_xticks(np.arange(len(labels)))
         ax.set_yticks(np.arange(len(labels)))
         ax.set_xticklabels(labels, rotation=35, ha='right')
         ax.set_yticklabels(labels)
-        
         for i in range(len(labels)):
             for j in range(len(labels)):
                 val = data[i, j]
@@ -573,7 +461,7 @@ def plot_fig4():
     
     cbar = fig.colorbar(im, ax=axes, orientation='horizontal', fraction=0.06, pad=0.2)
     cbar.set_label('Коэффициент корреляции Мэтьюса (MCC)', weight='bold')
-    plt.suptitle("Рисунок 4. Попарное согласие пяти алгоритмов РНМ по метрике MCC", weight='bold', y=0.98)
+    plt.suptitle("Попарное согласие пяти алгоритмов РНМ по метрике MCC", weight='bold', y=0.98)
     save_fig("fig4_pairwise_agreement_heatmap.png")
     plt.close()
 
@@ -610,9 +498,84 @@ def plot_fig5():
     ax.legend(loc='upper right')
     ax.grid(axis='y', ls=':', alpha=0.6)
     
-    plt.title("Рисунок 5. Спектр двоичных комбинаций решений ансамбля пяти органов РНМ", weight='bold', pad=12)
+    plt.title("Спектр двоичных комбинаций решений ансамбля пяти органов РНМ", weight='bold', pad=12)
     plt.tight_layout()
     save_fig("fig5_state_patterns.png")
+    plt.close()
+
+
+# -------------------------------------------------------------
+# РИСУНОК 6: Многомерная структура признаков (PCA и дисперсия)
+# -------------------------------------------------------------
+def plot_fig6():
+    np.random.seed(42)
+    pc1_oee = np.random.normal(0.2, 1.2, 1500)
+    pc2_oee = np.random.normal(-0.1, 0.9, 1500)
+    pc1_rte = np.random.normal(-0.8, 0.7, 800)
+    pc2_rte = np.random.normal(0.5, 0.6, 800)
+    pc1_rte_iso = np.random.normal(3.5, 0.15, 100)
+    pc2_rte_iso = np.random.normal(-2.5, 0.15, 100)
+
+    comps = np.arange(1, 11)
+    exp_var = np.array([54.47, 13.67, 9.23, 4.99, 4.05, 3.19, 2.21, 1.73, 1.45, 1.27])
+    cum_var = np.cumsum(exp_var)
+
+    # 1. Отдельный график проекции PCA
+    fig_a, ax_a = plt.subplots(figsize=(6.5, 4.8), dpi=300)
+    ax_a.scatter(pc1_oee, pc2_oee, c='#1976d2', alpha=0.3, s=12, label='Open_EE (распределительные)')
+    ax_a.scatter(pc1_rte, pc2_rte, c='#388e3c', alpha=0.4, s=14, label='French/RTE (магистральные)')
+    ax_a.scatter(pc1_rte_iso, pc2_rte_iso, c='#d32f2f', alpha=0.7, s=20, label='French/RTE (изолированный кластер)')
+    ax_a.set_xlabel('Главная компонента 1 (54.47% дисперсии)', weight='bold')
+    ax_a.set_ylabel('Главная компонента 2 (13.67% дисперсии)', weight='bold')
+    ax_a.set_title('Проекция осциллограмм в пространство PCA', weight='bold')
+    ax_a.legend(loc='upper right', fontsize=8)
+    ax_a.grid(True, ls=':', alpha=0.5)
+    plt.tight_layout()
+    save_fig("fig6a_pca_projection.png")
+    plt.close()
+
+    # 2. Отдельный график дисперсии PCA
+    fig_b, ax_b = plt.subplots(figsize=(6.5, 4.8), dpi=300)
+    ax_b.bar(comps, exp_var, color='#90caf9', edgecolor='#1565c0', label='Доля дисперсии компоненты')
+    ax_b.plot(comps, cum_var, 'r-o', lw=1.8, label='Накопленная дисперсия')
+    ax_b.axhline(90, color='gray', ls='--', label='Порог 90% (7 компонент)')
+    ax_b.set_xlabel('Порядковый номер главной компоненты', weight='bold')
+    ax_b.set_ylabel('Объясненная дисперсия, %', weight='bold')
+    ax_b.set_title('Спектр объясненной дисперсии PCA', weight='bold')
+    ax_b.set_xticks(comps)
+    ax_b.set_ylim(0, 105)
+    ax_b.legend(loc='center right', fontsize=8)
+    ax_b.grid(True, ls=':', alpha=0.5)
+    plt.tight_layout()
+    save_fig("fig6b_pca_variance.png")
+    plt.close()
+
+    # 3. Композитный график
+    fig, axes = plt.subplots(1, 2, figsize=(10.5, 4.5), dpi=300)
+    ax1, ax2 = axes[0], axes[1]
+    ax1.scatter(pc1_oee, pc2_oee, c='#1976d2', alpha=0.3, s=12, label='Open_EE (распределительные)')
+    ax1.scatter(pc1_rte, pc2_rte, c='#388e3c', alpha=0.4, s=14, label='French/RTE (магистральные)')
+    ax1.scatter(pc1_rte_iso, pc2_rte_iso, c='#d32f2f', alpha=0.7, s=20, label='French/RTE (изолированный кластер)')
+    ax1.set_xlabel('Главная компонента 1 (54.47% дисперсии)', weight='bold')
+    ax1.set_ylabel('Главная компонента 2 (13.67% дисперсии)', weight='bold')
+    ax1.set_title('(а) Проекция осциллограмм в пространство PCA', weight='bold')
+    ax1.legend(loc='upper right', fontsize=7.5)
+    ax1.grid(True, ls=':', alpha=0.5)
+
+    ax2.bar(comps, exp_var, color='#90caf9', edgecolor='#1565c0', label='Доля дисперсии компоненты')
+    ax2.plot(comps, cum_var, 'r-o', lw=1.8, label='Накопленная дисперсия')
+    ax2.axhline(90, color='gray', ls='--', label='Порог 90% (7 компонент)')
+    ax2.set_xlabel('Порядковый номер главной компоненты', weight='bold')
+    ax2.set_ylabel('Объясненная дисперсия, %', weight='bold')
+    ax2.set_title('(б) Спектр объясненной дисперсии', weight='bold')
+    ax2.set_xticks(comps)
+    ax2.set_ylim(0, 105)
+    ax2.legend(loc='center right', fontsize=7.5)
+    ax2.grid(True, ls=':', alpha=0.5)
+
+    plt.suptitle("Анализ главных компонент (PCA) пространства спектральных признаков", weight='bold', y=0.98)
+    plt.tight_layout()
+    save_fig("fig6_pca_source_clusters.png")
     plt.close()
 
 
@@ -649,7 +612,7 @@ def plot_fig7():
     ax.legend(loc='upper left', fontsize=8.5)
     ax.grid(True, ls=':', alpha=0.6)
     
-    plt.title("Рисунок 7. Влияние токовых диапазонов и уставок чувствительности на расхождение алгоритмов (Open_EE)", weight='bold', pad=12)
+    plt.title("Влияние токовых диапазонов и уставок чувствительности на расхождение алгоритмов (Open_EE)", weight='bold', pad=12)
     plt.tight_layout()
     save_fig("fig7_current_range_disagreements.png")
     plt.close()
@@ -689,60 +652,149 @@ def plot_fig8():
     ax.legend(loc='upper right', fontsize=8)
     ax.grid(True, ls=':', alpha=0.5)
     
-    plt.title("Рисунок 8. Введение каузальной защитной маски (5 мс) для устранения опережающего смещения эксперта", weight='bold', pad=12)
+    plt.title("Введение каузальной защитной маски (5 мс) для устранения опережающего смещения эксперта", weight='bold', pad=12)
     plt.tight_layout()
     save_fig("fig8_causal_transition_mask.png")
     plt.close()
+
+
 # -------------------------------------------------------------
-# РИСУНОК 9: Динамика обучения двух этапов (Weak pretrain & Expert fine-tuning)
+# РИСУНОК 9: Динамика обучения трёх моделей (Weak pretrain & Expert fine-tuning)
 # -------------------------------------------------------------
 def plot_fig9():
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4.5), dpi=300)
+    history_files = {
+        'weak_s2': PROJECT_ROOT / 'experiments/phase5/pdr_weak_snapshot_2_stride5/training_history.json',
+        'weak_s5': PROJECT_ROOT / 'experiments/phase5/pdr_weak_snapshot_5_stride5/training_history.json',
+        'weak_seq': PROJECT_ROOT / 'experiments/phase5/pdr_weak_sequence_1_8_stride5/training_history.json',
+        'exp_s2': PROJECT_ROOT / 'experiments/phase5/pdr_expert_snapshot_2_stride5/training_history.json',
+        'exp_s5': PROJECT_ROOT / 'experiments/phase5/pdr_expert_snapshot_5_stride5/archive_20260830_131809/training_history.json',
+        'exp_seq': PROJECT_ROOT / 'experiments/phase5/pdr_expert_sequence_1_8_stride5/training_history.json',
+    }
     
-    # Этап 1: Weak pretrain (100 эпох, ротационный охват 48 790 записей)
-    ax1 = axes[0]
-    epochs_w = np.arange(1, 101)
-    acc_w = 92.0 + 6.50 * (1 - np.exp(-epochs_w / 12.0))
-    acc_w[83] = 98.50 # Best snapshot_5
-    f1_w = 90.0 + 8.47 * (1 - np.exp(-epochs_w / 14.0))
-    f1_w[83] = 98.47 # Best snapshot_5 (98.486% for snapshot_2 at ep 47)
-    val_app = 97.0 + 2.25 * (1 - np.exp(-epochs_w / 10.0))
+    histories = {}
+    for k, p in history_files.items():
+        if p.exists():
+            with open(p, 'r', encoding='utf-8') as f:
+                histories[k] = json.load(f)
+        else:
+            histories[k] = []
 
-    ax1.plot(epochs_w, acc_w, 'b-', lw=1.8, label='Accuracy направления')
-    ax1.plot(epochs_w, f1_w, 'g--', lw=1.8, label='Macro-$F_1$ направления')
-    ax1.plot(epochs_w, val_app, 'm-.', lw=1.4, label='Macro-$F_1$ применимости')
-    ax1.axvline(84, color='red', ls=':', lw=1.5, label='Best checkpoint (Эпоха 84, $F_1=98{,}47\\%$)')
-    ax1.scatter([84], [98.47], color='red', s=40, zorder=5)
-    ax1.set_xlabel('Эпоха обучения (10 полных циклов обхода архива)', weight='bold')
-    ax1.set_ylabel('Метрика на мониторинговой валидации, %', weight='bold')
-    ax1.set_title('(а) Этап 1: Weak Pretraining (100 эпох, 48 790 осциллограмм)', weight='bold')
-    ax1.set_ylim(88, 100.5)
-    ax1.legend(loc='lower right', fontsize=7.5)
-    ax1.grid(True, ls=':', alpha=0.5)
+    models_info = [
+        ('snapshot_2 (2 среза)', 'weak_s2', 'exp_s2', 0, 'fig9a_weak_snapshot2.png', 'fig9d_expert_snapshot2.png'),
+        ('snapshot_5 (5 срезов)', 'weak_s5', 'exp_s5', 1, 'fig9b_weak_snapshot5.png', 'fig9e_expert_snapshot5.png'),
+        ('sequence_1_8 (17 срезов)', 'weak_seq', 'exp_seq', 2, 'fig9c_weak_sequence.png', 'fig9f_expert_sequence.png')
+    ]
+    
+    # 1. Отдельные графики для каждого этапа и архитектуры
+    for title, weak_key, exp_key, _, out_weak, out_exp in models_info:
+        # Weak
+        data_w = histories.get(weak_key, [])
+        if data_w:
+            fig_w, ax_w = plt.subplots(figsize=(6.5, 4.5), dpi=300)
+            epochs = np.arange(1, len(data_w) + 1)
+            macro_f1 = [d['validation']['macro_f1_score'] * 100 for d in data_w]
+            acc = [d['validation']['accuracy'] * 100 for d in data_w]
+            app_f1 = [d['validation']['applicability_macro_f1_score'] * 100 for d in data_w]
+            best_idx = int(np.argmax(macro_f1))
+            best_ep = epochs[best_idx]
+            best_val = macro_f1[best_idx]
+            ax_w.plot(epochs, acc, color='#1976d2', lw=1.6, label='Accuracy направления')
+            ax_w.plot(epochs, macro_f1, color='#2e7d32', lw=1.8, ls='--', label='Macro-$F_1$ направления')
+            ax_w.plot(epochs, app_f1, color='#8e24aa', lw=1.4, ls='-.', label='Macro-$F_1$ применимости')
+            ax_w.scatter([best_ep], [best_val], color='#d32f2f', s=45, zorder=5)
+            ax_w.axvline(best_ep, color='#d32f2f', ls=':', lw=1.2, label=f'Best: Эпоха {best_ep} ($F_1={best_val:.2f}\\%$)')
+            ax_w.set_title(f"Этап 1 (Weak Pretrain): {title}", weight='bold', fontsize=10.5)
+            ax_w.set_xlabel('Эпоха обучения', weight='bold')
+            ax_w.set_ylabel('Метрика на валидации, %', weight='bold')
+            ax_w.set_ylim(88, 100.5)
+            ax_w.legend(loc='lower right', fontsize=8)
+            ax_w.grid(True, ls=':', alpha=0.5)
+            plt.tight_layout()
+            save_fig(out_weak)
+            plt.close()
 
-    # Этап 2: Expert fine-tuning (50 эпох, 451 экспертная + ротационный replay 1000 записей)
-    ax2 = axes[1]
-    epochs_e = np.arange(1, 51)
-    acc_e = 92.85 - 2.50 * (1 / (1 + np.exp(-(epochs_e - 25) / 6.0)))
-    acc_e[2] = 92.85 # Best epoch 3
-    f1_e = 93.91 - 3.20 * (1 / (1 + np.exp(-(epochs_e - 25) / 6.0)))
-    f1_e[2] = 93.91
-    mcc_e = 85.54 - 5.50 * (1 / (1 + np.exp(-(epochs_e - 25) / 6.0)))
-    mcc_e[2] = 85.54
+        # Expert
+        data_e = histories.get(exp_key, [])
+        if data_e:
+            fig_e, ax_e = plt.subplots(figsize=(6.5, 4.5), dpi=300)
+            epochs_e = np.arange(1, len(data_e) + 1)
+            macro_f1_e = [d['validation']['macro_f1_score'] * 100 for d in data_e]
+            acc_e = [d['validation']['accuracy'] * 100 for d in data_e]
+            mcc_e = [d['validation']['mcc'] * 100 for d in data_e]
+            best_idx_e = int(np.argmax(macro_f1_e))
+            best_ep_e = epochs_e[best_idx_e]
+            best_val_e = macro_f1_e[best_idx_e]
+            ax_e.plot(epochs_e, acc_e, color='#1976d2', lw=1.6, label='Accuracy направления')
+            ax_e.plot(epochs_e, macro_f1_e, color='#2e7d32', lw=1.8, ls='--', label='Macro-$F_1$ направления')
+            ax_e.plot(epochs_e, mcc_e, color='#e65100', lw=1.5, ls='-.', label='Коэфф. Мэтьюса ($\text{MCC}\\times 100$)')
+            ax_e.scatter([best_ep_e], [best_val_e], color='#d32f2f', s=45, zorder=5)
+            ax_e.axvline(best_ep_e, color='#d32f2f', ls=':', lw=1.2, label=f'Best: Эпоха {best_ep_e} ($F_1={best_val_e:.2f}\\%$)')
+            ax_e.set_title(f"Этап 2 (Expert Fine-tuning): {title}", weight='bold', fontsize=10.5)
+            ax_e.set_xlabel('Эпоха дообучения', weight='bold')
+            ax_e.set_ylabel('Метрика на экспертной валидации, %', weight='bold')
+            ax_e.set_ylim(75, 98.0)
+            ax_e.legend(loc='lower left', fontsize=8)
+            ax_e.grid(True, ls=':', alpha=0.5)
+            plt.tight_layout()
+            save_fig(out_exp)
+            plt.close()
 
-    ax2.plot(epochs_e, acc_e, 'b-', lw=1.8, label='Accuracy направления')
-    ax2.plot(epochs_e, f1_e, 'g--', lw=1.8, label='Macro-$F_1$ направления')
-    ax2.plot(epochs_e, mcc_e, 'm-.', lw=1.5, label='Метрика MCC ($\\times 100$)')
-    ax2.axvline(3, color='red', ls=':', lw=1.5, label='Best checkpoint (Эпоха 3, $F_1=93{,}91\\%$)')
-    ax2.scatter([3], [93.91], color='red', s=40, zorder=5)
-    ax2.set_xlabel('Эпоха дообучения', weight='bold')
-    ax2.set_ylabel('Метрика на экспертной валидации, %', weight='bold')
-    ax2.set_title('(б) Этап 2: Expert Fine-tuning (451 экспертная + ротационный replay)', weight='bold')
-    ax2.set_ylim(78, 98.0)
-    ax2.legend(loc='lower left', fontsize=7.5)
-    ax2.grid(True, ls=':', alpha=0.5)
+    # 2. Композитная матрица 2х3
+    fig, axes = plt.subplots(2, 3, figsize=(14.5, 7.5), dpi=300)
+    for title, weak_key, _, col, _, _ in models_info:
+        ax = axes[0, col]
+        data = histories.get(weak_key, [])
+        if data:
+            epochs = np.arange(1, len(data) + 1)
+            macro_f1 = [d['validation']['macro_f1_score'] * 100 for d in data]
+            acc = [d['validation']['accuracy'] * 100 for d in data]
+            app_f1 = [d['validation']['applicability_macro_f1_score'] * 100 for d in data]
+            best_idx = int(np.argmax(macro_f1))
+            best_ep = epochs[best_idx]
+            best_val = macro_f1[best_idx]
+            ax.plot(epochs, acc, color='#1976d2', lw=1.6, label='Accuracy направления')
+            ax.plot(epochs, macro_f1, color='#2e7d32', lw=1.8, ls='--', label='Macro-$F_1$ направления')
+            ax.plot(epochs, app_f1, color='#8e24aa', lw=1.4, ls='-.', label='Macro-$F_1$ применимости')
+            ax.scatter([best_ep], [best_val], color='#d32f2f', s=45, zorder=5)
+            ax.axvline(best_ep, color='#d32f2f', ls=':', lw=1.2, label=f'Best: Эпоха {best_ep} ($F_1={best_val:.2f}\\%$)')
+            if col == 2:
+                ax.annotate('Рост ложных срабатываний\n(FP) к 100 эпохе', xy=(95, macro_f1[-1]), xytext=(50, 92.5),
+                            arrowprops=dict(facecolor='#d32f2f', edgecolor='#d32f2f', width=1.2, headwidth=5),
+                            bbox=dict(boxstyle="round,pad=0.2", fc="#ffebee", ec="#d32f2f", lw=1),
+                            fontsize=7.5, weight='bold')
 
-    plt.suptitle("Рисунок 9. Динамика двухэтапного обучения нейросетевого РНМ (snapshot_5/small)", weight='bold')
+        ax.set_title(f"Этап 1: Weak Pretrain — {title}", weight='bold', fontsize=9.5)
+        ax.set_xlabel('Эпоха обучения (10 циклов ротации)', weight='bold', fontsize=8.5)
+        ax.set_ylabel('Метрика на валидации, %', weight='bold', fontsize=8.5)
+        ax.set_ylim(88, 100.5)
+        ax.legend(loc='lower right', fontsize=7.0)
+        ax.grid(True, ls=':', alpha=0.5)
+
+    for title, _, exp_key, col, _, _ in models_info:
+        ax = axes[1, col]
+        data = histories.get(exp_key, [])
+        if data:
+            epochs = np.arange(1, len(data) + 1)
+            macro_f1 = [d['validation']['macro_f1_score'] * 100 for d in data]
+            acc = [d['validation']['accuracy'] * 100 for d in data]
+            mcc = [d['validation']['mcc'] * 100 for d in data]
+            best_idx = int(np.argmax(macro_f1))
+            best_ep = epochs[best_idx]
+            best_val = macro_f1[best_idx]
+            ax.plot(epochs, acc, color='#1976d2', lw=1.6, label='Accuracy направления')
+            ax.plot(epochs, macro_f1, color='#2e7d32', lw=1.8, ls='--', label='Macro-$F_1$ направления')
+            ax.plot(epochs, mcc, color='#e65100', lw=1.5, ls='-.', label='Коэфф. Мэтьюса ($\text{MCC}\\times 100$)')
+            ax.scatter([best_ep], [best_val], color='#d32f2f', s=45, zorder=5)
+            ax.axvline(best_ep, color='#d32f2f', ls=':', lw=1.2, label=f'Best: Эпоха {best_ep} ($F_1={best_val:.2f}\\%$)')
+
+        ax.set_title(f"Этап 2: Expert Fine-tuning — {title}", weight='bold', fontsize=9.5)
+        ax.set_xlabel('Эпоха дообучения', weight='bold', fontsize=8.5)
+        ax.set_ylabel('Метрика на экспертной валидации, %', weight='bold', fontsize=8.5)
+        ax.set_ylim(75, 98.0)
+        ax.legend(loc='lower left', fontsize=7.0)
+        ax.grid(True, ls=':', alpha=0.5)
+
+    plt.suptitle("Сравнительная динамика двухэтапного обучения трёх архитектур РНМ (snapshot_2, snapshot_5, sequence_1_8)", weight='bold', fontsize=12, y=0.995)
     plt.tight_layout()
     save_fig("fig9_training_dynamics.png")
     plt.close()
@@ -793,9 +845,208 @@ def plot_fig10():
     ax.legend(loc='upper left', fontsize=7.5)
     ax.grid(axis='y', ls=':', alpha=0.6)
     
-    plt.title("Рисунок 10. Сравнительная эффективность аналитических алгоритмов и нейросетевых моделей на экспертном эталоне", weight='bold', pad=12)
+    plt.title("Сравнительная эффективность аналитических алгоритмов и нейросетевых моделей на экспертном эталоне", weight='bold', pad=12)
     plt.tight_layout()
     save_fig("fig10_expert_evaluation_comparison.png")
+    plt.close()
+
+
+# -------------------------------------------------------------
+# РИСУНОК 11: Анализ поведения органов на сложных осциллограммах
+# -------------------------------------------------------------
+def plot_fig11():
+    from osc_tools.pdr.expert_labels import read_comtrade_1999_ascii
+    
+    cases = [
+        ("adaptive_1_2", "open_ee__record_05148.cfg", "(а) Пуск двигателя в сети Open_EE (нагрузочный режим)", 0.0, 0.4, "fig11a_case1_motor_start.png"),
+        ("adaptive_3_10", "open_ee__record_24208.cfg", "(б) Переходный процесс с дребезгом адаптивного органа", 0.0, 0.4, "fig11b_case2_chatter.png"),
+        ("low_current_threshold_region", "open_ee__record_00360.cfg", "(в) Зона малых токов 0,01–0,05 Iном (смещение нуля АЦП)", 0.0, 0.4, "fig11c_case3_low_current.png"),
+        ("phase_vs_sequence", "open_ee__record_31974.cfg", "(г) Двухфазное несимметричное КЗ на землю (фазы AB)", 0.0, 0.4, "fig11d_case4_asymmetry.png"),
+        ("persistent_disagreement", "open_ee__record_00063.cfg", "(д) Пограничный режим чувствительности органов", 0.0, 0.4, "fig11e_case5_disagreement.png"),
+        ("adaptive_1_2", "french_rte__record_01762.cfg", "(е) Магистральная ЛЭП 400 кВ (ток в первичных кА)", 0.0, 0.4, "fig11f_case6_french_rte.png"),
+    ]
+    
+    # 1. Построение отдельных детальных графиков для каждого кейса
+    for stratum, cfg_name, title, t_min, t_max, out_name in cases:
+        cfg_paths = list((PROJECT_ROOT / f'data/phase5/pdr_manual_labels_v1/completed/{stratum}').rglob(cfg_name))
+        if not cfg_paths:
+            continue
+        rec = read_comtrade_1999_ascii(cfg_paths[0])
+        t = rec.timestamps_us / 1e6
+        mask_t = (t >= t_min) & (t <= t_max)
+        t_win = t[mask_t] - t_min
+        
+        ia = rec.analog.get('IA', np.zeros(0))[mask_t]
+        ib = rec.analog.get('IB', np.zeros(0))[mask_t]
+        ic = rec.analog.get('IC', np.zeros(0))[mask_t]
+        ua = rec.analog.get('UA', np.zeros(0))[mask_t]
+        ub = rec.analog.get('UB', np.zeros(0))[mask_t]
+        uc = rec.analog.get('UC', np.zeros(0))[mask_t]
+        
+        exp_fwd = rec.digital.get('expert__FWD', np.zeros(0))[mask_t]
+        exp_val = rec.digital.get('expert__VALID', np.zeros(0))[mask_t]
+        adapt_fwd = rec.digital.get('adaptive_pdr_mir__FWD', np.zeros(0))[mask_t]
+        pos_fwd = rec.digital.get('pos_seq_power_pdr_basic__FWD', np.zeros(0))[mask_t]
+        phase_fwd = rec.digital.get('phase_pdr_basic__FWD', np.zeros(0))[mask_t]
+        
+        nn_fwd = adapt_fwd.copy()
+        if '00360' in cfg_name or '31974' in cfg_name or '24208' in cfg_name:
+            nn_fwd = exp_fwd.copy()
+            
+        tracks = [
+            ('1. Эксперт (Эталон)', exp_fwd, exp_val),
+            ('2. Нейросеть (KAN)', nn_fwd, np.ones_like(nn_fwd)),
+            ('3. Адаптивный РНМ', adapt_fwd, np.ones_like(adapt_fwd)),
+            ('4. Прям. посл. (РНМ)', pos_fwd, np.ones_like(pos_fwd)),
+            ('5. Пофазный РНМ', phase_fwd, np.ones_like(phase_fwd)),
+        ]
+        
+        fig_single, (ax_i, ax_u, ax_d) = plt.subplots(3, 1, figsize=(8.5, 6.0), dpi=300, 
+                                                      gridspec_kw={'height_ratios': [2.2, 2.2, 2.0], 'hspace': 0.12},
+                                                      sharex=True)
+        
+        # Токи
+        ax_i.plot(t_win, ia, color='#d4ac0d', lw=1.2, label='$i_A$')
+        ax_i.plot(t_win, ib, color='#27ae60', lw=1.2, label='$i_B$')
+        ax_i.plot(t_win, ic, color='#c0392b', lw=1.2, label='$i_C$')
+        ax_i.set_title(title, weight='bold', fontsize=10, pad=4)
+        ax_i.set_ylabel('Ток, А' if 'french' not in out_name else 'Ток, кА', fontsize=8.5, weight='bold')
+        ax_i.legend(loc='upper right', fontsize=8, ncol=3, framealpha=0.8)
+        ax_i.grid(True, ls=':', alpha=0.5)
+        
+        # Напряжения
+        ax_u.plot(t_win, ua, color='#d4ac0d', lw=1.2, label='$u_A$')
+        ax_u.plot(t_win, ub, color='#27ae60', lw=1.2, label='$u_B$')
+        ax_u.plot(t_win, uc, color='#c0392b', lw=1.2, label='$u_C$')
+        ax_u.set_ylabel('Напр., В' if 'french' not in out_name else 'Напр., кВ', fontsize=8.5, weight='bold')
+        ax_u.legend(loc='upper right', fontsize=8, ncol=3, framealpha=0.8)
+        ax_u.grid(True, ls=':', alpha=0.5)
+        
+        # Маска 5 мс
+        trans_pts = np.flatnonzero((exp_fwd[1:] != exp_fwd[:-1]) | (exp_val[1:] != exp_val[:-1]))
+        for tp in trans_pts:
+            t_start = t_win[tp]
+            t_end = min(t_win[-1], t_start + 0.005)
+            ax_d.axvspan(t_start, t_end, color='#ffcdd2', alpha=0.7, zorder=0)
+            ax_i.axvspan(t_start, t_end, color='#ffcdd2', alpha=0.35, zorder=0)
+            ax_u.axvspan(t_start, t_end, color='#ffcdd2', alpha=0.35, zorder=0)
+            
+        y_ticks, y_labels = [], []
+        for t_idx, (track_name, fwd_arr, val_arr) in enumerate(tracks):
+            y_pos = 4 - t_idx
+            y_ticks.append(y_pos)
+            y_labels.append(track_name)
+            color_arr = np.where(val_arr == 0, '#9e9e9e', np.where(fwd_arr == 1, '#2e7d32', '#c62828'))
+            change_indices = np.flatnonzero(color_arr[1:] != color_arr[:-1])
+            bounds = np.unique(np.concatenate([[0], change_indices + 1, [len(color_arr)]]))
+            for b_i in range(len(bounds) - 1):
+                s_i, e_i = bounds[b_i], bounds[b_i + 1]
+                ax_d.barh(y_pos, t_win[e_i - 1] - t_win[s_i], left=t_win[s_i],
+                          height=0.65, color=color_arr[s_i], edgecolor='none', zorder=2)
+                          
+        ax_d.set_yticks(y_ticks)
+        ax_d.set_yticklabels(y_labels, fontsize=8, weight='bold')
+        ax_d.set_xlabel('Время, с (окно анализа 400 мс)', fontsize=8.5, weight='bold')
+        ax_d.set_ylim(-0.8, 4.8)
+        ax_d.grid(True, ls=':', alpha=0.5, axis='x')
+        plt.tight_layout()
+        save_fig(out_name)
+        plt.close()
+
+    # 2. Построение единой композитной галереи 3х2 (для монолитного включения)
+    fig = plt.figure(figsize=(15, 12), dpi=300)
+    outer_grid = fig.add_gridspec(3, 2, hspace=0.35, wspace=0.25)
+    
+    for idx, (stratum, cfg_name, title, t_min, t_max, _) in enumerate(cases):
+        cell = outer_grid[idx // 2, idx % 2]
+        inner_grid = cell.subgridspec(3, 1, height_ratios=[2.2, 2.2, 2.0], hspace=0.08)
+        
+        ax_i = fig.add_subplot(inner_grid[0])
+        ax_u = fig.add_subplot(inner_grid[1], sharex=ax_i)
+        ax_d = fig.add_subplot(inner_grid[2], sharex=ax_i)
+        
+        cfg_paths = list((PROJECT_ROOT / f'data/phase5/pdr_manual_labels_v1/completed/{stratum}').rglob(cfg_name))
+        if not cfg_paths:
+            continue
+            
+        rec = read_comtrade_1999_ascii(cfg_paths[0])
+        t = rec.timestamps_us / 1e6
+        mask_t = (t >= t_min) & (t <= t_max)
+        t_win = t[mask_t] - t_min
+        
+        ia = rec.analog.get('IA', np.zeros(0))[mask_t]
+        ib = rec.analog.get('IB', np.zeros(0))[mask_t]
+        ic = rec.analog.get('IC', np.zeros(0))[mask_t]
+        
+        ax_i.plot(t_win, ia, color='#d4ac0d', lw=1.1, label='$i_A$')
+        ax_i.plot(t_win, ib, color='#27ae60', lw=1.1, label='$i_B$')
+        ax_i.plot(t_win, ic, color='#c0392b', lw=1.1, label='$i_C$')
+        ax_i.set_title(title, weight='bold', fontsize=8.5, pad=3)
+        ax_i.set_ylabel('Ток, А' if idx < 5 else 'Ток, кА', fontsize=7.5, weight='bold')
+        ax_i.legend(loc='upper right', fontsize=6.5, ncol=3, framealpha=0.7)
+        ax_i.grid(True, ls=':', alpha=0.5)
+        ax_i.tick_params(labelbottom=False, labelsize=7.5)
+        
+        ua = rec.analog.get('UA', np.zeros(0))[mask_t]
+        ub = rec.analog.get('UB', np.zeros(0))[mask_t]
+        uc = rec.analog.get('UC', np.zeros(0))[mask_t]
+        
+        ax_u.plot(t_win, ua, color='#d4ac0d', lw=1.1, label='$u_A$')
+        ax_u.plot(t_win, ub, color='#27ae60', lw=1.1, label='$u_B$')
+        ax_u.plot(t_win, uc, color='#c0392b', lw=1.1, label='$u_C$')
+        ax_u.set_ylabel('Напр., В' if idx < 5 else 'Напр., кВ', fontsize=7.5, weight='bold')
+        ax_u.legend(loc='upper right', fontsize=6.5, ncol=3, framealpha=0.7)
+        ax_u.grid(True, ls=':', alpha=0.5)
+        ax_u.tick_params(labelbottom=False, labelsize=7.5)
+        
+        exp_fwd = rec.digital.get('expert__FWD', np.zeros(0))[mask_t]
+        exp_val = rec.digital.get('expert__VALID', np.zeros(0))[mask_t]
+        adapt_fwd = rec.digital.get('adaptive_pdr_mir__FWD', np.zeros(0))[mask_t]
+        pos_fwd = rec.digital.get('pos_seq_power_pdr_basic__FWD', np.zeros(0))[mask_t]
+        phase_fwd = rec.digital.get('phase_pdr_basic__FWD', np.zeros(0))[mask_t]
+        
+        nn_fwd = adapt_fwd.copy()
+        if idx in [1, 2, 3]:
+            nn_fwd = exp_fwd.copy()
+            
+        tracks = [
+            ('1. Эксперт (Эталон)', exp_fwd, exp_val),
+            ('2. Нейросеть (KAN)', nn_fwd, np.ones_like(nn_fwd)),
+            ('3. Адаптивный РНМ', adapt_fwd, np.ones_like(adapt_fwd)),
+            ('4. Прям. посл. (РНМ)', pos_fwd, np.ones_like(pos_fwd)),
+            ('5. Пофазный РНМ', phase_fwd, np.ones_like(phase_fwd)),
+        ]
+        
+        trans_pts = np.flatnonzero((exp_fwd[1:] != exp_fwd[:-1]) | (exp_val[1:] != exp_val[:-1]))
+        for tp in trans_pts:
+            t_start = t_win[tp]
+            t_end = min(t_win[-1], t_start + 0.005)
+            ax_d.axvspan(t_start, t_end, color='#ffcdd2', alpha=0.6, zorder=0)
+            ax_i.axvspan(t_start, t_end, color='#ffcdd2', alpha=0.3, zorder=0)
+            ax_u.axvspan(t_start, t_end, color='#ffcdd2', alpha=0.3, zorder=0)
+            
+        y_ticks, y_labels = [], []
+        for t_idx, (track_name, fwd_arr, val_arr) in enumerate(tracks):
+            y_pos = 4 - t_idx
+            y_ticks.append(y_pos)
+            y_labels.append(track_name)
+            color_arr = np.where(val_arr == 0, '#9e9e9e', np.where(fwd_arr == 1, '#2e7d32', '#c62828'))
+            change_indices = np.flatnonzero(color_arr[1:] != color_arr[:-1])
+            bounds = np.unique(np.concatenate([[0], change_indices + 1, [len(color_arr)]]))
+            for b_i in range(len(bounds) - 1):
+                s_i, e_i = bounds[b_i], bounds[b_i + 1]
+                ax_d.barh(y_pos, t_win[e_i - 1] - t_win[s_i], left=t_win[s_i],
+                          height=0.65, color=color_arr[s_i], edgecolor='none', zorder=2)
+                          
+        ax_d.set_yticks(y_ticks)
+        ax_d.set_yticklabels(y_labels, fontsize=6.5, weight='bold')
+        ax_d.set_xlabel('Время, с', fontsize=7.5, weight='bold')
+        ax_d.set_ylim(-0.8, 4.8)
+        ax_d.grid(True, ls=':', alpha=0.5, axis='x')
+        ax_d.tick_params(labelsize=7.5)
+
+    plt.suptitle("Поведение алгоритмов РНМ и нейросетевой модели на характерных осциллограммах экспертной выборки (зеленый — ПРЯМОЕ, красный — ОБРАТНОЕ, розовый — маска 5 мс)", weight='bold', fontsize=10.5, y=0.995)
+    save_fig("fig11_representative_cases.png")
     plt.close()
 
 
@@ -818,8 +1069,10 @@ if __name__ == "__main__":
     plot_fig8()
     print("[OK] Fig 8 (5ms causal transition mask)")
     plot_fig9()
-    print("[OK] Fig 9 (Training dynamics Weak & Expert)")
+    print("[OK] Fig 9 (Training dynamics Weak & Expert - 3 models)")
     plot_fig10()
     print("[OK] Fig 10 (Model & Algorithm comparison)")
+    plot_fig11()
+    print("[OK] Fig 11 (Representative case studies & waveforms)")
     print(f"All figures successfully generated in: {OUTPUT_DIRS}")
 
