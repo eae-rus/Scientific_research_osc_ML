@@ -118,44 +118,72 @@ def plot_fig1():
 
 
 # -------------------------------------------------------------
-# РИСУНОК 2: Сквозная исследовательская методология (5 этапов)
+# РИСУНОК 2: Сквозная исследовательская методология разработки
+# и эксплуатационной адаптации измерительных органов РЗА
 # -------------------------------------------------------------
 def plot_fig2():
-    fig, ax = plt.subplots(figsize=(11, 4.2), dpi=300)
+    fig, ax = plt.subplots(figsize=(13.2, 5.0), dpi=300)
     ax.axis('off')
     
     stages = [
-        ("Этап 1: Физический\nконтракт РНМ", "• 5 аналитических алгоритмов\n• Условия применимости VALID\n• Полярность мощности DIR\n• Канал памяти $U_{\\mathrm{hist}}$", "#e3f2fd", "#1565c0"),
-        ("Этап 2: Сплошная\nслабая разметка", "• 56 826 осциллограмм\n• 48 790 пригодных (50.5 ч)\n• Open_EE + French/RTE\n• Шаг разметки 1 отсчет", "#e8f5e9", "#2e7d32"),
-        ("Этап 3: Многоуровневый\nаудит v5", "• Токовые зоны ($0.01-0.05\\,I_{\\mathrm{nom}}$)\n• Пофазная несимметрия\n• Доменный сдвиг (ROC 0.85)\n• Анализ PCA и KMeans", "#fff8e1", "#f57f17"),
-        ("Этап 4: Экспертная\nверификация v1", "• 3D-стратификация (190 записей)\n• Независимый эталон\n• Каузальная маска (5 мс)\n• Анализ расхождений", "#f3e5f5", "#7b1fa2"),
-        ("Этап 5: Двухэтапное\nобучение нейросети", "• Weak Pretraining (48k записей)\n• Expert Fine-tuning (160 записей)\n• Replay-буфер (25%)\n• Оценка на валидации", "#fbe9e7", "#d84315"),
+        ("1. Массив исходных\nосциллограмм", 
+         "• 56 826 записей (48 790 с $2I+2U$)\n• Суммарно 50,5 ч процесса\n• Сети 6–35 кВ и 225–400 кВ\n• Физическая нормировка в о.е.", 
+         "#e3f2fd", "#1565c0"),
+        ("2. Сравнение алгоритмов\nи слабая разметка", 
+         "• 5 типовых аналитических РНМ\n• Поточечная разметка всего пула\n• Единый физический контракт:\n  применимость + направление", 
+         "#e8f5e9", "#2e7d32"),
+        ("3. Статистический аудит\nи поиск сложных случаев", 
+         "• Аудит расхождений ($0.01-0.05\\,I_{\\mathrm{nom}}$)\n• Пофазная несимметрия и сдвиг\n• Многомерный отбор (PCA, IF)\n• Фильтрация дублей и шума", 
+         "#fff8e1", "#f57f17"),
+        ("4. Целевой экспертный\nанализ (Эталон)", 
+         "• 546 верифицированных записей\n• 4,68 млн применимых точек\n• Слепой контроль ($\\kappa = 0,885$)\n• Каузальная маска (5 мс)", 
+         "#f3e5f5", "#7b1fa2"),
+        ("5. Синтез адаптивного\nоргана РЗА (ML)", 
+         "• 2-этапное обучение (Weak $\\to$ Expert)\n• Replay-буфер против забывания\n• $\\text{Macro-}F_1 = 92,68-92,98\\%$\n• Память: 25,3 MiB (`snapshot_2`)", 
+         "#fbe9e7", "#d84315"),
+        ("6. Эксплуатационная\nадаптация органа", 
+         "• Донастройка под конкретный объект\n• Дообучение на выявленных сбоях\n• Повышенный вес ошибок ($w_i \\gg 1$)\n• Без подбора жестких уставок", 
+         "#e0f2f1", "#00796b"),
     ]
     
     n = len(stages)
-    width = 0.165
-    gap = 0.038
-    start_x = 0.02
+    width = 0.140
+    gap = 0.026
+    start_x = 0.012
     
     for i, (title, content, fc, ec) in enumerate(stages):
         x = start_x + i * (width + gap)
-        # Блок этапа
-        box = dict(boxstyle="round,pad=0.4", fc=fc, ec=ec, lw=1.5)
-        ax.text(x + width/2, 0.78, title, ha='center', va='center', bbox=box, weight='bold', fontsize=8.5, color=ec)
+        # Блок этапа (заголовок)
+        box = dict(boxstyle="round,pad=0.35", fc=fc, ec=ec, lw=1.5)
+        ax.text(x + width/2, 0.77, title, ha='center', va='center', bbox=box, weight='bold', fontsize=8.0, color=ec)
         
         # Описание этапа
         box_desc = dict(boxstyle="square,pad=0.3", fc="#ffffff", ec="#bdbdbd", lw=0.8)
-        ax.text(x + width/2, 0.35, content, ha='center', va='center', bbox=box_desc, fontsize=7.5)
+        ax.text(x + width/2, 0.38, content, ha='center', va='center', bbox=box_desc, fontsize=6.8)
         
         # Соединительная стрелка к следующему этапу
         if i < n - 1:
-            ax.annotate('', xy=(x + width + gap, 0.78), xytext=(x + width, 0.78),
-                        arrowprops=dict(facecolor=ec, edgecolor=ec, width=1.5, headwidth=6))
+            ax.annotate('', xy=(x + width + gap, 0.77), xytext=(x + width, 0.77),
+                        arrowprops=dict(facecolor=ec, edgecolor=ec, width=1.5, headwidth=5))
+
+    # Обратная стрелка от Блока 6 к Блоку 5 (петля эксплуатационного дообучения)
+    x5_mid = start_x + 4 * (width + gap) + width/2
+    x6_mid = start_x + 5 * (width + gap) + width/2
+    
+    ax.annotate('', xy=(x5_mid, 0.12), xytext=(x6_mid, 0.12),
+                arrowprops=dict(facecolor='#00796b', edgecolor='#00796b', width=1.4, headwidth=5, shrinkA=5, shrinkB=5))
+    ax.annotate('', xy=(x5_mid, 0.18), xytext=(x5_mid, 0.12),
+                arrowprops=dict(facecolor='#00796b', edgecolor='#00796b', width=1.4, headwidth=5))
+    ax.plot([x6_mid, x6_mid], [0.20, 0.12], color='#00796b', lw=1.4)
+    
+    ax.text((x5_mid + x6_mid)/2, 0.065, "Контур адаптации: дообучение на локальных данных объекта / весовая коррекция сбоев",
+            ha='center', va='center', fontsize=7.2, weight='bold', color='#004d40',
+            bbox=dict(boxstyle="round,pad=0.25", fc="#e0f2f1", ec="#80cbc4", lw=1))
 
     ax.set_xlim(0, 1.0)
-    ax.set_ylim(0.05, 0.98)
-    plt.title("Сквозная схема доказательной подготовки обучающих данных и двухэтапного обучения РНМ", 
-              pad=12, weight='bold')
+    ax.set_ylim(0.01, 0.98)
+    plt.title("Сквозная методология разработки, доказательной верификации и эксплуатационной адаптации измерительных органов РЗА", 
+              pad=12, weight='bold', fontsize=10.5)
     plt.tight_layout()
     save_fig("fig2_research_methodology.png")
     plt.close()
