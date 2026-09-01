@@ -554,11 +554,20 @@ expert/replay-группы число индексированных и реал
 После завершения expert-stage нельзя сопоставлять его training-history с weak
 напрямую: validation и эталоны у этапов различаются. Для общей оценки открыть
 `scripts/phase5_experiments/evaluate_pdr_expert_holdout.py` и запустить
-`run_manual()`. По умолчанию он последовательно проверяет weak/latest,
-expert/best и expert/latest только на одинаковой экспертной validation,
-сохраняя JSON в `experiments/phase5/pdr_expert_evaluation_v1`. Holdout
-добавляется в `SPLITS` однократно после фиксации архитектуры и порогов; для
-выбора эпохи или модели он не используется.
+`run_manual()`. Шесть проверенных neural-JSON уже находятся в
+`experiments/phase5/pdr_expert_evaluation_v2`, поэтому по умолчанию
+`RUN_NEURAL_EVALUATION = False`.
+
+После полного завершения обоих источников `pdr_labels_v6` оставить
+`RUN_ANALYTICAL_V6 = True` и запустить тот же `run_manual()`. Сценарий оценит
+все девять органов на том же expert-validation split, с тем же
+stride, лимитом точек на файл и 5-мс маской, сохранив
+`experiments/phase5/pdr_expert_evaluation_v2/analytical_validation_v6.json`.
+Direction-метрики аналитического органа считаются на точках, где
+применимы и эксперт, и орган; поэтому рядом с метриками хранится
+`n_samples`, а качество `VALID` показывается отдельно. Holdout
+добавляется однократно после фиксации архитектуры и порогов; для выбора
+эпохи или модели он не используется.
 
 Для отдельной итоговой проверки воспроизведения teacher открыть
 `evaluate_pdr_full_weak_validation.py`. Он оценивает weak best/latest по всем

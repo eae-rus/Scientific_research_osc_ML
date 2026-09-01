@@ -832,51 +832,107 @@ def plot_fig9():
 # РИСУНОК 10: Сравнение моделей и алгоритмов на экспертной валидации
 # -------------------------------------------------------------
 def plot_fig10():
-    fig, ax = plt.subplots(figsize=(10.5, 5), dpi=300)
-    
-    models = [
-        'Пофазный\nугловой',
-        'Пофазный\nмощностной',
-        'Угловой\nпрям. посл.',
-        'Мощностной\nпрям. посл.',
-        'Адаптивный\nРНМ (Teacher)',
-        'Weak Pretrain\n(Full-coverage)',
-        'Expert Fine-tuned\n(Replay buffer)'
+    """Compare every v6 PDR and all trained models on one expert grid."""
+
+    evaluation_dir = PROJECT_ROOT / "experiments/phase5/pdr_expert_evaluation_v2"
+    analytical_path = evaluation_dir / "analytical_validation_v6.json"
+    if not analytical_path.exists():
+        print(
+            "[SKIP] Fig 10: нет analytical_validation_v6.json. После "
+            "pdr_labels_v6 запустите evaluate_pdr_expert_holdout.py."
+        )
+        return False
+
+    algorithm_names = {
+        "phase_pdr_basic": "Пофазный угловой",
+        "phase_power_pdr_basic": "Пофазный мощностной",
+        "pos_seq_pdr_basic": "Угловой прямой посл.",
+        "pos_seq_power_pdr_basic": "Мощностной прямой посл.",
+        "adaptive_pdr_mir": "Адаптивный (учитель)",
+        "pdr_sivokobylenko_2pt": "Сивокобыленко, 2 выборки",
+        "pdr_sivokobylenko_5pt": "Сивокобыленко, 5 выборок",
+        "pdr_bmrz_q_assisted": "БМРЗ, ветвь $I_{p,1}$",
+        "pdr_bavr072_crosspol": "БАВР-072, memory proxy",
+    }
+    neural_runs = (
+        ("snapshot_2_weak_best.json", "snapshot_2 / weak"),
+        ("snapshot_2_expert_best.json", "snapshot_2 / expert"),
+        ("snapshot_5_weak_best.json", "snapshot_5 / weak"),
+        ("snapshot_5_expert_best.json", "snapshot_5 / expert"),
+        ("sequence_1_8_weak_best.json", "sequence_1_8 / weak"),
+        ("sequence_1_8_expert_best.json", "sequence_1_8 / expert"),
+    )
+    metric_keys = (
+        "accuracy", "macro_f1_score", "recall", "specificity", "mcc",
+        "applicability_macro_f1_score",
+    )
+    metric_names = (
+        "Accuracy", "Macro-$F_1$", "Recall\nFORWARD", "Specificity\nREVERSE",
+        "MCC", "Macro-$F_1$\nVALID",
+    )
+
+    analytical_payload = json.loads(analytical_path.read_text(encoding="utf-8"))
+    analytical_rows = analytical_payload["overall"]
+    analytical_ids = [
+        algorithm_id for algorithm_id in analytical_payload["algorithm_ids"]
+        if algorithm_id in analytical_rows
     ]
-    
-    acc_scores = [61.35, 61.37, 75.58, 77.61, 88.69, 90.56, 92.85]
-    f1_scores  = [58.20, 59.10, 78.50, 79.40, 88.70, 91.51, 93.91]
-    recall_fwd = [52.40, 54.00, 75.80, 76.90, 86.50, 89.63, 97.02]
-    mcc_scores = [0.420, 0.435, 0.650, 0.665, 0.795, 0.8097, 0.8554]
-    
-    x = np.arange(len(models))
-    width = 0.20
-    
-    r1 = ax.bar(x - 1.5*width, acc_scores, width, label='Accuracy (по всем точкам)', color='#90caf9', edgecolor='#1565c0')
-    r2 = ax.bar(x - 0.5*width, [m*100 for m in mcc_scores], width, label='MCC $\\times 100$', color='#a5d6a7', edgecolor='#2e7d32')
-    r3 = ax.bar(x + 0.5*width, recall_fwd, width, label='Recall FORWARD (чувствительность к КЗ)', color='#ffcc80', edgecolor='#e65100')
-    r4 = ax.bar(x + 1.5*width, f1_scores, width, label='Macro-$F_1$ направления', color='#ce93d8', edgecolor='#6a1b9a')
+    analytical_values = np.asarray([
+        [100.0 * float(analytical_rows[algorithm_id][key]) for key in metric_keys]
+        for algorithm_id in analytical_ids
+    ])
+    analytical_labels = [
+        f"{algorithm_names.get(value, value)} (n={int(analytical_rows[value]['n_samples']):,})"
+        for value in analytical_ids
+    ]
 
-    ax.annotate('Сокращение пропусков КЗ:\nFN снижен с 344 до 76\n(Recall: 85.5% $\\to$ 96.8%)', xy=(6, 97.02), xytext=(4.2, 35),
-                arrowprops=dict(facecolor='#d32f2f', edgecolor='#d32f2f', width=1.5, headwidth=6),
-                bbox=dict(boxstyle="round,pad=0.4", fc="#ffebee", ec="#d32f2f", lw=1.2),
-                fontsize=8.0, weight='bold')
+    neural_values, neural_labels = [], []
+    for filename, label in neural_runs:
+        path = evaluation_dir / filename
+        if not path.exists():
+            raise FileNotFoundError(f"Нет результата единой оценки: {path}")
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        metrics = payload["splits"]["validation"]["overall"]
+        neural_values.append([100.0 * float(metrics[key]) for key in metric_keys])
+        neural_labels.append(f"{label} (n={int(metrics['n_samples']):,})")
+    neural_values = np.asarray(neural_values)
 
-    ax.set_ylabel('Значение метрики, %', weight='bold')
-    ax.set_xticks(x)
-    ax.set_xticklabels(models, fontsize=8.5)
-    ax.set_ylim(0, 115)
-    ax.axvline(4.5, color='gray', ls='--', lw=1)
-    ax.text(2.0, 108, "Аналитические органы РНМ", ha='center', weight='bold', color='#37474f')
-    ax.text(5.5, 108, "Нейросетевые модели РНМ", ha='center', weight='bold', color='#0d47a1')
-    
-    ax.legend(loc='upper left', fontsize=7.5)
-    ax.grid(axis='y', ls=':', alpha=0.6)
-    
-    plt.title("Сравнительная эффективность аналитических алгоритмов и нейросетевых моделей на экспертном эталоне", weight='bold', pad=12)
-    plt.tight_layout()
+    fig, axes = plt.subplots(
+        2, 1, figsize=(10.8, 8.8), dpi=300,
+        gridspec_kw={"height_ratios": [len(analytical_labels), len(neural_labels)]},
+    )
+    for ax, values, labels, title in (
+        (axes[0], analytical_values, analytical_labels, "Аналитические органы РНМ"),
+        (axes[1], neural_values, neural_labels, "Нейросетевые модели: weak / expert"),
+    ):
+        image = ax.imshow(values, cmap="YlGnBu", vmin=50.0, vmax=100.0, aspect="auto")
+        ax.set_yticks(np.arange(len(labels)))
+        ax.set_yticklabels(labels, fontsize=8.2)
+        ax.set_xticks(np.arange(len(metric_names)))
+        ax.set_xticklabels(metric_names, fontsize=8.2)
+        ax.set_title(title, fontsize=10, weight="bold")
+        for row in range(values.shape[0]):
+            for column in range(values.shape[1]):
+                value = values[row, column]
+                color = "white" if value >= 78.0 else "black"
+                ax.text(column, row, f"{value:.1f}", ha="center", va="center", color=color, fontsize=7.3)
+        ax.set_xlabel(
+            f"Единый expert-validation split: "
+            f"stride={analytical_payload['label_stride_samples']}, "
+            f"до {analytical_payload['max_samples_per_record']} точек/файл; n — точки DIR",
+            fontsize=7.3,
+        )
+
+    colorbar = fig.colorbar(image, ax=axes, fraction=0.025, pad=0.02)
+    colorbar.set_label("Значение метрики, %", weight="bold")
+    fig.suptitle(
+        "Сравнение аналитических и нейросетевых РНМ с экспертным эталоном",
+        weight="bold", y=0.995,
+    )
+    fig.subplots_adjust(left=0.28, right=0.91, top=0.93, bottom=0.06, hspace=0.45)
     save_fig("fig10_expert_evaluation_comparison.png")
     plt.close()
+    return True
 
 
 # -------------------------------------------------------------
@@ -1098,8 +1154,8 @@ if __name__ == "__main__":
     print("[OK] Fig 8 (5ms causal transition mask)")
     plot_fig9()
     print("[OK] Fig 9 (Training dynamics Weak & Expert - 3 models)")
-    plot_fig10()
-    print("[OK] Fig 10 (Model & Algorithm comparison)")
+    if plot_fig10():
+        print("[OK] Fig 10 (Model & Algorithm comparison)")
     plot_fig11()
     print("[OK] Fig 11 (Representative case studies & waveforms)")
     print(f"All figures successfully generated in: {OUTPUT_DIRS}")

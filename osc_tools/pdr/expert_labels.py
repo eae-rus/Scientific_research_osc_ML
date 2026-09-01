@@ -365,7 +365,12 @@ def write_expert_archive(
 
 
 def aggregate_algorithm_comparison(records: Sequence[ImportedExpertRecord]) -> list[dict[str, object]]:
-    """Сравнить пять автоматических органов с завершённым экспертным слоем."""
+    """Сравнить автоматические органы с завершённым экспертным слоем.
+
+    Все direction-метрики считаются на одной и той же маске: вне 5-мс
+    защитной зоны, эксперт и орган оба VALID. Это исключает подмену
+    Macro-F1 обычной долей совпадений в таблицах и рисунках.
+    """
 
     rows: list[dict[str, object]] = []
     groups: list[tuple[str, Sequence[ImportedExpertRecord]]] = [("all", records)]
@@ -375,6 +380,7 @@ def aggregate_algorithm_comparison(records: Sequence[ImportedExpertRecord]) -> l
         for algorithm_id in ALGORITHM_IDS:
             comparable_total = agree_total = 0
             expert_forward = expert_reverse = auto_forward = 0
+            direction_tp = direction_tn = direction_fp = direction_fn = 0
             app_tp = app_tn = app_fp = app_fn = 0
             per_record_accuracy: list[float] = []
             per_record_counts: list[tuple[int, int]] = []
@@ -400,10 +406,19 @@ def aggregate_algorithm_comparison(records: Sequence[ImportedExpertRecord]) -> l
                     expert_forward += int(np.count_nonzero(record.directions[comparable] == 1))
                     expert_reverse += int(np.count_nonzero(record.directions[comparable] == 0))
                     auto_forward += int(np.count_nonzero(automatic[comparable] == 1))
+                    expert_values = record.directions[comparable]
+                    automatic_values = automatic[comparable]
+                    direction_tp += int(np.count_nonzero((expert_values == 1) & (automatic_values == 1)))
+                    direction_tn += int(np.count_nonzero((expert_values == 0) & (automatic_values == 0)))
+                    direction_fp += int(np.count_nonzero((expert_values == 0) & (automatic_values == 1)))
+                    direction_fn += int(np.count_nonzero((expert_values == 1) & (automatic_values == 0)))
             app_count = app_tp + app_tn + app_fp + app_fn
             sample_ci = _cluster_bootstrap_accuracy(per_record_counts, macro=False, seed=_stable_seed(group, algorithm_id))
             macro_ci = _cluster_bootstrap_accuracy(per_record_counts, macro=True, seed=_stable_seed(group, algorithm_id) + 1)
             record_accuracy_array = np.asarray(per_record_accuracy, dtype=np.float64)
+            direction_metrics = _binary_metrics_from_counts(
+                direction_tp, direction_tn, direction_fp, direction_fn
+            )
             rows.append({
                 "group": group,
                 "algorithm_id": algorithm_id,
@@ -430,12 +445,43 @@ def aggregate_algorithm_comparison(records: Sequence[ImportedExpertRecord]) -> l
                 ),
                 "expert_forward_fraction": expert_forward / comparable_total if comparable_total else "",
                 "automatic_forward_fraction": auto_forward / comparable_total if comparable_total else "",
+                "direction_tp": direction_tp,
+                "direction_tn": direction_tn,
+                "direction_fp": direction_fp,
+                "direction_fn": direction_fn,
+                **direction_metrics,
                 "applicability_accuracy": (app_tp + app_tn) / app_count if app_count else "",
                 "applicability_false_positive_fraction": app_fp / app_count if app_count else "",
                 "applicability_false_negative_fraction": app_fn / app_count if app_count else "",
                 "app_tp": app_tp, "app_tn": app_tn, "app_fp": app_fp, "app_fn": app_fn,
             })
     return rows
+
+
+def _binary_metrics_from_counts(tp: int, tn: int, fp: int, fn: int) -> dict[str, float]:
+    """Рассчитать бинарные метрики без зависимости от PyTorch."""
+
+    def ratio(numerator: float, denominator: float) -> float:
+        return float(numerator / denominator) if denominator else 0.0
+
+    precision_forward = ratio(tp, tp + fp)
+    recall_forward = ratio(tp, tp + fn)
+    specificity_reverse = ratio(tn, tn + fp)
+    f1_forward = ratio(2.0 * precision_forward * recall_forward, precision_forward + recall_forward)
+    precision_reverse = ratio(tn, tn + fn)
+    recall_reverse = specificity_reverse
+    f1_reverse = ratio(2.0 * precision_reverse * recall_reverse, precision_reverse + recall_reverse)
+    mcc_denominator = float((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn)) ** 0.5
+    return {
+        "direction_precision_forward": precision_forward,
+        "direction_recall_forward": recall_forward,
+        "direction_specificity_reverse": specificity_reverse,
+        "direction_f1_forward": f1_forward,
+        "direction_f1_reverse": f1_reverse,
+        "direction_macro_f1": 0.5 * (f1_forward + f1_reverse),
+        "direction_balanced_accuracy": 0.5 * (recall_forward + specificity_reverse),
+        "direction_mcc": ratio(tp * tn - fp * fn, mcc_denominator),
+    }
 
 
 def _stable_seed(*parts: str) -> int:
