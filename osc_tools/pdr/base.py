@@ -49,6 +49,13 @@ class PDRInputData:
     voltage_basis: str = "phase"
     # Временная метка окна в секундах
     timestamp_sec: float = 0.0
+    # Полная запись и текущий индекс нужны только субцикловым органам, которые
+    # работают по исходным мгновенным отсчётам, а не по однопериодному h1.
+    # Массив передаётся как read-only ссылка и не копируется для каждой точки.
+    raw_signals: Optional[np.ndarray] = None
+    end_sample_index: Optional[int] = None
+    sampling_rate_hz: Optional[float] = None
+    network_frequency_hz: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -111,6 +118,24 @@ class PDRAlgorithm(ABC):
     def reset_state(self) -> None:
         """Сбросить внутреннее состояние алгоритма (таймеры, блокировки) при старте новой осциллограммы."""
         pass
+
+    def prepare_record(
+        self,
+        signals: np.ndarray,
+        end_indices: Sequence[int],
+        *,
+        sampling_rate_hz: float,
+        network_frequency_hz: float,
+        voltage_basis: str,
+    ) -> None:
+        """Необязательная векторизованная подготовка одной осциллограммы.
+
+        Базовые фазорные органы ничего не делают. Субцикловые реализации могут
+        один раз подготовить необходимые величины для всех точек вместо
+        миллионов маленьких NumPy-операций внутри ``compute``.
+        """
+
+        return None
 
     def vectorized_compute(self, inputs: Sequence[PDRInputData]) -> list[PDROutput]:
         """Векторизованный или последовательный расчёт для списка входов."""

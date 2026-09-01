@@ -126,6 +126,13 @@ def label_record_multi(
         zip(algorithms, history_samples_by_algorithm)
     ):
         algorithm.reset_state()
+        algorithm.prepare_record(
+            prepared_signals,
+            end_indices,
+            sampling_rate_hz=timebase.sampling_rate_hz,
+            network_frequency_hz=timebase.network_frequency_hz,
+            voltage_basis=voltage_basis,
+        )
         if "steps_per_period" in algorithm.params:
             algorithm.params["steps_per_period"] = max(1, round(spp / sample_step))
         requires_history = bool(getattr(algorithm, "requires_history", False))
@@ -155,6 +162,10 @@ def label_record_multi(
                 provenance=prepared_provenance,
                 voltage_basis=voltage_basis,
                 timestamp_sec=float(end_idx / timebase.sampling_rate_hz),
+                raw_signals=prepared_signals,
+                end_sample_index=end_idx,
+                sampling_rate_hz=timebase.sampling_rate_hz,
+                network_frequency_hz=timebase.network_frequency_hz,
             ))
             directions[algorithm_index, window_index] = int(output.direction)
             margins[algorithm_index, window_index] = float(output.margin)

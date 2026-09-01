@@ -43,10 +43,14 @@ ALGORITHMS = (
     "pos_seq_pdr_basic",
     "phase_power_pdr_basic",
     "pos_seq_power_pdr_basic",
+    "pdr_sivokobylenko_2pt",
+    "pdr_sivokobylenko_5pt",
+    "pdr_bmrz_q_assisted",
+    "pdr_bavr072_crosspol",
 )
-DEFAULT_ANALYSIS_DIR = PROJECT_ROOT / "data/phase5/pdr_analysis_v5"
-DEFAULT_LABEL_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v5"
-DEFAULT_REVIEW_ROOT = PROJECT_ROOT / "data/phase5/pdr_manual_review_v5"
+DEFAULT_ANALYSIS_DIR = PROJECT_ROOT / "data/phase5/pdr_analysis_v6"
+DEFAULT_LABEL_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v6"
+DEFAULT_REVIEW_ROOT = PROJECT_ROOT / "data/phase5/pdr_manual_review_v6"
 DEFAULT_MANUAL_LABEL_ROOT = PROJECT_ROOT / "data/phase5/pdr_manual_labels_v1"
 DEFAULT_BLIND_AUDIT_ROOT = PROJECT_ROOT / "data/phase5/pdr_manual_blind_audit_v1"
 DEFAULT_STANDARD_NEW_ROOT = (

@@ -17,13 +17,17 @@ from scipy.stats import ks_2samp, mannwhitneyu, wasserstein_distance
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-DEFAULT_ANALYSIS_DIR = PROJECT_ROOT / "data/phase5/pdr_analysis_v5"
+DEFAULT_ANALYSIS_DIR = PROJECT_ROOT / "data/phase5/pdr_analysis_v6"
 ALGORITHMS = (
     "adaptive_pdr_mir",
     "phase_pdr_basic",
     "pos_seq_pdr_basic",
     "phase_power_pdr_basic",
     "pos_seq_power_pdr_basic",
+    "pdr_sivokobylenko_2pt",
+    "pdr_sivokobylenko_5pt",
+    "pdr_bmrz_q_assisted",
+    "pdr_bavr072_crosspol",
 )
 SIGNAL_METRICS = (
     "current_rms",
@@ -47,6 +51,10 @@ MULTIVARIATE_FEATURES = (
     "phase_pdr_basic__forward_fraction", "pos_seq_pdr_basic__forward_fraction",
     "phase_power_pdr_basic__forward_fraction",
     "pos_seq_power_pdr_basic__forward_fraction",
+    "pdr_sivokobylenko_2pt__forward_fraction",
+    "pdr_sivokobylenko_5pt__forward_fraction",
+    "pdr_bmrz_q_assisted__forward_fraction",
+    "pdr_bavr072_crosspol__forward_fraction",
 )
 
 SOURCE_SHIFT_FEATURES = (
@@ -116,10 +124,10 @@ def _write_metric_guide(path: Path) -> None:
 - `max_switches_in_0_5s/1_0s`: локальная плотность переключений, отделяющая
   короткий содержательный эпизод от равномерного шума по всей записи.
 
-## Комбинации пяти органов
+## Комбинации органов
 
-`state_pattern` содержит биты в порядке из `algorithm_order`. Например, `10100`
-означает FORWARD у первого и третьего органов. Сравнение `point_fraction` с
+`state_pattern` содержит биты в порядке из `algorithm_order`. Например, в v6
+`101000000` означает FORWARD у первого и третьего из девяти органов. Сравнение `point_fraction` с
 `mean_record_fraction` показывает влияние длинных осциллограмм и высокого SPP.
 """, encoding="utf-8")
 

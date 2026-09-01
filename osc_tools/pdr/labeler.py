@@ -232,6 +232,13 @@ class PDRDatasetLabeler:
             end_indices + history_end_indices,
             spp,
         )
+        self.teacher.prepare_record(
+            signals,
+            end_indices,
+            sampling_rate_hz=timebase.sampling_rate_hz,
+            network_frequency_hz=timebase.network_frequency_hz,
+            voltage_basis=voltage_basis,
+        )
 
         for w_idx, end_idx in enumerate(end_indices):
             hist_end_idx = end_idx - history_samples
@@ -279,6 +286,10 @@ class PDRDatasetLabeler:
                 provenance=provenance,
                 voltage_basis=voltage_basis,
                 timestamp_sec=float(end_idx / timebase.sampling_rate_hz),
+                raw_signals=signals,
+                end_sample_index=end_idx,
+                sampling_rate_hz=timebase.sampling_rate_hz,
+                network_frequency_hz=timebase.network_frequency_hz,
             )
 
             out = self.teacher.compute(inp)

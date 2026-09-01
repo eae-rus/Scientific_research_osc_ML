@@ -1,7 +1,7 @@
 """Реестр алгоритмов РНМ (PDRRegistry).
 
-Управляет поиском, регистрацией и динамической подгрузкой 4 открытых физических алгоритмов РНМ
-и закрытых (private) адаптивных плагинов.
+Управляет поиском, регистрацией базовых и литературных открытых алгоритмов РНМ,
+а также закрытых (private) адаптивных плагинов.
 """
 
 from __future__ import annotations
@@ -18,6 +18,10 @@ from .public_algorithms import (
     PositiveSequencePowerPDRAlgorithm,
     ManufacturerPowerPDRStub,
     ManufacturerCurrentPDRStub,
+    Sivokobylenko2PtPDRAlgorithm,
+    Sivokobylenko5PtPDRAlgorithm,
+    BMRZReactiveAssistedPDRAlgorithm,
+    BAVR072CrossPolarizedPDRAlgorithm,
 )
 from .placeholder import PlaceholderPDRAlgorithm
 
@@ -32,6 +36,10 @@ ALGORITHM_ALIASES: Dict[str, str] = {
     "pos_seq_pdr": "pos_seq_pdr_basic",
     "phase_power_pdr": "phase_power_pdr_basic",
     "pos_seq_power_pdr": "pos_seq_power_pdr_basic",
+    "sivokobylenko_2pt": "pdr_sivokobylenko_2pt",
+    "sivokobylenko_5pt": "pdr_sivokobylenko_5pt",
+    "bmrz_q_assisted": "pdr_bmrz_q_assisted",
+    "bavr072_crosspol": "pdr_bavr072_crosspol",
 }
 
 
@@ -107,6 +115,10 @@ PDRRegistry.register(PhasePDRAlgorithm)
 PDRRegistry.register(PositiveSequencePDRAlgorithm)
 PDRRegistry.register(PhasePowerPDRAlgorithm)
 PDRRegistry.register(PositiveSequencePowerPDRAlgorithm)
+PDRRegistry.register(Sivokobylenko2PtPDRAlgorithm)
+PDRRegistry.register(Sivokobylenko5PtPDRAlgorithm)
+PDRRegistry.register(BMRZReactiveAssistedPDRAlgorithm)
+PDRRegistry.register(BAVR072CrossPolarizedPDRAlgorithm)
 PDRRegistry.register(ManufacturerPowerPDRStub)
 PDRRegistry.register(ManufacturerCurrentPDRStub)
 PDRRegistry.register(PlaceholderPDRAlgorithm)

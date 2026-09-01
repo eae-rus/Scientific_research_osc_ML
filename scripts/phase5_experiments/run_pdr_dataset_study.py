@@ -43,6 +43,10 @@ DEFAULT_ALGORITHMS = (
     "pos_seq_pdr_basic",
     "phase_power_pdr_basic",
     "pos_seq_power_pdr_basic",
+    "pdr_sivokobylenko_2pt",
+    "pdr_sivokobylenko_5pt",
+    "pdr_bmrz_q_assisted",
+    "pdr_bavr072_crosspol",
 )
 DEFAULT_TEACHER = "adaptive_pdr_mir"
 SPLIT_MANIFEST_PATH = PROJECT_ROOT / "data/phase5/research_strict_splits_v2.json"
@@ -50,9 +54,9 @@ PROGRESS_WRITE_INTERVAL_SECONDS = 5.0
 ATOMIC_REPLACE_ATTEMPTS = 20
 PROGRESS_REPLACE_ATTEMPTS = 6
 DATASET_SCALE_PROFILE = "dataset_peak_phasor"
-PDR_ALGORITHM_CONTRACT_VERSION = 5
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v5"
-DEFAULT_SMOKE_OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v5_smoke"
+PDR_ALGORITHM_CONTRACT_VERSION = 6
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v6"
+DEFAULT_SMOKE_OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v6_smoke"
 
 
 def create_algorithms(algorithm_ids: Sequence[str]) -> list[PDRAlgorithm]:
@@ -751,7 +755,7 @@ def main() -> int:
         "--output-dir",
         type=Path,
         default=None,
-        help="По умолчанию pdr_labels_v5, а с --smoke — pdr_labels_v5_smoke",
+        help="По умолчанию pdr_labels_v6, а с --smoke — pdr_labels_v6_smoke",
     )
     parser.add_argument("--sources", nargs="+", choices=("open_ee", "french_rte"), default=["open_ee", "french_rte"])
     parser.add_argument("--algorithms", nargs="+", default=list(DEFAULT_ALGORITHMS))

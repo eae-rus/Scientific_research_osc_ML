@@ -10,6 +10,10 @@ from osc_tools.pdr.public_algorithms import (
     PhasePowerPDRAlgorithm,
     PositiveSequencePDRAlgorithm,
     PositiveSequencePowerPDRAlgorithm,
+    BMRZReactiveAssistedPDRAlgorithm,
+    BAVR072CrossPolarizedPDRAlgorithm,
+    Sivokobylenko2PtPDRAlgorithm,
+    Sivokobylenko5PtPDRAlgorithm,
 )
 from osc_tools.pdr.pdr_signal_utils import (
     compute_positive_sequence,
@@ -340,3 +344,134 @@ def test_dataset_peak_power_threshold_matches_physical_forward_power(
     kwargs = {"scale_profile": "dataset_peak_phasor", "i_min_pu": 0.001}
     assert PhasePowerPDRAlgorithm(**kwargs).compute(input_data).direction == expected
     assert PositiveSequencePowerPDRAlgorithm(**kwargs).compute(input_data).direction == expected
+
+
+def _raw_balanced_input(current_angle_deg: float = -60.0) -> PDRInputData:
+    """Синусоидальная запись 1 кГц для проверки субцикловых формул."""
+
+    sampling_rate = 1000.0
+    frequency = 50.0
+    time = np.arange(100, dtype=np.float64) / sampling_rate
+    omega = 2.0 * np.pi * frequency
+    phase_angles = (0.0, -2.0 * np.pi / 3.0, 2.0 * np.pi / 3.0)
+    raw = np.zeros((8, time.size), dtype=np.float64)
+    for index, phase in enumerate(phase_angles):
+        raw[index] = 0.2 * np.cos(omega * time + phase + np.deg2rad(current_angle_deg))
+        raw[index + 4] = np.cos(omega * time + phase)
+    a = np.exp(1j * 2.0 * np.pi / 3.0)
+    u = {"A": 1.0 + 0j, "B": a ** 2, "C": a}
+    i_a = 0.2 * np.exp(1j * np.deg2rad(current_angle_deg))
+    i = {"A": i_a, "B": i_a * a ** 2, "C": i_a * a}
+    return PDRInputData(
+        phasors_u=u,
+        phasors_i=i,
+        history_phasors_u=u,
+        history_phasors_i=i,
+        raw_signals=raw,
+        end_sample_index=time.size - 1,
+        sampling_rate_hz=sampling_rate,
+        network_frequency_hz=frequency,
+    )
+
+
+@pytest.mark.parametrize(
+    ("current_angle_deg", "expected"),
+    [(-60.0, PDRDirection.FORWARD), (120.0, PDRDirection.REVERSE)],
+)
+def test_sivokobylenko_two_sample_direction(
+    current_angle_deg: float,
+    expected: PDRDirection,
+) -> None:
+    input_data = _raw_balanced_input(current_angle_deg)
+    algorithm = Sivokobylenko2PtPDRAlgorithm()
+    algorithm.prepare_record(
+        input_data.raw_signals,
+        [input_data.end_sample_index],
+        sampling_rate_hz=input_data.sampling_rate_hz,
+        network_frequency_hz=input_data.network_frequency_hz,
+        voltage_basis=input_data.voltage_basis,
+    )
+    output = algorithm.compute(input_data)
+    assert output.direction == expected
+    assert output.diagnostics["sample_lag"] == 1
+    assert output.diagnostics["actual_interval_ms"] == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize(
+    ("current_angle_deg", "expected"),
+    [(-60.0, PDRDirection.FORWARD), (120.0, PDRDirection.REVERSE)],
+)
+def test_sivokobylenko_five_sample_direction_and_timing(
+    current_angle_deg: float,
+    expected: PDRDirection,
+) -> None:
+    input_data = _raw_balanced_input(current_angle_deg)
+    algorithm = Sivokobylenko5PtPDRAlgorithm()
+    algorithm.prepare_record(
+        input_data.raw_signals,
+        [input_data.end_sample_index],
+        sampling_rate_hz=input_data.sampling_rate_hz,
+        network_frequency_hz=input_data.network_frequency_hz,
+        voltage_basis=input_data.voltage_basis,
+    )
+    output = algorithm.compute(input_data)
+    assert output.direction == expected
+    assert output.diagnostics["actual_window_ms"] == pytest.approx(4.0)
+    assert output.diagnostics["estimate_delay_ms"] == pytest.approx(2.0)
+    assert output.diagnostics["averaging_gain"] == pytest.approx(4.520147, rel=1e-5)
+
+
+def test_subcycle_interval_is_converted_from_time_not_fixed_samples() -> None:
+    input_data = _raw_balanced_input()
+    repeated = np.repeat(input_data.raw_signals, 2, axis=1)
+    output = Sivokobylenko2PtPDRAlgorithm().compute(PDRInputData(
+        phasors_u=input_data.phasors_u,
+        phasors_i=input_data.phasors_i,
+        history_phasors_u=input_data.history_phasors_u,
+        raw_signals=repeated,
+        end_sample_index=repeated.shape[1] - 1,
+        sampling_rate_hz=2000.0,
+        network_frequency_hz=50.0,
+    ))
+    assert output.diagnostics["sample_lag"] == 2
+    assert output.diagnostics["actual_interval_ms"] == pytest.approx(1.0)
+
+
+def test_bmrz_reactive_branch_overrides_power_during_unbalance() -> None:
+    a = np.exp(1j * 2.0 * np.pi / 3.0)
+    u1, u2 = 1.0 + 0j, 0.2 + 0j
+    voltages = {
+        "A": u1 + u2,
+        "B": a ** 2 * u1 + a * u2,
+        "C": a * u1 + a ** 2 * u2,
+    }
+    i1 = 0.2 * np.exp(-1j * np.deg2rad(30.0))
+    currents = {"A": i1, "B": i1 * a ** 2, "C": i1 * a}
+    algorithm = BMRZReactiveAssistedPDRAlgorithm()
+    output = algorithm.compute(PDRInputData(phasors_u=voltages, phasors_i=currents))
+
+    assert output.direction == PDRDirection.REVERSE
+    assert output.diagnostics["reactive_assist"] is True
+    assert output.diagnostics["u2_abs"] == pytest.approx(0.2)
+
+
+def test_bavr072_crosspol_uses_memory_voltage_proxy() -> None:
+    a = np.exp(1j * 2.0 * np.pi / 3.0)
+    u_now = 0.01 + 0j
+    u_memory = 1.0 + 0j
+    i_a = 0.2 * np.exp(-1j * np.deg2rad(45.0))
+    input_data = PDRInputData(
+        phasors_u={"A": u_now, "B": u_now * a ** 2, "C": u_now * a},
+        phasors_i={"A": i_a, "B": i_a * a ** 2, "C": i_a * a},
+        history_phasors_u={
+            "A": u_memory,
+            "B": u_memory * a ** 2,
+            "C": u_memory * a,
+        },
+    )
+
+    output = BAVR072CrossPolarizedPDRAlgorithm().compute(input_data)
+
+    assert output.direction == PDRDirection.FORWARD
+    assert output.diagnostics["memory_weight"] == pytest.approx(0.3)
+    assert output.diagnostics["polarization_source"].endswith("memory_U1_proxy")

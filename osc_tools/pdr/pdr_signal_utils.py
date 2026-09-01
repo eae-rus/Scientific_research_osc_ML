@@ -186,13 +186,44 @@ def compute_positive_sequence(
             ua, ub, uc = uv.u_phase["A"], uv.u_phase["B"], uv.u_phase["C"]
             return (ua + ub * _A_OPERATOR + uc * _A2_OPERATOR) / 3.0
         return None
+    currents = derive_unified_currents(phasors)
+    ia, ib, ic = currents.get("A"), currents.get("B"), currents.get("C")
+    if ia is not None and ib is not None and ic is not None:
+        if np.isfinite([ia, ib, ic]).all():
+            return (ia + ib * _A_OPERATOR + ic * _A2_OPERATOR) / 3.0
+    return None
+
+
+def compute_negative_sequence(
+    phasors: Dict[str, complex],
+    is_voltage: bool = False,
+) -> Optional[complex]:
+    """Вычислить фазор обратной последовательности X2.
+
+    Восстановление отсутствующей третьей фазы выполняется тем же способом, что
+    и для прямой последовательности. Нулевая последовательность при этом не
+    восстанавливается и данным органам не требуется.
+    """
+
+    if not phasors:
+        return None
+    if is_voltage:
+        voltages = derive_unified_voltages(phasors)
+        if voltages.mode == "invalid":
+            return None
+        xa, xb, xc = (
+            voltages.u_phase["A"],
+            voltages.u_phase["B"],
+            voltages.u_phase["C"],
+        )
     else:
         currents = derive_unified_currents(phasors)
-        ia, ib, ic = currents.get("A"), currents.get("B"), currents.get("C")
-        if ia is not None and ib is not None and ic is not None:
-            if np.isfinite([ia, ib, ic]).all():
-                return (ia + ib * _A_OPERATOR + ic * _A2_OPERATOR) / 3.0
+        if set(currents) != {"A", "B", "C"}:
+            return None
+        xa, xb, xc = currents["A"], currents["B"], currents["C"]
+    if not np.isfinite([xa, xb, xc]).all():
         return None
+    return (xa + xb * _A2_OPERATOR + xc * _A_OPERATOR) / 3.0
 
 
 def get_memory_voltage(

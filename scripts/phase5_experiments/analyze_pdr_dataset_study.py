@@ -34,8 +34,8 @@ from osc_tools.pdr.signal_analysis import check_pdr_signal_sufficiency
 from scripts.phase5_experiments.progress import ProgressReporter
 
 
-DEFAULT_LABEL_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v5"
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_analysis_v5"
+DEFAULT_LABEL_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v6"
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "data/phase5/pdr_analysis_v6"
 DEFAULT_SOURCES = ("open_ee", "french_rte")
 DEFAULT_LOW_CURRENT_RMS_THRESHOLD = 0.05 / 20.0
 TEACHER_ID = "adaptive_pdr_mir"
