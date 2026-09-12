@@ -1364,19 +1364,19 @@ def run_manual() -> None:
     """
     # Основной контракт опыта.
     STAGE = "expert"                  # weak, затем expert
-    TEMPORAL_MODE = "sequence_1_8"   #  snapshot_2, snapshot_5 и sequence_1_8
+    TEMPORAL_MODE = "snapshot_2"   #  snapshot_2, snapshot_5 и sequence_1_8
     LABEL_STRIDE_SAMPLES = 5        # основной; абляция 2 и 1
     MODEL_PRESET = "small"          # small, medium, heavy
     SMOKE = False                   # True: короткая проверка перед full
-    RESUME = False                  # True: продолжить latest_checkpoint.pt
-    SSL_CHECKPOINT_KIND = "best"    # best или latest для инициализации weak
-    WEAK_CHECKPOINT_KIND = "best"   # best рекомендуется; latest остаётся доступен
+    RESUME = False                   # True: продолжить latest_checkpoint.pt
+    SSL_CHECKPOINT_KIND = "latest"    # best или latest для инициализации weak
+    WEAK_CHECKPOINT_KIND = "latest"   # best рекомендуется; latest остаётся доступен
     WEAK_CHECKPOINT_PATH = None      # None = путь автоматически совпадает с TEMPORAL_MODE
     EXPERT_LABELS_ROOT = "data/phase5/pdr_expert_labels_v1"
-    RESTART_WEAK_FROM = None         # None, best или latest: новый weak-цикл с готовых весов
+    RESTART_WEAK_FROM = "latest"        # None, best или latest: новый weak-цикл с готовых весов
 
     # Объём и длительность обучения.
-    EPOCHS = 50
+    EPOCHS = 100
     SAMPLES_PER_EPOCH = 20_000      # случайных целевых точек с возвращением
     BATCH_SIZE = 32                 # число примеров в одном шаге оптимизатора
     MAX_SAMPLES_PER_RECORD = 64     # ограничение train-индекса на осциллограмму

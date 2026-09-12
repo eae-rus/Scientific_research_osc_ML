@@ -254,6 +254,7 @@ def evaluate_pdr_metrics(
     dataloader: DataLoader,
     device: str = "cpu",
     progress_callback: Optional[Callable[[int], None]] = None,
+    prediction_callback: Optional[Callable[[dict, dict], None]] = None,
 ) -> Dict[str, float]:
     """Оценка качества модели на тестовом/валидационном датасете РНМ."""
     if not HAS_TORCH:
@@ -283,6 +284,8 @@ def evaluate_pdr_metrics(
 
             latent = extract_backbone_features(model, batch, device)
             out = head(latent)
+            if prediction_callback is not None:
+                prediction_callback(batch, out)
 
             preds = torch.argmax(out["logits"], dim=-1)
             all_preds.extend(preds[target_applicable].cpu().tolist())

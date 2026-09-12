@@ -25,10 +25,10 @@ from osc_tools.pdr.expert_labels import (
 )
 
 
-DEFAULT_LABELS_ROOT = PROJECT_ROOT / "data/phase5/pdr_manual_labels_v1"
+DEFAULT_LABELS_ROOT = PROJECT_ROOT / "data/phase5/pdr_manual_labels"
 DEFAULT_REFERENCE_ROOT = PROJECT_ROOT / "data/phase5/pdr_manual_review_v5"
 DEFAULT_OUTPUT_ROOT = PROJECT_ROOT / "data/phase5/pdr_expert_labels_v1"
-DEFAULT_BLIND_AUDIT_ROOT = PROJECT_ROOT / "data/phase5/pdr_manual_blind_audit_v1"
+DEFAULT_BLIND_AUDIT_ROOT = PROJECT_ROOT / "data/phase5/pdr_manual_blind_audit"
 DEFAULT_BLIND_AUDIT_LABELS_ROOT = DEFAULT_BLIND_AUDIT_ROOT / "labels"
 DEFAULT_BLIND_AUDIT_REFERENCE_ROOT = DEFAULT_BLIND_AUDIT_ROOT / "reference"
 DEFAULT_BLIND_AUDIT_OUTPUT_ROOT = DEFAULT_BLIND_AUDIT_ROOT / "analysis"
@@ -98,16 +98,26 @@ def run(
 
 def _blind_audit_origins(reference_root: Path) -> dict[tuple[str, int], str]:
     result: dict[tuple[str, int], str] = {}
-    path = Path(reference_root) / "_service" / "blind_audit_assignment.csv"
-    with path.open("r", encoding="utf-8-sig", newline="") as stream:
-        for row in csv.DictReader(stream):
-            origin = str(row.get("origin", ""))
-            if origin not in {"previously_labeled", "new_standard"}:
-                raise ValueError(f"Нет корректного blind audit origin: {row}")
-            key = (str(row["source"]), int(row["record_id"]))
-            if key in result:
-                raise ValueError(f"Повтор source/record_id в blind audit: {key}")
-            result[key] = origin
+    service_root = Path(reference_root) / "_service"
+    paths = sorted(service_root.glob("blind_audit_assignment*.csv"))
+    if not paths:
+        raise FileNotFoundError(
+            f"Не найдены blind_audit_assignment*.csv в {service_root}"
+        )
+    for path in paths:
+        with path.open("r", encoding="utf-8-sig", newline="") as stream:
+            for row in csv.DictReader(stream):
+                origin = str(row.get("origin", ""))
+                if origin not in {"previously_labeled", "new_standard"}:
+                    raise ValueError(
+                        f"Нет корректного blind audit origin в {path.name}: {row}"
+                    )
+                key = (str(row["source"]), int(row["record_id"]))
+                if key in result:
+                    raise ValueError(
+                        f"Повтор source/record_id в объединённом blind audit: {key}"
+                    )
+                result[key] = origin
     return result
 
 

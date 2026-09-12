@@ -11,6 +11,7 @@ import argparse
 from dataclasses import fields
 from datetime import datetime
 import json
+import hashlib
 from pathlib import Path
 import sys
 
@@ -33,6 +34,31 @@ from scripts.phase5_experiments.run_phase5_pdr_training import (
 )
 from osc_tools.pdr.base import PDRDirection
 from osc_tools.pdr.study import PDRStudyLabelStore
+
+
+def _sha256(path: Path) -> str:
+    """Отпечаток содержимого, независимый от копирования файла между ПК."""
+    with path.open("rb") as stream:
+        return hashlib.file_digest(stream, "sha256").hexdigest()
+
+
+def _grid_signature(groups) -> dict[str, object]:
+    """Связать результат с фактическими точками и экспертными целями."""
+    result = {}
+    for name, dataset in groups:
+        digest = hashlib.sha256()
+        selected = {}
+        for record_id, window_index in dataset.samples:
+            selected.setdefault(int(record_id), []).append(int(window_index))
+        for record_id, indices in sorted(selected.items()):
+            labels = dataset.label_store.get_record(record_id)
+            digest.update(np.asarray([record_id, len(indices)], dtype="<i8").tobytes())
+            for key in ("samples", "directions"):
+                digest.update(np.asarray(labels[key][indices], dtype="<i8").tobytes())
+        result[name.removeprefix("expert_")] = {
+            "sha256": digest.hexdigest(), "records": len(selected), "points": len(dataset),
+        }
+    return result
 
 
 def _config_from_json(path: Path) -> PDRTrainingConfig:
@@ -79,6 +105,7 @@ def evaluate_checkpoint(
             raise RuntimeError(f"Нет экспертных данных для split={split}")
 
         by_source: dict[str, object] = {}
+        grid = _grid_signature(groups)
         for name, dataset in groups:
             loader = DataLoader(
                 dataset,
@@ -92,20 +119,43 @@ def evaluate_checkpoint(
             progress = ProgressReporter(
                 f"Экспертная оценка {split}/{source_name}", len(loader), unit="batch"
             )
+            collected = {key: [] for key in ("record_id", "window_idx", "target", "prediction", "applicable")}
+
+            def collect(batch, outputs):
+                for key in ("record_id", "window_idx"):
+                    collected[key].extend(torch.as_tensor(batch[key]).cpu().tolist())
+                collected["target"].extend(batch["pdr_direction"].cpu().tolist())
+                collected["prediction"].extend(outputs["logits"].argmax(-1).cpu().tolist())
+                collected["applicable"].extend((outputs["applicability_logit"] >= 0).cpu().tolist())
+
             by_source[source_name] = evaluate_pdr_metrics(
-                model, head, loader, str(device), progress_callback=progress.update
+                model, head, loader, str(device), progress_callback=progress.update,
+                prediction_callback=collect,
+            )
+            arrays = {key: np.asarray(value) for key, value in collected.items()}
+            predicted_state = np.where(arrays["applicable"], arrays["prediction"], -999)
+            by_source[source_name]["joint_state_accuracy"] = float(np.mean(predicted_state == arrays["target"]))
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            np.savez_compressed(
+                output_path.with_name(f"{output_path.stem}__{split}__{source_name}.npz"), **arrays,
             )
             progress.finish()
         overall = _combine_source_metrics(by_source)
+        overall["joint_state_accuracy"] = sum(
+            item["joint_state_accuracy"] * item["n_applicability_samples"] for item in by_source.values()
+        ) / overall["n_applicability_samples"]
         split_results[split] = {
             "overall": overall,
             "by_source": by_source,
             "indexed_targets": {name: len(dataset) for name, dataset in groups},
+            "grid_signature": grid,
         }
 
     result: dict[str, object] = {
         "evaluated_at": datetime.now().isoformat(),
         "checkpoint": str(checkpoint_path),
+        "checkpoint_sha256": _sha256(checkpoint_path),
+        "training_config_sha256": _sha256(config_path),
         "training_config": str(config_path),
         "initialization": initialization,
         "max_samples_per_record": max_samples_per_record,
@@ -250,6 +300,7 @@ def evaluate_analytical_algorithms_on_neural_grid(
             app_count = app_tp + app_tn + app_fp + app_fn
             app_metrics = _direction_metrics_from_counts(app_tp, app_tn, app_fp, app_fn)
             metrics.update({
+                "joint_state_accuracy": (tp + tn + app_tn) / app_count if app_count else 0.0,
                 "applicability_accuracy": (app_tp + app_tn) / app_count if app_count else 0.0,
                 "applicability_macro_f1_score": app_metrics["macro_f1_score"],
                 "applicability_balanced_accuracy": app_metrics["balanced_accuracy"],
@@ -274,6 +325,8 @@ def evaluate_analytical_algorithms_on_neural_grid(
             *map(int, aggregate_app_counts[algorithm_id])
         )
         metrics.update({
+            "joint_state_accuracy": (int(counts[0] + counts[1]) + int(aggregate_app_counts[algorithm_id][1]))
+                / app_metrics["n_samples"] if app_metrics["n_samples"] else 0.0,
             "applicability_accuracy": app_metrics["accuracy"],
             "applicability_macro_f1_score": app_metrics["macro_f1_score"],
             "applicability_balanced_accuracy": app_metrics["balanced_accuracy"],
@@ -292,6 +345,7 @@ def evaluate_analytical_algorithms_on_neural_grid(
         "algorithm_ids": list(algorithm_ids),
         "overall": overall,
         "by_source": by_source,
+        "grid_signature": _grid_signature(groups),
         "interpretation": (
             "Органы и нейросети сравниваются при одинаковых split, stride, лимите "
             "точек на файл и каузальной маске. Direction-метрики аналитического "
@@ -305,6 +359,135 @@ def evaluate_analytical_algorithms_on_neural_grid(
     temporary.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     temporary.replace(output_path)
     print(f"[Готово] {output_path}", flush=True)
+    return result
+
+
+def _split_overlap_audit(rows: list[dict]) -> dict:
+    """Проверить дубли входа между обучением и обеими контрольными частями."""
+    training = {}
+    for row in rows:
+        if row["split"] == "train" and row.get("input_sha256"):
+            training.setdefault((row["source"], row["input_sha256"]), []).append(int(row["record_id"]))
+    overlap = []
+    for row in rows:
+        key = (row["source"], row.get("input_sha256"))
+        if row["split"] in ("validation", "holdout") and key in training:
+            overlap.append({"source": row["source"], "record_id": int(row["record_id"]),
+                            "split": row["split"], "input_sha256": row["input_sha256"],
+                            "training_record_ids": training[key]})
+    return {"training_overlap": overlap, "passed": not overlap}
+
+
+def _cached_prediction_metrics(arrays: dict) -> dict:
+    """Описательная оценка сохранённых ответов после исключения дублей."""
+    y, p = arrays["target"], arrays["prediction"]
+    valid, predicted_valid = y != -999, arrays["applicable"].astype(bool)
+    def counts(target, prediction):
+        return [int(np.sum(target & prediction)), int(np.sum(~target & ~prediction)),
+                int(np.sum(~target & prediction)), int(np.sum(target & ~prediction))]
+    direction = _direction_metrics_from_counts(*counts(y[valid] == 1, p[valid] == 1))
+    applicability = _direction_metrics_from_counts(*counts(valid, predicted_valid))
+    return {"direction": direction, "applicability": applicability,
+            "joint_state_accuracy": float(np.mean(np.where(predicted_valid, p, -999) == y)) if y.size else None,
+            "points": int(y.size), "records": int(np.unique(arrays["record_id"]).size)}
+
+
+def summarize_current_evaluations(output_root: Path, bootstrap_repetitions: int = 2000) -> dict:
+    """Парные интервалы по группам исходных файлов, не по зависимым отсчётам.
+
+    Интервалы описывают выборку validation при фиксированных весах; они не
+    учитывают оптимизм выбора лучшей эпохи и разброс между обучениями.
+    """
+    import csv
+    with (PROJECT_ROOT / "data/phase5/pdr_expert_labels_v1/records.csv").open(encoding="utf-8-sig") as stream:
+        records = list(csv.DictReader(stream))
+        groups = {(r["source"], int(r["record_id"])): r["input_sha256"] for r in records}
+    result = {"models": {}, "bootstrap_repetitions": bootstrap_repetitions, "seed": 20260910}
+    result["split_integrity"] = _split_overlap_audit(records)
+    excluded = {(r["source"], r["record_id"]) for r in result["split_integrity"]["training_overlap"]}
+    result["split_integrity"]["interpretation"] = (
+        "Дубли проверены по хешам входов экспертного архива. Исключение их после обучения "
+        "не отменяет выбора эпохи на исходной validation и не делает оценку независимым тестом."
+    )
+    if excluded:
+        print(f"[ВНИМАНИЕ] Найдены контрольные копии train: {sorted(excluded)}", flush=True)
+    expert_bootstraps = {}
+    common_grid = None
+    for mode in ("snapshot_2", "snapshot_5", "sequence_1_8"):
+        comparison = {}
+        grouped = {}
+        reference_grid = None
+        for stage in ("weak_initial", "expert_best"):
+            path = output_root / f"{mode}_{stage}.json"
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            validation = payload["splits"]["validation"]
+            if reference_grid is not None and reference_grid != validation["grid_signature"]:
+                raise ValueError("Нельзя сравнивать разные экспертные сетки")
+            reference_grid = validation["grid_signature"]
+            counts, correct, total = {}, 0, 0
+            source_joint = {}
+            clean_sources, clean_arrays = {}, []
+            for source in ("open_ee", "french_rte"):
+                with np.load(output_root / f"{mode}_{stage}__validation__{source}.npz") as archive:
+                    arrays = {key: archive[key] for key in archive.files}
+                keep = ~np.isin(arrays["record_id"], [rid for src, rid in excluded if src == source])
+                cleaned = {key: value[keep] for key, value in arrays.items()}
+                clean_sources[source] = _cached_prediction_metrics(cleaned)
+                # ID разных источников могут совпадать: для общего счётчика — уникальное смещение.
+                cleaned["record_id"] = cleaned["record_id"] + (0 if source == "open_ee" else 1_000_000)
+                clean_arrays.append(cleaned)
+                target, prediction = arrays["target"], arrays["prediction"]
+                state = np.where(arrays["applicable"], prediction, -999)
+                source_joint[source] = float(np.mean(state == target))
+                correct += int(np.count_nonzero(state == target))
+                total += len(target)
+                for record_id in np.unique(arrays["record_id"]):
+                    mask = (arrays["record_id"] == record_id) & (target != -999)
+                    y, p = target[mask], prediction[mask]
+                    key = (source, groups[(source, int(record_id))])
+                    counts.setdefault(key, np.zeros(4, dtype=np.int64))
+                    counts[key] += np.array([np.sum((y == 1) & (p == 1)), np.sum((y == 0) & (p == 0)),
+                                             np.sum((y == 0) & (p == 1)), np.sum((y == 1) & (p == 0))])
+            grouped[stage] = counts
+            comparison[stage] = {
+                "metrics": validation["overall"], "by_source": validation["by_source"],
+                "joint_state_accuracy": correct / total, "joint_state_accuracy_by_source": source_joint,
+                "checkpoint_sha256": payload["checkpoint_sha256"],
+                "excluding_training_duplicates": {
+                    "overall": _cached_prediction_metrics({key: np.concatenate([a[key] for a in clean_arrays])
+                                                           for key in clean_arrays[0]}),
+                    "by_source": clean_sources,
+                },
+            }
+        keys = sorted(grouped["expert_best"])
+        if set(keys) != set(grouped["weak_initial"]):
+            raise ValueError("Несовпадающие группы файлов")
+        matrices = {stage: np.asarray([values[key] for key in keys]) for stage, values in grouped.items()}
+        strata = [[i for i, key in enumerate(keys) if key[0] == source] for source in ("open_ee", "french_rte")]
+        rng = np.random.default_rng(20260910)
+        boot = []
+        for _ in range(bootstrap_repetitions):
+            indices = np.concatenate([rng.choice(indices, len(indices), replace=True) for indices in strata if indices])
+            scores = [_direction_metrics_from_counts(*map(int, matrices[stage][indices].sum(axis=0)))["macro_f1_score"]
+                      for stage in ("weak_initial", "expert_best")]
+            boot.append([scores[0], scores[1], scores[1] - scores[0]])
+        comparison["bootstrap_95_percentile"] = dict(zip(
+            ("weak_initial", "expert_best", "paired_improvement"), np.quantile(boot, [.025, .975], axis=0).T.tolist()))
+        comparison["independent_file_groups"] = len(keys)
+        comparison["grid_signature"] = reference_grid
+        if common_grid is not None and common_grid != reference_grid:
+            raise ValueError("Архитектуры оценены на разных сетках")
+        common_grid = reference_grid
+        expert_bootstraps[mode] = np.asarray(boot)[:, 1]
+        result["models"][mode] = comparison
+    result["architecture_differences_95_percentile"] = {
+        f"snapshot_5_minus_{mode}": np.quantile(
+            expert_bootstraps["snapshot_5"] - expert_bootstraps[mode], [.025, .975]
+        ).tolist() for mode in ("snapshot_2", "sequence_1_8")
+    }
+    path = output_root / "paired_comparison_summary.json"
+    path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"[Готово] Парное сравнение: {path}", flush=True)
     return result
 
 
@@ -338,7 +521,7 @@ def run_manual() -> None:
     # Holdout добавить только после фиксации архитектуры/порогов:
     # SPLITS = ("validation", "holdout")
     SPLITS = ("validation",)
-    RUN_NEURAL_EVALUATION = False  # JSON шести моделей уже построены.
+    RUN_NEURAL_EVALUATION = True  # Повторить после завершения нового expert-обучения.
     RUN_ANALYTICAL_V6 = True       # Запускать только после complete обоих pdr_labels_v6.
     RUNS = (
         (
@@ -358,10 +541,8 @@ def run_manual() -> None:
         ),
         (
             "snapshot_5_expert_best",
-            "experiments/phase5/pdr_expert_snapshot_5_stride5/"
-            "archive_20260830_131809/best_model.pt",
-            "experiments/phase5/pdr_expert_snapshot_5_stride5/"
-            "archive_20260830_131809/config.json",
+            "experiments/phase5/pdr_expert_snapshot_5_stride5/best_model.pt",
+            "experiments/phase5/pdr_expert_snapshot_5_stride5/config.json",
         ),
         (
             "sequence_1_8_weak_best",
@@ -374,7 +555,7 @@ def run_manual() -> None:
             "experiments/phase5/pdr_expert_sequence_1_8_stride5/config.json",
         ),
     )
-    output_root = PROJECT_ROOT / "experiments/phase5/pdr_expert_evaluation_v2"
+    output_root = PROJECT_ROOT / "experiments/phase5/pdr_expert_evaluation_v3"
     if RUN_NEURAL_EVALUATION:
         for name, checkpoint, config in RUNS:
             evaluate_checkpoint(
@@ -385,6 +566,18 @@ def run_manual() -> None:
                 max_samples_per_record=MAX_SAMPLES_PER_RECORD,
                 num_workers=NUM_WORKERS,
             )
+        # Expert запускался от latest, а не от weak-best: парный прирост
+        # следует считать именно относительно фактической инициализации.
+        for mode in ("snapshot_2", "snapshot_5", "sequence_1_8"):
+            config_path = PROJECT_ROOT / f"experiments/phase5/pdr_expert_{mode}_stride5/config.json"
+            initialization = Path(json.loads(config_path.read_text(encoding="utf-8"))["initialization"])
+            if not initialization.exists():
+                initialization = PROJECT_ROOT / f"experiments/phase5/pdr_weak_{mode}_stride5" / initialization.name
+            evaluate_checkpoint(
+                initialization, config_path, output_root / f"{mode}_weak_initial.json",
+                splits=SPLITS, max_samples_per_record=MAX_SAMPLES_PER_RECORD,
+                num_workers=NUM_WORKERS,
+            )
     if RUN_ANALYTICAL_V6:
         evaluate_analytical_algorithms_on_neural_grid(
             PROJECT_ROOT / RUNS[3][2],
@@ -393,6 +586,8 @@ def run_manual() -> None:
             split="validation",
             max_samples_per_record=MAX_SAMPLES_PER_RECORD,
         )
+    if RUN_NEURAL_EVALUATION:
+        summarize_current_evaluations(output_root)
 
 
 if __name__ == "__main__":

@@ -51,8 +51,8 @@ ALGORITHMS = (
 DEFAULT_ANALYSIS_DIR = PROJECT_ROOT / "data/phase5/pdr_analysis_v6"
 DEFAULT_LABEL_DIR = PROJECT_ROOT / "data/phase5/pdr_labels_v6"
 DEFAULT_REVIEW_ROOT = PROJECT_ROOT / "data/phase5/pdr_manual_review_v6"
-DEFAULT_MANUAL_LABEL_ROOT = PROJECT_ROOT / "data/phase5/pdr_manual_labels_v1"
-DEFAULT_BLIND_AUDIT_ROOT = PROJECT_ROOT / "data/phase5/pdr_manual_blind_audit_v1"
+DEFAULT_MANUAL_LABEL_ROOT = PROJECT_ROOT / "data/phase5/pdr_manual_labels"
+DEFAULT_BLIND_AUDIT_ROOT = PROJECT_ROOT / "data/phase5/pdr_manual_blind_audit"
 DEFAULT_STANDARD_NEW_ROOT = (
     DEFAULT_REVIEW_ROOT / "batch_20260827_standard_diverse_takt3"
 )
@@ -356,8 +356,8 @@ def discover_previously_exported(review_root: Path) -> set[tuple[str, int]]:
             result.add((match.group(1).lower(), int(match.group(2))))
     # Манифесты сохраняют историю отбора даже после переноса самих комплектов
     # CFG/DAT/JSON в рабочее дерево ручной разметки.
-    for name in ("batch_manifest.csv", "blind_audit_assignment.csv"):
-        for path in root.rglob(name):
+    for pattern in ("batch_manifest.csv", "blind_audit_assignment*.csv"):
+        for path in root.rglob(pattern):
             try:
                 with path.open("r", encoding="utf-8-sig", newline="") as stream:
                     for row in csv.DictReader(stream):
@@ -710,8 +710,10 @@ def run_export(
         "rank": case.rank, "selection_score": case.selection_score,
         "all_reasons": "|".join(case.reasons), "file_name": case.row.get("file_name", ""),
     } for case in selected])
-    if profile == "audit":
-        _write_csv(review_root / "_service" / "blind_audit_assignment.csv", [{
+    if profile == "audit" and export_comtrade:
+        batch_name = batch_name or datetime.now().strftime("batch_%Y%m%d_%H%M%S")
+        assignment_suffix = re.sub(r"[^0-9A-Za-z_-]+", "_", batch_name)
+        _write_csv(review_root / "_service" / f"blind_audit_assignment_{assignment_suffix}.csv", [{
             "source": case.source,
             "record_id": case.record_id,
             "origin": case.row["blind_audit_origin"],

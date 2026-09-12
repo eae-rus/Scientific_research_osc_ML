@@ -22,6 +22,23 @@ class _ContractBackbone(nn.Module):
         return {"features": torch.nan_to_num(x.transpose(1, 2), nan=0.0)}
 
 
+def test_evaluation_prediction_callback_preserves_metrics() -> None:
+    from osc_tools.pdr.pdr_trainer import evaluate_pdr_metrics
+    batch = {
+        "features": torch.ones(3, 2, 12), "provenance": torch.ones(3, 2, 12, dtype=torch.long),
+        "target_class": torch.tensor([0, 1, 0]), "target_applicable": torch.tensor([True, True, False]),
+        "pdr_margin": torch.full((3,), float("nan")), "record_id": torch.tensor([1, 1, 2]),
+    }
+    model, head = _ContractBackbone(), PDRTaskHead(d_model=12)
+    expected = evaluate_pdr_metrics(model, head, [batch])
+    captured = []
+    actual = evaluate_pdr_metrics(model, head, [batch], prediction_callback=lambda b, o: captured.append(o["logits"].shape))
+    assert actual == expected
+    assert captured == [torch.Size([3, 2])]
+    assert actual["n_samples"] == 2
+    assert actual["n_applicability_samples"] == 3
+
+
 def test_extract_backbone_features_transposes_and_passes_provenance() -> None:
     batch = {
         "features": torch.randn(2, 5, 12),
@@ -106,3 +123,11 @@ def test_actual_phase5_backbone_pdr_forward_backward() -> None:
 
     assert latent.shape == (3, 5, 16)
     assert torch.isfinite(loss)
+def test_evaluation_detects_cross_split_input_duplicates():
+    from scripts.phase5_experiments.evaluate_pdr_expert_holdout import _split_overlap_audit
+    rows = [dict(source="open_ee", record_id=i, split=s, input_sha256=h)
+            for i, s, h in [(1, "train", "a"), (2, "validation", "a"), (3, "holdout", "b")]]
+    result = _split_overlap_audit(rows)
+    assert not result["passed"]
+    assert result["training_overlap"][0]["record_id"] == 2
+    assert result["training_overlap"][0]["training_record_ids"] == [1]

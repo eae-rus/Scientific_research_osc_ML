@@ -10,7 +10,7 @@
 Для ручной работы используется отдельный каталог:
 
 ```text
-data/phase5/pdr_manual_labels_v1/
+data/phase5/pdr_manual_labels/
 ├── in_progress/
 ├── completed/
 ├── ambiguous/
@@ -185,7 +185,7 @@ python scripts/phase5_experiments/export_pdr_manual_review_comtrade.py `
 `labels`:
 
 ```text
-data/phase5/pdr_manual_blind_audit_v1/
+data/phase5/pdr_manual_blind_audit/
 ├── reference/batch_*/blind_control/<source>/
 └── labels/
     ├── in_progress/blind_control/<source>/
@@ -195,7 +195,7 @@ data/phase5/pdr_manual_blind_audit_v1/
 ```
 
 До окончания всей сотни не открывать
-`reference/_service/blind_audit_assignment.csv`: он раскрывает, какие случаи
+`reference/_service/blind_audit_assignment_<дата-время>.csv`: он раскрывает, какие случаи
 уже встречались. Все экспертные каналы в контрольном экспорте
 изначально нулевые. Дополнительные диагностические сигналы по-прежнему
 разрешены и игнорируются импортёром.

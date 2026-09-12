@@ -1566,7 +1566,7 @@ def _write_report(
         "основной единицей bootstrap/доверительных интервалов должна оставаться осциллограмма.",
         "- `teacher_temporal_statistics.csv` описывает серии, энтропию, локальную плотность "
         "переключений и chatter адаптивного teacher на уровне осциллограмм.",
-        "- `algorithm_state_patterns.csv` хранит комбинации пяти РНМ одновременно как "
+        "- `algorithm_state_patterns.csv` хранит комбинации всех РНМ одновременно как "
         "point-weighted и record-weighted доли.",
     ])
     (output_dir / "PRIMARY_ANALYSIS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")

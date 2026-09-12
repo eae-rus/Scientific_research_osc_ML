@@ -209,7 +209,7 @@ def _build_review_figures(
             axis.set_yticks(y, subset["state_pattern"])
             axis.set_xlabel("Доля")
             axis.set_ylabel("Состояния органов в порядке algorithm_order")
-            axis.set_title(f"Частые комбинации пяти РНМ — {source}")
+            axis.set_title(f"Частые комбинации {len(ALGORITHMS)} РНМ — {source}")
             axis.legend()
             axis.grid(axis="x", alpha=0.25)
             figure.tight_layout()
@@ -568,7 +568,7 @@ def _write_data_dictionary(path: Path, frame: pd.DataFrame) -> None:
         "disagreement_fraction": ("Доля общих валидных точек, где не все РНМ совпали", "fraction"),
         "pdr_structurally_eligible": ("Есть минимум 2I и 2U для восстановления", "boolean"),
         "current_bin_physical_pu": ("Диапазон waveform RMS тока в физических номиналах", "I/Iном"),
-        "total_transitions": ("Сумма переходов всех пяти РНМ", "count"),
+        "total_transitions": ("Сумма переходов всех рассчитываемых РНМ", "count"),
         "interest_score": ("Эвристический рейтинг динамики/расхождения для навигации", "dimensionless"),
     }
     suffixes = {
