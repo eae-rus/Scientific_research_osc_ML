@@ -940,7 +940,8 @@ def plot_fig10():
 # -------------------------------------------------------------
 # РИСУНОК 11: Анализ поведения органов на сложных осциллограммах
 # -------------------------------------------------------------
-def _record_spectral_cache(raw, provenance, basis, timebase, mode, version, ends):
+def _record_spectral_cache(raw, provenance, basis, timebase, mode, version, ends,
+                           startup_policy="full_context", shared_cache=None):
     """Точные признаки обучения с переиспользованием одинаковых окон Фурье.
 
     Только причинные окна, без изменения временной привязки/нормировки.
@@ -956,9 +957,28 @@ def _record_spectral_cache(raw, provenance, basis, timebase, mode, version, ends
         stride_fraction=timebase.stride_fraction,
     ))
     positions = np.asarray(ends)[:, None] - total + 1 + local_positions[None, :]
+    if startup_policy not in ("full_context", "early"):
+        raise ValueError("Неизвестная политика начального контекста")
+    if np.any(np.asarray(ends) < (timebase.spp - 1 if startup_policy == "early" else total - 1)):
+        raise ValueError("Цель раньше доступного окна Фурье/контекста")
+    if startup_policy == "early":
+        positions = np.maximum(positions, timebase.spp - 1)
+    if shared_cache is not None:
+        key = (version, startup_policy)
+        if key not in shared_cache:
+            all_positions = np.arange(timebase.spp - 1, raw.shape[1])
+            f, mask, meta = builder.build(raw.T, timebase.spp, all_positions,
+                voltage_basis=basis, channel_provenance=provenance,
+                zero_unavailable_low_history=startup_policy == "early")
+            p = np.broadcast_to(np.asarray(meta["feature_provenance"], dtype=np.uint8), f.shape).copy()
+            p[mask] = 0
+            shared_cache[key] = (f, p)
+        f, p = shared_cache[key]
+        return f, p, positions - (timebase.spp - 1)
     unique, inverse = np.unique(positions, return_inverse=True)
     features, masks, metadata = builder.build(
         raw.T, timebase.spp, unique, voltage_basis=basis, channel_provenance=provenance,
+        zero_unavailable_low_history=startup_policy == "early",
     )
     feature_provenance = np.broadcast_to(
         np.asarray(metadata["feature_provenance"], dtype=np.int64), features.shape,
@@ -972,9 +992,32 @@ def _expert_state_track(valid, forward):
     return np.where(np.asarray(valid, dtype=bool), np.asarray(forward, dtype=np.int16), -999)
 
 
+# Ручные настройки галереи: --gallery читает эти значения по умолчанию.
+GALLERY_CHECKPOINT_KIND = "latest"  # "best" — лучшие веса, "latest" — последние
+GALLERY_STARTUP_POLICY = "early"    # "full_context" — прежнее ожидание 20T
+GALLERY_INFERENCE_STRIDE = 1
+GALLERY_BATCH_SIZE = 128
+
+
+def _gallery_checkpoint_paths(checkpoint=None, checkpoint_kind="latest"):
+    """Явный выбор весов без незаметной подмены latest на best."""
+    if checkpoint_kind not in ("latest", "best"):
+        raise ValueError("checkpoint_kind должен быть latest или best")
+    if checkpoint is not None:
+        paths = [Path(checkpoint)] if isinstance(checkpoint, (str, Path)) else list(map(Path, checkpoint))
+    else:
+        filename = "latest_checkpoint.pt" if checkpoint_kind == "latest" else "best_model.pt"
+        paths = [PROJECT_ROOT / f"experiments/phase5/pdr_expert_{mode}_stride5" / filename
+                 for mode in ("snapshot_2", "snapshot_5", "sequence_1_8")]
+    for path in paths:
+        if not path.is_file():
+            raise FileNotFoundError(f"Нет запрошенных весов: {path}; автоматической замены на best нет")
+    return paths
+
+
 def build_expert_gallery(
     checkpoint=None, *, output_dir=None, inference_stride=1, max_records=None,
-    resume=True,
+    resume=True, checkpoint_kind="latest", startup_policy="early", batch_size=128,
 ):
     """Полная галерея реальных предсказаний; рисунок 11 статьи НЕ изменяется.
 
@@ -991,39 +1034,81 @@ def build_expert_gallery(
     from osc_tools.pdr.signal_analysis import derive_missing_currents, check_pdr_signal_sufficiency
     from osc_tools.pdr.expert_labels import read_comtrade_1999_ascii, _read_text
     from osc_tools.pdr.study import PDRStudyLabelStore
+    from scripts.phase5_experiments.run_pdr_dataset_study import _atomic_write_json
 
     torch, *_, = _imports()
     from osc_tools.pdr.pdr_trainer import extract_backbone_features
     torch.set_num_threads(2)
     if inference_stride < 1:
         raise ValueError("Шаг предсказаний должен быть положительным")
-    checkpoint = Path(checkpoint or PROJECT_ROOT / "experiments/phase5/pdr_expert_snapshot_5_stride5/best_model.pt")
-    cfg = _config_from_json(checkpoint.parent / "config.json")
-    model, head, _ = _build_model(cfg, None, checkpoint)
+    if startup_policy not in ("early", "full_context") or batch_size < 1:
+        raise ValueError("Проверьте startup_policy и batch_size")
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model, head = model.to(device).eval(), head.to(device).eval()
+    models = {}
+    for path in _gallery_checkpoint_paths(checkpoint, checkpoint_kind):
+        cfg_path = path.parent / "config.json"
+        cfg = _config_from_json(cfg_path)
+        if cfg.temporal_mode in models:
+            raise ValueError("Для одного временного представления задано несколько весов")
+        model, head, _ = _build_model(cfg, None, path)
+        models[cfg.temporal_mode] = (cfg, model.to(device).eval(), head.to(device).eval(), {
+            "checkpoint_sha256": _sha256(path), "config_sha256": _sha256(cfg_path),
+            "checkpoint": str(path.resolve()), "feature_version": cfg.feature_version,
+        })
+        print(f"[Веса] {cfg.temporal_mode}: {path.name}; {device}", flush=True)
     output_dir = Path(output_dir or PROJECT_ROOT / "data/phase5/pdr_expert_gallery")
     output_dir.mkdir(parents=True, exist_ok=True)
-    checkpoint_hash = _sha256(checkpoint)
     records = pd.read_csv(PROJECT_ROOT / "data/phase5/pdr_expert_labels_v1/record_audit.csv")
     splits = pd.read_csv(PROJECT_ROOT / "data/phase5/pdr_expert_labels_v1/records.csv")
     split_map = {(r.source, int(r.record_id)): r.split for r in splits.itertuples()}
     records = records.sort_values(["source", "record_id"])
     if max_records is not None:
         records = records.head(max_records)
-    algorithms = {
+    algorithm_names = {
         "adaptive_pdr_mir": "Адаптивный РНМ",
-        "pos_seq_power_pdr_basic": "Мощностной прямой посл.",
         "phase_pdr_basic": "Пофазный угловой",
+        "pos_seq_pdr_basic": "Угловой прямой последовательности",
+        "phase_power_pdr_basic": "Пофазный мощностной",
+        "pos_seq_power_pdr_basic": "Мощностной прямой последовательности",
+        "pdr_sivokobylenko_2pt": "Сивокобыленко, 2 точки",
+        "pdr_sivokobylenko_5pt": "Сивокобыленко, 5 точек",
+        "pdr_bmrz_q_assisted": "БМРЗ, реактивно-токовая ветвь",
         "pdr_bavr072_crosspol": "Адаптация БАВР-072",
     }
+    algorithms = {}
     sources, stores, manifest_hashes = {}, {}, {}
     for source in records.source.unique():
         sources[source] = create_source(PROJECT_ROOT / "data/phase5/datasets_registry.json", source)
         root = PROJECT_ROOT / "data/phase5/pdr_labels_v6" / source
+        manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+        ids = manifest["algorithm_ids"]
+        if algorithms and list(algorithms) != ids:
+            raise ValueError("Состав формульных РНМ различается по источникам")
+        algorithms = {key: algorithm_names.get(key, key) for key in ids}
         manifest_hashes[source] = _sha256(root / "manifest.json")
         stores[source] = {key: PDRStudyLabelStore(root, algorithm_id=key) for key in algorithms}
     entries, started = [], time.monotonic()
+    def update_index(complete=False):
+        elapsed = time.monotonic() - started
+        done = len(entries)
+        _atomic_write_json(output_dir / "progress.json", {
+            "completed": done, "total": len(records), "status": "complete" if complete else "running",
+            "elapsed_seconds": elapsed, "records_per_second": done / elapsed if elapsed else 0,
+            "eta_seconds": elapsed * (len(records) - done) / done if done else None,
+            "startup_policy": startup_policy, "models": {k: v[3] for k, v in models.items()},
+        })
+        links = "\n".join(f'<li>{html.escape(status)} / {html.escape(split)}: '
+            f'<a href="{html.escape(path, quote=True)}">{stem}</a></li>' for stem, status, split, path in entries)
+        (output_dir / "index.html").write_text(
+            '<!doctype html><meta charset="utf-8"><title>Полные осциллограммы РНМ</title>'
+            f'<h1>Галерея для выбора рисунка 11: {done}/{len(records)}</h1>'
+            '<p>Все формульные РНМ и фактические ответы нейросетей. '
+            f'Начальный контекст: {startup_policy}. Веса: {checkpoint_kind}. '
+            'Ранний старт не использовался при обучении этих весов; это диагностический опыт. '
+            'Не используйте holdout для подбора модели или порогов. '
+            'Файлы ambiguous содержат отложенные экспертные решения.</p><ol>'
+            + links + '</ol>', encoding="utf-8")
+    update_index()
     try:
         for number, row in enumerate(records.itertuples(), 1):
             source, record_id = row.source, int(row.record_id)
@@ -1039,10 +1124,11 @@ def build_expert_gallery(
             folder.mkdir(parents=True, exist_ok=True)
             image_path, cache_path = folder / (stem + ".png"), folder / (stem + ".npz")
             provenance = {
-                "schema": 2, "checkpoint_sha256": checkpoint_hash,
+                "schema": 3, "models": {k: v[3] for k, v in models.items()},
+                "startup_policy": startup_policy, "algorithm_ids": list(algorithms),
                 "cfg_sha256": _sha256(cfg_path), "dat_sha256": _sha256(cfg_path.with_suffix(".dat")),
                 "automatic_manifest_sha256": manifest_hashes[source],
-                "inference_stride": inference_stride, "temporal_mode": cfg.temporal_mode,
+                "inference_stride": inference_stride,
                 "split": split, "status": row.status,
             }
             sidecar = image_path.with_suffix(".json")
@@ -1063,42 +1149,58 @@ def build_expert_gallery(
                 raw, channel_prov = derive_missing_currents(raw, channel_prov)
                 if raw.shape[1] != rec.n_samples:
                     raise ValueError(f"Длина источника и COMTRADE различается: {stem}")
-                # -998 — отсутствие полного окна/каналов; -999 — ответ VALID=0.
-                states = np.full(rec.n_samples, -998, dtype=np.int16)
-                first = periods_to_samples(20, tb.spp) - 1
+                first = (tb.spp - 1 if startup_policy == "early" else periods_to_samples(20, tb.spp) - 1)
                 ends = np.arange(first, rec.n_samples, inference_stride, dtype=np.int64)
                 if not check_pdr_signal_sufficiency(channel_prov, basis).can_run_phase_pdr:
                     ends = ends[:0]
-                predictions, valid_probabilities = [], []
+                expert = _expert_state_track(rec.digital["expert__VALID"], rec.digital["expert__FWD"])
+                tracks = [("Эксперт" + (" (отложено)" if row.status == "ambiguous" else ""), expert)]
+                saved = {}
                 if can_reuse:
                     with np.load(cache_path) as cached:
-                        if not np.array_equal(cached["samples"], ends):
-                            raise ValueError(f"Сетка сохранённых предсказаний изменилась: {stem}")
-                        predictions = cached["direction"].tolist()
-                        valid_probabilities = cached["probability_valid"].tolist()
-                elif ends.size:
-                    features, feature_prov, lookup = _record_spectral_cache(
-                        raw, channel_prov, basis, tb, cfg.temporal_mode, cfg.feature_version, ends,
-                    )
-                    with torch.inference_mode():
-                        for begin in range(0, len(ends), 256):
-                            indices = lookup[begin:begin + 256]
-                            batch = {
-                                "features": torch.from_numpy(features[indices]),
-                                "provenance": torch.from_numpy(feature_prov[indices]),
-                            }
-                            outputs = head(extract_backbone_features(model, batch, device))
-                            predictions.extend(outputs["logits"].argmax(-1).cpu().tolist())
-                            valid_probabilities.extend(outputs["applicability_logit"].sigmoid().cpu().tolist())
-                if ends.size:
-                    decoded = np.where(np.asarray(valid_probabilities) >= .5, predictions, -999)
-                    nearest = np.searchsorted(ends, np.arange(first, rec.n_samples), side="right") - 1
-                    states[first:] = decoded[nearest]
-                np.savez_compressed(cache_path, samples=ends, direction=np.asarray(predictions, dtype=np.int8),
-                                    probability_valid=np.asarray(valid_probabilities, dtype=np.float32))
-                expert = _expert_state_track(rec.digital["expert__VALID"], rec.digital["expert__FWD"])
-                tracks = [("Эксперт" + (" (спорно)" if row.status == "ambiguous" else ""), expert),
-                          (f"Нейросеть {cfg.temporal_mode}", states)]
+                        saved = {key: cached[key] for key in cached.files}
+                shared_cache = {}
+                for mode, (cfg, model, head, model_meta) in models.items():
+                    print(f"[Расчёт] {number}/{len(records)} {stem}: {mode}, {len(ends):,} точек", flush=True)
+                    states = np.full(rec.n_samples, -998, dtype=np.int16)
+                    sample_key, dir_key, valid_key = (f"{mode}__{key}" for key in ("samples", "direction", "probability_valid"))
+                    if can_reuse:
+                        if not np.array_equal(saved[sample_key], ends):
+                            raise ValueError(f"Изменилась сетка сохранённых предсказаний: {stem}")
+                        predictions, valid_probabilities = saved[dir_key], saved[valid_key]
+                    else:
+                        predictions, valid_probabilities = [], []
+                        if ends.size:
+                            features, feature_prov, lookup = _record_spectral_cache(
+                                raw, channel_prov, basis, tb, mode, cfg.feature_version, ends,
+                                startup_policy=startup_policy, shared_cache=shared_cache,
+                            )
+                            with torch.inference_mode():
+                                for begin in range(0, len(ends), batch_size):
+                                    if begin % (50 * batch_size) == 0:
+                                        print(f"  [{mode}] {begin:,}/{len(ends):,} точек", flush=True)
+                                    indices = lookup[begin:begin + batch_size]
+                                    batch = {"features": torch.from_numpy(features[indices]),
+                                             "provenance": torch.from_numpy(feature_prov[indices])}
+                                    outputs = head(extract_backbone_features(model, batch, device))
+                                    predictions.extend(outputs["logits"].argmax(-1).cpu().tolist())
+                                    valid_probabilities.extend(outputs["applicability_logit"].sigmoid().cpu().tolist())
+                            del lookup
+                        saved[sample_key] = ends
+                        saved[dir_key] = np.asarray(predictions, dtype=np.int8)
+                        saved[valid_key] = np.asarray(valid_probabilities, dtype=np.float32)
+                    if ends.size:
+                        decoded = np.where(np.asarray(valid_probabilities) >= .5, predictions, -999)
+                        nearest = np.searchsorted(ends, np.arange(first, rec.n_samples), side="right") - 1
+                        states[first:] = decoded[nearest]
+                    selected = "last" if Path(model_meta["checkpoint"]).name == "latest_checkpoint.pt" else "best"
+                    tracks.append((f"ИИ {mode} ({selected})", states))
+                shared_cache.clear()
+                if not can_reuse:
+                    temporary_cache = cache_path.with_suffix(".npz.tmp")
+                    with temporary_cache.open("wb") as stream:
+                        np.savez_compressed(stream, **saved)
+                    temporary_cache.replace(cache_path)
                 for algorithm, name in algorithms.items():
                     track = np.full(rec.n_samples, -998, dtype=np.int16)
                     if stores[source][algorithm].has_record(record_id):
@@ -1107,8 +1209,8 @@ def build_expert_gallery(
                         in_bounds = (samples >= 0) & (samples < rec.n_samples)
                         track[samples[in_bounds]] = automatic["directions"][in_bounds]
                     tracks.append((name, track))
-                fig, axes = plt.subplots(3, 1, figsize=(17, 8), sharex=True,
-                                         gridspec_kw={"height_ratios": [2, 2, 3]}, layout="constrained")
+                fig, axes = plt.subplots(3, 1, figsize=(18, 12), sharex=True,
+                                         gridspec_kw={"height_ratios": [2, 2, 6]}, layout="constrained")
                 cfg_lines = list(csv.reader(_read_text(cfg_path).splitlines()))
                 analog_count = int(cfg_lines[1][1].rstrip("Aa"))
                 analog_info = {line[1].strip(): line for line in cfg_lines[2:2 + analog_count]}
@@ -1132,19 +1234,34 @@ def build_expert_gallery(
                                    cmap=ListedColormap(palette), norm=BoundaryNorm(np.arange(-.5, 4.5), 4),
                                    shading="flat", rasterized=True)
                 axes[2].set_yticks(np.arange(len(tracks)) + .5, [name for name, _ in tracks])
+                for boundary in range(1, len(tracks)):
+                    axes[2].axhline(boundary, color="white", lw=.7)
                 axes[2].invert_yaxis()
                 axes[2].set_xlabel("Время, с — полная осциллограмма")
                 axes[2].legend(handles=[patches.Patch(color=c, label=l) for c, l in zip(palette,
                     ("Нет контекста/каналов", "VALID=0", "REVERSE=0", "FORWARD=1"))],
-                    loc="upper center", bbox_to_anchor=(.5, -.19), ncol=4, fontsize=9)
-                axes[0].set_title(f"{stem} | {row.status} | {split} | ИИ: шаг {inference_stride} отсчёт(ов)")
+                    loc="upper center", bbox_to_anchor=(.5, -.08), ncol=4, fontsize=9)
+                axes[0].set_title(f"{stem} | {row.status} | {split} | ИИ: шаг {inference_stride}; контекст {startup_policy}")
+                if startup_policy == "early":
+                    axes[2].axvspan(t[0], min(t[-1], t[0] + 20 / tb.network_frequency_hz),
+                                   ymin=1 - (1 + len(models)) / len(tracks), ymax=1 - 1 / len(tracks),
+                                   facecolor="none", edgecolor="#777777", hatch="//", linewidth=0)
+                    axes[0].text(.01, .96, "Штриховка ИИ: неполная предыстория, режим не был включён в обучение",
+                                 transform=axes[0].transAxes, va="top", fontsize=8, bbox=dict(facecolor="white", alpha=.8, edgecolor="none"))
                 axes[2].set_xlim(t[0], edges[-1])
                 fig.savefig(image_path, dpi=140)
                 plt.close(fig)
-                sidecar.write_text(json.dumps(provenance, ensure_ascii=False, indent=2), encoding="utf-8")
+                _atomic_write_json(sidecar, provenance)
             entries.append((stem, row.status, split, image_path.relative_to(output_dir).as_posix()))
             elapsed = time.monotonic() - started
             print(f"[Галерея] {number}/{len(records)}; {elapsed:.0f} с; {stem}", flush=True)
+            update_index()
+    except Exception as exc:
+        _atomic_write_json(output_dir / "progress.json", {
+            "status": "failed", "completed": len(entries), "total": len(records),
+            "error": str(exc), "startup_policy": startup_policy,
+        })
+        raise
     finally:
         for group in stores.values():
             for store in group.values():
@@ -1153,13 +1270,7 @@ def build_expert_gallery(
         writer = csv.writer(stream)
         writer.writerow(("record", "status", "split", "image"))
         writer.writerows(entries)
-    links = "\n".join(f'<li>{html.escape(status)} / {html.escape(split)}: <a href="{html.escape(path, quote=True)}">{stem}</a></li>'
-                      for stem, status, split, path in entries)
-    (output_dir / "index.html").write_text(
-        '<!doctype html><meta charset="utf-8"><title>Полные осциллограммы РНМ</title>'
-        '<h1>Галерея для выбора рисунка 11</h1><p>Реальные предсказания ИИ; текущий рисунок статьи не изменён. '
-        'Не используйте holdout для подбора модели или порогов. Просмотр этих файлов раскрывает контрольную выборку. '
-        'Спорные экспертные метки не являются эталоном.</p><ol>' + links + '</ol>', encoding="utf-8")
+    update_index(complete=True)
     print(f"[Готово] {output_dir / 'index.html'}", flush=True)
 
 
@@ -1170,12 +1281,17 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Рисунки статьи и отдельная галерея реальных предсказаний")
     parser.add_argument("--gallery", action="store_true", help="Полные осциллограммы, без изменения рисунка 11")
-    parser.add_argument("--checkpoint", type=Path)
-    parser.add_argument("--inference-stride", type=int, default=1)
+    parser.add_argument("--checkpoint", type=Path, action="append", help="Явные веса; можно повторить для нескольких моделей")
+    parser.add_argument("--checkpoint-kind", choices=("latest", "best"), default=GALLERY_CHECKPOINT_KIND)
+    parser.add_argument("--startup-policy", choices=("early", "full_context"), default=GALLERY_STARTUP_POLICY)
+    parser.add_argument("--batch-size", type=int, default=GALLERY_BATCH_SIZE)
+    parser.add_argument("--inference-stride", type=int, default=GALLERY_INFERENCE_STRIDE)
     parser.add_argument("--max-records", type=int)
     args = parser.parse_args()
     if args.gallery:
-        build_expert_gallery(args.checkpoint, inference_stride=args.inference_stride, max_records=args.max_records)
+        build_expert_gallery(args.checkpoint, inference_stride=args.inference_stride, max_records=args.max_records,
+                             checkpoint_kind=args.checkpoint_kind, startup_policy=args.startup_policy,
+                             batch_size=args.batch_size)
         raise SystemExit(0)
     print("Generating figures for article...")
     plot_fig1()

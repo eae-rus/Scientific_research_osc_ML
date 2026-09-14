@@ -64,6 +64,7 @@ class SpectralFeatureBuilder:
 
     def build(self, raw: np.ndarray, spp: int, positions: Sequence[int] | None = None,
               voltage_basis: str = "phase", channel_provenance: Sequence[int] | None = None,
+              zero_unavailable_low_history: bool = False,
               ) -> tuple[np.ndarray, np.ndarray, dict[str, object]]:
         """Вернуть ``features, missing_mask, metadata`` для raw `(T, 8)` окна.
 
@@ -106,7 +107,16 @@ class SpectralFeatureBuilder:
         feature_provenance = self._feature_provenance(
             channel_provenance_array, voltage_basis, available
         )
+        # Ранний пуск: ноль — заглушка, не измеренная нулевая компонента.
+        # Маска остаётся True; недоступность по Найквисту/каналам не снимается.
+        if zero_unavailable_low_history:
+            for column, name in enumerate(self.schema.names):
+                harmonic = name.rsplit("_", 2)[1]
+                if harmonic.startswith("lp"):
+                    unavailable = positions_array < spp * int(harmonic[2:]) - 1
+                    features[unavailable, column] = 0.0
         return features, missing_mask, {
+            "zero_unavailable_low_history": zero_unavailable_low_history,
             "feature_contract": self.schema.contract_name, "feature_names": self.schema.names,
             "available_harmonics": sorted(available), "spp": spp, "voltage_basis": voltage_basis,
             "positions": positions_array.tolist(), "position_semantics": "window_end_inclusive",

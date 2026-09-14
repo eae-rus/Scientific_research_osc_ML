@@ -201,3 +201,44 @@ def test_expert_gallery_preserves_unlabeled_for_uint8_comtrade():
     import numpy as np
     states = _expert_state_track(np.array([0, 1, 1], dtype=np.uint8), np.array([0, 0, 1], dtype=np.uint8))
     np.testing.assert_array_equal(states, [-999, 0, 1])
+
+
+@pytest.mark.parametrize("mode", ["snapshot_2", "snapshot_5", "sequence_1_8"])
+@pytest.mark.parametrize("spp", [12, 128])
+def test_early_gallery_is_causal_and_converges_to_full_context(mode, spp):
+    from scripts.visualization.generate_pdr_article_figures import _record_spectral_cache
+    from osc_tools.ml.spectral_features import SpectralFeatureBuilder, SpectralFeatureConfig
+    rng = np.random.default_rng(42)
+    raw = rng.normal(size=(8, 22 * spp)).astype(np.float32)
+    provenance = np.ones(8, dtype=np.uint8)
+    tb = TimebaseContract.create(50 * spp, 50)
+    ends = np.array([spp - 1, 2 * spp - 1, 20 * spp - 1, 21 * spp - 1])
+    f, p, ix = _record_spectral_cache(raw, provenance, "phase", tb, mode, "B", ends, "early")
+    names = SpectralFeatureBuilder(SpectralFeatureConfig("B")).schema.names
+    low = [i for i, name in enumerate(names) if "_lp" in name]
+    np.testing.assert_array_equal(f[ix[0]][:, low], 0)
+    np.testing.assert_array_equal(p[ix[0]][:, low], 0)
+    np.testing.assert_array_equal(ix[0], ix[0, 0])  # все ранние срезы повторяют первый доступный
+    full, full_p, full_ix = _record_spectral_cache(raw, provenance, "phase", tb, mode, "B", ends[2:])
+    np.testing.assert_allclose(f[ix[2:]], full[full_ix], atol=0, rtol=0)
+    np.testing.assert_array_equal(p[ix[2:]], full_p[full_ix])
+    altered = raw.copy()
+    altered[:, 2 * spp:] = 1234  # изменение будущего не меняет ранних ответов
+    early, _, ei = _record_spectral_cache(altered, provenance, "phase", tb, mode, "B", ends[:2], "early")
+    np.testing.assert_allclose(f[ix[:2]], early[ei], atol=0, rtol=0)
+    shared, shared_p, shared_ix = _record_spectral_cache(raw, provenance, "phase", tb, mode, "B", ends,
+                                                      "early", shared_cache={})
+    np.testing.assert_allclose(f[ix], shared[shared_ix], atol=0, rtol=0)
+    np.testing.assert_array_equal(p[ix], shared_p[shared_ix])
+
+
+def test_gallery_defaults_to_all_three_latest_checkpoints(monkeypatch):
+    from scripts.visualization.generate_pdr_article_figures import _gallery_checkpoint_paths
+    monkeypatch.setattr(Path, "is_file", lambda self: True)
+    selected = _gallery_checkpoint_paths()
+    assert len(selected) == 3
+    assert all(path.name == "latest_checkpoint.pt" for path in selected)
+    assert all(path.name == "best_model.pt" for path in _gallery_checkpoint_paths(checkpoint_kind="best"))
+    monkeypatch.setattr(Path, "is_file", lambda self: False)
+    with pytest.raises(FileNotFoundError, match="автоматической замены"):
+        _gallery_checkpoint_paths()
