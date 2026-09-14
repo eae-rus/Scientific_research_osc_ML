@@ -40,6 +40,7 @@ class ExportRecord:
     trigger_datetime: datetime
     analog: tuple[AnalogChannel, ...]
     digital: tuple[DigitalChannel, ...]
+    cfg_encoding: str = "ascii"
 
 
 def write_comtrade_ascii(record: ExportRecord, cfg_path: Path, dat_path: Path) -> None:
@@ -75,7 +76,9 @@ def _validate(record: ExportRecord) -> int:
     lengths = {np.asarray(channel.values).size for channel in channels}
     if len(lengths) != 1 or next(iter(lengths)) <= 0:
         raise ValueError("Все каналы должны иметь одинаковую ненулевую длину")
-    names = [_clean(channel.name) for channel in channels]
+    if record.cfg_encoding not in ("ascii", "cp1251", "utf-8"):
+        raise ValueError("Неподдерживаемая кодировка CFG")
+    names = [_clean(channel.name, record.cfg_encoding) for channel in channels]
     if len(names) != len(set(names)):
         raise ValueError("Имена каналов после очистки должны быть уникальны")
     for channel in record.analog:
@@ -92,23 +95,24 @@ def _validate(record: ExportRecord) -> int:
 
 
 def _write_cfg(record: ExportRecord, n_samples: int, path: Path) -> None:
+    clean = lambda value: _clean(value, record.cfg_encoding)
     analog_count, digital_count = len(record.analog), len(record.digital)
     lines = [
-        f"{_clean(record.station_name)},{_clean(record.recorder_id)},1999",
+        f"{clean(record.station_name)},{clean(record.recorder_id)},1999",
         f"{analog_count + digital_count},{analog_count}A,{digital_count}D",
     ]
     for index, channel in enumerate(record.analog, start=1):
         values = np.asarray(channel.values, dtype=np.float64)
         minimum, maximum = float(values.min()), float(values.max())
         lines.append(
-            f"{index},{_clean(channel.name)},{_clean(channel.phase)},"
-            f"{_clean(channel.circuit)},{_clean(channel.unit)},1,0,0,"
+            f"{index},{clean(channel.name)},{clean(channel.phase)},"
+            f"{clean(channel.circuit)},{clean(channel.unit)},1,0,0,"
             f"{minimum:.17g},{maximum:.17g},1,1,S"
         )
     for index, channel in enumerate(record.digital, start=1):
         lines.append(
-            f"{index},{_clean(channel.name)},{_clean(channel.phase)},"
-            f"{_clean(channel.circuit)},{channel.normal_state}"
+            f"{index},{clean(channel.name)},{clean(channel.phase)},"
+            f"{clean(channel.circuit)},{channel.normal_state}"
         )
     lines.extend((
         f"{record.network_frequency_hz:.12g}",
@@ -119,7 +123,7 @@ def _write_cfg(record: ExportRecord, n_samples: int, path: Path) -> None:
         "ASCII",
         "1",
     ))
-    _write_crlf(path, lines)
+    _write_crlf(path, lines, record.cfg_encoding)
 
 
 def _write_dat(record: ExportRecord, n_samples: int, path: Path) -> None:
@@ -136,15 +140,15 @@ def _write_dat(record: ExportRecord, n_samples: int, path: Path) -> None:
         os.fsync(stream.fileno())
 
 
-def _write_crlf(path: Path, lines: list[str]) -> None:
-    with path.open("w", encoding="ascii", newline="") as stream:
+def _write_crlf(path: Path, lines: list[str], encoding: str = "ascii") -> None:
+    with path.open("w", encoding=encoding, newline="") as stream:
         stream.write("\r\n".join(lines) + "\r\n")
         stream.flush()
         os.fsync(stream.fileno())
 
 
-def _clean(value: object) -> str:
-    text = str(value).encode("ascii", "replace").decode("ascii")
+def _clean(value: object, encoding: str = "ascii") -> str:
+    text = str(value).encode(encoding, "replace").decode(encoding)
     return text.replace(",", "_").replace("\r", "_").replace("\n", "_").strip()
 
 

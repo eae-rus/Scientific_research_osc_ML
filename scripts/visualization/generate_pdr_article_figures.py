@@ -12,6 +12,8 @@ import json
 from pathlib import Path
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use("Agg")  # Пакетный расчёт не зависит от окон Qt и рабочего стола.
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
@@ -40,6 +42,17 @@ for d in OUTPUT_DIRS:
 def save_fig(filename, dpi=300):
     for d in OUTPUT_DIRS:
         plt.savefig(os.path.join(d, filename), dpi=dpi)
+
+
+def _save_gallery_png(fig, path: Path) -> None:
+    """Сначала создать новый PNG, затем заменить старый с повторами блокировки."""
+    from scripts.phase5_experiments.run_pdr_dataset_study import _replace_with_retry, _unique_temporary_path
+    temporary = _unique_temporary_path(path)
+    try:
+        fig.savefig(temporary, format="png", dpi=140)
+        _replace_with_retry(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 # -------------------------------------------------------------
@@ -1201,6 +1214,8 @@ def build_expert_gallery(
                     with temporary_cache.open("wb") as stream:
                         np.savez_compressed(stream, **saved)
                     temporary_cache.replace(cache_path)
+                    # При сбое PNG продолжение не повторяет дорогое вычисление ИИ.
+                    _atomic_write_json(sidecar, dict(provenance, schema=2))
                 for algorithm, name in algorithms.items():
                     track = np.full(rec.n_samples, -998, dtype=np.int16)
                     if stores[source][algorithm].has_record(record_id):
@@ -1249,8 +1264,10 @@ def build_expert_gallery(
                     axes[0].text(.01, .96, "Штриховка ИИ: неполная предыстория, режим не был включён в обучение",
                                  transform=axes[0].transAxes, va="top", fontsize=8, bbox=dict(facecolor="white", alpha=.8, edgecolor="none"))
                 axes[2].set_xlim(t[0], edges[-1])
-                fig.savefig(image_path, dpi=140)
-                plt.close(fig)
+                try:
+                    _save_gallery_png(fig, image_path)
+                finally:
+                    plt.close(fig)
                 _atomic_write_json(sidecar, provenance)
             entries.append((stem, row.status, split, image_path.relative_to(output_dir).as_posix()))
             elapsed = time.monotonic() - started
