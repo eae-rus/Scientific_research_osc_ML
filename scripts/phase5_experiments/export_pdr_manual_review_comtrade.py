@@ -740,8 +740,8 @@ def run_manual() -> None:
     """Ручной запуск F5: сначала предпросмотр, затем явное включение экспорта."""
 
     PROFILE = "standard"  # "standard" либо "audit"
-    AUDIT_COUNT = 100
-    EXPORT_COMTRADE = False
+    AUDIT_COUNT = 100  # Число повторных слепых примеров для PROFILE='audit', не число точек.
+    EXPORT_COMTRADE = False  # False: только план отбора; True: записать реальные CFG/DAT.
     BATCH_NAME: str | None = None
     run_export(
         profile=PROFILE,

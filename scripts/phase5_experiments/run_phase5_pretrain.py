@@ -568,11 +568,11 @@ def run_manual() -> None:
     RESTART_EPOCHS = 50            # Период рестарта скорости обучения (каждые 50 эпох)
     SAMPLES_PER_EPOCH = 20_000     # Число случайно выбираемых окон на эпоху
     VALIDATION_SAMPLES = 2_000     # Число окон на валидацию
-    BATCH_SIZE = 32
-    FEATURE_VERSION = "B"
-    TEMPORAL_MODE = "snapshot_5"
-    LOSS_TYPE = "complex_huber"
-    HUBER_BETA = 0.1
+    BATCH_SIZE = 32  # Число окон на шаг оптимизации; уменьшить при нехватке видеопамяти.
+    FEATURE_VERSION = "B"  # Схема спектральных признаков; обязана совпадать при продолжении весов.
+    TEMPORAL_MODE = "snapshot_5"  # Временные срезы входа: snapshot_2/snapshot_5/sequence_1_8.
+    LOSS_TYPE = "complex_huber"  # Функция ошибки восстановления комплексных величин.
+    HUBER_BETA = 0.1  # Граница квадратичной части Huber в нормированных единицах.
 
     OUTPUT_DIR = (
         PROJECT_ROOT

@@ -233,8 +233,8 @@ def main() -> int:
 def run_manual() -> None:
     """Ручной F5-запуск итоговой проверки best/latest без holdout."""
 
-    MAX_SAMPLES_PER_RECORD = 32
-    NUM_WORKERS = 0
+    MAX_SAMPLES_PER_RECORD = 32  # Лимит точек на каждую запись; все файлы validation остаются в проверке.
+    NUM_WORKERS = 0  # Число дополнительных загрузчиков; 0 — загрузка в основном процессе.
     RUNS = (
         (
             "weak_best",

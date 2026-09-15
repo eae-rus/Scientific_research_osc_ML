@@ -1067,7 +1067,7 @@ def main() -> int:
 
 def run_manual() -> None:
     """Ручной запуск после завершения `analyze_pdr_dataset_study.py`."""
-    ANALYSIS_DIR = DEFAULT_ANALYSIS_DIR
+    ANALYSIS_DIR = DEFAULT_ANALYSIS_DIR  # Уже готовые таблицы основного анализа; здесь появится расширенная статистика.
     for name, path in build_review_tables(ANALYSIS_DIR).items():
         print(f"{name}: {path}")
 

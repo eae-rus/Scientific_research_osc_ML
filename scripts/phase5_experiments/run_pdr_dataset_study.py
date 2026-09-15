@@ -786,11 +786,11 @@ def main() -> int:
 
 def run_manual() -> None:
     # Сначала обязательно выполнить SMOKE=True. После проверки артефактов заменить на False.
-    SMOKE = False
-    OUTPUT_DIR = DEFAULT_SMOKE_OUTPUT_DIR if SMOKE else DEFAULT_OUTPUT_DIR
-    SOURCES = ("open_ee", "french_rte")
-    ALGORITHMS = DEFAULT_ALGORITHMS
-    TEACHER = DEFAULT_TEACHER
+    SMOKE = False  # True: пробный малый набор, False: все записи выбранных источников.
+    OUTPUT_DIR = DEFAULT_SMOKE_OUTPUT_DIR if SMOKE else DEFAULT_OUTPUT_DIR  # Не смешивать smoke и полный архив.
+    SOURCES = ("open_ee", "french_rte")  # Какие исходные датасеты разметить; RTDS имеет отдельный сценарий.
+    ALGORITHMS = DEFAULT_ALGORITHMS  # Все формульные органы, результаты каждого сохраняются.
+    TEACHER = DEFAULT_TEACHER  # Орган-учитель для целей обучения; остальные не исключаются.
     SPLIT_SCOPE = "all"           # Размечаем всё, но исходный train/validation/holdout сохраняется в статистике.
     SAMPLE_STEP = 1                # Решение каждого РНМ для каждого исходного отсчёта.
     RECORDS_PER_SHARD = 64         # RAM/checkpoint-компромисс; не меняет физическую разметку.

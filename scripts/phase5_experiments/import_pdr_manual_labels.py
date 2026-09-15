@@ -224,10 +224,10 @@ def main() -> int:
 
 def run_manual() -> None:
     """Ручной запуск первого импорта экспертной разметки."""
-    LABELS_ROOT = DEFAULT_LABELS_ROOT
-    REFERENCE_ROOT = DEFAULT_REFERENCE_ROOT
-    OUTPUT_ROOT = DEFAULT_OUTPUT_ROOT
-    TRANSITION_MS = 5.0
+    LABELS_ROOT = DEFAULT_LABELS_ROOT  # Проверенные вручную Open_EE/French, не RTDS.
+    REFERENCE_ROOT = DEFAULT_REFERENCE_ROOT  # Исходный экспорт для проверки неизменности сигналов.
+    OUTPUT_ROOT = DEFAULT_OUTPUT_ROOT  # Производный экспертный архив для обучения и оценки.
+    TRANSITION_MS = 5.0  # Исключить из обучения границу перехода и следующие 5 мс; входной сигнал не обрезается.
     run(LABELS_ROOT, REFERENCE_ROOT, OUTPUT_ROOT, TRANSITION_MS)
 
 

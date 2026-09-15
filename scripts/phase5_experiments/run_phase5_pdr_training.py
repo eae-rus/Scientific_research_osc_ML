@@ -1372,11 +1372,11 @@ def run_manual() -> None:
     SSL_CHECKPOINT_KIND = "latest"    # best или latest для инициализации weak
     WEAK_CHECKPOINT_KIND = "latest"   # best рекомендуется; latest остаётся доступен
     WEAK_CHECKPOINT_PATH = None      # None = путь автоматически совпадает с TEMPORAL_MODE
-    EXPERT_LABELS_ROOT = "data/phase5/pdr_expert_labels_v1"
+    EXPERT_LABELS_ROOT = "data/phase5/pdr_expert_labels_v1"  # Производный архив импорта, не исходная папка CFG/DAT.
     RESTART_WEAK_FROM = "latest"        # None, best или latest: новый weak-цикл с готовых весов
 
     # Объём и длительность обучения.
-    EPOCHS = 100
+    EPOCHS = 100  # Итоговое число эпох цикла; при resume продолжение до этой границы, не столько дополнительных эпох.
     SAMPLES_PER_EPOCH = 20_000      # случайных целевых точек с возвращением
     BATCH_SIZE = 32                 # число примеров в одном шаге оптимизатора
     MAX_SAMPLES_PER_RECORD = 64     # ограничение train-индекса на осциллограмму

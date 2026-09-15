@@ -516,8 +516,8 @@ def main() -> int:
 def run_manual() -> None:
     """Ручная проверка одинакового expert-эталона для weak и expert моделей."""
 
-    MAX_SAMPLES_PER_RECORD = 256
-    NUM_WORKERS = 0
+    MAX_SAMPLES_PER_RECORD = 256  # Максимум проверяемых точек одной осциллограммы, не ограничение числа файлов.
+    NUM_WORKERS = 0  # Процессы загрузки: 0 проще для Windows и контрольного запуска.
     # Holdout добавить только после фиксации архитектуры/порогов:
     # SPLITS = ("validation", "holdout")
     SPLITS = ("validation",)

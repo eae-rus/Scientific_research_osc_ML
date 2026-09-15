@@ -1686,9 +1686,9 @@ def main() -> int:
 def run_manual() -> None:
     # MODE="all": summary -> agreement/temporal/patterns -> signals -> plots.
     MODE = "all"               # summary | eligibility | signals | agreement | plots | all
-    LABEL_DIR = DEFAULT_LABEL_DIR
-    OUTPUT_DIR = DEFAULT_OUTPUT_DIR
-    SOURCES = DEFAULT_SOURCES
+    LABEL_DIR = DEFAULT_LABEL_DIR  # Вход: завершённая автоматическая разметка; не папка исходных COMTRADE.
+    OUTPUT_DIR = DEFAULT_OUTPUT_DIR  # Выход: производные таблицы и картинки, исходную разметку не меняет.
+    SOURCES = DEFAULT_SOURCES  # Источники для анализа; уменьшение списка исключает источник из отчёта.
     ENABLE_CLUSTERS = True          # Exploratory KMeans отдельно внутри каждого источника.
     PLOTS_PER_GROUP = 20             # На источник и audit-группу; отбор разнообразный, не только top.
     WINDOW_SECONDS = 0.8            # Короткое окно 800 мс вокруг максимума локальной динамики.
