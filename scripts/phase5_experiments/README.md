@@ -44,6 +44,9 @@
 9. `run_pdr_rtds.py` — отдельная заключительная проверка RTDS: две секции,
    9 формульных РНМ, 12 наборов весов, заполненная экспертная разметка и COMTRADE.
    Порядок работы: `docs/phase_discription/PHASE_5_RTDS_GUIDE.md`.
+   Разметка автора — `data/phase5/pdr_rtds_labels`; `--evaluate-verified`
+   пересчитывает статистику без запуска моделей. Смысл 100 опытов описан в
+   `docs/phase_discription/PHASE_5_RTDS_CASES_GUIDE.md`.
 
 `review_pdr_analysis_results.py` не временный: он нужен для повтора
 одинаковых научных таблиц после каждой версии разметки. Одноразовый

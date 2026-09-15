@@ -31,18 +31,23 @@ from scripts.phase5_experiments.run_pdr_dataset_study import (
 )
 from scripts.phase5_experiments.evaluate_pdr_expert_holdout import _sha256
 
-INPUT_ROOT = PROJECT_ROOT / "data/phase5/_FABT_RTDS"
-OUTPUT_ROOT = PROJECT_ROOT / "data/phase5/pdr_rtds_review"
-VERIFIED_ROOT = PROJECT_ROOT / "data/phase5/pdr_rtds_verified"
-CURRENT_NOMINAL_A = 3000.0
+# РУЧНОЙ ЗАПУСК: F5/Run Python File запускает весь набор; сначала MAX_RECORDS=1.
+# Использовать окружение с CUDA PyTorch. Исходные CFG/DAT скрипт не изменяет.
+INPUT_ROOT = PROJECT_ROOT / "data/phase5/_FABT_RTDS"  # Исходные опыты, не ручная разметка.
+OUTPUT_ROOT = PROJECT_ROOT / "data/phase5/pdr_rtds_review"  # Новые COMTRADE; здесь сначала ждать завершения расчёта.
+VERIFIED_ROOT = PROJECT_ROOT / "data/phase5/pdr_rtds_labels"  # Принятые автором пары, включая VALID=0; можно по подпапкам.
+AUTHOR_RECHECK_PENDING = True  # Черновой отчёт: автор ещё проверит валидность напряжений; файлы пока не исключать.
+CURRENT_NOMINAL_A = 3000.0  # Действующий номинальный фазный ток, А; резерв 20 применяется ниже один раз.
 VOLTAGE_NOMINAL_V = 6000.0  # Линейный номинал сети; фазные отсчёты делятся на него без повторного sqrt(3).
-INFERENCE_STRIDE = 1
-BATCH_SIZE = 128
-STARTUP_POLICY = "early"
-PREPARE_ONLY = False
-MAX_RECORDS = None
-MODES = ("snapshot_2", "snapshot_5", "sequence_1_8")
-INTERNAL_FAULT_RECORDS = {"2.25", "2.26"}
+INFERENCE_STRIDE = 1  # Разметка каждого исходного отсчёта. Другие значения для итогового COMTRADE запрещены.
+BATCH_SIZE = 512  # Окна ИИ в GPU-пакете; автоматически уменьшается при нехватке VRAM.
+DEVICE = "cuda"  # Требовать CUDA, не переходить незаметно на медленный CPU.
+PHASOR_BACKEND = "fft"  # Точный прежний вход моделей; prefix быстрее, но меняет углы почти нулевых компонент.
+STARTUP_POLICY = "early"  # early: с первого периода; full_context: прежнее ожидание 20T.
+PREPARE_ONLY = False  # True: только физические каналы и эксперт; False: также 9 РНМ и 12 ИИ.
+MAX_RECORDS = None  # None: все 100; 1: короткая проверка полного маршрута, без обучения.
+MODES = ("snapshot_2", "snapshot_5", "sequence_1_8")  # Для каждого берутся weak/expert и last/best.
+INTERNAL_FAULT_RECORDS = {"2.25", "2.26"}  # Исключение только для секции 1 по таблице Г.5.
 
 
 def read_rtds(path: Path) -> tuple[ExportRecord, np.ndarray, np.ndarray, TimebaseContract]:
@@ -138,7 +143,10 @@ def load_models() -> dict:
     from scripts.phase5_experiments.evaluate_pdr_expert_holdout import _config_from_json
     torch, *_ = _imports()
     torch.set_num_threads(2)
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = ("cuda" if torch.cuda.is_available() else "cpu") if DEVICE == "auto" else DEVICE
+    if device == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("GPU недоступен: используйте PyTorch с CUDA или явно DEVICE='cpu'.")
+    print(f"[Устройство] {device}; torch={torch.__version__}; batch={BATCH_SIZE}", flush=True)
     result = {}
     for stage in ("weak", "expert"):
         for mode in MODES:
@@ -181,7 +189,7 @@ def run(*, prepare_only: bool = False, max_records: int | None = None) -> None:
             fingerprint = {"schema": 2, "source_cfg": _sha256(path), "source_dat": _sha256(path.with_suffix(".dat")),
                            "models": {k: v[4] for k, v in models.items()}, "prepare_only": prepare_only,
                            "algorithm_params": algorithm_params,
-                           "stride": INFERENCE_STRIDE, "startup": STARTUP_POLICY,
+                           "stride": INFERENCE_STRIDE, "startup": STARTUP_POLICY, "phasor_backend": PHASOR_BACKEND,
                            "current_nominal_a": CURRENT_NOMINAL_A, "voltage_nominal_v": VOLTAGE_NOMINAL_V}
             sidecar = OUTPUT_ROOT / (path.stem + ".json")
             fingerprint = json.loads(json.dumps(fingerprint, default=str))
@@ -225,21 +233,13 @@ def run(*, prepare_only: bool = False, max_records: int | None = None) -> None:
                     for name, (cfg, model, head, device, _) in models.items():
                         import torch
                         from osc_tools.pdr.pdr_trainer import extract_backbone_features
-                        from scripts.visualization.generate_pdr_article_figures import _record_spectral_cache
+                        from scripts.visualization.generate_pdr_article_figures import _record_spectral_cache, _predict_cached
                         print(f"  Секция {section}: {name}, {len(ends)} точек", flush=True)
                         features, provenance, lookup = _record_spectral_cache(signals, prov, "phase", tb,
-                            cfg.temporal_mode, cfg.feature_version, ends, startup_policy=STARTUP_POLICY, shared_cache=shared)
+                            cfg.temporal_mode, cfg.feature_version, ends, startup_policy=STARTUP_POLICY, shared_cache=shared, phasor_backend=PHASOR_BACKEND)
                         state = np.full(n, -999, dtype=np.int16)
-                        with torch.inference_mode():
-                            for begin in range(0, len(ends), BATCH_SIZE):
-                                if begin % (50 * BATCH_SIZE) == 0:
-                                    print(f"    {begin}/{len(ends)}", flush=True)
-                                indices = lookup[begin:begin + BATCH_SIZE]
-                                batch = {"features": torch.from_numpy(features[indices]), "provenance": torch.from_numpy(provenance[indices])}
-                                out = head(extract_backbone_features(model, batch, device))
-                                direction = out["logits"].argmax(-1).cpu().numpy()
-                                valid = out["applicability_logit"].sigmoid().cpu().numpy().reshape(-1) >= .5
-                                state[ends[begin:begin + BATCH_SIZE]] = np.where(valid, direction, -999)
+                        direction, probability = _predict_cached(model, head, features, provenance, lookup, device, BATCH_SIZE, shared)
+                        state[ends] = np.where(probability >= .5, direction, -999)
                         digital.extend(_state_channels(f"S{section}__{name}", state))
                     shared.clear()
                 write_comtrade_ascii(replace(record, digital=tuple(digital)), out_cfg, out_cfg.with_suffix(".dat"))
@@ -264,19 +264,57 @@ def _state_channels(prefix: str, state: np.ndarray) -> tuple[DigitalChannel, Dig
             DigitalChannel(prefix + "__VALID", (state != -999).astype(np.uint8)))
 
 
-def evaluate_verified() -> dict:
+def _comparison_metrics(target: np.ndarray, applicable: np.ndarray, direction: np.ndarray,
+                        valid: np.ndarray, sample_rate: float) -> dict:
+    """Три состояния для оценки (не классы обучения); отказ не повышает покрытие.
+
+    Строки матрицы — эксперт, столбцы — орган, порядок: INVALID, REV, FWD.
+    Дополнительная оценка исключает переход экспертного состояния и 5 мс после
+    него. Основные показатели по-прежнему включают все отсчёты, в том числе старт.
+    """
+    applicable, valid = applicable.astype(bool), valid.astype(bool)
+    truth = np.where(applicable, target + 1, 0).astype(np.int64)
+    pred = np.where(valid, direction + 1, 0).astype(np.int64)
+    both = applicable & valid
+    correct = truth == pred
+    transitions = np.flatnonzero(np.diff(truth) != 0) + 1
+    stable = np.ones(len(target), dtype=bool)
+    for start in transitions:
+        stable[start:start + int(np.floor(.005 * sample_rate)) + 1] = False
+    error_edges = np.diff(np.r_[False, ~correct, False].astype(np.int8))
+    lengths = np.flatnonzero(error_edges == -1) - np.flatnonzero(error_edges == 1)
+    return {
+        "samples": len(target), "direction_samples": int(both.sum()),
+        "direction_accuracy": float((direction[both] == target[both]).mean()) if both.any() else None,
+        "direction_coverage": float(both.sum() / applicable.sum()) if applicable.any() else None,
+        "validity_accuracy": float((valid == applicable).mean()),
+        "state_accuracy": float(correct.mean()),
+        "stable_state_accuracy": float(correct[stable].mean()) if stable.any() else None,
+        "state_confusion": np.bincount(truth * 3 + pred, minlength=9).reshape(3, 3).tolist(),
+        "expert_transitions": int(np.count_nonzero((np.diff(target.astype(int)) != 0) & applicable[1:] & applicable[:-1])),
+        "algorithm_transitions": int(np.count_nonzero((np.diff(direction.astype(int)) != 0) & valid[1:] & valid[:-1])),
+        "expert_state_transitions": len(transitions),
+        "algorithm_state_transitions": int(np.count_nonzero(np.diff(pred))),
+        "error_episodes_over_20ms": int(np.count_nonzero(lengths / sample_rate > .020)),
+        "max_error_episode_ms": float(lengths.max() * 1000 / sample_rate) if len(lengths) else 0.,
+    }
+
+
+def evaluate_verified(*, preliminary: bool = False) -> dict:
     """Прочитать принятые экспертом пары; лишние сигналы игнорируются.
 
     Сверка аналоговых отсчётов защищает от случайной подмены опыта. Автоматические
     ответы берутся из неизменённых цифровых каналов экспортированной пары;
     это первичная статистика, не оценка сертификационной надёжности БАВР.
     """
-    rows = []
-    files = sorted(VERIFIED_ROOT.rglob("*.cfg")) if VERIFIED_ROOT.exists() else []
+    rows, inventory, references = [], [], []
+    started = time.monotonic()
+    evaluation_root = OUTPUT_ROOT if preliminary else VERIFIED_ROOT
+    files = sorted(evaluation_root.rglob("*.cfg")) if evaluation_root.exists() else []
     if not files:
-        raise FileNotFoundError(f"Нет проверенных CFG в {VERIFIED_ROOT}")
+        raise FileNotFoundError(f"Нет CFG в {evaluation_root}")
     seen = set()
-    for cfg_path in files:
+    for file_index, cfg_path in enumerate(files, 1):
         if cfg_path.stem in seen:
             raise ValueError(f"Повтор одного опыта: {cfg_path.stem}")
         seen.add(cfg_path.stem)
@@ -286,6 +324,9 @@ def evaluate_verified() -> dict:
         if not sidecar.exists():
             sidecar = OUTPUT_ROOT / (cfg_path.stem + ".json")
         metadata = json.loads(sidecar.read_text(encoding="utf-8"))
+        references.append({"record": cfg_path.stem, "cfg_sha256": _sha256(cfg_path),
+                           "dat_sha256": _sha256(cfg_path.with_suffix(".dat")),
+                           "calculation_fingerprint": metadata.get("fingerprint")})
         expected_hashes = metadata.get("automatic_digital_hashes")
         if not expected_hashes:
             raise ValueError(f"Нет контрольных хешей автоматических сигналов: {sidecar}")
@@ -294,7 +335,8 @@ def evaluate_verified() -> dict:
                 raise ValueError(f"Изменён неэкспертный дискрет {name}: {cfg_path}")
         if edited.sample_rate_hz != original.sample_rate_hz:
             raise ValueError(f"Изменена частота: {cfg_path}")
-        cfg_rows = list(csv.reader(_read_text(cfg_path).splitlines()))
+        # Редактор COMTRADE добавляет пробелы после запятых: это не смена каналов.
+        cfg_rows = [[field.strip() for field in row] for row in csv.reader(_read_text(cfg_path).splitlines())]
         count = int(cfg_rows[1][1].rstrip("Aa"))
         analog_info = {r[1]: r for r in cfg_rows[2:2 + count]}
         for channel in original.analog:
@@ -308,30 +350,45 @@ def evaluate_verified() -> dict:
             prefix = f"S{section}__"
             target = edited.digital[prefix + "expert__FWD"]
             applicable = edited.digital[prefix + "expert__VALID"].astype(bool)
+            voltage_channels = [ch for ch in original.analog if ch.name.startswith(f"Напряжение {section} СШ")]
+            peak = max((float(np.max(np.abs(ch.values))) for ch in voltage_channels), default=None)
+            inventory.append({"record": cfg_path.stem, "section": section,
+                "samples": edited.n_samples, "sample_rate_hz": edited.sample_rate_hz,
+                "duration_seconds": edited.n_samples / edited.sample_rate_hz,
+                "expert_invalid_samples": int((~applicable).sum()),
+                "expert_reverse_samples": int((applicable & (target == 0)).sum()),
+                "expert_forward_samples": int((applicable & (target == 1)).sum()),
+                "voltage_absolute_peak_v": peak,
+                "voltage_peak_to_nominal_phase_peak": peak / (VOLTAGE_NOMINAL_V * np.sqrt(2/3)) if peak is not None else None})
             names = list(DEFAULT_ALGORITHMS) + [f"nn_{stage}_{mode}_{kind}" for stage in ("weak", "expert") for mode in MODES for kind in ("last", "best")]
             for name in names:
                 fwd_key, valid_key = prefix + name + "__FWD", prefix + name + "__VALID"
                 if fwd_key not in edited.digital or valid_key not in edited.digital:
                     raise ValueError(f"Нет расчёта {name} в {cfg_path}; сначала нужен полный экспорт")
                 direction, valid = edited.digital[fwd_key], edited.digital[valid_key].astype(bool)
-                both = valid & applicable
                 rows.append({"record": cfg_path.stem, "section": section, "algorithm": name,
-                    "samples": edited.n_samples, "direction_samples": int(both.sum()),
-                    "direction_accuracy": float((direction[both] == target[both]).mean()) if both.any() else None,
-                    "validity_accuracy": float((valid == applicable).mean()),
-                    "state_accuracy": float(((valid == applicable) & (~applicable | (direction == target))).mean()),
-                    "expert_transitions": int(np.count_nonzero(np.diff(target.astype(int)))),
-                    "algorithm_transitions": int(np.count_nonzero((np.diff(direction.astype(int)) != 0) & valid[1:] & valid[:-1]))})
+                    **_comparison_metrics(target, applicable, direction, valid, edited.sample_rate_hz)})
+        elapsed = time.monotonic() - started
+        print(f"[Оценка RTDS] {file_index}/{len(files)}; {elapsed:.1f} с; {cfg_path.stem}", flush=True)
     aggregate = {}
     for name in sorted({r["algorithm"] for r in rows}):
         group = [r for r in rows if r["algorithm"] == name]
         aggregate[name] = {key: float(np.mean([r[key] for r in group if r[key] is not None]))
-                           for key in ("direction_accuracy", "validity_accuracy", "state_accuracy")
+                           for key in ("direction_accuracy", "direction_coverage", "validity_accuracy", "state_accuracy", "stable_state_accuracy")
                            if any(r[key] is not None for r in group)}
-    result = {"n_verified_records": len(files), "record_section_metrics": rows,
+        aggregate[name]["state_confusion_sum"] = np.sum([r["state_confusion"] for r in group], axis=0).tolist()
+        aggregate[name]["record_sections"] = len(group)
+        aggregate[name]["direction_evaluable_record_sections"] = sum(r["direction_accuracy"] is not None for r in group)
+        aggregate[name]["record_sections_with_error_over_20ms"] = sum(r["error_episodes_over_20ms"] > 0 for r in group)
+    result = {"n_verified_records": 0 if preliminary else len(files), "n_records": len(files),
+              "reference_status": "automatic_provisional" if preliminary else "expert_verified", "record_section_metrics": rows,
+              "author_recheck_pending": AUTHOR_RECHECK_PENDING if not preliminary else True,
+              "reference_root": str(evaluation_root), "references": references, "record_section_inventory": inventory,
+              "state_order": ["INVALID", "REV", "FWD"],
               "macro_by_record_section": aggregate,
               "warning": "Первичная оценка. Отдельные задержки, ранний контекст и типы КЗ анализируются перед выводами."}
-    _atomic_write_json(OUTPUT_ROOT.parent / "pdr_rtds_evaluation.json", result)
+    filename = "pdr_rtds_evaluation_preliminary.json" if preliminary else "pdr_rtds_evaluation.json"
+    _atomic_write_json(OUTPUT_ROOT.parent / filename, result)
     return result
 
 
@@ -344,8 +401,9 @@ if __name__ == "__main__":
     parser.add_argument("--prepare-only", action="store_true", default=PREPARE_ONLY)
     parser.add_argument("--max-records", type=int, default=MAX_RECORDS)
     parser.add_argument("--evaluate-verified", action="store_true", help="Первичная статистика только папки проверенных")
+    parser.add_argument("--evaluate-preliminary", action="store_true", help="Согласие с автоматическими экспертными каналами, НЕ ручная проверка")
     args = parser.parse_args()
-    if args.evaluate_verified:
-        evaluate_verified()
+    if args.evaluate_verified or args.evaluate_preliminary:
+        evaluate_verified(preliminary=args.evaluate_preliminary)
     else:
         run(prepare_only=args.prepare_only, max_records=args.max_records)

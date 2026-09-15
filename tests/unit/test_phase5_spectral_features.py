@@ -1,8 +1,23 @@
 """Физические contracts feature builder v2."""
 
 import numpy as np
+import pytest
 
 from osc_tools.ml.spectral_features import SpectralFeatureBuilder, SpectralFeatureConfig
+
+
+@pytest.mark.parametrize("spp", [12, 128, 400])
+def test_prefix_matches_fft_complex_and_missing_windows(spp):
+    rng = np.random.default_rng(56)
+    raw = rng.normal(size=(22*spp, 8)).astype(np.float32)
+    raw[3:7, 0] = np.nan
+    raw[:, 3] = np.nan
+    positions = np.array([0, spp-1, 2*spp, 11*spp, len(raw)-1, len(raw)])
+    for window, count in [(spp, 9), (10*spp, 1)]:
+        a = SpectralFeatureBuilder._phasors(raw, positions, window, count)
+        b = SpectralFeatureBuilder._phasors_prefix(raw, positions, window, count)
+        np.testing.assert_array_equal(np.isnan(a), np.isnan(b))
+        np.testing.assert_allclose(a, b, rtol=2e-5, atol=2e-7, equal_nan=True)
 
 
 def _balanced_raw(spp: int = 32) -> np.ndarray:

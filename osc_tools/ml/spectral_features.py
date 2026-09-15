@@ -65,6 +65,7 @@ class SpectralFeatureBuilder:
     def build(self, raw: np.ndarray, spp: int, positions: Sequence[int] | None = None,
               voltage_basis: str = "phase", channel_provenance: Sequence[int] | None = None,
               zero_unavailable_low_history: bool = False,
+              phasor_backend: str = "fft",
               ) -> tuple[np.ndarray, np.ndarray, dict[str, object]]:
         """Вернуть ``features, missing_mask, metadata`` для raw `(T, 8)` окна.
 
@@ -87,8 +88,12 @@ class SpectralFeatureBuilder:
         positions_array = np.asarray((spp - 1,) if positions is None else positions, dtype=np.int64)
         if np.any(positions_array < 0):
             raise ValueError("Позиции FFT не могут быть отрицательными")
-        standard = self._phasors(raw, positions_array, spp, self.config.standard_harmonics)
-        lows = [self._phasors(raw, positions_array, spp * period, 1)[:, :, 0] for period in self.config.low_periods]
+        backends = {"fft": self._phasors, "prefix": self._phasors_prefix}
+        if phasor_backend not in backends:
+            raise ValueError("Расчёт спектра: fft или prefix")
+        phasors = backends[phasor_backend]
+        standard = phasors(raw, positions_array, spp, self.config.standard_harmonics)
+        lows = [phasors(raw, positions_array, spp * period, 1)[:, :, 0] for period in self.config.low_periods]
         available = set(available_harmonics(spp, self.config.standard_harmonics))
         blocks: list[np.ndarray] = []
         for harmonic in range(self.config.standard_harmonics):
@@ -116,6 +121,7 @@ class SpectralFeatureBuilder:
                     unavailable = positions_array < spp * int(harmonic[2:]) - 1
                     features[unavailable, column] = 0.0
         return features, missing_mask, {
+            "phasor_backend": phasor_backend,
             "zero_unavailable_low_history": zero_unavailable_low_history,
             "feature_contract": self.schema.contract_name, "feature_names": self.schema.names,
             "available_harmonics": sorted(available), "spp": spp, "voltage_basis": voltage_basis,
@@ -147,6 +153,34 @@ class SpectralFeatureBuilder:
             else:
                 result.append(int(ChannelProvenance.DERIVED if voltage_ok else ChannelProvenance.MISSING))
         return np.asarray(result, dtype=np.uint8)
+
+    @staticmethod
+    def _phasors_prefix(raw: np.ndarray, positions: np.ndarray, window: int, count: int) -> np.ndarray:
+        """Скользящий ДПФ через накопленные суммы; без FFT каждого окна.
+
+        float64/complex128 для накопления, затем тот же complex64-контракт.
+        На каждой частоте хранится лишь (T,8), не (T,8,window). NaN исключает
+        только соответствующий канал/окно. В обучении по умолчанию остаётся FFT.
+        """
+        out = np.full((len(positions), 8, count), np.nan + 1j * np.nan, dtype=np.complex64)
+        eligible = (positions >= window - 1) & (positions < len(raw))
+        ends = positions[eligible]
+        if not len(ends):
+            return out
+        starts = ends - window + 1
+        finite = np.isfinite(raw)
+        counts = np.vstack((np.zeros((1, 8), dtype=np.int64), np.cumsum(finite, axis=0)))
+        valid = counts[ends + 1] - counts[starts] == window
+        safe = np.where(finite, raw, 0).astype(np.float64)
+        samples = np.arange(len(raw), dtype=np.float64)
+        for harmonic in range(1, min(count, window // 2) + 1):
+            omega = 2 * np.pi * harmonic / window
+            weighted = safe * np.exp(-1j * omega * samples)[:, None]
+            prefix = np.vstack((np.zeros((1, 8), dtype=np.complex128), np.cumsum(weighted, axis=0)))
+            unscaled = ((prefix[ends + 1] - prefix[starts]) * np.exp(1j * omega * starts)[:, None]).astype(np.complex64)
+            value = 2 * (unscaled / window)  # Порядок округления как у FFT float32.
+            out[eligible, :, harmonic - 1] = np.where(valid, value, np.nan + 1j*np.nan)
+        return out
 
     @staticmethod
     def _phasors(raw: np.ndarray, positions: np.ndarray, window: int, count: int) -> np.ndarray:

@@ -954,7 +954,7 @@ def plot_fig10():
 # РИСУНОК 11: Анализ поведения органов на сложных осциллограммах
 # -------------------------------------------------------------
 def _record_spectral_cache(raw, provenance, basis, timebase, mode, version, ends,
-                           startup_policy="full_context", shared_cache=None):
+                           startup_policy="full_context", shared_cache=None, phasor_backend="fft"):
     """Точные признаки обучения с переиспользованием одинаковых окон Фурье.
 
     Только причинные окна, без изменения временной привязки/нормировки.
@@ -977,12 +977,12 @@ def _record_spectral_cache(raw, provenance, basis, timebase, mode, version, ends
     if startup_policy == "early":
         positions = np.maximum(positions, timebase.spp - 1)
     if shared_cache is not None:
-        key = (version, startup_policy)
+        key = (version, startup_policy, phasor_backend)
         if key not in shared_cache:
             all_positions = np.arange(timebase.spp - 1, raw.shape[1])
             f, mask, meta = builder.build(raw.T, timebase.spp, all_positions,
                 voltage_basis=basis, channel_provenance=provenance,
-                zero_unavailable_low_history=startup_policy == "early")
+                zero_unavailable_low_history=startup_policy == "early", phasor_backend=phasor_backend)
             p = np.broadcast_to(np.asarray(meta["feature_provenance"], dtype=np.uint8), f.shape).copy()
             p[mask] = 0
             shared_cache[key] = (f, p)
@@ -991,7 +991,7 @@ def _record_spectral_cache(raw, provenance, basis, timebase, mode, version, ends
     unique, inverse = np.unique(positions, return_inverse=True)
     features, masks, metadata = builder.build(
         raw.T, timebase.spp, unique, voltage_basis=basis, channel_provenance=provenance,
-        zero_unavailable_low_history=startup_policy == "early",
+        zero_unavailable_low_history=startup_policy == "early", phasor_backend=phasor_backend,
     )
     feature_provenance = np.broadcast_to(
         np.asarray(metadata["feature_provenance"], dtype=np.int64), features.shape,
@@ -1005,11 +1005,45 @@ def _expert_state_track(valid, forward):
     return np.where(np.asarray(valid, dtype=bool), np.asarray(forward, dtype=np.int16), -999)
 
 
-# Ручные настройки галереи: --gallery читает эти значения по умолчанию.
+def _predict_cached(model, head, features, provenance, lookup, device, batch_size, cache):
+    """Перенести компактный спектр на устройство один раз, окна собирать там."""
+    import torch
+    from osc_tools.pdr.pdr_trainer import extract_backbone_features
+    key = ("tensors", str(device), id(features))
+    if key not in cache:
+        cache[key] = (torch.as_tensor(features, device=device), torch.as_tensor(provenance, device=device))
+    f, p = cache[key]
+    directions = np.empty(len(lookup), dtype=np.int8)
+    probabilities = np.empty(len(lookup), dtype=np.float32)
+    begin, step = 0, batch_size
+    with torch.inference_mode():
+        while begin < len(lookup):
+            try:
+                indices = torch.as_tensor(lookup[begin:begin + step], device=device)
+                out = head(extract_backbone_features(model, {"features": f[indices], "provenance": p[indices]}, device))
+                size = len(indices)
+                directions[begin:begin + size] = out["logits"].argmax(-1).cpu().numpy()
+                probabilities[begin:begin + size] = out["applicability_logit"].sigmoid().cpu().numpy().reshape(-1)
+                begin += size
+                if begin % (50 * step) == 0 or begin == len(lookup):
+                    print(f"    {begin:,}/{len(lookup):,}; device={device}; batch={step}", flush=True)
+            except torch.cuda.OutOfMemoryError:
+                if step <= 1:
+                    raise
+                step = max(1, step // 2)
+                torch.cuda.empty_cache()
+                print(f"Недостаточно VRAM: batch уменьшен до {step}", flush=True)
+    return directions, probabilities
+
+
+# Ручные настройки галереи: запускать с --gallery (CLI имеет приоритет).
+# Без --gallery сценарий обновляет рисунки 1–10 статьи, а не галерею!
 GALLERY_CHECKPOINT_KIND = "latest"  # "best" — лучшие веса, "latest" — последние
 GALLERY_STARTUP_POLICY = "early"    # "full_context" — прежнее ожидание 20T
-GALLERY_INFERENCE_STRIDE = 1
-GALLERY_BATCH_SIZE = 128
+GALLERY_INFERENCE_STRIDE = 1  # 1: каждый отсчёт; >1: реже, между ответами удерживается предыдущий.
+GALLERY_BATCH_SIZE = 512  # Число окон ИИ в пакете; при нехватке VRAM автоматически уменьшается.
+GALLERY_DEVICE = "cuda"  # cuda требует GPU; cpu — явный медленный режим; auto — автоматический выбор.
+GALLERY_PHASOR_BACKEND = "fft"  # Точный прежний FFT; prefix — только эксперимент, не финальная разметка.
 
 
 def _gallery_checkpoint_paths(checkpoint=None, checkpoint_kind="latest"):
@@ -1030,7 +1064,8 @@ def _gallery_checkpoint_paths(checkpoint=None, checkpoint_kind="latest"):
 
 def build_expert_gallery(
     checkpoint=None, *, output_dir=None, inference_stride=1, max_records=None,
-    resume=True, checkpoint_kind="latest", startup_policy="early", batch_size=128,
+    resume=True, checkpoint_kind="latest", startup_policy="early", batch_size=512,
+    device=GALLERY_DEVICE, phasor_backend=GALLERY_PHASOR_BACKEND,
 ):
     """Полная галерея реальных предсказаний; рисунок 11 статьи НЕ изменяется.
 
@@ -1056,7 +1091,9 @@ def build_expert_gallery(
         raise ValueError("Шаг предсказаний должен быть положительным")
     if startup_policy not in ("early", "full_context") or batch_size < 1:
         raise ValueError("Проверьте startup_policy и batch_size")
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = ("cuda" if torch.cuda.is_available() else "cpu") if device == "auto" else device
+    if device == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("Для галереи требуется PyTorch с CUDA; медленный режим включается --device cpu")
     models = {}
     for path in _gallery_checkpoint_paths(checkpoint, checkpoint_kind):
         cfg_path = path.parent / "config.json"
@@ -1142,6 +1179,7 @@ def build_expert_gallery(
                 "cfg_sha256": _sha256(cfg_path), "dat_sha256": _sha256(cfg_path.with_suffix(".dat")),
                 "automatic_manifest_sha256": manifest_hashes[source],
                 "inference_stride": inference_stride,
+                "phasor_backend": phasor_backend,
                 "split": split, "status": row.status,
             }
             sidecar = image_path.with_suffix(".json")
@@ -1186,18 +1224,10 @@ def build_expert_gallery(
                         if ends.size:
                             features, feature_prov, lookup = _record_spectral_cache(
                                 raw, channel_prov, basis, tb, mode, cfg.feature_version, ends,
-                                startup_policy=startup_policy, shared_cache=shared_cache,
+                                startup_policy=startup_policy, shared_cache=shared_cache, phasor_backend=phasor_backend,
                             )
-                            with torch.inference_mode():
-                                for begin in range(0, len(ends), batch_size):
-                                    if begin % (50 * batch_size) == 0:
-                                        print(f"  [{mode}] {begin:,}/{len(ends):,} точек", flush=True)
-                                    indices = lookup[begin:begin + batch_size]
-                                    batch = {"features": torch.from_numpy(features[indices]),
-                                             "provenance": torch.from_numpy(feature_prov[indices])}
-                                    outputs = head(extract_backbone_features(model, batch, device))
-                                    predictions.extend(outputs["logits"].argmax(-1).cpu().tolist())
-                                    valid_probabilities.extend(outputs["applicability_logit"].sigmoid().cpu().tolist())
+                            predictions, valid_probabilities = _predict_cached(
+                                model, head, features, feature_prov, lookup, device, batch_size, shared_cache)
                             del lookup
                         saved[sample_key] = ends
                         saved[dir_key] = np.asarray(predictions, dtype=np.int8)
@@ -1302,13 +1332,15 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint-kind", choices=("latest", "best"), default=GALLERY_CHECKPOINT_KIND)
     parser.add_argument("--startup-policy", choices=("early", "full_context"), default=GALLERY_STARTUP_POLICY)
     parser.add_argument("--batch-size", type=int, default=GALLERY_BATCH_SIZE)
+    parser.add_argument("--device", choices=("cuda", "cpu", "auto"), default=GALLERY_DEVICE)
+    parser.add_argument("--phasor-backend", choices=("fft", "prefix"), default=GALLERY_PHASOR_BACKEND)
     parser.add_argument("--inference-stride", type=int, default=GALLERY_INFERENCE_STRIDE)
     parser.add_argument("--max-records", type=int)
     args = parser.parse_args()
     if args.gallery:
         build_expert_gallery(args.checkpoint, inference_stride=args.inference_stride, max_records=args.max_records,
                              checkpoint_kind=args.checkpoint_kind, startup_policy=args.startup_policy,
-                             batch_size=args.batch_size)
+                             batch_size=args.batch_size, device=args.device, phasor_backend=args.phasor_backend)
         raise SystemExit(0)
     print("Generating figures for article...")
     plot_fig1()

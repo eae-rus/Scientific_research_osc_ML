@@ -81,6 +81,8 @@ def test_verified_metrics_ignore_extra_signals_and_protect_automatic(tmp_path, m
     exported = replace(source, analog=source.analog + (AnalogChannel("MY_EXTRA", "A", np.array([99., 99.])),))
     cfg = tmp_path / "Oscilogramma1.1.cfg"
     write_comtrade_ascii(exported, cfg, cfg.with_suffix(".dat"))
+    # Внешний редактор добавляет пробелы в CFG; единицы и имена не меняются.
+    cfg.write_text(_read_text(cfg).replace(",", ", "), encoding="utf-8", newline="")
     cfg.with_suffix(".json").write_text(json.dumps({"automatic_digital_hashes": {
         ch.name: hashlib.sha256(ch.values.tobytes()).hexdigest() for ch in digital if "__expert__" not in ch.name}}))
     monkeypatch.setattr(module, "VERIFIED_ROOT", tmp_path)
@@ -95,3 +97,25 @@ def test_verified_metrics_ignore_extra_signals_and_protect_automatic(tmp_path, m
     write_comtrade_ascii(replace(exported, digital=tuple(changed)), cfg, cfg.with_suffix(".dat"))
     with pytest.raises(ValueError, match="Изменён неэкспертный"):
         module.evaluate_verified()
+
+
+def test_comparison_metrics_do_not_reward_abstention_or_invalid_direction():
+    from scripts.phase5_experiments.run_pdr_rtds import _comparison_metrics
+    result = _comparison_metrics(np.array([0, 1, 1, 0]), np.array([1, 1, 0, 0]),
+                                 np.array([0, 0, 1, 0]), np.array([1, 0, 0, 1]), 1000)
+    assert result["direction_accuracy"] == 1
+    assert result["direction_coverage"] == .5
+    assert result["state_accuracy"] == .5
+    assert result["state_confusion"] == [[1, 1, 0], [0, 1, 0], [1, 0, 0]]
+    assert result["expert_transitions"] == 1
+
+
+def test_comparison_metrics_long_errors_and_post_transition_exclusion():
+    from scripts.phase5_experiments.run_pdr_rtds import _comparison_metrics
+    target = np.r_[np.zeros(10), np.ones(30)].astype(np.uint8)
+    pred = np.zeros(40, dtype=np.uint8)
+    valid = np.ones(40, dtype=bool)
+    result = _comparison_metrics(target, valid, pred, valid, 1000)
+    assert result["max_error_episode_ms"] == 30
+    assert result["error_episodes_over_20ms"] == 1
+    assert result["stable_state_accuracy"] == 10/34
