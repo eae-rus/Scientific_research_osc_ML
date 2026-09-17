@@ -1,0 +1,45 @@
+{
+  "source_id": "DISS-005",
+  "source_sha256": "50516d7832e6ea133d77b11b48802c4ed1929283ea7601134b878fab0e0338f7",
+  "extracted_dir": "review/raw/DISS-005/50516d7832e6ea133d77b11b48802c4ed1929283ea7601134b878fab0e0338f7",
+  "parts_count": 6,
+  "comments_count": 144,
+  "files": [
+    {
+      "part_name": "word/comments.xml",
+      "relative_path": "comments.xml",
+      "bytes": 129487,
+      "sha256": "5b91bcb7797adcde62fbbedac19a952117985e5318a45719b7bddfa1353959d5"
+    },
+    {
+      "part_name": "word/commentsExtended.xml",
+      "relative_path": "commentsExtended.xml",
+      "bytes": 10536,
+      "sha256": "4e6a8925e6b8f8f920f26b1c895f70b7e44d94d5129bab3a4fe01338763e54c3"
+    },
+    {
+      "part_name": "word/commentsIds.xml",
+      "relative_path": "commentsIds.xml",
+      "bytes": 12784,
+      "sha256": "b6e70c06e7714ca45c8363dd817d7c9229e85ab61741a4fdf376ec564183e762"
+    },
+    {
+      "part_name": "word/commentsExtensible.xml",
+      "relative_path": "commentsExtensible.xml",
+      "bytes": 8103,
+      "sha256": "09c88e4620377bf7127fce0d596f0633ab4be8609b8831d983dce85bfd6140bf"
+    },
+    {
+      "part_name": "word/_rels/comments.xml.rels",
+      "relative_path": "_rels/comments.xml.rels",
+      "bytes": 1008,
+      "sha256": "6cfb96266a0af52abb3a2846d8e173e923fc02f85b05cb0c9e5f9d38d8555e50"
+    },
+    {
+      "part_name": "extracted/comments.json",
+      "relative_path": "comments.json",
+      "bytes": 360959,
+      "sha256": "77824272bd21362f99624cccb8c65ee070f31e284b9252981251d0b2609feec7"
+    }
+  ]
+}
