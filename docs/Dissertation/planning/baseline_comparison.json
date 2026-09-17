@@ -1,6 +1,7 @@
 {
   "scope": "Main document paragraph text including tracked deleted text; not a full formatting or package comparison",
   "archive_vs_article_equal": false,
+  "status_note": "Файл docs/article/Диссертация (Евдаков А.Е.) v0.5.docx удалён автором 17.09.2026 для исключения дублирования. Данный файл сохранён как историческая справка различий.",
   "diff": [
     "--- Dissertation/Архивное\n",
     "+++ article\n",
