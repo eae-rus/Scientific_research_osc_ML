@@ -2,7 +2,7 @@
   "source_id": "DISS-005",
   "source_sha256": "50516d7832e6ea133d77b11b48802c4ed1929283ea7601134b878fab0e0338f7",
   "extracted_dir": "review/raw/DISS-005/50516d7832e6ea133d77b11b48802c4ed1929283ea7601134b878fab0e0338f7",
-  "parts_count": 6,
+  "parts_count": 7,
   "comments_count": 144,
   "files": [
     {
@@ -40,6 +40,13 @@
       "relative_path": "comments.json",
       "bytes": 360959,
       "sha256": "77824272bd21362f99624cccb8c65ee070f31e284b9252981251d0b2609feec7"
+    },
+    {
+      "part_name": "extracted/revisions.json",
+      "relative_path": "revisions.json",
+      "bytes": 1941,
+      "sha256": "cf5ae53da98de760e8cc779dc508cea90b4463db005b803c4c8dc2a40af191b4",
+      "description": "Машиночитаемый реестр отслеживаемых изменений (A07)"
     }
   ]
 }
