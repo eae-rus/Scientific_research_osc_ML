@@ -35,6 +35,21 @@ def test_version_a_preserves_220_external_features() -> None:
     assert metadata["feature_contract"] == "feature_contract_v2_a"
 
 
+def test_h123_is_exact_subset_of_b_without_low_frequency_windows():
+    cfg = SpectralFeatureConfig("B_H123")
+    assert cfg.standard_harmonics == 3 and cfg.low_periods == ()
+    short = SpectralFeatureBuilder(cfg)
+    original = SpectralFeatureBuilder(SpectralFeatureConfig("B"))
+    raw = np.tile(_balanced_raw(32), (12, 1))
+    a, ma, meta = short.build(raw, 32, [31, len(raw)-1])
+    b, mb, _ = original.build(raw, 32, [31, len(raw)-1])
+    assert a.shape == (2, 36)
+    assert short.schema.names == original.schema.names[:36]
+    np.testing.assert_array_equal(a, b[:, :36])
+    np.testing.assert_array_equal(ma, mb[:, :36])
+    assert meta["feature_contract"] == "feature_contract_v2_b_h123"
+
+
 def test_version_b_has_only_symmetric_features_and_masks_unavailable_harmonics() -> None:
     builder = SpectralFeatureBuilder(SpectralFeatureConfig("B"))
     features, mask, metadata = builder.build(_balanced_raw(12), spp=12)

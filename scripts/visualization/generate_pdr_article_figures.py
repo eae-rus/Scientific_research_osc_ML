@@ -963,7 +963,7 @@ def _record_spectral_cache(raw, provenance, basis, timebase, mode, version, ends
     from osc_tools.ml.phase5_contracts import periods_to_samples, spectral_positions
     from osc_tools.ml.spectral_features import SpectralFeatureBuilder, SpectralFeatureConfig
     builder = SpectralFeatureBuilder(SpectralFeatureConfig(version))
-    history = max(builder.config.low_periods)
+    history = max(builder.config.low_periods, default=1)
     total = periods_to_samples(history + timebase.window_periods, timebase.spp)
     local_positions = np.asarray(spectral_positions(
         total, timebase.spp, mode, history_periods=history,

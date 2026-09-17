@@ -14,6 +14,32 @@ from osc_tools.pdr.pdr_trainer import (
 from osc_tools.ml.models.transformer import PhysicalKANTransformer
 
 
+def test_h123_deep24_forward_backward_and_checkpoint_contract(tmp_path):
+    from dataclasses import asdict, replace
+    from scripts.phase5_experiments.run_phase5_pdr_training import PDRTrainingConfig, _build_model, _default_output
+    import pytest
+    cfg = PDRTrainingConfig(model_preset="h123_deep24")
+    assert cfg.feature_version == "B_H123" and not cfg.use_ssl_initialization
+    assert _default_output(cfg, False) != _default_output(PDRTrainingConfig(), False)
+    with pytest.raises(ValueError, match="snapshot_5"):
+        PDRTrainingConfig(model_preset="h123_deep24", temporal_mode="snapshot_2")
+    model, head, _ = _build_model(cfg, None, None)
+    assert len(model.encoder_blocks) == 24 and model.num_input_channels == 36
+    batch = {"features": torch.rand(2, 5, 36), "provenance": torch.ones(2, 5, 36, dtype=torch.long)}
+    out = head(extract_backbone_features(model, batch, "cpu"))
+    loss = out["logits"].square().mean() + out["applicability_logit"].square().mean()
+    assert torch.isfinite(loss)
+    loss.backward()
+    assert all(torch.isfinite(p.grad).all() for p in model.parameters() if p.grad is not None)
+    path = tmp_path / "h123.pt"
+    torch.save({"config": asdict(cfg), "backbone_state_dict": model.state_dict(), "head_state_dict": head.state_dict()}, path)
+    reloaded, _, _ = _build_model(replace(cfg, stage="expert"), None, path)
+    assert reloaded.num_input_channels == 36
+    torch.save({"config": asdict(PDRTrainingConfig())}, path)
+    with pytest.raises(ValueError, match="собственный checkpoint"):
+        _build_model(cfg, None, path)
+
+
 class _ContractBackbone(nn.Module):
     def forward(self, x, mode="features", provenance=None):
         assert x.ndim == 3  # (B,C,T)

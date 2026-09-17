@@ -90,6 +90,11 @@ def test_dataset_uses_full_context_last_point_and_derived_current(tmp_path: Path
     assert sample["pdr_confidence"].item() == pytest.approx(0.8)
     assert sample["target_applicable"].item() is True
 
+    reduced = PDRTaskDataset(_SingleRecordSource(signal, spp), [0], labels, timebase,
+                             temporal_mode="snapshot_5", feature_version="B_H123")
+    assert reduced.feature_history_periods == 1
+    assert reduced[0]["features"].shape == (5, 36)
+
 
 def test_dataset_reads_new_sharded_teacher_format(tmp_path: Path) -> None:
     spp = 24

@@ -178,7 +178,7 @@ class PDRTaskDataset(Dataset):
             with np.load(self.labels_path) as data:
                 self.labels_dict = {k: data[k] for k in data.files}
 
-        ver = "B" if str(feature_version).upper().endswith("B") else "A"
+        ver = str(feature_version).upper().removeprefix("FEATURE_CONTRACT_V2_")
         feat_config = SpectralFeatureConfig(version=ver)
         self.feature_builder = SpectralFeatureBuilder(config=feat_config)
         self.feature_history_periods = float(max(feat_config.low_periods, default=1))

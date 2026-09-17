@@ -14,7 +14,7 @@ from osc_tools.features.phasor import (
 from .phase5_contracts import CHANNEL_ORDER, ChannelProvenance, available_harmonics
 
 
-FeatureVersion = Literal["A", "B"]
+FeatureVersion = Literal["A", "B", "B_H123"]
 SYMMETRIC_NAMES = ("I1", "I2", "I0", "U1", "U2", "U0")
 
 
@@ -25,6 +25,15 @@ class SpectralFeatureConfig:
     version: FeatureVersion
     standard_harmonics: int = 9
     low_periods: tuple[int, ...] = (2, 4, 6, 10)
+
+    def __post_init__(self) -> None:
+        if self.version == "B_H123":
+            # Отдельный контракт: три гармоники, без низкочастотных окон.
+            # Схемы A/B и их checkpoint остаются неизменными.
+            object.__setattr__(self, "standard_harmonics", 3)
+            object.__setattr__(self, "low_periods", ())
+        elif self.version not in ("A", "B"):
+            raise ValueError(f"Неизвестный спектральный контракт: {self.version}")
 
     @property
     def contract_name(self) -> str:
@@ -102,11 +111,11 @@ class SpectralFeatureBuilder:
                 phase[:] = np.nan + 1j * np.nan
             blocks.append(self._block(
                 phase, voltage_basis, include_phase=self.config.version == "A",
-                include_symmetric=self.config.version == "B" or harmonic == 0,
+                include_symmetric=self.config.version != "A" or harmonic == 0,
             ))
         for phase in lows:
             blocks.append(self._block(phase, voltage_basis, include_phase=self.config.version == "A",
-                                      include_symmetric=self.config.version == "B"))
+                                      include_symmetric=self.config.version != "A"))
         features = np.concatenate(blocks, axis=1).astype(np.float32)
         missing_mask = ~np.isfinite(features)
         feature_provenance = self._feature_provenance(

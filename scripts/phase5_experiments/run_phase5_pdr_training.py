@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import argparse
 import bisect
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime
 import hashlib
 import json
@@ -67,11 +67,20 @@ class PDRTrainingConfig:
     device: str = "auto"
     use_ssl_initialization: bool = True
 
+    def __post_init__(self) -> None:
+        if self.model_preset == "h123_deep24":
+            if self.temporal_mode != "snapshot_5":
+                raise ValueError("H123-D24 требует temporal_mode='snapshot_5'")
+            self.feature_version = "B_H123"
+            # SSL старого B имеет другой вход и глубину; первый weak — с нуля.
+            self.use_ssl_initialization = False
+
 
 MODEL_PRESETS = {
     "small": {"d_model": 64, "num_heads": 4, "num_layers": 4, "d_ff": 256},
     "medium": {"d_model": 128, "num_heads": 8, "num_layers": 6, "d_ff": 512},
     "heavy": {"d_model": 256, "num_heads": 8, "num_layers": 8, "d_ff": 1024},
+    "h123_deep24": {"d_model": 128, "num_heads": 8, "num_layers": 24, "d_ff": 512},
 }
 
 
@@ -736,6 +745,12 @@ def _build_model(cfg: PDRTrainingConfig, ssl_checkpoint: Path | None, weak_check
     initialization = "random"
     if weak_checkpoint is not None:
         checkpoint = torch.load(weak_checkpoint, map_location="cpu", weights_only=False)
+        stored = checkpoint.get("config", {})
+        if cfg.model_preset == "h123_deep24" and any(
+            stored.get(key) != getattr(cfg, key)
+            for key in ("feature_version", "temporal_mode", "model_preset")
+        ):
+            raise ValueError("H123-D24: нужен собственный checkpoint B_H123/snapshot_5/h123_deep24, не прежней модели B")
         model.load_state_dict(checkpoint["backbone_state_dict"])
         head.load_state_dict(checkpoint["head_state_dict"])
         initialization = str(weak_checkpoint)
@@ -760,6 +775,8 @@ def run(
     ) = _imports()
     if cfg.stage not in ("weak", "expert"):
         raise ValueError("stage должен быть weak или expert")
+    if not cfg.use_ssl_initialization:
+        ssl_checkpoint = None
     if cfg.stage == "expert" and weak_checkpoint is None and not resume:
         raise ValueError("Для expert-stage обязателен checkpoint weak-stage")
     positive_fields = (
@@ -815,6 +832,8 @@ def run(
         "режим_времени": cfg.temporal_mode,
         "шаг_целевых_точек": cfg.label_stride_samples,
         "модель": cfg.model_preset,
+        "спектральный_контракт": cfg.feature_version,
+        "архитектура": MODEL_PRESETS[cfg.model_preset],
         "эпох": cfg.epochs,
         "обучающих_примеров_на_эпоху": cfg.samples_per_epoch,
         "размер_batch": cfg.batch_size,
@@ -1178,6 +1197,8 @@ def run(
 
 def _default_output(cfg: PDRTrainingConfig, smoke: bool) -> Path:
     name = f"pdr_{cfg.stage}_{cfg.temporal_mode}_stride{cfg.label_stride_samples}"
+    if cfg.model_preset == "h123_deep24":
+        name += "_h123_deep24"
     if smoke:
         name = "smoke_" + name
     return PROJECT_ROOT / "experiments/phase5" / name
@@ -1324,9 +1345,7 @@ def main() -> int:
             )
         weak_checkpoint = _restart_checkpoint(output_dir, args.restart_weak_from)
     if cfg.stage == "expert" and weak_checkpoint is None:
-        weak_checkpoint = PROJECT_ROOT / (
-            f"experiments/phase5/pdr_weak_{cfg.temporal_mode}_stride{cfg.label_stride_samples}"
-        ) / _checkpoint_filename(args.weak_checkpoint_kind)
+        weak_checkpoint = _default_output(replace(cfg, stage="weak"), False) / _checkpoint_filename(args.weak_checkpoint_kind)
     run(
         cfg,
         output_dir,
@@ -1363,20 +1382,20 @@ def run_manual() -> None:
     но с нулевого внутреннего индекса эпохи и новым optimizer/scheduler.
     """
     # Основной контракт опыта.
-    STAGE = "expert"                  # weak, затем expert
-    TEMPORAL_MODE = "snapshot_2"   #  snapshot_2, snapshot_5 и sequence_1_8
+    STAGE = "weak"                  # weak, затем expert
+    TEMPORAL_MODE = "snapshot_5"   #  snapshot_2, snapshot_5 и sequence_1_8
     LABEL_STRIDE_SAMPLES = 5        # основной; абляция 2 и 1
-    MODEL_PRESET = "small"          # small, medium, heavy
+    MODEL_PRESET = "h123_deep24"          # small, medium, heavy; h123_deep24 = 24 слоя, h1–h3, обязательно snapshot_5.
     SMOKE = False                   # True: короткая проверка перед full
     RESUME = False                   # True: продолжить latest_checkpoint.pt
     SSL_CHECKPOINT_KIND = "latest"    # best или latest для инициализации weak
     WEAK_CHECKPOINT_KIND = "latest"   # best рекомендуется; latest остаётся доступен
     WEAK_CHECKPOINT_PATH = None      # None = путь автоматически совпадает с TEMPORAL_MODE
     EXPERT_LABELS_ROOT = "data/phase5/pdr_expert_labels_v1"  # Производный архив импорта, не исходная папка CFG/DAT.
-    RESTART_WEAK_FROM = "latest"        # None, best или latest: новый weak-цикл с готовых весов
+    RESTART_WEAK_FROM = None        # None для первого H123-D24; best/latest — новый цикл уже обученной той же модели.
 
     # Объём и длительность обучения.
-    EPOCHS = 100  # Итоговое число эпох цикла; при resume продолжение до этой границы, не столько дополнительных эпох.
+    EPOCHS = 300  # Итоговое число эпох цикла; при resume продолжение до этой границы, не столько дополнительных эпох.
     SAMPLES_PER_EPOCH = 20_000      # случайных целевых точек с возвращением
     BATCH_SIZE = 32                 # число примеров в одном шаге оптимизатора
     MAX_SAMPLES_PER_RECORD = 64     # ограничение train-индекса на осциллограмму
@@ -1462,9 +1481,7 @@ def run_manual() -> None:
             if not weak_checkpoint.is_absolute():
                 weak_checkpoint = PROJECT_ROOT / weak_checkpoint
         else:
-            weak_checkpoint = PROJECT_ROOT / (
-                f"experiments/phase5/pdr_weak_{TEMPORAL_MODE}_stride{LABEL_STRIDE_SAMPLES}"
-            ) / _checkpoint_filename(WEAK_CHECKPOINT_KIND)
+            weak_checkpoint = _default_output(replace(cfg, stage="weak"), False) / _checkpoint_filename(WEAK_CHECKPOINT_KIND)
     run(
         cfg,
         output_dir,
