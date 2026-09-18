@@ -5,18 +5,21 @@
 % ==============================================================================
 
 {\scriptsize
-\setlength{\tabcolsep}{1.5pt}
-\begin{longtable}{|p{2.2cm}|c|c|ccc|ccc|ccc|}
+\setlength{\tabcolsep}{0.8pt}
+\renewcommand{\arraystretch}{1.02}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\begin{longtable}{|L{3.35cm}|C{0.65cm}|C{0.85cm}|C{1.10cm}|C{1.10cm}|C{1.30cm}|C{0.95cm}|C{0.95cm}|C{1.10cm}|C{1.45cm}|C{1.35cm}|C{1.40cm}|}
 \hline
 \multicolumn{3}{|c|}{% DISS-005-B0892
-\textbf{Параметры эксперимента}} & \multicolumn{3}{|c|}{% DISS-005-B0893
-\textbf{\begin{tabular}[c]{@{}c@{}}Скорость достижения\\ уставки ($t_1$), мс\end{tabular}}} & \multicolumn{3}{|c|}{% DISS-005-B0894
-\textbf{\begin{tabular}[c]{@{}c@{}}Время вхождения\\ в зону ($t_{\text{зона}}$), мс\end{tabular}}} & \multicolumn{3}{|c|}{% DISS-005-B0895
-\textbf{\begin{tabular}[c]{@{}c@{}}Макс. отклонение\\ амплитуды ($\sigma_{\max}$), \%\end{tabular}}} \\
-\cline{4-12}
+\textbf{Параметры эксперимента}} & \multicolumn{3}{c|}{% DISS-005-B0893
+\textbf{\begin{tabular}[c]{@{}c@{}}Скорость достижения\\ уставки ($t_1$), мс\end{tabular}}} & \multicolumn{3}{c|}{% DISS-005-B0894
+\textbf{\begin{tabular}[c]{@{}c@{}}Время вхождения\\ в зону ($t_{\text{зона}}$), мс\end{tabular}}} & \multicolumn{3}{c|}{% DISS-005-B0895
+\textbf{\begin{tabular}[c]{@{}c@{}}Максимальное отклонение\\ амплитуды ($\sigma_{\max}$), \%\end{tabular}}} \\
+\hline
 % DISS-005-B0896
 \textbf{Окно} & % DISS-005-B0897
-\textbf{$L$, о.е.} & % DISS-005-B0898
+\textbf{\begin{tabular}[c]{@{}c@{}}L,\\ о.е.\end{tabular}} & % DISS-005-B0898
 \textbf{$T_a$, с} & % DISS-005-B0899
 \textbf{ТТ} & % DISS-005-B0900
 \textbf{КР} & % DISS-005-B0901
@@ -30,17 +33,17 @@
 \hline
 \endfirsthead
 
-\multicolumn{12}{c}{{\small\textit{Таблица 1. Сравнение оконных функций (продолжение)}}}\\
+\multicolumn{12}{r}{{\scriptsize\textit{Продолжение таблицы 1}}}\\
 \hline
 \multicolumn{3}{|c|}{% DISS-005-B0892
-\textbf{Параметры эксперимента}} & \multicolumn{3}{|c|}{% DISS-005-B0893
-\textbf{\begin{tabular}[c]{@{}c@{}}Скорость достижения\\ уставки ($t_1$), мс\end{tabular}}} & \multicolumn{3}{|c|}{% DISS-005-B0894
-\textbf{\begin{tabular}[c]{@{}c@{}}Время вхождения\\ в зону ($t_{\text{зона}}$), мс\end{tabular}}} & \multicolumn{3}{|c|}{% DISS-005-B0895
-\textbf{\begin{tabular}[c]{@{}c@{}}Макс. отклонение\\ амплитуды ($\sigma_{\max}$), \%\end{tabular}}} \\
-\cline{4-12}
+\textbf{Параметры эксперимента}} & \multicolumn{3}{c|}{% DISS-005-B0893
+\textbf{\begin{tabular}[c]{@{}c@{}}Скорость достижения\\ уставки ($t_1$), мс\end{tabular}}} & \multicolumn{3}{c|}{% DISS-005-B0894
+\textbf{\begin{tabular}[c]{@{}c@{}}Время вхождения\\ в зону ($t_{\text{зона}}$), мс\end{tabular}}} & \multicolumn{3}{c|}{% DISS-005-B0895
+\textbf{\begin{tabular}[c]{@{}c@{}}Максимальное отклонение\\ амплитуды ($\sigma_{\max}$), \%\end{tabular}}} \\
+\hline
 % DISS-005-B0896
 \textbf{Окно} & % DISS-005-B0897
-\textbf{$L$, о.е.} & % DISS-005-B0898
+\textbf{\begin{tabular}[c]{@{}c@{}}L,\\ о.е.\end{tabular}} & % DISS-005-B0898
 \textbf{$T_a$, с} & % DISS-005-B0899
 \textbf{ТТ} & % DISS-005-B0900
 \textbf{КР} & % DISS-005-B0901
@@ -63,8 +66,8 @@
 \endlastfoot
 
 % DISS-005-B0908
-\multirow{12}{=}{Прямоугольное окно} & % DISS-005-B0909
-\multirow{7}{=}{1} & % DISS-005-B0910
+\multirow{12}{3.35cm}{Прямоугольное окно} & % DISS-005-B0909
+\multirow{7}{*}{1} & % DISS-005-B0910
 0 & % DISS-005-B0911
 20.2 & % DISS-005-B0912
 27.7 & % DISS-005-B0913
@@ -159,10 +162,10 @@
 7.0338 & % DISS-005-B0990
 0.0167 & % DISS-005-B0991
 0.0167 \\
-\hline
+\cline{2-12}
 % DISS-005-B0992
  & % DISS-005-B0993
-\multirow{5}{=}{2} & % DISS-005-B0994
+\multirow{5}{*}{2} & % DISS-005-B0994
 0 & % DISS-005-B0995
 40.2 & % DISS-005-B0996
 47.7 & % DISS-005-B0997
@@ -231,8 +234,8 @@
 0.8308 \\
 \hline
 % DISS-005-B1052
-\multirow{5}{=}{Треугольное окно} & % DISS-005-B1053
-\multirow{5}{=}{2} & % DISS-005-B1054
+\multirow{5}{3.35cm}{Треугольное окно} & % DISS-005-B1053
+\multirow{5}{*}{2} & % DISS-005-B1054
 0 & % DISS-005-B1055
 - & % DISS-005-B1056
 41.7 & % DISS-005-B1057
@@ -313,7 +316,7 @@
 2.355 & % DISS-005-B1122
 0.0476 & % DISS-005-B1123
 0.87 \\
-\cline{3-12}
+\hline
 % DISS-005-B1124
 Окно Хемминга & % DISS-005-B1125
 2 & % DISS-005-B1126
@@ -327,7 +330,7 @@
 1.5939 & % DISS-005-B1134
 0.0354 & % DISS-005-B1135
 0.3299 \\
-\cline{3-12}
+\hline
 % DISS-005-B1136
 Окно Блэкмена & % DISS-005-B1137
 2 & % DISS-005-B1138
@@ -343,7 +346,7 @@
 7.6147 \\
 \hline
 % DISS-005-B1148
-\multirow{2}{=}{Окно Кайзера} & % DISS-005-B1149
+\multirow{2}{3.35cm}{Окно Кайзера} & % DISS-005-B1149
 1 & % DISS-005-B1150
 0.10 & % DISS-005-B1151
 12.9 & % DISS-005-B1152
@@ -355,7 +358,7 @@
 6.2574 & % DISS-005-B1158
 0.4863 & % DISS-005-B1159
 3.0063 \\
-\cline{3-12}
+\cline{2-12}
 % DISS-005-B1160
  & % DISS-005-B1161
 2 & % DISS-005-B1162

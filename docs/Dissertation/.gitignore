@@ -14,3 +14,8 @@
 # Local LaTeX build output folders
 build/
 manuscript/build/
+scratch/
+
+# Temporary test PDF builds
+*build.pdf
+*test.pdf
