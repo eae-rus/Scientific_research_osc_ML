@@ -1,0 +1,1547 @@
+{
+  "source_id": "DISS-005",
+  "source_sha256": "50516d7832e6ea133d77b11b48802c4ed1929283ea7601134b878fab0e0338f7",
+  "total_batches": 46,
+  "total_blocks": 2307,
+  "batches": [
+    {
+      "batch_id": "B03-001",
+      "parent_id": "B03",
+      "title": "Титульный лист и реквизиты организации",
+      "target_path": "manuscript/frontmatter/title.tex",
+      "first_block_id": "DISS-005-B0001",
+      "last_block_id": "DISS-005-B0032",
+      "start_order": 1,
+      "end_order": 32,
+      "block_count": 32,
+      "chapter_id": "frontmatter",
+      "objects_count": 0,
+      "object_ids": [],
+      "contains_tables": false,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0001"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-002",
+      "parent_id": "B03",
+      "title": "Оглавление (структурный блок Word TOC)",
+      "target_path": "manuscript/frontmatter/toc_source.tex",
+      "first_block_id": "DISS-005-B0033",
+      "last_block_id": "DISS-005-B0113",
+      "start_order": 33,
+      "end_order": 113,
+      "block_count": 81,
+      "chapter_id": "frontmatter",
+      "objects_count": 0,
+      "object_ids": [],
+      "contains_tables": false,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0002"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-001"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-003",
+      "parent_id": "B03",
+      "title": "Введение, часть 1 (актуальность, степень разработанности)",
+      "target_path": "manuscript/frontmatter/introduction.tex",
+      "first_block_id": "DISS-005-B0114",
+      "last_block_id": "DISS-005-B0150",
+      "start_order": 114,
+      "end_order": 150,
+      "block_count": 37,
+      "chapter_id": "frontmatter",
+      "objects_count": 0,
+      "object_ids": [],
+      "contains_tables": false,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0003",
+        "DISS-005-C0004"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-002"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-004",
+      "parent_id": "B03",
+      "title": "Введение, часть 2 (цели, задачи, положения, апробация)",
+      "target_path": "manuscript/frontmatter/introduction.tex",
+      "first_block_id": "DISS-005-B0151",
+      "last_block_id": "DISS-005-B0205",
+      "start_order": 151,
+      "end_order": 205,
+      "block_count": 55,
+      "chapter_id": "frontmatter",
+      "objects_count": 0,
+      "object_ids": [],
+      "contains_tables": false,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-003"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-005",
+      "parent_id": "B03",
+      "title": "Глава 1: Введение и рисунок 1 (схемы БАВР, Visio OLE)",
+      "target_path": "manuscript/chapters/ch01_bavr_problems/sec01_intro.tex",
+      "first_block_id": "DISS-005-B0206",
+      "last_block_id": "DISS-005-B0235",
+      "start_order": 206,
+      "end_order": 235,
+      "block_count": 30,
+      "chapter_id": "ch01",
+      "objects_count": 3,
+      "object_ids": [
+        "DISS-005-TAB-001",
+        "DISS-005-FIG-001",
+        "DISS-005-OLE-001"
+      ],
+      "contains_tables": true,
+      "contains_drawings": true,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0005",
+        "DISS-005-C0006",
+        "DISS-005-C0007",
+        "DISS-005-C0008"
+      ],
+      "revision_ids": [
+        "DISS-005-REV0001"
+      ],
+      "dependencies": [
+        "B02",
+        "B03-004"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-006",
+      "parent_id": "B03",
+      "title": "Глава 1: Статистика функционирования и базовые проблемы РНМ",
+      "target_path": "manuscript/chapters/ch01_bavr_problems/sec02_statistics_and_basic_problems.tex",
+      "first_block_id": "DISS-005-B0236",
+      "last_block_id": "DISS-005-B0259",
+      "start_order": 236,
+      "end_order": 259,
+      "block_count": 24,
+      "chapter_id": "ch01",
+      "objects_count": 2,
+      "object_ids": [
+        "DISS-005-FIG-002",
+        "DISS-005-FIG-003"
+      ],
+      "contains_tables": false,
+      "contains_drawings": true,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0009",
+        "DISS-005-C0010",
+        "DISS-005-C0011",
+        "DISS-005-C0012",
+        "DISS-005-C0013",
+        "DISS-005-C0014"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-005"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-007",
+      "parent_id": "B03",
+      "title": "Глава 1: Проблемы базовых измерительных органов РНМ",
+      "target_path": "manuscript/chapters/ch01_bavr_problems/sec03_base_organs_problems.tex",
+      "first_block_id": "DISS-005-B0260",
+      "last_block_id": "DISS-005-B0301",
+      "start_order": 260,
+      "end_order": 301,
+      "block_count": 42,
+      "chapter_id": "ch01",
+      "objects_count": 13,
+      "object_ids": [
+        "DISS-005-TAB-002",
+        "DISS-005-FIG-004",
+        "DISS-005-TAB-003",
+        "DISS-005-FIG-005",
+        "DISS-005-TAB-004",
+        "DISS-005-FIG-006",
+        "DISS-005-TAB-005",
+        "DISS-005-FIG-007",
+        "DISS-005-TAB-006",
+        "DISS-005-FIG-008",
+        "DISS-005-FIG-009",
+        "DISS-005-FIG-010",
+        "DISS-005-FIG-011"
+      ],
+      "contains_tables": true,
+      "contains_drawings": true,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0015",
+        "DISS-005-C0016",
+        "DISS-005-C0017",
+        "DISS-005-C0018",
+        "DISS-005-C0019",
+        "DISS-005-C0020",
+        "DISS-005-C0021",
+        "DISS-005-C0022",
+        "DISS-005-C0023",
+        "DISS-005-C0024",
+        "DISS-005-C0025",
+        "DISS-005-C0026",
+        "DISS-005-C0027"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-006"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-008",
+      "parent_id": "B03",
+      "title": "Глава 1: Внедрение адаптивных функций РНМ",
+      "target_path": "manuscript/chapters/ch01_bavr_problems/sec04_adaptive_functions.tex",
+      "first_block_id": "DISS-005-B0302",
+      "last_block_id": "DISS-005-B0320",
+      "start_order": 302,
+      "end_order": 320,
+      "block_count": 19,
+      "chapter_id": "ch01",
+      "objects_count": 6,
+      "object_ids": [
+        "DISS-005-TAB-007",
+        "DISS-005-FIG-012",
+        "DISS-005-TAB-008",
+        "DISS-005-FIG-013",
+        "DISS-005-TAB-009",
+        "DISS-005-FIG-014"
+      ],
+      "contains_tables": true,
+      "contains_drawings": true,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0028",
+        "DISS-005-C0029",
+        "DISS-005-C0030",
+        "DISS-005-C0031",
+        "DISS-005-C0032"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-007"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-009",
+      "parent_id": "B03",
+      "title": "Глава 1: Анализ органов других производителей (ЭКРА, Механотроника, Бреслер)",
+      "target_path": "manuscript/chapters/ch01_bavr_problems/sec05_manufacturers_analysis_part1.tex",
+      "first_block_id": "DISS-005-B0321",
+      "last_block_id": "DISS-005-B0354",
+      "start_order": 321,
+      "end_order": 354,
+      "block_count": 34,
+      "chapter_id": "ch01",
+      "objects_count": 6,
+      "object_ids": [
+        "DISS-005-TAB-010",
+        "DISS-005-FIG-015",
+        "DISS-005-TAB-011",
+        "DISS-005-FIG-016",
+        "DISS-005-OLE-002",
+        "DISS-005-FIG-017"
+      ],
+      "contains_tables": true,
+      "contains_drawings": true,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0033",
+        "DISS-005-C0034",
+        "DISS-005-C0035",
+        "DISS-005-C0036",
+        "DISS-005-C0037",
+        "DISS-005-C0038",
+        "DISS-005-C0039"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-008"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-010",
+      "parent_id": "B03",
+      "title": "Глава 1: Анализ органов других производителей (ЧЭАЗ, Радиус, Релематика, ABB, DMBTS)",
+      "target_path": "manuscript/chapters/ch01_bavr_problems/sec06_manufacturers_analysis_part2.tex",
+      "first_block_id": "DISS-005-B0355",
+      "last_block_id": "DISS-005-B0390",
+      "start_order": 355,
+      "end_order": 390,
+      "block_count": 36,
+      "chapter_id": "ch01",
+      "objects_count": 0,
+      "object_ids": [],
+      "contains_tables": false,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0040",
+        "DISS-005-C0041",
+        "DISS-005-C0042",
+        "DISS-005-C0043",
+        "DISS-005-C0044",
+        "DISS-005-C0045",
+        "DISS-005-C0046",
+        "DISS-005-C0047",
+        "DISS-005-C0048",
+        "DISS-005-C0049"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-009"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-011",
+      "parent_id": "B03",
+      "title": "Глава 1: Сложные случаи адаптивного РНМ (колебание, рекомендации)",
+      "target_path": "manuscript/chapters/ch01_bavr_problems/sec07_complex_cases_time.tex",
+      "first_block_id": "DISS-005-B0391",
+      "last_block_id": "DISS-005-B0410",
+      "start_order": 391,
+      "end_order": 410,
+      "block_count": 20,
+      "chapter_id": "ch01",
+      "objects_count": 3,
+      "object_ids": [
+        "DISS-005-TAB-012",
+        "DISS-005-FIG-018",
+        "DISS-005-FIG-019"
+      ],
+      "contains_tables": true,
+      "contains_drawings": true,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0050",
+        "DISS-005-C0051",
+        "DISS-005-C0052",
+        "DISS-005-C0053",
+        "DISS-005-C0054"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-010"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-012",
+      "parent_id": "B03",
+      "title": "Глава 1: Таблица 1 (Работа системы БАВР, TAB-013, 139 ячеек)",
+      "target_path": "manuscript/chapters/ch01_bavr_problems/tab01_bavr_operation.tex",
+      "first_block_id": "DISS-005-B0411",
+      "last_block_id": "DISS-005-B0549",
+      "start_order": 411,
+      "end_order": 549,
+      "block_count": 139,
+      "chapter_id": "ch01",
+      "objects_count": 1,
+      "object_ids": [
+        "DISS-005-TAB-013"
+      ],
+      "contains_tables": true,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0055",
+        "DISS-005-C0056"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-011"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-013",
+      "parent_id": "B03",
+      "title": "Глава 1: Отпадание адаптивного РНМ и подбор коэффициентов",
+      "target_path": "manuscript/chapters/ch01_bavr_problems/sec08_adaptive_dropout.tex",
+      "first_block_id": "DISS-005-B0550",
+      "last_block_id": "DISS-005-B0586",
+      "start_order": 550,
+      "end_order": 586,
+      "block_count": 37,
+      "chapter_id": "ch01",
+      "objects_count": 8,
+      "object_ids": [
+        "DISS-005-TAB-014",
+        "DISS-005-FIG-020",
+        "DISS-005-TAB-015",
+        "DISS-005-FIG-021",
+        "DISS-005-TAB-016",
+        "DISS-005-FIG-022",
+        "DISS-005-TAB-017",
+        "DISS-005-FIG-023"
+      ],
+      "contains_tables": true,
+      "contains_drawings": true,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0057",
+        "DISS-005-C0058",
+        "DISS-005-C0059",
+        "DISS-005-C0060",
+        "DISS-005-C0061",
+        "DISS-005-C0062"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-012"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-014",
+      "parent_id": "B03",
+      "title": "Глава 1: Блокировка работы БАВР при внешних двухфазных КЗ",
+      "target_path": "manuscript/chapters/ch01_bavr_problems/sec09_external_two_phase_blocking.tex",
+      "first_block_id": "DISS-005-B0587",
+      "last_block_id": "DISS-005-B0656",
+      "start_order": 587,
+      "end_order": 656,
+      "block_count": 70,
+      "chapter_id": "ch01",
+      "objects_count": 22,
+      "object_ids": [
+        "DISS-005-TAB-018",
+        "DISS-005-FIG-024",
+        "DISS-005-FIG-025",
+        "DISS-005-FIG-026",
+        "DISS-005-TAB-019",
+        "DISS-005-FIG-027",
+        "DISS-005-TAB-020",
+        "DISS-005-FIG-028",
+        "DISS-005-TAB-021",
+        "DISS-005-FIG-029",
+        "DISS-005-FIG-030",
+        "DISS-005-TAB-022",
+        "DISS-005-FIG-031",
+        "DISS-005-FIG-032",
+        "DISS-005-TAB-023",
+        "DISS-005-FIG-033",
+        "DISS-005-TAB-024",
+        "DISS-005-FIG-034",
+        "DISS-005-TAB-025",
+        "DISS-005-FIG-035",
+        "DISS-005-FIG-036",
+        "DISS-005-FIG-037"
+      ],
+      "contains_tables": true,
+      "contains_drawings": true,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0063",
+        "DISS-005-C0064",
+        "DISS-005-C0065"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-013"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-015",
+      "parent_id": "B03",
+      "title": "Глава 1: Измерение тока КР/ДН и РНМ нулевой последовательности",
+      "target_path": "manuscript/chapters/ch01_bavr_problems/sec10_rogowski_and_zero_sequence.tex",
+      "first_block_id": "DISS-005-B0657",
+      "last_block_id": "DISS-005-B0697",
+      "start_order": 657,
+      "end_order": 697,
+      "block_count": 41,
+      "chapter_id": "ch01",
+      "objects_count": 12,
+      "object_ids": [
+        "DISS-005-TAB-026",
+        "DISS-005-FIG-038",
+        "DISS-005-FIG-039",
+        "DISS-005-FIG-040",
+        "DISS-005-TAB-027",
+        "DISS-005-FIG-041",
+        "DISS-005-TAB-028",
+        "DISS-005-FIG-042",
+        "DISS-005-TAB-029",
+        "DISS-005-FIG-043",
+        "DISS-005-TAB-030",
+        "DISS-005-FIG-044"
+      ],
+      "contains_tables": true,
+      "contains_drawings": true,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0066",
+        "DISS-005-C0067",
+        "DISS-005-C0068",
+        "DISS-005-C0069"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-014"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-016",
+      "parent_id": "B03",
+      "title": "Глава 1: Поведение органов БАВР при феррорезонансных процессах ОЗЗ",
+      "target_path": "manuscript/chapters/ch01_bavr_problems/sec11_ferroresonance_ozz.tex",
+      "first_block_id": "DISS-005-B0698",
+      "last_block_id": "DISS-005-B0734",
+      "start_order": 698,
+      "end_order": 734,
+      "block_count": 37,
+      "chapter_id": "ch01",
+      "objects_count": 12,
+      "object_ids": [
+        "DISS-005-TAB-031",
+        "DISS-005-FIG-045",
+        "DISS-005-TAB-032",
+        "DISS-005-FIG-046",
+        "DISS-005-TAB-033",
+        "DISS-005-FIG-047",
+        "DISS-005-TAB-034",
+        "DISS-005-FIG-048",
+        "DISS-005-TAB-035",
+        "DISS-005-FIG-049",
+        "DISS-005-TAB-036",
+        "DISS-005-FIG-050"
+      ],
+      "contains_tables": true,
+      "contains_drawings": true,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0070",
+        "DISS-005-C0071",
+        "DISS-005-C0072",
+        "DISS-005-C0073"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-015"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-017",
+      "parent_id": "B03",
+      "title": "Глава 1: Выводы по первой главе",
+      "target_path": "manuscript/chapters/ch01_bavr_problems/sec12_conclusions.tex",
+      "first_block_id": "DISS-005-B0735",
+      "last_block_id": "DISS-005-B0754",
+      "start_order": 735,
+      "end_order": 754,
+      "block_count": 20,
+      "chapter_id": "ch01",
+      "objects_count": 0,
+      "object_ids": [],
+      "contains_tables": false,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-016"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-018",
+      "parent_id": "B03",
+      "title": "Глава 2: Введение, КР и ТТ, формулы тока КЗ (2.1, 2.2)",
+      "target_path": "manuscript/chapters/ch02_bavr_modernization/sec01_intro_and_rogowski_theory.tex",
+      "first_block_id": "DISS-005-B0755",
+      "last_block_id": "DISS-005-B0812",
+      "start_order": 755,
+      "end_order": 812,
+      "block_count": 58,
+      "chapter_id": "ch02",
+      "objects_count": 33,
+      "object_ids": [
+        "DISS-005-TAB-037",
+        "DISS-005-FIG-051",
+        "DISS-005-TAB-038",
+        "DISS-005-MATH-001",
+        "DISS-005-MATH-002",
+        "DISS-005-MATH-003",
+        "DISS-005-MATH-004",
+        "DISS-005-MATH-005",
+        "DISS-005-MATH-006",
+        "DISS-005-MATH-007",
+        "DISS-005-TAB-039",
+        "DISS-005-MATH-008",
+        "DISS-005-TAB-040",
+        "DISS-005-FIG-052",
+        "DISS-005-MATH-009",
+        "DISS-005-TAB-041",
+        "DISS-005-MATH-010",
+        "DISS-005-MATH-011",
+        "DISS-005-MATH-012",
+        "DISS-005-MATH-013",
+        "DISS-005-MATH-014",
+        "DISS-005-MATH-015",
+        "DISS-005-TAB-042",
+        "DISS-005-FIG-053",
+        "DISS-005-MATH-016",
+        "DISS-005-TAB-044",
+        "DISS-005-FIG-054",
+        "DISS-005-FIG-055",
+        "DISS-005-TAB-043",
+        "DISS-005-TAB-045",
+        "DISS-005-MATH-017",
+        "DISS-005-TAB-046",
+        "DISS-005-FIG-056"
+      ],
+      "contains_tables": true,
+      "contains_drawings": true,
+      "contains_math": true,
+      "comment_ids": [
+        "DISS-005-C0074",
+        "DISS-005-C0075",
+        "DISS-005-C0076"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-017"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-019",
+      "parent_id": "B03",
+      "title": "Глава 2: Переходный процесс, высшие гармоники и начальный участок",
+      "target_path": "manuscript/chapters/ch02_bavr_modernization/sec02_transient_and_harmonics.tex",
+      "first_block_id": "DISS-005-B0813",
+      "last_block_id": "DISS-005-B0861",
+      "start_order": 813,
+      "end_order": 861,
+      "block_count": 49,
+      "chapter_id": "ch02",
+      "objects_count": 28,
+      "object_ids": [
+        "DISS-005-TAB-047",
+        "DISS-005-FIG-057",
+        "DISS-005-MATH-018",
+        "DISS-005-MATH-019",
+        "DISS-005-MATH-020",
+        "DISS-005-MATH-021",
+        "DISS-005-TAB-049",
+        "DISS-005-FIG-058",
+        "DISS-005-FIG-059",
+        "DISS-005-FIG-060",
+        "DISS-005-FIG-061",
+        "DISS-005-TAB-048",
+        "DISS-005-TAB-050",
+        "DISS-005-MATH-022",
+        "DISS-005-MATH-023",
+        "DISS-005-MATH-024",
+        "DISS-005-MATH-025",
+        "DISS-005-MATH-026",
+        "DISS-005-MATH-027",
+        "DISS-005-MATH-028",
+        "DISS-005-MATH-029",
+        "DISS-005-MATH-030",
+        "DISS-005-TAB-051",
+        "DISS-005-FIG-062",
+        "DISS-005-TAB-053",
+        "DISS-005-FIG-063",
+        "DISS-005-FIG-064",
+        "DISS-005-TAB-052"
+      ],
+      "contains_tables": true,
+      "contains_drawings": true,
+      "contains_math": true,
+      "comment_ids": [
+        "DISS-005-C0077",
+        "DISS-005-C0078",
+        "DISS-005-C0079",
+        "DISS-005-C0080",
+        "DISS-005-C0081",
+        "DISS-005-C0082",
+        "DISS-005-C0083",
+        "DISS-005-C0084",
+        "DISS-005-C0085",
+        "DISS-005-C0086"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-018"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-020",
+      "parent_id": "B03",
+      "title": "Глава 2: Преобразование Фурье: теория и текст (формула 2.6)",
+      "target_path": "manuscript/chapters/ch02_bavr_modernization/sec03_fourier_theory.tex",
+      "first_block_id": "DISS-005-B0862",
+      "last_block_id": "DISS-005-B0891",
+      "start_order": 862,
+      "end_order": 891,
+      "block_count": 30,
+      "chapter_id": "ch02",
+      "objects_count": 2,
+      "object_ids": [
+        "DISS-005-TAB-054",
+        "DISS-005-MATH-031"
+      ],
+      "contains_tables": true,
+      "contains_drawings": false,
+      "contains_math": true,
+      "comment_ids": [],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-019"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-021",
+      "parent_id": "B03",
+      "title": "Глава 2: Таблица 4 (Сравнение оконных функций, TAB-055, 400 ячеек)",
+      "target_path": "manuscript/chapters/ch02_bavr_modernization/tab04_window_functions.tex",
+      "first_block_id": "DISS-005-B0892",
+      "last_block_id": "DISS-005-B1291",
+      "start_order": 892,
+      "end_order": 1291,
+      "block_count": 400,
+      "chapter_id": "ch02",
+      "objects_count": 1,
+      "object_ids": [
+        "DISS-005-TAB-055"
+      ],
+      "contains_tables": true,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-020"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-022",
+      "parent_id": "B03",
+      "title": "Глава 2: Анализ работы РНМ с применением ТТ и КР",
+      "target_path": "manuscript/chapters/ch02_bavr_modernization/sec04_rnm_tt_kr_comparison.tex",
+      "first_block_id": "DISS-005-B1292",
+      "last_block_id": "DISS-005-B1349",
+      "start_order": 1292,
+      "end_order": 1349,
+      "block_count": 58,
+      "chapter_id": "ch02",
+      "objects_count": 25,
+      "object_ids": [
+        "DISS-005-TAB-056",
+        "DISS-005-FIG-065",
+        "DISS-005-TAB-057",
+        "DISS-005-MATH-032",
+        "DISS-005-TAB-058",
+        "DISS-005-MATH-033",
+        "DISS-005-MATH-034",
+        "DISS-005-MATH-035",
+        "DISS-005-MATH-036",
+        "DISS-005-MATH-037",
+        "DISS-005-MATH-038",
+        "DISS-005-TAB-059",
+        "DISS-005-MATH-039",
+        "DISS-005-TAB-061",
+        "DISS-005-FIG-066",
+        "DISS-005-FIG-067",
+        "DISS-005-FIG-068",
+        "DISS-005-FIG-069",
+        "DISS-005-TAB-060",
+        "DISS-005-TAB-063",
+        "DISS-005-FIG-070",
+        "DISS-005-FIG-071",
+        "DISS-005-FIG-072",
+        "DISS-005-FIG-073",
+        "DISS-005-TAB-062"
+      ],
+      "contains_tables": true,
+      "contains_drawings": true,
+      "contains_math": true,
+      "comment_ids": [
+        "DISS-005-C0087"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-021"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-023",
+      "parent_id": "B03",
+      "title": "Глава 2: Практическое применение в промышленности и выводы по КР",
+      "target_path": "manuscript/chapters/ch02_bavr_modernization/sec05_industrial_application_kr.tex",
+      "first_block_id": "DISS-005-B1350",
+      "last_block_id": "DISS-005-B1392",
+      "start_order": 1350,
+      "end_order": 1392,
+      "block_count": 43,
+      "chapter_id": "ch02",
+      "objects_count": 8,
+      "object_ids": [
+        "DISS-005-TAB-065",
+        "DISS-005-FIG-074",
+        "DISS-005-FIG-075",
+        "DISS-005-TAB-064",
+        "DISS-005-TAB-067",
+        "DISS-005-FIG-076",
+        "DISS-005-FIG-077",
+        "DISS-005-TAB-066"
+      ],
+      "contains_tables": true,
+      "contains_drawings": true,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0088",
+        "DISS-005-C0089",
+        "DISS-005-C0090",
+        "DISS-005-C0091",
+        "DISS-005-C0092",
+        "DISS-005-C0093",
+        "DISS-005-C0094",
+        "DISS-005-C0095"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-022"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-024",
+      "parent_id": "B03",
+      "title": "Глава 2: Совершенствование алгоритмов ВНР (блокировки и выводы)",
+      "target_path": "manuscript/chapters/ch02_bavr_modernization/sec06_vnr_algorithms.tex",
+      "first_block_id": "DISS-005-B1393",
+      "last_block_id": "DISS-005-B1444",
+      "start_order": 1393,
+      "end_order": 1444,
+      "block_count": 52,
+      "chapter_id": "ch02",
+      "objects_count": 8,
+      "object_ids": [
+        "DISS-005-TAB-069",
+        "DISS-005-FIG-078",
+        "DISS-005-FIG-079",
+        "DISS-005-TAB-068",
+        "DISS-005-TAB-070",
+        "DISS-005-FIG-080",
+        "DISS-005-TAB-071",
+        "DISS-005-FIG-081"
+      ],
+      "contains_tables": true,
+      "contains_drawings": true,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0096",
+        "DISS-005-C0097",
+        "DISS-005-C0098",
+        "DISS-005-C0099"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-023"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-025",
+      "parent_id": "B03",
+      "title": "Глава 2: Выводы по второй главе",
+      "target_path": "manuscript/chapters/ch02_bavr_modernization/sec07_conclusions.tex",
+      "first_block_id": "DISS-005-B1445",
+      "last_block_id": "DISS-005-B1469",
+      "start_order": 1445,
+      "end_order": 1469,
+      "block_count": 25,
+      "chapter_id": "ch02",
+      "objects_count": 0,
+      "object_ids": [],
+      "contains_tables": false,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0100",
+        "DISS-005-C0101",
+        "DISS-005-C0102"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-024"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-026",
+      "parent_id": "B03",
+      "title": "Глава 3: Введение, методология формирования датасета и вызовы",
+      "target_path": "manuscript/chapters/ch03_dataset_preparation/sec01_intro_and_methodology.tex",
+      "first_block_id": "DISS-005-B1470",
+      "last_block_id": "DISS-005-B1524",
+      "start_order": 1470,
+      "end_order": 1524,
+      "block_count": 55,
+      "chapter_id": "ch03",
+      "objects_count": 0,
+      "object_ids": [],
+      "contains_tables": false,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0103",
+        "DISS-005-C0104",
+        "DISS-005-C0105",
+        "DISS-005-C0106",
+        "DISS-005-C0107",
+        "DISS-005-C0108",
+        "DISS-005-C0109",
+        "DISS-005-C0110",
+        "DISS-005-C0111"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-025"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-027",
+      "parent_id": "B03",
+      "title": "Глава 3: Сбор осциллограмм, поиск и формирование единой БД",
+      "target_path": "manuscript/chapters/ch03_dataset_preparation/sec02_data_collection_and_db.tex",
+      "first_block_id": "DISS-005-B1525",
+      "last_block_id": "DISS-005-B1563",
+      "start_order": 1525,
+      "end_order": 1563,
+      "block_count": 39,
+      "chapter_id": "ch03",
+      "objects_count": 9,
+      "object_ids": [
+        "DISS-005-TAB-072",
+        "DISS-005-FIG-082",
+        "DISS-005-TAB-074",
+        "DISS-005-FIG-083",
+        "DISS-005-FIG-084",
+        "DISS-005-TAB-073",
+        "DISS-005-TAB-075",
+        "DISS-005-FIG-085",
+        "DISS-005-FIG-086"
+      ],
+      "contains_tables": true,
+      "contains_drawings": true,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0112",
+        "DISS-005-C0113",
+        "DISS-005-C0114",
+        "DISS-005-C0115",
+        "DISS-005-C0116"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-026"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-028",
+      "parent_id": "B03",
+      "title": "Глава 3: Деперсонализация и структура файла конфигурации COMTRADE",
+      "target_path": "manuscript/chapters/ch03_dataset_preparation/sec03_comtrade_intro.tex",
+      "first_block_id": "DISS-005-B1564",
+      "last_block_id": "DISS-005-B1573",
+      "start_order": 1564,
+      "end_order": 1573,
+      "block_count": 10,
+      "chapter_id": "ch03",
+      "objects_count": 0,
+      "object_ids": [],
+      "contains_tables": false,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0117"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-027"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-029",
+      "parent_id": "B03",
+      "title": "Глава 3: Таблица 1 (Параметры аналоговых сигналов, TAB-076, 42 ячейки)",
+      "target_path": "manuscript/chapters/ch03_dataset_preparation/tab01_analog_signals_parameters.tex",
+      "first_block_id": "DISS-005-B1574",
+      "last_block_id": "DISS-005-B1615",
+      "start_order": 1574,
+      "end_order": 1615,
+      "block_count": 42,
+      "chapter_id": "ch03",
+      "objects_count": 1,
+      "object_ids": [
+        "DISS-005-TAB-076"
+      ],
+      "contains_tables": true,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-028"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-030",
+      "parent_id": "B03",
+      "title": "Глава 3: Файл данных COMTRADE и унификация параметров",
+      "target_path": "manuscript/chapters/ch03_dataset_preparation/sec04_dat_files_and_depersonalization.tex",
+      "first_block_id": "DISS-005-B1616",
+      "last_block_id": "DISS-005-B1642",
+      "start_order": 1616,
+      "end_order": 1642,
+      "block_count": 27,
+      "chapter_id": "ch03",
+      "objects_count": 0,
+      "object_ids": [],
+      "contains_tables": false,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0118",
+        "DISS-005-C0119",
+        "DISS-005-C0120"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-029"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-031",
+      "parent_id": "B03",
+      "title": "Глава 3: Таблица 2 (Частотные параметры осциллограмм, TAB-077, 157 ячеек)",
+      "target_path": "manuscript/chapters/ch03_dataset_preparation/tab02_oscillograms_frequencies.tex",
+      "first_block_id": "DISS-005-B1643",
+      "last_block_id": "DISS-005-B1799",
+      "start_order": 1643,
+      "end_order": 1799,
+      "block_count": 157,
+      "chapter_id": "ch03",
+      "objects_count": 1,
+      "object_ids": [
+        "DISS-005-TAB-077"
+      ],
+      "contains_tables": true,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-030"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-032",
+      "parent_id": "B03",
+      "title": "Глава 3: Унификация имен сигналов и фильтрация нерелевантных",
+      "target_path": "manuscript/chapters/ch03_dataset_preparation/sec05_signal_naming_unification.tex",
+      "first_block_id": "DISS-005-B1800",
+      "last_block_id": "DISS-005-B1858",
+      "start_order": 1800,
+      "end_order": 1858,
+      "block_count": 59,
+      "chapter_id": "ch03",
+      "objects_count": 10,
+      "object_ids": [
+        "DISS-005-TAB-078",
+        "DISS-005-FIG-087",
+        "DISS-005-TAB-079",
+        "DISS-005-FIG-088",
+        "DISS-005-TAB-080",
+        "DISS-005-FIG-089",
+        "DISS-005-TAB-081",
+        "DISS-005-FIG-090",
+        "DISS-005-TAB-082",
+        "DISS-005-FIG-091"
+      ],
+      "contains_tables": true,
+      "contains_drawings": true,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0121",
+        "DISS-005-C0122"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-031"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-033",
+      "parent_id": "B03",
+      "title": "Глава 3: Методика нормализации и разделение сигналов на группы",
+      "target_path": "manuscript/chapters/ch03_dataset_preparation/sec06_normalization_methodology.tex",
+      "first_block_id": "DISS-005-B1859",
+      "last_block_id": "DISS-005-B1880",
+      "start_order": 1859,
+      "end_order": 1880,
+      "block_count": 22,
+      "chapter_id": "ch03",
+      "objects_count": 0,
+      "object_ids": [],
+      "contains_tables": false,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0123",
+        "DISS-005-C0124",
+        "DISS-005-C0125"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-032"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-034",
+      "parent_id": "B03",
+      "title": "Глава 3: Таблица 3 (Алгоритм базиса тока 0-й последовательности, TAB-083)",
+      "target_path": "manuscript/chapters/ch03_dataset_preparation/tab03_zero_sequence_basis.tex",
+      "first_block_id": "DISS-005-B1881",
+      "last_block_id": "DISS-005-B1898",
+      "start_order": 1881,
+      "end_order": 1898,
+      "block_count": 18,
+      "chapter_id": "ch03",
+      "objects_count": 1,
+      "object_ids": [
+        "DISS-005-TAB-083"
+      ],
+      "contains_tables": true,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-033"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-035",
+      "parent_id": "B03",
+      "title": "Глава 3: Определение номиналов фазных величин и экспорт в CSV",
+      "target_path": "manuscript/chapters/ch03_dataset_preparation/sec07_basis_algorithms_and_csv.tex",
+      "first_block_id": "DISS-005-B1899",
+      "last_block_id": "DISS-005-B1957",
+      "start_order": 1899,
+      "end_order": 1957,
+      "block_count": 59,
+      "chapter_id": "ch03",
+      "objects_count": 2,
+      "object_ids": [
+        "DISS-005-TAB-084",
+        "DISS-005-TAB-085"
+      ],
+      "contains_tables": true,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0126",
+        "DISS-005-C0127",
+        "DISS-005-C0128",
+        "DISS-005-C0129"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-034"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-036",
+      "parent_id": "B03",
+      "title": "Глава 3: Методология и автоматизация аннотирования осциллограмм",
+      "target_path": "manuscript/chapters/ch03_dataset_preparation/sec08_annotation_methodology.tex",
+      "first_block_id": "DISS-005-B1958",
+      "last_block_id": "DISS-005-B2011",
+      "start_order": 1958,
+      "end_order": 2011,
+      "block_count": 54,
+      "chapter_id": "ch03",
+      "objects_count": 4,
+      "object_ids": [
+        "DISS-005-TAB-086",
+        "DISS-005-FIG-092",
+        "DISS-005-TAB-087",
+        "DISS-005-FIG-093"
+      ],
+      "contains_tables": true,
+      "contains_drawings": true,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0130",
+        "DISS-005-C0131",
+        "DISS-005-C0132",
+        "DISS-005-C0133",
+        "DISS-005-C0134",
+        "DISS-005-C0135"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-035"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-037",
+      "parent_id": "B03",
+      "title": "Глава 3: Фильтрация пустых осциллограмм (включая Таблицу 6, TAB-088)",
+      "target_path": "manuscript/chapters/ch03_dataset_preparation/sec09_empty_oscillograms_filtering.tex",
+      "first_block_id": "DISS-005-B2012",
+      "last_block_id": "DISS-005-B2046",
+      "start_order": 2012,
+      "end_order": 2046,
+      "block_count": 35,
+      "chapter_id": "ch03",
+      "objects_count": 1,
+      "object_ids": [
+        "DISS-005-TAB-088"
+      ],
+      "contains_tables": true,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-036"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-038",
+      "parent_id": "B03",
+      "title": "Глава 3: Выводы по третьей главе",
+      "target_path": "manuscript/chapters/ch03_dataset_preparation/sec10_conclusions.tex",
+      "first_block_id": "DISS-005-B2047",
+      "last_block_id": "DISS-005-B2053",
+      "start_order": 2047,
+      "end_order": 2053,
+      "block_count": 7,
+      "chapter_id": "ch03",
+      "objects_count": 0,
+      "object_ids": [],
+      "contains_tables": false,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0136"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-037"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-039",
+      "parent_id": "B03",
+      "title": "Глава 4 (Планируемая): Статистический анализ функционирования БАВР",
+      "target_path": "manuscript/chapters/ch04_statistical_analysis/chapter.tex",
+      "first_block_id": "DISS-005-B2054",
+      "last_block_id": "DISS-005-B2063",
+      "start_order": 2054,
+      "end_order": 2063,
+      "block_count": 10,
+      "chapter_id": "ch04",
+      "objects_count": 0,
+      "object_ids": [],
+      "contains_tables": false,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-038"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-040",
+      "parent_id": "B03",
+      "title": "Глава 5 (Планируемая): Адаптивные алгоритмы БАВР с применением ML",
+      "target_path": "manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex",
+      "first_block_id": "DISS-005-B2064",
+      "last_block_id": "DISS-005-B2081",
+      "start_order": 2064,
+      "end_order": 2081,
+      "block_count": 18,
+      "chapter_id": "ch05",
+      "objects_count": 0,
+      "object_ids": [],
+      "contains_tables": false,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-039"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-041",
+      "parent_id": "B03",
+      "title": "Список литературы: Записи 1..70",
+      "target_path": "manuscript/backmatter/bibliography_part1.tex",
+      "first_block_id": "DISS-005-B2082",
+      "last_block_id": "DISS-005-B2151",
+      "start_order": 2082,
+      "end_order": 2151,
+      "block_count": 70,
+      "chapter_id": "backmatter",
+      "objects_count": 0,
+      "object_ids": [],
+      "contains_tables": false,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0137",
+        "DISS-005-C0138",
+        "DISS-005-C0139"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-040"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-042",
+      "parent_id": "B03",
+      "title": "Список литературы: Записи 71..140",
+      "target_path": "manuscript/backmatter/bibliography_part2.tex",
+      "first_block_id": "DISS-005-B2152",
+      "last_block_id": "DISS-005-B2221",
+      "start_order": 2152,
+      "end_order": 2221,
+      "block_count": 70,
+      "chapter_id": "backmatter",
+      "objects_count": 0,
+      "object_ids": [],
+      "contains_tables": false,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-041"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-043",
+      "parent_id": "B03",
+      "title": "Приложение 1: Вводный раздел и заготовка материалов",
+      "target_path": "manuscript/backmatter/appendix01.tex",
+      "first_block_id": "DISS-005-B2222",
+      "last_block_id": "DISS-005-B2224",
+      "start_order": 2222,
+      "end_order": 2224,
+      "block_count": 3,
+      "chapter_id": "backmatter",
+      "objects_count": 0,
+      "object_ids": [],
+      "contains_tables": false,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-042"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-044",
+      "parent_id": "B03",
+      "title": "Мысли в слух: Часть 1 (ИИ, общие знания ML, датасет, идеи LLM)",
+      "target_path": "manuscript/backmatter/notes_informal_part1.tex",
+      "first_block_id": "DISS-005-B2225",
+      "last_block_id": "DISS-005-B2265",
+      "start_order": 2225,
+      "end_order": 2265,
+      "block_count": 41,
+      "chapter_id": "backmatter",
+      "objects_count": 1,
+      "object_ids": [
+        "DISS-005-FIG-094"
+      ],
+      "contains_tables": false,
+      "contains_drawings": true,
+      "contains_math": false,
+      "comment_ids": [
+        "DISS-005-C0140",
+        "DISS-005-C0141",
+        "DISS-005-C0142",
+        "DISS-005-C0143",
+        "DISS-005-C0144"
+      ],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-043"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-045",
+      "parent_id": "B03",
+      "title": "Мысли в слух: Часть 2 (боты, БАВР, синтетические данные)",
+      "target_path": "manuscript/backmatter/notes_informal_part2.tex",
+      "first_block_id": "DISS-005-B2266",
+      "last_block_id": "DISS-005-B2302",
+      "start_order": 2266,
+      "end_order": 2302,
+      "block_count": 37,
+      "chapter_id": "backmatter",
+      "objects_count": 7,
+      "object_ids": [
+        "DISS-005-TAB-089",
+        "DISS-005-FIG-095",
+        "DISS-005-FIG-096",
+        "DISS-005-FIG-097",
+        "DISS-005-FIG-098",
+        "DISS-005-FIG-099",
+        "DISS-005-FIG-100"
+      ],
+      "contains_tables": true,
+      "contains_drawings": true,
+      "contains_math": false,
+      "comment_ids": [],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-044"
+      ],
+      "status": "TODO"
+    },
+    {
+      "batch_id": "B03-046",
+      "parent_id": "B03",
+      "title": "Служебные элементы пакета: Сноски и колонтитулы (footnotes, footer)",
+      "target_path": "manuscript/backmatter/supplementary_elements.tex",
+      "first_block_id": "DISS-005-B2303",
+      "last_block_id": "DISS-005-B2307",
+      "start_order": 2303,
+      "end_order": 2307,
+      "block_count": 5,
+      "chapter_id": "backmatter",
+      "objects_count": 0,
+      "object_ids": [],
+      "contains_tables": false,
+      "contains_drawings": false,
+      "contains_math": false,
+      "comment_ids": [],
+      "revision_ids": [],
+      "dependencies": [
+        "B02",
+        "B03-045"
+      ],
+      "status": "TODO"
+    }
+  ]
+}
