@@ -1,0 +1,62 @@
+DISS-005-FIG-020 -> block=DISS-005-B0559, media=media/image23.png, caption_block=DISS-005-B0560
+  caption: Рисунок 1. Общий вид осциллограммы.
+DISS-005-FIG-021 -> block=DISS-005-B0565, media=media/image24.png, caption_block=DISS-005-B0566
+  caption: Рисунок 2. Поведение РНМ.
+DISS-005-FIG-022 -> block=DISS-005-B0576, media=media/image25.png, caption_block=DISS-005-B0577
+  caption: Рисунок 3. Характер изменения амплитуды тока на иной двигательной нагрузке.
+DISS-005-FIG-023 -> block=DISS-005-B0581, media=media/image26.png, caption_block=DISS-005-B0582
+  caption: Рисунок 4. Поведение РНМ при переключениях во внешней сети на ТАНЕКО (ГПП-3).
+DISS-005-FIG-024 -> block=DISS-005-B0594, media=media/image27.png, caption_block=None
+  caption: 
+DISS-005-FIG-025 -> block=DISS-005-B0596, media=media/image28.png, caption_block=DISS-005-B0600
+  caption: Рисунок 1. Полный вид осциллограммы произошедшего события а) 1СШ б) 3СШ*,
+DISS-005-FIG-026 -> block=DISS-005-B0598, media=media/image29.png, caption_block=DISS-005-B0600
+  caption: Рисунок 1. Полный вид осциллограммы произошедшего события а) 1СШ б) 3СШ*,
+DISS-005-FIG-027 -> block=DISS-005-B0607, media=media/image30.png, caption_block=DISS-005-B0608
+  caption: Рисунок 2. Функционирование БАВР, сигналы пуска и блокировки
+DISS-005-FIG-028 -> block=DISS-005-B0610, media=media/image31.png, caption_block=DISS-005-B0611
+  caption: Рисунок 3. Сигналы готовности БАВР
+DISS-005-FIG-029 -> block=DISS-005-B0619, media=media/image32.png, caption_block=DISS-005-B0623
+  caption: Рисунок 4. Вектора токов и напряжений на этапе 1 а) реальные, б) модельные
+DISS-005-FIG-030 -> block=DISS-005-B0620, media=media/image33.png, caption_block=DISS-005-B0623
+  caption: Рисунок 4. Вектора токов и напряжений на этапе 1 а) реальные, б) модельные
+DISS-005-FIG-031 -> block=DISS-005-B0625, media=media/image34.png, caption_block=DISS-005-B0629
+  caption: Рисунок 5. Вектора токов и напряжений на этапе 3 а) реальные, б) модельные
+DISS-005-FIG-032 -> block=DISS-005-B0626, media=media/image35.png, caption_block=DISS-005-B0629
+  caption: Рисунок 5. Вектора токов и напряжений на этапе 3 а) реальные, б) модельные
+DISS-005-FIG-033 -> block=DISS-005-B0633, media=media/image36.png, caption_block=DISS-005-B0634
+  caption: Рисунок 6. Векторная диаграмма тока и напряжения прямой последовательности 
+DISS-005-FIG-034 -> block=DISS-005-B0638, media=media/image37.png, caption_block=DISS-005-B0639
+  caption: Рисунок 7. Траектория движения вектора РНМ относительно зоны срабатывания РНМ
+DISS-005-FIG-035 -> block=DISS-005-B0642, media=media/image38.png, caption_block=DISS-005-B0643
+  caption: Рисунок 8. Ожидаемое поведение РНМ при активации адаптивной уставки по углу альфа на СШ2 на этапе 1
+DISS-005-FIG-036 -> block=DISS-005-B0649, media=media/image39.png, caption_block=None
+  caption: 
+DISS-005-FIG-037 -> block=DISS-005-B0651, media=media/image40.png, caption_block=None
+  caption: 
+DISS-005-FIG-038 -> block=DISS-005-B0662, media=media/image41.jpeg, caption_block=None
+  caption: 
+DISS-005-FIG-039 -> block=DISS-005-B0664, media=media/image42.png, caption_block=None
+  caption: 
+DISS-005-FIG-040 -> block=DISS-005-B0666, media=media/image43.png, caption_block=None
+  caption: 
+DISS-005-FIG-041 -> block=DISS-005-B0677, media=media/image44.png, caption_block=DISS-005-B0678
+  caption: Рисунок 1. Срабатывание БАВР по 1СШ после установки блока бесперебойного питания. 
+DISS-005-FIG-042 -> block=DISS-005-B0680, media=media/image45.png, caption_block=DISS-005-B0681
+  caption: Рисунок 2. Срабатывание ВНР 1СШ.
+DISS-005-FIG-043 -> block=DISS-005-B0691, media=media/image46.png, caption_block=DISS-005-B0692
+  caption: Рисунок 1. Напряжение с ТН СШ с обоих терминалов БАВР за весь промежуток аварии. 
+DISS-005-FIG-044 -> block=DISS-005-B0694, media=media/image47.png, caption_block=DISS-005-B0695
+  caption: Рисунок 2. Осциллограмма с терминала РЗА отходящей линии.
+DISS-005-FIG-045 -> block=DISS-005-B0706, media=media/image48.png, caption_block=DISS-005-B0707
+  caption: Рисунок 1. Развитие аварии на второй секции шин.
+DISS-005-FIG-046 -> block=DISS-005-B0709, media=media/image49.png, caption_block=DISS-005-B0710
+  caption: Рисунок 2. Запрет работы БАВР по сигналу БНН.
+DISS-005-FIG-047 -> block=DISS-005-B0715, media=media/image50.png, caption_block=DISS-005-B0716
+  caption: Рисунок 3. Фазные напряжения.
+DISS-005-FIG-048 -> block=DISS-005-B0718, media=media/image51.png, caption_block=DISS-005-B0719
+  caption: Рисунок 4. Линейные напряжения и напряжения обратной последовательности.
+DISS-005-FIG-049 -> block=DISS-005-B0722, media=media/image52.png, caption_block=DISS-005-B0723
+  caption: Рисунок 5. Послеаварийное измерение.
+DISS-005-FIG-050 -> block=DISS-005-B0726, media=media/image53.png, caption_block=DISS-005-B0727
+  caption: Рисунок 6. Протекание дугового перемежающегося замыкания на землю.
