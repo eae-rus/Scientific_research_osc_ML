@@ -27,7 +27,7 @@
       "dependencies": [
         "B02"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-002",
@@ -53,7 +53,7 @@
         "B02",
         "B03-001"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-003",
@@ -80,7 +80,7 @@
         "B02",
         "B03-002"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-004",
@@ -104,7 +104,7 @@
         "B02",
         "B03-003"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-005",
@@ -139,7 +139,7 @@
         "B02",
         "B03-004"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-006",
@@ -173,7 +173,7 @@
         "B02",
         "B03-005"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-007",
@@ -225,7 +225,7 @@
         "B02",
         "B03-006"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-008",
@@ -262,7 +262,7 @@
         "B02",
         "B03-007"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-009",
@@ -301,7 +301,7 @@
         "B02",
         "B03-008"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-010",
@@ -336,7 +336,7 @@
         "B02",
         "B03-009"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-011",
@@ -370,7 +370,7 @@
         "B02",
         "B03-010"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-012",
@@ -399,7 +399,7 @@
         "B02",
         "B03-011"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-013",
@@ -439,7 +439,7 @@
         "B02",
         "B03-012"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-014",
@@ -490,7 +490,7 @@
         "B02",
         "B03-013"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-015",
@@ -532,7 +532,7 @@
         "B02",
         "B03-014"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-016",
@@ -574,7 +574,7 @@
         "B02",
         "B03-015"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-017",
@@ -598,7 +598,7 @@
         "B02",
         "B03-016"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-018",
@@ -660,7 +660,7 @@
         "B02",
         "B03-017"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-019",
@@ -724,7 +724,7 @@
         "B02",
         "B03-018"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-020",
@@ -751,7 +751,7 @@
         "B02",
         "B03-019"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-021",
@@ -777,7 +777,7 @@
         "B02",
         "B03-020"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-022",
@@ -829,7 +829,7 @@
         "B02",
         "B03-021"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-023",
@@ -871,7 +871,7 @@
         "B02",
         "B03-022"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-024",
@@ -909,7 +909,7 @@
         "B02",
         "B03-023"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-025",
@@ -937,7 +937,7 @@
         "B02",
         "B03-024"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-026",
@@ -971,7 +971,7 @@
         "B02",
         "B03-025"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-027",
@@ -1011,7 +1011,7 @@
         "B02",
         "B03-026"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-028",
@@ -1037,7 +1037,7 @@
         "B02",
         "B03-027"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-029",
@@ -1063,7 +1063,7 @@
         "B02",
         "B03-028"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-030",
@@ -1091,7 +1091,7 @@
         "B02",
         "B03-029"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-031",
@@ -1117,7 +1117,7 @@
         "B02",
         "B03-030"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-032",
@@ -1155,7 +1155,7 @@
         "B02",
         "B03-031"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-033",
@@ -1183,7 +1183,7 @@
         "B02",
         "B03-032"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-034",
@@ -1209,7 +1209,7 @@
         "B02",
         "B03-033"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-035",
@@ -1241,7 +1241,7 @@
         "B02",
         "B03-034"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-036",
@@ -1277,7 +1277,7 @@
         "B02",
         "B03-035"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-037",
@@ -1303,7 +1303,7 @@
         "B02",
         "B03-036"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-038",
@@ -1329,7 +1329,7 @@
         "B02",
         "B03-037"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-039",
@@ -1353,7 +1353,7 @@
         "B02",
         "B03-038"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-040",
@@ -1377,7 +1377,7 @@
         "B02",
         "B03-039"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-041",
@@ -1405,7 +1405,7 @@
         "B02",
         "B03-040"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-042",
@@ -1429,7 +1429,7 @@
         "B02",
         "B03-041"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-043",
@@ -1453,7 +1453,7 @@
         "B02",
         "B03-042"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-044",
@@ -1485,7 +1485,7 @@
         "B02",
         "B03-043"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-045",
@@ -1517,7 +1517,7 @@
         "B02",
         "B03-044"
       ],
-      "status": "TODO"
+      "status": "DONE"
     },
     {
       "batch_id": "B03-046",
@@ -1541,7 +1541,7 @@
         "B02",
         "B03-045"
       ],
-      "status": "TODO"
+      "status": "DONE"
     }
   ]
 }

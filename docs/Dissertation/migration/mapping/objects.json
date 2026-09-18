@@ -2578,7 +2578,7 @@
     "extracted_xml": "tables/table_089.xml",
     "xml_sha256": "c67b2be8449bdffc1592783d73fed48194053a3e494ed263949896ef311131eb",
     "transfer_strategy": "unwrap_figure_container",
-    "status": "extracted"
+    "status": "completed"
   },
   {
     "object_id": "DISS-005-MATH-001",
@@ -6085,7 +6085,7 @@
     "caption_title": null,
     "caption_text": null,
     "transfer_strategy": "includegraphics_figure_or_subfigure",
-    "status": "extracted"
+    "status": "completed"
   },
   {
     "object_id": "DISS-005-FIG-095",
@@ -6114,7 +6114,7 @@
     "caption_title": "",
     "caption_text": "Фото 1",
     "transfer_strategy": "includegraphics_figure_or_subfigure",
-    "status": "extracted"
+    "status": "completed"
   },
   {
     "object_id": "DISS-005-FIG-096",
@@ -6143,7 +6143,7 @@
     "caption_title": "",
     "caption_text": "Фото 1",
     "transfer_strategy": "includegraphics_figure_or_subfigure",
-    "status": "extracted"
+    "status": "completed"
   },
   {
     "object_id": "DISS-005-FIG-097",
@@ -6172,7 +6172,7 @@
     "caption_title": "",
     "caption_text": "Фото 3",
     "transfer_strategy": "includegraphics_figure_or_subfigure",
-    "status": "extracted"
+    "status": "completed"
   },
   {
     "object_id": "DISS-005-FIG-098",
@@ -6201,7 +6201,7 @@
     "caption_title": "",
     "caption_text": "Фото 3",
     "transfer_strategy": "includegraphics_figure_or_subfigure",
-    "status": "extracted"
+    "status": "completed"
   },
   {
     "object_id": "DISS-005-FIG-099",
@@ -6230,7 +6230,7 @@
     "caption_title": "",
     "caption_text": "Фото 5",
     "transfer_strategy": "includegraphics_figure_or_subfigure",
-    "status": "extracted"
+    "status": "completed"
   },
   {
     "object_id": "DISS-005-FIG-100",
@@ -6259,7 +6259,7 @@
     "caption_title": "",
     "caption_text": "Фото 5",
     "transfer_strategy": "includegraphics_figure_or_subfigure",
-    "status": "extracted"
+    "status": "completed"
   },
   {
     "object_id": "DISS-005-COMM-MEDIA-001",
