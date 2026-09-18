@@ -16,6 +16,7 @@
 \usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage{multirow}
+\usepackage{enumitem}
 
 % Оформление правок и цвета
 \usepackage{ulem}
@@ -60,4 +61,11 @@
 % ------------------------------------------------------------------------------
 \DeclareRobustCommand{\commentnote}[3]{%
   \footnote{\textbf{Замечание [#1]} (\textit{#2}): #3}%
+}
+
+% Исключение служебных макросов из PDF-закладок (outlines)
+\pdfstringdefDisableCommands{%
+  \def\commentnote#1#2#3{}%
+  \def\wordchoice#1#2{#2}%
+  \def\wordrevnote#1#2#3#4{}%
 }
