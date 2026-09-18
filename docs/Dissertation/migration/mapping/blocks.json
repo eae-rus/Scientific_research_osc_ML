@@ -41283,9 +41283,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
-    "target_label": null,
-    "status": "unmapped"
+    "target_path": "chapters/ch03_dataset_preparation/sec10_conclusions.tex",
+    "target_label": "sec:ch03_conclusions",
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2048",
@@ -41303,9 +41303,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch03_dataset_preparation/sec10_conclusions.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2049",
@@ -41323,9 +41323,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch03_dataset_preparation/sec10_conclusions.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2050",
@@ -41343,9 +41343,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch03_dataset_preparation/sec10_conclusions.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2051",
@@ -41365,9 +41365,9 @@
     "comment_ids": [
       "252"
     ],
-    "target_path": null,
+    "target_path": "chapters/ch03_dataset_preparation/sec10_conclusions.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2052",
@@ -41385,9 +41385,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch03_dataset_preparation/sec10_conclusions.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2053",
@@ -41405,9 +41405,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch03_dataset_preparation/sec10_conclusions.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2054",
@@ -41425,9 +41425,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
-    "target_label": null,
-    "status": "unmapped"
+    "target_path": "chapters/ch04_statistical_analysis/chapter.tex",
+    "target_label": "ch:statistical_analysis",
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2055",
@@ -41445,9 +41445,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
-    "target_label": null,
-    "status": "unmapped"
+    "target_path": "chapters/ch04_statistical_analysis/chapter.tex",
+    "target_label": "sec:ch04_intro",
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2056",
@@ -41465,9 +41465,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch04_statistical_analysis/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2057",
@@ -41485,9 +41485,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch04_statistical_analysis/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2058",
@@ -41505,9 +41505,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch04_statistical_analysis/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2059",
@@ -41525,9 +41525,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch04_statistical_analysis/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2060",
@@ -41545,9 +41545,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch04_statistical_analysis/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2061",
@@ -41565,9 +41565,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch04_statistical_analysis/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2062",
@@ -41585,9 +41585,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch04_statistical_analysis/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2063",
@@ -41605,9 +41605,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch04_statistical_analysis/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2064",
@@ -41625,9 +41625,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
-    "target_label": null,
-    "status": "unmapped"
+    "target_path": "chapters/ch05_ml_adaptive_algorithms/chapter.tex",
+    "target_label": "ch:ml_adaptive_algorithms",
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2065",
@@ -41645,9 +41645,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
-    "target_label": null,
-    "status": "unmapped"
+    "target_path": "chapters/ch05_ml_adaptive_algorithms/chapter.tex",
+    "target_label": "sec:ch05_intro",
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2066",
@@ -41665,9 +41665,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch05_ml_adaptive_algorithms/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2067",
@@ -41685,9 +41685,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch05_ml_adaptive_algorithms/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2068",
@@ -41705,9 +41705,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch05_ml_adaptive_algorithms/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2069",
@@ -41725,9 +41725,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch05_ml_adaptive_algorithms/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2070",
@@ -41745,9 +41745,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch05_ml_adaptive_algorithms/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2071",
@@ -41765,9 +41765,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch05_ml_adaptive_algorithms/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2072",
@@ -41785,9 +41785,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch05_ml_adaptive_algorithms/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2073",
@@ -41805,9 +41805,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch05_ml_adaptive_algorithms/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2074",
@@ -41825,9 +41825,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch05_ml_adaptive_algorithms/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2075",
@@ -41845,9 +41845,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch05_ml_adaptive_algorithms/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2076",
@@ -41865,9 +41865,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch05_ml_adaptive_algorithms/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2077",
@@ -41885,9 +41885,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch05_ml_adaptive_algorithms/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2078",
@@ -41905,9 +41905,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch05_ml_adaptive_algorithms/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2079",
@@ -41925,9 +41925,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch05_ml_adaptive_algorithms/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2080",
@@ -41945,9 +41945,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch05_ml_adaptive_algorithms/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2081",
@@ -41965,9 +41965,9 @@
     "has_drawing": false,
     "has_revisions": false,
     "comment_ids": [],
-    "target_path": null,
+    "target_path": "chapters/ch05_ml_adaptive_algorithms/chapter.tex",
     "target_label": null,
-    "status": "unmapped"
+    "status": "completed"
   },
   {
     "block_id": "DISS-005-B2082",
