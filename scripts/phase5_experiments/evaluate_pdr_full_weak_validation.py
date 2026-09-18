@@ -233,8 +233,16 @@ def main() -> int:
 def run_manual() -> None:
     """Ручной F5-запуск итоговой проверки best/latest без holdout."""
 
+    RUN_PROFILE = "selected"  # selected: общий MANUAL_MODEL_RUNS в evaluate_pdr_expert_holdout.py; legacy: прежний список.
+    SKIP_EXISTING = True  # Проверять совместимость готового результата перед пропуском.
     MAX_SAMPLES_PER_RECORD = 32  # Лимит точек на каждую запись; все файлы validation остаются в проверке.
     NUM_WORKERS = 0  # Число дополнительных загрузчиков; 0 — загрузка в основном процессе.
+    if RUN_PROFILE in ("selected", "h123"):
+        from scripts.phase5_experiments.evaluate_pdr_expert_holdout import run_h123_evaluations
+        run_h123_evaluations(teacher=True, skip_existing=SKIP_EXISTING, max_samples=MAX_SAMPLES_PER_RECORD, workers=NUM_WORKERS)
+        return
+    if RUN_PROFILE != "legacy":
+        raise ValueError("RUN_PROFILE: selected или legacy")
     RUNS = (
         (
             "weak_best",

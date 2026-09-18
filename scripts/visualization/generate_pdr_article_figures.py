@@ -1036,14 +1036,18 @@ def _predict_cached(model, head, features, provenance, lookup, device, batch_siz
     return directions, probabilities
 
 
-# Ручные настройки галереи: запускать с --gallery (CLI имеет приоритет).
-# Без --gallery сценарий обновляет рисунки 1–10 статьи, а не галерею!
+# Ручные настройки галереи: F5 без аргументов; CLI имеет приоритет.
+# Для рисунков 1–10 статьи нужен явный --figures; рисунок 11 не заменяется.
 GALLERY_CHECKPOINT_KIND = "latest"  # "best" — лучшие веса, "latest" — последние
 GALLERY_STARTUP_POLICY = "early"    # "full_context" — прежнее ожидание 20T
 GALLERY_INFERENCE_STRIDE = 1  # 1: каждый отсчёт; >1: реже, между ответами удерживается предыдущий.
 GALLERY_BATCH_SIZE = 512  # Число окон ИИ в пакете; при нехватке VRAM автоматически уменьшается.
 GALLERY_DEVICE = "cuda"  # cuda требует GPU; cpu — явный медленный режим; auto — автоматический выбор.
 GALLERY_PHASOR_BACKEND = "fft"  # Точный прежний FFT; prefix — только эксперимент, не финальная разметка.
+GALLERY_MAX_RECORDS = None  # F5: None — весь ручной архив; 1 — короткая проба.
+GALLERY_SKIP_EXISTING = True  # Переиспользовать проверенные предсказания каждой модели из NPZ.
+GALLERY_INCLUDE_H123 = True  # Добавить H123-D24 отдельной дорожкой к трём прежним моделям.
+GALLERY_MODEL_FOLDERS = None  # None: прежние три + H123. Либо список папок любых моделей с config.json и весами.
 
 
 def _gallery_checkpoint_paths(checkpoint=None, checkpoint_kind="latest"):
@@ -1056,6 +1060,12 @@ def _gallery_checkpoint_paths(checkpoint=None, checkpoint_kind="latest"):
         filename = "latest_checkpoint.pt" if checkpoint_kind == "latest" else "best_model.pt"
         paths = [PROJECT_ROOT / f"experiments/phase5/pdr_expert_{mode}_stride5" / filename
                  for mode in ("snapshot_2", "snapshot_5", "sequence_1_8")]
+        if GALLERY_INCLUDE_H123:
+            paths.append(PROJECT_ROOT / "experiments/phase5/pdr_expert_snapshot_5_stride5_h123_deep24" / filename)
+        if GALLERY_MODEL_FOLDERS is not None:
+            paths = [PROJECT_ROOT / folder / filename for folder in GALLERY_MODEL_FOLDERS]
+    if not paths:
+        raise ValueError("Список моделей галереи пуст")
     for path in paths:
         if not path.is_file():
             raise FileNotFoundError(f"Нет запрошенных весов: {path}; автоматической замены на best нет")
@@ -1098,10 +1108,13 @@ def build_expert_gallery(
     for path in _gallery_checkpoint_paths(checkpoint, checkpoint_kind):
         cfg_path = path.parent / "config.json"
         cfg = _config_from_json(cfg_path)
-        if cfg.temporal_mode in models:
+        model_id = cfg.temporal_mode + ("_h123_deep24" if cfg.model_preset == "h123_deep24" else "")
+        if model_id in models:
+            model_id = path.parent.name
+        if model_id in models:
             raise ValueError("Для одного временного представления задано несколько весов")
         model, head, _ = _build_model(cfg, None, path)
-        models[cfg.temporal_mode] = (cfg, model.to(device).eval(), head.to(device).eval(), {
+        models[model_id] = (cfg, model.to(device).eval(), head.to(device).eval(), {
             "checkpoint_sha256": _sha256(path), "config_sha256": _sha256(cfg_path),
             "checkpoint": str(path.resolve()), "feature_version": cfg.feature_version,
         })
@@ -1187,8 +1200,8 @@ def build_expert_gallery(
                     and json.loads(sidecar.read_text(encoding="utf-8")) == provenance):
                 cached_meta = json.loads(sidecar.read_text(encoding="utf-8")) if sidecar.exists() else {}
                 can_reuse = (resume and cache_path.exists() and bool(cached_meta)
-                             and {k: v for k, v in cached_meta.items() if k != "schema"}
-                             == {k: v for k, v in provenance.items() if k != "schema"})
+                             and {k: v for k, v in cached_meta.items() if k not in ("schema", "models")}
+                             == {k: v for k, v in provenance.items() if k not in ("schema", "models")})
                 rec = read_comtrade_1999_ascii(cfg_path)
                 t = rec.timestamps_us / 1e6
                 raw = sources[source].load_signal(record_id)
@@ -1211,19 +1224,31 @@ def build_expert_gallery(
                     with np.load(cache_path) as cached:
                         saved = {key: cached[key] for key in cached.files}
                 shared_cache = {}
+                cache_changed = False
                 for mode, (cfg, model, head, model_meta) in models.items():
+                    if startup_policy == "full_context":
+                        from osc_tools.ml.spectral_features import SpectralFeatureConfig
+                        history = max(SpectralFeatureConfig(cfg.feature_version).low_periods, default=1)
+                        first = periods_to_samples(history + tb.window_periods, tb.spp) - 1
+                        ends = np.arange(first, rec.n_samples, inference_stride, dtype=np.int64)
+                        if not check_pdr_signal_sufficiency(channel_prov, basis).can_run_phase_pdr:
+                            ends = ends[:0]
                     print(f"[Расчёт] {number}/{len(records)} {stem}: {mode}, {len(ends):,} точек", flush=True)
                     states = np.full(rec.n_samples, -998, dtype=np.int16)
                     sample_key, dir_key, valid_key = (f"{mode}__{key}" for key in ("samples", "direction", "probability_valid"))
-                    if can_reuse:
+                    reuse_model = (can_reuse and cached_meta.get("models", {}).get(mode) == model_meta
+                                   and all(k in saved for k in (sample_key, dir_key, valid_key)))
+                    if reuse_model:
                         if not np.array_equal(saved[sample_key], ends):
                             raise ValueError(f"Изменилась сетка сохранённых предсказаний: {stem}")
                         predictions, valid_probabilities = saved[dir_key], saved[valid_key]
+                        print(f"[Кэш] {stem}: {mode}", flush=True)
                     else:
+                        cache_changed = True
                         predictions, valid_probabilities = [], []
                         if ends.size:
                             features, feature_prov, lookup = _record_spectral_cache(
-                                raw, channel_prov, basis, tb, mode, cfg.feature_version, ends,
+                                raw, channel_prov, basis, tb, cfg.temporal_mode, cfg.feature_version, ends,
                                 startup_policy=startup_policy, shared_cache=shared_cache, phasor_backend=phasor_backend,
                             )
                             predictions, valid_probabilities = _predict_cached(
@@ -1239,7 +1264,7 @@ def build_expert_gallery(
                     selected = "last" if Path(model_meta["checkpoint"]).name == "latest_checkpoint.pt" else "best"
                     tracks.append((f"ИИ {mode} ({selected})", states))
                 shared_cache.clear()
-                if not can_reuse:
+                if cache_changed or not can_reuse:
                     temporary_cache = cache_path.with_suffix(".npz.tmp")
                     with temporary_cache.open("wb") as stream:
                         np.savez_compressed(stream, **saved)
@@ -1288,9 +1313,12 @@ def build_expert_gallery(
                     loc="upper center", bbox_to_anchor=(.5, -.08), ncol=4, fontsize=9)
                 axes[0].set_title(f"{stem} | {row.status} | {split} | ИИ: шаг {inference_stride}; контекст {startup_policy}")
                 if startup_policy == "early":
-                    axes[2].axvspan(t[0], min(t[-1], t[0] + 20 / tb.network_frequency_hz),
-                                   ymin=1 - (1 + len(models)) / len(tracks), ymax=1 - 1 / len(tracks),
-                                   facecolor="none", edgecolor="#777777", hatch="//", linewidth=0)
+                    from osc_tools.ml.spectral_features import SpectralFeatureConfig
+                    for idx, (cfg, *_) in enumerate(models.values()):
+                        history = max(SpectralFeatureConfig(cfg.feature_version).low_periods, default=1)
+                        axes[2].axvspan(t[0], min(t[-1], t[0] + (history + tb.window_periods) / tb.network_frequency_hz),
+                                       ymin=1-(2+idx)/len(tracks), ymax=1-(1+idx)/len(tracks),
+                                       facecolor="none", edgecolor="#777777", hatch="//", linewidth=0)
                     axes[0].text(.01, .96, "Штриховка ИИ: неполная предыстория, режим не был включён в обучение",
                                  transform=axes[0].transAxes, va="top", fontsize=8, bbox=dict(facecolor="white", alpha=.8, edgecolor="none"))
                 axes[2].set_xlim(t[0], edges[-1])
@@ -1325,9 +1353,17 @@ def plot_fig11():
     raise RuntimeError("Старый макет не содержал реального вывода ИИ. Используйте --gallery; рисунок статьи меняется только после выбора автора.")
 
 if __name__ == "__main__":
+    # F5/без аргументов: только галерея; рисунки статьи не перезаписываются.
+    if len(sys.argv) == 1:
+        build_expert_gallery(checkpoint_kind=GALLERY_CHECKPOINT_KIND, startup_policy=GALLERY_STARTUP_POLICY,
+                             inference_stride=GALLERY_INFERENCE_STRIDE, batch_size=GALLERY_BATCH_SIZE,
+                             device=GALLERY_DEVICE, phasor_backend=GALLERY_PHASOR_BACKEND,
+                             max_records=GALLERY_MAX_RECORDS, resume=GALLERY_SKIP_EXISTING)
+        raise SystemExit(0)
     import argparse
     parser = argparse.ArgumentParser(description="Рисунки статьи и отдельная галерея реальных предсказаний")
     parser.add_argument("--gallery", action="store_true", help="Полные осциллограммы, без изменения рисунка 11")
+    parser.add_argument("--figures", action="store_true", help="Явно пересоздать рисунки 1–10 вместо галереи")
     parser.add_argument("--checkpoint", type=Path, action="append", help="Явные веса; можно повторить для нескольких моделей")
     parser.add_argument("--checkpoint-kind", choices=("latest", "best"), default=GALLERY_CHECKPOINT_KIND)
     parser.add_argument("--startup-policy", choices=("early", "full_context"), default=GALLERY_STARTUP_POLICY)

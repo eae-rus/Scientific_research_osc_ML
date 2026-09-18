@@ -119,3 +119,49 @@ def test_comparison_metrics_long_errors_and_post_transition_exclusion():
     assert result["max_error_episode_ms"] == 30
     assert result["error_episodes_over_20ms"] == 1
     assert result["stable_state_accuracy"] == 10/34
+
+
+def test_h123_augmentation_preserves_reference_and_resumes(tmp_path, monkeypatch):
+    import hashlib
+    import json
+    from dataclasses import replace
+    from types import SimpleNamespace
+    import pytest
+    import scripts.phase5_experiments.run_pdr_rtds as m
+    import scripts.visualization.generate_pdr_article_figures as gallery
+    from osc_tools.ml.phase5_contracts import TimebaseContract
+    source = tmp_path / "labels"
+    output = tmp_path / "augmented"
+    source.mkdir()
+    cfg = source / "Oscilogramma1.1.cfg"
+    now = datetime(2026, 9, 18)
+    digital = [DigitalChannel("old_formula", np.array([0, 1, 1, 0], dtype=np.uint8))]
+    for s in (1, 2):
+        digital.extend([DigitalChannel(f"S{s}__expert__FWD", np.array([1, 0, 1, 0], dtype=np.uint8)),
+                        DigitalChannel(f"S{s}__expert__VALID", np.array([1, 0, 0, 1], dtype=np.uint8))])
+    record = ExportRecord("RTDS", "0", 100, 50, now, now,
+                           (AnalogChannel("IA", "A", np.arange(4.)),), tuple(digital))
+    write_comtrade_ascii(record, cfg, cfg.with_suffix(".dat"))
+    cfg.with_suffix(".json").write_text(json.dumps({"automatic_digital_hashes": {
+        "old_formula": hashlib.sha256(digital[0].values.tobytes()).hexdigest()}}))
+    before = (cfg.read_bytes(), cfg.with_suffix(".dat").read_bytes())
+    calls = []
+    monkeypatch.setattr(m, "read_rtds", lambda p: (record, np.zeros((18, 4)), None, TimebaseContract.create(100, 50)))
+    monkeypatch.setattr(m, "load_models", lambda **kw: {"new_model": (SimpleNamespace(temporal_mode="snapshot_5", feature_version="B_H123"), None, None, "cpu", {"sha256": "test"})})
+    monkeypatch.setattr(gallery, "_record_spectral_cache", lambda raw, prov, basis, tb, mode, version, ends, **kw: (None, None, ends))
+    def predict(model, head, f, p, lookup, *args):
+        calls.append(len(lookup))
+        return np.ones(len(lookup), dtype=np.int8), np.ones(len(lookup))
+    monkeypatch.setattr(gallery, "_predict_cached", predict)
+    m.augment_h123(source, output)
+    edited = read_comtrade_1999_ascii(output / cfg.name)
+    for ch in digital:
+        np.testing.assert_array_equal(edited.digital[ch.name], ch.values)
+    assert before == (cfg.read_bytes(), cfg.with_suffix(".dat").read_bytes())
+    assert len(calls) == 2
+    m.augment_h123(source, output)
+    assert len(calls) == 2  # Уже готово: сеть не вызывается.
+    with (output / cfg.name).open("a") as stream:
+        stream.write("manual edit")
+    with pytest.raises(ValueError, match="перезапись запрещена"):
+        m.augment_h123(source, output)

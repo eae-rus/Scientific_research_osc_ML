@@ -237,13 +237,20 @@ def test_early_gallery_is_causal_and_converges_to_full_context(mode, spp):
     np.testing.assert_array_equal(p[ix], shared_p[shared_ix])
 
 
-def test_gallery_defaults_to_all_three_latest_checkpoints(monkeypatch):
+def test_gallery_defaults_to_four_latest_checkpoints(monkeypatch):
     from scripts.visualization.generate_pdr_article_figures import _gallery_checkpoint_paths
     monkeypatch.setattr(Path, "is_file", lambda self: True)
     selected = _gallery_checkpoint_paths()
-    assert len(selected) == 3
+    assert len(selected) == 4
     assert all(path.name == "latest_checkpoint.pt" for path in selected)
     assert all(path.name == "best_model.pt" for path in _gallery_checkpoint_paths(checkpoint_kind="best"))
     monkeypatch.setattr(Path, "is_file", lambda self: False)
     with pytest.raises(FileNotFoundError, match="автоматической замены"):
         _gallery_checkpoint_paths()
+
+
+def test_gallery_accepts_arbitrary_model_folders(monkeypatch):
+    import scripts.visualization.generate_pdr_article_figures as m
+    monkeypatch.setattr(Path, "is_file", lambda self: True)
+    monkeypatch.setattr(m, "GALLERY_MODEL_FOLDERS", ["experiments/custom_network"])
+    assert m._gallery_checkpoint_paths() == [m.PROJECT_ROOT / "experiments/custom_network/latest_checkpoint.pt"]

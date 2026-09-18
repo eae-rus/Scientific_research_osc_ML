@@ -1382,7 +1382,7 @@ def run_manual() -> None:
     но с нулевого внутреннего индекса эпохи и новым optimizer/scheduler.
     """
     # Основной контракт опыта.
-    STAGE = "weak"                  # weak, затем expert
+    STAGE = "expert"                  # weak, затем expert
     TEMPORAL_MODE = "snapshot_5"   #  snapshot_2, snapshot_5 и sequence_1_8
     LABEL_STRIDE_SAMPLES = 5        # основной; абляция 2 и 1
     MODEL_PRESET = "h123_deep24"          # small, medium, heavy; h123_deep24 = 24 слоя, h1–h3, обязательно snapshot_5.
@@ -1392,10 +1392,10 @@ def run_manual() -> None:
     WEAK_CHECKPOINT_KIND = "latest"   # best рекомендуется; latest остаётся доступен
     WEAK_CHECKPOINT_PATH = None      # None = путь автоматически совпадает с TEMPORAL_MODE
     EXPERT_LABELS_ROOT = "data/phase5/pdr_expert_labels_v1"  # Производный архив импорта, не исходная папка CFG/DAT.
-    RESTART_WEAK_FROM = None        # None для первого H123-D24; best/latest — новый цикл уже обученной той же модели.
+    RESTART_WEAK_FROM = "latest"        # None для первого H123-D24; best/latest — новый цикл уже обученной той же модели.
 
     # Объём и длительность обучения.
-    EPOCHS = 300  # Итоговое число эпох цикла; при resume продолжение до этой границы, не столько дополнительных эпох.
+    EPOCHS = 100  # Итоговое число эпох цикла; при resume продолжение до этой границы, не столько дополнительных эпох.
     SAMPLES_PER_EPOCH = 20_000      # случайных целевых точек с возвращением
     BATCH_SIZE = 32                 # число примеров в одном шаге оптимизатора
     MAX_SAMPLES_PER_RECORD = 64     # ограничение train-индекса на осциллограмму

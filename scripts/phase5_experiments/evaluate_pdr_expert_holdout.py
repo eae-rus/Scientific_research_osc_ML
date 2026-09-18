@@ -513,11 +513,82 @@ def main() -> int:
     return 0
 
 
+# Общий список для ручной оценки и дополнения RTDS. Ключ — постоянное уникальное
+# имя модели в отчётах/COMTRADE, значение — папка с config.json и весами.
+# Для следующей модели добавьте строку; существующие ключи не переименовывайте.
+MANUAL_MODEL_RUNS = {
+    "weak_snapshot_5_h123_deep24": "experiments/phase5/pdr_weak_snapshot_5_stride5_h123_deep24",
+    "expert_snapshot_5_h123_deep24": "experiments/phase5/pdr_expert_snapshot_5_stride5_h123_deep24",
+}
+MANUAL_CHECKPOINT_KINDS = ("latest", "best")  # Можно оставить только ("latest",).
+
+
+def run_h123_evaluations(*, teacher: bool = False, skip_existing: bool = True,
+                        max_samples: int = 256, workers: int = 0,
+                        model_runs=None, checkpoint_kinds=None, output_root=None) -> None:
+    """Оценка выбранных моделей; историческое имя сохранено для совместимости."""
+    from scripts.phase5_experiments.run_pdr_dataset_study import _atomic_write_json
+    evaluator = evaluate_checkpoint
+    if teacher:
+        from scripts.phase5_experiments.evaluate_pdr_full_weak_validation import evaluate_checkpoint as evaluator
+    output_root = Path(output_root) if output_root is not None else PROJECT_ROOT / "data/phase5/pdr_model_evaluation"
+    model_runs = MANUAL_MODEL_RUNS if model_runs is None else model_runs
+    checkpoint_kinds = MANUAL_CHECKPOINT_KINDS if checkpoint_kinds is None else checkpoint_kinds
+    filenames = {"latest": "latest_checkpoint.pt", "best": "best_model.pt"}
+    if not model_runs or not checkpoint_kinds or any(k not in filenames for k in checkpoint_kinds):
+        raise ValueError("Задайте модели и виды весов latest/best")
+    # Не хешируем многогигабайтные shards заново: учитываем состав, размер и mtime.
+    # После переноса/изменения архива повторный расчёт безопаснее старого кэша.
+    signature = []
+    for root_name in ("pdr_expert_labels_v1", "pdr_labels_v5", "splits"):
+        root = PROJECT_ROOT / "data/phase5" / root_name
+        for path in sorted(root.rglob("*")):
+            if path.is_file():
+                st = path.stat()
+                signature.append((str(path.relative_to(PROJECT_ROOT)), st.st_size, st.st_mtime_ns))
+    data_signature = hashlib.sha256(json.dumps(signature).encode()).hexdigest()
+    indexes = {p.name: _sha256(p) for p in (PROJECT_ROOT / "data/phase5").glob("*.json")
+               if p.name in ("datasets_registry.json", "research_strict_splits.json")}
+    code_signature = {str(p.relative_to(PROJECT_ROOT)): _sha256(p) for folder in ("osc_tools/ml", "osc_tools/pdr", "scripts/phase5_experiments")
+                      for p in (PROJECT_ROOT / folder).rglob("*.py")}
+    for stage, folder_name in model_runs.items():
+        if not stage or any(c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-" for c in stage):
+            raise ValueError("Имя модели: латиница, цифры, подчёркивание и дефис")
+        folder = PROJECT_ROOT / folder_name
+        for kind in checkpoint_kinds:
+            filename = filenames[kind]
+            checkpoint, config = folder / filename, folder / "config.json"
+            tag = "full_weak_validation" if teacher else "expert_validation"
+            output = output_root / f"{stage}_{kind}_{tag}.json"
+            marker = output.with_suffix(".request.json")
+            request = {"checkpoint": _sha256(checkpoint), "config": _sha256(config),
+                       "data": data_signature, "code": code_signature, "max_samples": max_samples,
+                       "teacher": teacher, "split": "validation", "indexes": indexes}
+            old = json.loads(marker.read_text(encoding="utf-8")) if marker.exists() else {}
+            artifacts = old.get("artifacts", {})
+            if (skip_existing and output.exists() and old.get("request") == request and artifacts
+                    and all((output_root / name).exists() and _sha256(output_root / name) == digest
+                            for name, digest in artifacts.items())):
+                print(f"[Готово ранее] {output.name}", flush=True)
+                continue
+            print(f"[Оценка модели] {stage}/{kind}: {tag}", flush=True)
+            evaluator(checkpoint, config, output, max_samples_per_record=max_samples, num_workers=workers)
+            files = [output, *output_root.glob(output.stem + "__*.npz")]
+            _atomic_write_json(marker, {"request": request, "artifacts": {p.name: _sha256(p) for p in files}})
+
+
 def run_manual() -> None:
     """Ручная проверка одинакового expert-эталона для weak и expert моделей."""
 
+    RUN_PROFILE = "selected"  # selected: MANUAL_MODEL_RUNS выше; legacy: прежние три модели и формульные органы.
+    SKIP_EXISTING = True  # Пропускать только проверенные совместимые результаты; False — пересчитать.
     MAX_SAMPLES_PER_RECORD = 256  # Максимум проверяемых точек одной осциллограммы, не ограничение числа файлов.
     NUM_WORKERS = 0  # Процессы загрузки: 0 проще для Windows и контрольного запуска.
+    if RUN_PROFILE in ("selected", "h123"):
+        run_h123_evaluations(skip_existing=SKIP_EXISTING, max_samples=MAX_SAMPLES_PER_RECORD, workers=NUM_WORKERS)
+        return
+    if RUN_PROFILE != "legacy":
+        raise ValueError("RUN_PROFILE: selected или legacy")
     # Holdout добавить только после фиксации архитектуры/порогов:
     # SPLITS = ("validation", "holdout")
     SPLITS = ("validation",)

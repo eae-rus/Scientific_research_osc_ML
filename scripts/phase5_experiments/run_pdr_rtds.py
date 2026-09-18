@@ -137,7 +137,7 @@ def expert_seed(current_rms: np.ndarray, fault: np.ndarray, breaker: np.ndarray,
     return result, reason
 
 
-def load_models() -> dict:
+def load_models(*, h123_only: bool = False, model_runs=None, checkpoint_kinds=None) -> dict:
     """Все weak/expert × три представления × latest/best; без подмены весов."""
     from scripts.phase5_experiments.run_phase5_pdr_training import _imports, _build_model
     from scripts.phase5_experiments.evaluate_pdr_expert_holdout import _config_from_json
@@ -148,17 +148,143 @@ def load_models() -> dict:
         raise RuntimeError("GPU недоступен: используйте PyTorch с CUDA или явно DEVICE='cpu'.")
     print(f"[Устройство] {device}; torch={torch.__version__}; batch={BATCH_SIZE}", flush=True)
     result = {}
+    if model_runs is not None:
+        filenames = {"latest": "latest_checkpoint.pt", "best": "best_model.pt"}
+        for name, folder_name in model_runs.items():
+            if not name or any(c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-" for c in name):
+                raise ValueError("Недопустимое имя модели")
+            folder = PROJECT_ROOT / folder_name
+            for kind in (checkpoint_kinds or ("latest", "best")):
+                path = folder / filenames[kind]
+                cfg = _config_from_json(folder / "config.json")
+                model, head, _ = _build_model(cfg, None, path)
+                key = f"nn_{name}_{'last' if kind == 'latest' else kind}"
+                result[key] = (cfg, model.to(device).eval(), head.to(device).eval(), device,
+                               {"path": str(path), "sha256": _sha256(path), "config_sha256": _sha256(folder / "config.json")})
+        if not result:
+            raise ValueError("Список моделей пуст")
+        return result
     for stage in ("weak", "expert"):
-        for mode in MODES:
+        for mode in (("snapshot_5",) if h123_only else MODES):
             folder = PROJECT_ROOT / f"experiments/phase5/pdr_{stage}_{mode}_stride5"
+            if h123_only:
+                folder = folder.with_name(folder.name + "_h123_deep24")
             for kind, filename in (("last", "latest_checkpoint.pt"), ("best", "best_model.pt")):
                 path = folder / filename
                 cfg = _config_from_json(folder / "config.json")
                 model, head, _ = _build_model(cfg, None, path)
-                key = f"nn_{stage}_{mode}_{kind}"
+                key = f"nn_{stage}_{mode}{'_h123_deep24' if h123_only else ''}_{kind}"
                 result[key] = (cfg, model.to(device).eval(), head.to(device).eval(), device,
                                {"path": str(path), "sha256": _sha256(path), "config_sha256": _sha256(folder / "config.json")})
     return result
+
+
+def augment_h123(input_root: Path, output_root: Path, *, max_records: int | None = None,
+                 skip_existing: bool = True, model_runs=None, checkpoint_kinds=None) -> None:
+    """Дополнить копии ручных COMTRADE, не пересчитывая прежние органы."""
+    from dataclasses import replace
+    from scripts.visualization.generate_pdr_article_figures import _record_spectral_cache, _predict_cached
+    from scripts.phase5_experiments.progress import ProgressReporter
+    input_root, output_root = input_root.resolve(), output_root.resolve()
+    if input_root == output_root or input_root in output_root.parents or output_root in input_root.parents:
+        raise ValueError("Вход и выход должны быть отдельными непересекающимися папками")
+    if INFERENCE_STRIDE != 1:
+        raise ValueError("COMTRADE требует INFERENCE_STRIDE=1")
+    paths = sorted(input_root.rglob("*.cfg"))
+    if max_records is not None:
+        paths = paths[:max_records]
+    if not paths:
+        raise FileNotFoundError(input_root)
+    if len({p.stem for p in paths}) != len(paths):
+        raise ValueError("Повтор номера опыта во входной папке")
+    models = (load_models(h123_only=True) if model_runs is None else
+              load_models(model_runs=model_runs, checkpoint_kinds=checkpoint_kinds))
+    code = {str(p.relative_to(PROJECT_ROOT)): _sha256(p) for folder in ("osc_tools/ml", "osc_tools/pdr")
+            for p in (PROJECT_ROOT / folder).rglob("*.py")}
+    code["runner"] = _sha256(Path(__file__))
+    code["inference"] = _sha256(PROJECT_ROOT / "scripts/visualization/generate_pdr_article_figures.py")
+    reporter = ProgressReporter("RTDS: добавление моделей", len(paths), unit="опыт")
+    output_root.mkdir(parents=True, exist_ok=True)
+    completed = 0
+    try:
+        for path in paths:
+            out = output_root / path.relative_to(input_root)
+            sidecar = path.with_suffix(".json")
+            if not sidecar.exists():
+                sidecar = OUTPUT_ROOT / (path.stem + ".json")
+            metadata = json.loads(sidecar.read_text(encoding="utf-8"))
+            fingerprint = {"cfg": _sha256(path), "dat": _sha256(path.with_suffix(".dat")),
+                "metadata": _sha256(sidecar), "models": {k: v[4] for k, v in models.items()},
+                "code": code, "startup": STARTUP_POLICY, "phasor_backend": PHASOR_BACKEND,
+                "current_nominal_a": CURRENT_NOMINAL_A, "voltage_nominal_v": VOLTAGE_NOMINAL_V}
+            old = json.loads(out.with_suffix(".json").read_text(encoding="utf-8")) if out.with_suffix(".json").exists() else {}
+            for suffix in (".cfg", ".dat"):
+                existing = out.with_suffix(suffix)
+                if existing.exists() and _sha256(existing) != old.get("output_hashes", {}).get(suffix):
+                    raise ValueError(f"Выход изменён или не подтверждён; перезапись запрещена: {existing}")
+            ready = all(out.with_suffix(s).exists() for s in (".cfg", ".dat"))
+            if skip_existing and ready and old.get("augmentation_fingerprint") == fingerprint:
+                print(f"[Готово ранее] {path.stem}", flush=True)
+            else:
+                record, physical, _, tb = read_rtds(INPUT_ROOT / path.name)
+                edited = read_comtrade_1999_ascii(path)
+                if edited.n_samples != physical.shape[1] or edited.sample_rate_hz != record.sample_rate_hz:
+                    raise ValueError(f"Изменены длина/частота: {path}")
+                if not np.allclose(edited.timestamps_us, np.arange(edited.n_samples)*1e6/edited.sample_rate_hz, atol=1, rtol=0):
+                    raise ValueError(f"Изменена временная сетка: {path}")
+                expected = metadata.get("automatic_digital_hashes", {})
+                if not expected:
+                    raise ValueError(f"Нет хешей исходных автоматических ответов: {sidecar}")
+                for name, digest in expected.items():
+                    if name not in edited.digital or hashlib.sha256(edited.digital[name].tobytes()).hexdigest() != digest:
+                        raise ValueError(f"Изменён автоматический дискрет: {name}, {path}")
+                cfg_rows = [[v.strip() for v in r] for r in csv.reader(_read_text(path).splitlines())]
+                analog_count = int(cfg_rows[1][1].rstrip("Aa"))
+                analog = tuple(AnalogChannel(r[1], r[4], edited.analog[r[1]]*float(r[5])+float(r[6]), r[2], r[3])
+                               for r in cfg_rows[2:2+analog_count])
+                by_name = {a.name: a for a in analog}
+                for a in record.analog:
+                    b = by_name[a.name]
+                    if a.unit != b.unit or not np.allclose(a.values, b.values, rtol=1e-7, atol=1e-6):
+                        raise ValueError(f"Изменён исходный аналоговый сигнал: {a.name}")
+                digital = [DigitalChannel(name, values) for name, values in edited.digital.items()]
+                new_names = {f"S{s}__{name}__{field}" for s in (1, 2) for name in models for field in ("FWD", "VALID")}
+                if new_names.intersection(edited.digital):
+                    raise ValueError("Во входе уже есть выбранные модели: исключите их из списка дополнения")
+                for section in (1, 2):
+                    for field in ("FWD", "VALID"):
+                        if f"S{section}__expert__{field}" not in edited.digital:
+                            raise ValueError("Нет экспертных каналов")
+                    signals, prov = section_signals(physical, section)
+                    shared = {}
+                    for name, (cfg, model, head, device, _) in models.items():
+                        from osc_tools.ml.spectral_features import SpectralFeatureConfig
+                        history = max(SpectralFeatureConfig(cfg.feature_version).low_periods, default=1)
+                        first = tb.spp-1 if STARTUP_POLICY == "early" else (10+history)*tb.spp-1
+                        ends = np.arange(first, edited.n_samples)
+                        print(f"[Модель] {completed+1}/{len(paths)} {path.stem}, S{section}, {name}", flush=True)
+                        f, p, lookup = _record_spectral_cache(signals, prov, "phase", tb, cfg.temporal_mode,
+                            cfg.feature_version, ends, startup_policy=STARTUP_POLICY, shared_cache=shared, phasor_backend=PHASOR_BACKEND)
+                        direction, probability = _predict_cached(model, head, f, p, lookup, device, BATCH_SIZE, shared)
+                        state = np.full(edited.n_samples, -999, dtype=np.int16)
+                        state[ends] = np.where(probability >= .5, direction, -999)
+                        digital.extend(_state_channels(f"S{section}__{name}", state))
+                    shared.clear()
+                write_comtrade_ascii(replace(record, analog=analog, digital=tuple(digital)), out, out.with_suffix(".dat"))
+                metadata.update({"augmentation_fingerprint": fingerprint, "expert_status": "copied_from_author_labels",
+                    "expert_reference_path": str(path), "additional_algorithm_ids": list(dict.fromkeys([*metadata.get("additional_algorithm_ids", []), *models])),
+                    "automatic_digital_hashes": {ch.name: hashlib.sha256(ch.values.astype(np.uint8).tobytes()).hexdigest()
+                        for ch in digital if "__expert__" not in ch.name},
+                    "output_hashes": {s: _sha256(out.with_suffix(s)) for s in (".cfg", ".dat")}})
+                _atomic_write_json(out.with_suffix(".json"), metadata)
+            completed += 1
+            reporter.update(completed)
+            _atomic_write_json(output_root / "progress.json", {"status": "running", "completed": completed, "total": len(paths)})
+    except Exception as exc:
+        _atomic_write_json(output_root / "progress.json", {"status": "failed", "completed": completed, "total": len(paths), "error": str(exc)})
+        raise
+    reporter.finish()
+    _atomic_write_json(output_root / "progress.json", {"status": "complete", "completed": completed, "total": len(paths)})
 
 
 def run(*, prepare_only: bool = False, max_records: int | None = None) -> None:
@@ -300,7 +426,7 @@ def _comparison_metrics(target: np.ndarray, applicable: np.ndarray, direction: n
     }
 
 
-def evaluate_verified(*, preliminary: bool = False) -> dict:
+def evaluate_verified(*, preliminary: bool = False, root: Path | None = None, output: Path | None = None) -> dict:
     """Прочитать принятые экспертом пары; лишние сигналы игнорируются.
 
     Сверка аналоговых отсчётов защищает от случайной подмены опыта. Автоматические
@@ -309,7 +435,7 @@ def evaluate_verified(*, preliminary: bool = False) -> dict:
     """
     rows, inventory, references = [], [], []
     started = time.monotonic()
-    evaluation_root = OUTPUT_ROOT if preliminary else VERIFIED_ROOT
+    evaluation_root = root if root is not None else (OUTPUT_ROOT if preliminary else VERIFIED_ROOT)
     files = sorted(evaluation_root.rglob("*.cfg")) if evaluation_root.exists() else []
     if not files:
         raise FileNotFoundError(f"Нет CFG в {evaluation_root}")
@@ -326,7 +452,8 @@ def evaluate_verified(*, preliminary: bool = False) -> dict:
         metadata = json.loads(sidecar.read_text(encoding="utf-8"))
         references.append({"record": cfg_path.stem, "cfg_sha256": _sha256(cfg_path),
                            "dat_sha256": _sha256(cfg_path.with_suffix(".dat")),
-                           "calculation_fingerprint": metadata.get("fingerprint")})
+                           "calculation_fingerprint": metadata.get("fingerprint"),
+                           "augmentation_fingerprint": metadata.get("augmentation_fingerprint")})
         expected_hashes = metadata.get("automatic_digital_hashes")
         if not expected_hashes:
             raise ValueError(f"Нет контрольных хешей автоматических сигналов: {sidecar}")
@@ -361,6 +488,7 @@ def evaluate_verified(*, preliminary: bool = False) -> dict:
                 "voltage_absolute_peak_v": peak,
                 "voltage_peak_to_nominal_phase_peak": peak / (VOLTAGE_NOMINAL_V * np.sqrt(2/3)) if peak is not None else None})
             names = list(DEFAULT_ALGORITHMS) + [f"nn_{stage}_{mode}_{kind}" for stage in ("weak", "expert") for mode in MODES for kind in ("last", "best")]
+            names += metadata.get("additional_algorithm_ids", [])
             for name in names:
                 fwd_key, valid_key = prefix + name + "__FWD", prefix + name + "__VALID"
                 if fwd_key not in edited.digital or valid_key not in edited.digital:
@@ -388,15 +516,37 @@ def evaluate_verified(*, preliminary: bool = False) -> dict:
               "macro_by_record_section": aggregate,
               "warning": "Первичная оценка. Отдельные задержки, ранний контекст и типы КЗ анализируются перед выводами."}
     filename = "pdr_rtds_evaluation_preliminary.json" if preliminary else "pdr_rtds_evaluation.json"
-    _atomic_write_json(OUTPUT_ROOT.parent / filename, result)
+    _atomic_write_json(output or OUTPUT_ROOT.parent / filename, result)
     return result
 
 
 def run_manual() -> None:
-    run(prepare_only=PREPARE_ONLY, max_records=MAX_RECORDS)
+    # F5: дополнить копии и сразу собрать статистику; CLI сохраняет прежние команды.
+    from scripts.phase5_experiments.evaluate_pdr_expert_holdout import MANUAL_MODEL_RUNS, MANUAL_CHECKPOINT_KINDS
+    MODEL_RUNS = MANUAL_MODEL_RUNS  # Общий редактируемый список папок моделей в evaluate_pdr_expert_holdout.py.
+    CHECKPOINT_KINDS = MANUAL_CHECKPOINT_KINDS  # latest/best; не подменяются автоматически.
+    ACTION = "augment_models"  # augment_models | evaluate_models | original_export | evaluate_original
+    LABELS_ROOT = VERIFIED_ROOT  # Авторские файлы: читаются, не изменяются.
+    AUGMENTED_ROOT = PROJECT_ROOT / "data/phase5/pdr_rtds_review_h123"  # Отдельные копии со всеми прежними ответами.
+    SKIP_EXISTING = True  # Совместимые законченные пары не рассчитываются заново.
+    MAX_FILES = None  # None: все 100; 1: проба, не итоговая оценка.
+    if ACTION == "augment_models":
+        augment_h123(LABELS_ROOT, AUGMENTED_ROOT, max_records=MAX_FILES, skip_existing=SKIP_EXISTING,
+                     model_runs=MODEL_RUNS, checkpoint_kinds=CHECKPOINT_KINDS)
+    if ACTION in ("augment_models", "evaluate_models"):
+        evaluate_verified(root=AUGMENTED_ROOT, output=PROJECT_ROOT / "data/phase5/pdr_rtds_evaluation_h123.json")
+    elif ACTION == "original_export":
+        run(prepare_only=PREPARE_ONLY, max_records=MAX_RECORDS)
+    elif ACTION == "evaluate_original":
+        evaluate_verified()
+    else:
+        raise ValueError("Неизвестный ACTION")
 
 
 if __name__ == "__main__":
+    if len(sys.argv) == 1:
+        run_manual()
+        raise SystemExit(0)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--prepare-only", action="store_true", default=PREPARE_ONLY)
     parser.add_argument("--max-records", type=int, default=MAX_RECORDS)

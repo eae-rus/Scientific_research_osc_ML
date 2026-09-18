@@ -14,6 +14,29 @@ from osc_tools.pdr.pdr_trainer import (
 from osc_tools.ml.models.transformer import PhysicalKANTransformer
 
 
+def test_manual_h123_evaluation_cache_checks_weights_and_outputs(tmp_path, monkeypatch):
+    import json
+    import scripts.phase5_experiments.evaluate_pdr_expert_holdout as m
+    monkeypatch.setattr(m, "PROJECT_ROOT", tmp_path)
+    calls = []
+    for stage in ("weak", "expert"):
+        folder = tmp_path / f"experiments/phase5/pdr_{stage}_snapshot_5_stride5_h123_deep24"
+        folder.mkdir(parents=True)
+        for name in ("config.json", "latest_checkpoint.pt", "best_model.pt"):
+            (folder / name).write_text("test")
+    def evaluate(checkpoint, config, output, **kw):
+        calls.append(output)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps({"test": True}))
+    monkeypatch.setattr(m, "evaluate_checkpoint", evaluate)
+    m.run_h123_evaluations()
+    m.run_h123_evaluations()
+    assert len(calls) == 4
+    calls[0].write_text("changed")
+    m.run_h123_evaluations()
+    assert len(calls) == 5
+
+
 def test_h123_deep24_forward_backward_and_checkpoint_contract(tmp_path):
     from dataclasses import asdict, replace
     from scripts.phase5_experiments.run_phase5_pdr_training import PDRTrainingConfig, _build_model, _default_output
