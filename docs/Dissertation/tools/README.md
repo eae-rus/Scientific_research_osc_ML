@@ -66,15 +66,20 @@ print('Export completed:', pdf_path.exists(), pdf_path.stat().st_size)
 На хосте установлен дистрибутив **MiKTeX 25.12** (каталог `C:\Users\Евдаков Алексей\AppData\Local\Programs\MiKTeX\miktex\bin\x64\`).  
 Автоматическая установка недостающих пакетов включена: `[MPM]AutoInstall=1`.
 
-Проверенные команды сборки:
+## 6. Сборка рукописи диссертации (`manuscript/`)
+
+Единый источник диссертации собирается из каталога `docs/Dissertation/manuscript/`:
 
 ```powershell
-# Сборка через pdflatex
-pdflatex -interaction=nonstopmode <имя_файла>.tex
+# Переход в каталог рукописи
+cd docs/Dissertation/manuscript
 
-# Сборка через xelatex (рекомендуется для UTF-8 и русских шрифтов)
-xelatex -interaction=nonstopmode <имя_файла>.tex
+# Сборка основного документа (двойной проход для актуализации оглавления и ссылок)
+& "C:\Users\Евдаков Алексей\AppData\Local\Programs\MiKTeX\miktex\bin\x64\pdflatex.exe" -interaction=nonstopmode main.tex
+& "C:\Users\Евдаков Алексей\AppData\Local\Programs\MiKTeX\miktex\bin\x64\pdflatex.exe" -interaction=nonstopmode main.tex
 
-# Обработка библиографии
-biber <имя_файла>
+# Сборка тестового образца верификации каркаса
+& "C:\Users\Евдаков Алексей\AppData\Local\Programs\MiKTeX\miktex\bin\x64\pdflatex.exe" -interaction=nonstopmode test_skeleton.tex
 ```
+
+Графические файлы загружаются автоматически через `\graphicspath` из `figures/` (для новых версий) и `../migration/extracted/.../media/` (для базовых версий из v0.5) без дублирования в репозитории.
