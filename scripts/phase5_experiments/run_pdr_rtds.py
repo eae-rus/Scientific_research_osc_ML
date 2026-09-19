@@ -179,6 +179,20 @@ def load_models(*, h123_only: bool = False, model_runs=None, checkpoint_kinds=No
     return result
 
 
+def _augmentation_compatible(previous: dict, current: dict) -> bool:
+    """Поправка состава экспортируемых аналогов не меняет предсказания сети.
+
+    Разрешаем только конкретную проверенную предыдущую версию экспортёра;
+    остальные изменения кода, данных и весов по-прежнему сбрасывают кэш.
+    """
+    previous = dict(previous)
+    code = dict(previous.get("code", {}))
+    if code.get("runner") == "009d4aade78515fd6305698e7e5d504071c3aa7525c11d4c9421ea3c48300bba":
+        code["runner"] = current.get("code", {}).get("runner")
+        previous["code"] = code
+    return previous == current
+
+
 def augment_h123(input_root: Path, output_root: Path, *, max_records: int | None = None,
                  skip_existing: bool = True, model_runs=None, checkpoint_kinds=None) -> None:
     """Дополнить копии ручных COMTRADE, не пересчитывая прежние органы."""
@@ -223,7 +237,7 @@ def augment_h123(input_root: Path, output_root: Path, *, max_records: int | None
                 if existing.exists() and _sha256(existing) != old.get("output_hashes", {}).get(suffix):
                     raise ValueError(f"Выход изменён или не подтверждён; перезапись запрещена: {existing}")
             ready = all(out.with_suffix(s).exists() for s in (".cfg", ".dat"))
-            if skip_existing and ready and old.get("augmentation_fingerprint") == fingerprint:
+            if skip_existing and ready and _augmentation_compatible(old.get("augmentation_fingerprint", {}), fingerprint):
                 print(f"[Готово ранее] {path.stem}", flush=True)
             else:
                 record, physical, _, tb = read_rtds(INPUT_ROOT / path.name)
@@ -240,13 +254,24 @@ def augment_h123(input_root: Path, output_root: Path, *, max_records: int | None
                         raise ValueError(f"Изменён автоматический дискрет: {name}, {path}")
                 cfg_rows = [[v.strip() for v in r] for r in csv.reader(_read_text(path).splitlines())]
                 analog_count = int(cfg_rows[1][1].rstrip("Aa"))
-                analog = tuple(AnalogChannel(r[1], r[4], edited.analog[r[1]]*float(r[5])+float(r[6]), r[2], r[3])
-                               for r in cfg_rows[2:2+analog_count])
-                by_name = {a.name: a for a in analog}
+                # Только исходные физические каналы. Добавленные автором
+                # расчётные сигналы могут содержать NaN на границах Фурье:
+                # не экспортируем их и не используем как вход нейросети.
+                required = {a.name for a in record.analog}
+                by_name = {}
+                for r in cfg_rows[2:2+analog_count]:
+                    if r[1] in required and r[1] not in by_name:
+                        by_name[r[1]] = AnalogChannel(r[1], r[4], edited.analog[r[1]]*float(r[5])+float(r[6]), r[2], r[3])
+                    if len(by_name) == len(required):
+                        break
+                missing = required - by_name.keys()
+                if missing:
+                    raise ValueError(f"Отсутствуют базовые аналоговые каналы: {sorted(missing)}, {path}")
                 for a in record.analog:
                     b = by_name[a.name]
                     if a.unit != b.unit or not np.allclose(a.values, b.values, rtol=1e-7, atol=1e-6):
                         raise ValueError(f"Изменён исходный аналоговый сигнал: {a.name}")
+                analog = tuple(by_name[a.name] for a in record.analog)
                 digital = [DigitalChannel(name, values) for name, values in edited.digital.items()]
                 new_names = {f"S{s}__{name}__{field}" for s in (1, 2) for name in models for field in ("FWD", "VALID")}
                 if new_names.intersection(edited.digital):

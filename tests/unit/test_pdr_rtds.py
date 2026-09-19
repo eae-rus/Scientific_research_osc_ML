@@ -145,6 +145,22 @@ def test_h123_augmentation_preserves_reference_and_resumes(tmp_path, monkeypatch
     cfg.with_suffix(".json").write_text(json.dumps({"automatic_digital_hashes": {
         "old_formula": hashlib.sha256(digital[0].values.tobytes()).hexdigest()}}))
     before = (cfg.read_bytes(), cfg.with_suffix(".dat").read_bytes())
+    # Пользовательские вычисленные каналы могут иметь NaN/Inf: экспортёр
+    # обязан игнорировать их, сохраняя базовые сигналы и экспертные дискреты.
+    reader = m.read_comtrade_1999_ascii
+    def read_with_extra(path):
+        edited = reader(path)
+        edited.analog["I прям. посл. 1ВВ"] = np.array([np.nan, np.inf, 0., 1.])
+        return edited
+    monkeypatch.setattr(m, "read_comtrade_1999_ascii", read_with_extra)
+    read_text = m._read_text
+    def cfg_with_extra(path):
+        rows = read_text(path).splitlines()
+        count = rows[1].split(",")
+        rows[1] = f"{int(count[0])+1},2A,{count[2]}"
+        rows.insert(3, "2,I прям. посл. 1ВВ,,,A,1,0,0,0,1,1,1,S")
+        return "\n".join(rows)
+    monkeypatch.setattr(m, "_read_text", cfg_with_extra)
     calls = []
     monkeypatch.setattr(m, "read_rtds", lambda p: (record, np.zeros((18, 4)), None, TimebaseContract.create(100, 50)))
     monkeypatch.setattr(m, "load_models", lambda **kw: {"new_model": (SimpleNamespace(temporal_mode="snapshot_5", feature_version="B_H123"), None, None, "cpu", {"sha256": "test"})})
@@ -155,6 +171,7 @@ def test_h123_augmentation_preserves_reference_and_resumes(tmp_path, monkeypatch
     monkeypatch.setattr(gallery, "_predict_cached", predict)
     m.augment_h123(source, output)
     edited = read_comtrade_1999_ascii(output / cfg.name)
+    assert set(edited.analog) == {"IA"}
     for ch in digital:
         np.testing.assert_array_equal(edited.digital[ch.name], ch.values)
     assert before == (cfg.read_bytes(), cfg.with_suffix(".dat").read_bytes())
@@ -165,3 +182,12 @@ def test_h123_augmentation_preserves_reference_and_resumes(tmp_path, monkeypatch
         stream.write("manual edit")
     with pytest.raises(ValueError, match="перезапись запрещена"):
         m.augment_h123(source, output)
+
+
+def test_augmentation_allows_only_known_export_only_change():
+    from scripts.phase5_experiments.run_pdr_rtds import _augmentation_compatible
+    previous = {"code": {"runner": "009d4aade78515fd6305698e7e5d504071c3aa7525c11d4c9421ea3c48300bba", "inference": "same"}, "models": "same"}
+    current = {"code": {"runner": "new", "inference": "same"}, "models": "same"}
+    assert _augmentation_compatible(previous, current)
+    assert not _augmentation_compatible(previous, {**current, "models": "changed"})
+    assert not _augmentation_compatible(previous, {**current, "code": {"runner": "new", "inference": "changed"}})

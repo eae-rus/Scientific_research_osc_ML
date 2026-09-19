@@ -746,6 +746,8 @@ def plot_fig9():
         'exp_s2': PROJECT_ROOT / 'experiments/phase5/pdr_expert_snapshot_2_stride5/training_history.json',
         'exp_s5': PROJECT_ROOT / 'experiments/phase5/pdr_expert_snapshot_5_stride5/training_history.json',
         'exp_seq': PROJECT_ROOT / 'experiments/phase5/pdr_expert_sequence_1_8_stride5/training_history.json',
+        'weak_h123': PROJECT_ROOT / 'experiments/phase5/pdr_weak_snapshot_5_stride5_h123_deep24/training_history.json',
+        'exp_h123': PROJECT_ROOT / 'experiments/phase5/pdr_expert_snapshot_5_stride5_h123_deep24/training_history.json',
     }
     
     histories = {}
@@ -759,7 +761,8 @@ def plot_fig9():
     models_info = [
         ('snapshot_2 (2 среза)', 'weak_s2', 'exp_s2', 0, 'fig9a_weak_snapshot2.png', 'fig9d_expert_snapshot2.png'),
         ('snapshot_5 (5 срезов)', 'weak_s5', 'exp_s5', 1, 'fig9b_weak_snapshot5.png', 'fig9e_expert_snapshot5.png'),
-        ('sequence_1_8', 'weak_seq', 'exp_seq', 2, 'fig9c_weak_sequence.png', 'fig9f_expert_sequence.png')
+        ('sequence_1_8', 'weak_seq', 'exp_seq', 2, 'fig9c_weak_sequence.png', 'fig9f_expert_sequence.png'),
+        ('H123-D24 (5 срезов)', 'weak_h123', 'exp_h123', 3, 'fig9g_weak_h123.png', 'fig9h_expert_h123.png'),
     ]
     
     # 1. Отдельные графики для каждого этапа и архитектуры
@@ -817,7 +820,7 @@ def plot_fig9():
             plt.close()
 
     # 2. Композитная матрица 2х3
-    fig, axes = plt.subplots(2, 3, figsize=(14.5, 7.5), dpi=300)
+    fig, axes = plt.subplots(2, len(models_info), figsize=(19, 7.5), dpi=300)
     for title, weak_key, _, col, _, _ in models_info:
         ax = axes[0, col]
         data = histories.get(weak_key, [])
@@ -866,7 +869,7 @@ def plot_fig9():
         ax.legend(loc='lower left', fontsize=7.0)
         ax.grid(True, ls=':', alpha=0.5)
 
-    plt.suptitle("Сравнительная динамика двухэтапного обучения трёх архитектур РНМ (snapshot_2, snapshot_5, sequence_1_8)", weight='bold', fontsize=12, y=0.995)
+    plt.suptitle("Динамика обучения четырёх конфигураций РНМ; H123-D24 использует отдельную сетку валидации", weight='bold', fontsize=12, y=0.995)
     plt.tight_layout()
     save_fig("fig9_training_dynamics.png")
     plt.close()
@@ -947,7 +950,48 @@ def plot_fig10():
     fig.subplots_adjust(left=.32, right=.98, bottom=.12, top=.92, hspace=.35, wspace=.08)
     save_fig("fig10_expert_evaluation_comparison.png")
     plt.close(fig)
+    plot_fig10_h123()
     return True
+
+
+def plot_fig10_h123():
+    """Новый опыт отдельно: его сетка не совпадает с прежним рисунком 10."""
+    import hashlib
+    root = PROJECT_ROOT / "data/phase5/pdr_model_evaluation"
+    choices = (("weak", "latest"), ("weak", "best"), ("expert", "latest"), ("expert", "best"))
+    labels = ("До: последние", "До: выбранные", "После: последние", "После: выбранные")
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5.3))
+    for ax, suffix, title in zip(axes, ("expert_validation", "full_weak_validation"),
+                                 ("Экспертный эталон", "Автоматический учитель")):
+        rows = []
+        for stage, kind in choices:
+            path = root / f"{stage}_snapshot_5_h123_deep24_{kind}_{suffix}.json"
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            request = json.loads(path.with_suffix(".request.json").read_text(encoding="utf-8"))
+            if hashlib.sha256(path.read_bytes()).hexdigest() != request["artifacts"][path.name]:
+                raise ValueError(f"Результат изменён после расчёта: {path}")
+            if hashlib.sha256(Path(payload["checkpoint"]).read_bytes()).hexdigest() != request["request"]["checkpoint"]:
+                raise ValueError(f"Веса изменены после оценки: {path}")
+            rows.append(payload.get("splits", {}).get("validation", payload)["overall"])
+        supports = {(r["n_samples"], r["n_applicability_samples"]) for r in rows}
+        if len(supports) != 1:
+            raise ValueError("Не совпадает число точек внутри панели H123")
+        x = np.arange(4)
+        for offset, key, color, label in ((-.19, "macro_f1_score", "#1976d2", "Macro-F1 направления"),
+                                          (.19, "applicability_macro_f1_score", "#8e24aa", "Macro-F1 применимости")):
+            bars = ax.bar(x+offset, [r[key]*100 for r in rows], width=.36, color=color, label=label)
+            ax.bar_label(bars, fmt="%.2f", fontsize=8, padding=3)
+        nd, nv = next(iter(supports))
+        ax.set_title(f"{title}\nDIR: {int(nd):,}; VALID: {int(nv):,} точек", fontsize=11)
+        ax.set_xticks(x, labels, rotation=22, ha="right")
+        ax.set_ylim(0, 110)
+        ax.set_ylabel("Macro-F1, %")
+        ax.grid(axis="y", alpha=.25)
+    axes[0].legend(loc="lower left", fontsize=9)
+    fig.suptitle("H123-D24: разные эталоны — отдельные оценки", fontsize=13)
+    fig.tight_layout()
+    save_fig("fig10a_h123_evaluation.png")
+    plt.close(fig)
 
 
 # -------------------------------------------------------------
