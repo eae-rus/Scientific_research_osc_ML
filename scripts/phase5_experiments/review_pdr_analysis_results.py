@@ -1,8 +1,8 @@
 """Дополнительный воспроизводимый аудит полной Phase 5 PDR-разметки.
 
-Сценарий не читает тяжёлые label shards: он объединяет уже рассчитанные
-``record_statistics.csv`` и ``signal_record_statistics.csv`` и формирует
-компактные таблицы для инженерного и научного ревью.
+F5: инженерные временные метрики сохранённых плотных ответов RTDS и
+экспертной галереи. Нейросети и Фурье повторно не рассчитываются.
+Профиль legacy объединяет готовые CSV прежнего массового аудита.
 """
 
 from __future__ import annotations
@@ -17,6 +17,8 @@ from scipy.stats import ks_2samp, mannwhitneyu, wasserstein_distance
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 DEFAULT_ANALYSIS_DIR = PROJECT_ROOT / "data/phase5/pdr_analysis_v6"
 ALGORITHMS = (
     "adaptive_pdr_mir",
@@ -1065,8 +1067,395 @@ def main() -> int:
     return 0
 
 
+def build_engineering_review(*, scope: str, output_root: Path, gallery_root: Path,
+                             rtds_root: Path, config=None, resume: bool = True,
+                             max_records: int | None = None, bootstrap_repeats: int = 2000) -> dict:
+    """CPU-аудит плотных сохранённых ответов: без запуска нейросетей/Фурье.
+
+    Возобновление по целой записи; в кэше находятся только метрики и события.
+    Экспертная часть — исключительно validation, не train/holdout.
+    """
+    import json
+    import csv
+    import hashlib
+    from dataclasses import asdict
+    from osc_tools.pdr.temporal_metrics import TemporalConfig, temporal_metrics
+    from osc_tools.pdr.expert_labels import read_comtrade_1999_ascii, _read_text
+    from osc_tools.pdr.study import PDRStudyLabelStore
+    from scripts.phase5_experiments.run_pdr_dataset_study import _atomic_write_json
+    from scripts.phase5_experiments.progress import ProgressReporter
+
+    if scope not in ("rtds", "expert") or (max_records is not None and max_records < 1) or bootstrap_repeats < 0:
+        raise ValueError("scope=rtds/expert; MAX_RECORDS=None или положительное число")
+    cfg = config or TemporalConfig()
+    def digest(path: Path) -> str:
+        with path.open("rb") as f:
+            return hashlib.file_digest(f, "sha256").hexdigest()
+    files = (sorted(rtds_root.rglob("*.cfg")) if scope == "rtds" else
+             sorted((gallery_root / "validation").rglob("*.json")))
+    if not files:
+        raise FileNotFoundError("Нет входных записей: проверьте путь/завершение галереи")
+    total_available = len(files)
+    files = files[:max_records] if max_records else files
+    # Пробный запуск не затирает полный отчёт и его прогресс.
+    output_root = output_root / scope / ("smoke" if max_records else "full")
+    output_root.mkdir(parents=True, exist_ok=True)
+    reporter = ProgressReporter(f"Инженерные метрики: {scope}", len(files), unit="запись")
+    code = {"metrics": digest(PROJECT_ROOT / "osc_tools/pdr/temporal_metrics.py"), "runner": digest(Path(__file__))}
+    manual = {}
+    split_records = {}
+    split_hash = None
+    if scope == "expert":
+        split_file = PROJECT_ROOT / "data/phase5/pdr_expert_labels_v1/records.csv"
+        split_hash = digest(split_file)
+        with split_file.open(encoding="utf-8-sig", newline="") as stream:
+            split_records = {(x["source"], int(x["record_id"])): x for x in csv.DictReader(stream) if x["split"] == "validation"}
+        available = {(p.parent.name, int(p.stem.rsplit("_",1)[1])) for p in
+                     (gallery_root / "validation").rglob("*.json")}
+        if available != set(split_records):
+            raise ValueError("Галерея validation не соответствует текущему split: обновите галерею")
+        for p in (PROJECT_ROOT / "data/phase5/pdr_manual_labels").rglob("*.cfg"):
+            manual.setdefault(p.stem, []).append(p)
+    stores, manifests, rows, checkpoint_hashes = {}, {}, [], {}
+    model_set = None
+    try:
+        for number, path in enumerate(files, 1):
+            meta_path = path.with_suffix(".json") if scope == "rtds" else path
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            if scope == "expert":
+                if meta.get("split") != "validation" or meta.get("status") not in ("completed", "invalid_quality"):
+                    raise ValueError(f"Недопустимая часть/статус: {path}")
+                if meta.get("inference_stride") != 1 or meta.get("startup_policy") != "early":
+                    raise ValueError("Нужна плотная галерея: stride=1, startup_policy=early")
+                if len(manual.get(path.stem, [])) != 1:
+                    raise ValueError(f"Неоднозначный/отсутствующий экспертный COMTRADE: {path.stem}")
+                cfg_path = manual[path.stem][0]
+                source = path.parent.name
+                record_id = int(path.stem.rsplit("_", 1)[1])
+                if source not in stores:
+                    root = PROJECT_ROOT / "data/phase5/pdr_labels_v6" / source
+                    manifest = root / "manifest.json"
+                    manifests[source] = digest(manifest)
+                    stores[source] = {key: PDRStudyLabelStore(root, algorithm_id=key) for key in meta["algorithm_ids"]}
+                if manifests[source] != meta["automatic_manifest_sha256"]:
+                    raise ValueError(f"Изменилась формульная разметка: обновите галерею {path}")
+                if digest(cfg_path) != meta["cfg_sha256"] or digest(cfg_path.with_suffix(".dat")) != meta["dat_sha256"]:
+                    raise ValueError(f"Изменена экспертная разметка: обновите галерею {path}")
+                for model in meta["models"].values():
+                    weight = Path(model["checkpoint"])
+                    if str(weight) not in checkpoint_hashes:
+                        checkpoint_hashes[str(weight)] = digest(weight)
+                    if checkpoint_hashes[str(weight)] != model["checkpoint_sha256"]:
+                        raise ValueError(f"Изменены веса: обновите галерею {weight}")
+                    if digest(weight.parent / "config.json") != model["config_sha256"]:
+                        raise ValueError(f"Изменена конфигурация: обновите галерею {weight}")
+                selected = tuple(sorted(meta["models"]))
+                if model_set is not None and model_set != selected:
+                    raise ValueError("Галерея не закончена: различается состав моделей")
+                model_set = selected
+                inputs = {"meta": digest(path), "npz": digest(path.with_suffix(".npz")),
+                          "cfg": meta["cfg_sha256"], "dat": meta["dat_sha256"], "manifest": manifests[source], "split": split_hash}
+            else:
+                cfg_path, source = path, "rtds"
+                selected = tuple(sorted(set(meta["fingerprint"]["algorithm_params"]) |
+                    set(meta["fingerprint"]["models"]) | set(meta["additional_algorithm_ids"])))
+                if model_set is not None and model_set != selected:
+                    raise ValueError("RTDS не закончен: различается состав алгоритмов")
+                model_set = selected
+                if meta["fingerprint"].get("stride") != 1 or meta["augmentation_fingerprint"].get("startup") != "early":
+                    raise ValueError("RTDS должен быть рассчитан плотно с ранним стартом")
+                for suffix in (".cfg", ".dat"):
+                    if digest(path.with_suffix(suffix)) != meta.get("output_hashes", {}).get(suffix):
+                        raise ValueError(f"Изменена дополненная пара RTDS: {path}")
+                reference = Path(meta["expert_reference_path"])
+                for suffix, key in ((".cfg", "cfg"), (".dat", "dat")):
+                    if digest(reference.with_suffix(suffix)) != meta["augmentation_fingerprint"][key]:
+                        raise ValueError(f"Эксперт RTDS изменён: сначала обновите дополненные COMTRADE {path}")
+                inputs = {"meta": digest(meta_path), **meta["output_hashes"]}
+            request = json.loads(json.dumps({"inputs": inputs, "code": code, "config": asdict(cfg)}))
+            cache = output_root / "records" / f"{source}__{path.stem}.json"
+            previous = json.loads(cache.read_text(encoding="utf-8")) if resume and cache.exists() else {}
+            if previous.get("request") == request:
+                part = previous["rows"]
+                print(f"[Кэш метрик] {path.stem}", flush=True)
+            else:
+                rec = read_comtrade_1999_ascii(cfg_path)
+                cfg_rows = list(csv.reader(_read_text(cfg_path).splitlines()))
+                frequency = float(cfg_rows[2+int(cfg_rows[1][0])][0])
+                if not np.isfinite(frequency) or frequency <= 0:
+                    raise ValueError(f"Неверная частота сети: {cfg_path}")
+                first_fourier = min(rec.n_samples, round(rec.sample_rate_hz/frequency)-1)
+                if not np.allclose(rec.timestamps_us, np.arange(rec.n_samples)*1e6/rec.sample_rate_hz, atol=1, rtol=0):
+                    raise ValueError(f"Нерегулярная временная сетка: {cfg_path}")
+                part = []
+                def add(algorithm, section, truth, pred, first, cluster):
+                    part.append({"source": source, "record": path.stem, "section": section,
+                        "cluster": cluster, "algorithm": algorithm,
+                        "metrics": temporal_metrics(truth, pred, rec.sample_rate_hz, config=cfg, startup_samples=first)})
+                if scope == "rtds":
+                    allowed = set(meta["fingerprint"]["algorithm_params"]) | set(meta["fingerprint"]["models"]) | set(meta["additional_algorithm_ids"])
+                    for section in (1,2):
+                        prefix = f"S{section}__"
+                        truth = np.where(rec.digital[prefix+"expert__VALID"], rec.digital[prefix+"expert__FWD"], -1).astype(np.int8)
+                        for algorithm in sorted(allowed):
+                            name = prefix+algorithm+"__FWD"
+                            pred = np.where(rec.digital[prefix+algorithm+"__VALID"], rec.digital[name], -1).astype(np.int8)
+                            add(algorithm, section, truth, pred, first_fourier, path.stem)
+                else:
+                    truth = np.where(rec.digital["expert__VALID"], rec.digital["expert__FWD"], -1).astype(np.int8)
+                    # Канонический хеш исходных входов из импортированного архива:
+                    # дополнительные каналы эксперта не создают новые группы.
+                    cluster = source+":"+split_records[(source, record_id)]["input_sha256"]
+                    with np.load(path.with_suffix(".npz"), allow_pickle=False) as archive:
+                        for name in meta["models"]:
+                            samples = archive[name+"__samples"]
+                            if not len(samples) or not np.array_equal(samples, np.arange(int(samples[0]), rec.n_samples)):
+                                raise ValueError(f"Нет плотного полного ответа: {path}, {name}")
+                            probability = archive[name+"__probability_valid"]
+                            direction = archive[name+"__direction"]
+                            if not np.isfinite(probability).all() or not ((probability>=0)&(probability<=1)).all() or not np.isin(direction, (0,1)).all():
+                                raise ValueError(f"Невалидный ответ сети: {path}")
+                            pred = np.full(rec.n_samples, -1, dtype=np.int8)
+                            pred[samples] = np.where(probability >= .5, direction, -1)
+                            add("nn_"+name, 0, truth, pred, int(samples[0]), cluster)
+                    for name, store in stores[source].items():
+                        if not store.has_record(record_id):
+                            raise ValueError(f"Нет формульного ответа: {source}, {record_id}, {name}")
+                        automatic = store.get_record(record_id)
+                        samples = np.asarray(automatic["samples"], dtype=np.int64)
+                        if not len(samples) or not np.array_equal(samples, np.arange(int(samples[0]), rec.n_samples)):
+                            raise ValueError(f"Формульная сетка не плотная: {source}/{record_id}/{name}")
+                        values = np.asarray(automatic["directions"])
+                        if not np.isin(values, (-999,0,1)).all():
+                            raise ValueError("Неполученные формульные ответы не являются неприменимостью")
+                        pred = np.full(rec.n_samples, -1, dtype=np.int8)
+                        pred[samples] = np.where(values == -999, -1, values)
+                        add(name, 0, truth, pred, max(first_fourier, int(samples[0])), cluster)
+                cache.parent.mkdir(parents=True, exist_ok=True)
+                _atomic_write_json(cache, {"request": request, "provenance":meta, "rows": part})
+            rows.extend(part)
+            reporter.update(number)
+            _atomic_write_json(output_root / "progress.json", {"status": "running", "completed": number, "total": len(files)})
+        result = _summarize_engineering(rows, bootstrap_repeats)
+        result.update({"scope": scope, "config": asdict(cfg), "records": len(files),
+                       "available_records": total_available, "partial": max_records is not None,
+                       "reference_status": "author_recheck_pending" if scope == "rtds" else "validation_not_independent_holdout",
+                       "per_record_results": "records/*.json"})
+        _atomic_write_json(output_root / "summary.json", result)
+        _plot_engineering(rows, output_root)
+        _atomic_write_json(output_root / "progress.json", {"status": "complete", "completed": len(files), "total": len(files)})
+        reporter.finish()
+        print(f"[Готово] {output_root / 'summary.json'}", flush=True)
+        return result
+    except Exception as exc:
+        _atomic_write_json(output_root / "progress.json", {"status": "failed", "error": str(exc)})
+        raise
+    finally:
+        for group in stores.values():
+            for store in group.values():
+                store.close()
+
+
+def _summarize_engineering(rows: list[dict], bootstrap_repeats: int) -> dict:
+    """Равный вес записи; секции RTDS вместе. Интервалы — по целым группам."""
+    from collections import defaultdict
+    groups = defaultdict(list)
+    for r in rows:
+        groups[(r["source"], r["algorithm"])].append(r)
+    result = {}
+    for (source, algorithm), group in groups.items():
+        errors = {}
+        for name in group[0]["metrics"]["regions"]["all"]:
+            items = [r["metrics"]["regions"]["all"][name] for r in group]
+            by_record = defaultdict(list)
+            for r, item in zip(group, items):
+                if item["fraction"] is not None:
+                    by_record[r["cluster"]].append(item["fraction"])
+            values = np.array([np.mean(x) for x in by_record.values()])
+            support = sum(x["support_ms"] for x in items)
+            error = sum(x["error_ms"] for x in items)
+            ci = None
+            if len(values) > 1 and bootstrap_repeats:
+                rng = np.random.default_rng(42)
+                means = np.mean(rng.choice(values, (bootstrap_repeats, len(values))), axis=1)
+                ci = np.quantile(means, [.025,.975]).tolist()
+            errors[name] = {"error_ms": error, "support_ms": support,
+                "time_weighted_fraction": error/support if support else None,
+                "supported_groups": len(values), "total_groups": len({r['cluster'] for r in group}),
+                "group_mean": float(values.mean()) if len(values) else None,
+                "group_median": float(np.median(values)) if len(values) else None,
+                "group_p90": float(np.quantile(values,.9)) if len(values) else None,
+                "group_p95": float(np.quantile(values,.95)) if len(values) else None,
+                "group_max": float(values.max()) if len(values) else None, "group_mean_ci95": ci}
+        events = defaultdict(list)
+        for r in group:
+            for event in r["metrics"]["event_matching"]:
+                events[(event["from"], event["to"], event["window_ms"], event["hold_ms"])].append(event)
+        event_summary = []
+        for (a,b,w,h), chunks in events.items():
+            records = [x for chunk in chunks for x in chunk["events"]]
+            delays = [x["delay_ms"] for x in records if x["status"] == "matched"]
+            deadlines = {t: {k:sum(c["by_deadline"].get(t,{}).get(k,0) for c in chunks)
+                             for k in ("eligible","responded")}
+                         for t in chunks[0]["by_deadline"]}
+            event_summary.append({"from":a,"to":b,"window_ms":w,"hold_ms":h,
+                "reference_events": len(records),
+                "statuses": {status:sum(x["status"]==status for x in records)
+                    for status in ("matched","missed","censored","short_reference","next_reference_event")},
+                "unmatched_predicted_events":sum(c["unmatched_predicted_events"] for c in chunks),
+                "early_events":sum(x<0 for x in delays), "late_events":sum(x>0 for x in delays),
+                "signed_delay_median_ms":float(np.median(delays)) if delays else None,
+                "late_delay_p90_ms":float(np.quantile([x for x in delays if x>=0],.9)) if any(x>=0 for x in delays) else None,
+                "by_deadline":deadlines})
+        worst = defaultdict(list)
+        for r in group:
+            worst[r["cluster"]].append(r["metrics"]["regions"]["all"]["all"]["max_episode_ms"])
+        durations = np.array([max(v) for v in worst.values()])
+        result.setdefault(source,{})[algorithm] = {"record_sections": len(group), "errors": errors,
+            "event_summary":event_summary,
+            "worst_episode_by_group_ms": {"median":float(np.median(durations)), "p90":float(np.quantile(durations,.9)),
+                "p95":float(np.quantile(durations,.95)), "max":float(durations.max()),
+                "groups_over_threshold":{str(t):int((durations>t+1e-9).sum()) for t in group[0]["metrics"]["config"]["thresholds_ms"]}},
+            "by_section": {str(s): {"records":sum(r["section"]==s for r in group),
+                "mean_error_fraction":float(np.mean([r["metrics"]["regions"]["all"]["all"]["fraction"] for r in group if r["section"]==s]))}
+                for s in sorted({r["section"] for r in group}) if s}}
+    # Парные разности общего ошибочного времени на одинаковых группах;
+    # отрицательная разность B-A означает меньшее ошибочное время у B.
+    paired = {}
+    from itertools import combinations
+    for source in result:
+        maps = {}
+        for algorithm in result[source]:
+            values = defaultdict(list)
+            for r in groups[(source,algorithm)]:
+                values[r["cluster"]].append(r["metrics"]["regions"]["all"]["all"]["fraction"])
+            maps[algorithm] = {k:float(np.mean(v)) for k,v in values.items()}
+        comparisons = []
+        for a,b in combinations(sorted(maps),2):
+            keys = sorted(maps[a].keys() & maps[b].keys())
+            diff = np.array([maps[b][k]-maps[a][k] for k in keys])
+            ci = None
+            if len(diff)>1 and bootstrap_repeats:
+                rng = np.random.default_rng(42)
+                ci = np.quantile(rng.choice(diff,(bootstrap_repeats,len(diff))).mean(axis=1),[.025,.975]).tolist()
+            comparisons.append({"a":a,"b":b,"groups":len(diff),"mean_difference_b_minus_a":float(diff.mean()) if len(diff) else None,
+                "ci95":ci,"improved_b":int((diff < -1e-12).sum()),"worse_b":int((diff > 1e-12).sum()),
+                "unchanged":int((np.abs(diff)<=1e-12).sum())})
+        paired[source] = comparisons
+    return {"schema": 1, "by_source": result, "paired_error_comparisons":paired, "bootstrap_repeats": bootstrap_repeats,
+            "warning": "Интервалы условны для имеющихся групп и весов; редкий класс может быть представлен несколькими опытами. RTDS не случайная эксплуатационная выборка."}
+
+
+def _plot_engineering(rows: list[dict], output_root: Path) -> None:
+    """Диагностические рисунки; статья и её рисунок 11 не перезаписываются."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    for source in sorted({r["source"] for r in rows}):
+        # В обзорных рисунках только последние экспертные сети и формулы.
+        # Все weak/best остаются в JSON и парных сравнениях.
+        selected = [r for r in rows if r["source"] == source
+                    and not r["algorithm"].startswith("nn_weak_") and not r["algorithm"].endswith("_best")]
+        names = sorted({r["algorithm"] for r in selected})
+        fig, axes = plt.subplots(1,2, figsize=(15,6))
+        for name in names:
+            group = [r["metrics"] for r in selected if r["algorithm"] == name]
+            clusters = {}
+            for row in selected:
+                if row["algorithm"] == name:
+                    value = row["metrics"]["regions"]["all"]["all"]["max_episode_ms"]
+                    clusters[row["cluster"]] = max(value,clusters.get(row["cluster"],0))
+            lengths = np.array(list(clusters.values()))
+            thresholds = np.r_[0,5,20,50,100,200,500,1000]
+            axes[0].plot(thresholds, [100*np.mean(lengths>t) for t in thresholds], label=name)
+            observed = [m for m in group if m["stability"]["stable_switches_per_second"] is not None]
+            axes[1].scatter([100*m["regions"]["all"]["all"]["fraction"] for m in observed],
+                            [m["stability"]["stable_switches_per_second"] for m in observed], s=9, alpha=.4, label=name)
+        axes[0].set(xlabel="Длительность непрерывной ошибки, мс", ylabel="Доля исходных групп с более длинной ошибкой, %", xscale="symlog")
+        axes[1].set(xlabel="Ошибочное время, % записи", ylabel="Переключений/с вне переходной зоны и старта", yscale="symlog")
+        for ax in axes:
+            ax.grid(alpha=.2)
+        fig.suptitle(source+": ошибки и неустойчивость (диагностический обзор)")
+        fig.legend(*axes[0].get_legend_handles_labels(), loc="lower center", ncol=3, fontsize=6)
+        fig.subplots_adjust(bottom=.32, top=.90)
+        fig.savefig(output_root / f"{source}_engineering.png", dpi=160)
+        plt.close(fig)
+        summary = _summarize_engineering(selected, 0)["by_source"][source]
+        keys = ("false_forward","false_reverse","unnecessary_refusal","missed_invalid")
+        matrix = np.array([[summary[name]["errors"][key]["group_mean"]
+                            if summary[name]["errors"][key]["group_mean"] is not None else np.nan
+                            for key in keys] for name in names])*100
+        fig, ax = plt.subplots(figsize=(12, max(5, .45*len(names))))
+        cmap = plt.get_cmap("YlOrRd").copy(); cmap.set_bad("lightgray")
+        im = ax.imshow(matrix, vmin=0, vmax=100, cmap=cmap, aspect="auto")
+        ax.set_yticks(range(len(names)), names, fontsize=8)
+        ax.set_xticks(range(4), ("Ложное прямое\n/ время REV", "Ложное обратное\n/ время FWD",
+                                "Лишний отказ\n/ применимое время", "Пропуск Н\n/ неприменимое время"), fontsize=8)
+        for i,name in enumerate(names):
+            for j,key in enumerate(keys):
+                item = summary[name]["errors"][key]
+                label = "нет эталона" if np.isnan(matrix[i,j]) else f"{matrix[i,j]:.2f}%\nn={item['supported_groups']}"
+                ax.text(j,i,label,ha="center",va="center",fontsize=7)
+        ax.set_title(source+": условные ошибки, равный вес исходных групп; n — поддержка")
+        fig.colorbar(im, ax=ax, label="Ошибка, % времени соответствующего класса")
+        fig.tight_layout(); fig.savefig(output_root/f"{source}_conditional_errors.png", dpi=160); plt.close(fig)
+        fig, axes = plt.subplots(2,2, figsize=(13,10))
+        configuration = selected[0]["metrics"]["config"]
+        window = max(configuration["match_windows_ms"])
+        hold = 5. if 5. in configuration["hold_ms"] else configuration["hold_ms"][0]
+        families = (((0,1),), ((1,0),), ((0,-1),(1,-1)), ((-1,0),(-1,1)))
+        titles = ("REVERSE → FORWARD", "FORWARD → REVERSE", "Появление неприменимости", "Восстановление применимости")
+        for ax, family, title in zip(axes.flat,families,titles):
+            for name in names:
+                chunks = [e for e in summary[name]["event_summary"] if (e["from"],e["to"]) in family
+                          and e["window_ms"] == window and e["hold_ms"] == hold]
+                deadlines = [t for t in configuration["thresholds_ms"] if t<=window]
+                fractions = []
+                for t in deadlines:
+                    eligible = sum(c["by_deadline"].get(str(t),{}).get("eligible",0) for c in chunks)
+                    responded = sum(c["by_deadline"].get(str(t),{}).get("responded",0) for c in chunks)
+                    fractions.append(100*responded/eligible if eligible else np.nan)
+                if np.isfinite(fractions).any():
+                    ax.plot(deadlines, fractions, marker=".", label=name)
+            ax.set(title=title, xlabel="Начало устойчивого ответа не позже, мс", ylabel="Доля наблюдаемых событий, %", ylim=(0,105))
+            ax.grid(alpha=.25)
+        fig.suptitle(f"{source}: удержание {hold:g} мс, окно ±{window:g} мс; опережения включены, пропуски не скрыты")
+        handles = {}
+        for ax in axes.flat:
+            for handle,label in zip(*ax.get_legend_handles_labels()):
+                handles[label]=handle
+        fig.legend(handles.values(), handles.keys(), loc="lower center", ncol=3, fontsize=6)
+        fig.subplots_adjust(bottom=.24,hspace=.35,top=.91)
+        fig.savefig(output_root/f"{source}_event_response.png",dpi=160); plt.close(fig)
+
+
 def run_manual() -> None:
-    """Ручной запуск после завершения `analyze_pdr_dataset_study.py`."""
+    """F5: инженерные метрики плотной галереи/RTDS или прежний CSV-аудит."""
+    # F5 без аргументов: только новые метрики, без инференса и изменения статьи.
+    ACTION = "engineering"  # engineering: плотные ответы; legacy: прежний массовый статистический аудит.
+    SCOPES = ("rtds", "expert")  # Можно оставить один источник; expert — только validation.
+    OUTPUT_ROOT = PROJECT_ROOT / "data/phase5/pdr_engineering_review"
+    GALLERY_ROOT = PROJECT_ROOT / "data/phase5/pdr_expert_gallery"
+    RTDS_ROOT = PROJECT_ROOT / "data/phase5/pdr_rtds_review_h123"
+    MAX_RECORDS = None  # None: весь набор; 1: проба в отдельной подпапке smoke.
+    RESUME = True  # Повторно использовать метрики при неизменности входов, кода и параметров.
+    BOOTSTRAP_REPEATS = 2000  # Повторы по целым группам записей; 0 отключает интервалы.
+    if ACTION == "engineering":
+        from osc_tools.pdr.temporal_metrics import TemporalConfig
+        config = TemporalConfig(
+            transition_ms=5.,  # Граница эксперта и следующие 5 мс: отдельная область проверки.
+            thresholds_ms=(5.,20.,50.,100.),  # Диагностические длительности, не норматив БАВР.
+            match_windows_ms=(100.,50.),  # Симметричные окна сопоставления событий, мс.
+            hold_ms=(0.,5.,20.),  # Удержание ответа для оценки; НЕ выдержка в модели.
+            sliding_ms=100.,  # Ошибочное время в наиболее неблагоприятном окне, мс.
+        )
+        for scope in SCOPES:
+            build_engineering_review(scope=scope, output_root=OUTPUT_ROOT, gallery_root=GALLERY_ROOT,
+                rtds_root=RTDS_ROOT, config=config, resume=RESUME, max_records=MAX_RECORDS,
+                bootstrap_repeats=BOOTSTRAP_REPEATS)
+        return
+    if ACTION != "legacy":
+        raise ValueError("ACTION: engineering или legacy")
     ANALYSIS_DIR = DEFAULT_ANALYSIS_DIR  # Уже готовые таблицы основного анализа; здесь появится расширенная статистика.
     for name, path in build_review_tables(ANALYSIS_DIR).items():
         print(f"{name}: {path}")
