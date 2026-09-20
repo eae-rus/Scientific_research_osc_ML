@@ -1,0 +1,301 @@
+{
+  "release_id": "migration-v0.5",
+  "release_title": "Точный буквальный перенос диссертации v0.5 в LaTeX",
+  "created_at": "2026-09-20T22:15:00+03:00",
+  "author": "Евдаков Алексей Евгеньевич",
+  "dissertation_title": "СОВЕРШЕНСТВОВАНИЕ АЛГОРИТМОВ БЫСТРОДЕЙСТВУЮЩЕГО АВТОМАТИЧЕСКОГО ВВОДА РЕЗЕРВА С ПРИМЕНЕНИЕМ МЕТОДОВ МАШИННОГО ОБУЧЕНИЯ",
+  "specialty": "05.14.02 — Электрические станции и электроэнергетические системы",
+  "baseline_source": {
+    "source_id": "DISS-005",
+    "file_name": "Диссертация (Евдаков А.Е.) v0.5.docx",
+    "sha256": "50516d7832e6ea133d77b11b48802c4ed1929283ea7601134b878fab0e0338f7",
+    "path_in_repo": "docs/Dissertation/Архивное/Диссертация (Евдаков А.Е.) v0.5.docx",
+    "integrity_status": "VERIFIED_UNTOUCHED"
+  },
+  "compilation_environment": {
+    "compiler": "MiKTeX pdflatex (x64) 25.12",
+    "engine": "pdfTeX 3.141592653-2.6-1.40.26",
+    "command": "pdflatex -interaction=nonstopmode main.tex",
+    "working_directory": "manuscript/",
+    "pdf_target": "main.pdf",
+    "pages_count": 132,
+    "exit_code": 0
+  },
+  "migration_metrics": {
+    "total_blocks_transferred": 2307,
+    "total_blocks_baseline": 2307,
+    "blocks_coverage_percent": 100.0,
+    "unexplained_losses": 0,
+    "total_comments_preserved": 144,
+    "comments_execution_status": "NONE_EXECUTED_RAW_PRESERVED",
+    "comments_macro": "\\commentnote{issue_id}{author}{text}",
+    "total_objects_transferred": 231,
+    "figures_count": 100,
+    "tables_count": 89,
+    "math_equations_count": 39,
+    "ole_objects_vectorized": 1,
+    "revisions_count": 1,
+    "revision_macro": "\\wordchoice",
+    "bibliography_entries": 136,
+    "bibliography_file": "manuscript/bibliography/references.bib",
+    "latex_labels": 163,
+    "latex_refs": 6,
+    "unresolved_references": 0
+  },
+  "inherited_defects_preserved": [
+    {
+      "id": "FLD-0108",
+      "block_id": "DISS-005-B0772",
+      "location": "manuscript/chapters/ch02_bavr_modernization/sec01_intro_and_rogowski_theory.tex",
+      "text": "Ошибка! Источник ссылки не найден.",
+      "cause": "Отсутствие целевой закладки в исходном Word DOCX v0.5",
+      "handling": "Сохранено буквально без домысливания"
+    },
+    {
+      "id": "FLD-0111",
+      "block_id": "DISS-005-B0778",
+      "location": "manuscript/chapters/ch02_bavr_modernization/sec01_intro_and_rogowski_theory.tex",
+      "text": "Ошибка! Источник ссылки не найден.",
+      "cause": "Отсутствие целевой закладки в исходном Word DOCX v0.5",
+      "handling": "Сохранено буквально без домысливания"
+    }
+  ],
+  "files": {
+    "dissertation_v0.5_literal.pdf": {
+      "sha256": "ab82c1f377f3714039e04eb77a539713405dc35b00caa64f1293c734199aa179",
+      "size_bytes": 19849972
+    },
+    "full-audit.md": {
+      "sha256": "965fbe961fc7c1c13f634a8c3feedb001cf5849ae2fda9f6d84aa5dd887ad942",
+      "size_bytes": 10078
+    },
+    "manuscript/main.pdf": {
+      "sha256": "ab82c1f377f3714039e04eb77a539713405dc35b00caa64f1293c734199aa179",
+      "size_bytes": 19849972
+    },
+    "manuscript/main.tex": {
+      "sha256": "408bb716e90269a112eb02b6f744f35c5ac090939b3934b4904d162b7b2ca08b",
+      "size_bytes": 1954
+    },
+    "manuscript/preamble.tex": {
+      "sha256": "6b68667572d60ad5df0e65a0998c9cb3110ef162440e33b1cec9beaeed10583f",
+      "size_bytes": 3352
+    },
+    "manuscript/test_skeleton.tex": {
+      "sha256": "aca4ec7483e1b4e3ee6b908dda0f0710c7fbf92000eadebd67a9b862e74e0bfd",
+      "size_bytes": 2441
+    },
+    "manuscript/backmatter/appendix01.tex": {
+      "sha256": "a8c1ee2f2e154601571de090460d26fd5b2eaa3df11378638da1fc0502bc1a0b",
+      "size_bytes": 625
+    },
+    "manuscript/backmatter/bibliography.tex": {
+      "sha256": "bf3d42abf99e45b3e134b3bbdc588329b3cee45ad6aa8d53cc3aca47cb67793f",
+      "size_bytes": 455
+    },
+    "manuscript/backmatter/bibliography_part1.tex": {
+      "sha256": "ed81420bf92be06339318bfc600af2c5dbdbaffb2e368fec52e957626f0fb33c",
+      "size_bytes": 15567
+    },
+    "manuscript/backmatter/bibliography_part2.tex": {
+      "sha256": "12602c5bf2ba3007ac69a8c7722c7d24eaa7a5b6907a9b7985d0a0a6a45f2976",
+      "size_bytes": 16680
+    },
+    "manuscript/backmatter/notes_informal.tex": {
+      "sha256": "c8cd036c979b763f8d77cf2f76ca5edbae7ceca61ef6ff164f2e3f1871c29847",
+      "size_bytes": 450
+    },
+    "manuscript/backmatter/notes_informal_part1.tex": {
+      "sha256": "8f6e547e499c4ad321a976c46665644d2af641e028a73dda52d8aba104714fb7",
+      "size_bytes": 12180
+    },
+    "manuscript/backmatter/notes_informal_part2.tex": {
+      "sha256": "765474806e1071bbcea276c2bbd86f3c388719e04b1d78456f61e6137fa78514",
+      "size_bytes": 6095
+    },
+    "manuscript/backmatter/supplementary_elements.tex": {
+      "sha256": "92e6956c74ab8867d17b44a46152781532634534cb947c04cc4b0272c0d3cd9a",
+      "size_bytes": 860
+    },
+    "manuscript/bibliography/references.bib": {
+      "sha256": "fa3f614a5d7ebdd906e2db3b25f170dd3774cc08091d5dbaeb7ec8e6f7431cdf",
+      "size_bytes": 95084
+    },
+    "manuscript/bibliography/references_mapping.json": {
+      "sha256": "afb1770152a21d176302bdda2a1cec77624a49503de1b3dfe6359827f18d7684",
+      "size_bytes": 155756
+    },
+    "manuscript/chapters/ch01_bavr_problems/chapter.tex": {
+      "sha256": "eb4fe123410136f2b8340660379d5d1b53f457ca0b455a4456805f516c9a22be",
+      "size_bytes": 2291
+    },
+    "manuscript/chapters/ch01_bavr_problems/sec01_intro.tex": {
+      "sha256": "035ee21a74830f4ad3262fcbe6a06265fd58a804b45aaaaf573b9aa32002f6d4",
+      "size_bytes": 11453
+    },
+    "manuscript/chapters/ch01_bavr_problems/sec02_statistics_and_basic_problems.tex": {
+      "sha256": "166bcb7fe14e4e636d224ebeceabce382de96221934496e838dbd76f848b7ab5",
+      "size_bytes": 7769
+    },
+    "manuscript/chapters/ch01_bavr_problems/sec03_base_organs_problems.tex": {
+      "sha256": "e0eb85fade471042cac52aaa9c3e7c8e550a4acca20a92853e438cc17a2d71fc",
+      "size_bytes": 15065
+    },
+    "manuscript/chapters/ch01_bavr_problems/sec04_adaptive_functions.tex": {
+      "sha256": "c01e121e26e144040d209d88a8f3b99101a0eeda5065ab7e292419c1f97e76ce",
+      "size_bytes": 5862
+    },
+    "manuscript/chapters/ch01_bavr_problems/sec05_manufacturers_analysis_part1.tex": {
+      "sha256": "21e2ef1ae497939d9ecbd1b9b88f13991f86c2f7cfabf75a001752d18bb87a8e",
+      "size_bytes": 9265
+    },
+    "manuscript/chapters/ch01_bavr_problems/sec06_manufacturers_analysis_part2.tex": {
+      "sha256": "407a5956012602b5a256f4fc4e0c5d09448d339421d52dd0b44620863f8fe4d6",
+      "size_bytes": 6167
+    },
+    "manuscript/chapters/ch01_bavr_problems/sec07_complex_cases_time.tex": {
+      "sha256": "b7c698af18fddd842b999b5043702f189aee6a9743f6a311250c66b7231e29d6",
+      "size_bytes": 5188
+    },
+    "manuscript/chapters/ch01_bavr_problems/sec08_adaptive_dropout.tex": {
+      "sha256": "e62d67b98e491a548b6f56a46e3d6f81fa74566abc7bf0d136c5ebe7f4a9e417",
+      "size_bytes": 10461
+    },
+    "manuscript/chapters/ch01_bavr_problems/sec09_external_two_phase_blocking.tex": {
+      "sha256": "12c91393d5451e8439a1c1ef2afc836fe72e4bbefee50928de4622b579554c15",
+      "size_bytes": 18939
+    },
+    "manuscript/chapters/ch01_bavr_problems/sec10_rogowski_and_zero_sequence.tex": {
+      "sha256": "554dc6d20193db6e27fb5224a1daa4411db6eff43bccb8e8f6c28bff518b79c2",
+      "size_bytes": 13918
+    },
+    "manuscript/chapters/ch01_bavr_problems/sec11_ferroresonance_ozz.tex": {
+      "sha256": "66b157e7adc903ad36e1951f571c87d831135bd53fb12d09ef94ebb79a8d21c2",
+      "size_bytes": 9973
+    },
+    "manuscript/chapters/ch01_bavr_problems/sec12_conclusions.tex": {
+      "sha256": "fb7079fcdd709a7b4faf2ce5d26a2af1adc7e06ae487459cabcfb7d4eec4fd77",
+      "size_bytes": 8411
+    },
+    "manuscript/chapters/ch01_bavr_problems/tab01_bavr_operation.tex": {
+      "sha256": "a1f4809519d0dcbdf0d173a31243d49eab7cff5d34e4224a7ac131d0c6f42302",
+      "size_bytes": 3252
+    },
+    "manuscript/chapters/ch02_bavr_modernization/chapter.tex": {
+      "sha256": "27a572ea1d4fcedd9166f902e29e907b9613a55f4fc61d24794753deaf41e942",
+      "size_bytes": 1494
+    },
+    "manuscript/chapters/ch02_bavr_modernization/sec01_intro_and_rogowski_theory.tex": {
+      "sha256": "8e4f2eecfa125d077232efef2273631e0077485877a9f56b25a4580968a347f5",
+      "size_bytes": 23132
+    },
+    "manuscript/chapters/ch02_bavr_modernization/sec02_transient_and_harmonics.tex": {
+      "sha256": "1e163de5abc6b4452eafaf5bfd71d2c599e904a48f45dad1f36a6c65ca1f6302",
+      "size_bytes": 19362
+    },
+    "manuscript/chapters/ch02_bavr_modernization/sec03_fourier_theory.tex": {
+      "sha256": "799f35889ed96a9648b3ab187866d0082cf898f0f58da35d72ec9f9763f88485",
+      "size_bytes": 8400
+    },
+    "manuscript/chapters/ch02_bavr_modernization/sec04_rnm_tt_kr_comparison.tex": {
+      "sha256": "586869979f10a814b7bbccde9c18421e5dd6ea02e84f7b5ea86dc4ad21f467ea",
+      "size_bytes": 18550
+    },
+    "manuscript/chapters/ch02_bavr_modernization/sec05_industrial_application_kr.tex": {
+      "sha256": "5a7640f5b164cad3fa9577f802ddf761b1938d42ac3b694171632af31811e61e",
+      "size_bytes": 18331
+    },
+    "manuscript/chapters/ch02_bavr_modernization/sec06_vnr_algorithms.tex": {
+      "sha256": "936b23329c4fabe575a77a2eaa6e978f462688b40ff0c35b8a74c2edb1943844",
+      "size_bytes": 26387
+    },
+    "manuscript/chapters/ch02_bavr_modernization/sec07_conclusions.tex": {
+      "sha256": "e7dccde5d17ca643afeb62393b41dbcb533d61069cb4aa72becea84227d10b9b",
+      "size_bytes": 9803
+    },
+    "manuscript/chapters/ch02_bavr_modernization/tab04_window_functions.tex": {
+      "sha256": "0e19c45372706d8a452ab7f30aec79433d479a37aa98db9661f3de95176fb70d",
+      "size_bytes": 13846
+    },
+    "manuscript/chapters/ch03_dataset_preparation/chapter.tex": {
+      "sha256": "351570f0f640a428c307decdfaf87f38871c12961495ee559bd092fe41e52b9b",
+      "size_bytes": 1908
+    },
+    "manuscript/chapters/ch03_dataset_preparation/sec01_intro_and_methodology.tex": {
+      "sha256": "614964f00278cff757a19ed6212ba2dd3776e93ccc42cc47ddff06188d9d32b5",
+      "size_bytes": 35642
+    },
+    "manuscript/chapters/ch03_dataset_preparation/sec02_data_collection_and_db.tex": {
+      "sha256": "8d27b569833f7b45c3d929ca4e7c458cc4200befc7b90278b195e9f535cbca8d",
+      "size_bytes": 19480
+    },
+    "manuscript/chapters/ch03_dataset_preparation/sec03_comtrade_intro.tex": {
+      "sha256": "6d6c98ae6999e5fef271f40ae3566ba28a81244687b975aacfb9ce005ced6e13",
+      "size_bytes": 4469
+    },
+    "manuscript/chapters/ch03_dataset_preparation/sec04_dat_files_and_depersonalization.tex": {
+      "sha256": "7de7d336ae66a78468b2d86acb3d294b209cb646640acf5f2c211b12eb4cfe42",
+      "size_bytes": 12708
+    },
+    "manuscript/chapters/ch03_dataset_preparation/sec05_signal_naming_unification.tex": {
+      "sha256": "258526f269f5a6aa4167d76e4e9449e913b05d48f0c78c10b6a8051127b754e7",
+      "size_bytes": 20859
+    },
+    "manuscript/chapters/ch03_dataset_preparation/sec06_normalization_methodology.tex": {
+      "sha256": "88b482cfbb0a74e81af9c4e1efddaf02e3e838bed4344c0c04cdbe639059a5a3",
+      "size_bytes": 10648
+    },
+    "manuscript/chapters/ch03_dataset_preparation/sec07_basis_algorithms_and_csv.tex": {
+      "sha256": "e2b205e2a84baff87f212ec5d564243f287150d40e76f33fc17f3272e251a271",
+      "size_bytes": 16979
+    },
+    "manuscript/chapters/ch03_dataset_preparation/sec08_annotation_methodology.tex": {
+      "sha256": "67166d57101bc45edfd0ae6567327a87a9192f898c59ce715a4f3a7086792531",
+      "size_bytes": 22104
+    },
+    "manuscript/chapters/ch03_dataset_preparation/sec09_empty_oscillograms_filtering.tex": {
+      "sha256": "dc46bb1a42ba85fb8de4991f7066fc3dacab00ec3991300e4b53ac7a4e428cf6",
+      "size_bytes": 4417
+    },
+    "manuscript/chapters/ch03_dataset_preparation/sec10_conclusions.tex": {
+      "sha256": "8fecd3b4a2f9fd76ba385a7b4f86c380bb6a2a559646b1e6ba66e5b4c62f2418",
+      "size_bytes": 7525
+    },
+    "manuscript/chapters/ch03_dataset_preparation/tab01_analog_signals_parameters.tex": {
+      "sha256": "94f049aab2af3a77225ce7a00bb5565ccccaf05545a5fd7028864a922ffec5f2",
+      "size_bytes": 3352
+    },
+    "manuscript/chapters/ch03_dataset_preparation/tab02_oscillograms_frequencies.tex": {
+      "sha256": "1453eb3a0ea52941ab6afaf10e3ae70b02b8002180b6af539d1f17e9acaeb725",
+      "size_bytes": 5618
+    },
+    "manuscript/chapters/ch03_dataset_preparation/tab03_zero_sequence_basis.tex": {
+      "sha256": "83c5f016aa6c25cbad2e562ebe1e7c92613250c3baa286de47b6e3c5d60f2a6d",
+      "size_bytes": 1571
+    },
+    "manuscript/chapters/ch04_statistical_analysis/chapter.tex": {
+      "sha256": "3de752855825dd2bfe79b8f198285cfdb03b6f71ac10ad1dc051e62432e39cbf",
+      "size_bytes": 1641
+    },
+    "manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex": {
+      "sha256": "1b8422c37850c1fc7c46c8688eae8413c39e343155a1bcc3bbf3834a00f34d9f",
+      "size_bytes": 3570
+    },
+    "manuscript/figures/image2.png": {
+      "sha256": "a47e441fa204ea4f53821ee7bb92921e1c1fc4931b8c536c068e4661019f9294",
+      "size_bytes": 3435
+    },
+    "manuscript/frontmatter/introduction.tex": {
+      "sha256": "658c5f8f92792235e3a2d6249ea1931a722f511a8bc304746348e20c29b124d7",
+      "size_bytes": 20177
+    },
+    "manuscript/frontmatter/title.tex": {
+      "sha256": "123abebc884ed825f15e06d12ec22aba50587f411f3fce313ea6e2bc3bdd8be8",
+      "size_bytes": 2676
+    },
+    "manuscript/frontmatter/toc_source.tex": {
+      "sha256": "060cae328a354a16bb2930a4d32e6055af8b437977f03d73ae6f8be78cda7250",
+      "size_bytes": 12857
+    }
+  }
+}
