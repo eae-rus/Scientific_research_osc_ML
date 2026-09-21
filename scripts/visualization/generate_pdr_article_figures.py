@@ -997,6 +997,69 @@ def plot_fig10_h123():
 # -------------------------------------------------------------
 # РИСУНОК 11: Анализ поведения органов на сложных осциллограммах
 # -------------------------------------------------------------
+def plot_engineering_metrics() -> None:
+    """Рисунки 12–13 из готовых полных сводок; без инференса и изменения галереи."""
+    root = PROJECT_ROOT / "data/phase5/pdr_engineering_review"
+    reports = {}
+    for scope in ("expert", "rtds"):
+        folder = root / scope / "full"
+        data = json.loads((folder / "summary.json").read_text(encoding="utf-8"))
+        progress = json.loads((folder / "progress.json").read_text(encoding="utf-8"))
+        if data["partial"] or progress["status"] != "complete":
+            raise ValueError(f"Нужен полный завершённый проход: {folder}")
+        reports.update(data["by_source"])
+    models = [
+        ("phase_pdr_basic", "phase_pdr_basic", "Фазный угловой"),
+        ("adaptive_pdr_mir", "adaptive_pdr_mir", "Адаптивный"),
+        ("nn_snapshot_2", "nn_expert_snapshot_2_last", "2 среза"),
+        ("nn_snapshot_5", "nn_expert_snapshot_5_last", "5 срезов"),
+        ("nn_sequence_1_8", "nn_expert_sequence_1_8_last", "Последовательность"),
+        ("nn_snapshot_5_h123_deep24", "nn_expert_snapshot_5_h123_deep24_last", "H123-D24"),
+    ]
+    colors = plt.get_cmap("tab10").colors
+    fig, axes = plt.subplots(1, 3, figsize=(13, 4.8), sharey=True)
+    for ax, source, title in zip(axes, ("open_ee", "french_rte", "rtds"),
+                                ("Open_EE", "French/RTE", "RTDS")):
+        count = reports[source]["phase_pdr_basic"]["errors"]["all"]["total_groups"]
+        for i, (expert, rtds, label) in enumerate(models):
+            error = reports[source][rtds if source == "rtds" else expert]["errors"]["all"]
+            mean = error["group_mean"] * 1000
+            ci = np.array(error["group_mean_ci95"]) * 1000
+            ax.plot(ci, [i, i], color=colors[i], linewidth=2)
+            ax.scatter(mean, i, color=colors[i], s=35, zorder=3)
+            ax.annotate(f"{mean:.1f}", (mean, i), xytext=(0, 7),
+                        textcoords="offset points", ha="center", fontsize=8)
+        ax.set(title=f"{title}: исходных групп — {count}", xlabel="Ошибочное время, мс на секунду", xlim=(0, None),
+               ylim=(-.65, len(models)-.5))
+        ax.grid(axis="x", alpha=.25)
+    axes[0].set_yticks(range(len(models)), [m[2] for m in models])
+    axes[0].invert_yaxis()
+    fig.suptitle("Полное состояние: среднее и 95%-й групповой интервал\nПоследние экспертные веса; плотная временная сетка")
+    fig.tight_layout()
+    save_fig("fig12_engineering_error_time.png")
+    plt.close(fig)
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.7), sharey=True)
+    for ax, pair, title in zip(axes, ((0, 1), (1, 0)),
+                               ("Обратное → прямое", "Прямое → обратное")):
+        for i, (_, name, label) in enumerate(models):
+            item = next(e for e in reports["rtds"][name]["event_summary"]
+                        if (e["from"], e["to"]) == pair and e["window_ms"] == 100 and e["hold_ms"] == 5)
+            points = sorted((float(t), v) for t, v in item["by_deadline"].items())
+            ax.plot([t for t,v in points],
+                    [100*v["responded"]/v["eligible"] if v["eligible"] else np.nan for t,v in points],
+                    marker="o", color=colors[i], label=label)
+        support = item["by_deadline"]["20.0"]["eligible"]
+        ax.set(title=f"{title}\nЗнаменатель при 20 мс: {support} события", xlabel="Начало устойчивого ответа не позже, мс",
+               ylim=(-2, 103), xticks=(5,20,50,100))
+        ax.grid(alpha=.25)
+    axes[0].set_ylabel("Доля наблюдаемых экспертных переходов, %")
+    fig.legend(*axes[0].get_legend_handles_labels(), loc="lower center", ncol=3, fontsize=9)
+    fig.suptitle("RTDS: удержание ответа 5 мс, сопоставление в окне ±100 мс")
+    fig.tight_layout(rect=(0,.14,1,.95))
+    save_fig("fig13_engineering_event_response.png")
+    plt.close(fig)
+
+
 def _record_spectral_cache(raw, provenance, basis, timebase, mode, version, ends,
                            startup_policy="full_context", shared_cache=None, phasor_backend="fft"):
     """Точные признаки обучения с переиспользованием одинаковых окон Фурье.
@@ -1408,6 +1471,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Рисунки статьи и отдельная галерея реальных предсказаний")
     parser.add_argument("--gallery", action="store_true", help="Полные осциллограммы, без изменения рисунка 11")
     parser.add_argument("--figures", action="store_true", help="Явно пересоздать рисунки 1–10 вместо галереи")
+    parser.add_argument("--engineering-figures", action="store_true", help="Только рисунки 12–13 из готовой инженерной статистики; без галереи и инференса")
     parser.add_argument("--checkpoint", type=Path, action="append", help="Явные веса; можно повторить для нескольких моделей")
     parser.add_argument("--checkpoint-kind", choices=("latest", "best"), default=GALLERY_CHECKPOINT_KIND)
     parser.add_argument("--startup-policy", choices=("early", "full_context"), default=GALLERY_STARTUP_POLICY)
@@ -1417,6 +1481,11 @@ if __name__ == "__main__":
     parser.add_argument("--inference-stride", type=int, default=GALLERY_INFERENCE_STRIDE)
     parser.add_argument("--max-records", type=int)
     args = parser.parse_args()
+    if args.engineering_figures:
+        if args.gallery or args.figures:
+            parser.error("--engineering-figures запускается отдельно от --gallery/--figures")
+        plot_engineering_metrics()
+        raise SystemExit(0)
     if args.gallery:
         build_expert_gallery(args.checkpoint, inference_stride=args.inference_stride, max_records=args.max_records,
                              checkpoint_kind=args.checkpoint_kind, startup_policy=args.startup_policy,
