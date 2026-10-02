@@ -19,3 +19,13 @@ scratch/
 # Temporary test PDF builds
 *build.pdf
 *test.pdf
+
+# Reproducible working renders; archived source/release PDFs stay versioned
+/manuscript/main.pdf
+/manuscript/test_skeleton.pdf
+
+# Office lock files and local caches
+~$*
+*.tmp
+*.bak
+__pycache__/
