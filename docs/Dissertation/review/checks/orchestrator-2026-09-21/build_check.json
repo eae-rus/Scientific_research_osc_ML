@@ -1,0 +1,16 @@
+{
+  "pdf_path": "docs/Dissertation/manuscript/main.pdf",
+  "sha256": "2a0b93d6d9ae18a51f5187959bc3a4d266782cfebd094238d61837c698832b46",
+  "pages": 132,
+  "size": 19848639,
+  "old_pdf": "docs/Dissertation/build/orchestrator-2026-09-21/main-before-refresh-55pages.pdf",
+  "clean_build": "docs/Dissertation/build/orchestrator-2026-09-21/clean-work/manuscript/main.pdf",
+  "exit_codes": [
+    0,
+    0
+  ],
+  "undefined_references": false,
+  "overfull": 26,
+  "float_too_large": 1,
+  "scope": "Current working PDF refreshed; not full visual acceptance"
+}

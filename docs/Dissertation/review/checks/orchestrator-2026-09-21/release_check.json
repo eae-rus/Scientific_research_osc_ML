@@ -1,0 +1,20 @@
+{
+  "missing": [
+    "dissertation_v0.5_literal.pdf",
+    "manuscript/main.pdf"
+  ],
+  "hash_mismatch": [
+    "full-audit.md",
+    "manuscript/chapters/ch02_bavr_modernization/sec01_intro_and_rogowski_theory.tex",
+    "manuscript/chapters/ch02_bavr_modernization/sec02_transient_and_harmonics.tex",
+    "manuscript/chapters/ch02_bavr_modernization/sec03_fourier_theory.tex",
+    "manuscript/chapters/ch02_bavr_modernization/sec04_rnm_tt_kr_comparison.tex",
+    "manuscript/chapters/ch02_bavr_modernization/sec05_industrial_application_kr.tex",
+    "manuscript/chapters/ch02_bavr_modernization/sec06_vnr_algorithms.tex",
+    "manuscript/chapters/ch02_bavr_modernization/sec07_conclusions.tex",
+    "manuscript/chapters/ch03_dataset_preparation/sec04_dat_files_and_depersonalization.tex",
+    "manuscript/chapters/ch03_dataset_preparation/sec10_conclusions.tex",
+    "manuscript/chapters/ch04_statistical_analysis/chapter.tex",
+    "manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex"
+  ]
+}
