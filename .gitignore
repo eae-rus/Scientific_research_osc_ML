@@ -40,3 +40,7 @@ build/
 # Experiments and scratch folders
 experiments/
 scratch/
+
+# Результаты сборки адаптера форматов осциллограмм производителей
+tools/osc_formats/bin/
+tools/osc_formats/obj/
