@@ -1,0 +1,11 @@
+{
+  "BinaryDecimal.cs": "021e0f6556c34d3dd229c0a88295053edb7414451337943487600f221a02dfd0",
+  "BlackBoxReader.cs": "17e88ea044d9c97215adb0f0808bc1873dd92b90d04f453f568ce45da32e91db",
+  "BreslerReader.cs": "7fffc16acb4842ea0a604c7fa2a571536811e5f7994476686e91ed4aee697575",
+  "EkraDfrReader.cs": "95fceffbaaeeec6028cf3a97066c70fdf63baeffc1b444ad8e822ac11540cfc2",
+  "EkraNdrReader.cs": "e90be3bb0a60c7fc4d663deddefb18af1ba8d4b2df7698443b1d7b76c01cbdee",
+  "NativeSampleBuilder.cs": "89fc947fab233352f44116129fca6ac129159b25c1723b6c2c7d6256f800841b",
+  "NevaReader.cs": "ccc41acc7bb0a1d8f7fb93972c3988e7a7407de35e0c0b807ad0fbf3ba8a17ad",
+  "ParmaDoConverter.cs": "8668b5bdad22790bc7fc6648c1d84af914d9bcb0758f176b2443a42ae345e4ce",
+  "Res3Reader.cs": "cdf91dbbe62943152a55f2621a10aff0e887c7ffb7a15b3089990fe169717f73"
+}
