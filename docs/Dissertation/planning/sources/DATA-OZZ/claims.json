@@ -1,0 +1,520 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-05",
+  "protocol": "protocol.md",
+  "claims": [
+    {
+      "claim_id": "OZZ-DATA-01",
+      "source_id": "DATA-OZZ",
+      "source_sha256": "f4993e3efd914536101e056dbe4d8b210bbff0404d7c04688b5b5270d2cad5f3",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0058",
+          "text": "<1,2"
+        },
+        {
+          "locator": "word/document.xml:P0059",
+          "text": "484"
+        },
+        {
+          "locator": "word/document.xml:P0060",
+          "text": "10"
+        }
+      ],
+      "neutral_ru": "Диапазон <1.2: 484 кандидатов и 10 после проверки.",
+      "experiment_id": "OZZ-SELECT/EXPERT",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "range": "<1.2",
+        "before": 484,
+        "after": 10,
+        "unit": "record"
+      },
+      "limitations": [
+        "Правила включения границ и первичный список ID не заданы."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-DATA-02",
+      "source_id": "DATA-OZZ",
+      "source_sha256": "f4993e3efd914536101e056dbe4d8b210bbff0404d7c04688b5b5270d2cad5f3",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0061",
+          "text": "1,2÷1,71"
+        },
+        {
+          "locator": "word/document.xml:P0062",
+          "text": "401"
+        },
+        {
+          "locator": "word/document.xml:P0063",
+          "text": "83"
+        }
+      ],
+      "neutral_ru": "Диапазон 1.2–1.71: 401 кандидатов и 83 после проверки.",
+      "experiment_id": "OZZ-SELECT/EXPERT",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "range": "1.2–1.71",
+        "before": 401,
+        "after": 83,
+        "unit": "record"
+      },
+      "limitations": [
+        "Правила включения границ и первичный список ID не заданы."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-DATA-03",
+      "source_id": "DATA-OZZ",
+      "source_sha256": "f4993e3efd914536101e056dbe4d8b210bbff0404d7c04688b5b5270d2cad5f3",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0064",
+          "text": "1,71÷1,75"
+        },
+        {
+          "locator": "word/document.xml:P0065",
+          "text": "37"
+        },
+        {
+          "locator": "word/document.xml:P0066",
+          "text": "17"
+        }
+      ],
+      "neutral_ru": "Диапазон 1.71–1.75: 37 кандидатов и 17 после проверки.",
+      "experiment_id": "OZZ-SELECT/EXPERT",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "range": "1.71–1.75",
+        "before": 37,
+        "after": 17,
+        "unit": "record"
+      },
+      "limitations": [
+        "Правила включения границ и первичный список ID не заданы."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-DATA-04",
+      "source_id": "DATA-OZZ",
+      "source_sha256": "f4993e3efd914536101e056dbe4d8b210bbff0404d7c04688b5b5270d2cad5f3",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0067",
+          "text": "1,75÷2"
+        },
+        {
+          "locator": "word/document.xml:P0068",
+          "text": "550"
+        },
+        {
+          "locator": "word/document.xml:P0069",
+          "text": "403"
+        }
+      ],
+      "neutral_ru": "Диапазон 1.75–2: 550 кандидатов и 403 после проверки.",
+      "experiment_id": "OZZ-SELECT/EXPERT",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "range": "1.75–2",
+        "before": 550,
+        "after": 403,
+        "unit": "record"
+      },
+      "limitations": [
+        "Правила включения границ и первичный список ID не заданы."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-DATA-05",
+      "source_id": "DATA-OZZ",
+      "source_sha256": "f4993e3efd914536101e056dbe4d8b210bbff0404d7c04688b5b5270d2cad5f3",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0070",
+          "text": "2 ÷2,5"
+        },
+        {
+          "locator": "word/document.xml:P0071",
+          "text": "318"
+        },
+        {
+          "locator": "word/document.xml:P0072",
+          "text": "286"
+        }
+      ],
+      "neutral_ru": "Диапазон 2–2.5: 318 кандидатов и 286 после проверки.",
+      "experiment_id": "OZZ-SELECT/EXPERT",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "range": "2–2.5",
+        "before": 318,
+        "after": 286,
+        "unit": "record"
+      },
+      "limitations": [
+        "Правила включения границ и первичный список ID не заданы."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-DATA-06",
+      "source_id": "DATA-OZZ",
+      "source_sha256": "f4993e3efd914536101e056dbe4d8b210bbff0404d7c04688b5b5270d2cad5f3",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0073",
+          "text": "2,5÷3"
+        },
+        {
+          "locator": "word/document.xml:P0074",
+          "text": "45"
+        },
+        {
+          "locator": "word/document.xml:P0075",
+          "text": "31"
+        }
+      ],
+      "neutral_ru": "Диапазон 2.5–3: 45 кандидатов и 31 после проверки.",
+      "experiment_id": "OZZ-SELECT/EXPERT",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "range": "2.5–3",
+        "before": 45,
+        "after": 31,
+        "unit": "record"
+      },
+      "limitations": [
+        "Правила включения границ и первичный список ID не заданы."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-DATA-07",
+      "source_id": "DATA-OZZ",
+      "source_sha256": "f4993e3efd914536101e056dbe4d8b210bbff0404d7c04688b5b5270d2cad5f3",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0076",
+          "text": "3÷3,5"
+        },
+        {
+          "locator": "word/document.xml:P0077",
+          "text": "0"
+        },
+        {
+          "locator": "word/document.xml:P0078",
+          "text": "0"
+        }
+      ],
+      "neutral_ru": "Диапазон 3–3.5: 0 кандидатов и 0 после проверки.",
+      "experiment_id": "OZZ-SELECT/EXPERT",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "range": "3–3.5",
+        "before": 0,
+        "after": 0,
+        "unit": "record"
+      },
+      "limitations": [
+        "Правила включения границ и первичный список ID не заданы."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-DATA-08",
+      "source_id": "DATA-OZZ",
+      "source_sha256": "f4993e3efd914536101e056dbe4d8b210bbff0404d7c04688b5b5270d2cad5f3",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0079",
+          "text": "3,5÷4"
+        },
+        {
+          "locator": "word/document.xml:P0080",
+          "text": "8"
+        },
+        {
+          "locator": "word/document.xml:P0081",
+          "text": "0"
+        }
+      ],
+      "neutral_ru": "Диапазон 3.5–4: 8 кандидатов и 0 после проверки.",
+      "experiment_id": "OZZ-SELECT/EXPERT",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "range": "3.5–4",
+        "before": 8,
+        "after": 0,
+        "unit": "record"
+      },
+      "limitations": [
+        "Правила включения границ и первичный список ID не заданы."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-DATA-09",
+      "source_id": "DATA-OZZ",
+      "source_sha256": "f4993e3efd914536101e056dbe4d8b210bbff0404d7c04688b5b5270d2cad5f3",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0082",
+          "text": "4÷4,5"
+        },
+        {
+          "locator": "word/document.xml:P0083",
+          "text": "18"
+        },
+        {
+          "locator": "word/document.xml:P0084",
+          "text": "0"
+        }
+      ],
+      "neutral_ru": "Диапазон 4–4.5: 18 кандидатов и 0 после проверки.",
+      "experiment_id": "OZZ-SELECT/EXPERT",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "range": "4–4.5",
+        "before": 18,
+        "after": 0,
+        "unit": "record"
+      },
+      "limitations": [
+        "Правила включения границ и первичный список ID не заданы."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-DATA-10",
+      "source_id": "DATA-OZZ",
+      "source_sha256": "f4993e3efd914536101e056dbe4d8b210bbff0404d7c04688b5b5270d2cad5f3",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0085",
+          "text": "4,5÷5"
+        },
+        {
+          "locator": "word/document.xml:P0086",
+          "text": "4"
+        },
+        {
+          "locator": "word/document.xml:P0087",
+          "text": "0"
+        }
+      ],
+      "neutral_ru": "Диапазон 4.5–5: 4 кандидатов и 0 после проверки.",
+      "experiment_id": "OZZ-SELECT/EXPERT",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "range": "4.5–5",
+        "before": 4,
+        "after": 0,
+        "unit": "record"
+      },
+      "limitations": [
+        "Правила включения границ и первичный список ID не заданы."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-DATA-11",
+      "source_id": "DATA-OZZ",
+      "source_sha256": "f4993e3efd914536101e056dbe4d8b210bbff0404d7c04688b5b5270d2cad5f3",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0088",
+          "text": "> 5"
+        },
+        {
+          "locator": "word/document.xml:P0089",
+          "text": "0"
+        },
+        {
+          "locator": "word/document.xml:P0090",
+          "text": "0"
+        }
+      ],
+      "neutral_ru": "Диапазон >5: 0 кандидатов и 0 после проверки.",
+      "experiment_id": "OZZ-SELECT/EXPERT",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "range": ">5",
+        "before": 0,
+        "after": 0,
+        "unit": "record"
+      },
+      "limitations": [
+        "Правила включения границ и первичный список ID не заданы."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-DATA-TOTAL",
+      "source_id": "DATA-OZZ",
+      "source_sha256": "f4993e3efd914536101e056dbe4d8b210bbff0404d7c04688b5b5270d2cad5f3",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0047",
+          "text": "Применение данного алгоритма позволило сократить исходную выборку более чем в 27 раз, выделив 1866 осциллограмм, которые с высокой вероятностью содержали искомые режимы ОЗЗ. Результаты автоматического отбора и первичной классификации по максимальной кратности перенапряжения представлены в Таблице 1, столбец «До ручной разметки."
+        },
+        {
+          "locator": "word/document.xml:P0092",
+          "text": "1866"
+        },
+        {
+          "locator": "word/document.xml:P0093",
+          "text": "830"
+        }
+      ],
+      "neutral_ru": "В тексте 1866 кандидатов, но сумма строк 1865; после проверки 830.",
+      "experiment_id": "OZZ-SELECT/EXPERT",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "reported_candidates": 1866,
+        "row_sum_candidates": 1865,
+        "reported_verified": 830,
+        "row_sum_verified": 830,
+        "check": "before total inconsistent"
+      },
+      "limitations": [
+        "Не исправлять источник без исходного расчёта."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-DATA-WEAK",
+      "source_id": "DATA-OZZ",
+      "source_sha256": "f4993e3efd914536101e056dbe4d8b210bbff0404d7c04688b5b5270d2cad5f3",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0126",
+          "text": "В рассмотренном массиве до ручной разметки существовало 885 осциллограмм, в которых перенапряжения составили менее 1,71 Uном. Из них ручной разметкой было выделено 93события ОЗЗ."
+        }
+      ],
+      "neutral_ru": "Ниже 1.71 Uном — 885 кандидатов и 93 верифицированных записи.",
+      "experiment_id": "OZZ-SELECT/EXPERT",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "before": 885,
+        "after": 93
+      },
+      "limitations": [
+        "Не полнота детекции слабых ОЗЗ; нет эталона отвергнутой части."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-DATA-ZONE",
+      "source_id": "DATA-OZZ",
+      "source_sha256": "f4993e3efd914536101e056dbe4d8b210bbff0404d7c04688b5b5270d2cad5f3",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0119",
+          "text": "Максимальный бросок часто наблюдается не во время протекания ОЗЗ, а в момент ликвидации аварии коммутационной аппаратурой (Рис. 5). В рамках данного исследования такие броски не относились к перенапряжениям, вызванным непосредственно ОЗЗ, однако их учёт мог бы существенно изменить статистику в области высоких кратностей (>2,5 Uном). Отметим, что данный вопрос является особо важным, и требует отдельно обсуждения."
+        }
+      ],
+      "neutral_ru": "Коммутационные броски при ликвидации аварии не включены в перенапряжения самого ОЗЗ.",
+      "experiment_id": "OZZ-SELECT/EXPERT",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "exclusion": "switching spikes outside SPEF zone"
+      },
+      "limitations": [
+        "Не максимум всех перенапряжений записи."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    }
+  ],
+  "coverage": "Основные численные результаты, арифметические проверки, критические расхождения; первичные скаляры не пересчитаны, визуальная приёмка не выполнена."
+}

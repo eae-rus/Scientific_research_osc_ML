@@ -1,0 +1,164 @@
+{
+  "source_id": "AI-04",
+  "source_sha256": "ac04852a3db2a5f6c1cbeee8d909a6e63167e43fc37a5eb4e4b322a5cbe98a5c",
+  "source_path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/article/(ч4) Трансформеры для детекции событий v1.1.docx",
+  "preserved_parts": [
+    {
+      "path": "[Content_Types].xml",
+      "sha256": "6192b06bd07ffa853639ac170ff98260f1ac234358c6985d9405b3b9395f7fa1"
+    },
+    {
+      "path": "_rels/.rels",
+      "sha256": "c30fe099dbcfed4ecc4ae544ccf82f432c8d3bb665e2a301df283738b196d803"
+    },
+    {
+      "path": "word/document.xml",
+      "sha256": "4f36f530584584b148c0323ce778e43aabfa192338041356ad0199926bc70c5c"
+    },
+    {
+      "path": "word/_rels/document.xml.rels",
+      "sha256": "28f1e79b7fff7ad7d3ce4f080bf09ffbdb3345a33955a4ca39798aacec090441"
+    },
+    {
+      "path": "word/header1.xml",
+      "sha256": "8d73e32eb25f1a56498ac1e454a0b23912378b12b80c0d176437e4dcc2fa258c"
+    },
+    {
+      "path": "word/header2.xml",
+      "sha256": "dcf049b872ab1c6e406a6fdc578cd30de6e44e48f04b3e7a225520daf10ffab2"
+    },
+    {
+      "path": "word/footer1.xml",
+      "sha256": "66d1cce2c91970d9e431b2ce0c07641d7652adb4cc28fcfcaa7f2ee5067349b8"
+    },
+    {
+      "path": "word/footer2.xml",
+      "sha256": "0ce8ec863284ff13b3c2f9714172b967d28ab77a6fcfdb4a12d0ac235ca1d54e"
+    },
+    {
+      "path": "word/footnotes.xml",
+      "sha256": "5bb23ac1231b9d2d3449e66aafea31164d0496c8b129080c8dc578398a0d945e"
+    },
+    {
+      "path": "word/endnotes.xml",
+      "sha256": "e2963d204b4d772bfc4eab9474e1beb7cf84045f682a60c5fdc4e93fe188d122"
+    },
+    {
+      "path": "word/footer3.xml",
+      "sha256": "812622ffa0448944ea60d0694c5e4d50520afb3ef2c8997ac0022f871255f627"
+    },
+    {
+      "path": "word/footer5.xml",
+      "sha256": "1328bee57cba2320c2ada2df21f99f8a0e350ce393e440877f51f988b5aceb85"
+    },
+    {
+      "path": "word/footer4.xml",
+      "sha256": "6789af1ae1fb6cb6343c39559671601b2d5e2de8c56f9c230d14ba8aac353aba"
+    },
+    {
+      "path": "word/theme/theme1.xml",
+      "sha256": "bf4992e3fa7832e5c68fdbc4ec5189c8e5d347fef03c5ba2522ad704bde5078f"
+    },
+    {
+      "path": "word/_rels/comments.xml.rels",
+      "sha256": "37bdc189bb31db67375dcc0ee0e6a7916769abc33f32523dd887ea40af7a45b2"
+    },
+    {
+      "path": "word/comments.xml",
+      "sha256": "30cf7b709cc391ffe1f5571eb413c9030e97822bfbde6a0172c4fcac4d2e572e"
+    },
+    {
+      "path": "word/settings.xml",
+      "sha256": "6417254cfc02b0544c672e9c5c8b4f42ebfd771c522941993585ab630dee3b10"
+    },
+    {
+      "path": "word/_rels/settings.xml.rels",
+      "sha256": "60cdb8cee2f8607399701b5eaf9055258f91594e663945ae00908bf47dfa666c"
+    },
+    {
+      "path": "customXml/item1.xml",
+      "sha256": "c8092edbb672f8c93f1d5ef66539a6f169462ba8738b785b59cc5d96f4aca59a"
+    },
+    {
+      "path": "customXml/itemProps1.xml",
+      "sha256": "a0e9b8994ce85bde654b5701829533f3704d3e439f36c8bf8b3c51d3d19118e9"
+    },
+    {
+      "path": "word/numbering.xml",
+      "sha256": "42d9ee9efee6641ec5fd9eb41a6ae4027af20e0360781cbf8f3599ce217160d9"
+    },
+    {
+      "path": "word/commentsExtended.xml",
+      "sha256": "fc7bda1a27096e80ca9f3e84e2ecb91c2c74f186953fc5e7fe394adda8a0d658"
+    },
+    {
+      "path": "word/fontTable.xml",
+      "sha256": "acb522d093e13bd504e72900a67cd321cf772f5bd363ba93b66dfe5b5885f4c2"
+    },
+    {
+      "path": "word/people.xml",
+      "sha256": "ca3a9eb335d97f99e15bd951b1034988eda6d327bb326a26e42dfbb09dce8e01"
+    },
+    {
+      "path": "word/commentsIds.xml",
+      "sha256": "7bf33047e22fe1a404c7e432fba2f1d0e989b2496065cb354cc98308ac6d2f5f"
+    },
+    {
+      "path": "docProps/core.xml",
+      "sha256": "457574c9fd871352594ab558b6c6dc9dfde51357a1ac68b6cf6a7a2083a3719f"
+    },
+    {
+      "path": "docProps/app.xml",
+      "sha256": "d178d27f40ba8567d38092481db03fdd6e4017f3e74952dfb55e72971c5fb713"
+    },
+    {
+      "path": "word/webSettings.xml",
+      "sha256": "26aab1f4d8825d9c3fedf1eaec6c1d280ed014ebe7367dbc816cad1ed3eed1f9"
+    },
+    {
+      "path": "word/styles.xml",
+      "sha256": "3c8abcba902c7be36a732134d5a8173ee13029e0d689896f1d1bf18ae950a904"
+    },
+    {
+      "path": "customXml/_rels/item1.xml.rels",
+      "sha256": "80482f86e196171d66001e0e74d1900408a3aaf2463e54005d251b5f2db9a0b0"
+    },
+    {
+      "path": "word/commentsExtensible.xml",
+      "sha256": "bad2a4845c5c0ad2d3e8479f3ab7f3fef12a749351511884d9f6778807e73e33"
+    },
+    {
+      "path": "docProps/custom.xml",
+      "sha256": "201271e8348a9e22cbb8c85cefa465a66d456782e645a27179b53b2cdd4254c1"
+    }
+  ],
+  "non_xml_preserved_in_docx": [
+    "word/media/image22.png",
+    "word/media/image10.png",
+    "word/media/image1.png",
+    "word/media/image2.png",
+    "word/media/image3.png",
+    "word/media/image4.png",
+    "word/media/image5.png",
+    "word/media/image6.png",
+    "word/media/image7.png",
+    "word/media/image8.png",
+    "word/media/image9.png",
+    "word/media/image23.png",
+    "word/media/image11.png",
+    "word/media/image12.png",
+    "word/media/image13.png",
+    "word/media/image14.png",
+    "word/media/image15.png",
+    "word/media/image16.png",
+    "word/media/image17.png",
+    "word/media/image18.png",
+    "word/media/image19.png",
+    "word/media/image20.png",
+    "word/media/image21.png"
+  ],
+  "paragraph_count": 390,
+  "comment_count": 69,
+  "revision_count": 0,
+  "semantics": "w:t and w:delText exported; no tracked changes accepted or rejected; paragraph context is not an exact text range"
+}

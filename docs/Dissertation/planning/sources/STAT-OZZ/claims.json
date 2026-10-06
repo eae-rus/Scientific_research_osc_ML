@@ -1,0 +1,404 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-05",
+  "protocol": "protocol.md",
+  "claims": [
+    {
+      "claim_id": "OZZ-STAT-count",
+      "source_id": "STAT-OZZ",
+      "source_sha256": "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0057",
+          "text": "Количество наблюдений"
+        },
+        {
+          "locator": "word/document.xml:P0058",
+          "text": "830"
+        }
+      ],
+      "neutral_ru": "Количество наблюдений: 830.",
+      "experiment_id": "OZZ-STATS",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "metric": "count",
+        "value": 830,
+        "unit": "record count"
+      },
+      "limitations": [
+        "Заявленная описательная статистика; первичный CSV не пересчитан."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-STAT-mean",
+      "source_id": "STAT-OZZ",
+      "source_sha256": "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0059",
+          "text": "Среднее арифметическое"
+        },
+        {
+          "locator": "word/document.xml:P0060",
+          "text": "1,960"
+        }
+      ],
+      "neutral_ru": "Среднее арифметическое: 1.96.",
+      "experiment_id": "OZZ-STATS",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "metric": "mean",
+        "value": 1.96,
+        "unit": "relative phase nominal voltage; variance in squared units"
+      },
+      "limitations": [
+        "Заявленная описательная статистика; первичный CSV не пересчитан."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-STAT-median",
+      "source_id": "STAT-OZZ",
+      "source_sha256": "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0061",
+          "text": "Медиана (50-й перцентиль)"
+        },
+        {
+          "locator": "word/document.xml:P0062",
+          "text": "1,926"
+        }
+      ],
+      "neutral_ru": "Медиана (50-й перцентиль): 1.926.",
+      "experiment_id": "OZZ-STATS",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "metric": "median",
+        "value": 1.926,
+        "unit": "relative phase nominal voltage; variance in squared units"
+      },
+      "limitations": [
+        "Заявленная описательная статистика; первичный CSV не пересчитан."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-STAT-std",
+      "source_id": "STAT-OZZ",
+      "source_sha256": "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0063",
+          "text": "Стандартное отклонение"
+        },
+        {
+          "locator": "word/document.xml:P0064",
+          "text": "0,274"
+        }
+      ],
+      "neutral_ru": "Стандартное отклонение: 0.274.",
+      "experiment_id": "OZZ-STATS",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "metric": "std",
+        "value": 0.274,
+        "unit": "relative phase nominal voltage; variance in squared units"
+      },
+      "limitations": [
+        "Заявленная описательная статистика; первичный CSV не пересчитан."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-STAT-variance",
+      "source_id": "STAT-OZZ",
+      "source_sha256": "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0065",
+          "text": "Дисперсия"
+        },
+        {
+          "locator": "word/document.xml:P0066",
+          "text": "0,075"
+        }
+      ],
+      "neutral_ru": "Дисперсия: 0.075.",
+      "experiment_id": "OZZ-STATS",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "metric": "variance",
+        "value": 0.075,
+        "unit": "relative phase nominal voltage; variance in squared units"
+      },
+      "limitations": [
+        "Заявленная описательная статистика; первичный CSV не пересчитан."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-STAT-min",
+      "source_id": "STAT-OZZ",
+      "source_sha256": "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0067",
+          "text": "Минимальное значение"
+        },
+        {
+          "locator": "word/document.xml:P0068",
+          "text": "0,862"
+        }
+      ],
+      "neutral_ru": "Минимальное значение: 0.862.",
+      "experiment_id": "OZZ-STATS",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "metric": "min",
+        "value": 0.862,
+        "unit": "relative phase nominal voltage; variance in squared units"
+      },
+      "limitations": [
+        "Заявленная описательная статистика; первичный CSV не пересчитан."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-STAT-Q1",
+      "source_id": "STAT-OZZ",
+      "source_sha256": "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0069",
+          "text": "25-й перцентиль (Q1)"
+        },
+        {
+          "locator": "word/document.xml:P0070",
+          "text": "1,823"
+        }
+      ],
+      "neutral_ru": "25-й перцентиль (Q1): 1.823.",
+      "experiment_id": "OZZ-STATS",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "metric": "Q1",
+        "value": 1.823,
+        "unit": "relative phase nominal voltage; variance in squared units"
+      },
+      "limitations": [
+        "Заявленная описательная статистика; первичный CSV не пересчитан."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-STAT-Q3",
+      "source_id": "STAT-OZZ",
+      "source_sha256": "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0071",
+          "text": "75-й перцентиль (Q3)"
+        },
+        {
+          "locator": "word/document.xml:P0072",
+          "text": "2,099"
+        }
+      ],
+      "neutral_ru": "75-й перцентиль (Q3): 2.099.",
+      "experiment_id": "OZZ-STATS",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "metric": "Q3",
+        "value": 2.099,
+        "unit": "relative phase nominal voltage; variance in squared units"
+      },
+      "limitations": [
+        "Заявленная описательная статистика; первичный CSV не пересчитан."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-STAT-max",
+      "source_id": "STAT-OZZ",
+      "source_sha256": "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0073",
+          "text": "Максимальное значение"
+        },
+        {
+          "locator": "word/document.xml:P0074",
+          "text": "2,843"
+        }
+      ],
+      "neutral_ru": "Максимальное значение: 2.843.",
+      "experiment_id": "OZZ-STATS",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "metric": "max",
+        "value": 2.843,
+        "unit": "relative phase nominal voltage; variance in squared units"
+      },
+      "limitations": [
+        "Заявленная описательная статистика; первичный CSV не пересчитан."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-STAT-Q95",
+      "source_id": "STAT-OZZ",
+      "source_sha256": "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0047",
+          "text": "Данный график позволяет сделать ряд практически значимых выводов. В 95 % проанализированных случаев кратность перенапряжения при ОЗЗ не превышала 2,45 Uном. Это является крайне важным наблюдением, так как оно расходится с часто цитируемыми в теоретической литературе значениями в 3÷4 Uном, которые, как показывает анализ реальных данных, в реальной сети является исчезающе малой (<1 %) в рамках исследованной выборки. Однако не стоит забывать про имеющиеся ограничения измерительных датчиков и тот факт, что мы лишь статистически оцениваем события."
+        }
+      ],
+      "neutral_ru": "В источнике 95% значений не выше 2.45 Uном.",
+      "experiment_id": "OZZ-STATS",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "threshold": 2.45,
+        "CDF_percent": 95
+      },
+      "limitations": [
+        "Только выбранные зарегистрированные случаи; неизвестна точная интерполяция/численность."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-STAT-RANGE",
+      "source_id": "STAT-OZZ",
+      "source_sha256": "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0011",
+          "text": "Результаты: Установлено, что эмпирическое распределение кратностей перенапряжений существенно отличается от классических теоретических оценок. В 95 % случаев перенапряжения не превышали 2,45 Uном, а медианное значение составило 1,926 Uном. Большая часть значений (90 %) находится в диапазоне 1,65÷2,35 Uном. Максимальное зафиксированное значение — 2,843 Uном."
+        },
+        {
+          "locator": "word/document.xml:P0048",
+          "text": "Кроме того, можно отметить, что менее 10 % всех зафиксированных ОЗЗ сопровождались перенапряжениями ниже 1,65 Uном; и что 90 % не выше 2,35 Uном. Медианное значение (50-й перцентиль) составляет 1,926 Uном, что означает, что половина всех случаев имела перенапряжения ниже этого уровня, а половина — выше."
+        },
+        {
+          "locator": "word/document.xml:P0101",
+          "text": "1) Эмпирическое распределение кратностей перенапряжений при ОЗЗ заметно отличается от классических теоретических оценок. В подавляющем большинстве случаев измеренные значения значительно ниже теоретического предела 3÷4 Uном. Большинство значений (90 %) находятся в диапазоне 1,65÷2,35 Uном. Медианное значение составляет 1,926 Uном, максимальное фиксированное — ≈2,843 Uном."
+        }
+      ],
+      "neutral_ru": "Аннотация заявляет 90% в интервале 1.65–2.35; основной текст даёт другие односторонние условия.",
+      "experiment_id": "OZZ-STATS",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "status": "CDF interval fraction unresolved"
+      },
+      "limitations": [
+        "Центральную долю нужно получить как разность CDF; не заменять автоматически на 80%."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "OZZ-STAT-IQR",
+      "source_id": "STAT-OZZ",
+      "source_sha256": "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323",
+      "source_statements": [
+        {
+          "locator": "word/document.xml:P0070",
+          "text": "1,823"
+        },
+        {
+          "locator": "word/document.xml:P0072",
+          "text": "2,099"
+        },
+        {
+          "locator": "word/document.xml:P0076",
+          "text": "Данные таблицы подтверждают и дополняют выводы, сделанные на основе графического анализа. Близость среднего значения (1,96) и медианы (1,926) указывает на ограниченное влияние экстремальных выбросов на центральную тенденцию данных. Небольшое значение стандартного отклонения (0,274) указывает на низкую степень разброса данных вокруг среднего — большинство значений сгруппированы в узком диапазоне. Межквартильный размах (разница между Q3 и Q1) составляет всего 0,276, что означает, что 50 % всех «типичных» событий укладываются в диапазон от 1,823 до 2,099 Uном. Важно отметить, что максимальное зафиксированное значение в верифицированной выборке составляет 2,843 Uном, что значительно ниже теоретически возможных пределов для дуговых перенапряжений."
+        }
+      ],
+      "neutral_ru": "Межквартильный размах 0.276 согласуется с Q3−Q1.",
+      "experiment_id": "OZZ-STATS",
+      "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
+      "evidence": {
+        "IQR": 0.276,
+        "arithmetic_check": "passed"
+      },
+      "limitations": [
+        "Округлённые квантили; не диапазон моды KDE."
+      ],
+      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "dissertation_role": "самостоятельное исследование главы 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
+      },
+      "related_claim_ids": []
+    }
+  ],
+  "coverage": "Основные численные результаты, арифметические проверки, критические расхождения; первичные скаляры не пересчитаны, визуальная приёмка не выполнена."
+}

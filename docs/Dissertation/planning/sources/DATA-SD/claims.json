@@ -1,0 +1,852 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-05",
+  "source_id": "DATA-SD",
+  "protocol": "protocol.md",
+  "claims": [
+    {
+      "claim_id": "SD-001",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0070",
+          "text": "To address this limitations, we have compiled a significantly larger dataset consisting of 50,765 previously unpublished real oscillograms recorded by RPA terminals across multiple substations. This dataset includes a subset of expert-annotated records covering fault events, operational scenarios, and noise instances. All data have been standardized, anonymized, and normalized to support research in ML applications, the development of RPA algorithms, and fault detection and diagnosis systems."
+        },
+        {
+          "locator": "Article.tex:L0092",
+          "text": "The oscillograms were sourced exclusively from anonymised internal industrial databases and external collaborators in various versions of the COMTRADE format ('.cfg' and '.dat' files). No public third-party datasets or previously published oscillogram collections were used. A custom proprietary program was developed to automate the process of collecting and preparing oscillograms. This code performs various tasks, including searching for unique oscillograms, removing duplicates, and organizing files into a unified database. To facilitate searches across different directories or computers, there is an option to save and reuse a dictionary of unique files. This dictionary stores the hash name of the data file as the key, along with the file path and name. The dataset collected in the first stage includes 50,765 oscillograms."
+        }
+      ],
+      "neutral_ru": "Подготовленный ресурс содержит 50 765 записей COMTRADE.",
+      "experiment_id": "DATA-SD-DATA",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "record_count": 50765
+      },
+      "limitations": [
+        "Запись не равна независимому повреждению или объекту."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-002",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0104",
+          "text": "Original oscillograms include names for analog and discrete signals assigned by the manufacturer. The use of inconsistent and unstructured signal names can complicate further analysis and may inadvertently reveal information about the device manufacturer or installation site. In this dataset, 3,170 unique names of analog signals and 13,513 unique names of discrete signals were identified."
+        }
+      ],
+      "neutral_ru": "До унификации найдено 3170 аналоговых и 13 513 дискретных названий.",
+      "experiment_id": "DATA-SD-DATA",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "analog_names": 3170,
+        "discrete_names": 13513
+      },
+      "limitations": [
+        "Числа относятся к названиям, не каналам каждой записи."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-003",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0171",
+          "text": "In modern electrical networks, signals are often measured in kilovolts (kV) for voltage and hundreds or thousands of amperes (especially in fault conditions) for currents. These parameters vary depending on network type, substation, load, etc. To standardize values across different ranges, intermediate transformers are used. Conventional voltage transformers (VTs) reduce voltage to 100 V (\\( U_\\text{base} \\)), and current transformers (CTs) to 1 A or 5 A. This study uses the standard of 5 A (\\(I_\\text{base} \\)), the most common secondary current value for medium voltage networks. \\textit{\\textbf{Note}: These values may differ by country.}"
+        },
+        {
+          "locator": "Article.tex:L0173",
+          "text": "Where possible, normalization should use secondary values as they are already standardized. When this is not feasible, normalization should use primary values. To ensure that normalized values lie within [0, 1] (excluding outliers), the following rules are recommended:"
+        },
+        {
+          "locator": "Article.tex:L0176",
+          "text": "    \\item For currents: divide by \\( 25 \\times I_{\\text{base}} \\);"
+        },
+        {
+          "locator": "Article.tex:L0177",
+          "text": "    \\item For voltages: divide by \\( 3 \\times U_{\\text{base}} \\)."
+        },
+        {
+          "locator": "Article.tex:L0180",
+          "text": "In this study, the base values for current and voltage were calculated in semi-automatic mode for all oscillograms and are stored in a separate file."
+        }
+      ],
+      "neutral_ru": "Нормировочные делители статьи — 25·Ibase для токов и 3·Ubase для напряжений.",
+      "experiment_id": "DATA-SD-DATA",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "default_Ibase_A": 5,
+        "default_Ubase_V": 100,
+        "current_factor": 25,
+        "voltage_factor": 3
+      },
+      "limitations": [
+        "Базы определяются по записи/группе; не заменять нормировку PDR-05."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-004",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0212",
+          "text": "Initially, a subset of oscillograms was manually annotated for the precise identification of events and boundary delineation. This subset was selected from terminals with a relatively high event frequency, totaling 480 oscillograms, all recorded at a 50 Hz network frequency and a 1,600 Hz sampling rate. Neural networks can be trained on this data, which then optimize the sorting of events and significantly reduce the time and effort associated with manual annotation \\cite{ml6}."
+        },
+        {
+          "locator": "Article.tex:L0214",
+          "text": "Signal annotations may vary according to task-specific approaches. Scientific discourse often raises concerns about terminology, evaluation criteria, and event boundaries. The authors of this study do not claim universality for the proposed annotations, instead offering an interpretation suited to the task of analyzing and segmenting a large volume of oscillograms by event type and automating this process. Researchers may reannotate the dataset to fit their own needs and requirements. "
+        },
+        {
+          "locator": "Article.tex:L0216",
+          "text": "The annotation included only analog signal values, without the use of discrete data. The signals were divided into four main groups:"
+        }
+      ],
+      "neutral_ru": "Ручная временная разметка выполнена для 480 записей с частотой 1600 Гц при сети 50 Гц.",
+      "experiment_id": "DATA-SD-LABEL",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "records": 480,
+        "sampling_Hz": 1600,
+        "network_Hz": 50
+      },
+      "limitations": [
+        "Отбор не случайный; использованы аналоговые сигналы; неизвестна независимая межэкспертная проверка."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-005-0",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0233",
+          "text": "Group 0: No Event            & 598,303 & 36.7 \\\\"
+        }
+      ],
+      "neutral_ru": "Группа No Event: 598303 размеченных отсчётов (36.7%).",
+      "experiment_id": "DATA-SD-LABEL",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "class": "No Event",
+        "timestamps": 598303,
+        "total_timestamps": 1628076,
+        "percent": 36.7,
+        "arithmetic_check": "passed"
+      },
+      "limitations": [
+        "Не число событий; не частота аварий всей сети."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-005-1",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0234",
+          "text": "Group 1: Operational Switching & 131,593 & 8.1 \\\\"
+        }
+      ],
+      "neutral_ru": "Группа Operational Switching: 131593 размеченных отсчётов (8.1%).",
+      "experiment_id": "DATA-SD-LABEL",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "class": "Operational Switching",
+        "timestamps": 131593,
+        "total_timestamps": 1628076,
+        "percent": 8.1,
+        "arithmetic_check": "passed"
+      },
+      "limitations": [
+        "Не число событий; не частота аварий всей сети."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-005-2",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0235",
+          "text": "Group 2: Abnormal Events      & 700,169  & 43.0 \\\\"
+        }
+      ],
+      "neutral_ru": "Группа Abnormal Events: 700169 размеченных отсчётов (43.0%).",
+      "experiment_id": "DATA-SD-LABEL",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "class": "Abnormal Events",
+        "timestamps": 700169,
+        "total_timestamps": 1628076,
+        "percent": 43.0,
+        "arithmetic_check": "passed"
+      },
+      "limitations": [
+        "Не число событий; не частота аварий всей сети."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-005-3",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0236",
+          "text": "Group 3: Fault Events         & 198,011  & 12.2 \\\\"
+        }
+      ],
+      "neutral_ru": "Группа Fault Events: 198011 размеченных отсчётов (12.2%).",
+      "experiment_id": "DATA-SD-LABEL",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "class": "Fault Events",
+        "timestamps": 198011,
+        "total_timestamps": 1628076,
+        "percent": 12.2,
+        "arithmetic_check": "passed"
+      },
+      "limitations": [
+        "Не число событий; не частота аварий всей сети."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-006",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0257",
+          "text": "\\textbf{Additional data filtering.} While all recorded oscillograms contain valuable real-world measurements, including actual noise and grid loads, we performed additional manual filtering to identify files with signal disturbances distinct from normal operation. This file-level filtering (without pointwise annotation) resulted in 20,873 oscillograms (out of 50,765) marked as containing notable disturbances."
+        }
+      ],
+      "neutral_ru": "В файловом списке возмущений 20 873 записи из 50 765.",
+      "experiment_id": "DATA-SD-DATA",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "disturbance_records": 20873,
+        "archive_records": 50765
+      },
+      "limitations": [
+        "Не временная разметка всех 20 873 записей; не поднабор ОЗЗ."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-007",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0293",
+          "text": "First, we trained a 1D convolutional autoencoder with a symmetric encoder-decoder architecture. The encoder consisted of two stacked 1D convolutional layers with max-pooling for dimensionality reduction, while the decoder used transposed convolutions for signal reconstruction. The annotated dataset was stratified by the four primary event groups and split into training, validation, and test sets. Each oscillogram was segmented into non-overlapping windows corresponding to one full signal cycle."
+        },
+        {
+          "locator": "Article.tex:L0295",
+          "text": "\\textbf{Spectral loss optimization.} Instead of conventional Mean Squared Error (MSE), the autoencoder was trained to minimize the Mean Absolute Error (MAE) between the magnitude spectra of the original signal $X$ and its reconstruction $\\hat{X}$:  "
+        },
+        {
+          "locator": "Article.tex:L0297",
+          "text": "This phase-invariant spectral loss proved highly effective at learning robust spectral-temporal features regardless of the random starting phase introduced by windowing."
+        }
+      ],
+      "neutral_ru": "Для автоэнкодера используется MAE между модулями FFT.",
+      "experiment_id": "DATA-SD-AE",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "loss": "FFT-magnitude MAE",
+        "window": "one cycle",
+        "split": "stratified train/validation/test"
+      },
+      "limitations": [
+        "Нет полного паспорта split и межобъектной независимости."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-008",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0299",
+          "text": "\\textbf{Latent space analysis.} The encoder from the best autoencoder (selected by validation loss) was applied to the held-out test set, producing compact latent representations. These were visualized using t-SNE (Fig.~\\ref{fig:clusters}). The resulting plot shows four clearly separated clusters that correspond exactly to the expert-defined event categories, confirming that the annotations reflect distinguishable patterns in the raw oscillogram data."
+        },
+        {
+          "locator": "Article.tex:L0304",
+          "text": "    \\caption{t-SNE visualization of autoencoder latent vectors colored by the four expert-annotated event groups, demonstrating separability of the classes in the learned feature space.}"
+        }
+      ],
+      "neutral_ru": "Авторы интерпретируют t-SNE test-представлений как визуальную разделимость четырёх групп.",
+      "experiment_id": "DATA-SD-AE",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "object": "t-SNE plot"
+      },
+      "limitations": [
+        "Качественная проекция; не метрика и не доказательство физической истинности."
+      ],
+      "verification_status": "author_interpretation_with_limits",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": [],
+      "visual_observation": "PDF p14 reviewed: concentrations of class colours and mixed regions; not four fully isolated clusters. Qualitative observation, no computed separation metric."
+    },
+    {
+      "claim_id": "SD-009",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0316",
+          "text": "All models were trained for 100 epochs with early stopping using categorical cross-entropy loss and Adam optimizer. The performance metrics reported in Table~\\ref{tab:classification_results} are mean values over 5 independent runs with different random seeds."
+        }
+      ],
+      "neutral_ru": "Табличные результаты MLP/CNN/GRU усреднены по пяти random seeds; обучение — до 100 эпох с early stopping.",
+      "experiment_id": "DATA-SD-CLS",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "runs": 5,
+        "epochs_max": 100,
+        "optimizer": "Adam",
+        "loss": "categorical cross-entropy"
+      },
+      "limitations": [
+        "Не указаны размеры моделей, split-ID, разброс и точные гиперпараметры."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-010-0-MLP",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0330",
+          "text": "No Event               & 0.84 & 0.85 & 0.84 & \\textbf{0.89} & 0.84 & 0.87 & \\textbf{0.89} & \\textbf{0.88} & \\textbf{0.88} \\\\"
+        }
+      ],
+      "neutral_ru": "MLP, No Event: precision 0.84, recall 0.85, F1 0.84.",
+      "experiment_id": "DATA-SD-CLS",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "model": "MLP",
+        "class": "No Event",
+        "precision": 0.84,
+        "recall": 0.85,
+        "F1": 0.84,
+        "aggregation": "mean over five seeds",
+        "denominator": "class; detailed window-label rule unknown"
+      },
+      "limitations": [
+        "Отдельный классовый F1; не macro-F1; нет ДИ/разброса."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-010-0-CNN",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0330",
+          "text": "No Event               & 0.84 & 0.85 & 0.84 & \\textbf{0.89} & 0.84 & 0.87 & \\textbf{0.89} & \\textbf{0.88} & \\textbf{0.88} \\\\"
+        }
+      ],
+      "neutral_ru": "CNN, No Event: precision 0.89, recall 0.84, F1 0.87.",
+      "experiment_id": "DATA-SD-CLS",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "model": "CNN",
+        "class": "No Event",
+        "precision": 0.89,
+        "recall": 0.84,
+        "F1": 0.87,
+        "aggregation": "mean over five seeds",
+        "denominator": "class; detailed window-label rule unknown"
+      },
+      "limitations": [
+        "Отдельный классовый F1; не macro-F1; нет ДИ/разброса."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-010-0-GRU",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0330",
+          "text": "No Event               & 0.84 & 0.85 & 0.84 & \\textbf{0.89} & 0.84 & 0.87 & \\textbf{0.89} & \\textbf{0.88} & \\textbf{0.88} \\\\"
+        }
+      ],
+      "neutral_ru": "GRU, No Event: precision 0.89, recall 0.88, F1 0.88.",
+      "experiment_id": "DATA-SD-CLS",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "model": "GRU",
+        "class": "No Event",
+        "precision": 0.89,
+        "recall": 0.88,
+        "F1": 0.88,
+        "aggregation": "mean over five seeds",
+        "denominator": "class; detailed window-label rule unknown"
+      },
+      "limitations": [
+        "Отдельный классовый F1; не macro-F1; нет ДИ/разброса."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-010-1-MLP",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0331",
+          "text": "Operational Switching  & 0.40 & 0.52 & 0.45 & \\textbf{0.42} & 0.57 & \\textbf{0.48} & 0.36 & \\textbf{0.60} & 0.45 \\\\"
+        }
+      ],
+      "neutral_ru": "MLP, Operational Switching: precision 0.40, recall 0.52, F1 0.45.",
+      "experiment_id": "DATA-SD-CLS",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "model": "MLP",
+        "class": "Operational Switching",
+        "precision": 0.4,
+        "recall": 0.52,
+        "F1": 0.45,
+        "aggregation": "mean over five seeds",
+        "denominator": "class; detailed window-label rule unknown"
+      },
+      "limitations": [
+        "Отдельный классовый F1; не macro-F1; нет ДИ/разброса."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-010-1-CNN",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0331",
+          "text": "Operational Switching  & 0.40 & 0.52 & 0.45 & \\textbf{0.42} & 0.57 & \\textbf{0.48} & 0.36 & \\textbf{0.60} & 0.45 \\\\"
+        }
+      ],
+      "neutral_ru": "CNN, Operational Switching: precision 0.42, recall 0.57, F1 0.48.",
+      "experiment_id": "DATA-SD-CLS",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "model": "CNN",
+        "class": "Operational Switching",
+        "precision": 0.42,
+        "recall": 0.57,
+        "F1": 0.48,
+        "aggregation": "mean over five seeds",
+        "denominator": "class; detailed window-label rule unknown"
+      },
+      "limitations": [
+        "Отдельный классовый F1; не macro-F1; нет ДИ/разброса."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-010-1-GRU",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0331",
+          "text": "Operational Switching  & 0.40 & 0.52 & 0.45 & \\textbf{0.42} & 0.57 & \\textbf{0.48} & 0.36 & \\textbf{0.60} & 0.45 \\\\"
+        }
+      ],
+      "neutral_ru": "GRU, Operational Switching: precision 0.36, recall 0.60, F1 0.45.",
+      "experiment_id": "DATA-SD-CLS",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "model": "GRU",
+        "class": "Operational Switching",
+        "precision": 0.36,
+        "recall": 0.6,
+        "F1": 0.45,
+        "aggregation": "mean over five seeds",
+        "denominator": "class; detailed window-label rule unknown"
+      },
+      "limitations": [
+        "Отдельный классовый F1; не macro-F1; нет ДИ/разброса."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-010-2-MLP",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0332",
+          "text": "Abnormal Events        & 0.88 & 0.75 & 0.81 & 0.86 & \\textbf{0.79} & 0.82 & \\textbf{0.89} & \\textbf{0.79} & 0.84 \\\\"
+        }
+      ],
+      "neutral_ru": "MLP, Abnormal Events: precision 0.88, recall 0.75, F1 0.81.",
+      "experiment_id": "DATA-SD-CLS",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "model": "MLP",
+        "class": "Abnormal Events",
+        "precision": 0.88,
+        "recall": 0.75,
+        "F1": 0.81,
+        "aggregation": "mean over five seeds",
+        "denominator": "class; detailed window-label rule unknown"
+      },
+      "limitations": [
+        "Отдельный классовый F1; не macro-F1; нет ДИ/разброса."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-010-2-CNN",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0332",
+          "text": "Abnormal Events        & 0.88 & 0.75 & 0.81 & 0.86 & \\textbf{0.79} & 0.82 & \\textbf{0.89} & \\textbf{0.79} & 0.84 \\\\"
+        }
+      ],
+      "neutral_ru": "CNN, Abnormal Events: precision 0.86, recall 0.79, F1 0.82.",
+      "experiment_id": "DATA-SD-CLS",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "model": "CNN",
+        "class": "Abnormal Events",
+        "precision": 0.86,
+        "recall": 0.79,
+        "F1": 0.82,
+        "aggregation": "mean over five seeds",
+        "denominator": "class; detailed window-label rule unknown"
+      },
+      "limitations": [
+        "Отдельный классовый F1; не macro-F1; нет ДИ/разброса."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-010-2-GRU",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0332",
+          "text": "Abnormal Events        & 0.88 & 0.75 & 0.81 & 0.86 & \\textbf{0.79} & 0.82 & \\textbf{0.89} & \\textbf{0.79} & 0.84 \\\\"
+        }
+      ],
+      "neutral_ru": "GRU, Abnormal Events: precision 0.89, recall 0.79, F1 0.84.",
+      "experiment_id": "DATA-SD-CLS",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "model": "GRU",
+        "class": "Abnormal Events",
+        "precision": 0.89,
+        "recall": 0.79,
+        "F1": 0.84,
+        "aggregation": "mean over five seeds",
+        "denominator": "class; detailed window-label rule unknown"
+      },
+      "limitations": [
+        "Отдельный классовый F1; не macro-F1; нет ДИ/разброса."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-010-3-MLP",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0333",
+          "text": "Fault Events           & 0.72 & 0.87 & 0.79 & 0.78 & \\textbf{0.92} & 0.83 & \\textbf{0.84} & 0.88 & \\textbf{0.85} \\\\"
+        }
+      ],
+      "neutral_ru": "MLP, Fault Events: precision 0.72, recall 0.87, F1 0.79.",
+      "experiment_id": "DATA-SD-CLS",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "model": "MLP",
+        "class": "Fault Events",
+        "precision": 0.72,
+        "recall": 0.87,
+        "F1": 0.79,
+        "aggregation": "mean over five seeds",
+        "denominator": "class; detailed window-label rule unknown"
+      },
+      "limitations": [
+        "Отдельный классовый F1; не macro-F1; нет ДИ/разброса."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-010-3-CNN",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0333",
+          "text": "Fault Events           & 0.72 & 0.87 & 0.79 & 0.78 & \\textbf{0.92} & 0.83 & \\textbf{0.84} & 0.88 & \\textbf{0.85} \\\\"
+        }
+      ],
+      "neutral_ru": "CNN, Fault Events: precision 0.78, recall 0.92, F1 0.83.",
+      "experiment_id": "DATA-SD-CLS",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "model": "CNN",
+        "class": "Fault Events",
+        "precision": 0.78,
+        "recall": 0.92,
+        "F1": 0.83,
+        "aggregation": "mean over five seeds",
+        "denominator": "class; detailed window-label rule unknown"
+      },
+      "limitations": [
+        "Отдельный классовый F1; не macro-F1; нет ДИ/разброса."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-010-3-GRU",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0333",
+          "text": "Fault Events           & 0.72 & 0.87 & 0.79 & 0.78 & \\textbf{0.92} & 0.83 & \\textbf{0.84} & 0.88 & \\textbf{0.85} \\\\"
+        }
+      ],
+      "neutral_ru": "GRU, Fault Events: precision 0.84, recall 0.88, F1 0.85.",
+      "experiment_id": "DATA-SD-CLS",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "model": "GRU",
+        "class": "Fault Events",
+        "precision": 0.84,
+        "recall": 0.88,
+        "F1": 0.85,
+        "aggregation": "mean over five seeds",
+        "denominator": "class; detailed window-label rule unknown"
+      },
+      "limitations": [
+        "Отдельный классовый F1; не macro-F1; нет ДИ/разброса."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-011",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0337",
+          "text": "The classification experiment confirmed that all models successfully learned to recognize the annotated events, achieving performance significantly above chance level. While the overall accuracy and per-class metrics varied, the results demonstrate that the dataset is suitable for developing and benchmarking supervised methods."
+        }
+      ],
+      "neutral_ru": "Авторы считают ресурс пригодным для разработки и сравнения supervised-методов.",
+      "experiment_id": "DATA-SD-CLS",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "object": "classification table"
+      },
+      "limitations": [
+        "Наихудшая группа имеет F1 0.45–0.48; не безошибочность и не независимая эксплуатационная проверка."
+      ],
+      "verification_status": "author_interpretation_with_limits",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "SD-012",
+      "source_id": "DATA-SD",
+      "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+      "source_statements": [
+        {
+          "locator": "Article.tex:L0444",
+          "text": "A.E., G.f. and A.Y. performed the collection of the raw data, manual preproccessing and labeling. A.K. designed the pipeline for CSV conversion. E.S. designed the technical validation experiments. I.M. analysed the results. All authors reviewed the manuscript."
+        }
+      ],
+      "neutral_ru": "Распределены роли соавторов в сборе/обработке, CSV-конвейере, валидации и анализе.",
+      "experiment_id": "DATA-SD-DATA",
+      "scope": "Описанный локальной статьёй опубликованный срез и его отдельная проверка; не вся сеть.",
+      "evidence": {
+        "object": "Author contributions"
+      },
+      "limitations": [
+        "Совместный вклад; не основание приписать все результаты одному автору."
+      ],
+      "verification_status": "source_statement_checked; primary_data_not_recomputed",
+      "dissertation_role": "глава 3",
+      "attribution": {
+        "kind": "joint",
+        "basis": "Article.tex L0442–L0444; роли обработки и технической проверки раздельны"
+      },
+      "related_claim_ids": []
+    }
+  ],
+  "coverage": "Численные результаты двух таблиц и основные тезисы подготовки/проверки; все 36 P/R/F1 и четыре timestamp-численности сверены с TEX. Фигуры учтены как качественные объекты, визуальная приёмка C04 ещё не выполнена."
+}

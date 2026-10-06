@@ -1,0 +1,1571 @@
+[
+  {
+    "original_comment_id": "0",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "0",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Valery Valery",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-13T15:26:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "VV"
+    },
+    "paragraphs": [
+      "Давай добавим в кабельных сетях"
+    ],
+    "text": "Давай добавим в кабельных сетях",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[1]/w:commentRangeStart[1]",
+        "paragraph_index": 1,
+        "paragraph_text": "ПОДГОТОВКА И АНАЛИЗ НАБОРА ОСЦИЛЛОГРАММ ДЛЯ ИССЛЕДОВАНИЯ ОДНОФАЗНЫХ ЗАМЫКАНИЙ НА ЗЕМЛЮ В КАБЕЛЬНЫХ СЕТЯХ"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[1]/w:commentRangeEnd[1]",
+        "paragraph_index": 1,
+        "paragraph_text": "ПОДГОТОВКА И АНАЛИЗ НАБОРА ОСЦИЛЛОГРАММ ДЛЯ ИССЛЕДОВАНИЯ ОДНОФАЗНЫХ ЗАМЫКАНИЙ НА ЗЕМЛЮ В КАБЕЛЬНЫХ СЕТЯХ"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[1]/w:r[6]/w:commentReference",
+        "paragraph_index": 1,
+        "paragraph_text": "ПОДГОТОВКА И АНАЛИЗ НАБОРА ОСЦИЛЛОГРАММ ДЛЯ ИССЛЕДОВАНИЯ ОДНОФАЗНЫХ ЗАМЫКАНИЙ НА ЗЕМЛЮ В КАБЕЛЬНЫХ СЕТЯХ"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "1",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "1",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:18:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "+"
+    ],
+    "text": "+",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[1]/w:commentRangeStart[2]",
+        "paragraph_index": 1,
+        "paragraph_text": "ПОДГОТОВКА И АНАЛИЗ НАБОРА ОСЦИЛЛОГРАММ ДЛЯ ИССЛЕДОВАНИЯ ОДНОФАЗНЫХ ЗАМЫКАНИЙ НА ЗЕМЛЮ В КАБЕЛЬНЫХ СЕТЯХ"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[1]/w:commentRangeEnd[2]",
+        "paragraph_index": 1,
+        "paragraph_text": "ПОДГОТОВКА И АНАЛИЗ НАБОРА ОСЦИЛЛОГРАММ ДЛЯ ИССЛЕДОВАНИЯ ОДНОФАЗНЫХ ЗАМЫКАНИЙ НА ЗЕМЛЮ В КАБЕЛЬНЫХ СЕТЯХ"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[1]/w:r[7]/w:commentReference",
+        "paragraph_index": 1,
+        "paragraph_text": "ПОДГОТОВКА И АНАЛИЗ НАБОРА ОСЦИЛЛОГРАММ ДЛЯ ИССЛЕДОВАНИЯ ОДНОФАЗНЫХ ЗАМЫКАНИЙ НА ЗЕМЛЮ В КАБЕЛЬНЫХ СЕТЯХ"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "3",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "3",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Valery Valery",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-13T15:26:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "VV"
+    },
+    "paragraphs": [
+      "Относящихся в основном к кабельным сетям",
+      "",
+      "Это же будет верно?"
+    ],
+    "text": "Относящихся в основном к кабельным сетям\n\nЭто же будет верно?",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[9]/w:commentRangeStart[1]",
+        "paragraph_index": 9,
+        "paragraph_text": "Материалы и методы: Представлена многоэтапная методология формирования целевого набора данных из большого промышленного архива (50 765 записей), полученного преимущественно из кабельных сетей. Методология включает автоматизированный первичный отбор осциллограмм с признаками ОЗЗ с помощью алгоритма на Python и последующую ручную экспертную верификацию для отсеивания ложных срабатываний и уточнения разметки."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[9]/w:commentRangeEnd[1]",
+        "paragraph_index": 9,
+        "paragraph_text": "Материалы и методы: Представлена многоэтапная методология формирования целевого набора данных из большого промышленного архива (50 765 записей), полученного преимущественно из кабельных сетей. Методология включает автоматизированный первичный отбор осциллограмм с признаками ОЗЗ с помощью алгоритма на Python и последующую ручную экспертную верификацию для отсеивания ложных срабатываний и уточнения разметки."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[9]/w:r[6]/w:commentReference",
+        "paragraph_index": 9,
+        "paragraph_text": "Материалы и методы: Представлена многоэтапная методология формирования целевого набора данных из большого промышленного архива (50 765 записей), полученного преимущественно из кабельных сетей. Методология включает автоматизированный первичный отбор осциллограмм с признаками ОЗЗ с помощью алгоритма на Python и последующую ручную экспертную верификацию для отсеивания ложных срабатываний и уточнения разметки."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "4",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "4",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:19:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Ну да, большинство кабельных сетей. Надо будет вычитать, поправить"
+    ],
+    "text": "Ну да, большинство кабельных сетей. Надо будет вычитать, поправить",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[9]/w:commentRangeStart[2]",
+        "paragraph_index": 9,
+        "paragraph_text": "Материалы и методы: Представлена многоэтапная методология формирования целевого набора данных из большого промышленного архива (50 765 записей), полученного преимущественно из кабельных сетей. Методология включает автоматизированный первичный отбор осциллограмм с признаками ОЗЗ с помощью алгоритма на Python и последующую ручную экспертную верификацию для отсеивания ложных срабатываний и уточнения разметки."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[9]/w:commentRangeEnd[2]",
+        "paragraph_index": 9,
+        "paragraph_text": "Материалы и методы: Представлена многоэтапная методология формирования целевого набора данных из большого промышленного архива (50 765 записей), полученного преимущественно из кабельных сетей. Методология включает автоматизированный первичный отбор осциллограмм с признаками ОЗЗ с помощью алгоритма на Python и последующую ручную экспертную верификацию для отсеивания ложных срабатываний и уточнения разметки."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[9]/w:r[7]/w:commentReference",
+        "paragraph_index": 9,
+        "paragraph_text": "Материалы и методы: Представлена многоэтапная методология формирования целевого набора данных из большого промышленного архива (50 765 записей), полученного преимущественно из кабельных сетей. Методология включает автоматизированный первичный отбор осциллограмм с признаками ОЗЗ с помощью алгоритма на Python и последующую ручную экспертную верификацию для отсеивания ложных срабатываний и уточнения разметки."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "10",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "10",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T11:44:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Поправить после корректировки русского текста."
+    ],
+    "text": "Поправить после корректировки русского текста.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[14]/w:commentRangeStart",
+        "paragraph_index": 14,
+        "paragraph_text": "PREPARATION AND ANALYSIS OF AN OSCILLOGRAM DATASET FOR RESEARCH OF SINGLE-PHASE EARTH FAULTS IN CABLE NETWORKS"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[14]/w:commentRangeEnd",
+        "paragraph_index": 14,
+        "paragraph_text": "PREPARATION AND ANALYSIS OF AN OSCILLOGRAM DATASET FOR RESEARCH OF SINGLE-PHASE EARTH FAULTS IN CABLE NETWORKS"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[14]/w:r[2]/w:commentReference",
+        "paragraph_index": 14,
+        "paragraph_text": "PREPARATION AND ANALYSIS OF AN OSCILLOGRAM DATASET FOR RESEARCH OF SINGLE-PHASE EARTH FAULTS IN CABLE NETWORKS"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "11",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "11",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-12T22:13:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Требуется сделать\n1) Подготовить список литературы",
+      "2) Привести картинки к удобном виду",
+      "3) ужать до 4стр (провёл только первичное сжатие) + переразместить рисунки."
+    ],
+    "text": "Требуется сделать\n1) Подготовить список литературы\n2) Привести картинки к удобном виду\n3) ужать до 4стр (провёл только первичное сжатие) + переразместить рисунки.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[30]/w:commentRangeStart",
+        "paragraph_index": 30,
+        "paragraph_text": "Введение"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[30]/w:commentRangeEnd",
+        "paragraph_index": 30,
+        "paragraph_text": "Введение"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[30]/w:r[2]/w:commentReference",
+        "paragraph_index": 30,
+        "paragraph_text": "Введение"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "12",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "12",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Valery Valery",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-13T15:27:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "VV"
+    },
+    "paragraphs": [
+      "Добавь сслыку на классиков) на Шуина"
+    ],
+    "text": "Добавь сслыку на классиков) на Шуина",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[31]/w:commentRangeStart[1]",
+        "paragraph_index": 31,
+        "paragraph_text": "Однофазные замыкания на землю (ОЗЗ) являются преобладающим видом повреждений в распределительных сетях 6÷35 кВ [1]. Современные цифровые устройства релейной защиты (РЗА) накапливают огромные архивы осциллограмм, однако эти «сырые» данные содержат большое количество неинформативных записей, записи сразу нескольких событий, что создает серьезные препятствия для их автоматизированного анализа и последующего использования [2]."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[31]/w:commentRangeEnd[1]",
+        "paragraph_index": 31,
+        "paragraph_text": "Однофазные замыкания на землю (ОЗЗ) являются преобладающим видом повреждений в распределительных сетях 6÷35 кВ [1]. Современные цифровые устройства релейной защиты (РЗА) накапливают огромные архивы осциллограмм, однако эти «сырые» данные содержат большое количество неинформативных записей, записи сразу нескольких событий, что создает серьезные препятствия для их автоматизированного анализа и последующего использования [2]."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[31]/w:r[3]/w:commentReference",
+        "paragraph_index": 31,
+        "paragraph_text": "Однофазные замыкания на землю (ОЗЗ) являются преобладающим видом повреждений в распределительных сетях 6÷35 кВ [1]. Современные цифровые устройства релейной защиты (РЗА) накапливают огромные архивы осциллограмм, однако эти «сырые» данные содержат большое количество неинформативных записей, записи сразу нескольких событий, что создает серьезные препятствия для их автоматизированного анализа и последующего использования [2]."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "13",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "13",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T10:31:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "+"
+    ],
+    "text": "+",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[31]/w:commentRangeStart[2]",
+        "paragraph_index": 31,
+        "paragraph_text": "Однофазные замыкания на землю (ОЗЗ) являются преобладающим видом повреждений в распределительных сетях 6÷35 кВ [1]. Современные цифровые устройства релейной защиты (РЗА) накапливают огромные архивы осциллограмм, однако эти «сырые» данные содержат большое количество неинформативных записей, записи сразу нескольких событий, что создает серьезные препятствия для их автоматизированного анализа и последующего использования [2]."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[31]/w:commentRangeEnd[2]",
+        "paragraph_index": 31,
+        "paragraph_text": "Однофазные замыкания на землю (ОЗЗ) являются преобладающим видом повреждений в распределительных сетях 6÷35 кВ [1]. Современные цифровые устройства релейной защиты (РЗА) накапливают огромные архивы осциллограмм, однако эти «сырые» данные содержат большое количество неинформативных записей, записи сразу нескольких событий, что создает серьезные препятствия для их автоматизированного анализа и последующего использования [2]."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[31]/w:r[4]/w:commentReference",
+        "paragraph_index": 31,
+        "paragraph_text": "Однофазные замыкания на землю (ОЗЗ) являются преобладающим видом повреждений в распределительных сетях 6÷35 кВ [1]. Современные цифровые устройства релейной защиты (РЗА) накапливают огромные архивы осциллограмм, однако эти «сырые» данные содержат большое количество неинформативных записей, записи сразу нескольких событий, что создает серьезные препятствия для их автоматизированного анализа и последующего использования [2]."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "15",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "15",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T13:11:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Можно будет удалить описание, оставить прост название пунктов, если нужно будет сжать"
+    ],
+    "text": "Можно будет удалить описание, оставить прост название пунктов, если нужно будет сжать",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[44]/w:commentRangeStart",
+        "paragraph_index": 44,
+        "paragraph_text": "\tНормализация сигналов. Загрузка коэффициентов нормализации и приведение мгновенных значений токов и напряжений к безразмерным относительным единицам."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[44]/w:commentRangeEnd",
+        "paragraph_index": 44,
+        "paragraph_text": "\tНормализация сигналов. Загрузка коэффициентов нормализации и приведение мгновенных значений токов и напряжений к безразмерным относительным единицам."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[44]/w:r[3]/w:commentReference",
+        "paragraph_index": 44,
+        "paragraph_text": "\tНормализация сигналов. Загрузка коэффициентов нормализации и приведение мгновенных значений токов и напряжений к безразмерным относительным единицам."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "16",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "16",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Valery Valery",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-13T15:12:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "VV"
+    },
+    "paragraphs": [
+      "О чем идет речь? О первой гармонике?"
+    ],
+    "text": "О чем идет речь? О первой гармонике?",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[45]/w:commentRangeStart[1]",
+        "paragraph_index": 45,
+        "paragraph_text": "\tДетектирование зон ОЗЗ. В рамках каждой осциллограммы анализировались первые гармоники сигналов напряжений нулевой последовательности (U0) и фазных напряжений (Uф) для поиска интервалов, где их уровень превышал заданные пороговые значения по амплитуде и времени процесса."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[45]/w:commentRangeEnd[1]",
+        "paragraph_index": 45,
+        "paragraph_text": "\tДетектирование зон ОЗЗ. В рамках каждой осциллограммы анализировались первые гармоники сигналов напряжений нулевой последовательности (U0) и фазных напряжений (Uф) для поиска интервалов, где их уровень превышал заданные пороговые значения по амплитуде и времени процесса."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[45]/w:r[7]/w:commentReference",
+        "paragraph_index": 45,
+        "paragraph_text": "\tДетектирование зон ОЗЗ. В рамках каждой осциллограммы анализировались первые гармоники сигналов напряжений нулевой последовательности (U0) и фазных напряжений (Uф) для поиска интервалов, где их уровень превышал заданные пороговые значения по амплитуде и времени процесса."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "17",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "17",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:22:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Здесь, да, добавил уточнение"
+    ],
+    "text": "Здесь, да, добавил уточнение",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[45]/w:commentRangeStart[2]",
+        "paragraph_index": 45,
+        "paragraph_text": "\tДетектирование зон ОЗЗ. В рамках каждой осциллограммы анализировались первые гармоники сигналов напряжений нулевой последовательности (U0) и фазных напряжений (Uф) для поиска интервалов, где их уровень превышал заданные пороговые значения по амплитуде и времени процесса."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[45]/w:commentRangeEnd[2]",
+        "paragraph_index": 45,
+        "paragraph_text": "\tДетектирование зон ОЗЗ. В рамках каждой осциллограммы анализировались первые гармоники сигналов напряжений нулевой последовательности (U0) и фазных напряжений (Uф) для поиска интервалов, где их уровень превышал заданные пороговые значения по амплитуде и времени процесса."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[45]/w:r[8]/w:commentReference",
+        "paragraph_index": 45,
+        "paragraph_text": "\tДетектирование зон ОЗЗ. В рамках каждой осциллограммы анализировались первые гармоники сигналов напряжений нулевой последовательности (U0) и фазных напряжений (Uф) для поиска интервалов, где их уровень превышал заданные пороговые значения по амплитуде и времени процесса."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "18",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "18",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T14:18:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Наверное, прост удалю. Не очень знаю пока, как подробно изобразить, да и надо ли. А здесь очень грубо описано. Да и ужимать надо бы текст."
+    ],
+    "text": "Наверное, прост удалю. Не очень знаю пока, как подробно изобразить, да и надо ли. А здесь очень грубо описано. Да и ужимать надо бы текст.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeStart[1]",
+        "paragraph_index": 49,
+        "paragraph_text": "Алгоритм первичного отбора осциллограмм ОЗЗ"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeEnd[1]",
+        "paragraph_index": 49,
+        "paragraph_text": "Алгоритм первичного отбора осциллограмм ОЗЗ"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:r[3]/w:commentReference",
+        "paragraph_index": 49,
+        "paragraph_text": "Алгоритм первичного отбора осциллограмм ОЗЗ"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "19",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "19",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T15:39:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Так-то код довольно большой и сложный, хотя сами критерия там и можно выписать. Но надо ли это здесь вообще?"
+    ],
+    "text": "Так-то код довольно большой и сложный, хотя сами критерия там и можно выписать. Но надо ли это здесь вообще?",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeStart[2]",
+        "paragraph_index": 49,
+        "paragraph_text": "Алгоритм первичного отбора осциллограмм ОЗЗ"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeEnd[2]",
+        "paragraph_index": 49,
+        "paragraph_text": "Алгоритм первичного отбора осциллограмм ОЗЗ"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:r[4]/w:commentReference",
+        "paragraph_index": 49,
+        "paragraph_text": "Алгоритм первичного отбора осциллограмм ОЗЗ"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "20",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "20",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Valery Valery",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-13T15:14:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "VV"
+    },
+    "paragraphs": [
+      "Сколько осциллограмм ты обработал «вручную»?"
+    ],
+    "text": "Сколько осциллограмм ты обработал «вручную»?",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[51]/w:commentRangeStart[1]",
+        "paragraph_index": 53,
+        "paragraph_text": "Следующим этапом стала обязательная ручная верификация всех отобранных алгоритмом осциллограмм. Целью данной процедуры была очистка выборки от ложноположительных срабатываний, уточнение границ ОЗЗ и корректировка расчетных значений перенапряжений в сложных случаях. В процессе верификации была выявлена и систематизирована целая группа проблем, ограничивающих эффективность полностью автоматического анализа."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[51]/w:commentRangeEnd[1]",
+        "paragraph_index": 53,
+        "paragraph_text": "Следующим этапом стала обязательная ручная верификация всех отобранных алгоритмом осциллограмм. Целью данной процедуры была очистка выборки от ложноположительных срабатываний, уточнение границ ОЗЗ и корректировка расчетных значений перенапряжений в сложных случаях. В процессе верификации была выявлена и систематизирована целая группа проблем, ограничивающих эффективность полностью автоматического анализа."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[51]/w:r[3]/w:commentReference",
+        "paragraph_index": 53,
+        "paragraph_text": "Следующим этапом стала обязательная ручная верификация всех отобранных алгоритмом осциллограмм. Целью данной процедуры была очистка выборки от ложноположительных срабатываний, уточнение границ ОЗЗ и корректировка расчетных значений перенапряжений в сложных случаях. В процессе верификации была выявлена и систематизирована целая группа проблем, ограничивающих эффективность полностью автоматического анализа."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "21",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "21",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:07:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Все… Добавил про это. А число указано в таблице"
+    ],
+    "text": "Все… Добавил про это. А число указано в таблице",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[51]/w:commentRangeStart[2]",
+        "paragraph_index": 53,
+        "paragraph_text": "Следующим этапом стала обязательная ручная верификация всех отобранных алгоритмом осциллограмм. Целью данной процедуры была очистка выборки от ложноположительных срабатываний, уточнение границ ОЗЗ и корректировка расчетных значений перенапряжений в сложных случаях. В процессе верификации была выявлена и систематизирована целая группа проблем, ограничивающих эффективность полностью автоматического анализа."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[51]/w:commentRangeEnd[2]",
+        "paragraph_index": 53,
+        "paragraph_text": "Следующим этапом стала обязательная ручная верификация всех отобранных алгоритмом осциллограмм. Целью данной процедуры была очистка выборки от ложноположительных срабатываний, уточнение границ ОЗЗ и корректировка расчетных значений перенапряжений в сложных случаях. В процессе верификации была выявлена и систематизирована целая группа проблем, ограничивающих эффективность полностью автоматического анализа."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[51]/w:r[4]/w:commentReference",
+        "paragraph_index": 53,
+        "paragraph_text": "Следующим этапом стала обязательная ручная верификация всех отобранных алгоритмом осциллограмм. Целью данной процедуры была очистка выборки от ложноположительных срабатываний, уточнение границ ОЗЗ и корректировка расчетных значений перенапряжений в сложных случаях. В процессе верификации была выявлена и систематизирована целая группа проблем, ограничивающих эффективность полностью автоматического анализа."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "22",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "22",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T11:40:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Таблицу надо будет расположить на 1 листе."
+    ],
+    "text": "Таблицу надо будет расположить на 1 листе.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[53]/w:commentRangeStart",
+        "paragraph_index": 55,
+        "paragraph_text": "Результаты отбора осциллограмм"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[53]/w:commentRangeEnd",
+        "paragraph_index": 55,
+        "paragraph_text": "Результаты отбора осциллограмм"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[53]/w:r[2]/w:commentReference",
+        "paragraph_index": 55,
+        "paragraph_text": "Результаты отбора осциллограмм"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "24",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "24",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Valery Valery",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-13T15:17:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "VV"
+    },
+    "paragraphs": [
+      "Длительное?"
+    ],
+    "text": "Длительное?",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[57]/w:commentRangeStart[1]",
+        "paragraph_index": 100,
+        "paragraph_text": "Одной из основных проблем при анализе режимов с высокими перенапряжениями является нелинейность характеристик измерительных трансформаторов напряжения (ТН) и промежуточных датчиков напряжений в устройствах РЗА, а также ограниченность входов АЦП. При значительном увеличении напряжения на неповрежденных фазах сердечник ТН может войти в режим насыщения. Обычно производителями заявляется длительное напряжение порядка 1,9÷2 Uном. Также указанные входа АЦП измерительных устройств могут быть не рассчитаны на такие значения, что приводит к переходу АЦП в режим «плато». Типичный пример такого явления показан на рисунке 2."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[57]/w:commentRangeEnd[1]",
+        "paragraph_index": 100,
+        "paragraph_text": "Одной из основных проблем при анализе режимов с высокими перенапряжениями является нелинейность характеристик измерительных трансформаторов напряжения (ТН) и промежуточных датчиков напряжений в устройствах РЗА, а также ограниченность входов АЦП. При значительном увеличении напряжения на неповрежденных фазах сердечник ТН может войти в режим насыщения. Обычно производителями заявляется длительное напряжение порядка 1,9÷2 Uном. Также указанные входа АЦП измерительных устройств могут быть не рассчитаны на такие значения, что приводит к переходу АЦП в режим «плато». Типичный пример такого явления показан на рисунке 2."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[57]/w:r[11]/w:commentReference",
+        "paragraph_index": 100,
+        "paragraph_text": "Одной из основных проблем при анализе режимов с высокими перенапряжениями является нелинейность характеристик измерительных трансформаторов напряжения (ТН) и промежуточных датчиков напряжений в устройствах РЗА, а также ограниченность входов АЦП. При значительном увеличении напряжения на неповрежденных фазах сердечник ТН может войти в режим насыщения. Обычно производителями заявляется длительное напряжение порядка 1,9÷2 Uном. Также указанные входа АЦП измерительных устройств могут быть не рассчитаны на такие значения, что приводит к переходу АЦП в режим «плато». Типичный пример такого явления показан на рисунке 2."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "25",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "25",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T11:40:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Да, вроде бы это длительное предельное. Так что поправил."
+    ],
+    "text": "Да, вроде бы это длительное предельное. Так что поправил.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[57]/w:commentRangeStart[2]",
+        "paragraph_index": 100,
+        "paragraph_text": "Одной из основных проблем при анализе режимов с высокими перенапряжениями является нелинейность характеристик измерительных трансформаторов напряжения (ТН) и промежуточных датчиков напряжений в устройствах РЗА, а также ограниченность входов АЦП. При значительном увеличении напряжения на неповрежденных фазах сердечник ТН может войти в режим насыщения. Обычно производителями заявляется длительное напряжение порядка 1,9÷2 Uном. Также указанные входа АЦП измерительных устройств могут быть не рассчитаны на такие значения, что приводит к переходу АЦП в режим «плато». Типичный пример такого явления показан на рисунке 2."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[57]/w:commentRangeEnd[2]",
+        "paragraph_index": 100,
+        "paragraph_text": "Одной из основных проблем при анализе режимов с высокими перенапряжениями является нелинейность характеристик измерительных трансформаторов напряжения (ТН) и промежуточных датчиков напряжений в устройствах РЗА, а также ограниченность входов АЦП. При значительном увеличении напряжения на неповрежденных фазах сердечник ТН может войти в режим насыщения. Обычно производителями заявляется длительное напряжение порядка 1,9÷2 Uном. Также указанные входа АЦП измерительных устройств могут быть не рассчитаны на такие значения, что приводит к переходу АЦП в режим «плато». Типичный пример такого явления показан на рисунке 2."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[57]/w:r[12]/w:commentReference",
+        "paragraph_index": 100,
+        "paragraph_text": "Одной из основных проблем при анализе режимов с высокими перенапряжениями является нелинейность характеристик измерительных трансформаторов напряжения (ТН) и промежуточных датчиков напряжений в устройствах РЗА, а также ограниченность входов АЦП. При значительном увеличении напряжения на неповрежденных фазах сердечник ТН может войти в режим насыщения. Обычно производителями заявляется длительное напряжение порядка 1,9÷2 Uном. Также указанные входа АЦП измерительных устройств могут быть не рассчитаны на такие значения, что приводит к переходу АЦП в режим «плато». Типичный пример такого явления показан на рисунке 2."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "26",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "26",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Valery Valery",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-13T15:18:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "VV"
+    },
+    "paragraphs": [
+      "Не уверена про плато, мб ковычки добавить"
+    ],
+    "text": "Не уверена про плато, мб ковычки добавить",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[57]/w:commentRangeStart[3]",
+        "paragraph_index": 100,
+        "paragraph_text": "Одной из основных проблем при анализе режимов с высокими перенапряжениями является нелинейность характеристик измерительных трансформаторов напряжения (ТН) и промежуточных датчиков напряжений в устройствах РЗА, а также ограниченность входов АЦП. При значительном увеличении напряжения на неповрежденных фазах сердечник ТН может войти в режим насыщения. Обычно производителями заявляется длительное напряжение порядка 1,9÷2 Uном. Также указанные входа АЦП измерительных устройств могут быть не рассчитаны на такие значения, что приводит к переходу АЦП в режим «плато». Типичный пример такого явления показан на рисунке 2."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[57]/w:commentRangeEnd[3]",
+        "paragraph_index": 100,
+        "paragraph_text": "Одной из основных проблем при анализе режимов с высокими перенапряжениями является нелинейность характеристик измерительных трансформаторов напряжения (ТН) и промежуточных датчиков напряжений в устройствах РЗА, а также ограниченность входов АЦП. При значительном увеличении напряжения на неповрежденных фазах сердечник ТН может войти в режим насыщения. Обычно производителями заявляется длительное напряжение порядка 1,9÷2 Uном. Также указанные входа АЦП измерительных устройств могут быть не рассчитаны на такие значения, что приводит к переходу АЦП в режим «плато». Типичный пример такого явления показан на рисунке 2."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[57]/w:r[25]/w:commentReference",
+        "paragraph_index": 100,
+        "paragraph_text": "Одной из основных проблем при анализе режимов с высокими перенапряжениями является нелинейность характеристик измерительных трансформаторов напряжения (ТН) и промежуточных датчиков напряжений в устройствах РЗА, а также ограниченность входов АЦП. При значительном увеличении напряжения на неповрежденных фазах сердечник ТН может войти в режим насыщения. Обычно производителями заявляется длительное напряжение порядка 1,9÷2 Uном. Также указанные входа АЦП измерительных устройств могут быть не рассчитаны на такие значения, что приводит к переходу АЦП в режим «плато». Типичный пример такого явления показан на рисунке 2."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "27",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "27",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:25:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Да, добавил, возражений не имею."
+    ],
+    "text": "Да, добавил, возражений не имею.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[57]/w:commentRangeStart[4]",
+        "paragraph_index": 100,
+        "paragraph_text": "Одной из основных проблем при анализе режимов с высокими перенапряжениями является нелинейность характеристик измерительных трансформаторов напряжения (ТН) и промежуточных датчиков напряжений в устройствах РЗА, а также ограниченность входов АЦП. При значительном увеличении напряжения на неповрежденных фазах сердечник ТН может войти в режим насыщения. Обычно производителями заявляется длительное напряжение порядка 1,9÷2 Uном. Также указанные входа АЦП измерительных устройств могут быть не рассчитаны на такие значения, что приводит к переходу АЦП в режим «плато». Типичный пример такого явления показан на рисунке 2."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[57]/w:commentRangeEnd[4]",
+        "paragraph_index": 100,
+        "paragraph_text": "Одной из основных проблем при анализе режимов с высокими перенапряжениями является нелинейность характеристик измерительных трансформаторов напряжения (ТН) и промежуточных датчиков напряжений в устройствах РЗА, а также ограниченность входов АЦП. При значительном увеличении напряжения на неповрежденных фазах сердечник ТН может войти в режим насыщения. Обычно производителями заявляется длительное напряжение порядка 1,9÷2 Uном. Также указанные входа АЦП измерительных устройств могут быть не рассчитаны на такие значения, что приводит к переходу АЦП в режим «плато». Типичный пример такого явления показан на рисунке 2."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[57]/w:r[26]/w:commentReference",
+        "paragraph_index": 100,
+        "paragraph_text": "Одной из основных проблем при анализе режимов с высокими перенапряжениями является нелинейность характеристик измерительных трансформаторов напряжения (ТН) и промежуточных датчиков напряжений в устройствах РЗА, а также ограниченность входов АЦП. При значительном увеличении напряжения на неповрежденных фазах сердечник ТН может войти в режим насыщения. Обычно производителями заявляется длительное напряжение порядка 1,9÷2 Uном. Также указанные входа АЦП измерительных устройств могут быть не рассчитаны на такие значения, что приводит к переходу АЦП в режим «плато». Типичный пример такого явления показан на рисунке 2."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "28",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "28",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T11:12:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "91520d105c0e0f6d5ba179d5ead3e967"
+    ],
+    "text": "91520d105c0e0f6d5ba179d5ead3e967",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[3]/w:tr[2]/w:tc/w:p/w:commentRangeStart",
+        "paragraph_index": 103,
+        "paragraph_text": "Искажение формы напряжения на неповрежденных фазах"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[3]/w:tr[2]/w:tc/w:p/w:commentRangeEnd",
+        "paragraph_index": 103,
+        "paragraph_text": "Искажение формы напряжения на неповрежденных фазах"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[3]/w:tr[2]/w:tc/w:p/w:r[2]/w:commentReference",
+        "paragraph_index": 103,
+        "paragraph_text": "Искажение формы напряжения на неповрежденных фазах"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "29",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "29",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Valery Valery",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-13T15:19:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "VV"
+    },
+    "paragraphs": [
+      "Где-то пораньше этот термин введи"
+    ],
+    "text": "Где-то пораньше этот термин введи",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[60]/w:commentRangeStart[1]",
+        "paragraph_index": 105,
+        "paragraph_text": "Важной особенностью анализируемого набора осциллограмм является его статистическое смещение, обусловленное источником записей. Значительная часть осциллограмм была зарегистрирована устройствами быстродействующего автоматического ввода резерва (БАВР). Следовательно, в выборке преобладают случаи, когда исходное однофазное замыкание на землю развилось в двух- или трёхфазное короткое замыкание, что и вызвало срабатывание защиты. Это накладывает отпечаток на динамику процесса: осциллограмма отражает не «чистое» ОЗЗ, а сложный переходный процесс, включающий моменты замыкания на других фазах и последующего отключения (Рисунок 3). Данный факт необходимо учитывать при интерпретации выводов на все случаи ОЗЗ, часть из которых может быть устранена до перехода в междуфазное замыкание."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[60]/w:commentRangeEnd[1]",
+        "paragraph_index": 105,
+        "paragraph_text": "Важной особенностью анализируемого набора осциллограмм является его статистическое смещение, обусловленное источником записей. Значительная часть осциллограмм была зарегистрирована устройствами быстродействующего автоматического ввода резерва (БАВР). Следовательно, в выборке преобладают случаи, когда исходное однофазное замыкание на землю развилось в двух- или трёхфазное короткое замыкание, что и вызвало срабатывание защиты. Это накладывает отпечаток на динамику процесса: осциллограмма отражает не «чистое» ОЗЗ, а сложный переходный процесс, включающий моменты замыкания на других фазах и последующего отключения (Рисунок 3). Данный факт необходимо учитывать при интерпретации выводов на все случаи ОЗЗ, часть из которых может быть устранена до перехода в междуфазное замыкание."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[60]/w:r[5]/w:commentReference",
+        "paragraph_index": 105,
+        "paragraph_text": "Важной особенностью анализируемого набора осциллограмм является его статистическое смещение, обусловленное источником записей. Значительная часть осциллограмм была зарегистрирована устройствами быстродействующего автоматического ввода резерва (БАВР). Следовательно, в выборке преобладают случаи, когда исходное однофазное замыкание на землю развилось в двух- или трёхфазное короткое замыкание, что и вызвало срабатывание защиты. Это накладывает отпечаток на динамику процесса: осциллограмма отражает не «чистое» ОЗЗ, а сложный переходный процесс, включающий моменты замыкания на других фазах и последующего отключения (Рисунок 3). Данный факт необходимо учитывать при интерпретации выводов на все случаи ОЗЗ, часть из которых может быть устранена до перехода в междуфазное замыкание."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "30",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "30",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:24:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Поменял датасет на «набор осциллограмм»."
+    ],
+    "text": "Поменял датасет на «набор осциллограмм».",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[60]/w:commentRangeStart[2]",
+        "paragraph_index": 105,
+        "paragraph_text": "Важной особенностью анализируемого набора осциллограмм является его статистическое смещение, обусловленное источником записей. Значительная часть осциллограмм была зарегистрирована устройствами быстродействующего автоматического ввода резерва (БАВР). Следовательно, в выборке преобладают случаи, когда исходное однофазное замыкание на землю развилось в двух- или трёхфазное короткое замыкание, что и вызвало срабатывание защиты. Это накладывает отпечаток на динамику процесса: осциллограмма отражает не «чистое» ОЗЗ, а сложный переходный процесс, включающий моменты замыкания на других фазах и последующего отключения (Рисунок 3). Данный факт необходимо учитывать при интерпретации выводов на все случаи ОЗЗ, часть из которых может быть устранена до перехода в междуфазное замыкание."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[60]/w:commentRangeEnd[2]",
+        "paragraph_index": 105,
+        "paragraph_text": "Важной особенностью анализируемого набора осциллограмм является его статистическое смещение, обусловленное источником записей. Значительная часть осциллограмм была зарегистрирована устройствами быстродействующего автоматического ввода резерва (БАВР). Следовательно, в выборке преобладают случаи, когда исходное однофазное замыкание на землю развилось в двух- или трёхфазное короткое замыкание, что и вызвало срабатывание защиты. Это накладывает отпечаток на динамику процесса: осциллограмма отражает не «чистое» ОЗЗ, а сложный переходный процесс, включающий моменты замыкания на других фазах и последующего отключения (Рисунок 3). Данный факт необходимо учитывать при интерпретации выводов на все случаи ОЗЗ, часть из которых может быть устранена до перехода в междуфазное замыкание."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[60]/w:r[6]/w:commentReference",
+        "paragraph_index": 105,
+        "paragraph_text": "Важной особенностью анализируемого набора осциллограмм является его статистическое смещение, обусловленное источником записей. Значительная часть осциллограмм была зарегистрирована устройствами быстродействующего автоматического ввода резерва (БАВР). Следовательно, в выборке преобладают случаи, когда исходное однофазное замыкание на землю развилось в двух- или трёхфазное короткое замыкание, что и вызвало срабатывание защиты. Это накладывает отпечаток на динамику процесса: осциллограмма отражает не «чистое» ОЗЗ, а сложный переходный процесс, включающий моменты замыкания на других фазах и последующего отключения (Рисунок 3). Данный факт необходимо учитывать при интерпретации выводов на все случаи ОЗЗ, часть из которых может быть устранена до перехода в междуфазное замыкание."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "31",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "31",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:24:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Если честно, корёжит от подобных переименовывай. Но ладно, понимаю, что статья не в IT."
+    ],
+    "text": "Если честно, корёжит от подобных переименовывай. Но ладно, понимаю, что статья не в IT.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[60]/w:commentRangeStart[3]",
+        "paragraph_index": 105,
+        "paragraph_text": "Важной особенностью анализируемого набора осциллограмм является его статистическое смещение, обусловленное источником записей. Значительная часть осциллограмм была зарегистрирована устройствами быстродействующего автоматического ввода резерва (БАВР). Следовательно, в выборке преобладают случаи, когда исходное однофазное замыкание на землю развилось в двух- или трёхфазное короткое замыкание, что и вызвало срабатывание защиты. Это накладывает отпечаток на динамику процесса: осциллограмма отражает не «чистое» ОЗЗ, а сложный переходный процесс, включающий моменты замыкания на других фазах и последующего отключения (Рисунок 3). Данный факт необходимо учитывать при интерпретации выводов на все случаи ОЗЗ, часть из которых может быть устранена до перехода в междуфазное замыкание."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[60]/w:commentRangeEnd[3]",
+        "paragraph_index": 105,
+        "paragraph_text": "Важной особенностью анализируемого набора осциллограмм является его статистическое смещение, обусловленное источником записей. Значительная часть осциллограмм была зарегистрирована устройствами быстродействующего автоматического ввода резерва (БАВР). Следовательно, в выборке преобладают случаи, когда исходное однофазное замыкание на землю развилось в двух- или трёхфазное короткое замыкание, что и вызвало срабатывание защиты. Это накладывает отпечаток на динамику процесса: осциллограмма отражает не «чистое» ОЗЗ, а сложный переходный процесс, включающий моменты замыкания на других фазах и последующего отключения (Рисунок 3). Данный факт необходимо учитывать при интерпретации выводов на все случаи ОЗЗ, часть из которых может быть устранена до перехода в междуфазное замыкание."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[60]/w:r[7]/w:commentReference",
+        "paragraph_index": 105,
+        "paragraph_text": "Важной особенностью анализируемого набора осциллограмм является его статистическое смещение, обусловленное источником записей. Значительная часть осциллограмм была зарегистрирована устройствами быстродействующего автоматического ввода резерва (БАВР). Следовательно, в выборке преобладают случаи, когда исходное однофазное замыкание на землю развилось в двух- или трёхфазное короткое замыкание, что и вызвало срабатывание защиты. Это накладывает отпечаток на динамику процесса: осциллограмма отражает не «чистое» ОЗЗ, а сложный переходный процесс, включающий моменты замыкания на других фазах и последующего отключения (Рисунок 3). Данный факт необходимо учитывать при интерпретации выводов на все случаи ОЗЗ, часть из которых может быть устранена до перехода в междуфазное замыкание."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "32",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "32",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T11:13:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "e0cfe7f6aea62f117cf2b595798c4324"
+    ],
+    "text": "e0cfe7f6aea62f117cf2b595798c4324",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p/w:commentRangeStart[1]",
+        "paragraph_index": 107,
+        "paragraph_text": "Осциллограмма перехода ОЗЗ в многофазное КЗ. 1 – доаварийный режим, 2 – ОЗЗ, 3 – многофазное КЗ, 4 отключение вводного выключателя, 5 – послеаварийный режим (включение СВ)"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p/w:commentRangeEnd[1]",
+        "paragraph_index": 107,
+        "paragraph_text": "Осциллограмма перехода ОЗЗ в многофазное КЗ. 1 – доаварийный режим, 2 – ОЗЗ, 3 – многофазное КЗ, 4 отключение вводного выключателя, 5 – послеаварийный режим (включение СВ)"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p/w:r[2]/w:commentReference",
+        "paragraph_index": 107,
+        "paragraph_text": "Осциллограмма перехода ОЗЗ в многофазное КЗ. 1 – доаварийный режим, 2 – ОЗЗ, 3 – многофазное КЗ, 4 отключение вводного выключателя, 5 – послеаварийный режим (включение СВ)"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "33",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "33",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Valery Valery",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-13T15:20:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "VV"
+    },
+    "paragraphs": [
+      "А вот прямо тут можно выделить границы, где ОЗЗ, где КЗ и так далее",
+      "Не просто стрелочки, я прям подписать"
+    ],
+    "text": "А вот прямо тут можно выделить границы, где ОЗЗ, где КЗ и так далее\nНе просто стрелочки, я прям подписать",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p/w:commentRangeStart[2]",
+        "paragraph_index": 107,
+        "paragraph_text": "Осциллограмма перехода ОЗЗ в многофазное КЗ. 1 – доаварийный режим, 2 – ОЗЗ, 3 – многофазное КЗ, 4 отключение вводного выключателя, 5 – послеаварийный режим (включение СВ)"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p/w:commentRangeEnd[2]",
+        "paragraph_index": 107,
+        "paragraph_text": "Осциллограмма перехода ОЗЗ в многофазное КЗ. 1 – доаварийный режим, 2 – ОЗЗ, 3 – многофазное КЗ, 4 отключение вводного выключателя, 5 – послеаварийный режим (включение СВ)"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p/w:r[5]/w:commentReference",
+        "paragraph_index": 107,
+        "paragraph_text": "Осциллограмма перехода ОЗЗ в многофазное КЗ. 1 – доаварийный режим, 2 – ОЗЗ, 3 – многофазное КЗ, 4 отключение вводного выключателя, 5 – послеаварийный режим (включение СВ)"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "34",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "34",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:09:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Ок, сделаю"
+    ],
+    "text": "Ок, сделаю",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p/w:commentRangeStart[3]",
+        "paragraph_index": 107,
+        "paragraph_text": "Осциллограмма перехода ОЗЗ в многофазное КЗ. 1 – доаварийный режим, 2 – ОЗЗ, 3 – многофазное КЗ, 4 отключение вводного выключателя, 5 – послеаварийный режим (включение СВ)"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p/w:commentRangeEnd[3]",
+        "paragraph_index": 107,
+        "paragraph_text": "Осциллограмма перехода ОЗЗ в многофазное КЗ. 1 – доаварийный режим, 2 – ОЗЗ, 3 – многофазное КЗ, 4 отключение вводного выключателя, 5 – послеаварийный режим (включение СВ)"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p/w:r[6]/w:commentReference",
+        "paragraph_index": 107,
+        "paragraph_text": "Осциллограмма перехода ОЗЗ в многофазное КЗ. 1 – доаварийный режим, 2 – ОЗЗ, 3 – многофазное КЗ, 4 отключение вводного выключателя, 5 – послеаварийный режим (включение СВ)"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "35",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "35",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T11:15:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "d52ba93e0421174d3b64b3d6ef25129c"
+    ],
+    "text": "d52ba93e0421174d3b64b3d6ef25129c",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[5]/w:tr[2]/w:tc/w:p/w:commentRangeStart",
+        "paragraph_index": 111,
+        "paragraph_text": "Коммутационный процесс и его перенапряжение."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[5]/w:tr[2]/w:tc/w:p/w:commentRangeEnd",
+        "paragraph_index": 111,
+        "paragraph_text": "Коммутационный процесс и его перенапряжение."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[5]/w:tr[2]/w:tc/w:p/w:r[2]/w:commentReference",
+        "paragraph_index": 111,
+        "paragraph_text": "Коммутационный процесс и его перенапряжение."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "36",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "36",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Valery Valery",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-13T15:21:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "VV"
+    },
+    "paragraphs": [
+      "От этого она может ложно сработать или что?",
+      "Являются ли они кратковременными?",
+      "Это мешает только нам в данном случае для классификации или есть еще что то",
+      ""
+    ],
+    "text": "От этого она может ложно сработать или что?\nЯвляются ли они кратковременными?\nЭто мешает только нам в данном случае для классификации или есть еще что то\n",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[66]/w:commentRangeStart[1]",
+        "paragraph_index": 115,
+        "paragraph_text": "Так же коммутационные процессы в сети могут генерировать броски напряжений нулевой последовательности, которые алгоритмы первичного отбора интерпретируют как признаки ОЗЗ. Особенно это характерно для секций шин, находящихся в «холостом» режиме, где отсутствует инерционная нагрузка, способная демпфировать высокочастотные колебания (Рисунке 5)."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[66]/w:commentRangeEnd[1]",
+        "paragraph_index": 115,
+        "paragraph_text": "Так же коммутационные процессы в сети могут генерировать броски напряжений нулевой последовательности, которые алгоритмы первичного отбора интерпретируют как признаки ОЗЗ. Особенно это характерно для секций шин, находящихся в «холостом» режиме, где отсутствует инерционная нагрузка, способная демпфировать высокочастотные колебания (Рисунке 5)."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[66]/w:r[4]/w:commentReference",
+        "paragraph_index": 115,
+        "paragraph_text": "Так же коммутационные процессы в сети могут генерировать броски напряжений нулевой последовательности, которые алгоритмы первичного отбора интерпретируют как признаки ОЗЗ. Особенно это характерно для секций шин, находящихся в «холостом» режиме, где отсутствует инерционная нагрузка, способная демпфировать высокочастотные колебания (Рисунке 5)."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "37",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "37",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:26:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Нуу… Да, это очень сильно мешает нам сейчас, и первичные алгоритмы косячат. Про это как раз раздел.",
+      "",
+      "А так, ещё наш БАВР сиё не любит и может ложно себя вести, но это не совсем к такой осциллограмме."
+    ],
+    "text": "Нуу… Да, это очень сильно мешает нам сейчас, и первичные алгоритмы косячат. Про это как раз раздел.\n\nА так, ещё наш БАВР сиё не любит и может ложно себя вести, но это не совсем к такой осциллограмме.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[66]/w:commentRangeStart[2]",
+        "paragraph_index": 115,
+        "paragraph_text": "Так же коммутационные процессы в сети могут генерировать броски напряжений нулевой последовательности, которые алгоритмы первичного отбора интерпретируют как признаки ОЗЗ. Особенно это характерно для секций шин, находящихся в «холостом» режиме, где отсутствует инерционная нагрузка, способная демпфировать высокочастотные колебания (Рисунке 5)."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[66]/w:commentRangeEnd[2]",
+        "paragraph_index": 115,
+        "paragraph_text": "Так же коммутационные процессы в сети могут генерировать броски напряжений нулевой последовательности, которые алгоритмы первичного отбора интерпретируют как признаки ОЗЗ. Особенно это характерно для секций шин, находящихся в «холостом» режиме, где отсутствует инерционная нагрузка, способная демпфировать высокочастотные колебания (Рисунке 5)."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[66]/w:r[5]/w:commentReference",
+        "paragraph_index": 115,
+        "paragraph_text": "Так же коммутационные процессы в сети могут генерировать броски напряжений нулевой последовательности, которые алгоритмы первичного отбора интерпретируют как признаки ОЗЗ. Особенно это характерно для секций шин, находящихся в «холостом» режиме, где отсутствует инерционная нагрузка, способная демпфировать высокочастотные колебания (Рисунке 5)."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "38",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "38",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T11:15:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "72f8a458baa9f9af869a74009e920be7"
+    ],
+    "text": "72f8a458baa9f9af869a74009e920be7",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[6]/w:tr[2]/w:tc/w:p/w:commentRangeStart",
+        "paragraph_index": 117,
+        "paragraph_text": "Коммутационный  процесс, имитирующий ОЗЗ."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[6]/w:tr[2]/w:tc/w:p/w:commentRangeEnd",
+        "paragraph_index": 117,
+        "paragraph_text": "Коммутационный  процесс, имитирующий ОЗЗ."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[6]/w:tr[2]/w:tc/w:p/w:r[2]/w:commentReference",
+        "paragraph_index": 117,
+        "paragraph_text": "Коммутационный  процесс, имитирующий ОЗЗ."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "39",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "39",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T11:37:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "d8e57e692fd29447706bec5885daebf3"
+    ],
+    "text": "d8e57e692fd29447706bec5885daebf3",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[7]/w:tr[2]/w:tc/w:p/w:commentRangeStart",
+        "paragraph_index": 121,
+        "paragraph_text": "Осциллограмма слабовыраженного (затухающего) ОЗЗ"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[7]/w:tr[2]/w:tc/w:p/w:commentRangeEnd",
+        "paragraph_index": 121,
+        "paragraph_text": "Осциллограмма слабовыраженного (затухающего) ОЗЗ"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[7]/w:tr[2]/w:tc/w:p/w:r[2]/w:commentReference",
+        "paragraph_index": 121,
+        "paragraph_text": "Осциллограмма слабовыраженного (затухающего) ОЗЗ"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "41",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "41",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Valery Valery",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-13T15:23:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "VV"
+    },
+    "paragraphs": [
+      "А ты их как-то отсеивал? Ты знал, где какой датчик?"
+    ],
+    "text": "А ты их как-то отсеивал? Ты знал, где какой датчик?",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[72]/w:commentRangeStart[1]",
+        "paragraph_index": 125,
+        "paragraph_text": "Традиционные электромагнитные ТН обладают инерционностью и могут сглаживать/занижать быстрые пики перенапряжений. В то же время, современные ёмкостные, обладая более широкой полосой пропускания, могут регистрировать излишние высокочастотные всплески, не связанные с основной гармоникой процесса."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[72]/w:commentRangeEnd[1]",
+        "paragraph_index": 125,
+        "paragraph_text": "Традиционные электромагнитные ТН обладают инерционностью и могут сглаживать/занижать быстрые пики перенапряжений. В то же время, современные ёмкостные, обладая более широкой полосой пропускания, могут регистрировать излишние высокочастотные всплески, не связанные с основной гармоникой процесса."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[72]/w:r[5]/w:commentReference",
+        "paragraph_index": 125,
+        "paragraph_text": "Традиционные электромагнитные ТН обладают инерционностью и могут сглаживать/занижать быстрые пики перенапряжений. В то же время, современные ёмкостные, обладая более широкой полосой пропускания, могут регистрировать излишние высокочастотные всплески, не связанные с основной гармоникой процесса."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "42",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "42",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:27:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "На некоторых осциллограммах, да, знал и прост смотрел (там только ТН на КЛ + видно сильное зашумление тока). Хотя таких случаев всего несколько было. ",
+      "",
+      "А так это скорее больше память от наладки БАВР с Тавридовскими измерительными цепями, там были подобные заморочки."
+    ],
+    "text": "На некоторых осциллограммах, да, знал и прост смотрел (там только ТН на КЛ + видно сильное зашумление тока). Хотя таких случаев всего несколько было. \n\nА так это скорее больше память от наладки БАВР с Тавридовскими измерительными цепями, там были подобные заморочки.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[72]/w:commentRangeStart[2]",
+        "paragraph_index": 125,
+        "paragraph_text": "Традиционные электромагнитные ТН обладают инерционностью и могут сглаживать/занижать быстрые пики перенапряжений. В то же время, современные ёмкостные, обладая более широкой полосой пропускания, могут регистрировать излишние высокочастотные всплески, не связанные с основной гармоникой процесса."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[72]/w:commentRangeEnd[2]",
+        "paragraph_index": 125,
+        "paragraph_text": "Традиционные электромагнитные ТН обладают инерционностью и могут сглаживать/занижать быстрые пики перенапряжений. В то же время, современные ёмкостные, обладая более широкой полосой пропускания, могут регистрировать излишние высокочастотные всплески, не связанные с основной гармоникой процесса."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[72]/w:r[6]/w:commentReference",
+        "paragraph_index": 125,
+        "paragraph_text": "Традиционные электромагнитные ТН обладают инерционностью и могут сглаживать/занижать быстрые пики перенапряжений. В то же время, современные ёмкостные, обладая более широкой полосой пропускания, могут регистрировать излишние высокочастотные всплески, не связанные с основной гармоникой процесса."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "45",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "45",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Valery Valery",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-13T15:24:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "VV"
+    },
+    "paragraphs": [
+      "Алексей, откуда ты берешь эти слова))) ну каких еще сигнатур",
+      "Осциллограмм? ",
+      "Процессов?"
+    ],
+    "text": "Алексей, откуда ты берешь эти слова))) ну каких еще сигнатур\nОсциллограмм? \nПроцессов?",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[76]/w:commentRangeStart[1]",
+        "paragraph_index": 129,
+        "paragraph_text": "2) В ходе экспертной верификации выявлен и систематизирован ряд нетривиальных явлений, критически усложняющих автоматическую интерпретацию осциллограмм. Ключевыми из них являются: искажение формы сигналов из-за нелинейности измерительных трансформаторов, развитие ОЗЗ в многофазные короткие замыкания, а также схожесть формы протекающих процессов при ОЗЗ и коммутациях."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[76]/w:commentRangeEnd[1]",
+        "paragraph_index": 129,
+        "paragraph_text": "2) В ходе экспертной верификации выявлен и систематизирован ряд нетривиальных явлений, критически усложняющих автоматическую интерпретацию осциллограмм. Ключевыми из них являются: искажение формы сигналов из-за нелинейности измерительных трансформаторов, развитие ОЗЗ в многофазные короткие замыкания, а также схожесть формы протекающих процессов при ОЗЗ и коммутациях."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[76]/w:r[8]/w:commentReference",
+        "paragraph_index": 129,
+        "paragraph_text": "2) В ходе экспертной верификации выявлен и систематизирован ряд нетривиальных явлений, критически усложняющих автоматическую интерпретацию осциллограмм. Ключевыми из них являются: искажение формы сигналов из-за нелинейности измерительных трансформаторов, развитие ОЗЗ в многофазные короткие замыкания, а также схожесть формы протекающих процессов при ОЗЗ и коммутациях."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "46",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "46",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:09:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Ну это GPT нравится, но согласен, из IT чёт, я обычно там слова такие слышу, когда говорим про модельки и обработку картинок))"
+    ],
+    "text": "Ну это GPT нравится, но согласен, из IT чёт, я обычно там слова такие слышу, когда говорим про модельки и обработку картинок))",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[76]/w:commentRangeStart[2]",
+        "paragraph_index": 129,
+        "paragraph_text": "2) В ходе экспертной верификации выявлен и систематизирован ряд нетривиальных явлений, критически усложняющих автоматическую интерпретацию осциллограмм. Ключевыми из них являются: искажение формы сигналов из-за нелинейности измерительных трансформаторов, развитие ОЗЗ в многофазные короткие замыкания, а также схожесть формы протекающих процессов при ОЗЗ и коммутациях."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[76]/w:commentRangeEnd[2]",
+        "paragraph_index": 129,
+        "paragraph_text": "2) В ходе экспертной верификации выявлен и систематизирован ряд нетривиальных явлений, критически усложняющих автоматическую интерпретацию осциллограмм. Ключевыми из них являются: искажение формы сигналов из-за нелинейности измерительных трансформаторов, развитие ОЗЗ в многофазные короткие замыкания, а также схожесть формы протекающих процессов при ОЗЗ и коммутациях."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[76]/w:r[9]/w:commentReference",
+        "paragraph_index": 129,
+        "paragraph_text": "2) В ходе экспертной верификации выявлен и систематизирован ряд нетривиальных явлений, критически усложняющих автоматическую интерпретацию осциллограмм. Ключевыми из них являются: искажение формы сигналов из-за нелинейности измерительных трансформаторов, развитие ОЗЗ в многофазные короткие замыкания, а также схожесть формы протекающих процессов при ОЗЗ и коммутациях."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "47",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "47",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:12:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Вот блин… А как сказать по русски-то, вроде и формы сигнала, но как-то плохо звучит, ладно сейчас извернусь."
+    ],
+    "text": "Вот блин… А как сказать по русски-то, вроде и формы сигнала, но как-то плохо звучит, ладно сейчас извернусь.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[76]/w:commentRangeStart[3]",
+        "paragraph_index": 129,
+        "paragraph_text": "2) В ходе экспертной верификации выявлен и систематизирован ряд нетривиальных явлений, критически усложняющих автоматическую интерпретацию осциллограмм. Ключевыми из них являются: искажение формы сигналов из-за нелинейности измерительных трансформаторов, развитие ОЗЗ в многофазные короткие замыкания, а также схожесть формы протекающих процессов при ОЗЗ и коммутациях."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[76]/w:commentRangeEnd[3]",
+        "paragraph_index": 129,
+        "paragraph_text": "2) В ходе экспертной верификации выявлен и систематизирован ряд нетривиальных явлений, критически усложняющих автоматическую интерпретацию осциллограмм. Ключевыми из них являются: искажение формы сигналов из-за нелинейности измерительных трансформаторов, развитие ОЗЗ в многофазные короткие замыкания, а также схожесть формы протекающих процессов при ОЗЗ и коммутациях."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[76]/w:r[10]/w:commentReference",
+        "paragraph_index": 129,
+        "paragraph_text": "2) В ходе экспертной верификации выявлен и систематизирован ряд нетривиальных явлений, критически усложняющих автоматическую интерпретацию осциллограмм. Ключевыми из них являются: искажение формы сигналов из-за нелинейности измерительных трансформаторов, развитие ОЗЗ в многофазные короткие замыкания, а также схожесть формы протекающих процессов при ОЗЗ и коммутациях."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "51",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "51",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Valery Valery",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-13T15:25:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "VV"
+    },
+    "paragraphs": [
+      "Ну РЗА добавь тогда, выход на РЗА"
+    ],
+    "text": "Ну РЗА добавь тогда, выход на РЗА",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[77]/w:commentRangeStart[1]",
+        "paragraph_index": 130,
+        "paragraph_text": "3) Проделанная работа демонстрирует, что этап ручной экспертной верификации является неотъемлемой частью подготовки данных для исследований в области РЗА. Созданный эталонный набор, в отличие от синтетических моделей, содержит реальные шумы и переходные процессы, что делает его незаменимой основой для обучения и тестирования робастных интеллектуальных алгоритмов релейной защиты и автоматики."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[77]/w:commentRangeEnd[1]",
+        "paragraph_index": 130,
+        "paragraph_text": "3) Проделанная работа демонстрирует, что этап ручной экспертной верификации является неотъемлемой частью подготовки данных для исследований в области РЗА. Созданный эталонный набор, в отличие от синтетических моделей, содержит реальные шумы и переходные процессы, что делает его незаменимой основой для обучения и тестирования робастных интеллектуальных алгоритмов релейной защиты и автоматики."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[77]/w:r[4]/w:commentReference",
+        "paragraph_index": 130,
+        "paragraph_text": "3) Проделанная работа демонстрирует, что этап ручной экспертной верификации является неотъемлемой частью подготовки данных для исследований в области РЗА. Созданный эталонный набор, в отличие от синтетических моделей, содержит реальные шумы и переходные процессы, что делает его незаменимой основой для обучения и тестирования робастных интеллектуальных алгоритмов релейной защиты и автоматики."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "52",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "52",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:31:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Добавил."
+    ],
+    "text": "Добавил.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[77]/w:commentRangeStart[2]",
+        "paragraph_index": 130,
+        "paragraph_text": "3) Проделанная работа демонстрирует, что этап ручной экспертной верификации является неотъемлемой частью подготовки данных для исследований в области РЗА. Созданный эталонный набор, в отличие от синтетических моделей, содержит реальные шумы и переходные процессы, что делает его незаменимой основой для обучения и тестирования робастных интеллектуальных алгоритмов релейной защиты и автоматики."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[77]/w:commentRangeEnd[2]",
+        "paragraph_index": 130,
+        "paragraph_text": "3) Проделанная работа демонстрирует, что этап ручной экспертной верификации является неотъемлемой частью подготовки данных для исследований в области РЗА. Созданный эталонный набор, в отличие от синтетических моделей, содержит реальные шумы и переходные процессы, что делает его незаменимой основой для обучения и тестирования робастных интеллектуальных алгоритмов релейной защиты и автоматики."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[77]/w:r[5]/w:commentReference",
+        "paragraph_index": 130,
+        "paragraph_text": "3) Проделанная работа демонстрирует, что этап ручной экспертной верификации является неотъемлемой частью подготовки данных для исследований в области РЗА. Созданный эталонный набор, в отличие от синтетических моделей, содержит реальные шумы и переходные процессы, что делает его незаменимой основой для обучения и тестирования робастных интеллектуальных алгоритмов релейной защиты и автоматики."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "53",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "53",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T12:49:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Вот ссылка на него https://figshare.com/articles/dataset/Open_Dataset_of_Real-World_Oscillograms_from_Electric_Power_Grids/28465427/5"
+    ],
+    "text": "Вот ссылка на него https://figshare.com/articles/dataset/Open_Dataset_of_Real-World_Oscillograms_from_Electric_Power_Grids/28465427/5",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[81]/w:commentRangeStart[1]",
+        "paragraph_index": 134,
+        "paragraph_text": "Евдаков А.Е., Филатова Г.А. A A Dataset of Real-World Oscillograms from Electric Power Grids. V. 5 : [Набор данных]. – Figshare, 2024. – URL: https://doi.org/10.6084/m9.figshare.28465427.v5 (дата обращения: 14.10.2025). – DOI: 10.6084/m9.figshare.28465427.v5."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[81]/w:commentRangeEnd[1]",
+        "paragraph_index": 134,
+        "paragraph_text": "Евдаков А.Е., Филатова Г.А. A A Dataset of Real-World Oscillograms from Electric Power Grids. V. 5 : [Набор данных]. – Figshare, 2024. – URL: https://doi.org/10.6084/m9.figshare.28465427.v5 (дата обращения: 14.10.2025). – DOI: 10.6084/m9.figshare.28465427.v5."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[81]/w:r[6]/w:commentReference",
+        "paragraph_index": 134,
+        "paragraph_text": "Евдаков А.Е., Филатова Г.А. A A Dataset of Real-World Oscillograms from Electric Power Grids. V. 5 : [Набор данных]. – Figshare, 2024. – URL: https://doi.org/10.6084/m9.figshare.28465427.v5 (дата обращения: 14.10.2025). – DOI: 10.6084/m9.figshare.28465427.v5."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "54",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "54",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Valery Valery",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-13T15:09:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "VV"
+    },
+    "paragraphs": [
+      "Добавь прямо в литературу",
+      "Можно ссылку на нашу программу для ЭВМ также"
+    ],
+    "text": "Добавь прямо в литературу\nМожно ссылку на нашу программу для ЭВМ также",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[81]/w:commentRangeStart[2]",
+        "paragraph_index": 134,
+        "paragraph_text": "Евдаков А.Е., Филатова Г.А. A A Dataset of Real-World Oscillograms from Electric Power Grids. V. 5 : [Набор данных]. – Figshare, 2024. – URL: https://doi.org/10.6084/m9.figshare.28465427.v5 (дата обращения: 14.10.2025). – DOI: 10.6084/m9.figshare.28465427.v5."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[81]/w:commentRangeEnd[2]",
+        "paragraph_index": 134,
+        "paragraph_text": "Евдаков А.Е., Филатова Г.А. A A Dataset of Real-World Oscillograms from Electric Power Grids. V. 5 : [Набор данных]. – Figshare, 2024. – URL: https://doi.org/10.6084/m9.figshare.28465427.v5 (дата обращения: 14.10.2025). – DOI: 10.6084/m9.figshare.28465427.v5."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[81]/w:r[7]/w:commentReference",
+        "paragraph_index": 134,
+        "paragraph_text": "Евдаков А.Е., Филатова Г.А. A A Dataset of Real-World Oscillograms from Electric Power Grids. V. 5 : [Набор данных]. – Figshare, 2024. – URL: https://doi.org/10.6084/m9.figshare.28465427.v5 (дата обращения: 14.10.2025). – DOI: 10.6084/m9.figshare.28465427.v5."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "55",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "55",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:23:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Ок, сделаю, дабавил. Быть может список автором можно будет ужать"
+    ],
+    "text": "Ок, сделаю, дабавил. Быть может список автором можно будет ужать",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[81]/w:commentRangeStart[3]",
+        "paragraph_index": 134,
+        "paragraph_text": "Евдаков А.Е., Филатова Г.А. A A Dataset of Real-World Oscillograms from Electric Power Grids. V. 5 : [Набор данных]. – Figshare, 2024. – URL: https://doi.org/10.6084/m9.figshare.28465427.v5 (дата обращения: 14.10.2025). – DOI: 10.6084/m9.figshare.28465427.v5."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[81]/w:commentRangeEnd[3]",
+        "paragraph_index": 134,
+        "paragraph_text": "Евдаков А.Е., Филатова Г.А. A A Dataset of Real-World Oscillograms from Electric Power Grids. V. 5 : [Набор данных]. – Figshare, 2024. – URL: https://doi.org/10.6084/m9.figshare.28465427.v5 (дата обращения: 14.10.2025). – DOI: 10.6084/m9.figshare.28465427.v5."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[81]/w:r[23]/w:commentReference",
+        "paragraph_index": 134,
+        "paragraph_text": "Евдаков А.Е., Филатова Г.А. A A Dataset of Real-World Oscillograms from Electric Power Grids. V. 5 : [Набор данных]. – Figshare, 2024. – URL: https://doi.org/10.6084/m9.figshare.28465427.v5 (дата обращения: 14.10.2025). – DOI: 10.6084/m9.figshare.28465427.v5."
+      }
+    ],
+    "decision": "not_reviewed"
+  }
+]

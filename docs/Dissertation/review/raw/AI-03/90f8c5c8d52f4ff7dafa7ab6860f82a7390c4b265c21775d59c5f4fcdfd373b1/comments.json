@@ -1,0 +1,1393 @@
+[
+  {
+    "original_comment_id": "0",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "0",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-04-21T20:57:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Можно чисто на меня статью сделать, можно на всех, тут не принципиально."
+    ],
+    "text": "Можно чисто на меня статью сделать, можно на всех, тут не принципиально.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[6]/w:commentRangeStart",
+        "paragraph_index": 6,
+        "paragraph_text": "Яблоков Андрей Анатольевич "
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[10]/w:commentRangeEnd",
+        "paragraph_index": 10,
+        "paragraph_text": "Официальное название организации, ученая степень, должность, подразделение, страна, город, телефон, адрес электронной почты"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[10]/w:r[3]/w:commentReference",
+        "paragraph_index": 10,
+        "paragraph_text": "Официальное название организации, ученая степень, должность, подразделение, страна, город, телефон, адрес электронной почты"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "4",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "4",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-04-21T21:07:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Само собой сюда много ссылок надо добавить… Литературы почти нет, или совсем нет."
+    ],
+    "text": "Само собой сюда много ссылок надо добавить… Литературы почти нет, или совсем нет.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[44]/w:commentRangeStart",
+        "paragraph_index": 44,
+        "paragraph_text": "1. Введение."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[44]/w:commentRangeEnd",
+        "paragraph_index": 44,
+        "paragraph_text": "1. Введение."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[44]/w:r[3]/w:commentReference",
+        "paragraph_index": 44,
+        "paragraph_text": "1. Введение."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "5",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "5",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-04-21T21:25:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Можно бы вставить работы…"
+    ],
+    "text": "Можно бы вставить работы…",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[47]/w:commentRangeStart",
+        "paragraph_index": 47,
+        "paragraph_text": "Перспективным направлением преодоления этих ограничений является объединение классической электротехники и технологий искусственного интеллекта (ИИ). В предшествующих работах [XX] авторов был сформирован фундаментальный базис для внедрения глубокого машинного обучения в консервативную отрасль энергетики. В частности, было доказано, что обучение нейросетей на мгновенных значениях токов и напряжений («сырых» осциллограммах) сопряжено с избыточной вычислительной нагрузкой и отсутствием физической интерпретируемости. В качестве оптимального признакового пространства был предложен переход к спектральным характеристикам в полярных координатах. На этой базе авторами были успешно реализованы физически-информированные сети Колмогорова-Арнольда, доказавшие свою высокую эффективность в задаче выявления ОЗЗ и ДПОЗЗ."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[47]/w:commentRangeEnd",
+        "paragraph_index": 47,
+        "paragraph_text": "Перспективным направлением преодоления этих ограничений является объединение классической электротехники и технологий искусственного интеллекта (ИИ). В предшествующих работах [XX] авторов был сформирован фундаментальный базис для внедрения глубокого машинного обучения в консервативную отрасль энергетики. В частности, было доказано, что обучение нейросетей на мгновенных значениях токов и напряжений («сырых» осциллограммах) сопряжено с избыточной вычислительной нагрузкой и отсутствием физической интерпретируемости. В качестве оптимального признакового пространства был предложен переход к спектральным характеристикам в полярных координатах. На этой базе авторами были успешно реализованы физически-информированные сети Колмогорова-Арнольда, доказавшие свою высокую эффективность в задаче выявления ОЗЗ и ДПОЗЗ."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[47]/w:r[10]/w:commentReference",
+        "paragraph_index": 47,
+        "paragraph_text": "Перспективным направлением преодоления этих ограничений является объединение классической электротехники и технологий искусственного интеллекта (ИИ). В предшествующих работах [XX] авторов был сформирован фундаментальный базис для внедрения глубокого машинного обучения в консервативную отрасль энергетики. В частности, было доказано, что обучение нейросетей на мгновенных значениях токов и напряжений («сырых» осциллограммах) сопряжено с избыточной вычислительной нагрузкой и отсутствием физической интерпретируемости. В качестве оптимального признакового пространства был предложен переход к спектральным характеристикам в полярных координатах. На этой базе авторами были успешно реализованы физически-информированные сети Колмогорова-Арнольда, доказавшие свою высокую эффективность в задаче выявления ОЗЗ и ДПОЗЗ."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "6",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "6",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-21T11:49:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Vaswani A. et al. Attention is all you need //Advances in neural information processing systems. – 2017. – Т. 30."
+    ],
+    "text": "Vaswani A. et al. Attention is all you need //Advances in neural information processing systems. – 2017. – Т. 30.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[49]/w:commentRangeStart[1]",
+        "paragraph_index": 49,
+        "paragraph_text": "Логичным эволюционным шагом для преодоления этих ограничений является переход к анализу последовательностей с использованием механизма глобального внимания (архитектура «Трансформер») [XX]. В связи с этим целью данного исследования является архитектурная модернизация интеллектуальных измерительных органов путем интеграции архитектуры «Трансформера» и интерпретируемых нелинейных сетей Колмогорова-Арнольда (KAN) [XX] с внедрением базовых законов электротехники непосредственно в граф вычислений."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[49]/w:commentRangeEnd[1]",
+        "paragraph_index": 49,
+        "paragraph_text": "Логичным эволюционным шагом для преодоления этих ограничений является переход к анализу последовательностей с использованием механизма глобального внимания (архитектура «Трансформер») [XX]. В связи с этим целью данного исследования является архитектурная модернизация интеллектуальных измерительных органов путем интеграции архитектуры «Трансформера» и интерпретируемых нелинейных сетей Колмогорова-Арнольда (KAN) [XX] с внедрением базовых законов электротехники непосредственно в граф вычислений."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[49]/w:r[10]/w:commentReference",
+        "paragraph_index": 49,
+        "paragraph_text": "Логичным эволюционным шагом для преодоления этих ограничений является переход к анализу последовательностей с использованием механизма глобального внимания (архитектура «Трансформер») [XX]. В связи с этим целью данного исследования является архитектурная модернизация интеллектуальных измерительных органов путем интеграции архитектуры «Трансформера» и интерпретируемых нелинейных сетей Колмогорова-Арнольда (KAN) [XX] с внедрением базовых законов электротехники непосредственно в граф вычислений."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "7",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "7",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-21T11:39:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Liu Z. et al. KAN: Kolmogorov–arnold networks //International conference on learning representations. – 2025. – Т. 2025. – С. 70367-70413.",
+      "",
+      "Ток проверить, что тут подходит, ведь про трансформаторы говорю.",
+      ""
+    ],
+    "text": "Liu Z. et al. KAN: Kolmogorov–arnold networks //International conference on learning representations. – 2025. – Т. 2025. – С. 70367-70413.\n\nТок проверить, что тут подходит, ведь про трансформаторы говорю.\n",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[49]/w:commentRangeStart[2]",
+        "paragraph_index": 49,
+        "paragraph_text": "Логичным эволюционным шагом для преодоления этих ограничений является переход к анализу последовательностей с использованием механизма глобального внимания (архитектура «Трансформер») [XX]. В связи с этим целью данного исследования является архитектурная модернизация интеллектуальных измерительных органов путем интеграции архитектуры «Трансформера» и интерпретируемых нелинейных сетей Колмогорова-Арнольда (KAN) [XX] с внедрением базовых законов электротехники непосредственно в граф вычислений."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[49]/w:commentRangeEnd[2]",
+        "paragraph_index": 49,
+        "paragraph_text": "Логичным эволюционным шагом для преодоления этих ограничений является переход к анализу последовательностей с использованием механизма глобального внимания (архитектура «Трансформер») [XX]. В связи с этим целью данного исследования является архитектурная модернизация интеллектуальных измерительных органов путем интеграции архитектуры «Трансформера» и интерпретируемых нелинейных сетей Колмогорова-Арнольда (KAN) [XX] с внедрением базовых законов электротехники непосредственно в граф вычислений."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[49]/w:r[23]/w:commentReference",
+        "paragraph_index": 49,
+        "paragraph_text": "Логичным эволюционным шагом для преодоления этих ограничений является переход к анализу последовательностей с использованием механизма глобального внимания (архитектура «Трансформер») [XX]. В связи с этим целью данного исследования является архитектурная модернизация интеллектуальных измерительных органов путем интеграции архитектуры «Трансформера» и интерпретируемых нелинейных сетей Колмогорова-Арнольда (KAN) [XX] с внедрением базовых законов электротехники непосредственно в граф вычислений."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "10",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "10",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-04-20T13:21:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Ссылка на работу с признаковым пространством"
+    ],
+    "text": "Ссылка на работу с признаковым пространством",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[52]/w:commentRangeStart",
+        "paragraph_index": 52,
+        "paragraph_text": "В предыдущих исследованиях авторами была решена фундаментальная задача оптимизации признакового пространства для нейросетевых алгоритмов релейной защиты и автоматики (РЗА) [XX]. Было доказано, что использование мгновенных значений («сырых» осциллограмм) является экстенсивным путём, ведущим к избыточной вычислительной нагрузке. Оптимальным базисом для искусственного интеллекта (ИИ) в энергетике признан переход в спектральную область с использованием полярных координат, где данные представлены в виде чередующихся пар амплитуд и фазовых углов гармоник (A,φ). На базе этого подхода были успешно применены физически-информированные нейронные сети семейства Колмогорова-Арнольда (cPhysicsKAN), оперирующие в поле комплексных чисел."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[52]/w:commentRangeEnd",
+        "paragraph_index": 52,
+        "paragraph_text": "В предыдущих исследованиях авторами была решена фундаментальная задача оптимизации признакового пространства для нейросетевых алгоритмов релейной защиты и автоматики (РЗА) [XX]. Было доказано, что использование мгновенных значений («сырых» осциллограмм) является экстенсивным путём, ведущим к избыточной вычислительной нагрузке. Оптимальным базисом для искусственного интеллекта (ИИ) в энергетике признан переход в спектральную область с использованием полярных координат, где данные представлены в виде чередующихся пар амплитуд и фазовых углов гармоник (A,φ). На базе этого подхода были успешно применены физически-информированные нейронные сети семейства Колмогорова-Арнольда (cPhysicsKAN), оперирующие в поле комплексных чисел."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[52]/w:r[8]/w:commentReference",
+        "paragraph_index": 52,
+        "paragraph_text": "В предыдущих исследованиях авторами была решена фундаментальная задача оптимизации признакового пространства для нейросетевых алгоритмов релейной защиты и автоматики (РЗА) [XX]. Было доказано, что использование мгновенных значений («сырых» осциллограмм) является экстенсивным путём, ведущим к избыточной вычислительной нагрузке. Оптимальным базисом для искусственного интеллекта (ИИ) в энергетике признан переход в спектральную область с использованием полярных координат, где данные представлены в виде чередующихся пар амплитуд и фазовых углов гармоник (A,φ). На базе этого подхода были успешно применены физически-информированные нейронные сети семейства Колмогорова-Арнольда (cPhysicsKAN), оперирующие в поле комплексных чисел."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "12",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "12",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-05T21:40:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Прям перед этим говорится про данные «последовательности».",
+      "",
+      "Можно ещё поменять слово вектор, если оно не смущает. Прост в математике из этой сфере оно значит «массив чисел»"
+    ],
+    "text": "Прям перед этим говорится про данные «последовательности».\n\nМожно ещё поменять слово вектор, если оно не смущает. Прост в математике из этой сфере оно значит «массив чисел»",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[63]/w:commentRangeStart[1]",
+        "paragraph_index": 63,
+        "paragraph_text": "Для каждой пары временны́х шагов вычисляется скалярное произведение соответствующих векторов-запросов и векторов-ключей. Полученный результат масштабируется и проходит через функцию нормировки (, преобразующую значения в вероятностное распределение), что формирует матрицу внимания. Она определяет, с какими «силами» текущий временной шаг обращается к предыстории. Итоговое скрытое представление формируется как взвешенная сумма информационных векторов (Value, содержащих полезные признаки сигнала) по этой матрице. В отличие от свёрточных сетей с ограниченным рецептивным полем, такой механизм потенциально связывает любые два временны́х шага напрямую, что критически важно для анализа каскадно развивающихся режимов."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[63]/w:commentRangeEnd[1]",
+        "paragraph_index": 63,
+        "paragraph_text": "Для каждой пары временны́х шагов вычисляется скалярное произведение соответствующих векторов-запросов и векторов-ключей. Полученный результат масштабируется и проходит через функцию нормировки (, преобразующую значения в вероятностное распределение), что формирует матрицу внимания. Она определяет, с какими «силами» текущий временной шаг обращается к предыстории. Итоговое скрытое представление формируется как взвешенная сумма информационных векторов (Value, содержащих полезные признаки сигнала) по этой матрице. В отличие от свёрточных сетей с ограниченным рецептивным полем, такой механизм потенциально связывает любые два временны́х шага напрямую, что критически важно для анализа каскадно развивающихся режимов."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[63]/w:r[6]/w:commentReference",
+        "paragraph_index": 63,
+        "paragraph_text": "Для каждой пары временны́х шагов вычисляется скалярное произведение соответствующих векторов-запросов и векторов-ключей. Полученный результат масштабируется и проходит через функцию нормировки (, преобразующую значения в вероятностное распределение), что формирует матрицу внимания. Она определяет, с какими «силами» текущий временной шаг обращается к предыстории. Итоговое скрытое представление формируется как взвешенная сумма информационных векторов (Value, содержащих полезные признаки сигнала) по этой матрице. В отличие от свёрточных сетей с ограниченным рецептивным полем, такой механизм потенциально связывает любые два временны́х шага напрямую, что критически важно для анализа каскадно развивающихся режимов."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "13",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "13",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-05T21:42:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Добавил термин и формулу softmax, если нужно, можно ещё подробнее.",
+      "",
+      "Теперь дальше используется именно он"
+    ],
+    "text": "Добавил термин и формулу softmax, если нужно, можно ещё подробнее.\n\nТеперь дальше используется именно он",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[63]/w:commentRangeStart[2]",
+        "paragraph_index": 63,
+        "paragraph_text": "Для каждой пары временны́х шагов вычисляется скалярное произведение соответствующих векторов-запросов и векторов-ключей. Полученный результат масштабируется и проходит через функцию нормировки (, преобразующую значения в вероятностное распределение), что формирует матрицу внимания. Она определяет, с какими «силами» текущий временной шаг обращается к предыстории. Итоговое скрытое представление формируется как взвешенная сумма информационных векторов (Value, содержащих полезные признаки сигнала) по этой матрице. В отличие от свёрточных сетей с ограниченным рецептивным полем, такой механизм потенциально связывает любые два временны́х шага напрямую, что критически важно для анализа каскадно развивающихся режимов."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[63]/w:commentRangeEnd[2]",
+        "paragraph_index": 63,
+        "paragraph_text": "Для каждой пары временны́х шагов вычисляется скалярное произведение соответствующих векторов-запросов и векторов-ключей. Полученный результат масштабируется и проходит через функцию нормировки (, преобразующую значения в вероятностное распределение), что формирует матрицу внимания. Она определяет, с какими «силами» текущий временной шаг обращается к предыстории. Итоговое скрытое представление формируется как взвешенная сумма информационных векторов (Value, содержащих полезные признаки сигнала) по этой матрице. В отличие от свёрточных сетей с ограниченным рецептивным полем, такой механизм потенциально связывает любые два временны́х шага напрямую, что критически важно для анализа каскадно развивающихся режимов."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[63]/w:r[9]/w:commentReference",
+        "paragraph_index": 63,
+        "paragraph_text": "Для каждой пары временны́х шагов вычисляется скалярное произведение соответствующих векторов-запросов и векторов-ключей. Полученный результат масштабируется и проходит через функцию нормировки (, преобразующую значения в вероятностное распределение), что формирует матрицу внимания. Она определяет, с какими «силами» текущий временной шаг обращается к предыстории. Итоговое скрытое представление формируется как взвешенная сумма информационных векторов (Value, содержащих полезные признаки сигнала) по этой матрице. В отличие от свёрточных сетей с ограниченным рецептивным полем, такой механизм потенциально связывает любые два временны́х шага напрямую, что критически важно для анализа каскадно развивающихся режимов."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "16",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "16",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-04T16:47:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "От Андрея замечание",
+      "Перевести все иностранные слова"
+    ],
+    "text": "От Андрея замечание\nПеревести все иностранные слова",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeStart[1]",
+        "paragraph_index": 67,
+        "paragraph_text": "а)"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeEnd[1]",
+        "paragraph_index": 67,
+        "paragraph_text": "а)"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:r[2]/w:commentReference",
+        "paragraph_index": 67,
+        "paragraph_text": "а)"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "17",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "17",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-04T16:47:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Да и всех рисунков касается"
+    ],
+    "text": "Да и всех рисунков касается",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeStart[2]",
+        "paragraph_index": 67,
+        "paragraph_text": "а)"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeEnd[2]",
+        "paragraph_index": 67,
+        "paragraph_text": "а)"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:r[3]/w:commentReference",
+        "paragraph_index": 67,
+        "paragraph_text": "а)"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "18",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "18",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-04-20T15:00:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Ну… Пусть пока такое, суть в том, что модель смотрит на всё сразу и с нужным «весом» оценивает влияние какого-то участка на данную зону."
+    ],
+    "text": "Ну… Пусть пока такое, суть в том, что модель смотрит на всё сразу и с нужным «весом» оценивает влияние какого-то участка на данную зону.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[5]/w:tc/w:p/w:commentRangeStart",
+        "paragraph_index": 70,
+        "paragraph_text": "Рисунок 1. Принцип работы механизма внимания а) математическое описание блоков, и б) пример на задаче обработки последовательностей (пословный перевод)."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[5]/w:tc/w:p/w:commentRangeEnd",
+        "paragraph_index": 70,
+        "paragraph_text": "Рисунок 1. Принцип работы механизма внимания а) математическое описание блоков, и б) пример на задаче обработки последовательностей (пословный перевод)."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[5]/w:tc/w:p/w:r[3]/w:commentReference",
+        "paragraph_index": 70,
+        "paragraph_text": "Рисунок 1. Принцип работы механизма внимания а) математическое описание блоков, и б) пример на задаче обработки последовательностей (пословный перевод)."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "19",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "19",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-04T16:49:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "От Андрея замечание",
+      "Этот текст должен быть в линию."
+    ],
+    "text": "От Андрея замечание\nЭтот текст должен быть в линию.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[69]/w:commentRangeStart[1]",
+        "paragraph_index": 74,
+        "paragraph_text": "Во-первых, классические архитектуры «Трансформеры» требуют огромных вычислительных ресурсов. В то же время, микропроцессорные терминалы РЗА и БАВР обладают жёсткими аппаратными ограничениями по объему оперативной памяти и тактовой частоте."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[69]/w:commentRangeEnd[1]",
+        "paragraph_index": 74,
+        "paragraph_text": "Во-первых, классические архитектуры «Трансформеры» требуют огромных вычислительных ресурсов. В то же время, микропроцессорные терминалы РЗА и БАВР обладают жёсткими аппаратными ограничениями по объему оперативной памяти и тактовой частоте."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[69]/w:r[2]/w:commentReference",
+        "paragraph_index": 74,
+        "paragraph_text": "Во-первых, классические архитектуры «Трансформеры» требуют огромных вычислительных ресурсов. В то же время, микропроцессорные терминалы РЗА и БАВР обладают жёсткими аппаратными ограничениями по объему оперативной памяти и тактовой частоте."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "20",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "20",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-04T16:50:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Если честно, не понял почему и как…"
+    ],
+    "text": "Если честно, не понял почему и как…",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[69]/w:commentRangeStart[2]",
+        "paragraph_index": 74,
+        "paragraph_text": "Во-первых, классические архитектуры «Трансформеры» требуют огромных вычислительных ресурсов. В то же время, микропроцессорные терминалы РЗА и БАВР обладают жёсткими аппаратными ограничениями по объему оперативной памяти и тактовой частоте."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[69]/w:commentRangeEnd[2]",
+        "paragraph_index": 74,
+        "paragraph_text": "Во-первых, классические архитектуры «Трансформеры» требуют огромных вычислительных ресурсов. В то же время, микропроцессорные терминалы РЗА и БАВР обладают жёсткими аппаратными ограничениями по объему оперативной памяти и тактовой частоте."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[69]/w:r[3]/w:commentReference",
+        "paragraph_index": 74,
+        "paragraph_text": "Во-первых, классические архитектуры «Трансформеры» требуют огромных вычислительных ресурсов. В то же время, микропроцессорные терминалы РЗА и БАВР обладают жёсткими аппаратными ограничениями по объему оперативной памяти и тактовой частоте."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "21",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "21",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-04T16:49:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Может перестать лепить везде эту фразу «архитектура», ну прям плодит текст без какого-либо смысла. Прост от того, что «эти люди не привыкли»…"
+    ],
+    "text": "Может перестать лепить везде эту фразу «архитектура», ну прям плодит текст без какого-либо смысла. Прост от того, что «эти люди не привыкли»…",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[69]/w:commentRangeStart[3]",
+        "paragraph_index": 74,
+        "paragraph_text": "Во-первых, классические архитектуры «Трансформеры» требуют огромных вычислительных ресурсов. В то же время, микропроцессорные терминалы РЗА и БАВР обладают жёсткими аппаратными ограничениями по объему оперативной памяти и тактовой частоте."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[69]/w:commentRangeEnd[3]",
+        "paragraph_index": 74,
+        "paragraph_text": "Во-первых, классические архитектуры «Трансформеры» требуют огромных вычислительных ресурсов. В то же время, микропроцессорные терминалы РЗА и БАВР обладают жёсткими аппаратными ограничениями по объему оперативной памяти и тактовой частоте."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[69]/w:r[6]/w:commentReference",
+        "paragraph_index": 74,
+        "paragraph_text": "Во-первых, классические архитектуры «Трансформеры» требуют огромных вычислительных ресурсов. В то же время, микропроцессорные терминалы РЗА и БАВР обладают жёсткими аппаратными ограничениями по объему оперативной памяти и тактовой частоте."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "23",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "23",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-05T21:49:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Переписал подробнее. Или может непонятно, что значит «полносвязные»? Прост для меня это прям базовый термин…"
+    ],
+    "text": "Переписал подробнее. Или может непонятно, что значит «полносвязные»? Прост для меня это прям базовый термин…",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[70]/w:commentRangeStart",
+        "paragraph_index": 75,
+        "paragraph_text": "Во-вторых, стандартный механизм внимания и классические многослойные нейронные сети (полносвязные слои), встроенные в архитектуру «Трансформера» воспринимают входные токи и напряжения как абстрактный набор скалярных величин. Архитектура «слепа» к базовым законам электротехники: она не учитывает векторную природу сигналов и не содержит математического аппарата для вычисления производных величин (мощности, сопротивления, проводимости)."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[70]/w:commentRangeEnd",
+        "paragraph_index": 75,
+        "paragraph_text": "Во-вторых, стандартный механизм внимания и классические многослойные нейронные сети (полносвязные слои), встроенные в архитектуру «Трансформера» воспринимают входные токи и напряжения как абстрактный набор скалярных величин. Архитектура «слепа» к базовым законам электротехники: она не учитывает векторную природу сигналов и не содержит математического аппарата для вычисления производных величин (мощности, сопротивления, проводимости)."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[70]/w:r[4]/w:commentReference",
+        "paragraph_index": 75,
+        "paragraph_text": "Во-вторых, стандартный механизм внимания и классические многослойные нейронные сети (полносвязные слои), встроенные в архитектуру «Трансформера» воспринимают входные токи и напряжения как абстрактный набор скалярных величин. Архитектура «слепа» к базовым законам электротехники: она не учитывает векторную природу сигналов и не содержит математического аппарата для вычисления производных величин (мощности, сопротивления, проводимости)."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "24",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "24",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-04T16:52:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Прост для информации – это чисто моя вставка, чтобы удобнее отслеживать разворот листа. Само собой будет удалено в итоговой версии."
+    ],
+    "text": "Прост для информации – это чисто моя вставка, чтобы удобнее отслеживать разворот листа. Само собой будет удалено в итоговой версии.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[73]/w:commentRangeStart",
+        "paragraph_index": 78,
+        "paragraph_text": "РАЗРЫВ для двух картинок 1"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[73]/w:commentRangeEnd",
+        "paragraph_index": 78,
+        "paragraph_text": "РАЗРЫВ для двух картинок 1"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[73]/w:r[2]/w:commentReference",
+        "paragraph_index": 78,
+        "paragraph_text": "РАЗРЫВ для двух картинок 1"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "25",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "25",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-04-20T17:25:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Проверить, нет ли дублирования с разделом 2."
+    ],
+    "text": "Проверить, нет ли дублирования с разделом 2.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[84]/w:commentRangeStart",
+        "paragraph_index": 91,
+        "paragraph_text": "Переход к архитектуре «Трансформера» требует принципиального пересмотра логики формирования входных данных. В классических IT-задачах механизм внимания оперирует абстрактными числовыми векторами, вычисляя степень их статистического сходства. Однако для электромагнитных переходных процессов прямое проецирование мгновенных значений токов и напряжений в матрицу внимания приводит к потере физического смысла: алгоритм вынужден тратить вычислительные ресурсы на поиск тригонометрических закономерностей вместо анализа самого аварийного режима. В связи с этим в данной работе предложено формировать специализированный физически-обоснованный базис, опирающийся на комплексное представление сигналов в полярной системе координат."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[84]/w:commentRangeEnd",
+        "paragraph_index": 91,
+        "paragraph_text": "Переход к архитектуре «Трансформера» требует принципиального пересмотра логики формирования входных данных. В классических IT-задачах механизм внимания оперирует абстрактными числовыми векторами, вычисляя степень их статистического сходства. Однако для электромагнитных переходных процессов прямое проецирование мгновенных значений токов и напряжений в матрицу внимания приводит к потере физического смысла: алгоритм вынужден тратить вычислительные ресурсы на поиск тригонометрических закономерностей вместо анализа самого аварийного режима. В связи с этим в данной работе предложено формировать специализированный физически-обоснованный базис, опирающийся на комплексное представление сигналов в полярной системе координат."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[84]/w:r[7]/w:commentReference",
+        "paragraph_index": 91,
+        "paragraph_text": "Переход к архитектуре «Трансформера» требует принципиального пересмотра логики формирования входных данных. В классических IT-задачах механизм внимания оперирует абстрактными числовыми векторами, вычисляя степень их статистического сходства. Однако для электромагнитных переходных процессов прямое проецирование мгновенных значений токов и напряжений в матрицу внимания приводит к потере физического смысла: алгоритм вынужден тратить вычислительные ресурсы на поиск тригонометрических закономерностей вместо анализа самого аварийного режима. В связи с этим в данной работе предложено формировать специализированный физически-обоснованный базис, опирающийся на комплексное представление сигналов в полярной системе координат."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "29",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "29",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-04-20T17:36:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Не сильно важное это, конечно для статьи… Хотя при расчётах вызывало проблемы. Так что пока оставил."
+    ],
+    "text": "Не сильно важное это, конечно для статьи… Хотя при расчётах вызывало проблемы. Так что пока оставил.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[88]/w:commentRangeStart",
+        "paragraph_index": 95,
+        "paragraph_text": "Важным аспектом внедрения подобных интеллектуальных систем в реальную эксплуатацию является обеспечение устойчивости к аппаратным сбоям. В микропроцессорных терминалах РЗА нередки случаи физического отсутствия отдельных сигналов, например, с датчиков тока заведены только фазы «А» и «С», или отсутствуют каналы напряжения. Классические нейросети воспринимают потерю сигнала как нулевое значение, что может быть ошибочно интерпретировано алгоритмом как глубокая просадка напряжения или обрыв фазы сети, приводя к ложному срабатыванию защиты."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[88]/w:commentRangeEnd",
+        "paragraph_index": 95,
+        "paragraph_text": "Важным аспектом внедрения подобных интеллектуальных систем в реальную эксплуатацию является обеспечение устойчивости к аппаратным сбоям. В микропроцессорных терминалах РЗА нередки случаи физического отсутствия отдельных сигналов, например, с датчиков тока заведены только фазы «А» и «С», или отсутствуют каналы напряжения. Классические нейросети воспринимают потерю сигнала как нулевое значение, что может быть ошибочно интерпретировано алгоритмом как глубокая просадка напряжения или обрыв фазы сети, приводя к ложному срабатыванию защиты."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[88]/w:r[2]/w:commentReference",
+        "paragraph_index": 95,
+        "paragraph_text": "Важным аспектом внедрения подобных интеллектуальных систем в реальную эксплуатацию является обеспечение устойчивости к аппаратным сбоям. В микропроцессорных терминалах РЗА нередки случаи физического отсутствия отдельных сигналов, например, с датчиков тока заведены только фазы «А» и «С», или отсутствуют каналы напряжения. Классические нейросети воспринимают потерю сигнала как нулевое значение, что может быть ошибочно интерпретировано алгоритмом как глубокая просадка напряжения или обрыв фазы сети, приводя к ложному срабатыванию защиты."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "31",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "31",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-04-21T10:13:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Явно надо будет перерисовать, чтобы лучше помещалось)) И пока сложно. Но уже рабочее хотя бы"
+    ],
+    "text": "Явно надо будет перерисовать, чтобы лучше помещалось)) И пока сложно. Но уже рабочее хотя бы",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[3]/w:tr[2]/w:tc/w:p/w:commentRangeStart",
+        "paragraph_index": 103,
+        "paragraph_text": "Рисунок 3. Архитектура предложенной физически-информированной нейронной сети Physical KAN-Transformer с интеграцией комплексных арифметических слоев и нелинейных KAN-сплайнов. "
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[3]/w:tr[2]/w:tc/w:p/w:commentRangeEnd",
+        "paragraph_index": 103,
+        "paragraph_text": "Рисунок 3. Архитектура предложенной физически-информированной нейронной сети Physical KAN-Transformer с интеграцией комплексных арифметических слоев и нелинейных KAN-сплайнов. "
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[3]/w:tr[2]/w:tc/w:p/w:r[5]/w:commentReference",
+        "paragraph_index": 103,
+        "paragraph_text": "Рисунок 3. Архитектура предложенной физически-информированной нейронной сети Physical KAN-Transformer с интеграцией комплексных арифметических слоев и нелинейных KAN-сплайнов. "
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "32",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "32",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-05T21:54:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Надо глянуть, может нигде далее не используется"
+    ],
+    "text": "Надо глянуть, может нигде далее не используется",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[98]/w:commentRangeStart",
+        "paragraph_index": 107,
+        "paragraph_text": "Базовым математическим правилом, заложенным в основу разработанной архитектуры, является принцип неразрывности физического вектора. На входе модели признаки строго структурированы в виде чередующихся пар «амплитуда – угол». При переходе во внутреннее скрытое пространство модели размерности (d_model) полярная структура сохраняется, но реорганизуется в блочный вид: первая половина вектора скрытого состояния отводится исключительно под амплитудную компоненту, вторая – под фазовую. Все последующие слои (нормализация, механизм внимания, полносвязный блок) оперируют этими двумя компонентами раздельно, согласованно применяя к ним операции и обмениваясь информацией только через явно определённые физические узлы."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[98]/w:commentRangeEnd",
+        "paragraph_index": 107,
+        "paragraph_text": "Базовым математическим правилом, заложенным в основу разработанной архитектуры, является принцип неразрывности физического вектора. На входе модели признаки строго структурированы в виде чередующихся пар «амплитуда – угол». При переходе во внутреннее скрытое пространство модели размерности (d_model) полярная структура сохраняется, но реорганизуется в блочный вид: первая половина вектора скрытого состояния отводится исключительно под амплитудную компоненту, вторая – под фазовую. Все последующие слои (нормализация, механизм внимания, полносвязный блок) оперируют этими двумя компонентами раздельно, согласованно применяя к ним операции и обмениваясь информацией только через явно определённые физические узлы."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[98]/w:r[10]/w:commentReference",
+        "paragraph_index": 107,
+        "paragraph_text": "Базовым математическим правилом, заложенным в основу разработанной архитектуры, является принцип неразрывности физического вектора. На входе модели признаки строго структурированы в виде чередующихся пар «амплитуда – угол». При переходе во внутреннее скрытое пространство модели размерности (d_model) полярная структура сохраняется, но реорганизуется в блочный вид: первая половина вектора скрытого состояния отводится исключительно под амплитудную компоненту, вторая – под фазовую. Все последующие слои (нормализация, механизм внимания, полносвязный блок) оперируют этими двумя компонентами раздельно, согласованно применяя к ним операции и обмениваясь информацией только через явно определённые физические узлы."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "35",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "35",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-04-21T15:21:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Можно и формулу привести в случае чего, но… Пусть пока так."
+    ],
+    "text": "Можно и формулу привести в случае чего, но… Пусть пока так.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[103]/w:commentRangeStart",
+        "paragraph_index": 112,
+        "paragraph_text": "Работа входного каскада начинается с разделения входящего потока данных на амплитудную и фазовую ветви. Каждая пара признаков (A, φ) собирается в одно комплексное число в показательной форме  (операция polar → complex), что позволяет трактовать поток входных данных как массив физических векторов гармоник. На этом этапе в работу включается инновационный блок комплексных взаимодействий. Вместо того чтобы вручную задавать жёсткие формулы для расчёта мощностей или сопротивлений, сеть формирует обучаемые линейные комбинации входных векторов (с сохранением комплексной природы операции) и подвергает полученные промежуточные векторы попарному комплексному умножению и делению. Для сохранения численной устойчивости (вектор проводимости  при малом токе может неограниченно возрастать) модуль результата деления мягко ограничивается функцией гиперболического тангенса (tanh), тогда как фазовый угол сохраняется без искажений."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[103]/w:commentRangeEnd",
+        "paragraph_index": 112,
+        "paragraph_text": "Работа входного каскада начинается с разделения входящего потока данных на амплитудную и фазовую ветви. Каждая пара признаков (A, φ) собирается в одно комплексное число в показательной форме  (операция polar → complex), что позволяет трактовать поток входных данных как массив физических векторов гармоник. На этом этапе в работу включается инновационный блок комплексных взаимодействий. Вместо того чтобы вручную задавать жёсткие формулы для расчёта мощностей или сопротивлений, сеть формирует обучаемые линейные комбинации входных векторов (с сохранением комплексной природы операции) и подвергает полученные промежуточные векторы попарному комплексному умножению и делению. Для сохранения численной устойчивости (вектор проводимости  при малом токе может неограниченно возрастать) модуль результата деления мягко ограничивается функцией гиперболического тангенса (tanh), тогда как фазовый угол сохраняется без искажений."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[103]/w:r[14]/w:commentReference",
+        "paragraph_index": 112,
+        "paragraph_text": "Работа входного каскада начинается с разделения входящего потока данных на амплитудную и фазовую ветви. Каждая пара признаков (A, φ) собирается в одно комплексное число в показательной форме  (операция polar → complex), что позволяет трактовать поток входных данных как массив физических векторов гармоник. На этом этапе в работу включается инновационный блок комплексных взаимодействий. Вместо того чтобы вручную задавать жёсткие формулы для расчёта мощностей или сопротивлений, сеть формирует обучаемые линейные комбинации входных векторов (с сохранением комплексной природы операции) и подвергает полученные промежуточные векторы попарному комплексному умножению и делению. Для сохранения численной устойчивости (вектор проводимости  при малом токе может неограниченно возрастать) модуль результата деления мягко ограничивается функцией гиперболического тангенса (tanh), тогда как фазовый угол сохраняется без искажений."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "36",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "36",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-04-21T15:28:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Переменная, которая принадлежит множеству, обозначенному квадратными скобками"
+    ],
+    "text": "Переменная, которая принадлежит множеству, обозначенному квадратными скобками",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[105]/w:commentRangeStart[1]",
+        "paragraph_index": 114,
+        "paragraph_text": "После выполнения комплексных взаимодействий результат снова переводится в полярную форму. Амплитудная и угловая составляющие вектора обрабатываются принципиально разным образом. К амплитудной ветви применяется нелинейное преобразование на базе сети Колмогорова-Арнольда (FastKAN), адаптивные сплайны которой выделяют энергетически значимые закономерности и, по сути, играют роль обучаемых «нелинейных уставок». Угловая составляющая проходит через обучаемый сдвиг, выполняющий роль обобщённого угла максимальной чувствительности, и специализированный модуль DirectionalRelayGate, который по значению угла формирует мультипликативный коэффициент g ∈ [gback, 1] и модулирует им амплитудную ветвь. Таким образом, к углу не применяются произвольные нелинейности, способные разрушить его векторную природу: углы только согласованно поворачиваются и используются как управляющий сигнал. Итоговые результаты объединяются проекциями proj_amp и proj_angle в блочный полярный вектор [амплитудная половина | фазовая половина] размерности d_model и передаются в основные блоки «Трансформера». На выходе каскада применяется математическая операция статистической нормализации, которая масштабирует только амплитудную половину скрытого вектора и оставляющая углы неизменными – это отражает физическое соображение о том, что уровни сигналов подлежат статистической нормировке, а направленность – нет. Использование подобного входного каскада кардинально снижает вычислительную нагрузку на последующие слои механизма внимания, так как они получают уже физически осмысленные (обогащённые) токены (векторы признаков), отражающие реальную топологию и режим работы энергосистемы."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[105]/w:commentRangeEnd[1]",
+        "paragraph_index": 114,
+        "paragraph_text": "После выполнения комплексных взаимодействий результат снова переводится в полярную форму. Амплитудная и угловая составляющие вектора обрабатываются принципиально разным образом. К амплитудной ветви применяется нелинейное преобразование на базе сети Колмогорова-Арнольда (FastKAN), адаптивные сплайны которой выделяют энергетически значимые закономерности и, по сути, играют роль обучаемых «нелинейных уставок». Угловая составляющая проходит через обучаемый сдвиг, выполняющий роль обобщённого угла максимальной чувствительности, и специализированный модуль DirectionalRelayGate, который по значению угла формирует мультипликативный коэффициент g ∈ [gback, 1] и модулирует им амплитудную ветвь. Таким образом, к углу не применяются произвольные нелинейности, способные разрушить его векторную природу: углы только согласованно поворачиваются и используются как управляющий сигнал. Итоговые результаты объединяются проекциями proj_amp и proj_angle в блочный полярный вектор [амплитудная половина | фазовая половина] размерности d_model и передаются в основные блоки «Трансформера». На выходе каскада применяется математическая операция статистической нормализации, которая масштабирует только амплитудную половину скрытого вектора и оставляющая углы неизменными – это отражает физическое соображение о том, что уровни сигналов подлежат статистической нормировке, а направленность – нет. Использование подобного входного каскада кардинально снижает вычислительную нагрузку на последующие слои механизма внимания, так как они получают уже физически осмысленные (обогащённые) токены (векторы признаков), отражающие реальную топологию и режим работы энергосистемы."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[105]/w:r[28]/w:commentReference",
+        "paragraph_index": 114,
+        "paragraph_text": "После выполнения комплексных взаимодействий результат снова переводится в полярную форму. Амплитудная и угловая составляющие вектора обрабатываются принципиально разным образом. К амплитудной ветви применяется нелинейное преобразование на базе сети Колмогорова-Арнольда (FastKAN), адаптивные сплайны которой выделяют энергетически значимые закономерности и, по сути, играют роль обучаемых «нелинейных уставок». Угловая составляющая проходит через обучаемый сдвиг, выполняющий роль обобщённого угла максимальной чувствительности, и специализированный модуль DirectionalRelayGate, который по значению угла формирует мультипликативный коэффициент g ∈ [gback, 1] и модулирует им амплитудную ветвь. Таким образом, к углу не применяются произвольные нелинейности, способные разрушить его векторную природу: углы только согласованно поворачиваются и используются как управляющий сигнал. Итоговые результаты объединяются проекциями proj_amp и proj_angle в блочный полярный вектор [амплитудная половина | фазовая половина] размерности d_model и передаются в основные блоки «Трансформера». На выходе каскада применяется математическая операция статистической нормализации, которая масштабирует только амплитудную половину скрытого вектора и оставляющая углы неизменными – это отражает физическое соображение о том, что уровни сигналов подлежат статистической нормировке, а направленность – нет. Использование подобного входного каскада кардинально снижает вычислительную нагрузку на последующие слои механизма внимания, так как они получают уже физически осмысленные (обогащённые) токены (векторы признаков), отражающие реальную топологию и режим работы энергосистемы."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "37",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "37",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-04-21T15:29:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Наверное надо будет переписать, уж слишком программистки… "
+    ],
+    "text": "Наверное надо будет переписать, уж слишком программистки… ",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[105]/w:commentRangeStart[2]",
+        "paragraph_index": 114,
+        "paragraph_text": "После выполнения комплексных взаимодействий результат снова переводится в полярную форму. Амплитудная и угловая составляющие вектора обрабатываются принципиально разным образом. К амплитудной ветви применяется нелинейное преобразование на базе сети Колмогорова-Арнольда (FastKAN), адаптивные сплайны которой выделяют энергетически значимые закономерности и, по сути, играют роль обучаемых «нелинейных уставок». Угловая составляющая проходит через обучаемый сдвиг, выполняющий роль обобщённого угла максимальной чувствительности, и специализированный модуль DirectionalRelayGate, который по значению угла формирует мультипликативный коэффициент g ∈ [gback, 1] и модулирует им амплитудную ветвь. Таким образом, к углу не применяются произвольные нелинейности, способные разрушить его векторную природу: углы только согласованно поворачиваются и используются как управляющий сигнал. Итоговые результаты объединяются проекциями proj_amp и proj_angle в блочный полярный вектор [амплитудная половина | фазовая половина] размерности d_model и передаются в основные блоки «Трансформера». На выходе каскада применяется математическая операция статистической нормализации, которая масштабирует только амплитудную половину скрытого вектора и оставляющая углы неизменными – это отражает физическое соображение о том, что уровни сигналов подлежат статистической нормировке, а направленность – нет. Использование подобного входного каскада кардинально снижает вычислительную нагрузку на последующие слои механизма внимания, так как они получают уже физически осмысленные (обогащённые) токены (векторы признаков), отражающие реальную топологию и режим работы энергосистемы."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[105]/w:commentRangeEnd[2]",
+        "paragraph_index": 114,
+        "paragraph_text": "После выполнения комплексных взаимодействий результат снова переводится в полярную форму. Амплитудная и угловая составляющие вектора обрабатываются принципиально разным образом. К амплитудной ветви применяется нелинейное преобразование на базе сети Колмогорова-Арнольда (FastKAN), адаптивные сплайны которой выделяют энергетически значимые закономерности и, по сути, играют роль обучаемых «нелинейных уставок». Угловая составляющая проходит через обучаемый сдвиг, выполняющий роль обобщённого угла максимальной чувствительности, и специализированный модуль DirectionalRelayGate, который по значению угла формирует мультипликативный коэффициент g ∈ [gback, 1] и модулирует им амплитудную ветвь. Таким образом, к углу не применяются произвольные нелинейности, способные разрушить его векторную природу: углы только согласованно поворачиваются и используются как управляющий сигнал. Итоговые результаты объединяются проекциями proj_amp и proj_angle в блочный полярный вектор [амплитудная половина | фазовая половина] размерности d_model и передаются в основные блоки «Трансформера». На выходе каскада применяется математическая операция статистической нормализации, которая масштабирует только амплитудную половину скрытого вектора и оставляющая углы неизменными – это отражает физическое соображение о том, что уровни сигналов подлежат статистической нормировке, а направленность – нет. Использование подобного входного каскада кардинально снижает вычислительную нагрузку на последующие слои механизма внимания, так как они получают уже физически осмысленные (обогащённые) токены (векторы признаков), отражающие реальную топологию и режим работы энергосистемы."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[105]/w:r[32]/w:commentReference",
+        "paragraph_index": 114,
+        "paragraph_text": "После выполнения комплексных взаимодействий результат снова переводится в полярную форму. Амплитудная и угловая составляющие вектора обрабатываются принципиально разным образом. К амплитудной ветви применяется нелинейное преобразование на базе сети Колмогорова-Арнольда (FastKAN), адаптивные сплайны которой выделяют энергетически значимые закономерности и, по сути, играют роль обучаемых «нелинейных уставок». Угловая составляющая проходит через обучаемый сдвиг, выполняющий роль обобщённого угла максимальной чувствительности, и специализированный модуль DirectionalRelayGate, который по значению угла формирует мультипликативный коэффициент g ∈ [gback, 1] и модулирует им амплитудную ветвь. Таким образом, к углу не применяются произвольные нелинейности, способные разрушить его векторную природу: углы только согласованно поворачиваются и используются как управляющий сигнал. Итоговые результаты объединяются проекциями proj_amp и proj_angle в блочный полярный вектор [амплитудная половина | фазовая половина] размерности d_model и передаются в основные блоки «Трансформера». На выходе каскада применяется математическая операция статистической нормализации, которая масштабирует только амплитудную половину скрытого вектора и оставляющая углы неизменными – это отражает физическое соображение о том, что уровни сигналов подлежат статистической нормировке, а направленность – нет. Использование подобного входного каскада кардинально снижает вычислительную нагрузку на последующие слои механизма внимания, так как они получают уже физически осмысленные (обогащённые) токены (векторы признаков), отражающие реальную топологию и режим работы энергосистемы."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "40",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "40",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-04-21T11:03:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Есть в картинке"
+    ],
+    "text": "Есть в картинке",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[113]/w:commentRangeStart",
+        "paragraph_index": 122,
+        "paragraph_text": "В классической архитектура «Трансформера» за блоком внимания всегда следует полносвязная нейронная сеть (Feed-Forward Network, FFN), состоящая из стандартных линейных слоёв. В разрабатываемой модели этот узел заменен на специализированный физически-информированный блок (Physical KAN Feed-Forward), выполняющий роль адаптивного измерительного органа."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[113]/w:commentRangeEnd",
+        "paragraph_index": 122,
+        "paragraph_text": "В классической архитектура «Трансформера» за блоком внимания всегда следует полносвязная нейронная сеть (Feed-Forward Network, FFN), состоящая из стандартных линейных слоёв. В разрабатываемой модели этот узел заменен на специализированный физически-информированный блок (Physical KAN Feed-Forward), выполняющий роль адаптивного измерительного органа."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[113]/w:r[19]/w:commentReference",
+        "paragraph_index": 122,
+        "paragraph_text": "В классической архитектура «Трансформера» за блоком внимания всегда следует полносвязная нейронная сеть (Feed-Forward Network, FFN), состоящая из стандартных линейных слоёв. В разрабатываемой модели этот узел заменен на специализированный физически-информированный блок (Physical KAN Feed-Forward), выполняющий роль адаптивного измерительного органа."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "44",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "44",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-05T22:03:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Можно старый термин и не вставлять, но решил указать. Всё же для осуществляемых действий и того, как идёт обучение – он базовый."
+    ],
+    "text": "Можно старый термин и не вставлять, но решил указать. Всё же для осуществляемых действий и того, как идёт обучение – он базовый.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[122]/w:commentRangeStart",
+        "paragraph_index": 131,
+        "paragraph_text": "На первом этапе алгоритм обучается пониманию базовой физики и динамики электроэнергетических процессов без использования какой-либо разметки аварийных режимов. В качестве решения был адаптирован метод обучения путем искусственного скрытия части данных с их последующим восстановлением (маскированием)."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[122]/w:commentRangeEnd",
+        "paragraph_index": 131,
+        "paragraph_text": "На первом этапе алгоритм обучается пониманию базовой физики и динамики электроэнергетических процессов без использования какой-либо разметки аварийных режимов. В качестве решения был адаптирован метод обучения путем искусственного скрытия части данных с их последующим восстановлением (маскированием)."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[122]/w:r[7]/w:commentReference",
+        "paragraph_index": 131,
+        "paragraph_text": "На первом этапе алгоритм обучается пониманию базовой физики и динамики электроэнергетических процессов без использования какой-либо разметки аварийных режимов. В качестве решения был адаптирован метод обучения путем искусственного скрытия части данных с их последующим восстановлением (маскированием)."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "45",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "45",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-04-21T16:01:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Вот эта галочка, или как-то так – это в статистики и подобном символ предсказанного значения, ну или апроксимации. Может прямо напишу потом, ибо если бы я сейчас не учился в ШАД (Яндексе) – то и не знал бы об этом и не понял бы такую запись)) Хоть она математически корректна…"
+    ],
+    "text": "Вот эта галочка, или как-то так – это в статистики и подобном символ предсказанного значения, ну или апроксимации. Может прямо напишу потом, ибо если бы я сейчас не учился в ШАД (Яндексе) – то и не знал бы об этом и не понял бы такую запись)) Хоть она математически корректна…",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[124]/w:commentRangeStart",
+        "paragraph_index": 133,
+        "paragraph_text": "Функция потерь реконструкции строится непосредственно в комплексной плоскости. Для каждого скрытого временно́го шага и каждого спектрального канала предсказанный и целевой векторы собираются в комплексные числа\n (истинные значения) и  (предсказанные значения), после чего вычисляется модуль их векторной разности (1):"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[124]/w:commentRangeEnd",
+        "paragraph_index": 133,
+        "paragraph_text": "Функция потерь реконструкции строится непосредственно в комплексной плоскости. Для каждого скрытого временно́го шага и каждого спектрального канала предсказанный и целевой векторы собираются в комплексные числа\n (истинные значения) и  (предсказанные значения), после чего вычисляется модуль их векторной разности (1):"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[124]/w:r[12]/w:commentReference",
+        "paragraph_index": 133,
+        "paragraph_text": "Функция потерь реконструкции строится непосредственно в комплексной плоскости. Для каждого скрытого временно́го шага и каждого спектрального канала предсказанный и целевой векторы собираются в комплексные числа\n (истинные значения) и  (предсказанные значения), после чего вычисляется модуль их векторной разности (1):"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "46",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "46",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-04-21T16:10:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Вводил такие коэффициенты. Здесь можно бы убрать."
+    ],
+    "text": "Вводил такие коэффициенты. Здесь можно бы убрать.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[129]/w:commentRangeStart",
+        "paragraph_index": 138,
+        "paragraph_text": "Такой выбор метрики автоматически учитывает циклическую природу фазового угла (различия в  дают нулевую ошибку) и строго штрафует разворот вектора на 180°, который при раздельном сравнении модулей и углов в евклидовом пространстве был бы ошибочно замаскирован. Для обеспечения сопоставимости ошибок каналов с разными характерными уровнями сигналов полученная разность нормируется на максимальную амплитуду соответствующей фазы по всем её гармоникам на текущем окне, при этом нормировочный делитель ограничен снизу порогами шума измерительного тракта (1/2000 о.е. для токов и 1/300 о.е. для напряжений). Дополнительно вводится амплитудное взвешивание: вклад «шумовых» каналов с малым уровнем сигнала в итоговую ошибку линейно снижается до 0,1, что не даёт алгоритму «гнаться» за шумом в каналах с нулевым уровнем полезного сигнала."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[129]/w:commentRangeEnd",
+        "paragraph_index": 138,
+        "paragraph_text": "Такой выбор метрики автоматически учитывает циклическую природу фазового угла (различия в  дают нулевую ошибку) и строго штрафует разворот вектора на 180°, который при раздельном сравнении модулей и углов в евклидовом пространстве был бы ошибочно замаскирован. Для обеспечения сопоставимости ошибок каналов с разными характерными уровнями сигналов полученная разность нормируется на максимальную амплитуду соответствующей фазы по всем её гармоникам на текущем окне, при этом нормировочный делитель ограничен снизу порогами шума измерительного тракта (1/2000 о.е. для токов и 1/300 о.е. для напряжений). Дополнительно вводится амплитудное взвешивание: вклад «шумовых» каналов с малым уровнем сигнала в итоговую ошибку линейно снижается до 0,1, что не даёт алгоритму «гнаться» за шумом в каналах с нулевым уровнем полезного сигнала."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[129]/w:r[9]/w:commentReference",
+        "paragraph_index": 138,
+        "paragraph_text": "Такой выбор метрики автоматически учитывает циклическую природу фазового угла (различия в  дают нулевую ошибку) и строго штрафует разворот вектора на 180°, который при раздельном сравнении модулей и углов в евклидовом пространстве был бы ошибочно замаскирован. Для обеспечения сопоставимости ошибок каналов с разными характерными уровнями сигналов полученная разность нормируется на максимальную амплитуду соответствующей фазы по всем её гармоникам на текущем окне, при этом нормировочный делитель ограничен снизу порогами шума измерительного тракта (1/2000 о.е. для токов и 1/300 о.е. для напряжений). Дополнительно вводится амплитудное взвешивание: вклад «шумовых» каналов с малым уровнем сигнала в итоговую ошибку линейно снижается до 0,1, что не даёт алгоритму «гнаться» за шумом в каналах с нулевым уровнем полезного сигнала."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "48",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "48",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-04-20T15:00:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Ну… Пусть пока такое, суть в том, что модель смотрит на всё сразу и с нужным «весом» оценивает влияние какого-то участка на данную зону."
+    ],
+    "text": "Ну… Пусть пока такое, суть в том, что модель смотрит на всё сразу и с нужным «весом» оценивает влияние какого-то участка на данную зону.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p/w:commentRangeStart[1]",
+        "paragraph_index": 142,
+        "paragraph_text": "Рисунок 4. Пример работы механизма маскирования. "
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p/w:commentRangeEnd[1]",
+        "paragraph_index": 142,
+        "paragraph_text": "Рисунок 4. Пример работы механизма маскирования. "
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p/w:r[5]/w:commentReference",
+        "paragraph_index": 142,
+        "paragraph_text": "Рисунок 4. Пример работы механизма маскирования. "
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "49",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "49",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-04-21T16:17:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Взята из языковой модели BERT, можно и другое поискать…"
+    ],
+    "text": "Взята из языковой модели BERT, можно и другое поискать…",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p/w:commentRangeStart[2]",
+        "paragraph_index": 142,
+        "paragraph_text": "Рисунок 4. Пример работы механизма маскирования. "
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p/w:commentRangeEnd[2]",
+        "paragraph_index": 142,
+        "paragraph_text": "Рисунок 4. Пример работы механизма маскирования. "
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p/w:r[6]/w:commentReference",
+        "paragraph_index": 142,
+        "paragraph_text": "Рисунок 4. Пример работы механизма маскирования. "
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "50",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "50",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-04-21T23:41:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Во, нашёл лучше картинку, нужна такая всё же."
+    ],
+    "text": "Во, нашёл лучше картинку, нужна такая всё же.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p/w:commentRangeStart[3]",
+        "paragraph_index": 142,
+        "paragraph_text": "Рисунок 4. Пример работы механизма маскирования. "
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p/w:commentRangeEnd[3]",
+        "paragraph_index": 142,
+        "paragraph_text": "Рисунок 4. Пример работы механизма маскирования. "
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p/w:r[7]/w:commentReference",
+        "paragraph_index": 142,
+        "paragraph_text": "Рисунок 4. Пример работы механизма маскирования. "
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "51",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "51",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-05T22:07:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Или «блок»… Прост без конца не хочется пихать «блок»."
+    ],
+    "text": "Или «блок»… Прост без конца не хочется пихать «блок».",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[135]/w:commentRangeStart",
+        "paragraph_index": 146,
+        "paragraph_text": "Для этого блок, отвечавший за реконструкцию спектра, заменяется на новый вычислительный модуль. Принципиально важным решением является использование на этом этапе нелинейных слоёв Колмогорова-Арнольда (KAN) вместо классических полносвязных структур. Классификационный блок построен как каскад из одного KAN-слоя (FastKAN), расширяющего размерность скрытого представления и выполняющего нелинейное выделение диагностически значимых шаблонов посредством обучаемых сплайнов, и финальной линейной проекции в вероятности классов. Это сохраняет общую концепцию интерпретируемости: инженер может проанализировать форму выходных сплайнов, чтобы понять, какие именно значения латентного пространства модель сочла достаточными для выдачи сигнала о событии."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[135]/w:commentRangeEnd",
+        "paragraph_index": 146,
+        "paragraph_text": "Для этого блок, отвечавший за реконструкцию спектра, заменяется на новый вычислительный модуль. Принципиально важным решением является использование на этом этапе нелинейных слоёв Колмогорова-Арнольда (KAN) вместо классических полносвязных структур. Классификационный блок построен как каскад из одного KAN-слоя (FastKAN), расширяющего размерность скрытого представления и выполняющего нелинейное выделение диагностически значимых шаблонов посредством обучаемых сплайнов, и финальной линейной проекции в вероятности классов. Это сохраняет общую концепцию интерпретируемости: инженер может проанализировать форму выходных сплайнов, чтобы понять, какие именно значения латентного пространства модель сочла достаточными для выдачи сигнала о событии."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[135]/w:r[7]/w:commentReference",
+        "paragraph_index": 146,
+        "paragraph_text": "Для этого блок, отвечавший за реконструкцию спектра, заменяется на новый вычислительный модуль. Принципиально важным решением является использование на этом этапе нелинейных слоёв Колмогорова-Арнольда (KAN) вместо классических полносвязных структур. Классификационный блок построен как каскад из одного KAN-слоя (FastKAN), расширяющего размерность скрытого представления и выполняющего нелинейное выделение диагностически значимых шаблонов посредством обучаемых сплайнов, и финальной линейной проекции в вероятности классов. Это сохраняет общую концепцию интерпретируемости: инженер может проанализировать форму выходных сплайнов, чтобы понять, какие именно значения латентного пространства модель сочла достаточными для выдачи сигнала о событии."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "52",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "52",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-08-08T15:45:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Evdakov, A., Filatova, G., Yablokov, A. et al. A dataset of real-world oscillograms from electrical power grids. Sci Data (2026). https://doi.org/10.1038/s41597-026-06587-8"
+    ],
+    "text": "Evdakov, A., Filatova, G., Yablokov, A. et al. A dataset of real-world oscillograms from electrical power grids. Sci Data (2026). https://doi.org/10.1038/s41597-026-06587-8",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[145]/w:commentRangeStart",
+        "paragraph_index": 156,
+        "paragraph_text": "С целью подтверждения эффективности разработанной архитектуры Physical KAN-Transformer была проведена серия вычислительных экспериментов на массиве верифицированных осциллограмм аварийных и нормальных режимов работы энергосистемы [XX]. Результаты зонной классификации наглядно демонстрируют способность модели отслеживать динамику сложных нестационарных процессов с высоким временны́м разрешением (Рисунок ХХ)."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[145]/w:commentRangeEnd",
+        "paragraph_index": 156,
+        "paragraph_text": "С целью подтверждения эффективности разработанной архитектуры Physical KAN-Transformer была проведена серия вычислительных экспериментов на массиве верифицированных осциллограмм аварийных и нормальных режимов работы энергосистемы [XX]. Результаты зонной классификации наглядно демонстрируют способность модели отслеживать динамику сложных нестационарных процессов с высоким временны́м разрешением (Рисунок ХХ)."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[145]/w:r[13]/w:commentReference",
+        "paragraph_index": 156,
+        "paragraph_text": "С целью подтверждения эффективности разработанной архитектуры Physical KAN-Transformer была проведена серия вычислительных экспериментов на массиве верифицированных осциллограмм аварийных и нормальных режимов работы энергосистемы [XX]. Результаты зонной классификации наглядно демонстрируют способность модели отслеживать динамику сложных нестационарных процессов с высоким временны́м разрешением (Рисунок ХХ)."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "53",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "53",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-04-21T11:33:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Файлы приведены в ",
+      "Комментарии научным руквоводителям.docx"
+    ],
+    "text": "Файлы приведены в \nКомментарии научным руквоводителям.docx",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[5]/w:tr[5]/w:tc/w:p[1]/w:commentRangeStart",
+        "paragraph_index": 175,
+        "paragraph_text": "Рисунок ХХ. Демонстрация зонной классификации электромагнитного переходного процесса."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[5]/w:tr[5]/w:tc/w:p[1]/w:commentRangeEnd",
+        "paragraph_index": 175,
+        "paragraph_text": "Рисунок ХХ. Демонстрация зонной классификации электромагнитного переходного процесса."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[5]/w:tr[5]/w:tc/w:p[1]/w:r[2]/w:commentReference",
+        "paragraph_index": 175,
+        "paragraph_text": "Рисунок ХХ. Демонстрация зонной классификации электромагнитного переходного процесса."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "55",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "55",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-05T15:54:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "От Андрея замечание",
+      "Добавить инициалы"
+    ],
+    "text": "От Андрея замечание\nДобавить инициалы",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[170]/w:commentRangeStart[1]",
+        "paragraph_index": 195,
+        "paragraph_text": "Архитектура будет применена для детальной классификации различных типов ОЗЗ (с учётом теорий В. Петерсена, Дж. Петерса и Х. Слепяна, Н.Н. Белякова). Планируется использовать обученную модель в качестве интеллектуального аудитора для прохода по огромному массиву реальных (неразмеченных) осциллограмм с целью поиска дуговых замыканий."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[170]/w:commentRangeEnd[1]",
+        "paragraph_index": 195,
+        "paragraph_text": "Архитектура будет применена для детальной классификации различных типов ОЗЗ (с учётом теорий В. Петерсена, Дж. Петерса и Х. Слепяна, Н.Н. Белякова). Планируется использовать обученную модель в качестве интеллектуального аудитора для прохода по огромному массиву реальных (неразмеченных) осциллограмм с целью поиска дуговых замыканий."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[170]/w:r[7]/w:commentReference",
+        "paragraph_index": 195,
+        "paragraph_text": "Архитектура будет применена для детальной классификации различных типов ОЗЗ (с учётом теорий В. Петерсена, Дж. Петерса и Х. Слепяна, Н.Н. Белякова). Планируется использовать обученную модель в качестве интеллектуального аудитора для прохода по огромному массиву реальных (неразмеченных) осциллограмм с целью поиска дуговых замыканий."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "56",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "56",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-08-08T15:06:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Хмм… Вот в этой диссертации вообще не упоминаются инициалы. Максимум при описании Белякова они есть, поэтому решил убрать все",
+      "",
+      "https://mpei.ru/diss/Lists/FilesAbstracts/486-Автореферат.pdf?ysclid=mskbsjwh6433794848 "
+    ],
+    "text": "Хмм… Вот в этой диссертации вообще не упоминаются инициалы. Максимум при описании Белякова они есть, поэтому решил убрать все\n\nhttps://mpei.ru/diss/Lists/FilesAbstracts/486-Автореферат.pdf?ysclid=mskbsjwh6433794848 ",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[170]/w:commentRangeStart[2]",
+        "paragraph_index": 195,
+        "paragraph_text": "Архитектура будет применена для детальной классификации различных типов ОЗЗ (с учётом теорий В. Петерсена, Дж. Петерса и Х. Слепяна, Н.Н. Белякова). Планируется использовать обученную модель в качестве интеллектуального аудитора для прохода по огромному массиву реальных (неразмеченных) осциллограмм с целью поиска дуговых замыканий."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[170]/w:commentRangeEnd[2]",
+        "paragraph_index": 195,
+        "paragraph_text": "Архитектура будет применена для детальной классификации различных типов ОЗЗ (с учётом теорий В. Петерсена, Дж. Петерса и Х. Слепяна, Н.Н. Белякова). Планируется использовать обученную модель в качестве интеллектуального аудитора для прохода по огромному массиву реальных (неразмеченных) осциллограмм с целью поиска дуговых замыканий."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[170]/w:r[8]/w:commentReference",
+        "paragraph_index": 195,
+        "paragraph_text": "Архитектура будет применена для детальной классификации различных типов ОЗЗ (с учётом теорий В. Петерсена, Дж. Петерса и Х. Слепяна, Н.Н. Белякова). Планируется использовать обученную модель в качестве интеллектуального аудитора для прохода по огромному массиву реальных (неразмеченных) осциллограмм с целью поиска дуговых замыканий."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "57",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "57",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-08-08T15:10:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "В работах Галины есть вот такие инициалы:",
+      "(В. Петерсена, Дж. Петерса и Х. Слепяна, Н.Н. Белякова)",
+      "",
+      "https://cyberleninka.ru/article/n/issledovanie-tsifrovyh-izmeritelnyh-transformatorov-v-usloviyah-dugovyh-peremezhayuschihsya-odnofaznyh-zamykaniy-na-zemlyu-s/viewer "
+    ],
+    "text": "В работах Галины есть вот такие инициалы:\n(В. Петерсена, Дж. Петерса и Х. Слепяна, Н.Н. Белякова)\n\nhttps://cyberleninka.ru/article/n/issledovanie-tsifrovyh-izmeritelnyh-transformatorov-v-usloviyah-dugovyh-peremezhayuschihsya-odnofaznyh-zamykaniy-na-zemlyu-s/viewer ",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[170]/w:commentRangeStart[3]",
+        "paragraph_index": 195,
+        "paragraph_text": "Архитектура будет применена для детальной классификации различных типов ОЗЗ (с учётом теорий В. Петерсена, Дж. Петерса и Х. Слепяна, Н.Н. Белякова). Планируется использовать обученную модель в качестве интеллектуального аудитора для прохода по огромному массиву реальных (неразмеченных) осциллограмм с целью поиска дуговых замыканий."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[170]/w:commentRangeEnd[3]",
+        "paragraph_index": 195,
+        "paragraph_text": "Архитектура будет применена для детальной классификации различных типов ОЗЗ (с учётом теорий В. Петерсена, Дж. Петерса и Х. Слепяна, Н.Н. Белякова). Планируется использовать обученную модель в качестве интеллектуального аудитора для прохода по огромному массиву реальных (неразмеченных) осциллограмм с целью поиска дуговых замыканий."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[170]/w:r[9]/w:commentReference",
+        "paragraph_index": 195,
+        "paragraph_text": "Архитектура будет применена для детальной классификации различных типов ОЗЗ (с учётом теорий В. Петерсена, Дж. Петерса и Х. Слепяна, Н.Н. Белякова). Планируется использовать обученную модель в качестве интеллектуального аудитора для прохода по огромному массиву реальных (неразмеченных) осциллограмм с целью поиска дуговых замыканий."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "58",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "58",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-08-08T15:11:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "И вот тут нашёл такие инициалы:",
+      "",
+      "W. Petersen",
+      "J. F. Peters and J. Slepyan",
+      "N.N. Belyakov",
+      "",
+      "https://www.e3s-conferences.org/articles/e3sconf/ref/2019/66/e3sconf_eece18_05001/e3sconf_eece18_05001.html "
+    ],
+    "text": "И вот тут нашёл такие инициалы:\n\nW. Petersen\nJ. F. Peters and J. Slepyan\nN.N. Belyakov\n\nhttps://www.e3s-conferences.org/articles/e3sconf/ref/2019/66/e3sconf_eece18_05001/e3sconf_eece18_05001.html ",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[170]/w:commentRangeStart[4]",
+        "paragraph_index": 195,
+        "paragraph_text": "Архитектура будет применена для детальной классификации различных типов ОЗЗ (с учётом теорий В. Петерсена, Дж. Петерса и Х. Слепяна, Н.Н. Белякова). Планируется использовать обученную модель в качестве интеллектуального аудитора для прохода по огромному массиву реальных (неразмеченных) осциллограмм с целью поиска дуговых замыканий."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[170]/w:commentRangeEnd[4]",
+        "paragraph_index": 195,
+        "paragraph_text": "Архитектура будет применена для детальной классификации различных типов ОЗЗ (с учётом теорий В. Петерсена, Дж. Петерса и Х. Слепяна, Н.Н. Белякова). Планируется использовать обученную модель в качестве интеллектуального аудитора для прохода по огромному массиву реальных (неразмеченных) осциллограмм с целью поиска дуговых замыканий."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[170]/w:r[10]/w:commentReference",
+        "paragraph_index": 195,
+        "paragraph_text": "Архитектура будет применена для детальной классификации различных типов ОЗЗ (с учётом теорий В. Петерсена, Дж. Петерса и Х. Слепяна, Н.Н. Белякова). Планируется использовать обученную модель в качестве интеллектуального аудитора для прохода по огромному массиву реальных (неразмеченных) осциллограмм с целью поиска дуговых замыканий."
+      }
+    ],
+    "decision": "not_reviewed"
+  }
+]

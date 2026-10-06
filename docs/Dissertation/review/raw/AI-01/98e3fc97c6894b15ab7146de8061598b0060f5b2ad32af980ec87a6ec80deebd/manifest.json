@@ -1,0 +1,149 @@
+{
+  "source_id": "AI-01",
+  "source_sha256": "98e3fc97c6894b15ab7146de8061598b0060f5b2ad32af980ec87a6ec80deebd",
+  "source_path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/article/(ч1) Архитектура ИИ ФизКАН для энергетики v3.4.docx",
+  "preserved_parts": [
+    {
+      "path": "[Content_Types].xml",
+      "sha256": "28bd9cad9bc737c48597462072da9989174613cf16c9c446917ed33285b5bbf0"
+    },
+    {
+      "path": "_rels/.rels",
+      "sha256": "c30fe099dbcfed4ecc4ae544ccf82f432c8d3bb665e2a301df283738b196d803"
+    },
+    {
+      "path": "word/document.xml",
+      "sha256": "a7d8782ee9198ab26e126396aa541bef896804aff9ed1fd53e5f5b058b183e40"
+    },
+    {
+      "path": "word/_rels/document.xml.rels",
+      "sha256": "049e9c658036aee3fcf56ea9e9005017b98cd4f37e5d61b2873feb63fb34b059"
+    },
+    {
+      "path": "word/footer3.xml",
+      "sha256": "ae551d357dc744d055b7952aa68eb30431aac2f5289889009d03ecc5d8942578"
+    },
+    {
+      "path": "word/header1.xml",
+      "sha256": "c056ca694381d9fab1d34463cbe472fba281583b8da38610c106ea72640359e6"
+    },
+    {
+      "path": "word/header2.xml",
+      "sha256": "9ef51d21d1c584618c8b8c15af3fbf11aba70bcf25c1d959ad3080f542e69d37"
+    },
+    {
+      "path": "word/footer1.xml",
+      "sha256": "5558f3ce68e7f095a1d1c7710bbf69ed22f9a97c81ce5de6f29ed1f52a7ae20e"
+    },
+    {
+      "path": "word/footnotes.xml",
+      "sha256": "971b0e53f1e41a132b1d0c9c2e3e83c4f212e696f783a27d78c7292eab23818a"
+    },
+    {
+      "path": "word/endnotes.xml",
+      "sha256": "66c9e6e988a9ebb705c78f8f92a0fd23c9196a71e9a4e32d046035921c6c7b95"
+    },
+    {
+      "path": "word/footer2.xml",
+      "sha256": "a61ca4da6e5a0c756319da4d450aea6e6c4ef17c6ba31c0e91b74ad4d3c8f4ed"
+    },
+    {
+      "path": "word/theme/theme1.xml",
+      "sha256": "bf4992e3fa7832e5c68fdbc4ec5189c8e5d347fef03c5ba2522ad704bde5078f"
+    },
+    {
+      "path": "word/_rels/comments.xml.rels",
+      "sha256": "f4cb52dba0d5e0bc299510ed80df0fe6c006bcf6ed7824474a10e85f9f06bade"
+    },
+    {
+      "path": "word/comments.xml",
+      "sha256": "c17d50e83a04ffe58a59f34213e55cea237ecdfb754c98abf41da1e3798da88c"
+    },
+    {
+      "path": "word/settings.xml",
+      "sha256": "a66816fd7a6635f648f3f4264f061f769438fc6adcf3fff752abc68b917edd7e"
+    },
+    {
+      "path": "word/_rels/settings.xml.rels",
+      "sha256": "60cdb8cee2f8607399701b5eaf9055258f91594e663945ae00908bf47dfa666c"
+    },
+    {
+      "path": "customXml/item1.xml",
+      "sha256": "c8092edbb672f8c93f1d5ef66539a6f169462ba8738b785b59cc5d96f4aca59a"
+    },
+    {
+      "path": "customXml/itemProps1.xml",
+      "sha256": "c743842c5b1288e4a60b61c38c5d8549f49703133dcad74c85574fca2b0e9524"
+    },
+    {
+      "path": "word/numbering.xml",
+      "sha256": "73285bb34e5bc7fc198050dcc0838f534d0a1b5f3e7eccf51ed4794208cb6d93"
+    },
+    {
+      "path": "word/styles.xml",
+      "sha256": "0ba553f1ab637fff4ace796e90f64e03b2478acf899a6390108394f909c9e4cb"
+    },
+    {
+      "path": "word/webSettings.xml",
+      "sha256": "0266d87582d5a46b8b24826641c146578497762f62f6ca47ed3e94dc181ba092"
+    },
+    {
+      "path": "word/commentsIds.xml",
+      "sha256": "9752680342abec8c7929c653b164072119e35c9376d8d1c3c1505469c9fb1a5f"
+    },
+    {
+      "path": "word/commentsExtensible.xml",
+      "sha256": "b73bf3e3519a4cb70c6efffa06f3577b7c0aefc6bd6c5ebcbb3b1fa53be5e7aa"
+    },
+    {
+      "path": "docProps/core.xml",
+      "sha256": "845ada4596a5c525b2a8b6a4b38d3258416795ce7dda082f52164bdbcfef8c9b"
+    },
+    {
+      "path": "docProps/app.xml",
+      "sha256": "6e7dfccdf71c0a89aa5892fe45991a6f66beece290c5fa9ad18632b152b73d93"
+    },
+    {
+      "path": "docProps/custom.xml",
+      "sha256": "201271e8348a9e22cbb8c85cefa465a66d456782e645a27179b53b2cdd4254c1"
+    },
+    {
+      "path": "word/commentsExtended.xml",
+      "sha256": "21c2e3e39d85e00752781150a87734496f0f928a3a7ad3d351266893190ada6b"
+    },
+    {
+      "path": "customXml/_rels/item1.xml.rels",
+      "sha256": "80482f86e196171d66001e0e74d1900408a3aaf2463e54005d251b5f2db9a0b0"
+    },
+    {
+      "path": "word/fontTable.xml",
+      "sha256": "d91fac43be0b9998c564f0b402ca25408f5f00baeceda95a2d54e2342e0cba81"
+    },
+    {
+      "path": "word/people.xml",
+      "sha256": "3746bf1341fcc0b7612271e6b371b145020556a5ed4f6534cf679fbd20492b8b"
+    }
+  ],
+  "non_xml_preserved_in_docx": [
+    "word/media/image14.png",
+    "word/media/image15.png",
+    "word/media/image16.png",
+    "word/media/image1.png",
+    "word/media/image2.jpeg",
+    "word/media/image3.png",
+    "word/media/image4.png",
+    "word/media/image5.png",
+    "word/media/image6.png",
+    "word/media/image7.png",
+    "word/media/image8.png",
+    "word/media/image9.png",
+    "word/media/image10.png",
+    "word/media/image11.png",
+    "word/media/image12.png",
+    "word/media/image13.png"
+  ],
+  "paragraph_count": 272,
+  "comment_count": 45,
+  "revision_count": 0,
+  "semantics": "w:t and w:delText exported; no tracked changes accepted or rejected; paragraph context is not an exact text range"
+}

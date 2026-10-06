@@ -1,0 +1,1906 @@
+[
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 1,
+    "locator": "/w:document/w:body/w:p[1]",
+    "style": "",
+    "text": "УДК 621.316.925.1"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 2,
+    "locator": "/w:document/w:body/w:p[2]",
+    "style": "",
+    "text": "Евдаков Алексей Евгеньевич"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 3,
+    "locator": "/w:document/w:body/w:p[3]",
+    "style": "",
+    "text": "ФГБОУВО «Ивановский государственный энергетический университет имени В.И. Ленина», аспирант, Россия, Иваново, телефон +7-980-694-38-55, e-mail: eae_rus@mail.ru"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 4,
+    "locator": "/w:document/w:body/w:p[4]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 5,
+    "locator": "/w:document/w:body/w:p[5]",
+    "style": "",
+    "text": "Архитектурная модернизация интеллектуальных алгоритмов релейной защиты: внедрение законов электротехники в граф вычислений"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 6,
+    "locator": "/w:document/w:body/w:p[6]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 7,
+    "locator": "/w:document/w:body/w:p[7]",
+    "style": "",
+    "text": "Авторское резюме"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 8,
+    "locator": "/w:document/w:body/w:p[8]",
+    "style": "32",
+    "text": "Состояние вопроса. Развитие энергосистем и внедрение современного оборудования усложняет электромагнитные переходные процессы, снижая эффективность традиционных алгоритмов релейной защиты и автоматики, включая устройств быстродействующего автоматического ввода резерва. Применение классических нейронных сетей для анализа осциллограмм ограничено проблемой «чёрного ящика», вычислительной сложностью и отсутствием физической интерпретируемости. В связи с этим актуальной научно-технической задачей является модернизация архитектур нейронных сетей."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 9,
+    "locator": "/w:document/w:body/w:p[9]",
+    "style": "32",
+    "text": "Методы и материалы. На основе массива реальных осциллограмм выполнен системный сравнительный анализ классических ИИ-архитектур (MLP, CNN, ResNet) и новейших сетей Колмогорова-Арнольда (KAN). Разработаны физически-информированные модификации нейросетей семейства PhysicsKAN, интегрирующие законы электротехники, за счёт операций перемножения и деления сигналов, непосредственно в граф вычислений через операции с вещественными и комплексными числами."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 10,
+    "locator": "/w:document/w:body/w:p[10]",
+    "style": "32",
+    "text": "Результаты. Доказано, что экстенсивное наращивание глубины классических сетей ведёт к увеличению вычислительной сложности без значительного роста точности. Предложенная архитектура PhysicsKAN достигла точности тяжёлых сетей ResNet при кратно меньшем числе настраиваемых параметров. Тест на отключение «нейронов» подтвердили, что сеть успешно синтезирует логику пороговых измерительных органов."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 11,
+    "locator": "/w:document/w:body/w:p[11]",
+    "style": "",
+    "text": "Выводы. Внедрение «физических» блоков в топологию нейронных сетей повышает точность ИИ-моделей. Результаты формируют основу для создания адаптивных измерительных органов и систем предиктивной аналитики нового поколения. "
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 12,
+    "locator": "/w:document/w:body/w:p[12]",
+    "style": "32",
+    "text": "Ключевые слова: релейная защита, РЗА, анализ осциллограмм, машинное обучение, сети Колмогорова-Арнольда, БАВР, физически-информированные нейросети."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 13,
+    "locator": "/w:document/w:body/w:p[13]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 14,
+    "locator": "/w:document/w:body/w:p[14]",
+    "style": "",
+    "text": "Evdakov Aleksey Evgenievich"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 15,
+    "locator": "/w:document/w:body/w:p[15]",
+    "style": "",
+    "text": "Ivanovo State Power Engineering Universit, graduate student, Russia, Ivanovo, telephone +7-980-694-38-55, e-mail: eae_rus@mail.ru"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 16,
+    "locator": "/w:document/w:body/w:p[16]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 17,
+    "locator": "/w:document/w:body/w:p[17]",
+    "style": "",
+    "text": "Architectural Modernization of Intelligent Relay Protection Algorithms: Integrating Electrical Engineering Laws into the Computation Graph"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 18,
+    "locator": "/w:document/w:body/w:p[18]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 19,
+    "locator": "/w:document/w:body/w:p[19]",
+    "style": "",
+    "text": "Abstract"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 20,
+    "locator": "/w:document/w:body/w:p[20]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 21,
+    "locator": "/w:document/w:body/w:p[21]",
+    "style": "",
+    "text": "Background. The modernization and structural complication of modern power systems degrade the performance of traditional protective relaying and automation systems, including Fast automatic bus transfer (FABT) devices. Although deep learning models show promise for transient process classification, their industrial application is hindered by the «black box» nature of artificial neural networks, high computational complexity, and lack of physical interpretability. In this regard, the modernization of neural network architectures is an urgent scientific and technical task.."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 22,
+    "locator": "/w:document/w:body/w:p[22]",
+    "style": "",
+    "text": "Materials and methods. Using a database of real-world power grid oscillograms, a comparative analysis of classical neural networks (MLP, CNN, ResNet) and Kolmogorov-Arnold Networks (KAN) is performed. This paper presents a family of physics-informed models, PhysicsKAN. These models integrate the fundamental laws of electrical engineering directly into the network computation graph using real and complex vector operations."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 23,
+    "locator": "/w:document/w:body/w:p[23]",
+    "style": "",
+    "text": "Results. It is shown that extensive scaling of classical neural networks leads to unnecessary microprocessor overhead without a proportional accuracy gain. The proposed PhysicsKAN architecture achieves accuracy comparable to heavy ResNet structures while utilizing several orders of magnitude fewer trainable parameters. Interpretability analysis confirms that the KAN spline weights successfully synthesize the threshold logic of protective measuring elements based on calculated power and impedance."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 24,
+    "locator": "/w:document/w:body/w:p[24]",
+    "style": "",
+    "text": "Conclusions. The integration of deterministic electrical engineering operations into neural network topologies improves both classification accuracy and physical interpretability. These results establish a mathematical foundation for the development of adaptive measuring organs and predictive analytics for next-generation relay protection systems."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 25,
+    "locator": "/w:document/w:body/w:p[25]",
+    "style": "",
+    "text": "Key words: protective relaying, oscillogram analysis, machine learning, Kolmogorov-Arnold Networks, FABT, physics-informed neural networks."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 26,
+    "locator": "/w:document/w:body/w:p[26]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 27,
+    "locator": "/w:document/w:body/w:p[27]",
+    "style": "2",
+    "text": "1. Введение."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 28,
+    "locator": "/w:document/w:body/w:p[28]",
+    "style": "",
+    "text": "Развитие современных электроэнергетических систем связано с их структурным и технологическим усложнением. Широкое внедрение распределённой генерации, силовой преобразовательной техники, частотно-регулируемых приводов и другого типа оборудования приводит к искажению формы сигналов, появлению высших гармоник и высокочастотного затухающего шума переходных процессах. В этих условиях обеспечение надёжности и быстродействия комплексов релейной защиты и автоматики (РЗА), в частности устройств быстродействующего автоматического ввода резерва (БАВР), становится критически важной задачей. "
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 29,
+    "locator": "/w:document/w:body/w:p[29]",
+    "style": "",
+    "text": "Традиционные микропроцессорные устройства РЗА функционируют на базе жёстко прописанных алгоритмов, сравнивающих контролируемые параметры (действующие значения токов, напряжений или их симметричные составляющих) с заданными уставками [1]. Такой подход эффективен при простых повреждениях, однако сталкивается с трудностями при нестационарных режимах. Дуговые перемежающиеся замыкания на землю (ДПОЗЗ) с хаотичным горением дуги, глубокое насыщение измерительных трансформаторов тока [2,3] и пусковые токи мощных двигателей существенно искажают форму сигналов. В результате традиционные измерительные органы либо работают с задержками для отстройки от помех, либо подвергаются риску избыточного срабатывания или ложной блокировки. Это формирует потребность в методах, способных анализировать физический шаблон процесса целиком, выявляя аварийные режимы на ранней стадии."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 30,
+    "locator": "/w:document/w:body/w:p[30]",
+    "style": "",
+    "text": "Перспективным направлением преодоления ограничений существующей логики РЗА является применение методов машинного обучения (ML) и технологий искусственного интеллекта (ИИ). В последние годы наблюдается значительный рост числа исследований, посвящённых использованию нейронных сетей для классификации временных рядов [4-7], к которому относятся и осциллограммы аномальных и аварийных режимов. Тем не менее, массовое внедрение алгоритмов ИИ в промышленную эксплуатацию сдерживается рядом фундаментальных барьеров."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 31,
+    "locator": "/w:document/w:body/w:p[31]",
+    "style": "",
+    "text": "Одним из ключевых препятствий является проблема «чёрного ящика». Традиционные архитектуры глубокого обучения, такие как многослойные перцептроны (MLP), свёрточные (CNN) и остаточные сети (ResNet), представляют собой мощные математические аппроксиматоры, однако их внутренняя структура из матриц весов непрозрачна. В консервативной отрасли электроэнергетики недопустимо использовать алгоритмы, логику принятия решений которых невозможно детально проанализировать и физически обосновать, особенно при расследовании случаев ложных срабатываний или отказов."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 32,
+    "locator": "/w:document/w:body/w:p[32]",
+    "style": "",
+    "text": "Возможным ключом к решению проблемы интерпретируемости стало появление сетей Колмогорова-Арнольда (KAN) [8]. В отличие от классических перцептронов, где нелинейные функции активации жёстко зафиксированы в узлах (нейронах), архитектура KAN обучает сами функции активации, располагая их непосредственно на рёбрах графа вычислений в виде адаптивных одномерных сплайнов y = f(x). Данный подход обеспечивает сетям KAN иной уровень выразительности, поскольку они способны выучивать сложные нелинейные зависимости (например, полигональные характеристики реле сопротивления) при значительно меньшем числе параметров. Кроме того, обученные сплайны обладают физической наглядностью, позволяя анализировать выученные нелинейные связи напрямую, а не через скрытые признаки в абстрактных матрицах весов."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 33,
+    "locator": "/w:document/w:body/w:p[33]",
+    "style": "",
+    "text": "Опираясь на потенциал KAN сетей, в данной работе выдвигается гипотеза о необходимости создания физически-информированных нейронных сетей [9-11] для задач РЗА. Речь идет не о замене детерминированной модели защиты, а о её интеграции с машинным обучением. Предлагаемая архитектурная модернизация (PhysicsKAN) подразумевает внедрение в структуру нейросети специализированных слоёв, отражающих базовые законы теоретической электротехники."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 34,
+    "locator": "/w:document/w:body/w:p[34]",
+    "style": "",
+    "text": "В частности, добавляются операции попарного перемножения сигналов (для оценки величин, пропорциональных мощности S = U * I) и их деления (для оценки комплексной проводимости Y = I / U). При учитывается, что работа ведётся с комплексными числами (в полярных координатах), где при умножении фазовые углы складываются, а при делении – вычитаются. Предполагается, что такой подход избавит модель от необходимости тратить вычислительные ресурсы на «изобретение» законов физики с нуля (например, закон Ома), позволяя сплайнам сфокусироваться на выявлении тонких шаблонов нестационарных переходных процессов."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 35,
+    "locator": "/w:document/w:body/w:p[35]",
+    "style": "",
+    "text": "Целью данного исследования является модернизация архитектуры сетей Колмогорова-Арнольда для создания точных, вычислительно эффективных и физически-информированных модулей классификации аварийных режимов электросетей."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 36,
+    "locator": "/w:document/w:body/w:p[36]",
+    "style": "",
+    "text": "Достижение поставленной цели может быть сопряжено с решением следующих задач:"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 37,
+    "locator": "/w:document/w:body/w:p[37]",
+    "style": "afffd",
+    "text": "Выполнить оценку производительности и аппаратной применимости классических архитектур (MLP, CNN, ResNet) в сравнении с базовыми сетями KAN и разработанным семейством физически-информированных моделей PhysicsKAN, cPhysicsKAN и rPhysicsKAN."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 38,
+    "locator": "/w:document/w:body/w:p[38]",
+    "style": "afffd",
+    "text": "Продемонстрировать работоспособность предложенных подходов на сложной прикладной задаче – детектировании и распознавании различных типов событий на реальных осциллограммах."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 39,
+    "locator": "/w:document/w:body/w:p[39]",
+    "style": "",
+    "text": "Научная новизна работы заключается в том, что впервые на массиве реальных (а не синтетически сгенерированных) электросетевых осциллограмм проведено системное сравнение ИИ-архитектур. Кроме того, предложена уникальная адаптация сетей KAN, доказывающая, что внедрение в граф вычислений математических операций, отражающих базовые законы электротехники, позволяет повысить точность и стабильность работы интеллектуальных органов защиты."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 40,
+    "locator": "/w:document/w:body/w:p[40]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 41,
+    "locator": "/w:document/w:body/w:p[41]",
+    "style": "2",
+    "text": "2. Методология и архитектуры интеллектуальных алгоритмов."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 42,
+    "locator": "/w:document/w:body/w:p[42]",
+    "style": "30",
+    "text": "2.1. База данных и логика разметки обучающей выборки."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 43,
+    "locator": "/w:document/w:body/w:p[43]",
+    "style": "",
+    "text": "Основой исследования является уникальный массив реальных осциллограмм аварий и нормальных режимов работы, зарегистрированных микропроцессорными терминалами РЗА на объектах с напряжением 0,4 ÷ 35 кВ. Подробное описание методологии сбора, анонимизации и верификации данного набора данных (датасета) приведено в ранее опубликованной работе [12]. "
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 44,
+    "locator": "/w:document/w:body/w:p[44]",
+    "style": "",
+    "text": "С целью обучения и тестирования моделей использовалась экспертно-размеченная выборка осциллограмм. Оценка способности ИИ-моделей извлекать признаки и анализировать переходные процессы основана на разделении всех осциллограмм на 4 базовых классах. Норма: установившиеся режимы работы сети и измерительный шум.; Рабочие коммутации: штатные пуски электродвигателей, включения силовых трансформаторов под напряжение и т.д. Аномальные режимы: искажения формы сигнала, устойчивые смещения нейтрали, не требующие мгновенного отключения. Аварийные события: критические повреждения (включая короткие замыкания), требующие немедленного срабатывания РЗА. Такое разделение служит полигоном для проверки селективности разрабатываемых алгоритмов."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 45,
+    "locator": "/w:document/w:body/w:p[45]",
+    "style": "30",
+    "text": "2.2. Методология оценки качества моделей."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 46,
+    "locator": "/w:document/w:body/w:p[46]",
+    "style": "",
+    "text": "Специфика анализа реальных данных энергосистем систем заключается в экстремальном дисбалансе классов. Большую часть времени сеть находится в нормальном режиме. В этих условиях стандартная метрика доли правильных ответов (Accuracy) становится неинформативной. Если нейросеть будет в тривиально классифицировать все окна как «Норма», Accuracy превысит 90%, однако для релейной защиты это будет означать катастрофический отказ в срабатывании."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 47,
+    "locator": "/w:document/w:body/w:p[47]",
+    "style": "",
+    "text": "В связи с экстремальным дисбалансом классов (доминирование нормального режима), метрика  является неинформативной. Объективная оценка проводилась с использованием системы сбалансированных метрик (рис. 1):  (селективность, минимизация ложных срабатываний),\n (чувствительность, отсутствие пропусков аварий) и их гармоническое среднее . Дополнительно оценивалась площадь под кривой ошибок \nROC-AUC (рис. 2), характеризующая гибкость настройки уставки чувствительности алгоритма к небалансам и помехам."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 48,
+    "locator": "/w:document/w:body/w:p[48]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 49,
+    "locator": "/w:document/w:body/w:tbl[1]/w:tr[1]/w:tc/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 50,
+    "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p",
+    "style": "",
+    "text": "Рисунок 1. Визуальное представление исследуемых метрик. Область внутри круга – предсказание моделью значений «сработал». Левая часть – область, где надо было сработать, а правая – где не надо было."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 51,
+    "locator": "/w:document/w:body/w:p[49]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 52,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[1]/w:tc/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 53,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[2]/w:tc/w:p",
+    "style": "",
+    "text": "Рисунок 2. Визуальное представление метрики ROC-AUC. "
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 54,
+    "locator": "/w:document/w:body/w:p[50]",
+    "style": "afffd",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 55,
+    "locator": "/w:document/w:body/w:p[51]",
+    "style": "",
+    "text": "Инженерная визуализация предсказаний"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 56,
+    "locator": "/w:document/w:body/w:p[52]",
+    "style": "",
+    "text": "Стоит отметить, что данные ИИ-метрики имеют прямые аналоги в теории РЗА: метрика Precision характеризует селективность алгоритма и его отстройку от помех (отсутствие ложных срабатываний), Recall – надежность срабатывания (чувствительность, отсутствие пропусков аварий), а \nF1-Score отражает интегральную эффективность измерительного органа."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 57,
+    "locator": "/w:document/w:body/w:p[53]",
+    "style": "",
+    "text": "Сложные агрегированные метрики удобны для обучения моделей, однако для инженеров-энергетиков требуется более наглядная оценка надёжности в терминах «цены ошибки». Для этого в исследовании внедрена концепция инженерного визуального анализа на базе гистограмм и матриц ошибок. Доля правильных предсказаний (TP): отображается столбцами, направленными вверх, показывая уверенность модели в правильном диагнозе. Доля ошибок I и II рода (I – ложноположительные результаты (FP) и II – ложноотрицательные (FN), т.е. несрабатывания): отображается столбцами, направленными вниз. "
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 58,
+    "locator": "/w:document/w:body/w:p[54]",
+    "style": "",
+    "text": "Разработанная система визуализации направлена на то, чтобы доказать: использование PhysicsKAN не просто повышает общую точность, но и минимизирует определённые ошибки. "
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 59,
+    "locator": "/w:document/w:body/w:p[55]",
+    "style": "",
+    "text": "Так же в работе предлагается концепция разделения ошибок ИИ на «допустимые» и «критические». Допустимые ошибки – например, классификация «Аномалии» (просадки напряжения) как «Аварии». В худшем случае это приведет лишь к избыточному пуску регистратора аварийных событий БАВР для записи процесса. Критические ошибки – классификация «Рабочей коммутации» (пуск двигателя) как «Аварии» (что ведет к ложному отключению потребителя) или классификация «Аварии» как «Нормы» (пропуск повреждения, ведущий к разрушению оборудования). "
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 60,
+    "locator": "/w:document/w:body/w:p[56]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 61,
+    "locator": "/w:document/w:body/w:p[57]",
+    "style": "2",
+    "text": "3. Исследуемые архитектуры."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 62,
+    "locator": "/w:document/w:body/w:p[58]",
+    "style": "",
+    "text": "Разработка эффективного органа РЗА требует подбора математического аппарата, способного надёжно аппроксимировать физику процессов в условиях ограниченных вычислительных ресурсов микропроцессорного терминала. В данной работе проводится сравнительный анализ семи нейросетевых архитектур, демонстрирующих эволюцию от классических ИИ-«черных ящиков» до интерпретируемых физически-информированных моделей."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 63,
+    "locator": "/w:document/w:body/w:p[59]",
+    "style": "",
+    "text": "С целью обеспечения корректности оценки каждая архитектура реализована в трёх конфигурациях сложности: лёгкая (Light): использует только 1-ю гармонику сигнала; средняя (Medium): использует первые 3 гармоники; тяжелая (Heavy): использует первые 9 гармоник. Это позволяет оценить их Парето-эффективность – баланс между точностью классификации и вычислительной задержкой на CPU."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 64,
+    "locator": "/w:document/w:body/w:p[60]",
+    "style": "30",
+    "text": "3.1. Классические архитектуры (базовые модели)"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 65,
+    "locator": "/w:document/w:body/w:p[61]",
+    "style": "",
+    "text": "В качестве контрольной группы глубокого выступают сети с фиксированными функциями активации и обучаемыми матрицами весов (рис. 3)."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 66,
+    "locator": "/w:document/w:body/w:p[62]",
+    "style": "",
+    "text": "Первым шагом в исследовании стал классический многослойный перцептрон (SimpleMLP, рис 3.а). Данная полносвязная архитектура рассматривает точки входного вектора как независимые признаки. Она игнорирует их временную и физическую связь, представляя собой аналог сложной комбинаторной логики «всего со всем». Данная нейросеть используется в качестве базовой."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 67,
+    "locator": "/w:document/w:body/w:p[63]",
+    "style": "",
+    "text": "В качестве стандарта при работе с временными рядами применялись одномерные свёрточные сети (1D-CNN, Рис 3.б).Они работают как набор адаптивных цифровых фильтров, самостоятельно подбирая коэффициенты для выделения фронтов и гармоник. Она компактнее MLP, но логику работы её внутренних фильтров сложно интерпретировать."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 68,
+    "locator": "/w:document/w:body/w:p[64]",
+    "style": "",
+    "text": "Роль «тяжёлой артиллерии» классического ИИ выполняла глубокая остаточная сеть ResNet1D (Рис 3.в). за счёт механизма обходных связей (skip-connections) модель обладает высочайшей обобщающей способностью и задает «верхнюю планку» (SOTA) точности для классического ИИ, оставаясь при этом непрозрачным «чёрным ящиком»."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 69,
+    "locator": "/w:document/w:body/w:p[65]",
+    "style": "30",
+    "text": "3.2. Эволюция математического аппарата: сети Колмогорова-Арнольда (KAN)"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 70,
+    "locator": "/w:document/w:body/w:p[66]",
+    "style": "",
+    "text": "С целью преодоления проблемы непрозрачности исследуется класс моделей – сети Колмогорова-Арнольда (KAN) [8]. Их отличие заключается в обучении одномерных B-сплайнов непосредственно на рёбрах графа вычислений (рис. 4). В терминах РЗА это означает, что сеть не просто умножает сигнал на веса, а пропускает его через гибкие кривые, самостоятельно синтезируя аналог характеристики срабатывания реле."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 71,
+    "locator": "/w:document/w:body/w:p[67]",
+    "style": "",
+    "text": "Рассматривалась базовая конфигурация SimpleKAN (Рис 4.а), являющаяся прямой альтернативой сети MLP, обладающая высокой выразительной мощностью и потенциальной интерпретируемостью сплайнов. Для анализа сложных зашумленных сигналов энергосистем была применена гибридная модель ConvKAN (Рис 4.б), гибридная модель, объединяющая способность свёрток работать с локальными окнами и выразительность нелинейных сплайнов, выполняющих роль адаптивных цифровых фильтров"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 72,
+    "locator": "/w:document/w:body/w:p[68]",
+    "style": "30",
+    "text": "3.3. Интеграция законов электротехники: физически-информированные архитектуры"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 73,
+    "locator": "/w:document/w:body/w:p[69]",
+    "style": "",
+    "text": "Главным ограничением как классических глубоких сетей, так и базовых KAN-моделей является непроизводительная трата ёмкости параметров на самостоятельное «изобретение» законов электротехники. С целью устранения данного недостатка предложена новая концепция интеграции фундаментальных законов теоретической электротехники непосредственно в граф вычислений нейросети, что привело к созданию семейства физически-информированных моделей."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 74,
+    "locator": "/w:document/w:body/w:p[70]",
+    "style": "",
+    "text": "Первым шагом развития ConvKAN в этом направлении стала архитектура PhysicsKAN (рис 5.а). В её топологию принудительно внедрён слой, выполняющий базовые операции над вещественными сигналами токов и напряжений. В рамках одного прямого прохода слой осуществляет поэлементное умножение сигналов для оценки величины, пропорциональной мгновенной мощности (S=U⋅I), и их деления для оценки их частного (аналог проводимости Y ∼ I / U) с встроенной защитой от деления на ноль. Отдельно оговоримся, что речь идёт не о жёсткой фиксации мощности и сопротивления – градиенты при обучении проходят сквозь эти арифметические узлы, и сплайны следующих KAN-слоёв сами решают, какие из обучаемых линейных комбинаций исходных векторов перемножать и делить. Таким образом, модель примитивы графа вычислений, но не ограничивается классическими мощностью и сопротивлением. Полученные физические признаки нормализуются и конкатенируются с исходными сигналами, удваивая число каналов. Данная модель изначально «знает» закон Ома, однако она оперирует вещественными значениями и чувствительна к фазе лишь косвенно – через временную структуру скользящего окна."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 75,
+    "locator": "/w:document/w:body/w:p[71]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 76,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[1]/w:tc/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 77,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[2]/w:tc/w:p[1]",
+    "style": "",
+    "text": "Рисунок 3. Исследуемые классические архитектуры глубокого обучения: "
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 78,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[2]/w:tc/w:p[2]",
+    "style": "",
+    "text": "а) SimpleMLP, б) SimpleCNN, в) ResNet1D."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 79,
+    "locator": "/w:document/w:body/w:p[72]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 80,
+    "locator": "/w:document/w:body/w:tbl[4]/w:tr[1]/w:tc/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 81,
+    "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p",
+    "style": "",
+    "text": "Рисунок 4. Архитектуры на базе сетей Колмогорова-Арнольда: а) SimpleKAN, б) ConvKAN"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 82,
+    "locator": "/w:document/w:body/w:p[73]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 83,
+    "locator": "/w:document/w:body/w:tbl[5]/w:tr[1]/w:tc/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 84,
+    "locator": "/w:document/w:body/w:tbl[5]/w:tr[2]/w:tc/w:p",
+    "style": "",
+    "text": "Рисунок 5. Физически-информированные архитектуры Колмогорова-Арнольда: а) PhysicsKAN, б) cPhysicsKAN"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 85,
+    "locator": "/w:document/w:body/w:p[74]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 86,
+    "locator": "/w:document/w:body/w:tbl[6]/w:tr[1]/w:tc/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 87,
+    "locator": "/w:document/w:body/w:tbl[6]/w:tr[2]/w:tc/w:p",
+    "style": "",
+    "text": "Рисунок 6. Релейная архитектура Колмогорова-Арнольда (rPhysicsKAN)"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 88,
+    "locator": "/w:document/w:body/w:p[75]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 89,
+    "locator": "/w:document/w:body/w:p[76]",
+    "style": "",
+    "text": "С целью преодоления этого ограничения разработана комплексная модель cPhysicsKAN (рис 5.б), которая оперирует векторами в полярной форме (), соответствующей классической электротехнической записи комплексных чисел. Входной тензор формируется с жёстким чередованием каналов амплитуд и фаз. Специализированные слои комплексного умножения и деления вычисляют аналоги полной мощности и сопротивления по правилам векторной алгебры: амплитуды перемножаются или делятся, а фазовые углы согласованно складываются или вычитаются с учетом обучаемого пофазного сдвига. "
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 90,
+    "locator": "/w:document/w:body/w:p[77]",
+    "style": "",
+    "text": "Вершиной эволюции классических интеллектуальных алгоритмов в данной работе стала релейная физическая модель rPhysicsKAN (рис 6). Она реализует концепцию «направленного реле», выступающую прямым аналогом реле направления мощности (РНМ). В отличие от cPhysicsKAN, где амплитуды и фазы обрабатывались в KAN-слоях параллельно и независимо, в rPhysicsKAN угловая информация напрямую управляет прохождением амплитудных признаков."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 91,
+    "locator": "/w:document/w:body/w:p[78]",
+    "style": "",
+    "text": "Математически это реализуется через три параллельные ветви KAN. Амплитудная ветвь извлекает энергетические закономерности из модулей сигналов, фазовая – формирует угловые признаки, а управляющая рассчитывает корректирующие маски на основе фазовых сдвигов. Маска, ограниченная сигмоидальной функцией в диапазоне [0 - 1], поэлементно перемножается с выходом амплитудной ветви. Если фазовые соотношения соответствуют зоне работы направленной защиты, маска открывается и пропускает амплитудные признаки; в противном случае сигнал блокируется."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 92,
+    "locator": "/w:document/w:body/w:p[79]",
+    "style": "",
+    "text": "В терминах релейной защиты это эквивалентно операции проецирования вектора тока на ось напряжения (Icosφ). Такое жёсткое структурное ограничение резко сужает пространство поиска решений при обучении, повышает устойчивость модели к шумам и обеспечивает уникальную интерпретируемость, визуализируя выученную сплайнами функцию управления, можно в явном виде подтвердить соответствие работы ИИ-модели классическим секторам срабатывания РНМ. Кроме того, rPhysicsKAN служит архитектурным мостом к полноценному физически-информированному трансформеру, передавая ему идею направленного управления признаками."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 93,
+    "locator": "/w:document/w:body/w:p[80]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 94,
+    "locator": "/w:document/w:body/w:p[81]",
+    "style": "2",
+    "text": "4. Шаги и результаты исследования"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 95,
+    "locator": "/w:document/w:body/w:p[82]",
+    "style": "",
+    "text": "В данном разделе представлены результаты вычислительного эксперимента по обучению и оценке разработанных моделей. Обучение всех архитектур проводилось на протяжении 60 эпох с использованием взвешенной функции потерь (BCEWithLogitsLoss) для компенсации дисбаланса классов."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 96,
+    "locator": "/w:document/w:body/w:p[83]",
+    "style": "",
+    "text": "С целью повышения обобщающей способности моделей применялась физически обоснованная аугментация (случайное масштабирование амплитуд, инверсия полярности сигналов и перестановка фаз). Вычислительная эффективность в процессе обучения обеспечивалась методом случайного выбора примеров (из каждого файла выбиралось 12 случайных фрагментов), что позволяло в каждой эпохе анализировать новые вариации сигналов при сохранении общего объёма обучающей выборки на уровне 10 000 примеров за итерацию."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 97,
+    "locator": "/w:document/w:body/w:p[84]",
+    "style": "",
+    "text": "В ходе экспериментов фиксировались две версии моделей: «лучшая» (Best Model), показавшая наивысший показатель F1 на валидационном наборе, и «финальная» (Final Model), отражающая состояние весов после 60-й эпохи. Итоговый расчёт статистики проводились на полном тестовом наборе данных (с шагом скольжения окна stride=4 для обеспечения максимального покрытия временного ряда). В итоговых таблицах представлены показатели наиболее эффективной модели, прошедшей верификацию на контрольном наборе."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 98,
+    "locator": "/w:document/w:body/w:p[85]",
+    "style": "30",
+    "text": "4.1. Эффективность архитектур"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 99,
+    "locator": "/w:document/w:body/w:p[86]",
+    "style": "",
+    "text": "Для обеспечения корректности оценки классические архитектуры и модели семейства KAN исследовались в трёх унифицированных конфигурациях сложности (лёгкая – средняя – тяжёлая) на данных среднего уровня разреженности (2 измерения за период). Ключевым критерием применимости интеллектуального алгоритма в устройствах РЗА и БАВР является не только точность, но и аппаратная эффективность, определяемая объемом занимаемой памяти и скоростью принятия решения на CPU терминала."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 100,
+    "locator": "/w:document/w:body/w:p[87]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 101,
+    "locator": "/w:document/w:body/w:tbl[7]/w:tr[1]/w:tc/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 102,
+    "locator": "/w:document/w:body/w:tbl[7]/w:tr[2]/w:tc/w:p",
+    "style": "",
+    "text": "а) по скорости расчёта"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 103,
+    "locator": "/w:document/w:body/w:tbl[7]/w:tr[3]/w:tc/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 104,
+    "locator": "/w:document/w:body/w:tbl[7]/w:tr[4]/w:tc/w:p",
+    "style": "",
+    "text": "б) по количеству параметров"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 105,
+    "locator": "/w:document/w:body/w:tbl[7]/w:tr[5]/w:tc/w:p",
+    "style": "",
+    "text": "Рисунок 7. Оценка Парето."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 106,
+    "locator": "/w:document/w:body/w:p[88]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 107,
+    "locator": "/w:document/w:body/w:p[89]",
+    "style": "",
+    "text": "Анализ масштабируемости, представленный на диаграммах Парето (рис. 7), выявил фундаментальную закономерность – наращивание глубины и ширины классических архитектур при переходе от средней конфигурации к тяжёлой даёт крайне незначительный прирост обобщающей способности (дельта F1-Macro не превышает 0,03). При этом требования к памяти возрастают кратно – с 105 до более чем 106 параметров. Это свидетельствует о том, что для задач анализа электромагнитных переходных процессов экстенсивное усложнение статических весов является тупиковым путем."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 108,
+    "locator": "/w:document/w:body/w:p[90]",
+    "style": "",
+    "text": "В то же время архитектуры ConvKAN и PhysicsKAN уверенно занимают лидирующие позиции на фронте Парето. По критерию количества параметров они значительно опережают тяжёлые версии ResNet. В частности, модель PhysicsKAN средней сложности, имеющая около 144 тыс. параметров, обеспечивает точность, сопоставимую с сетью ResNet тяжёлой конфигурации, содержащей более 7 млн параметров."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 109,
+    "locator": "/w:document/w:body/w:p[91]",
+    "style": "",
+    "text": "При оценке времени расчёта одного окна на процессоре (CPU) наблюдается иная картина: текущая программная реализация KAN-слоёв уступает по скорости оптимизированным матричным операциям CNN. Это связано с тем, что KAN-архитектура только начинает внедряться, и её код ещё недостаточно оптимизирован. Более того, выявленная внутренняя разреженность KAN-моделей открывает перспективы для глубокого прунинга (удаления до 40–50% неактивных ребер), что совместно со сжатием спектрального признакового пространства позволит пропорционально ускорить расчеты на реальных микропроцессорах"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 110,
+    "locator": "/w:document/w:body/w:p[92]",
+    "style": "30",
+    "text": "4.2. Инженерный анализ ошибок и визуализация предсказаний"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 111,
+    "locator": "/w:document/w:body/w:p[93]",
+    "style": "",
+    "text": "Агрегированная метрика F1-Macro даёт общую математическую оценку качества моделей, однако для инженера-релейщика критически важно понимать, физический характер селективных ошибок от ИИ. С этой целью в работе проведён детальный анализ лучших моделей с использованием целого дополняющих друг друга методов: лепестковые диаграммы (рис. 8); двунаправленные гистограммы (рис. 9); матрицы перекрестных ошибок (табл. 1); графики предсказательной разметки на реальных осциллограммах (рис. 10). Такой разносторонний подход позволяет наглядно оценить применимость алгоритмов при их интеграции в микропроцессорные терминалы РЗА и БАВР."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 112,
+    "locator": "/w:document/w:body/w:p[94]",
+    "style": "",
+    "text": "При анализе ошибок критически важно разделять их по последствиям. Ложное срабатывание пускового органа осциллографа БАВР при классификации просадки напряжения («Аномалия») как короткого замыкания («Авария») с сохранением блокировок является допустимой ошибкой, приводящей лишь к записи лишней осциллограммы. Напротив, пропуск реального многофазного КЗ или ложное отключение питающего фидера при штатном пуске мощного асинхронного двигателя («Рабочая коммутация») – это фатальная ошибка, ведущая к системным авариям и недоотпуску электроэнергии."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 113,
+    "locator": "/w:document/w:body/w:p[95]",
+    "style": "",
+    "text": "Анализ лепестковых карт (рис. 8) подтверждает, что все исследуемые модели отлично справляются с распознаванием нормальных режимов и простых аномалий (устойчивые смещения нейтрали, статические искажения) благодаря их преобладанию в выборке и структурной однородности. Однако при классификации критически важных «Аварий» вскрывается проблема классических глубоких сетей (CNN, ResNet). Из-за жёсткого дефицита примеров реальных КЗ алгоритмы на жёстких фильтрах демонстрируют эффект «зауживания» границ предсказаний. Оптимизируя глобальную функцию потерь за счёт частых событий, они склонны игнорировать редкие аварии, из-за чего переходные процессы пусков двигателей часто сливаются для них с повреждениями."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 114,
+    "locator": "/w:document/w:body/w:p[96]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 115,
+    "locator": "/w:document/w:body/w:tbl[8]/w:tr[1]/w:tc/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 116,
+    "locator": "/w:document/w:body/w:tbl[8]/w:tr[2]/w:tc/w:p",
+    "style": "",
+    "text": "Рисунок 8. Лепестковая карта распознавания событий для лучшей модели."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 117,
+    "locator": "/w:document/w:body/w:p[97]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 118,
+    "locator": "/w:document/w:body/w:p[98]",
+    "style": "",
+    "text": "В противовес этому, новые архитектуры семейства KAN (особенно подкласс PhysicsKAN) показывают значительно более устойчивые результаты. Внедрение операций умножения и деления задаёт нейросети надёжный физический каркас. Опираясь на расчётная проводимость (Y ∼ I / U) и мощность (S ∼ U*I), нелинейные сплайны точнее выстраивают границы между пусковыми токами (высокий ток при низком cos(φ)) и реальными КЗ (высокий ток при резком падении напряжения), сохраняя высокую точность даже при дефиците данных и низком качестве выборки."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 119,
+    "locator": "/w:document/w:body/w:p[99]",
+    "style": "",
+    "text": "Это подтверждают двунаправленные гистограммы (рис. 9), особенно в относительных величинах. Для коммутаций и аварий наблюдается много ошибок (значений, уходящих вниз): как ложных срабатываний при их фактическом отсутствии, так и пропусков реальных повреждений."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 120,
+    "locator": "/w:document/w:body/w:p[100]",
+    "style": "",
+    "text": "Данная тенденция математически подтверждается матрицами перекрёстных ошибок (табл. 1). Хотя у всех моделей присутствует путаница, комплексная модель cPhysicsKAN демонстрирует более чистую диагональ. Внедрение слоёв аппроксимации мощности и проводимости позволяет сети увереннее отделять рабочие коммутации от аварийных режимов, снижая долю ложных отключений."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 121,
+    "locator": "/w:document/w:body/w:p[101]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 122,
+    "locator": "/w:document/w:body/w:tbl[9]/w:tr[1]/w:tc/w:p",
+    "style": "af6",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 123,
+    "locator": "/w:document/w:body/w:tbl[9]/w:tr[2]/w:tc/w:p",
+    "style": "",
+    "text": "а) в абсолютных значениях"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 124,
+    "locator": "/w:document/w:body/w:tbl[9]/w:tr[3]/w:tc/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 125,
+    "locator": "/w:document/w:body/w:tbl[9]/w:tr[4]/w:tc/w:p",
+    "style": "",
+    "text": "б) в относительных величинах"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 126,
+    "locator": "/w:document/w:body/w:tbl[9]/w:tr[5]/w:tc/w:p",
+    "style": "",
+    "text": "Рисунок 9. Двунаправленная гистограмма предсказаний для лучших моделей"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 127,
+    "locator": "/w:document/w:body/w:p[102]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 128,
+    "locator": "/w:document/w:body/w:p[103]",
+    "style": "",
+    "text": "Таблица 1. Матрица перекрёстных ошибок в относительных величинах (%) для лучших моделей."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 129,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[1]/w:tc[1]/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 130,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[1]/w:tc[2]/w:p",
+    "style": "",
+    "text": "Предсказания"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 131,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[2]/w:tc[1]/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 132,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[2]/w:tc[2]/w:p",
+    "style": "",
+    "text": "Норм"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 133,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[2]/w:tc[3]/w:p",
+    "style": "",
+    "text": "Комут."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 134,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[2]/w:tc[4]/w:p",
+    "style": "",
+    "text": "Аном."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 135,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[2]/w:tc[5]/w:p",
+    "style": "",
+    "text": "Авар."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 136,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[3]/w:tc/w:p",
+    "style": "",
+    "text": "для ResNet"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 137,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[4]/w:tc[1]/w:p",
+    "style": "",
+    "text": "Реал."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 138,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[4]/w:tc[2]/w:p",
+    "style": "",
+    "text": "Норм"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 139,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[4]/w:tc[3]/w:p",
+    "style": "",
+    "text": "77,2"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 140,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[4]/w:tc[4]/w:p",
+    "style": "",
+    "text": "12,1"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 141,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[4]/w:tc[5]/w:p",
+    "style": "",
+    "text": "9,1"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 142,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[4]/w:tc[6]/w:p",
+    "style": "",
+    "text": "1,6"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 143,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[5]/w:tc[1]/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 144,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[5]/w:tc[2]/w:p",
+    "style": "",
+    "text": "Комут."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 145,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[5]/w:tc[3]/w:p",
+    "style": "",
+    "text": "12,8"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 146,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[5]/w:tc[4]/w:p",
+    "style": "",
+    "text": "56,5"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 147,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[5]/w:tc[5]/w:p",
+    "style": "",
+    "text": "25,5"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 148,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[5]/w:tc[6]/w:p",
+    "style": "",
+    "text": "2,2"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 149,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[6]/w:tc[1]/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 150,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[6]/w:tc[2]/w:p",
+    "style": "",
+    "text": "Аном."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 151,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[6]/w:tc[3]/w:p",
+    "style": "",
+    "text": "19,9"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 152,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[6]/w:tc[4]/w:p",
+    "style": "",
+    "text": "18,2"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 153,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[6]/w:tc[5]/w:p",
+    "style": "",
+    "text": "61,6"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 154,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[6]/w:tc[6]/w:p",
+    "style": "",
+    "text": "0,3"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 155,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[7]/w:tc[1]/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 156,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[7]/w:tc[2]/w:p",
+    "style": "",
+    "text": "Авар."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 157,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[7]/w:tc[3]/w:p",
+    "style": "",
+    "text": "27,6"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 158,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[7]/w:tc[4]/w:p",
+    "style": "",
+    "text": "36,1"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 159,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[7]/w:tc[5]/w:p",
+    "style": "",
+    "text": "15,4"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 160,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[7]/w:tc[6]/w:p",
+    "style": "",
+    "text": "20,9"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 161,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[8]/w:tc/w:p",
+    "style": "",
+    "text": "для rPhysicsKAN"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 162,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[9]/w:tc[1]/w:p",
+    "style": "",
+    "text": "Реал."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 163,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[9]/w:tc[2]/w:p",
+    "style": "",
+    "text": "Норм"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 164,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[9]/w:tc[3]/w:p",
+    "style": "",
+    "text": "84,9"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 165,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[9]/w:tc[4]/w:p",
+    "style": "",
+    "text": "9,6"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 166,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[9]/w:tc[5]/w:p",
+    "style": "",
+    "text": "4,8"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 167,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[9]/w:tc[6]/w:p",
+    "style": "",
+    "text": "0,7"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 168,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[10]/w:tc[1]/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 169,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[10]/w:tc[2]/w:p",
+    "style": "",
+    "text": "Комут."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 170,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[10]/w:tc[3]/w:p",
+    "style": "",
+    "text": "37,1"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 171,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[10]/w:tc[4]/w:p",
+    "style": "",
+    "text": "53,1"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 172,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[10]/w:tc[5]/w:p",
+    "style": "",
+    "text": "8,2"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 173,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[10]/w:tc[6]/w:p",
+    "style": "",
+    "text": "1,6"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 174,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[11]/w:tc[1]/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 175,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[11]/w:tc[2]/w:p",
+    "style": "",
+    "text": "Аном."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 176,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[11]/w:tc[3]/w:p",
+    "style": "",
+    "text": "48,5"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 177,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[11]/w:tc[4]/w:p",
+    "style": "",
+    "text": "3,9"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 178,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[11]/w:tc[5]/w:p",
+    "style": "",
+    "text": "47,6"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 179,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[11]/w:tc[6]/w:p",
+    "style": "",
+    "text": "0"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 180,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[12]/w:tc[1]/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 181,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[12]/w:tc[2]/w:p",
+    "style": "",
+    "text": "Авар."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 182,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[12]/w:tc[3]/w:p",
+    "style": "",
+    "text": "13,9"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 183,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[12]/w:tc[4]/w:p",
+    "style": "",
+    "text": "27,1"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 184,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[12]/w:tc[5]/w:p",
+    "style": "",
+    "text": "28,5"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 185,
+    "locator": "/w:document/w:body/w:tbl[10]/w:tr[12]/w:tc[6]/w:p",
+    "style": "",
+    "text": "30,4"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 186,
+    "locator": "/w:document/w:body/w:p[104]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 187,
+    "locator": "/w:document/w:body/w:p[105]",
+    "style": "",
+    "text": "Остающиеся проблемы классификации во многом обусловлены «размазанностью» оценок по всей длине 10-периодного скользящего окна. Обучаясь на исторических данных, модель стремится выдать общий вердикт на всё окно, из-за чего запаздывает с локализацией кратковременных событий. Это наглядно иллюстрируют графики предсказательной разметки реальных осциллограмм пуска двигателя (рис. 10.а) и перерастания однофазного замыкания в КЗ (рис. 10.б), где наблюдаются задержки и колебания уверенности на границах изменения режимов."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 188,
+    "locator": "/w:document/w:body/w:p[106]",
+    "style": "",
+    "text": "Безусловно, исследуемые модели требуют дальнейшей модернизации, в том числе за счёт сужения окон анализа и внедрения механизмов глобального внимания (Трансформеров). Тем не менее, полученные результаты уже сейчас подтверждают высокую эффективность применения KAN-моделей и интеграции в их структуру физических блоков векторной арифметики."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 189,
+    "locator": "/w:document/w:body/w:p[107]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 190,
+    "locator": "/w:document/w:body/w:tbl[11]/w:tr[1]/w:tc[1]/w:p",
+    "style": "af6",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 191,
+    "locator": "/w:document/w:body/w:tbl[11]/w:tr[1]/w:tc[2]/w:p",
+    "style": "af6",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 192,
+    "locator": "/w:document/w:body/w:tbl[11]/w:tr[2]/w:tc[1]/w:p",
+    "style": "",
+    "text": "а) пуск сверхмощного двигателя"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 193,
+    "locator": "/w:document/w:body/w:tbl[11]/w:tr[2]/w:tc[2]/w:p",
+    "style": "",
+    "text": "б) Однофазное замыкание, которое перерастает в КЗ."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 194,
+    "locator": "/w:document/w:body/w:tbl[11]/w:tr[3]/w:tc/w:p",
+    "style": "",
+    "text": "Рисунок 10. Разметка реальных осциллограмм с помощью rPhysicsKAN с отображение вероятности"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 195,
+    "locator": "/w:document/w:body/w:p[108]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 196,
+    "locator": "/w:document/w:body/w:p[109]",
+    "style": "30",
+    "text": "4.3. Интерпретация и визуализация знаний сети"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 197,
+    "locator": "/w:document/w:body/w:p[110]",
+    "style": "",
+    "text": "Главным барьером внедрения классических нейронных сетей (CNN, MLP) в комплексы РЗА является их непрозрачность. Релейная защита относится к критической инфраструктуре, где алгоритм принятия решений должен быть понятен инженеру. Архитектуры семейства KAN решают эту проблему, предоставляя уникальную возможность визуализации обученных зависимостей, так как нелинейные функции (сплайны) располагаются непосредственно на рёбрах графа вычислений."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 198,
+    "locator": "/w:document/w:body/w:p[111]",
+    "style": "",
+    "text": "Анализ обученной модели PhysicsKAN включал визуализацию сплайнов на внутренних слоях нейросети (рис. 11), позволяющая наглядно проследить выученную «физику» процесса. Значительная часть графиков принимает S-образную форму или форму «ступеньки». В терминах релейной защиты это означает самостоятельный синтез нейросетью аналогов пороговых измерительных органов. Связь пропускает сигнал лишь тогда, когда входная величина (амплитуда тока или сопротивление) превышает определенную «уставку». Прямые линии соответствуют простому пропорциональному масштабированию. В то же время, сложные волнообразные графики отражают адаптацию сети к высокочастотным затухающим колебаниям (например, при пусках двигателей), недоступным для описания классическими формулами."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 199,
+    "locator": "/w:document/w:body/w:p[112]",
+    "style": "",
+    "text": "Наиболее интересным результатом является наличие «нулевых функций» – графиков, выродившихся в горизонтальную линию около нуля. Это указывает на то, что сеть алгоритмически «отключила» данную связь. Тепловые карты матриц весов (рис. 12) подтверждают высокую разреженность модели, до 60–80% связей имеют нулевую активность. Это математически доказывает, что нейросеть абстрагируется от информационного шума и опирается лишь на доминантные физические признаки (например, моменты скачка тока). Данный факт открывает прямую перспективу к глубокому сжатию (прунингу) модели для её интеграции в слабые микропроцессоры терминалов РЗА."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 200,
+    "locator": "/w:document/w:body/w:p[113]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 201,
+    "locator": "/w:document/w:body/w:tbl[12]/w:tr[1]/w:tc/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 202,
+    "locator": "/w:document/w:body/w:tbl[12]/w:tr[2]/w:tc/w:p",
+    "style": "",
+    "text": "Рисунок 11. Примеры обученных функций активации (сплайнов) на ребрах сети PhysicsKAN."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 203,
+    "locator": "/w:document/w:body/w:p[114]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 204,
+    "locator": "/w:document/w:body/w:tbl[13]/w:tr[1]/w:tc/w:p",
+    "style": "af6",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 205,
+    "locator": "/w:document/w:body/w:tbl[13]/w:tr[2]/w:tc/w:p",
+    "style": "",
+    "text": "Рисунок 12. Матрица функций активации первого слоя (тепловая карта)."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 206,
+    "locator": "/w:document/w:body/w:p[115]",
+    "style": "30",
+    "text": "4.4. Оценка вклада физических слоёв"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 207,
+    "locator": "/w:document/w:body/w:p[116]",
+    "style": "",
+    "text": "Для научного обоснования того, что прирост точности PhysicsKAN обусловлен внедрением «законов электротехники», а не просто математической гибкостью сплайнов, был проведен тест на отключение компонентов из структуры последовательно изымались предметные блоки (умножение S ∼ U ⋅ I и деление Y ∼ I / U), после чего модель обучалась заново с оценкой метрике F1-Macro."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 208,
+    "locator": "/w:document/w:body/w:p[117]",
+    "style": "",
+    "text": "Результаты эксперимента (рис. 13) доказывают критическую важность интегрированных знаний. Базовая конфигурация PhysicsKAN демонстрирует максимальную точность за счёт работы всех слоёв. Исключение слоя попарного умножения токов и напряжений (No Mult) приводит к сильному падению обобщающей способности (F1 снижается более чем на 30%). Это подверждает, что оценка вектора мощности является критическим параметром для селективной отстройки аварийных режимов от рабочих коммутаций."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 209,
+    "locator": "/w:document/w:body/w:p[118]",
+    "style": "",
+    "text": "Отключение же слоя деления (Y∼ I/U) влияет слабо и практически не снижает надёжность. Вероятно, это обусловлено вычислительной нестабильностью: при малых значениях напряжения деления стремится к бесконечности, создавая резкие выбросы градиентов. Несмотря на последующие нормализации сигналов, такое поведение может дестабилизировать обучение, поэтому данный блок требует дальнейшей доработки."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 210,
+    "locator": "/w:document/w:body/w:p[119]",
+    "style": "",
+    "text": "В экстремальном тесте (Only Arith) на вход KAN-блока подавались исключительно результаты расчёта мощности и сопротивления без исходных фазных векторов. Модель сохранила принципиальную устойчивость (результат значительно превосходит случайное гадание), доказывав, что синтезированные признаки формируют надёжный информационный каркас."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 211,
+    "locator": "/w:document/w:body/w:p[120]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 212,
+    "locator": "/w:document/w:body/w:tbl[14]/w:tr[1]/w:tc/w:p",
+    "style": "af6",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 213,
+    "locator": "/w:document/w:body/w:tbl[14]/w:tr[2]/w:tc/w:p",
+    "style": "",
+    "text": "Рисунок 13. Влияние отключения физически-информированных слоев на точность классификации."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 214,
+    "locator": "/w:document/w:body/w:p[121]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 215,
+    "locator": "/w:document/w:body/w:p[122]",
+    "style": "",
+    "text": "Вывод по разделу: фундаментальный анализ доказал превосходство моделей KAN в задаче макро-классификации осциллограмм. Выявлено, что внедрение электротехнических закономерностей формирует надёжный логический каркас, а сплайны успешно синтезируют аналоги пороговых измерительных органов. Данная архитектурная база является полностью состоятельной и будет применена для решения узкоспециализированных прикладных задач РЗА, таких как селективное детектирование дуговых перемежающихся замыканий на землю."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 216,
+    "locator": "/w:document/w:body/w:p[123]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 217,
+    "locator": "/w:document/w:body/w:p[124]",
+    "style": "2",
+    "text": "5. Обсуждение и векторы развития"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 218,
+    "locator": "/w:document/w:body/w:p[125]",
+    "style": "",
+    "text": "Исследование подтвердило перспективность нейросетей в РЗА, но выявило ограничения, определяющие направления дальнейшей модернизации."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 219,
+    "locator": "/w:document/w:body/w:p[126]",
+    "style": "30",
+    "text": "5.1. Проблема «последней точки» и \nгранулярность разметки"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 220,
+    "locator": "/w:document/w:body/w:p[127]",
+    "style": "",
+    "text": "Анализ скользящим окном (200 мс) приводит к задержке локализации («размазыванию» границ режима) после отключения КЗ. Это допустимо для мониторинга, но неприемлемо для мгновенных защит БАВР. Решением является переход к точной гранулярной временно́й разметке обучающей выборки с фиксацией моментов начала и окончания процессов."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 221,
+    "locator": "/w:document/w:body/w:p[128]",
+    "style": "30",
+    "text": "5.2. Идея синергетических ансамблей"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 222,
+    "locator": "/w:document/w:body/w:p[129]",
+    "style": "",
+    "text": "Классификация более 30 видов событий одной моделью ведёт к падению метрики F1-Macro из-за расфокусировки алгоритма. Перспективен отказ от универсальных классификаторов в пользу ансамблей компактных «узких специалистов» (например, по ДПОЗЗ, органу РНМ или пускам двигателей), объединенных каскадной логикой принятия решений."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 223,
+    "locator": "/w:document/w:body/w:p[130]",
+    "style": "30",
+    "text": "5.3. Дорожная карта модернизации"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 224,
+    "locator": "/w:document/w:body/w:p[131]",
+    "style": "",
+    "text": "Приоритетные направления будущих исследований делятся на следующие два варианта. Фундаментальное направление включают переход к новым архитектурам, например, комплексным Трансформерам с KAN-узлами для анализа длинных осциллограмм, а также предварительное обучение моделей без учителя на массиве более 50 000 неразмеченных файлов. Прикладное направление открывает путь к применению PhysicsKAN для синтеза нелинейных характеристик измерительных органов БАВР (например, органу РНМ) в комплексной плоскости, а также реализация селективного пуска умных регистраторов аварий."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 225,
+    "locator": "/w:document/w:body/w:p[132]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 226,
+    "locator": "/w:document/w:body/w:p[133]",
+    "style": "2",
+    "text": "Заключение"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 227,
+    "locator": "/w:document/w:body/w:p[134]",
+    "style": "",
+    "text": "В представленном исследовании решена фундаментальная задача адаптации современного математического аппарата нейронных сетей к строгим требованиям и физическим реалиям электроэнергетики. Анализ результатов позволяет сформулировать следующие концептуальные выводы:"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 228,
+    "locator": "/w:document/w:body/w:p[135]",
+    "style": "afffd",
+    "text": "Доказано, что глубокие свёрточные сети (CNN, ResNet), избыточны для задач РЗА и остаются непрозрачными «чёрными ящиками». Применение сетей Колмогорова-Арнольда (KAN), позволило достичь более высокой точности при значительно меньшем числе параметров. Внедрение в KAN математики комплексных чисел и механизмов направленного реле обеспечило моделям способность оперировать электрическими величинами (мощностью, сопротивлением) так же, как это делают инженеры-релейщики."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 229,
+    "locator": "/w:document/w:body/w:p[136]",
+    "style": "afffd",
+    "text": "Визуализация функций активации внутренних слоёв подтвердила способность архитектуры KAN к автономному синтезу характеристик срабатывания, визуально интерпретируемых как пороговые измерительные органы (S-образные сплайны)."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 230,
+    "locator": "/w:document/w:body/w:p[137]",
+    "style": "afffd",
+    "text": "Проведённая работа доказывает, что будущее искусственного интеллекта в энергетике – это не замена физики «большими данными», а их глубокая интеграция. Разработанные алгоритмы закладывают основу для создания быстрых, компактных и интерпретируемых измерительных органов для терминалов РЗА и БАВР нового поколения."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 231,
+    "locator": "/w:document/w:body/w:p[138]",
+    "style": "afffd",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 232,
+    "locator": "/w:document/w:body/w:p[139]",
+    "style": "afffd",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 233,
+    "locator": "/w:document/w:body/w:p[140]",
+    "style": "afffd",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 234,
+    "locator": "/w:document/w:body/w:p[141]",
+    "style": "",
+    "text": "Список литературы"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 235,
+    "locator": "/w:document/w:body/w:p[142]",
+    "style": "",
+    "text": "1. Шнеерсон Э. М. Цифровая релейная защита. – 2007."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 236,
+    "locator": "/w:document/w:body/w:p[143]",
+    "style": "",
+    "text": "2. Добрягина О. А. и др. Влияние высших гармоник на переходные процессы при дуговых замыканиях на землю в кабельных сетях 6-10 кв с изолированной нейтралью // Вестник Ивановского государственного энергетического университета. – 2020. – №. 2. – С. 30-40."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 237,
+    "locator": "/w:document/w:body/w:p[144]",
+    "style": "",
+    "text": "3. Лебедев В. Д., Филатова Г. А., Петров А. Е. Исследование цифровых измерительных трансформаторов в условиях дуговых перемежающихся однофазных замыканий на землю с применением программно-аппаратного комплекса RTDS //Вестник Южно-Уральского государственного университета. Серия: Энергетика. – 2024. – Т. 24. – №. 2. – С. 5-17."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 238,
+    "locator": "/w:document/w:body/w:p[145]",
+    "style": "",
+    "text": "4. Иванов С. О., Никандров М. В., Славутский Л. А. Нейросетевое моделирование релейной защиты с временной задержкой //Вестник Чувашского университета. – 2022. – №. 3. – С. 53-60."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 239,
+    "locator": "/w:document/w:body/w:p[146]",
+    "style": "",
+    "text": "5. Куликов А. Л., Лоскутов А. А., Совина А. Н. Использование машинного обучения и искусственных нейронных сетей для распознавания витковых замыканий в силовых трансформаторах //Электричество. – 2022. – №. 10. – С. 34-44."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 240,
+    "locator": "/w:document/w:body/w:p[147]",
+    "style": "",
+    "text": "6. Кощеев М. И., Ларюхин А. А., Славутский А. Л. Использование адаптивных нейроалгоритмов для распознавания аномальных режимов систем вторичного оборудования электроэнергетики // Вестник Чувашского университета.–2019.–№. 1.–С. 47-58."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 241,
+    "locator": "/w:document/w:body/w:p[148]",
+    "style": "",
+    "text": "7. Беззубов А. А. Разработка системы идентификации объема управляющих воздействий в энергосистемах на основе алгоритмов машинного обучения: магистерская диссертация : дис. – б. и., 2024."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 242,
+    "locator": "/w:document/w:body/w:p[149]",
+    "style": "",
+    "text": "8. Liu Z. et al. KAN: Kolmogorov–arnold networks //International conference on learning representations. – 2025. – Т. 2025. – С. 70367-70413."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 243,
+    "locator": "/w:document/w:body/w:p[150]",
+    "style": "",
+    "text": "9. Raissi M., Perdikaris P., Karniadakis G. E. Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations //Journal of Computational physics. – 2019. – Т. 378. – С. 686-707."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 244,
+    "locator": "/w:document/w:body/w:p[151]",
+    "style": "",
+    "text": "10. Karniadakis G. E. et al. Physics-informed machine learning //Nature Reviews Physics. – 2021. – Т. 3. – №. 6. – С. 422-440."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 245,
+    "locator": "/w:document/w:body/w:p[152]",
+    "style": "",
+    "text": "11. Misyris G. S., Venzke A., Chatzivasileiadis S. Physics-informed neural networks for power systems //2020 IEEE power & energy society general meeting (PESGM). – IEEE, 2020. – С. 1-5."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 246,
+    "locator": "/w:document/w:body/w:p[153]",
+    "style": "",
+    "text": "12. Evdakov, A., Filatova, G., Yablokov, A. et al. A dataset of real-world oscillograms from \nelectrical power grids. Sci Data (2026). https://doi.org/10.1038/s41597-026-06587-8."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 247,
+    "locator": "/w:document/w:body/w:p[154]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 248,
+    "locator": "/w:document/w:body/w:p[155]",
+    "style": "",
+    "text": "Reference"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 249,
+    "locator": "/w:document/w:body/w:p[156]",
+    "style": "",
+    "text": "1. Shneerson, E. M. (2007). Tsifrovaya releynaya zashchita [Digital relay protection]. Moscow. [In Russian]."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 250,
+    "locator": "/w:document/w:body/w:p[157]",
+    "style": "",
+    "text": "2. Dobryagina, O. A., et al. (2020). Vliyanie vysshikh garmonik na perekhodnye protsessy pri dugovykh zamykaniyakh na zemlyu v kabelnykh setyakh 6-10 kV s izolirovannoy neytralyu [Influence of higher harmonics on transient processes during arc ground faults in 6-10 kV cable networks with isolated neutral]. Vestnik Ivanovskogo gosudarstvennogo energeticheskogo universiteta [Vestnik of Ivanovo State Power Engineering University], no. 2, pp. 30-40. [In Russian]."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 251,
+    "locator": "/w:document/w:body/w:p[158]",
+    "style": "",
+    "text": "3. Lebedev, V. D., Filatova, G. A., & Petrov, A. E. (2024). Issledovanie tsifrovykh izmeritelnykh transformatorov v usloviyakh dugovykh peremezhayushchikhsya odnofaznykh zamykaniy na zemlyu s primeneniem programmno-apparatnogo kompleksa RTDS [Study of digital instrument transformers under conditions of arcing intermittent single-phase ground faults using the RTDS software and hardware complex]. Vestnik Yuzhno-Uralskogo gosudarstvennogo universiteta. Seriya: Energetika [Bulletin of the South Ural State University. Series: Power Engineering], vol. 24, no. 2, pp. 5-17. [In Russian]."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 252,
+    "locator": "/w:document/w:body/w:p[159]",
+    "style": "",
+    "text": "4. Ivanov, S. O., et al. (2022). Neyrosetevoe modelirovanie releynoy zashchity s vremennoy zaderzhkoy [Neural network modeling of time-delayed relay protection]. Vestnik Chuvashskogo universiteta [Chuvash University Bulletin], no. 3, pp. 53-60. [In Russian]."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 253,
+    "locator": "/w:document/w:body/w:p[160]",
+    "style": "",
+    "text": "5. Kulikov, A. L., Loskutov, A. A., & Sovina, A. N. (2022). Ispolzovanie mashinnogo obucheniya i iskusstvennykh neyronnykh setey dlya raspoznavaniya vitkovykh zamykaniy v silovykh transformatorakh [Use of machine learning and artificial neural networks for recognition of inter-turn faults in power transformers]. Elektrichestvo [Electricity], no. 10, pp. 34-44. [In Russian]."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 254,
+    "locator": "/w:document/w:body/w:p[161]",
+    "style": "",
+    "text": "6. Koshcheev, M. I., et al. (2019). Ispolzovanie adaptivnykh neyroalgoritmov dlya raspoznavaniya anomalnykh rezhimov sistem vtorichnogo oborudovaniya elektroenergetiki [Use of adaptive neuro-algorithms for recognition of anomalous modes of secondary equipment systems in electric power engineering]. Vestnik Chuvashskogo universiteta [Chuvash University Bulletin], no. 1, pp. 47-58. [In Russian]."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 255,
+    "locator": "/w:document/w:body/w:p[162]",
+    "style": "",
+    "text": "7. Bezzubov, A. A. (2024). Razrabotka sistemy identifikatsii obema upravlyayushchikh vozdeystviy v energosistemakh na osнове algoritmov mashinnogo obucheniya [Development of a system for identifying the volume of control actions in power systems based on machine learning algorithms]. Master's thesis, Moscow. [In Russian]."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 256,
+    "locator": "/w:document/w:body/w:p[163]",
+    "style": "",
+    "text": "8. Liu Z. et al. KAN: Kolmogorov–arnold networks //International conference on learning representations. – 2025. – Т. 2025. – С. 70367-70413."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 257,
+    "locator": "/w:document/w:body/w:p[164]",
+    "style": "",
+    "text": "9. Raissi M., Perdikaris P., Karniadakis G. E. Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations //Journal of Computational physics. – 2019. – Т. 378. – С. 686-707."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 258,
+    "locator": "/w:document/w:body/w:p[165]",
+    "style": "",
+    "text": "10. Karniadakis G. E. et al. Physics-informed machine learning //Nature Reviews Physics. – 2021. – Т. 3. – №. 6. – С. 422-440."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 259,
+    "locator": "/w:document/w:body/w:p[166]",
+    "style": "",
+    "text": "11. Misyris G. S., Venzke A., Chatzivasileiadis S. Physics-informed neural networks for power systems //2020 IEEE power & energy society general meeting (PESGM). – IEEE, 2020. – С. 1-5."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 260,
+    "locator": "/w:document/w:body/w:p[167]",
+    "style": "",
+    "text": "12. Evdakov, A., Filatova, G., Yablokov, A. et al. A dataset of real-world oscillograms from \nelectrical power grids. Sci Data (2026). https://doi.org/10.1038/s41597-026-06587-8."
+  },
+  {
+    "story_part": "word/footer3.xml",
+    "paragraph_index": 1,
+    "locator": "/w:ftr/w:p",
+    "style": "afc",
+    "text": "11"
+  },
+  {
+    "story_part": "word/header1.xml",
+    "paragraph_index": 1,
+    "locator": "/w:hdr/w:p[1]",
+    "style": "afa",
+    "text": " «Вестник ИГЭУ».    2026 г.    Вып. ХХ"
+  },
+  {
+    "story_part": "word/header1.xml",
+    "paragraph_index": 2,
+    "locator": "/w:hdr/w:p[2]",
+    "style": "afa",
+    "text": ""
+  },
+  {
+    "story_part": "word/header2.xml",
+    "paragraph_index": 1,
+    "locator": "/w:hdr/w:p[1]",
+    "style": "afa",
+    "text": " «Вестник ИГЭУ».    ХХХХ г.    Вып. Х"
+  },
+  {
+    "story_part": "word/header2.xml",
+    "paragraph_index": 2,
+    "locator": "/w:hdr/w:p[2]",
+    "style": "afa",
+    "text": ""
+  },
+  {
+    "story_part": "word/header2.xml",
+    "paragraph_index": 3,
+    "locator": "/w:hdr/w:p[3]",
+    "style": "afa",
+    "text": ""
+  },
+  {
+    "story_part": "word/footer1.xml",
+    "paragraph_index": 1,
+    "locator": "/w:ftr/w:p",
+    "style": "afc",
+    "text": "2"
+  },
+  {
+    "story_part": "word/footnotes.xml",
+    "paragraph_index": 1,
+    "locator": "/w:footnotes/w:footnote[1]/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/footnotes.xml",
+    "paragraph_index": 2,
+    "locator": "/w:footnotes/w:footnote[2]/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/endnotes.xml",
+    "paragraph_index": 1,
+    "locator": "/w:endnotes/w:endnote[1]/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/endnotes.xml",
+    "paragraph_index": 2,
+    "locator": "/w:endnotes/w:endnote[2]/w:p",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/footer2.xml",
+    "paragraph_index": 1,
+    "locator": "/w:ftr/w:p",
+    "style": "afc",
+    "text": "1"
+  }
+]

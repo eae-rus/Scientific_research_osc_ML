@@ -1,0 +1,454 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{cite}
+\usepackage{multirow}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{subcaption}
+\usepackage{authblk}
+
+\begin{document}
+
+\title{A dataset of real-world oscillograms from electrical power grids}
+
+\date{}
+
+
+\author[1,2]{Aleksey Evdakov}
+\author[2]{Galina Filatova}
+\author[2]{Andrey Yablokov}
+\author[3,6]{Aleksandr Kovalenko}
+\author[4]{Evgeny Skachkov}
+\author[3,5,6]{Ilya Makarov}
+
+\affil[1]{LLC "APS", Moscow, Russia}
+            
+\affil[2]{ISPU, Moscow, Russia}
+
+\affil[3]{AIRI, Moscow, Russia}
+
+\affil[4]{Sbercity, Moscow, Russia}
+
+\affil[5]{Research Center of the Artificial Intelligence Institute, Innopolis University, Innopolis, Russia}
+
+\affil[6]{ISP RAS, Moscow, Russia}
+
+\maketitle
+
+\begin{abstract}
+This paper presents an extensive dataset of real-world oscillograms that capture voltage and current signals from electrical substations. The dataset aims to advance research on power system analysis, fault detection, and machine learning-driven relay protection. It includes approximately 50,000 oscillograms recorded with sampling rates up to 8 kHz. A manually annotated subset of 480 oscillograms categorizes events into four groups: noise-dominated signals without deviations; routine equipment operations such as load switching, circuit breaker actions, motor startups, or transformer energization; non-critical deviations compliant with operational standards, including single-phase ground faults or minor voltage dips; critical faults such as short-circuits or voltage collapses requiring immediate relay protection activation. The unannotated part of the data supports self-supervised and unsupervised machine learning methods, enabling tasks like feature extraction, anomaly detection, and latent pattern identification in power networks. The dataset facilitates various applications, including the validation of synthetically trained models, the refinement of adaptive relay protection algorithms, and the development of fault detection and diagnosis systems.
+\end{abstract}
+
+\section*{Background \& Summary}
+
+Technological advances in the past and present centuries have driven the creation and growth of power grids, ensuring a stable power supply to various economic sectors and supporting a high standard of living for populations \cite{h1, h2, h3}. In the early days of electrical power engineering, direct recording of electrical signal oscillograms was not possible. Instead, the analysis of electrical phenomena relied on theoretical models and expert evaluations. In-depth investigations of numerous processes required extensive experimentation and observation, which limited the ability to analyze and prevent emergencies.
+
+As power grids expanded and became more complex, concerns about power quality and supply stability became increasingly critical \cite{h4}. Rising electricity demand, diverse consumers, and the integration of new industrial technologies have made the system more vulnerable to various failures and disturbances \cite{f1, f2}. To address these challenges, relay protection and automation (RPA) devices have been improved \cite{b1}. Their primary function is to protect and control key power network equipment by responding when monitored parameters exceed thresholds. Early RPA devices used electromechanical relays, which abruptly changed the output signal when thresholds were exceeded, leading to the term "relay protection" \cite{rp1}.
+
+Advances in microelectronics and microprocessors significantly improved RPA algorithms, improving performance, sensitivity, and selectivity \cite{rp2}. Modern devices enable easier storage of event oscillograms for analysis and fine-tuning. However, challenges persist. Today's power systems operate under diverse generation and consumption modes, which RPA settings may not always accommodate, reducing effectiveness \cite{rp3, rp4}.
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=.9\textwidth]{Fig_1.png}
+    \caption{Relay Protection and Automation (RPA) terminals}
+    \label{fig:terminals}
+\end{figure} 
+
+A promising solution is adaptive settings that automatically adjust to current operating conditions, reducing pre-calculation needs and improving stability \cite{ad1, ad2, ad3, ad4, ad5}. However, pre-configuration of flexible parameters is still necessary in some cases. Designing fixed logic that accounts for all possible modes, especially with network expansion and integration of distributed generation, remains difficult \cite{dt1, dt2, dt3}. Discrepancies in device behavior often only become apparent during operational analysis, necessitating large oscillogram volumes for testing adaptive settings.
+
+Machine learning (ML) methods offer another promising direction due to their ability to generalize to new data. ML models can identify relevant events or serve as independent components in adaptive settings, even functioning as fully operational RPA features \cite{ml1, ml2, ml3}. Recent AI advancements, particularly in neural networks, enable algorithms that process raw data directly, eliminating the need for segmentation and feature extraction. However, training these models requires vast datasets.
+
+The creation of extensive oscillogram databases for various processes is therefore essential. These databases enable the exploration of new RPA algorithms based on traditional principles and testing their functionality. Additionally, they facilitate the development of ML models for addressing numerous tasks.
+
+Many studies on applying ML in relay protection \cite{ml4, ml5} and oscillogram analysis rely on synthetic data generated from mathematical models. This approach offers multiple benefits, such as simplified preprocessing and customizable event simulations (e.g., phase faults, transition resistance). This enables controlled experiments with adjustable parameters at low cost, while maintaining balanced datasets for ML training. However, practical applications require validation with real data, as neural networks can be highly susceptible to noise \cite{noise}. While valuable for initial model development, synthetic data have limitations. It cannot fully replicate real-world complexities like measurement errors, nonlinear system behaviors, or random fault events (e.g., lightning strikes, arcing). Load variations, such as those caused by motors or furnaces, also prove challenging to model accurately.
+
+Therefore, datasets based on real oscillograms are relevant \cite{data2}. However, collecting real data for all cases is practically impossible, even with various augmentation techniques. Thus, a combination of both methods \cite{data3} is a promising approach. Real data can be used for final testing of pre-trained models and for further fine-tuning models initially trained on synthetic data, thereby increasing their operational robustness when deployed.
+
+Such ML-based models can be implemented in industrial devices, such as RPA terminals, improving their performance and facilitating personnel tasks. For example, oscillogram classification algorithms can provide preliminary analysis of fault events and provide reports to maintenance staff. Additionally, a dataset of real data allows verification of simulation models used to generate synthetic data, facilitates process analysis in power networks, and aids in creating new theories (e.g., models of  arc intermittent single phase-to-ground fault).
+
+\textbf{Related datasets.} There are several public datasets for power quality disturbances and fault analysis. Synthetic generators allow for the scalable generation of controlled events \cite{data1, data4}, but cannot fully capture real-world noise, measurement errors, or complex nonlinear behaviors. Among real-world datasets, the Grid Event Signature Library \cite{data5} (GESL, over ~5,000 labeled and unlabeled event signatures from U.S. utilities) and DatabaseRTE \cite{data6} (12,053 raw fault recordings from the French HV transmission grid) are the most relevant. However, these collections remain limited in size and lack detailed expert timestamp-level annotation.
+
+To address this limitations, we have compiled a significantly larger dataset consisting of 50,765 previously unpublished real oscillograms recorded by RPA terminals across multiple substations. This dataset includes a subset of expert-annotated records covering fault events, operational scenarios, and noise instances. All data have been standardized, anonymized, and normalized to support research in ML applications, the development of RPA algorithms, and fault detection and diagnosis systems.
+
+\section*{Methods}
+
+This section provides a detailed examination of the stages involved in preparing a public dataset of oscillograms recorded from real RPA terminals (Fig. \ref{fig:terminals}). The data were predominantly obtained from 0.4–35 kV electrical networks during commissioning or from oscillograms submitted for fault analysis and device behavior. The dataset primarily focuses on oscillograms of fast automatic bus transfer (FABT) operation in two-section substations (see Fig. \ref{fig:FABT_osc}). The steps (Fig. \ref{fig:scheme}) for collecting and preparing the oscillograms are detailed below.
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=\textwidth]{Fig_2.png}
+    \caption{Example of Fast Automatic Bus Transfer (FABT) operation oscillogram. Discrete signals represent the manual labeling.}
+    \label{fig:FABT_osc}
+\end{figure}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Fig_3.pdf}
+    \caption{Oscillogram collection and preparation scheme}
+    \label{fig:scheme}
+\end{figure} 
+
+\subsection*{Data collection}
+
+The oscillograms were sourced exclusively from anonymised internal industrial databases and external collaborators in various versions of the COMTRADE format ('.cfg' and '.dat' files). No public third-party datasets or previously published oscillogram collections were used. A custom proprietary program was developed to automate the process of collecting and preparing oscillograms. This code performs various tasks, including searching for unique oscillograms, removing duplicates, and organizing files into a unified database. To facilitate searches across different directories or computers, there is an option to save and reuse a dictionary of unique files. This dictionary stores the hash name of the data file as the key, along with the file path and name. The dataset collected in the first stage includes 50,765 oscillograms.
+
+\subsection*{Anonymization and Standardization}
+
+Oscillograms used in research often contain proprietary or sensitive information. Therefore, before sharing them publicly or with third parties, data must be anonymized \cite{an1}. Without anonymization, this raw data cannot be shared or cited. To ensure data anonymization, the following sensitive information was removed from the COMTRADE files:
+ 
+\begin{itemize}
+    \item Object name and manufacturer information;
+    \item Oscillogram and file recording dates;
+    \item Filename.
+\end{itemize}
+
+Original oscillograms include names for analog and discrete signals assigned by the manufacturer. The use of inconsistent and unstructured signal names can complicate further analysis and may inadvertently reveal information about the device manufacturer or installation site. In this dataset, 3,170 unique names of analog signals and 13,513 unique names of discrete signals were identified.
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Fig_4.pdf}
+    \caption{Typical substation section layout and signal measurement points.}
+    \label{fig:Typical_substation}
+\end{figure}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Fig_5.pdf}
+    \caption{Example of an analog signal name.}
+    \label{fig:Example_analog_signal}
+\end{figure}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=\textwidth]{Fig_6.pdf}
+    \caption{The structure of analog signals.}
+    \label{fig:Analog_structure}
+\end{figure}
+
+\textbf{Analog signals}
+were standardized according to the typical layout of the substation section shown in Figure \ref{fig:Typical_substation}. As illustrated, each section can have up to 18 signals. These signals can originate from both traditional sensors, such as current transformers (CTs) and voltage transformers (VTs), and non-traditional ones (e.g., Rogowski coils, which output a voltage proportional to the derivative of the current). The specified accuracy of the measuring sensors used does not exceed 1\% for voltage and 3\% for current. We added the suffix "raw" to the signal name to distinguish signals based on their underlying physical principles.
+
+The name of each analog signal is divided into three segments, separated by the “\(|\)” symbol. An example of a naming convention for the phase A voltage signal of the first bus section is illustrated in Figure \ref{fig:Example_analog_signal}. A detailed list of signals and their structure is shown in Figure \ref{fig:Analog_structure}.
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Fig_7.pdf}
+    \caption{Standard substation layout and circuit breaker positions (Incoming feeder breaker – IFB, Bus coupler — BC).}
+    \label{fig:Standard_substation_two_bus}
+\end{figure}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=\textwidth]{Fig_8.pdf}
+    \caption{Discrete signal structure.}
+    \label{fig:Discrete_structure}
+\end{figure}
+
+\textbf{Discrete signals}
+exhibit much greater diversity and can vary significantly depending on the object, requiring more sophisticated identification algorithms. This study considers a standard substation layout with two bus sections, as shown in Figure \ref{fig:Standard_substation_two_bus}. Some signal names may contain sensitive information; thus, we categorized discrete signals as follows for standardization purposes:
+
+\begin{itemize}
+    \item Circuit breaker positions;
+    \item Circuit breaker commands.
+\end{itemize}
+
+A detailed list of signals and their structure is presented in Figure \ref{fig:Discrete_structure}. The section number was added to the bus couplers to account for cases where there may be multiple sections, as is possible in substations with three sections. Moreover, substations with three sections have several BC installed, so they are also numbered. Furthermore, some manufacturers do not differentiate between incoming and bus coupler breakers; instead, they simply list three breakers, with the third serving as a bus coupler.
+
+As a result, the final versions of the oscillograms were saved as COMTRADE files in IEEE C37.111-2013 ASCII format, ready for public use. This format was chosen as the primary one since it allows most users to work with oscillograms using specialized software.
+
+\subsection*{Data Normalization}
+
+Normalizing oscillograms presents a challenge due to the significant variation in signal baseline values. Calculating the maximum for each signal across all oscillograms, as is common in many machine learning studies, is unsuitable here because the reference values differ between oscillograms and must be determined independently (the COMTRADE files do not specify these values). Moreover, many oscillograms may contain only noise without useful signal data, complicating the process of defining nominal values.
+
+Based on the typical connection scheme (Fig. \ref{fig:Typical_substation}), four groups are identified, each with potentially different baseline values (also differing by section if applicable):
+
+\begin{itemize}
+    \item Busbar section voltages (e.g., \(U | BusBar-1 | phase: A\));
+    \item Cable line voltages (e.g., \(U | CableLine-1 | phase: A\));
+    \item Phase currents (e.g., \(I | Bus-1 | phase: A\) or I\_raw); 
+    \item Zero-sequence currents (\(I | Bus-1 | phase: N\)). 
+\end{itemize}
+
+In modern electrical networks, signals are often measured in kilovolts (kV) for voltage and hundreds or thousands of amperes (especially in fault conditions) for currents. These parameters vary depending on network type, substation, load, etc. To standardize values across different ranges, intermediate transformers are used. Conventional voltage transformers (VTs) reduce voltage to 100 V (\( U_\text{base} \)), and current transformers (CTs) to 1 A or 5 A. This study uses the standard of 5 A (\(I_\text{base} \)), the most common secondary current value for medium voltage networks. \textit{\textbf{Note}: These values may differ by country.}
+
+Where possible, normalization should use secondary values as they are already standardized. When this is not feasible, normalization should use primary values. To ensure that normalized values lie within [0, 1] (excluding outliers), the following rules are recommended:
+
+\begin{itemize}
+    \item For currents: divide by \( 25 \times I_{\text{base}} \);
+    \item For voltages: divide by \( 3 \times U_{\text{base}} \).
+\end{itemize}
+
+In this study, the base values for current and voltage were calculated in semi-automatic mode for all oscillograms and are stored in a separate file.
+
+%Table \ref{tab:VoltageAlgorithm} provides example conditions for voltage. If the algorithm cannot strictly determine the threshold and manual adjustment is required, the following issues are flagged:
+
+%\begin{itemize}
+%    \item ?1 – \textbf{Potential issue}: secondary values do not correspond to traditional sensors;
+%    \item ?2 – \textbf{Potential issue}: due to transient or fault processes, higher harmonics exceed the level of the first;
+%    \item ?3 – \textbf{Potential issue}: no distinction between primary and secondary quantities.
+%\end{itemize}
+
+
+%\begin{table*}[!ht]
+%    \centering
+%    \caption{Automatic Determination Algorithm for Voltage Base Value}
+%    \begin{tabular}{c|c|c|c} 
+%         \multirow{2}{*}{Conditions} &  \multicolumn{2}{c|}{$H_{1 (s)} > 1.5H_{x-max(s)}$} & \multirow{2}{*}{$H_{1 (s)} <= 1.5H_{x-max(s)}$}\\ 
+%         \cline{2-3}
+%         &  $H_{1(p)} > 560$&  $H_{1(p)} \leq 560$& \\ 
+%         \hline
+%         $H_{1(s)} > 560$&  \multicolumn{3}{c}{?3}\\
+%         \hline
+%         $140 < H_{1(s)} \leq 560$&  \multicolumn{2}{c|}{$U_{\text{base}} = 400 V$}& ?2\\
+%         \hline
+%         $20 < H_{1(s)} \leq 140$&  \multicolumn{2}{c|}{$U_{\text{base}} = 100$}& ?2\\ 
+%         \hline
+%         $H_{1(s)} \leq 20$&  ?1&  \multicolumn{2}{c}{Noise:  ($U_{\text{base}} = 100$)}\\ 
+%    \end{tabular}
+%    \label{tab:VoltageAlgorithm}
+%\end{table*}
+
+\subsection*{Manual Annotation}
+
+Initially, a subset of oscillograms was manually annotated for the precise identification of events and boundary delineation. This subset was selected from terminals with a relatively high event frequency, totaling 480 oscillograms, all recorded at a 50 Hz network frequency and a 1,600 Hz sampling rate. Neural networks can be trained on this data, which then optimize the sorting of events and significantly reduce the time and effort associated with manual annotation \cite{ml6}.
+
+Signal annotations may vary according to task-specific approaches. Scientific discourse often raises concerns about terminology, evaluation criteria, and event boundaries. The authors of this study do not claim universality for the proposed annotations, instead offering an interpretation suited to the task of analyzing and segmenting a large volume of oscillograms by event type and automating this process. Researchers may reannotate the dataset to fit their own needs and requirements. 
+
+The annotation included only analog signal values, without the use of discrete data. The signals were divided into four main groups:
+
+\begin{itemize}
+    \item \textbf{Group 0: “No Event”} — segments where the network operates normally, without deviations or events, including oscillograms containing only noise (i.e., no useful signal);
+    \item \textbf{Group 1: “Operational Switching”} — segments reflecting cases of load switching, part of standard network operation, or routine equipment action during a fault (e.g., breaker operation, motor start-up, power transformer switching);
+    \item \textbf{Group 2: “Abnormal Events”} — events that do not require immediate disconnection but deviate from normal network operation per regulatory guidelines or warrant attention (e.g., single-phase ground faults, minor voltage dips);
+    \item \textbf{Group 3: “Fault Events”} — events that cause or should cause relay protection device activation (e.g., a single-phase ground fault escalating to a two-phase short circuit).
+\end{itemize}
+
+The distribution of annotated timestamps across these groups of classes is highly imbalanced, which is typical for real-world power system records where fault and abnormal events are relatively rare compared to normal operation and operational switching. The detailed group distribution is presented in Table~\ref{tab:class_distribution}.
+\begin{table}[!ht]
+\centering
+\caption{Distribution of annotated timestamps by event group}
+\label{tab:class_distribution}
+\begin{tabular}{l|c|c}
+Event Group & Number of timestamps & Percentage (\%) \\
+\hline
+Group 0: No Event            & 598,303 & 36.7 \\
+Group 1: Operational Switching & 131,593 & 8.1 \\
+Group 2: Abnormal Events      & 700,169  & 43.0 \\
+Group 3: Fault Events         & 198,011  & 12.2 \\
+Total                         & 1,628,076 &  \\
+\end{tabular}
+\end{table}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.8\textwidth]{Fig_9.pdf}
+    \caption{An example of decoding an ML signal.}
+    \label{fig:discrete_signal}
+\end{figure}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=\textwidth]{Fig_10.pdf}
+    \caption{Simplified classification hierarchy scheme.}
+    \label{fig:classification_hierarchy}
+\end{figure}
+
+The markup was saved in COMTRADE files as separate "ML" signals with different encodings (Fig. \ref{fig:discrete_signal}) according to the structure of the classification hierarchy (Fig. \ref{fig:classification_hierarchy}). Note that different event types may overlap, such as a breaker operation during a fault, and events often transition into each other, resulting in blurred boundaries between them. This can introduce label noise, which users should consider when applying ML models.
+
+\textbf{Additional data filtering.} While all recorded oscillograms contain valuable real-world measurements, including actual noise and grid loads, we performed additional manual filtering to identify files with signal disturbances distinct from normal operation. This file-level filtering (without pointwise annotation) resulted in 20,873 oscillograms (out of 50,765) marked as containing notable disturbances.
+
+\section*{Data Records}
+
+We created a unified database containing both oscillogram files organized into subfolders and files with general descriptions of variables, data structure, etc. (see Fig. \ref{fig:Arch_database}). This dataset is available at Figshare \cite{figshare}.
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=\textwidth]{Fig_11.pdf}
+    \caption{Folder hierarchy and file organization of the unified OscGrid database.}
+    \label{fig:Arch_database}
+\end{figure}
+
+\textbf{CSV\_format\_vXX}
+ folder contains preprocessed oscillograms, normalized and stored in CSV format. These files include only disturbance-containing waveforms, with normal operation segments truncated to focus on relevant events. The trimming of normal sections was applied only to the labeled subset of oscillograms.
+
+\textbf{Description}
+folder contains:
+\begin{itemize}
+    \item A brief description of the labeled oscillograms (Description of the oscillograms vXX.xlsx);
+    \item Detailed lists and structures of analog (dict\_analog\_names\_vXX.json) and discrete (dict\_discrete\_names\_vXX.json) signals;
+    \item A detailed list of events (Event typing vXX.xlsx);
+    \item Nominal values for oscillogram normalization (norm\_coef\_vXX.csv);
+    \item A list of oscillograms containing disturbances (with\_perturbations\_vXX.csv).
+\end{itemize}
+
+\textbf{Labeled\_raw\_vXX}
+folder contains labeled oscillograms in COMTRADE format.
+
+\textbf{Unlabeled\_raw\_vXX}
+folder contains unlabeled data. The oscillograms are divided into subfolders according to the frequency of the power grid and the sampling rate of the recording devices.
+
+\section*{Technical Validation}
+
+To ensure the reliability and quality of the expert annotations in the labeled subset (480 oscillograms), we performed a comprehensive technical validation combining unsupervised feature learning with supervised classification benchmarking.
+
+First, we trained a 1D convolutional autoencoder with a symmetric encoder-decoder architecture. The encoder consisted of two stacked 1D convolutional layers with max-pooling for dimensionality reduction, while the decoder used transposed convolutions for signal reconstruction. The annotated dataset was stratified by the four primary event groups and split into training, validation, and test sets. Each oscillogram was segmented into non-overlapping windows corresponding to one full signal cycle.
+
+\textbf{Spectral loss optimization.} Instead of conventional Mean Squared Error (MSE), the autoencoder was trained to minimize the Mean Absolute Error (MAE) between the magnitude spectra of the original signal $X$ and its reconstruction $\hat{X}$:  
+$Loss = MAE(|FFT(X)|, |FFT(\hat{X})|)$.  
+This phase-invariant spectral loss proved highly effective at learning robust spectral-temporal features regardless of the random starting phase introduced by windowing.
+
+\textbf{Latent space analysis.} The encoder from the best autoencoder (selected by validation loss) was applied to the held-out test set, producing compact latent representations. These were visualized using t-SNE (Fig.~\ref{fig:clusters}). The resulting plot shows four clearly separated clusters that correspond exactly to the expert-defined event categories, confirming that the annotations reflect distinguishable patterns in the raw oscillogram data.
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.9\textwidth]{Fig_12.pdf}
+    \caption{t-SNE visualization of autoencoder latent vectors colored by the four expert-annotated event groups, demonstrating separability of the classes in the learned feature space.}
+    \label{fig:clusters}
+\end{figure}
+
+\textbf{Quantitative classification benchmarking.} To further validate the practical utility of the annotations in a machine learning context, we trained and evaluated three standard supervised learning architectures:
+
+\begin{itemize}
+    \item \textbf{MLP (Multilayer Perceptron)}
+    \item \textbf{CNN (Convolutional Neural Network)}
+    \item \textbf{GRU (Gated Recurrent Unit)}
+\end{itemize}
+
+All models were trained for 100 epochs with early stopping using categorical cross-entropy loss and Adam optimizer. The performance metrics reported in Table~\ref{tab:classification_results} are mean values over 5 independent runs with different random seeds.
+
+\begin{table}[!ht]
+\centering
+\caption{Quantitative validation of expert annotations: per-class Precision, Recall and F1-score.}
+\label{tab:classification_results}
+\footnotesize
+\begin{tabular}{l |ccc |ccc |ccc}
+\multirow{2}{*}{Class} & 
+\multicolumn{3}{c|}{MLP} & 
+\multicolumn{3}{c|}{CNN} & 
+\multicolumn{3}{c}{GRU} \\
+ & P     & R     & F1    & P     & R     & F1    & P     & R     & F1\\
+ \hline
+No Event               & 0.84 & 0.85 & 0.84 & \textbf{0.89} & 0.84 & 0.87 & \textbf{0.89} & \textbf{0.88} & \textbf{0.88} \\
+Operational Switching  & 0.40 & 0.52 & 0.45 & \textbf{0.42} & 0.57 & \textbf{0.48} & 0.36 & \textbf{0.60} & 0.45 \\
+Abnormal Events        & 0.88 & 0.75 & 0.81 & 0.86 & \textbf{0.79} & 0.82 & \textbf{0.89} & \textbf{0.79} & 0.84 \\
+Fault Events           & 0.72 & 0.87 & 0.79 & 0.78 & \textbf{0.92} & 0.83 & \textbf{0.84} & 0.88 & \textbf{0.85} \\
+\end{tabular}
+\end{table}
+
+The classification experiment confirmed that all models successfully learned to recognize the annotated events, achieving performance significantly above chance level. While the overall accuracy and per-class metrics varied, the results demonstrate that the dataset is suitable for developing and benchmarking supervised methods.
+
+\section*{Usage Notes}
+
+The dataset is provided in the standard COMTRADE format used in power systems, enabling direct signal visualization and analysis through industry-standard software. The collection has also been converted to CSV format to facilitate supervised and unsupervised machine learning applications.
+
+
+
+Our processing tools provide customizable CSV conversion with these features:
+\begin{itemize}
+
+    \item Automatic normalization
+
+    \item Selective inclusion of oscillograms containing significant disturbances
+
+    \item Removing long "normal operation" sections to focus on important parts
+
+\end{itemize}
+
+Either already pre-processed CSV files or custom conversions using the provided code can be utilized based on research requirements.
+
+For imbalanced classes, we recommend strategies such as resampling (e.g., oversampling rare faults), data augmentation techniques (including phase cycle shifting, signal scaling, noise injection, etc.), and class weighting during model training to improve performance.
+
+\textbf{Extending the dataset with user data}. Researchers and engineers can integrate their own oscillogram data to expand or specialize the dataset. This process is facilitated by the near-universal support of the COMTRADE format by protection relays, digital fault recorders, and power quality analyzers from major manufacturers. Most device software includes an export function to generate standard \emph{.cfg} and \emph{.dat} file pairs. The methodology for data processing—including anonymization, standardization, normalization, and expert annotation—is fully described in the previous sections. For the practical step of converting COMTRADE files to CSV, researchers can directly use the provided conversion code, which implements the customizable preprocessing features listed above.
+
+\section*{Data Availability}
+
+The dataset is available at Figshare \cite{figshare}.
+
+\section*{Code Availability}
+
+The Python code for converting COMTRADE files into CSV format is publicly available under the MIT license at https://github.com/AIRI-Institute/oscgrid. This repository also contains the implementation code for the technical validation methodology.
+
+\begin{thebibliography}{00}
+
+\bibitem{h1} Agüero, J. R., Takayesu, E., Novosel, D. \& Masiello, R. Grid modernization: challenges and opportunities. \emph{The Electricity Journal} \textbf{30}, 1-6, https://doi.org/10.1016/j.tej.2017.03.008 (2017).
+
+\bibitem{h2} Korkovelos, A., Zerriffi, H., Howells, M., Bazilian, M., Rogner, H. H. \& Fuso Nerini, F. A retrospective analysis of energy access with a focus on the role of mini-grids. \emph{Sustainability} \textbf{12}, 1793, https://doi.org/10.3390/su12051793 (2020).
+
+\bibitem{h3} Monteiro, V., Martins, J. S., Aparício Fernandes, J. C. \& Afonso, J. L. Review of a disruptive vision of future power grids: a new path based on hybrid AC/DC grids and solid-state transformers. \emph{Sustainability} \textbf{13}, 9423, https://doi.org/10.3390/su13169423 (2021).
+
+\bibitem{h4} Huang, S., Zhang, J., Meng, J., Zhang, H., Lan, C., Xie, Y., Zheng, X. \& Tai, N. Challenges and prospect of relay protection in power grids with large-scale renewable power. \emph{IET Conference Proceedings} \textbf{2023}, 779-783, https://doi.org/10.1049/icp.2023.2262 (2023).
+
+\bibitem{f1} Soltan, S., Mazauric, D. \& Zussman, G. Analysis of failures in power grids. \emph{IEEE Transactions on Control of Network Systems} \textbf{4}, 288-300, https://doi.org/10.1109/TCNS.2015.2498464 (2015).
+
+\bibitem{f2} Shakiba, F. M., Azizi, S. M., Zhou, M. \& Abusorrah, A. Application of machine learning methods in fault detection and classification of power transmission lines: a survey. \emph{Artificial Intelligence Review} \textbf{56}, 5799-5836, https://doi.org/10.1007/s10462-022-10296-0 (2023).
+
+\bibitem{b1} Automation Guide. \emph{Network Protection \& Automation Guide} (2002).
+
+\bibitem{rp1} Bo, Z. Q., Lin, X. N., Wang, Q. P., Yi, Y. H. \& Zhou, F. Q. Developments of power system protection and control. \emph{Protection and Control of Modern Power Systems} \textbf{1}, 1-8, https://doi.org/10.1186/s41601-016-0012-2 (2016).
+
+\bibitem{rp2} Santos, G. R., Zancul, E., Manassero, G. \& Spinola, M. From conventional to smart substations: A classification model. \emph{Electric Power Systems Research} \textbf{226}, 109887, https://doi.org/10.1016/j.epsr.2023.109887 (2024).
+
+\bibitem{rp3} Bevrani, H. \emph{Robust power system frequency control} 2nd edn (Springer Cham, 2014).
+
+\bibitem{rp4} Xiaoyang, W., Zhongqing, L., Yue, Y. \& Guosheng, Y. A New Method of Data Fusion Calculation for Relay Protection Setting Calculation. \emph{IEEE International Conference on Power Science and Technology (ICPST)} \textbf{2023}, 969-973, https://doi.org/10.1109/ICPST56889.2023.10165188 (2023).
+
+\bibitem{ad1} Zhang, H. \& Li, S. Design of adaptive line protection under smart grid. \emph{International Conference on Advanced Power System Automation and Protection} \textbf{2011}, 599-603, https://doi.org/10.1109/APAP.2011.6180471 (2011).
+
+\bibitem{ad2} Wu, S. An adaptive limited wide area differential protection for power grid with micro-sources. \emph{Protection and Control of Modern Power Systems} \textbf{2}, 1-9, https://doi.org/10.1186/s41601-017-0052-2 (2017).
+
+\bibitem{ad3} Lin, H., Sun, K., Tan, Z. H., Liu, C., Guerrero, J. M. \& Vasquez, J. C. Adaptive protection combined with machine learning for microgrids. \emph{IET generation, transmission \& distribution} \textbf{13}, 770-779, https://doi.org/10.1049/iet-gtd.2018.6230 (2019).
+
+\bibitem{ad4} Summers, A., Patel, T., Matthews, R. \& Reno, M. J. Prediction of relay settings in an adaptive protection system. \emph{IEEE Power \& Energy Society Innovative Smart Grid Technologies Conference (ISGT)} \textbf{2022}, 1-5, https://doi.org/10.1109/ISGT50606.2022.9817483 (2022).
+
+\bibitem{ad5} Lachugin, V. F., Vertoguzov, D. A., Danilov, S. A., Sazanov, V. S., Voloshin, A. A. \& Kovalenko, A. I. Development of solutions for automatic computation of relay protection and automation operation parameters. \emph{6th International Scientific and Technical Conference on Relay Protection and Automation (RPA)} \textbf{2023}, 1-14, https://doi.org/10.1109/RPA59835.2023.10319816 (2023).
+
+\bibitem{dt1} Singh, P., Kumar, U., Choudhary, N. K. \& Singh, N. Advancements in Protection Coordination of Microgrids: a Comprehensive Review of Protection Challenges and Mitigation Schemes for Grid Stability. \emph{Protection and Control of Modern Power Systems} \textbf{9}, 156-183, https://doi.org/10.23919/PCMP.2023.000250 (2024).
+
+\bibitem{dt2} Luo, H., Sun, C., Xu, H., Su, J. \& Wang, Y. A Setting Optimization Ensemble for a Distributed Power Grid Protective Relay. \emph{Applied Sciences} \textbf{14}, 2278, https://doi.org/10.3390/app14062278 (2024).
+
+\bibitem{dt3} Li, Y., Wang, J., Zhang, J., Li, H., Ren, L., Li, Y., Shi, D. \& Duan, X. Fast Searching of Extreme Operating Conditions for Relay Protection Setting Calculation Based on Graph Neural Network and Reinforcement Learning. Preprint at https://doi.org/10.48550/arXiv.2501.09399 (2025).
+
+\bibitem{ml1} Stepanova, D. A., Naumov, V. A. \& Antonov, V. I. Deep learning in relay protection of digital power industry. \emph{2nd International Youth Scientific and Technical Conference on Relay Protection and Automation (RPA)} \textbf{2019}, 1-17, https://doi.org/10.1109/RPA47751.2019.8958378 (2019).
+
+\bibitem{ml2} Mei, Y., Ni, S. \& Zhang, H. Fault diagnosis of intelligent substation relay protection system based on transformer architecture and migration training model. \emph{Energy Informatics} \textbf{7}, 120, https://doi.org/10.1186/s42162-024-00429-w (2024).
+
+\bibitem{ml3} Kovalenko, A., Evdakov, A., Filatova, G., Yablokov, A., Bulashov, A. \& Makarov, I. Poster Abstract: Autonomous AI-Driven Grid Protection: Sub-Cycle Fault Response via NPU-Optimized Neural Networks. \emph{Proceedings of the 23rd ACM Conference on Embedded Networked Sensor Systems} \textbf{2025}, 670-671, https://doi.org/10.1145/3715014.3724062 (2025).
+
+\bibitem{ml4} Kulikov, A., Loskutov, A. \& Bezdushniy, D. Relay protection and automation algorithms of electrical networks based on simulation and machine learning methods. \emph{Energies} \textbf{15}, 6525, https://doi.org/10.3390/en15186525 (2022).
+
+\bibitem{ml5} Kulikov, A., Loskutov, A., Bezdushniy, D. \& Petrov, I. Decision tree models and machine learning algorithms in the fault recognition on power lines with branches. \emph{Energies} \textbf{16}, 5563, https://doi.org/10.3390/en16145563 (2023).
+
+\bibitem{noise} Pozdnyakov, V., Kovalenko, A., Makarov, I., Drobyshevskiy, M. \& Lukyanov, K. Adversarial attacks and defenses in fault detection and diagnosis: A comprehensive benchmark on the Tennessee Eastman process. \emph{IEEE Open Journal of the Industrial Electronics Society} \textbf{5}, 428-440, https://doi.org/10.1109/OJIES.2024.3401396 (2024).
+
+\bibitem{data2} De Oliveira, R. A. \& Bollen, M. H. Deep learning for power quality. \emph{Electric Power Systems Research} \textbf{214}, 108887, https://doi.org/10.1016/j.epsr.2022.108887 (2023).
+
+\bibitem{data3} Filatova G., Piskunov D., Evdakov A. \& Filatova G. Automated method for the research of the relay protection function implemented in 6(10) kV digital instrument transformers using real oscillograms. \emph{International Russian Automation Conference (RusAutoCon)} \textbf{2024}, 362-367, https://doi.org/10.1109/RusAutoCon61949.2024.10694146 (2024).
+
+\bibitem{data1} Machlev, R., Chachkes, A., Belikov, J., Beck, Y. \& Levron, Y. Open source dataset generator for power quality disturbances with deep-learning reference classifiers. \emph{Electric Power Systems Research} \textbf{195}, 107152, https://doi.org/10.1016/j.epsr.2021.107152 (2021).
+
+\bibitem{data4} Dabou, R. T., Kamwa, I., Delavari, A., \& Hasnaoui, F. S. Big-Data Modeling Based Simscape Power Systems-ST for Protective Relaying. \emph{15th International Conference on Power, Energy, and Electrical Engineering (CPEEE)} \textbf{2025}, 257-262, https://doi.org/10.1109/CPEEE64598.2025.10987443 (2025).
+
+\bibitem{data5} Wilson, A. J., Ekti, A. R., Follum, J., Biswas, S., Annalicia, C., Joo, J. Y., Aziz, Q. \& Lian, J. The grid event signature library: An open-access repository of power system measurement signatures. \emph{IEEE Access} \textbf{12}, 76207-76218, https://doi.org/10.1109/ACCESS.2024.3404886 (2024).
+
+\bibitem{data6} Presvôts, C. \& Prevost, T. Database of Voltage and Current Sample Values from the French Electricity Transmission Grid. \emph{Github} https://github.com/rte-france/digital-fault-recording-database (2024)
+
+\bibitem{an1} Sweeney, L. k-anonymity: A model for protecting privacy. \emph{International journal of uncertainty, fuzziness and knowledge-based systems} \textbf{10}, 557-570, https://doi.org/10.1142/S0218488502001648 (2002).
+
+\bibitem{ml6} Evdakov, A., Filatova, G \& Evdakov, A. Automatic classification of anomalies in oscillograms using neural networks. \emph{Proceedings of the VIII International Scientific and Technical Conference. Problems and prospects of development of energy, electrical engineering and energy efficiency} \textbf{2024}, 63-76, https://elibrary.ru/pcnigc ID: 80450043 (2024).
+
+\bibitem{figshare} Aleksey, E., Makoldin, A., Kovalenko, A., Filatova, G. \& Yablokov, A. A Dataset of Real-World Oscillograms from Electric Power Grids. \emph{figshare} https://doi.org/10.6084/m9.figshare.28465427 (2025).
+
+\end{thebibliography}
+
+\section*{Author contributions}
+
+A.E., G.f. and A.Y. performed the collection of the raw data, manual preproccessing and labeling. A.K. designed the pipeline for CSV conversion. E.S. designed the technical validation experiments. I.M. analysed the results. All authors reviewed the manuscript.
+
+\section*{Competing interests}
+
+The authors declare no competing interests.
+
+\section*{Funding}
+
+The work of I. Makarov was supported by the Ministry of Economic Development of the Russian Federation (agreement No. 139-10-2025-034 dd. 19.06.2025, IGK 000000C313925P4D0002).
+
+\end{document}

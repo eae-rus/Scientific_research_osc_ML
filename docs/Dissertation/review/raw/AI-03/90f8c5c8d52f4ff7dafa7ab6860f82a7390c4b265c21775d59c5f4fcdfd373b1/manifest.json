@@ -1,0 +1,142 @@
+{
+  "source_id": "AI-03",
+  "source_sha256": "90f8c5c8d52f4ff7dafa7ab6860f82a7390c4b265c21775d59c5f4fcdfd373b1",
+  "source_path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/article/(ч3) Архитектура трансформеров v1.3.docx",
+  "preserved_parts": [
+    {
+      "path": "[Content_Types].xml",
+      "sha256": "efd7787d5abf54610049beb855b98181c44fd193ff2eace5d19b116decc9fc45"
+    },
+    {
+      "path": "_rels/.rels",
+      "sha256": "c30fe099dbcfed4ecc4ae544ccf82f432c8d3bb665e2a301df283738b196d803"
+    },
+    {
+      "path": "word/_rels/document.xml.rels",
+      "sha256": "089ea5c1fdeb493fc481503625616d5519ffb31859d2540bfd62a2f54d5a5626"
+    },
+    {
+      "path": "word/document.xml",
+      "sha256": "408b49453aab4a642b8c5d8f99662939b4f325686d1391b21e101ad9693312d5"
+    },
+    {
+      "path": "word/endnotes.xml",
+      "sha256": "6f2aed77f3e6bc614c844f0400b2b12d2ed8d4c0aa8d6750f26d3bf82e282bf5"
+    },
+    {
+      "path": "word/header2.xml",
+      "sha256": "51474fd16e452b5a7f48ee2fdbbd73ac082ba4024b4871bd0030468c6b7095d3"
+    },
+    {
+      "path": "word/footer1.xml",
+      "sha256": "8171f4bf497c46e10407903a53033fab2b3b0da0c318f7147fa5d1f7d62b3ca5"
+    },
+    {
+      "path": "word/footer2.xml",
+      "sha256": "edf54a425c758fb24490fa6c3491a27543093db78a2e9e82596f852732124f5a"
+    },
+    {
+      "path": "word/footer3.xml",
+      "sha256": "8ffbe6f1523da131d68db3d952798b343dd696b494467ea175c344292ce3abb8"
+    },
+    {
+      "path": "word/header1.xml",
+      "sha256": "1b4b419659b12c9757564e5d28a12bcb37adab26a4438427b1e0714cc627bc34"
+    },
+    {
+      "path": "word/footnotes.xml",
+      "sha256": "b16bf28910654b69bbeee8d963cd97ef4f60ffe15107a11a72c7751b0a1fdbcf"
+    },
+    {
+      "path": "word/theme/theme1.xml",
+      "sha256": "bf4992e3fa7832e5c68fdbc4ec5189c8e5d347fef03c5ba2522ad704bde5078f"
+    },
+    {
+      "path": "word/comments.xml",
+      "sha256": "cdd28328f7d5fe89a52bdb6315a8fc140c2d491f00282ef20c0abc8c71d80086"
+    },
+    {
+      "path": "word/_rels/comments.xml.rels",
+      "sha256": "5c8fd1ad2248942358b16ebef048b2376c606b78460ca1ffec09b64ef4081d74"
+    },
+    {
+      "path": "word/settings.xml",
+      "sha256": "f1ae544a1247377a21be8cb01b865b13e865c6e3ec03d2cb34e52e6b9e5e4f5c"
+    },
+    {
+      "path": "word/_rels/settings.xml.rels",
+      "sha256": "60cdb8cee2f8607399701b5eaf9055258f91594e663945ae00908bf47dfa666c"
+    },
+    {
+      "path": "customXml/itemProps1.xml",
+      "sha256": "3e36c7294973ebcca5c408caa4414cc2a5712ea2bde8cc4e00930bf58c44ca34"
+    },
+    {
+      "path": "word/numbering.xml",
+      "sha256": "42d9ee9efee6641ec5fd9eb41a6ae4027af20e0360781cbf8f3599ce217160d9"
+    },
+    {
+      "path": "word/styles.xml",
+      "sha256": "8dafacd1f2256303d8b408301c83a2697637f07abd5a120b3e6557b070e4fb26"
+    },
+    {
+      "path": "word/webSettings.xml",
+      "sha256": "5d6aa8d4b6cf8acde6d04fc72f24204aecdc72ba11e6e1b703edce1a2e2b85ae"
+    },
+    {
+      "path": "word/commentsExtended.xml",
+      "sha256": "e90c8a9e4e488b2ca9b9a0df5572fabdfca6fc6f55c524d9ef1d849dc2f94884"
+    },
+    {
+      "path": "word/commentsIds.xml",
+      "sha256": "c91a9ede4a3759acd64a6054752248e83a14362e8c9caab3cd7b2af3a44bd7ac"
+    },
+    {
+      "path": "docProps/core.xml",
+      "sha256": "77d3d15edd8acb363ac320266c61a47cefd18cb04aa73c53fa7744aae8365217"
+    },
+    {
+      "path": "docProps/app.xml",
+      "sha256": "af717eb958cbd507b0d9f7a11eb366b463a2a6f823aec18efe49f46ebc24790f"
+    },
+    {
+      "path": "docProps/custom.xml",
+      "sha256": "201271e8348a9e22cbb8c85cefa465a66d456782e645a27179b53b2cdd4254c1"
+    },
+    {
+      "path": "word/fontTable.xml",
+      "sha256": "3f502dbfad227da48059ae1c9aeb16ed471dbf1b7c16fae0d1c72deb7b23ae89"
+    },
+    {
+      "path": "word/people.xml",
+      "sha256": "ca3a9eb335d97f99e15bd951b1034988eda6d327bb326a26e42dfbb09dce8e01"
+    },
+    {
+      "path": "customXml/_rels/item1.xml.rels",
+      "sha256": "80482f86e196171d66001e0e74d1900408a3aaf2463e54005d251b5f2db9a0b0"
+    },
+    {
+      "path": "word/commentsExtensible.xml",
+      "sha256": "11d2b710b33969c84d58d75e3b87c31d4741ef024d67dec138f9be25fcd5c328"
+    },
+    {
+      "path": "customXml/item1.xml",
+      "sha256": "c8092edbb672f8c93f1d5ef66539a6f169462ba8738b785b59cc5d96f4aca59a"
+    }
+  ],
+  "non_xml_preserved_in_docx": [
+    "word/media/image5.png",
+    "word/media/image7.png",
+    "word/media/image8.png",
+    "word/media/image9.png",
+    "word/media/image2.png",
+    "word/media/image4.png",
+    "word/media/image1.png",
+    "word/media/image3.png",
+    "word/media/image6.png"
+  ],
+  "paragraph_count": 226,
+  "comment_count": 37,
+  "revision_count": 0,
+  "semantics": "w:t and w:delText exported; no tracked changes accepted or rejected; paragraph context is not an exact text range"
+}
