@@ -5787,23 +5787,24 @@
     }
   ],
   "author_annotation_input_revision": "39886d38db56ba6ed6c12f6a887049a886c22370",
-  "author_annotation_input_policy": "Hashes refer to annotated inputs before operative continuations; original notes retained verbatim in updated files.",
+  "author_annotation_input_policy": "Original note text retained verbatim; hashes updated after explicit visible status markers on 2026-10-06; registry has stable AA IDs.",
   "author_annotation_current_sha256": {
-    "docs/Dissertation/planning/handoffs/D00.md": "821941b3da245a2b44be850feaef59a133d9a1a5eebe56c646b5d71d5dc95e7f",
-    "docs/Dissertation/planning/integration/rewrite_proposals/ch03.md": "906eb23792e78214d67ec50600284933b80870bbb60a1621da4f300735912cc3",
-    "docs/Dissertation/planning/integration/rewrite_proposals/ch05.md": "0fb3a84b69733366913d9c99c13385851bb6945d2316d3f4c4f361c28f355db3"
+    "docs/Dissertation/planning/handoffs/D00.md": "b038cbf0c0757d6ecf366ec7f0f15fe7e823f55fa8c2aecc4fa1c77285661cf4",
+    "docs/Dissertation/planning/integration/rewrite_proposals/ch03.md": "de6d73ae2a95fecfebf68d33d2ea540bd7c5cf07d1a559a23fe4572724d07ba3",
+    "docs/Dissertation/planning/integration/rewrite_proposals/ch05.md": "b4057fea4b1947ea7f3558bb52cf12bcfac967a14ef68319a3f514220c2e5ae2",
+    "docs/Dissertation/planning/questions.md": "24b9dbf3b70c0052469bd18c344896662df2d2ceb4aa539742ace092ca0f41db"
   },
   "verification_summary": {
     "unchanged_source_files": 290,
     "c02_steps": 45,
     "c03_tasks": 52,
     "original_comment_ids_covered": 333,
-    "author_annotations_preserved": 19,
+    "author_annotations_preserved": 28,
     "task_graph": "acyclic",
     "scientific_reading": "not_complete"
   },
   "reading_progress": {
-    "date": "2026-10-05",
+    "date": "2026-10-06",
     "completed_C02_steps": 17,
     "total_C02_steps": 45,
     "completed_C03_groups": 1,
@@ -5819,10 +5820,16 @@
     ],
     "report": "planning/handoffs/C02.md",
     "author_review": "planning/questions.md",
-    "next_task": "C02-PDR-05-02",
-    "main_manuscript_modified": false,
+    "next_task": "C02-PDR-05-02b",
+    "main_manuscript_modified": true,
     "completed_C03_tasks": 8,
-    "total_C03_tasks": 52
+    "total_C03_tasks": 52,
+    "completed_scoped_parts": [
+      "C02-PDR-05-02a"
+    ],
+    "completed_integration_tasks": [
+      "D02-001"
+    ]
   },
   "supporting_status_snapshots": [
     {

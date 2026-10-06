@@ -458,7 +458,15 @@
         "kind": "joint",
         "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
       },
-      "related_claim_ids": []
+      "related_claim_ids": [],
+      "author_resolution": {
+        "date": "2026-10-06",
+        "accepted_dissertation_before_count": 1865,
+        "source_before_count_retained": 1866,
+        "table_grid_check": "review/checks/DATA-OZZ-table.json",
+        "first_last_rows_checked": true,
+        "limits": "Arithmetic discrepancy retained; primary source list not reconstructed."
+      }
     },
     {
       "claim_id": "OZZ-DATA-WEAK",

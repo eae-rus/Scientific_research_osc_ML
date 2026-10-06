@@ -163,12 +163,14 @@
 
 | Приоритет | Пакет | Следующий ID | Статус шага |
 |---|---|---|---|
-| 1 | DATA-SD | C02-PDR-05-02 | READY |
-| 2 | PDR-05 | C02-PDR-05-01 | READY |
-| 3 | DATA-OZZ | C02-DATA-OZZ-01 | READY |
-| 4 | STAT-OZZ | C02-STAT-OZZ-01 | READY |
-| 5 | AI-01 | C02-AI-01-01 | READY |
-| 6 | AI-02-RU | C02-AI-02-RU-01 | READY |
-| 7 | AI-02-EN | C02-AI-02-EN-01 | READY |
-| 8 | AI-03 | C02-AI-03-01 | READY |
-| 9 | AI-04 | C02-AI-04-01 | READY |
+| 1 | DATA-SD | — (C02-01–05 завершены) | DONE |
+| 2 | PDR-05 | C02-PDR-05-02b | DOING |
+| 3 | DATA-OZZ | C02-DATA-OZZ-04 | READY |
+| 4 | STAT-OZZ | C02-STAT-OZZ-04 | READY |
+| 5 | AI-01 | C02-AI-01-02 | READY |
+| 6 | AI-02-RU | C02-AI-02-RU-02 | READY |
+| 7 | AI-02-EN | C02-AI-02-EN-02 | READY |
+| 8 | AI-03 | C02-AI-03-02 | READY |
+| 9 | AI-04 | C02-AI-04-02 | READY |
+
+Обновление 06.10.2026: D02-001 DONE (см. карточку/проверку); ранняя ограниченная партия не закрывает родитель D02. C02-PDR-05-02 DOING: 02a завершена, далее 02b. C02 17/45 полных шагов, C03 1/43 содержательных групп.
