@@ -29,3 +29,31 @@ scratch/
 *.tmp
 *.bak
 __pycache__/
+
+# Local PDR audit cache: copied code, logs, predictions and run metadata.
+# Article/review snapshots and origin.json remain versioned.
+# Readable protocols, claims and audit reports are outside this cache.
+/sources/PDR-05/*/*.py
+/sources/PDR-05/*/*.npz
+/sources/PDR-05/*/config.json
+/sources/PDR-05/*/progress.json
+/sources/PDR-05/*/summary.json
+/sources/PDR-05/*/training_log.jsonl
+/sources/PDR-05/*/*_expert_best.json
+/sources/PDR-05/*/*_weak_best.json
+/sources/PDR-05/*/*_weak_initial.json
+/sources/PDR-05/*/paired_comparison_summary.json
+
+# Local PDR audit cache: copied code, logs, predictions and run metadata.
+# Article/review snapshots and origin.json remain versioned.
+# Readable protocols, claims and audit reports are outside this cache.
+/sources/PDR-05/*/*.py
+/sources/PDR-05/*/*.npz
+/sources/PDR-05/*/config.json
+/sources/PDR-05/*/progress.json
+/sources/PDR-05/*/summary.json
+/sources/PDR-05/*/training_log.jsonl
+/sources/PDR-05/*/*_expert_best.json
+/sources/PDR-05/*/*_weak_best.json
+/sources/PDR-05/*/*_weak_initial.json
+/sources/PDR-05/*/paired_comparison_summary.json

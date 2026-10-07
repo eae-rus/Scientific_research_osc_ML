@@ -309,7 +309,7 @@
       "status": "DECISION_RECORDED",
       "decision": "Author accepts arithmetic total 1865. Recheck original OOXML table, including first/last data rows and separate total. Keep source reported 1866 in provenance.",
       "last_seen_note_index": 1,
-      "last_seen_file_sha256": "24b9dbf3b70c0052469bd18c344896662df2d2ceb4aa539742ace092ca0f41db",
+      "last_seen_file_sha256": "5ae8358bca7ce3ee34f9c78f27f075a8f38147e117069061ff86c10e11a57eac",
       "reviewed_at": "2026-10-06",
       "display": "учтено: 1865; строки перепроверены",
       "author_input_date": "2026-10-06"
@@ -322,7 +322,7 @@
       "status": "DECISION_RECORDED",
       "decision": "Keep unresolved central interval percentage as future numeric check; do not block transfer of verified statistics or assert 80/90 percent without underlying CDF.",
       "last_seen_note_index": 2,
-      "last_seen_file_sha256": "24b9dbf3b70c0052469bd18c344896662df2d2ceb4aa539742ace092ca0f41db",
+      "last_seen_file_sha256": "5ae8358bca7ce3ee34f9c78f27f075a8f38147e117069061ff86c10e11a57eac",
       "reviewed_at": "2026-10-06",
       "display": "учтено: проверка CDF отложена",
       "author_input_date": "2026-10-06"
@@ -335,7 +335,7 @@
       "status": "DECISION_RECORDED",
       "decision": "Author agrees on sample/measurement limits and on no automatic revision of insulation standards.",
       "last_seen_note_index": 3,
-      "last_seen_file_sha256": "24b9dbf3b70c0052469bd18c344896662df2d2ceb4aa539742ace092ca0f41db",
+      "last_seen_file_sha256": "5ae8358bca7ce3ee34f9c78f27f075a8f38147e117069061ff86c10e11a57eac",
       "reviewed_at": "2026-10-06",
       "display": "учтено: ограничения сохраняются",
       "author_input_date": "2026-10-06"
@@ -348,7 +348,7 @@
       "status": "DECISION_RECORDED",
       "decision": "RTDS section is part of present validation. Transfer current material, explain any remaining disagreement with actual case/metric; coordinate later edits of PDR article and dissertation.",
       "last_seen_note_index": 4,
-      "last_seen_file_sha256": "24b9dbf3b70c0052469bd18c344896662df2d2ceb4aa539742ace092ca0f41db",
+      "last_seen_file_sha256": "5ae8358bca7ce3ee34f9c78f27f075a8f38147e117069061ff86c10e11a57eac",
       "reviewed_at": "2026-10-06",
       "display": "учтено: переносим имеющееся; вопросы конкретизируем",
       "author_input_date": "2026-10-06"
@@ -361,12 +361,12 @@
       "status": "DECISION_RECORDED",
       "decision": "Keep raw Word comments, paths and author notes. Review while editing a bounded fragment; raise important unresolved questions with exact anchors in planning/questions.md. Do not silently delete source-link reminders.",
       "last_seen_note_index": 5,
-      "last_seen_file_sha256": "24b9dbf3b70c0052469bd18c344896662df2d2ceb4aa539742ace092ca0f41db",
+      "last_seen_file_sha256": "5ae8358bca7ce3ee34f9c78f27f075a8f38147e117069061ff86c10e11a57eac",
       "reviewed_at": "2026-10-06",
       "display": "учтено: комментарии и ссылки сохранены",
       "author_input_date": "2026-10-06"
     }
   ],
-  "updated": "2026-10-06",
+  "updated": "2026-10-07",
   "policy": "Original text retained; status means reviewed disposition, not automatic completion of related scientific work. Never silently delete notes."
 }

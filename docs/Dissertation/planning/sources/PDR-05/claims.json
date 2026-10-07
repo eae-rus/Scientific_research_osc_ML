@@ -1,0 +1,921 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-07",
+  "protocol": "protocol.md",
+  "status": "C02-PDR-05-03 DOING; first bounded group DONE",
+  "coverage": "24 atomic validation claims: 3 compact modes x initialization/expert-selected x 4 metrics. Other paper tables/figures not accepted by this subset.",
+  "claims": [
+    {
+      "claim_id": "PDR-VAL-001",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_weak_initial.json::splits.validation.overall.macro_f1_score",
+          "numeric_value": 0.8577781254784989,
+          "artifact_sha256": "ae50d663f8f7198aa19951c939e4c640a52d906a5417dfc1deb8be5330bddd47"
+        }
+      ],
+      "neutral_ru": "snapshot_2, weak_initial: Macro-F1 направления = 0.857778125478 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/snapshot_2/weak_initial",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "macro_f1_direction",
+        "value": 0.8577781254784989,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit"
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-002",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_weak_initial.json::splits.validation.overall.mcc",
+          "numeric_value": 0.7308109660407234,
+          "artifact_sha256": "ae50d663f8f7198aa19951c939e4c640a52d906a5417dfc1deb8be5330bddd47"
+        }
+      ],
+      "neutral_ru": "snapshot_2, weak_initial: MCC направления = 0.730810966041 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/snapshot_2/weak_initial",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "mcc_direction",
+        "value": 0.7308109660407234,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit"
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-003",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_weak_initial.json::splits.validation.overall.applicability_macro_f1_score",
+          "numeric_value": 0.9722793125435591,
+          "artifact_sha256": "ae50d663f8f7198aa19951c939e4c640a52d906a5417dfc1deb8be5330bddd47"
+        }
+      ],
+      "neutral_ru": "snapshot_2, weak_initial: Macro-F1 применимости = 0.972279312544 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/snapshot_2/weak_initial",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "macro_f1_applicability",
+        "value": 0.9722793125435591,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit"
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-004",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_weak_initial.json::splits.validation.by_source.open_ee.joint_state_accuracy",
+          "numeric_value": 0.8634746922024624,
+          "artifact_sha256": "ae50d663f8f7198aa19951c939e4c640a52d906a5417dfc1deb8be5330bddd47",
+          "n_points": 7310
+        },
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_weak_initial.json::splits.validation.by_source.french_rte.joint_state_accuracy",
+          "numeric_value": 0.9074928977272727,
+          "artifact_sha256": "ae50d663f8f7198aa19951c939e4c640a52d906a5417dfc1deb8be5330bddd47",
+          "n_points": 5632
+        }
+      ],
+      "neutral_ru": "snapshot_2, weak_initial: Совпадение полного состояния = 0.88263019626 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/snapshot_2/weak_initial",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "joint_state_accuracy",
+        "value": 0.882630196260238,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit",
+        "aggregation": "Overall full-state accuracy recomputed from all NPZ points; matches source point-weighted joint state accuracies. Not equal-record mean."
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-005",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_expert_best.json::splits.validation.overall.macro_f1_score",
+          "numeric_value": 0.9583430887507571,
+          "artifact_sha256": "11b69bd478163a7a67c40fca0676068b95f6ea907d3baa68f6769a41050355a0"
+        }
+      ],
+      "neutral_ru": "snapshot_2, expert_best: Macro-F1 направления = 0.958343088751 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/snapshot_2/expert_best",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "macro_f1_direction",
+        "value": 0.9583430887507571,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit"
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-006",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_expert_best.json::splits.validation.overall.mcc",
+          "numeric_value": 0.9166993303301988,
+          "artifact_sha256": "11b69bd478163a7a67c40fca0676068b95f6ea907d3baa68f6769a41050355a0"
+        }
+      ],
+      "neutral_ru": "snapshot_2, expert_best: MCC направления = 0.91669933033 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/snapshot_2/expert_best",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "mcc_direction",
+        "value": 0.9166993303301988,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit"
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-007",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_expert_best.json::splits.validation.overall.applicability_macro_f1_score",
+          "numeric_value": 0.9647294863159261,
+          "artifact_sha256": "11b69bd478163a7a67c40fca0676068b95f6ea907d3baa68f6769a41050355a0"
+        }
+      ],
+      "neutral_ru": "snapshot_2, expert_best: Macro-F1 применимости = 0.964729486316 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/snapshot_2/expert_best",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "macro_f1_applicability",
+        "value": 0.9647294863159261,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit"
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-008",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_expert_best.json::splits.validation.by_source.open_ee.joint_state_accuracy",
+          "numeric_value": 0.9187414500683995,
+          "artifact_sha256": "11b69bd478163a7a67c40fca0676068b95f6ea907d3baa68f6769a41050355a0",
+          "n_points": 7310
+        },
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_expert_best.json::splits.validation.by_source.french_rte.joint_state_accuracy",
+          "numeric_value": 0.9818892045454546,
+          "artifact_sha256": "11b69bd478163a7a67c40fca0676068b95f6ea907d3baa68f6769a41050355a0",
+          "n_points": 5632
+        }
+      ],
+      "neutral_ru": "snapshot_2, expert_best: Совпадение полного состояния = 0.94622160408 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/snapshot_2/expert_best",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "joint_state_accuracy",
+        "value": 0.9462216040797404,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit",
+        "aggregation": "Overall full-state accuracy recomputed from all NPZ points; matches source point-weighted joint state accuracies. Not equal-record mean."
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-009",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_weak_initial.json::splits.validation.overall.macro_f1_score",
+          "numeric_value": 0.8835891212658424,
+          "artifact_sha256": "15e7d1fd4a9faf5487ce041282782e331c87be4dd378a4d871a6d148fac2c5f0"
+        }
+      ],
+      "neutral_ru": "snapshot_5, weak_initial: Macro-F1 направления = 0.883589121266 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/snapshot_5/weak_initial",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "macro_f1_direction",
+        "value": 0.8835891212658427,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit"
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-010",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_weak_initial.json::splits.validation.overall.mcc",
+          "numeric_value": 0.7772515876433236,
+          "artifact_sha256": "15e7d1fd4a9faf5487ce041282782e331c87be4dd378a4d871a6d148fac2c5f0"
+        }
+      ],
+      "neutral_ru": "snapshot_5, weak_initial: MCC направления = 0.777251587643 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/snapshot_5/weak_initial",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "mcc_direction",
+        "value": 0.7772515876433236,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit"
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-011",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_weak_initial.json::splits.validation.overall.applicability_macro_f1_score",
+          "numeric_value": 0.9717738883367635,
+          "artifact_sha256": "15e7d1fd4a9faf5487ce041282782e331c87be4dd378a4d871a6d148fac2c5f0"
+        }
+      ],
+      "neutral_ru": "snapshot_5, weak_initial: Macro-F1 применимости = 0.971773888337 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/snapshot_5/weak_initial",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "macro_f1_applicability",
+        "value": 0.9717738883367635,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit"
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-012",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_weak_initial.json::splits.validation.by_source.open_ee.joint_state_accuracy",
+          "numeric_value": 0.8974008207934336,
+          "artifact_sha256": "15e7d1fd4a9faf5487ce041282782e331c87be4dd378a4d871a6d148fac2c5f0",
+          "n_points": 7310
+        },
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_weak_initial.json::splits.validation.by_source.french_rte.joint_state_accuracy",
+          "numeric_value": 0.9018110795454546,
+          "artifact_sha256": "15e7d1fd4a9faf5487ce041282782e331c87be4dd378a4d871a6d148fac2c5f0",
+          "n_points": 5632
+        }
+      ],
+      "neutral_ru": "snapshot_5, weak_initial: Совпадение полного состояния = 0.89932004327 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/snapshot_5/weak_initial",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "joint_state_accuracy",
+        "value": 0.8993200432699737,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit",
+        "aggregation": "Overall full-state accuracy recomputed from all NPZ points; matches source point-weighted joint state accuracies. Not equal-record mean."
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-013",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_expert_best.json::splits.validation.overall.macro_f1_score",
+          "numeric_value": 0.97218067125202,
+          "artifact_sha256": "048e7fa0685a755e6da1bc81bc879651afa44555bd517d75c7272d07b607e5cf"
+        }
+      ],
+      "neutral_ru": "snapshot_5, expert_best: Macro-F1 направления = 0.972180671252 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/snapshot_5/expert_best",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "macro_f1_direction",
+        "value": 0.97218067125202,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit"
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-014",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_expert_best.json::splits.validation.overall.mcc",
+          "numeric_value": 0.9443919991938237,
+          "artifact_sha256": "048e7fa0685a755e6da1bc81bc879651afa44555bd517d75c7272d07b607e5cf"
+        }
+      ],
+      "neutral_ru": "snapshot_5, expert_best: MCC направления = 0.944391999194 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/snapshot_5/expert_best",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "mcc_direction",
+        "value": 0.9443919991938237,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit"
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-015",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_expert_best.json::splits.validation.overall.applicability_macro_f1_score",
+          "numeric_value": 0.9617664429964334,
+          "artifact_sha256": "048e7fa0685a755e6da1bc81bc879651afa44555bd517d75c7272d07b607e5cf"
+        }
+      ],
+      "neutral_ru": "snapshot_5, expert_best: Macro-F1 применимости = 0.961766442996 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/snapshot_5/expert_best",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "macro_f1_applicability",
+        "value": 0.9617664429964334,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit"
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-016",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_expert_best.json::splits.validation.by_source.open_ee.joint_state_accuracy",
+          "numeric_value": 0.9352941176470588,
+          "artifact_sha256": "048e7fa0685a755e6da1bc81bc879651afa44555bd517d75c7272d07b607e5cf",
+          "n_points": 7310
+        },
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_expert_best.json::splits.validation.by_source.french_rte.joint_state_accuracy",
+          "numeric_value": 0.98046875,
+          "artifact_sha256": "048e7fa0685a755e6da1bc81bc879651afa44555bd517d75c7272d07b607e5cf",
+          "n_points": 5632
+        }
+      ],
+      "neutral_ru": "snapshot_5, expert_best: Совпадение полного состояния = 0.954952866636 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/snapshot_5/expert_best",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "joint_state_accuracy",
+        "value": 0.9549528666357595,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit",
+        "aggregation": "Overall full-state accuracy recomputed from all NPZ points; matches source point-weighted joint state accuracies. Not equal-record mean."
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-017",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_weak_initial.json::splits.validation.overall.macro_f1_score",
+          "numeric_value": 0.8405597401033665,
+          "artifact_sha256": "35335ae6de445e46a68390f2ae8d628302ffb079ddb94d779b15cbdaff0cb549"
+        }
+      ],
+      "neutral_ru": "sequence_1_8, weak_initial: Macro-F1 направления = 0.840559740103 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/sequence_1_8/weak_initial",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "macro_f1_direction",
+        "value": 0.8405597401033665,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit"
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-018",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_weak_initial.json::splits.validation.overall.mcc",
+          "numeric_value": 0.700765838046803,
+          "artifact_sha256": "35335ae6de445e46a68390f2ae8d628302ffb079ddb94d779b15cbdaff0cb549"
+        }
+      ],
+      "neutral_ru": "sequence_1_8, weak_initial: MCC направления = 0.700765838047 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/sequence_1_8/weak_initial",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "mcc_direction",
+        "value": 0.700765838046803,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit"
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-019",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_weak_initial.json::splits.validation.overall.applicability_macro_f1_score",
+          "numeric_value": 0.9684187776563418,
+          "artifact_sha256": "35335ae6de445e46a68390f2ae8d628302ffb079ddb94d779b15cbdaff0cb549"
+        }
+      ],
+      "neutral_ru": "sequence_1_8, weak_initial: Macro-F1 применимости = 0.968418777656 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/sequence_1_8/weak_initial",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "macro_f1_applicability",
+        "value": 0.9684187776563418,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit"
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-020",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_weak_initial.json::splits.validation.by_source.open_ee.joint_state_accuracy",
+          "numeric_value": 0.8507523939808481,
+          "artifact_sha256": "35335ae6de445e46a68390f2ae8d628302ffb079ddb94d779b15cbdaff0cb549",
+          "n_points": 7310
+        },
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_weak_initial.json::splits.validation.by_source.french_rte.joint_state_accuracy",
+          "numeric_value": 0.8924005681818182,
+          "artifact_sha256": "35335ae6de445e46a68390f2ae8d628302ffb079ddb94d779b15cbdaff0cb549",
+          "n_points": 5632
+        }
+      ],
+      "neutral_ru": "sequence_1_8, weak_initial: Совпадение полного состояния = 0.868876526039 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/sequence_1_8/weak_initial",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "joint_state_accuracy",
+        "value": 0.868876526039252,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit",
+        "aggregation": "Overall full-state accuracy recomputed from all NPZ points; matches source point-weighted joint state accuracies. Not equal-record mean."
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-021",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_expert_best.json::splits.validation.overall.macro_f1_score",
+          "numeric_value": 0.9272561700039552,
+          "artifact_sha256": "09a0a8fa5912438cd17e2a25b0b13c3b5561bfa4a37495b94a8fb02b4c3dc25c"
+        }
+      ],
+      "neutral_ru": "sequence_1_8, expert_best: Macro-F1 направления = 0.927256170004 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/sequence_1_8/expert_best",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "macro_f1_direction",
+        "value": 0.9272561700039552,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit"
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-022",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_expert_best.json::splits.validation.overall.mcc",
+          "numeric_value": 0.8605096027367762,
+          "artifact_sha256": "09a0a8fa5912438cd17e2a25b0b13c3b5561bfa4a37495b94a8fb02b4c3dc25c"
+        }
+      ],
+      "neutral_ru": "sequence_1_8, expert_best: MCC направления = 0.860509602737 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/sequence_1_8/expert_best",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "mcc_direction",
+        "value": 0.8605096027367762,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit"
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-023",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_expert_best.json::splits.validation.overall.applicability_macro_f1_score",
+          "numeric_value": 0.955749624477531,
+          "artifact_sha256": "09a0a8fa5912438cd17e2a25b0b13c3b5561bfa4a37495b94a8fb02b4c3dc25c"
+        }
+      ],
+      "neutral_ru": "sequence_1_8, expert_best: Macro-F1 применимости = 0.955749624478 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/sequence_1_8/expert_best",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "macro_f1_applicability",
+        "value": 0.955749624477531,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit"
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    },
+    {
+      "claim_id": "PDR-VAL-024",
+      "source_id": "PDR-05",
+      "source_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "source_statements": [
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_expert_best.json::splits.validation.by_source.open_ee.joint_state_accuracy",
+          "numeric_value": 0.8705882352941177,
+          "artifact_sha256": "09a0a8fa5912438cd17e2a25b0b13c3b5561bfa4a37495b94a8fb02b4c3dc25c",
+          "n_points": 7310
+        },
+        {
+          "locator": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_expert_best.json::splits.validation.by_source.french_rte.joint_state_accuracy",
+          "numeric_value": 0.9834872159090909,
+          "artifact_sha256": "09a0a8fa5912438cd17e2a25b0b13c3b5561bfa4a37495b94a8fb02b4c3dc25c",
+          "n_points": 5632
+        }
+      ],
+      "neutral_ru": "sequence_1_8, expert_best: Совпадение полного состояния = 0.919718745171 на фиксированной экспертной validation-сетке. Доля относится к указанной сетке, а не к независимым испытаниям.",
+      "experiment_id": "PDR-VALIDATION-54/sequence_1_8/expert_best",
+      "scope": "54 специально отобранные записи; 12942 точки применимости / 10181 направления; masked sparse grid",
+      "evidence": {
+        "metric": "joint_state_accuracy",
+        "value": 0.9197187451707619,
+        "unit": "ratio",
+        "n_direction_points": 10181,
+        "n_applicability_points": 12942,
+        "recalculation": "review/checks/C02-PDR-05-results.json",
+        "primary_predictions": "NPZ linked in audit",
+        "aggregation": "Overall full-state accuracy recomputed from all NPZ points; matches source point-weighted joint state accuracies. Not equal-record mean."
+      },
+      "limitations": [
+        "Validation used for checkpoint selection; two exact training copies.",
+        "Single training run per model; no training-randomness interval.",
+        "Result does not establish physical truth, full-system behavior or independent holdout performance."
+      ],
+      "verification_status": "saved_prediction_confusions_and_metric_recomputed; weights/config_sha_verified",
+      "dissertation_role": "подтверждённый кандидат в главу исследования РНМ; перенос после критического/графического прохода",
+      "attribution": {
+        "kind": "author_research_with_joint_data_resources",
+        "basis": "Author context; do not infer individual contribution from score alone."
+      },
+      "related_claim_ids": []
+    }
+  ]
+}
