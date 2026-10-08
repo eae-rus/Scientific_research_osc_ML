@@ -93,5 +93,10 @@
     "undefined_references": 0,
     "change": "Author deletion preserved; wording about specialists and disputed cases simplified.",
     "visual_review": "Page 109 rendered and inspected after the revision."
+  },
+  "author_rewrite_20261008": {
+    "basis": "Direct author clarification: temporal labels for 480 DATA-SD records prepared by one specialist; author rewrite preserved.",
+    "target_sha256": "99784d2f84d0a1ddc15c28d6f76297202a634828ca7126f5feeb2afb07d8ad9c",
+    "editorial_change": "Only typo corrected (введу -> ввиду)."
   }
 }
