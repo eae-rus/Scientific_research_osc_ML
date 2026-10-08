@@ -3687,11 +3687,17 @@
         },
         {
           "id": "C02-PDR-05-03-002",
-          "status": "READY"
+          "status": "REVIEW",
+          "audit": "review/checks/C02-PDR-05-population.json",
+          "issues": [
+            "PDR-S01",
+            "PDR-S02",
+            "PDR-S03"
+          ]
         },
         {
           "id": "C02-PDR-05-03-003",
-          "status": "TODO"
+          "status": "READY"
         },
         {
           "id": "C02-PDR-05-03-004",
@@ -5822,7 +5828,7 @@
     "docs/Dissertation/planning/handoffs/D00.md": "b038cbf0c0757d6ecf366ec7f0f15fe7e823f55fa8c2aecc4fa1c77285661cf4",
     "docs/Dissertation/planning/integration/rewrite_proposals/ch03.md": "de6d73ae2a95fecfebf68d33d2ea540bd7c5cf07d1a559a23fe4572724d07ba3",
     "docs/Dissertation/planning/integration/rewrite_proposals/ch05.md": "b4057fea4b1947ea7f3558bb52cf12bcfac967a14ef68319a3f514220c2e5ae2",
-    "docs/Dissertation/planning/questions.md": "5ae8358bca7ce3ee34f9c78f27f075a8f38147e117069061ff86c10e11a57eac"
+    "docs/Dissertation/planning/questions.md": "5e558361a6b70832ed0d3131df3fb40fffee496e5d8bcc871f6719a4a33e0e1b"
   },
   "verification_summary": {
     "unchanged_source_files": 290,
@@ -5850,7 +5856,7 @@
     ],
     "report": "planning/handoffs/C02.md",
     "author_review": "planning/questions.md",
-    "next_task": "C02-PDR-05-03-002",
+    "next_task": "C02-PDR-05-03-003",
     "main_manuscript_modified": true,
     "completed_C03_tasks": 8,
     "total_C03_tasks": 52,
@@ -5863,6 +5869,9 @@
     ],
     "completed_integration_tasks": [
       "D02-001"
+    ],
+    "review_scoped_parts": [
+      "C02-PDR-05-03-002"
     ]
   },
   "supporting_status_snapshots": [
@@ -5884,7 +5893,8 @@
     "source_id": "PDR-05",
     "reports": [
       "review/checks/C02-PDR-05-02.json",
-      "review/checks/C02-PDR-05-results.json"
+      "review/checks/C02-PDR-05-results.json",
+      "review/checks/C02-PDR-05-population.json"
     ],
     "sources": [
       {
@@ -6176,6 +6186,56 @@
         "path": "experiments/phase5/pdr_expert_evaluation_v3/paired_comparison_summary.json",
         "sha256": "2c415e4fc6d5fbc01849d0102d38c4c94af6d5394e4f7f9ec66daf87ad7694c7",
         "snapshot": "docs/Dissertation/sources/PDR-05/2c415e4fc6d5fbc01849d0102d38c4c94af6d5394e4f7f9ec66daf87ad7694c7/paired_comparison_summary.json"
+      },
+      {
+        "path": "scripts/phase5_experiments/review_pdr_analysis_results.py",
+        "sha256": "731dc1d4552e5aa4b4e63e8446c3ac6084e66eb215eec1345637176f10229a43",
+        "snapshot": "docs/Dissertation/sources/PDR-05/731dc1d4552e5aa4b4e63e8446c3ac6084e66eb215eec1345637176f10229a43/review_pdr_analysis_results.py"
+      },
+      {
+        "path": "data/phase5/pdr_analysis_v6/review_population_summary.csv",
+        "sha256": "8ffccd2558d25b0a6d5485502f8e553186a79a9dadcb058beba93eed21b34f2b",
+        "snapshot": "docs/Dissertation/sources/PDR-05/8ffccd2558d25b0a6d5485502f8e553186a79a9dadcb058beba93eed21b34f2b/review_population_summary.csv"
+      },
+      {
+        "path": "data/phase5/pdr_analysis_v6/review_algorithm_record_bootstrap.csv",
+        "sha256": "dd69b487c9eb1f63dc752e360781d898d7b7b920bdac554d00174ddae34c4554",
+        "snapshot": "docs/Dissertation/sources/PDR-05/dd69b487c9eb1f63dc752e360781d898d7b7b920bdac554d00174ddae34c4554/review_algorithm_record_bootstrap.csv"
+      },
+      {
+        "path": "data/phase5/pdr_analysis_v6/review_current_profiles.csv",
+        "sha256": "4b1ec6d1ad0484e54312e5714c03beb81205196fc7495aae4efa0a04f4b11e33",
+        "snapshot": "docs/Dissertation/sources/PDR-05/4b1ec6d1ad0484e54312e5714c03beb81205196fc7495aae4efa0a04f4b11e33/review_current_profiles.csv"
+      },
+      {
+        "path": "data/phase5/pdr_analysis_v6/pairwise_pointwise_agreement.csv",
+        "sha256": "b55676acbaf4d8fd2f6fb0328a06f40ed27f5d19b691e6e532407f0c78f369cc",
+        "snapshot": "docs/Dissertation/sources/PDR-05/b55676acbaf4d8fd2f6fb0328a06f40ed27f5d19b691e6e532407f0c78f369cc/pairwise_pointwise_agreement.csv"
+      },
+      {
+        "path": "data/phase5/pdr_analysis_v6/algorithm_state_patterns.csv",
+        "sha256": "2c0fafd0475a11b0e39a1176a9b53731ae3cf992e1965e120dd7274189db9c38",
+        "snapshot": "docs/Dissertation/sources/PDR-05/2c0fafd0475a11b0e39a1176a9b53731ae3cf992e1965e120dd7274189db9c38/algorithm_state_patterns.csv"
+      },
+      {
+        "path": "data/phase5/pdr_analysis_v6/transition_groups.csv",
+        "sha256": "d17284cc72a7d6eb45d186e74b4c5b9edd812661207aa8b18df514d9280edb57",
+        "snapshot": "docs/Dissertation/sources/PDR-05/d17284cc72a7d6eb45d186e74b4c5b9edd812661207aa8b18df514d9280edb57/transition_groups.csv"
+      },
+      {
+        "path": "data/phase5/pdr_analysis_v6/record_signal_eligibility.csv",
+        "sha256": "d3f6f67418de2f74c4a4e47a398760ac20b8eb9ce388578194b992ea37a2eead",
+        "snapshot": "docs/Dissertation/sources/PDR-05/d3f6f67418de2f74c4a4e47a398760ac20b8eb9ce388578194b992ea37a2eead/record_signal_eligibility.csv"
+      },
+      {
+        "path": "data/phase5/pdr_analysis_v6/record_statistics.csv",
+        "sha256": "a06d2f38e57a1b411e4d813d9fdb084b414ca1ec6c47785b5c384b22b22f84a9",
+        "snapshot": "docs/Dissertation/sources/PDR-05/a06d2f38e57a1b411e4d813d9fdb084b414ca1ec6c47785b5c384b22b22f84a9/record_statistics.csv"
+      },
+      {
+        "path": "data/phase5/pdr_analysis_v6/review_weighting_sensitivity.csv",
+        "sha256": "1aeeaa1e8922c64fdf17094c345f6156d401e9571254a6889134ff7028cfc879",
+        "snapshot": "docs/Dissertation/sources/PDR-05/1aeeaa1e8922c64fdf17094c345f6156d401e9571254a6889134ff7028cfc879/review_weighting_sensitivity.csv"
       }
     ],
     "policy": "Exact selected evidence only; full archived experiment and code-at-run-time not implied."

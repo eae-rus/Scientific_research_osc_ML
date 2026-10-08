@@ -31,6 +31,8 @@ scratch/
 __pycache__/
 
 # Local PDR audit cache: copied code, logs, predictions and run metadata.
+# CSV inputs are local reproducibility snapshots too; readable audit outputs stay in Git.
+/sources/PDR-05/*/*.csv
 # Article/review snapshots and origin.json remain versioned.
 # Readable protocols, claims and audit reports are outside this cache.
 /sources/PDR-05/*/*.py
