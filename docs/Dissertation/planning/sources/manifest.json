@@ -5828,19 +5828,20 @@
     "docs/Dissertation/planning/handoffs/D00.md": "b038cbf0c0757d6ecf366ec7f0f15fe7e823f55fa8c2aecc4fa1c77285661cf4",
     "docs/Dissertation/planning/integration/rewrite_proposals/ch03.md": "de6d73ae2a95fecfebf68d33d2ea540bd7c5cf07d1a559a23fe4572724d07ba3",
     "docs/Dissertation/planning/integration/rewrite_proposals/ch05.md": "b4057fea4b1947ea7f3558bb52cf12bcfac967a14ef68319a3f514220c2e5ae2",
-    "docs/Dissertation/planning/questions.md": "5e558361a6b70832ed0d3131df3fb40fffee496e5d8bcc871f6719a4a33e0e1b"
+    "docs/Dissertation/planning/questions.md": "2f1f5ca12b1d214b82e6b6a4bcc0d430e4c794669be69b339ac0d920569d51aa",
+    "docs/Dissertation/planning/sources/PDR-05/limitations_and_comments.md": "bf40ebd6091f5235bea00db2d9c5599fa51250dccfd872ea36c0c61661626072"
   },
   "verification_summary": {
     "unchanged_source_files": 290,
     "c02_steps": 45,
     "c03_tasks": 52,
     "original_comment_ids_covered": 333,
-    "author_annotations_preserved": 28,
+    "author_annotations_preserved": 33,
     "task_graph": "acyclic",
     "scientific_reading": "not_complete"
   },
   "reading_progress": {
-    "date": "2026-10-07",
+    "date": "2026-10-08",
     "completed_C02_steps": 18,
     "total_C02_steps": 45,
     "completed_C03_groups": 1,
@@ -5856,7 +5857,7 @@
     ],
     "report": "planning/handoffs/C02.md",
     "author_review": "planning/questions.md",
-    "next_task": "C02-PDR-05-03-003",
+    "next_task": "C02-DATA-OZZ-04",
     "main_manuscript_modified": true,
     "completed_C03_tasks": 8,
     "total_C03_tasks": 52,
@@ -5868,7 +5869,8 @@
       "C02-PDR-05-03-001"
     ],
     "completed_integration_tasks": [
-      "D02-001"
+      "D02-001",
+      "D02-002"
     ],
     "review_scoped_parts": [
       "C02-PDR-05-03-002"
@@ -6239,5 +6241,16 @@
       }
     ],
     "policy": "Exact selected evidence only; full archived experiment and code-at-run-time not implied."
-  }
+  },
+  "source_revisions_20261008": [
+    {
+      "source_id": "PDR-05",
+      "path": "docs/article/PHASE_5_PDR_STATISTICAL_ARTICLE_DRAFT.md",
+      "previous_sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "current_sha256": "dd933cf4252254d41af78e0af985614952f972bd61e683fee952e8cf35d115a8",
+      "snapshot": "docs/Dissertation/sources/PDR-05/dd933cf4252254d41af78e0af985614952f972bd61e683fee952e8cf35d115a8/PHASE_5_PDR_STATISTICAL_ARTICLE_DRAFT.md",
+      "change": "Reviewer notes S01–S03 only; scientific body verified unchanged after excluding notes and whitespace.",
+      "audit_policy": "Existing claims/audits keep the previous immutable article SHA; S01–S03 still REVIEW."
+    }
+  ]
 }

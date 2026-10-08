@@ -1,5 +1,6 @@
 """Audit saved v6 population summaries and article tables; no signal inference."""
 import csv
+import argparse
 import hashlib
 import json
 import math
@@ -18,6 +19,10 @@ SOURCES = ('open_ee', 'french_rte')
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--article', type=Path,
+                        help='Article input; default is the immutable version used by this audit.')
+    args = parser.parse_args()
     inputs = []
 
     def preserve(path):
@@ -37,8 +42,12 @@ def main():
         with preserve(DATA / name).open(encoding='utf-8-sig', newline='') as f:
             return list(csv.DictReader(f))
 
-    article = preserve(REPO / 'docs/article/PHASE_5_PDR_STATISTICAL_ARTICLE_DRAFT.md')
-    assert inputs[-1]['sha256'] == 'a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55'
+    accepted_sha = 'a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55'
+    accepted = ROOT / 'sources/PDR-05' / accepted_sha / 'PHASE_5_PDR_STATISTICAL_ARTICLE_DRAFT.md'
+    article = args.article or accepted
+    assert hashlib.sha256(article.read_bytes()).hexdigest() == accepted_sha, 'Article version changed; review dependent claims before accepting a new audit.'
+    inputs.append({'path':'docs/article/PHASE_5_PDR_STATISTICAL_ARTICLE_DRAFT.md',
+                   'sha256':accepted_sha,'snapshot':accepted.relative_to(REPO).as_posix()})
     code = preserve(REPO / 'scripts/phase5_experiments/analyze_pdr_dataset_study.py')
     review_code = preserve(REPO / 'scripts/phase5_experiments/review_pdr_analysis_results.py')
     text = article.read_text(encoding='utf-8')

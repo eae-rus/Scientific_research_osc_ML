@@ -1,0 +1,88 @@
+{
+  "task_id": "D02-002",
+  "date": "2026-10-08",
+  "status": "DONE",
+  "basis_sha256": "50516d7832e6ea133d77b11b48802c4ed1929283ea7601134b878fab0e0338f7",
+  "basis_checks": [
+    {
+      "block_id": "DISS-005-B1973",
+      "locator": "/w:document/w:body/w:p[877]",
+      "source_text": "Группа 3: «Аварийные события» (Fault Events) – События, которые вызывают или должны вызывать срабатывание устройств релейной защиты (например, короткие замыкания, перегрузки, ведущие к отключению) или в нашем случае – срабатывание БАВР.",
+      "XML_checked": true
+    },
+    {
+      "block_id": "DISS-005-B1982",
+      "locator": "/w:document/w:body/w:p[882]",
+      "source_text": "Для первоначального обучения моделей и валидации подходов была выполнена ручная разметка подмножества осциллограмм. Было отобрано 409 осциллограмм, записанные в сетях 50 Гц с частотой дискретизации 1600 Гц, которые содержали относительно высокую частоту событий.",
+      "XML_checked": true
+    }
+  ],
+  "target_path": "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec08_annotation_methodology.tex",
+  "before_sha256": "67166d57101bc45edfd0ae6567327a87a9192f898c59ce715a4f3a7086792531",
+  "after_sha256": "2fa045a6caec080ab2caf74e1a5e532f314171b1aa0d2c7d131346a81be188e1",
+  "preserved_commentnote_count": 6,
+  "commentnote_calls_identical": true,
+  "source_claims": [
+    "SD-004",
+    "SD-005-0",
+    "SD-005-1",
+    "SD-005-2",
+    "SD-005-3"
+  ],
+  "source_sha256": "220eb9b265bfc28430857a7cd6318a2ab03c58aa8c0aedbb1fdb1e3b6f27587e",
+  "counts": [
+    {
+      "class": "No Event",
+      "timestamps": 598303,
+      "total_timestamps": 1628076,
+      "percent": 36.7,
+      "arithmetic_check": "passed"
+    },
+    {
+      "class": "Operational Switching",
+      "timestamps": 131593,
+      "total_timestamps": 1628076,
+      "percent": 8.1,
+      "arithmetic_check": "passed"
+    },
+    {
+      "class": "Abnormal Events",
+      "timestamps": 700169,
+      "total_timestamps": 1628076,
+      "percent": 43.0,
+      "arithmetic_check": "passed"
+    },
+    {
+      "class": "Fault Events",
+      "timestamps": 198011,
+      "total_timestamps": 1628076,
+      "percent": 12.2,
+      "arithmetic_check": "passed"
+    }
+  ],
+  "total": 1628076,
+  "limits": "Only this annotation block; no whole-manuscript acceptance or physical BAWR truth audit.",
+  "build": {
+    "exit_code": 0,
+    "passes": 4,
+    "pages": 133,
+    "undefined_references": 0,
+    "scope_overfull": 0,
+    "pdf_sha256": "17bd102a22c9608c485fb0b2a6be951e8a955cef4c010ccbd089d0468d2d065e",
+    "aux_policy": "Latest AUX copied to source cwd before final passes; no old undefined reference retained."
+  },
+  "visual_review": {
+    "physical_pages": [
+      108,
+      109,
+      110
+    ],
+    "final_images": "build/reading/latex/D02-002-final-108.png and 109.png",
+    "result": "Table, footnote, surrounding figures and transition inspected; no clipping or overlap in scoped addition."
+  },
+  "changes": [
+    "Historical 409 updated to published 480 with C0134 preserved.",
+    "Four timestamp counts and explicit population/annotation limitations added.",
+    "Fault-event label no longer equated automatically with BAWR action; B1973 basis checked."
+  ]
+}

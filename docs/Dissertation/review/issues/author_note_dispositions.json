@@ -1,0 +1,200 @@
+{
+  "planning/integration/rewrite_proposals/ch03.md#1": {
+    "text_sha256": "89aa08df917fba3d94fb7689676834ddb99d8f07a315aa19bcdc1ab373b834c7",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch03.md#2": {
+    "text_sha256": "05e7b92968b092395814b9f3c5c440353b9b14744256012f4e3971a7aa7d9f9e",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch03.md#3": {
+    "text_sha256": "33862d6732a8959a3800ea5b57f864db9eab15c2567c6606320aed8138dea042",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch03.md#4": {
+    "text_sha256": "883d0be4c59e71d152487ea0c26dc9edcc4e2b0f8d3c50708ab69dc6929796f2",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch03.md#5": {
+    "text_sha256": "5ee6278c0c364e5b3e498dd273dcd7b2641b52ed2ab96171d5806e4063f74ced",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch03.md#6": {
+    "text_sha256": "58cbea296f6990e930a7bdaae25c88ea5feb0660a6a12e47fcb2065440717e5e",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch03.md#7": {
+    "text_sha256": "7c958912533cf4fc38be00f55c29e85b11d41f8b853bfc4667e7d4d71c9247bc",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch03.md#8": {
+    "text_sha256": "4336ae62eb7e52ac39d01e665e180e1da4be31c4dc9aed4776bb91b654097de5",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch03.md#9": {
+    "text_sha256": "5ef0b3bc8a4732551dbea3342e1d28c8a311cd369c936e5ee001930c6a804661",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch03.md#10": {
+    "text_sha256": "560242dbbf8f9d1aed540200a98f11991c36912f8f8b57262f2acab975d877e6",
+    "status": "DECISION_RECORDED",
+    "decision": "Possible obsolescence is not automatic resolution of Word C0126/C0128; check when editing their exact fragments.",
+    "display": "прочитано; актуальность старых замечаний проверяется"
+  },
+  "planning/integration/rewrite_proposals/ch03.md#11": {
+    "text_sha256": "f77f82ff99c6f39d88b4bc5ddc7bdbaa92f1b5fd15048c975498cde2aaad54fb",
+    "status": "DECISION_RECORDED",
+    "decision": "Future labeling research: retained verbatim; confidential specifics excluded from dissertation; generic perspective only until results.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch05.md#1": {
+    "text_sha256": "20546dc45b204df4616b408e345d2c2ffb78aa6d4e38fcd99c2e211b692d1e71",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch05.md#2": {
+    "text_sha256": "3525685ca84b8e273c253ba9c8401b166dceff761dcd9749997f4f214ac8e857",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch05.md#3": {
+    "text_sha256": "efcd3a6ac5055bbf9ce8c69bf3586e8569c0dc2738a4969cc409683070484447",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch05.md#4": {
+    "text_sha256": "451a70fa507474f60d89e3b1cfb08f04a188ef26aab9fac5145e2bae5e2d39cf",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch05.md#5": {
+    "text_sha256": "728ed8f621dcba2614df716df22b2b9a4e8b4d4257ed7822688ca6285bef6c57",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch05.md#6": {
+    "text_sha256": "0f7983c6fc501c061aad818edf5a9bc57626579b1a312993f94ddbbeb419eaab",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/handoffs/D00.md#1": {
+    "text_sha256": "c53d4750afc4208d7ca128debef97d5d937b9a5d16e5e3dc9fd5f9c3dd0d906a",
+    "status": "DECISION_RECORDED",
+    "decision": "Visible IDs and dispositions added; original texts retained.",
+    "display": "учтено: старые примечания помечены"
+  },
+  "planning/handoffs/D00.md#2": {
+    "text_sha256": "7a16055500fd4fca3ae732d580470da4d8ce66e9ed525ea4c65552199a67e74b",
+    "status": "DECISION_RECORDED",
+    "decision": "Omit details of recent multi-format support; if needed acknowledge APS participation. Do not attribute collective code solely to author.",
+    "display": "учтено: форматы без технического углубления"
+  },
+  "planning/handoffs/D00.md#3": {
+    "text_sha256": "c275bbfd7b5c285056374a926f13456a320120942ed47a7e2a3e4b116731fa4d",
+    "status": "DECISION_RECORDED",
+    "decision": "Found docs/phase_discription/PHASE_6_RESEARCH_PLAN.md v0.1, 2026-10-06. Draft not read/approved by author; no results claimed. Only generic perspective in dissertation.",
+    "display": "учтено: новая Фаза 6 — пока перспектива"
+  },
+  "planning/handoffs/D00.md#4": {
+    "text_sha256": "c5c2e067b271d9bd0bf82e8e243b81b7d0444c17a50f9e50c0c845f6db0ed4a7",
+    "status": "DECISION_RECORDED",
+    "decision": "PDR labeling remains in progress, not cancelled. Current evidence can be transferred with dated snapshot; later PDR corrections coordinated between article and dissertation.",
+    "display": "учтено: разметка продолжается"
+  },
+  "planning/handoffs/D00.md#5": {
+    "text_sha256": "80b3e5c4890c94214dfd922896d9f5d900b64807d0c3bbd4d23099abdade1ee0",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/handoffs/D00.md#6": {
+    "text_sha256": "7902f83b764162cd454668dd4f1024d2f4a24dace4fbb869c8f8bf76546ff43e",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/questions.md#1": {
+    "text_sha256": "1d01f8bd1963dc9ef5a5402d414a7bb03cabe6a5479d28bda7ea6aa68086d7f5",
+    "status": "DECISION_RECORDED",
+    "decision": "Author accepts arithmetic total 1865. Recheck original OOXML table, including first/last data rows and separate total. Keep source reported 1866 in provenance.",
+    "display": "учтено: 1865; строки перепроверены"
+  },
+  "planning/questions.md#2": {
+    "text_sha256": "4186ea516ca8364e0e74d4d4a7a0a7cb1af835a52db1689ae2c6528cddd3dabf",
+    "status": "DECISION_RECORDED",
+    "decision": "Keep unresolved central interval percentage as future numeric check; do not block transfer of verified statistics or assert 80/90 percent without underlying CDF.",
+    "display": "учтено: проверка CDF отложена"
+  },
+  "planning/questions.md#3": {
+    "text_sha256": "1d9bc5c660b97e80f51be8c13e2c66210f68ed5bd6cc3d49527d56a8f3083f0a",
+    "status": "DECISION_RECORDED",
+    "decision": "Author agrees on sample/measurement limits and on no automatic revision of insulation standards.",
+    "display": "учтено: ограничения сохраняются"
+  },
+  "planning/questions.md#4": {
+    "text_sha256": "9e562cff8b9984751bdfb15441a122d6f08daf60373b65e2acf6edcd8c43caa6",
+    "status": "DECISION_RECORDED",
+    "decision": "RTDS section is part of present validation. Transfer current material, explain any remaining disagreement with actual case/metric; coordinate later edits of PDR article and dissertation.",
+    "display": "учтено: переносим имеющееся; вопросы конкретизируем"
+  },
+  "planning/questions.md#5": {
+    "text_sha256": "b7ce4481bbd149853112b8c28ff29e6e04198b23f4b0e997b74683f2e3618eec",
+    "status": "DECISION_RECORDED",
+    "decision": "новые ответы прочитаны; адресные вопросы сохранены",
+    "display": "новые ответы прочитаны; адресные вопросы сохранены"
+  },
+  "planning/questions.md#6": {
+    "text_sha256": "4b4b3d1ab8f730180ff3d49abc7ea29d9a7126d6a1cc73d6e2ff1fe1c1a59636",
+    "status": "DECISION_RECORDED",
+    "decision": "Keep raw Word comments, paths and author notes. Review while editing a bounded fragment; raise important unresolved questions with exact anchors in planning/questions.md. Do not silently delete source-link reminders.",
+    "display": "учтено: комментарии и ссылки сохранены"
+  },
+  "planning/sources/PDR-05/limitations_and_comments.md#1": {
+    "text_sha256": "f672ec783e50967ed013866dd0c7db74406d740255b7373d4ba2f0c03734da7e",
+    "status": "DECISION_RECORDED",
+    "decision": "замечание S01 внесено в статью; исправление отдельной партией",
+    "display": "замечание S01 внесено в статью; исправление отдельной партией"
+  },
+  "planning/sources/PDR-05/limitations_and_comments.md#2": {
+    "text_sha256": "bb7cb67c9596c6723e157f5fae46cc58951d108f7bd269a6282fcc2d02439caa",
+    "status": "DECISION_RECORDED",
+    "decision": "продолжаем другие разделы; РНМ оставлен на доработку",
+    "display": "продолжаем другие разделы; РНМ оставлен на доработку"
+  },
+  "planning/sources/PDR-05/limitations_and_comments.md#3": {
+    "text_sha256": "994761c5bf57c5e7e5a5ee975756e59fda24d829e17246d3f81c9d7695c2605a",
+    "status": "DECISION_RECORDED",
+    "decision": "S02 внесено в статью и инструкцию Фазы 5",
+    "display": "S02 внесено в статью и инструкцию Фазы 5"
+  },
+  "planning/sources/PDR-05/limitations_and_comments.md#4": {
+    "text_sha256": "58c4d0fa39803bd27c568d21c337ab940293937b24a44fb8a5d1948847f97977",
+    "status": "DECISION_RECORDED",
+    "decision": "S03 прочитано; сохранено для доработки статьи",
+    "display": "S03 прочитано; сохранено для доработки статьи"
+  }
+}

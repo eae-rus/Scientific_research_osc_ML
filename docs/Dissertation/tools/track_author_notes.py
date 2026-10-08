@@ -4,6 +4,7 @@ No decisions are inferred from a note's content. Callers supply dispositions
 in review/issues/author_note_dispositions.json; unknown notes stay OPEN.
 """
 import argparse, hashlib, json, re
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -50,7 +51,8 @@ def main():
     args = ap.parse_args()
     files = [ROOT/'planning/integration/rewrite_proposals/ch03.md',
              ROOT/'planning/integration/rewrite_proposals/ch05.md',
-             ROOT/'planning/handoffs/D00.md', ROOT/'planning/questions.md']
+             ROOT/'planning/handoffs/D00.md', ROOT/'planning/questions.md',
+             ROOT/'planning/sources/PDR-05/limitations_and_comments.md']
     registry_path = ROOT/'review/issues/author_annotations.json'
     registry = json.loads(registry_path.read_text(encoding='utf-8')) if registry_path.exists() else {'schema_version':1,'notes':[]}
     disposition_path = ROOT/'review/issues/author_note_dispositions.json'
@@ -70,8 +72,10 @@ def main():
                 registry['notes'].append(record)
                 existing[(rel,sha)] = record
             key = f'{path.relative_to(ROOT).as_posix()}#{index}'
-            if key in dispositions:
-                record.update(dispositions[key])
+            disposition = dispositions.get(key)
+            # A new note inserted earlier must not inherit the old note's decision.
+            if disposition and disposition.get('text_sha256') == sha:
+                record.update(disposition)
             record['last_seen_note_index'] = index
             record['last_seen_file_sha256'] = hashlib.sha256(text.encode('utf-8')).hexdigest()
             label = record.get('display','прочитано; решение открыто' if record['status']!='OPEN' else 'новое; не рассмотрено')
@@ -84,12 +88,17 @@ def main():
         assert [q[2] for q in scan(text)] == [q[2] for q in scan(changed)],path
         prepared.append((path,changed))
     if args.apply:
-        registry['updated']='2026-10-06'
+        registry['updated']=date.today().isoformat()
         registry['policy']='Original text retained; status means reviewed disposition, not automatic completion of related scientific work. Never silently delete notes.'
         registry_path.parent.mkdir(parents=True,exist_ok=True)
-        registry_path.write_text(json.dumps(registry,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
         for path,text in prepared:
             path.write_text(text,encoding='utf-8')
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            rel = path.relative_to(REPO).as_posix()
+            for record in registry['notes']:
+                if record['file'] == rel:
+                    record['last_seen_file_sha256'] = digest
+        registry_path.write_text(json.dumps(registry,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 
 if __name__=='__main__':
     main()
