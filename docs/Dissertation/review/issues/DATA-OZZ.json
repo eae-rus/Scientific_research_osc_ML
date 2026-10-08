@@ -1,0 +1,443 @@
+{
+  "source_id": "DATA-OZZ",
+  "date": "2026-10-08",
+  "version": "v2.0",
+  "source_sha256": "b02a8962a1bdd6e11d93f32f18a4a4d44f3250b89675fc4ae264765e59f5f68a",
+  "groups_completed": [
+    "C03-DATA-OZZ-001",
+    "C03-DATA-OZZ-002"
+  ],
+  "coverage": "All 13 comments of v2.0 reviewed; later source versions remain unreviewed.",
+  "comments": [
+    {
+      "source_sha256": "b02a8962a1bdd6e11d93f32f18a4a4d44f3250b89675fc4ae264765e59f5f68a",
+      "original_comment_id": "0",
+      "original_text": "Перевести, как сделаю русский вариант",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[15]/w:commentRangeStart",
+          "paragraph_index": 15,
+          "paragraph_text": "НАЗВАНИЕ ДОКЛАДА НА АНГЛИЙСКОМ ЯЗЫКЕ (Название доклада)**"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[15]/w:commentRangeEnd",
+          "paragraph_index": 15,
+          "paragraph_text": "НАЗВАНИЕ ДОКЛАДА НА АНГЛИЙСКОМ ЯЗЫКЕ (Название доклада)**"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[15]/w:r[3]/w:commentReference",
+          "paragraph_index": 15,
+          "paragraph_text": "НАЗВАНИЕ ДОКЛАДА НА АНГЛИЙСКОМ ЯЗЫКЕ (Название доклада)**"
+        }
+      ],
+      "kind": "publication_reminder",
+      "decision": "Перевод заголовка относится к докладу. Для диссертации используется русское изложение; пометка не задаёт научного изменения.",
+      "status": "REVIEWED",
+      "implementation_status": "No source edits; dependencies retained for scoped inclusion.",
+      "group": "C03-DATA-OZZ-001"
+    },
+    {
+      "source_sha256": "b02a8962a1bdd6e11d93f32f18a4a4d44f3250b89675fc4ae264765e59f5f68a",
+      "original_comment_id": "1",
+      "original_text": "Требуется сделать\n1) Подготовить список литературы\n2) Привести картинки к удобном виду\n3) ужать до 4стр (провёл только первичное сжатие) + переразместить рисунки.",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[31]/w:commentRangeStart",
+          "paragraph_index": 31,
+          "paragraph_text": "Введение"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[31]/w:commentRangeEnd",
+          "paragraph_index": 31,
+          "paragraph_text": "Введение"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[31]/w:r[2]/w:commentReference",
+          "paragraph_index": 31,
+          "paragraph_text": "Введение"
+        }
+      ],
+      "kind": "publication_and_dependencies",
+      "decision": "Ограничение четырьмя страницами и размещение рисунков относятся к докладу. Подробность диссертации сохраняется. Литература и выбранные рисунки требуют адресной проверки при включении.",
+      "status": "REVIEWED",
+      "implementation_status": "No source edits; dependencies retained for scoped inclusion.",
+      "group": "C03-DATA-OZZ-001"
+    },
+    {
+      "source_sha256": "b02a8962a1bdd6e11d93f32f18a4a4d44f3250b89675fc4ae264765e59f5f68a",
+      "original_comment_id": "2",
+      "original_text": "Вот ссылка на него https://figshare.com/articles/dataset/Open_Dataset_of_Real-World_Oscillograms_from_Electric_Power_Grids/28465427/5",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[38]/w:commentRangeStart",
+          "paragraph_index": 38,
+          "paragraph_text": "Основой для исследования послужил открытый набор данных «A Dataset of Real-World Oscillograms from Electric Power Grids»[X], содержащий 50 765 осциллограмм в формате COMTRADE. Несмотря на предварительную стандартизацию, проведенную авторами набора, для целенаправленного анализа ОЗЗ исходный массив обладал рядом критических недостатков:"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[38]/w:commentRangeEnd",
+          "paragraph_index": 38,
+          "paragraph_text": "Основой для исследования послужил открытый набор данных «A Dataset of Real-World Oscillograms from Electric Power Grids»[X], содержащий 50 765 осциллограмм в формате COMTRADE. Несмотря на предварительную стандартизацию, проведенную авторами набора, для целенаправленного анализа ОЗЗ исходный массив обладал рядом критических недостатков:"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[38]/w:r[13]/w:commentReference",
+          "paragraph_index": 38,
+          "paragraph_text": "Основой для исследования послужил открытый набор данных «A Dataset of Real-World Oscillograms from Electric Power Grids»[X], содержащий 50 765 осциллограмм в формате COMTRADE. Несмотря на предварительную стандартизацию, проведенную авторами набора, для целенаправленного анализа ОЗЗ исходный массив обладал рядом критических недостатков:"
+        }
+      ],
+      "kind": "source_link",
+      "decision": "Ссылка на исходный набор сохранена. Для диссертации используется принятое локальное DATA-SD; ссылка старой версии не заменяет текущий паспорт и численности.",
+      "status": "REVIEWED",
+      "implementation_status": "No source edits; dependencies retained for scoped inclusion.",
+      "group": "C03-DATA-OZZ-001"
+    },
+    {
+      "source_sha256": "b02a8962a1bdd6e11d93f32f18a4a4d44f3250b89675fc4ae264765e59f5f68a",
+      "original_comment_id": "3",
+      "original_text": "Можно будет удалить описание, оставить прост название пунктов, если нужно будет сжать",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[45]/w:commentRangeStart",
+          "paragraph_index": 45,
+          "paragraph_text": "\tНормализация сигналов. Загрузка коэффициентов нормализации и приведение мгновенных значений токов и напряжений к безразмерным относительным единицам."
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[45]/w:commentRangeEnd",
+          "paragraph_index": 45,
+          "paragraph_text": "\tНормализация сигналов. Загрузка коэффициентов нормализации и приведение мгновенных значений токов и напряжений к безразмерным относительным единицам."
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[45]/w:r[3]/w:commentReference",
+          "paragraph_index": 45,
+          "paragraph_text": "\tНормализация сигналов. Загрузка коэффициентов нормализации и приведение мгновенных значений токов и напряжений к безразмерным относительным единицам."
+        }
+      ],
+      "kind": "publication_compression",
+      "decision": "Предложение сократить описание вызвано объёмом доклада. В диссертации сохранять содержательные объяснения нормировки и обработки.",
+      "status": "REVIEWED",
+      "implementation_status": "No source edits; dependencies retained for scoped inclusion.",
+      "group": "C03-DATA-OZZ-001"
+    },
+    {
+      "source_sha256": "b02a8962a1bdd6e11d93f32f18a4a4d44f3250b89675fc4ae264765e59f5f68a",
+      "original_comment_id": "4",
+      "original_text": "Наверное, прост удалю. Не очень знаю пока, как подробно изобразить, да и надо ли. А здесь очень грубо описано. Да и ужимать надо бы текст.",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeStart[1]",
+          "paragraph_index": 50,
+          "paragraph_text": "Алгоритм первичного отбора осциллограмм ОЗЗ"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeEnd[1]",
+          "paragraph_index": 50,
+          "paragraph_text": "Алгоритм первичного отбора осциллограмм ОЗЗ"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:r[3]/w:commentReference",
+          "paragraph_index": 50,
+          "paragraph_text": "Алгоритм первичного отбора осциллограмм ОЗЗ"
+        }
+      ],
+      "kind": "method_description",
+      "decision": "Предложение удалить грубое описание не является доказательством ненужности метода. В диссертации описать критерии отбора, единицы и ограничения по проверенному источнику; полный код не переносить.",
+      "status": "REVIEWED",
+      "implementation_status": "No source edits; dependencies retained for scoped inclusion.",
+      "group": "C03-DATA-OZZ-001"
+    },
+    {
+      "source_sha256": "b02a8962a1bdd6e11d93f32f18a4a4d44f3250b89675fc4ae264765e59f5f68a",
+      "original_comment_id": "5",
+      "original_text": "Так-то код довольно большой и сложный, хотя сами критерия там и можно выписать. Но надо ли это здесь вообще?",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeStart[2]",
+          "paragraph_index": 50,
+          "paragraph_text": "Алгоритм первичного отбора осциллограмм ОЗЗ"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeEnd[2]",
+          "paragraph_index": 50,
+          "paragraph_text": "Алгоритм первичного отбора осциллограмм ОЗЗ"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:r[4]/w:commentReference",
+          "paragraph_index": 50,
+          "paragraph_text": "Алгоритм первичного отбора осциллограмм ОЗЗ"
+        }
+      ],
+      "kind": "method_description",
+      "decision": "Сложность кода не требует листинга в научном тексте. Перед воспроизводимым описанием нужны фактические критерии и версия реализации; неизвестные поля паспорта пока остаются неизвестными.",
+      "status": "REVIEWED",
+      "implementation_status": "No source edits; dependencies retained for scoped inclusion.",
+      "group": "C03-DATA-OZZ-001"
+    },
+    {
+      "source_sha256": "b02a8962a1bdd6e11d93f32f18a4a4d44f3250b89675fc4ae264765e59f5f68a",
+      "original_comment_id": "6",
+      "original_text": "Ручную возможно скорректирую на днях.",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[2]/w:tr[3]/w:tc[3]/w:p/w:commentRangeStart",
+          "paragraph_index": 64,
+          "paragraph_text": "8"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[2]/w:tr[3]/w:tc[3]/w:p/w:commentRangeEnd",
+          "paragraph_index": 64,
+          "paragraph_text": "8"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[2]/w:tr[3]/w:tc[3]/w:p/w:r[2]/w:commentReference",
+          "paragraph_index": 64,
+          "paragraph_text": "8"
+        }
+      ],
+      "kind": "historical_revision_reminder",
+      "decision": "Пометка о будущем изменении ручной проверки относится к ранней версии. Современные численности берутся из принятой v2.4.3; не восстанавливать старые значения по этому напоминанию.",
+      "status": "REVIEWED",
+      "implementation_status": "No source edits; dependencies retained for scoped inclusion.",
+      "group": "C03-DATA-OZZ-001"
+    },
+    {
+      "source_sha256": "b02a8962a1bdd6e11d93f32f18a4a4d44f3250b89675fc4ae264765e59f5f68a",
+      "original_comment_id": "8",
+      "original_text": "91520d105c0e0f6d5ba179d5ead3e967",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[3]/w:tr[1]/w:tc/w:p/w:commentRangeStart",
+          "paragraph_index": 103,
+          "paragraph_text": ""
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[3]/w:tr[1]/w:tc/w:p/w:commentRangeEnd",
+          "paragraph_index": 103,
+          "paragraph_text": ""
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[3]/w:tr[1]/w:tc/w:p/w:r[2]/w:commentReference",
+          "paragraph_index": 103,
+          "paragraph_text": ""
+        }
+      ],
+      "kind": "record_identifier",
+      "decision": "Идентификатор примера сохранить с исходным якорем; физический смысл по одной строке идентификатора не устанавливать.",
+      "status": "REVIEWED",
+      "implementation_status": "No source edits; dependencies retained for scoped inclusion.",
+      "group": "C03-DATA-OZZ-001"
+    },
+    {
+      "source_sha256": "b02a8962a1bdd6e11d93f32f18a4a4d44f3250b89675fc4ae264765e59f5f68a",
+      "original_comment_id": "9",
+      "original_text": "e0cfe7f6aea62f117cf2b595798c4324",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[4]/w:tr[1]/w:tc/w:p/w:commentRangeStart",
+          "paragraph_index": 107,
+          "paragraph_text": ""
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[4]/w:tr[1]/w:tc/w:p/w:commentRangeEnd",
+          "paragraph_index": 107,
+          "paragraph_text": ""
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[4]/w:tr[1]/w:tc/w:p/w:r[2]/w:commentReference",
+          "paragraph_index": 107,
+          "paragraph_text": ""
+        }
+      ],
+      "kind": "record_identifier",
+      "decision": "Идентификатор примера сохранить с исходным якорем; физический смысл по одной строке идентификатора не устанавливать.",
+      "status": "REVIEWED",
+      "implementation_status": "No source edits; dependencies retained for scoped inclusion.",
+      "group": "C03-DATA-OZZ-001"
+    },
+    {
+      "source_sha256": "b02a8962a1bdd6e11d93f32f18a4a4d44f3250b89675fc4ae264765e59f5f68a",
+      "original_comment_id": "10",
+      "original_text": "d52ba93e0421174d3b64b3d6ef25129c",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[5]/w:tr[1]/w:tc/w:p/w:commentRangeStart",
+          "paragraph_index": 112,
+          "paragraph_text": ""
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[5]/w:tr[1]/w:tc/w:p/w:commentRangeEnd",
+          "paragraph_index": 112,
+          "paragraph_text": ""
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[5]/w:tr[1]/w:tc/w:p/w:r[1]/w:commentReference",
+          "paragraph_index": 112,
+          "paragraph_text": ""
+        }
+      ],
+      "kind": "record_identifier",
+      "decision": "Идентификатор примера сохранить с исходным якорем; физический смысл по одной строке идентификатора не устанавливать.",
+      "status": "REVIEWED",
+      "implementation_status": "No source edits; dependencies retained for scoped inclusion.",
+      "group": "C03-DATA-OZZ-001"
+    },
+    {
+      "source_sha256": "b02a8962a1bdd6e11d93f32f18a4a4d44f3250b89675fc4ae264765e59f5f68a",
+      "original_comment_id": "11",
+      "original_text": "63d63c7f35aeb29aa0e02d81f09c3157",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[6]/w:tr[1]/w:tc/w:p/w:commentRangeStart",
+          "paragraph_index": 115,
+          "paragraph_text": ""
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[6]/w:tr[1]/w:tc/w:p/w:commentRangeEnd",
+          "paragraph_index": 115,
+          "paragraph_text": ""
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[6]/w:tr[1]/w:tc/w:p/w:r[1]/w:commentReference",
+          "paragraph_index": 115,
+          "paragraph_text": ""
+        }
+      ],
+      "kind": "record_identifier",
+      "decision": "Идентификатор примера сохранить с исходным якорем; физический смысл по одной строке идентификатора не устанавливать.",
+      "status": "REVIEWED",
+      "implementation_status": "No source edits; dependencies retained for scoped inclusion.",
+      "group": "C03-DATA-OZZ-002"
+    },
+    {
+      "source_sha256": "b02a8962a1bdd6e11d93f32f18a4a4d44f3250b89675fc4ae264765e59f5f68a",
+      "original_comment_id": "12",
+      "original_text": "d8e57e692fd29447706bec5885daebf3",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[7]/w:tr[1]/w:tc/w:p/w:commentRangeStart",
+          "paragraph_index": 119,
+          "paragraph_text": ""
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[7]/w:tr[1]/w:tc/w:p/w:commentRangeEnd",
+          "paragraph_index": 119,
+          "paragraph_text": ""
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[7]/w:tr[1]/w:tc/w:p/w:r[2]/w:commentReference",
+          "paragraph_index": 119,
+          "paragraph_text": ""
+        }
+      ],
+      "kind": "record_identifier",
+      "decision": "Идентификатор примера сохранить с исходным якорем; физический смысл по одной строке идентификатора не устанавливать.",
+      "status": "REVIEWED",
+      "implementation_status": "No source edits; dependencies retained for scoped inclusion.",
+      "group": "C03-DATA-OZZ-002"
+    },
+    {
+      "source_sha256": "b02a8962a1bdd6e11d93f32f18a4a4d44f3250b89675fc4ae264765e59f5f68a",
+      "original_comment_id": "14",
+      "original_text": "ПОПРАВИТЬ!",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[77]/w:commentRangeStart",
+          "paragraph_index": 130,
+          "paragraph_text": "Список литературы"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[77]/w:commentRangeEnd",
+          "paragraph_index": 130,
+          "paragraph_text": "Список литературы"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[77]/w:r[3]/w:commentReference",
+          "paragraph_index": 130,
+          "paragraph_text": "Список литературы"
+        }
+      ],
+      "kind": "bibliography_dependency",
+      "decision": "Исправление списка литературы остаётся адресной зависимостью будущего включения. Номера ссылок разных версий не считать общими ключами; исходную пометку сохранить.",
+      "status": "REVIEWED",
+      "implementation_status": "No source edits; dependencies retained for scoped inclusion.",
+      "group": "C03-DATA-OZZ-002"
+    }
+  ],
+  "limits": "Reviewed disposition does not mean all figure/bibliography/algorithm dependencies implemented."
+}

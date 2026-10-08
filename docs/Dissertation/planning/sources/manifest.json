@@ -3802,7 +3802,7 @@
         "C02-DATA-OZZ-03",
         "C03-DATA-OZZ-013"
       ],
-      "status": "TODO",
+      "status": "DOING",
       "output": "planning/sources/DATA-OZZ/limitations_and_comments.md"
     },
     {
@@ -3832,7 +3832,7 @@
       "after": [
         "C03-DATA-OZZ-RAW"
       ],
-      "status": "TODO",
+      "status": "DONE",
       "output": "planning/sources/DATA-OZZ/limitations_and_comments.md",
       "input": {
         "id": "C03-DATA-OZZ-001",
@@ -3848,8 +3848,11 @@
           "8",
           "9",
           "10"
-        ]
-      }
+        ],
+        "status": "DONE",
+        "report": "review/issues/DATA-OZZ.json"
+      },
+      "report": "review/issues/DATA-OZZ.json"
     },
     {
       "id": "C03-DATA-OZZ-002",
@@ -3858,7 +3861,7 @@
       "after": [
         "C03-DATA-OZZ-001"
       ],
-      "status": "TODO",
+      "status": "DONE",
       "output": "planning/sources/DATA-OZZ/limitations_and_comments.md",
       "input": {
         "id": "C03-DATA-OZZ-002",
@@ -3867,8 +3870,11 @@
           "11",
           "12",
           "14"
-        ]
-      }
+        ],
+        "status": "DONE",
+        "report": "review/issues/DATA-OZZ.json"
+      },
+      "report": "review/issues/DATA-OZZ.json"
     },
     {
       "id": "C03-DATA-OZZ-003",
@@ -5216,7 +5222,8 @@
         "9",
         "10"
       ],
-      "status": "TODO"
+      "status": "DONE",
+      "report": "review/issues/DATA-OZZ.json"
     },
     {
       "id": "C03-DATA-OZZ-002",
@@ -5226,7 +5233,8 @@
         "12",
         "14"
       ],
-      "status": "TODO"
+      "status": "DONE",
+      "report": "review/issues/DATA-OZZ.json"
     },
     {
       "id": "C03-DATA-OZZ-003",
@@ -5844,7 +5852,7 @@
     "date": "2026-10-08",
     "completed_C02_steps": 18,
     "total_C02_steps": 45,
-    "completed_C03_groups": 1,
+    "completed_C03_groups": 3,
     "total_C03_groups": 43,
     "raw_export_done_source_ids": [
       "DATA-SD",
@@ -5857,9 +5865,9 @@
     ],
     "report": "planning/handoffs/C02.md",
     "author_review": "planning/questions.md",
-    "next_task": "C02-DATA-OZZ-04",
+    "next_task": "C03-DATA-OZZ-003",
     "main_manuscript_modified": true,
-    "completed_C03_tasks": 8,
+    "completed_C03_tasks": 10,
     "total_C03_tasks": 52,
     "completed_scoped_parts": [
       "C02-PDR-05-02a",

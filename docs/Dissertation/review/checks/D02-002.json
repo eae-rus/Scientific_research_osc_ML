@@ -84,5 +84,14 @@
     "Historical 409 updated to published 480 with C0134 preserved.",
     "Four timestamp counts and explicit population/annotation limitations added.",
     "Fault-event label no longer equated automatically with BAWR action; B1973 basis checked."
-  ]
+  ],
+  "author_style_revision": {
+    "date": "2026-10-08",
+    "target_sha256": "51e2d8e687e549ee66e607c90f5486cc0aa0f938d4f462057f773b3ba1972cfc",
+    "pdf_sha256": "281bd1e907d123ead7b29ac6b37f714e257923176fcc7499ae5c3b55f4f8d53c",
+    "pages": 133,
+    "undefined_references": 0,
+    "change": "Author deletion preserved; wording about specialists and disputed cases simplified.",
+    "visual_review": "Page 109 rendered and inspected after the revision."
+  }
 }
