@@ -341,7 +341,7 @@ Raw instantaneous    | 0.977  | 91.6%      | 60.1%      | 8.9
 
 ### Реализовано: Низшие (суб-)гармоники
 
-1. **`compute_low_harmonics_fft()`** в [osc_tools/preprocessing/filtering.py](osc_tools/preprocessing/filtering.py)
+1. **`compute_low_harmonics_fft()`** в [osc_tools/preprocessing/filtering.py](../../../osc_tools/preprocessing/filtering.py)
    - Backward-looking скользящее окно FFT для суб-гармоник с периодами 2, 4, 6, 10
    - Извлекает бин 1 FFT из окон 64, 128, 192, 320 отсчётов
    - Начальные точки заполняются первым валидным значением (дублирование)
@@ -349,7 +349,7 @@ Raw instantaneous    | 0.977  | 91.6%      | 60.1%      | 8.9
 
 ### Реализовано: AugmentedSpectralDataset
 
-2. **`AugmentedSpectralDataset`** в [osc_tools/ml/augmented_dataset.py](osc_tools/ml/augmented_dataset.py)
+2. **`AugmentedSpectralDataset`** в [osc_tools/ml/augmented_dataset.py](../../../osc_tools/ml/augmented_dataset.py)
    - On-the-fly FFT: загружает raw 8-канальные данные, вычисляет FFT в реальном времени
    - Аугментация ДО FFT: инверсия, масштабирование, перетасовка фаз на сырых данных
    - Поддерживает SSL (маскирование + предсказание будущего) и classify режимы
@@ -371,7 +371,7 @@ Raw instantaneous    | 0.977  | 91.6%      | 60.1%      | 8.9
 
 ### Реализовано: Скрипт оценки Phase 4
 
-6. **[scripts/phase4_experiments/evaluate_phase4.py](scripts/phase4_experiments/evaluate_phase4.py)**
+6. **[scripts/phase4_experiments/evaluate_phase4.py](../../../scripts/phase4_experiments/evaluate_phase4.py)**
    - Порог предсказания: 0.7
    - Полные метрики: Macro-F1, Precision, Recall, ROC-AUC, Confusion Matrix
    - Measurement inference latency
@@ -380,7 +380,7 @@ Raw instantaneous    | 0.977  | 91.6%      | 60.1%      | 8.9
 
 ### Обновлено: build_channel_groups_phase_polar
 
-7. Поддержка `num_low_harmonics` в [osc_tools/ml/losses.py](osc_tools/ml/losses.py)
+7. Поддержка `num_low_harmonics` в [osc_tools/ml/losses.py](../../../osc_tools/ml/losses.py)
 
 ---
 
@@ -390,7 +390,7 @@ Raw instantaneous    | 0.977  | 91.6%      | 60.1%      | 8.9
 
 1. **Критический баг: NaN Loss в SpectralReconstructionLoss**
    - **Проблема**: `true_amp` и `true_phase` содержали NaN из-за отсутствующих каналов (IN absent в 96% файлов). При вычислении `cos(NaN)` / `sin(NaN)` результат = NaN, а `NaN * 0 = NaN` (IEEE 754) — маскирование через умножение не убирает NaN.
-   - **Решение**: Добавлен `torch.nan_to_num(x, nan=0.0)` для всех 4 входных тензоров **перед** вычислениями в [osc_tools/ml/losses.py](osc_tools/ml/losses.py). Маска по-прежнему игнорирует эти позиции при агрегации Loss.
+   - **Решение**: Добавлен `torch.nan_to_num(x, nan=0.0)` для всех 4 входных тензоров **перед** вычислениями в [osc_tools/ml/losses.py](../../../osc_tools/ml/losses.py). Маска по-прежнему игнорирует эти позиции при агрегации Loss.
    - Исправлено в `SpectralReconstructionLoss.forward()` и `ComplexMSELoss.forward()`.
 
 ### Запущенный pretrain (100 эпох)
@@ -403,7 +403,7 @@ Raw instantaneous    | 0.977  | 91.6%      | 60.1%      | 8.9
 
 ### Реализовано: Fine-tuning pipeline
 
-- Создан скрипт [scripts/phase4_experiments/run_phase4_finetune.py](scripts/phase4_experiments/run_phase4_finetune.py)
+- Создан скрипт [scripts/phase4_experiments/run_phase4_finetune.py](../../../scripts/phase4_experiments/run_phase4_finetune.py)
 - **Ключевые решения:**
   - Инициализация из SSL-чекпоинта (`strict=False`, пропускает `cls_head`)
   - zone_size=1: каждый временной шаг (stride=16 ≈ полпериода) = зона

@@ -1,7 +1,7 @@
 # Сценарии Phase 5
 
 **Начинать отсюда.** Полная рабочая инструкция по РНМ находится в
-`docs/phase_discription/PHASE_5_PDR_PIPELINE_GUIDE.md`. Этот README — только
+`docs/phase_discription/phase_5/PHASE_5_PDR_PIPELINE_GUIDE.md`. Этот README — только
 короткая карта сценариев, а не второй параллельный регламент.
 
 Файлы остаются в одной папке: разнесение по подпапкам сломало бы
@@ -46,16 +46,16 @@
    осциллограмм.
 9. `run_pdr_rtds.py` — отдельная заключительная проверка RTDS: две секции,
    9 формульных РНМ, 12 наборов весов, заполненная экспертная разметка и COMTRADE.
-   Порядок работы: `docs/phase_discription/PHASE_5_RTDS_GUIDE.md`.
+   Порядок работы: `docs/phase_discription/phase_5/PHASE_5_RTDS_GUIDE.md`.
    Разметка автора — `data/phase5/pdr_rtds_labels`; `--evaluate-verified`
    пересчитывает статистику без запуска моделей. Смысл 100 опытов описан в
-   `docs/phase_discription/PHASE_5_RTDS_CASES_GUIDE.md`.
+   `docs/phase_discription/phase_5/PHASE_5_RTDS_CASES_GUIDE.md`.
 
 `review_pdr_analysis_results.py` не временный: он нужен для повтора
 одинаковых научных таблиц после каждой версии разметки. Одноразовый
 `build_pdr_unlabeled_overlay.py` удалён: он был нужен только для миграции v3.
 
-Полная инструкция: `docs/phase_discription/PHASE_5_PDR_PIPELINE_GUIDE.md`.
+Полная инструкция: `docs/phase_discription/phase_5/PHASE_5_PDR_PIPELINE_GUIDE.md`.
 
 ### Единый слепой аудит
 

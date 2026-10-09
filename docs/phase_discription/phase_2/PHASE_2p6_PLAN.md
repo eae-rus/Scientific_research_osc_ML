@@ -143,11 +143,11 @@
 **Зачем:** Проверить предел качества PhysicsKAN и сравнить с улучшенной версией, где логика меток и головы сделаны зависимыми.
 
 *   **Вариант A (Baseline 200):** PhysicsKAN, `phase_polar + stride`, `target_level=base`, 200 эпох.
-    - Конфигурация: [scripts/phase2_experiments/run_phase2_6.py](scripts/phase2_experiments/run_phase2_6.py#L425-L434)
+    - Конфигурация: [scripts/phase2_experiments/run_phase2_6.py](../../../scripts/phase2_experiments/run_phase2_6.py#L425-L434)
 *   **Вариант B (Conditional 200):** PhysicsKANConditional, `phase_polar + stride`, `target_level=base_sequential`, 200 эпох.
-    - Конфигурация: [scripts/phase2_experiments/run_phase2_6.py](scripts/phase2_experiments/run_phase2_6.py#L436-L448)
-    - Новые метки: [osc_tools/ml/labels.py](osc_tools/ml/labels.py#L69-L257)
-    - Новая модель: [osc_tools/ml/models/kan.py](osc_tools/ml/models/kan.py#L208-L306)
+    - Конфигурация: [scripts/phase2_experiments/run_phase2_6.py](../../../scripts/phase2_experiments/run_phase2_6.py#L436-L448)
+    - Новые метки: [osc_tools/ml/labels.py](../../../osc_tools/ml/labels.py#L69-L257)
+    - Новая модель: [osc_tools/ml/models/kan.py](../../../osc_tools/ml/models/kan.py#L208-L306)
 
 ---
 
@@ -157,9 +157,9 @@
 *   **Идея:** Метка для окна равна максимуму по всем точкам окна. Это соответствует правилу: "событие было в памяти последних 320 точек".
 *   **Конфигурация:** Полная копия `2.6.1_stride` (Phase Polar + Stride, pos_weight, аугментация), все 6 базовых моделей.
 *   **Реализация:**
-    - Новый режим метки окна в [osc_tools/ml/dataset.py](osc_tools/ml/dataset.py)
-    - Аналогично для предрасчёта в [osc_tools/ml/precomputed_dataset.py](osc_tools/ml/precomputed_dataset.py)
-    - Эксперимент в [scripts/phase2_experiments/run_phase2_6.py](scripts/phase2_experiments/run_phase2_6.py)
+    - Новый режим метки окна в [osc_tools/ml/dataset.py](../../../osc_tools/ml/dataset.py)
+    - Аналогично для предрасчёта в [osc_tools/ml/precomputed_dataset.py](../../../osc_tools/ml/precomputed_dataset.py)
+    - Эксперимент в [scripts/phase2_experiments/run_phase2_6.py](../../../scripts/phase2_experiments/run_phase2_6.py)
 
 ---
 
@@ -177,11 +177,11 @@
     - умножение: $A=A_1\cdot A_2$, $\varphi=\varphi_1+\varphi_2$;
     - деление: $A=A_1/A_2$, $\varphi=\varphi_1-\varphi_2$.
 *   **Реализация:**
-    - новая модель: [osc_tools/ml/models/kan.py](osc_tools/ml/models/kan.py)
-    - регистрация в runner: [osc_tools/ml/runner.py](osc_tools/ml/runner.py)
-    - экспорт модели: [osc_tools/ml/models/__init__.py](osc_tools/ml/models/__init__.py)
-    - эксперимент: [scripts/phase2_experiments/run_phase2_6.py](scripts/phase2_experiments/run_phase2_6.py)
-    - тесты: [tests/unit/test_ml_models_kan.py](tests/unit/test_ml_models_kan.py)
+    - новая модель: [osc_tools/ml/models/kan.py](../../../osc_tools/ml/models/kan.py)
+    - регистрация в runner: [osc_tools/ml/runner.py](../../../osc_tools/ml/runner.py)
+    - экспорт модели: [osc_tools/ml/models/__init__.py](../../../osc_tools/ml/models/__init__.py)
+    - эксперимент: [scripts/phase2_experiments/run_phase2_6.py](../../../scripts/phase2_experiments/run_phase2_6.py)
+    - тесты: [tests/unit/test_ml_models_kan.py](../../../tests/unit/test_ml_models_kan.py)
 
 ---
 
@@ -197,16 +197,16 @@
     - ДПОЗЗ: пики производной + запертый заряд (Гильберт)
     - Затухающее: огибающая спадает ниже 30% от максимума
     - Устойчивое: стабильная $3U_0$ выше порога
-    - Реализация (`precompute_ozz_features`, `classify_window_from_features`): [osc_tools/analysis/ozz_physics.py](osc_tools/analysis/ozz_physics.py)
+    - Реализация (`precompute_ozz_features`, `classify_window_from_features`): [osc_tools/analysis/ozz_physics.py](../../../osc_tools/analysis/ozz_physics.py)
 *   **Нейросетевая модель:** `cPhysicsKAN` (комплексная полярная PhysicsKAN).
 *   **Конфигурации:**
     - `2.6.11_global_stride`: cPhysicsKAN + Global Balancing (light/medium/heavy)
     - `2.6.11_weights_stride`: cPhysicsKAN + Weighted Loss (light/medium/heavy)
     - `2.6.11_baselines_stride`: 6 базовых моделей (heavy) для сравнения
 *   **Данные:** `phase_polar + stride + any_in_window + aug`, ДПОЗЗ-стратифицированный split
-*   **Стратифицированный split:** [osc_tools/data_management/ozz_split.py](osc_tools/data_management/ozz_split.py)
-*   **Оценка PhysicsBaseline:** [scripts/evaluation/evaluate_physics_baseline.py](scripts/evaluation/evaluate_physics_baseline.py)
-*   **Сглаженные предсказания:** Обновлён [scripts/evaluation/plot_model_marking.py](scripts/evaluation/plot_model_marking.py) — взвешенное усреднение по окнам
+*   **Стратифицированный split:** [osc_tools/data_management/ozz_split.py](../../../osc_tools/data_management/ozz_split.py)
+*   **Оценка PhysicsBaseline:** [scripts/evaluation/evaluate_physics_baseline.py](../../../scripts/evaluation/evaluate_physics_baseline.py)
+*   **Сглаженные предсказания:** Обновлён [scripts/evaluation/plot_model_marking.py](../../../scripts/evaluation/plot_model_marking.py) — взвешенное усреднение по окнам
 
 ---
 

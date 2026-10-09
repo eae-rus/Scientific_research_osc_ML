@@ -40,25 +40,25 @@
 авторский выбор рисунка 11 и арбитраж 35 расхождений повторной разметки.
 
 - [x] Повторная оценка текущих трёх expert-моделей и weak-инициализаций:
-  [сценарий](../../scripts/phase5_experiments/evaluate_pdr_expert_holdout.py), отчёт 8, §13.
+  [сценарий](../../../scripts/phase5_experiments/evaluate_pdr_expert_holdout.py), отчёт 8, §13.
 - [x] Полная галерея эксперт + реальная нейросеть + четыре РНМ:
-  [генератор](../../scripts/visualization/generate_pdr_article_figures.py), параметр --gallery.
+  [генератор](../../../scripts/visualization/generate_pdr_article_figures.py), параметр --gallery.
 - [ ] Согласованно подключить групповой split ко всем этапам; повторить строгий
   эксперимент без переноса загрязнённых начальных весов. Имеющийся
-  [генератор split](../../scripts/phase5_experiments/build_phase5_splits.py) уже создаёт v2,
+  [генератор split](../../../scripts/phase5_experiments/build_phase5_splits.py) уже создаёт v2,
   но current training/import используют v1; не менять сохранённую историю.
 
 - [x] Диагностическая галерея с ранним стартом от первого окна Фурье,
   нулевыми недоступными длиннооконными признаками и маской отсутствия;
   три latest-модели и все девять РНМ
-  ([генератор](../../scripts/visualization/generate_pdr_article_figures.py), --gallery).
+  ([генератор](../../../scripts/visualization/generate_pdr_article_figures.py), --gallery).
 - [ ] В следующем обучающем эксперименте добавить такой же ранний контекст
   в PDRTaskDataset с явным versioned-параметром, ротацией ранних целей и
   отдельной оценкой интервалов 1–2T, 2–4T, 4–10T, 10–20T и полного контекста.
   Нули незрелых низкочастотных признаков должны оставаться маскированными,
   ранние срезы повторяют первый доступный спектр без доступа к будущему.
   Опция builder уже реализована в
-  [spectral_features.py](../../osc_tools/ml/spectral_features.py):
+  [spectral_features.py](../../../osc_tools/ml/spectral_features.py):
   zero_unavailable_low_history; текущие обучающие индексы и checkpoints не менялись.
   Разметка переходов по-прежнему исключает границу и следующие 5 мс из loss.
 
@@ -919,7 +919,7 @@ PDR-специфичного `run_phase5_pdr_training.py`, но универса
 
 Публичная часть репозитория:
 
-- `docs/phase_discription/PHASE_5_PDR_ALGORITHMS.md` содержит открытые алгоритмы, общий интерфейс и анонимизированный перечень закрытых вариантов без раскрытия формул;
+- `docs/phase_discription/phase_5/PHASE_5_PDR_ALGORITHMS.md` содержит открытые алгоритмы, общий интерфейс и анонимизированный перечень закрытых вариантов без раскрытия формул;
 - `osc_tools/pdr/` содержит `PDRAlgorithm`, registry, открытые реализации и fallback policy;
 - конфигурация выбирает орган по стабильному ID, а не импортирует закрытую функцию напрямую;
 - если выбранный закрытый орган недоступен, программа выдаёт явное предупреждение, записывает факт fallback в config/log и выбирает заданный исследователем открытый fallback. Нельзя незаметно подменять teacher.
@@ -982,7 +982,7 @@ PDR-специфичного `run_phase5_pdr_training.py`, но универса
   постоянный пороговый сдвиг вынесен из основного динамического рейтинга
   (см. `osc_tools/pdr/study.py`).
 - [x] CSV-рейтинг и тематические подборки для будущей ручной разметки
-  (см. `docs/phase_discription/PHASE_5_PDR_PIPELINE_GUIDE.md`).
+  (см. `docs/phase_discription/phase_5/PHASE_5_PDR_PIPELINE_GUIDE.md`).
 - [x] Общая и per-source статистика по осциллограммам, exact pointwise
   agreement/kappa/MCC, signal RMS audit, SHA-256 duplicate audit,
   exploratory-кластеры и короткие PNG/CSV review bundles
@@ -1246,7 +1246,7 @@ Phase 5 small/heavy` ещё не выполнялись. Возврат к ОЗ�
 Документы:
 
 - обновлять этот план по мере выполнения;
-- вести `docs/phase_discription/PHASE_5_WORK_LOG.md`;
+- вести `docs/phase_discription/phase_5/PHASE_5_WORK_LOG.md`;
 - сохранять краткие отчёты:
   - `reports/phase5/open_ee_scan.md`;
   - `reports/phase5/french_normalization_notes.md`;
@@ -1334,8 +1334,8 @@ Phase 5 small/heavy` ещё не выполнялись. Возврат к ОЗ�
 
 | Файл | Назначение |
 |------|------------|
-| `docs/phase_discription/PHASE_5_PLAN.md` | текущий план |
-| `docs/phase_discription/PHASE_5_WORK_LOG.md` | журнал выполнения |
+| `docs/phase_discription/phase_5/PHASE_5_PLAN.md` | текущий план |
+| `docs/phase_discription/phase_5/PHASE_5_WORK_LOG.md` | журнал выполнения |
 | `scripts/phase5_experiments/scan_open_ee_dataset.py` | статистика Open_EE |
 | `scripts/phase5_experiments/scan_french_dataset.py` | статистика French/RTE |
 | `osc_tools/ml/phase5_contracts.py` | реализованные контракты каналов и временной сетки |
@@ -1353,8 +1353,8 @@ Phase 5 small/heavy` ещё не выполнялись. Возврат к ОЗ�
 | `osc_tools/pdr/study.py` | multi-PDR разметка, sharded reader и метрики интересности |
 | `scripts/phase5_experiments/run_pdr_dataset_study.py` | статистика органов и воспроизводимая teacher-разметка |
 | `scripts/phase5_experiments/run_phase5_pdr_training.py` | реализованный PDR fine-tuning и post-training |
-| `docs/phase_discription/PHASE_5_PDR_ALGORITHMS.md` | математика и версии органов |
-| `docs/phase_discription/PHASE_5_PDR_PIPELINE_GUIDE.md` | разметка, мониторинг, анализ и отбор сложных записей |
+| `docs/phase_discription/phase_5/PHASE_5_PDR_ALGORITHMS.md` | математика и версии органов |
+| `docs/phase_discription/phase_5/PHASE_5_PDR_PIPELINE_GUIDE.md` | разметка, мониторинг, анализ и отбор сложных записей |
 | `scripts/phase5_experiments/README.md` | карта ручных сценариев Phase 5 |
 | `data/phase5/datasets_registry.json` | машинный реестр |
 | `reports/phase5/*.md` | отчёты |
@@ -1403,7 +1403,7 @@ never-seen file-level holdout, зафиксированный до pretrain.
   FWD/VALID (см. `scripts/phase5_experiments/run_pdr_rtds.py`). Все 100 исходных
   записей прочитаны, короткая проверка всех органов пройдена; полный расчёт запущен.
 - [x] Добавить описательный раздел 11 статьи и порядок ручной проверки
-  (см. `docs/phase_discription/PHASE_5_RTDS_GUIDE.md`).
+  (см. `docs/phase_discription/phase_5/PHASE_5_RTDS_GUIDE.md`).
 - [x] Подготовить первичное сравнение проверенных файлов, защиту неизменности
   сигналов и простые поопытные показатели (`evaluate_verified` в том же сценарии).
 - [x] Полный RTDS-экспорт завершён; автор просмотрел 100 пар и разместил их

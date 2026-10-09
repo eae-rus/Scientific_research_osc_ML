@@ -6,9 +6,9 @@
 При запуске `Exp_2.6.13_PhysicsKANv2_medium_phase_polar_stride_base_weights_aug` обучение на train выглядело стабильным (`Train Loss ≈ 0.8–0.9`), но `Val Loss` периодически уходил в диапазон миллионов/миллиардов/триллионов. Это указывает не на обычную плохую сходимость, а на выбросы логитов на отдельных validation-батчах. Наиболее вероятный источник — делительные физические каналы: при малом знаменателе `a/b` создаёт экстремальные значения, которые затем попадают в KAN-свёртки за пределы рабочей сетки.
 
 ### Что перенесено из стабильной Transformer-архитектуры
-В [transformer_blocks.py](osc_tools/ml/layers/transformer_blocks.py) `ComplexInteractionBlock` уже использует архитектурную защиту: результат деления сжимается через `tanh(|z|)` с сохранением угла. Этот принцип перенесён в v2-KAN блоки без удаления физики.
+В [transformer_blocks.py](../../../osc_tools/ml/layers/transformer_blocks.py) `ComplexInteractionBlock` уже использует архитектурную защиту: результат деления сжимается через `tanh(|z|)` с сохранением угла. Этот принцип перенесён в v2-KAN блоки без удаления физики.
 
-### Изменения в [kan.py](osc_tools/ml/models/kan.py)
+### Изменения в [kan.py](../../../osc_tools/ml/models/kan.py)
 1. Добавлены служебные функции `_finite_tanh()` и `_wrap_phase()`.
 2. `PhysicsInteractionBlock`:
    - вход для физической ветки ограничивается через `tanh`;
@@ -26,9 +26,9 @@
 Физические блоки не удалены: сохранены `mult/div`, комплексные `amp/phase` операции и релейные блоки. Изменён только масштаб прохождения физического пути, чтобы он не мог численно разрушать backbone.
 
 ### Тесты и проверка
-- [test_ml_models_kan.py](tests/unit/test_ml_models_kan.py): добавлены регрессионные тесты на почти нулой знаменатель в real/complex div-ветках; резидуальная добавка остаётся bounded и finite.
+- [test_ml_models_kan.py](../../../tests/unit/test_ml_models_kan.py): добавлены регрессионные тесты на почти нулой знаменатель в real/complex div-ветках; резидуальная добавка остаётся bounded и finite.
 - `C:/ProgramData/anaconda3/python.exe -m pytest tests/unit/test_ml_models_kan.py -q` → **26 passed**.
-- `py_compile` для [kan.py](osc_tools/ml/models/kan.py), [test_ml_models_kan.py](tests/unit/test_ml_models_kan.py), [run_phase2_6.py](scripts/phase2_experiments/run_phase2_6.py) → **OK**.
+- `py_compile` для [kan.py](../../../osc_tools/ml/models/kan.py), [test_ml_models_kan.py](../../../tests/unit/test_ml_models_kan.py), [run_phase2_6.py](../../../scripts/phase2_experiments/run_phase2_6.py) → **OK**.
 - Smoke-forward `PhysicsKANv2` medium на входе с почти нулевыми знаменателями: logits finite, `max_abs ≈ 0.144`; `cPhysicsKANv2` и `rPhysicsKANv2` также finite.
 
 ## [2026-03-11] Version 2: физика и реле на глубоких слоях (PhysicsKANv2 / cPhysicsKANv2 / rPhysicsKANv2)
@@ -36,7 +36,7 @@
 ### Мотивация
 В исходных Physics-моделях (`PhysicsKAN`, `cPhysicsKAN`, `rPhysicsKAN`) физические операции (умножение/деление) и релейный орган применяются **только на входе (stem)**. Цель версии 2 — проверить гипотезу о пользе их применения **на скрытых слоях**, сохранив при этом возможность валидного вложенного сравнения (меняется ровно одна переменная за раз). Существующие модели и запуски не затрагиваются — все классы новые.
 
-### Новые блоки (см. [kan.py](osc_tools/ml/models/kan.py))
+### Новые блоки (см. [kan.py](../../../osc_tools/ml/models/kan.py))
 1. **`PhysicsInteractionBlock`** — резидуальный вещественный физический блок для скрытых слоёв. Все каналы линейно проецируются (`Conv1d` 1×1) в `2k` операндов, считаются `mult`/`div` (`k` взаимодействий), результат смешивается KAN-свёрткой обратно в `C` каналов. Форма `[B, C, T]` сохраняется; добавка резидуальная `x + scale·Δ` (init `scale=0.1`). Проекция операндов допускает **межсигнальные** комбинации каналов. Чётность каналов больше не требуется.
 2. **`ComplexPhysicsInteractionBlock`** — комплексный (полярный) аналог: амплитуды (через `softplus`, `>0`) перемножаются/делятся, фазы складываются/вычитаются; нормируются только амплитуды. Требует чётное число каналов.
 3. **`RelayGateBlock`** — релейный орган `x·(1 + scale·(gate−0.5))`, `gate=σ(KANConv(x))`, применим на любом слое и «на выходе».
@@ -51,18 +51,18 @@
 Семейство валидных сравнений: `ConvKAN` → `PhysicsKAN`→`PhysicsKANv2` → `cPhysicsKAN`→`cPhysicsKANv2` → `rPhysicsKAN`→`rPhysicsKANv2`.
 
 ### Интеграция
-- Регистрация в [models/__init__.py](osc_tools/ml/models/__init__.py) и [runner.py](osc_tools/ml/runner.py).
-- [run_phase2_6.py](scripts/phase2_experiments/run_phase2_6.py): добавлены `cPhysicsKANv2` в `MODEL_COMPLEXITY`, ограничения `phase_polar`, снижение батча для heavy/harmonic, `input_size`/`use_mlp`-списки; опыт **2.6.13_stride** содержит все 7 моделей (`feature_mode=phase_polar`, `stride=16`, `aug`, `balancing=weights`, `target_level=base`).
-- [config_resolvers.py](scripts/evaluation/_core/config_resolvers.py): v2-модели распознаются раньше базовых имён, чтобы не схлопываться в отчётах.
-- [draw_architectures.py](osc_tools/visualization/draw_architectures.py): схемы `draw_physicskanv2/cphysicskanv2/rphysicskanv2`.
-- [architectures_description.md](docs/architectures_description.md): таблица изображений + раздел 8.1–8.3 с описанием v2.
+- Регистрация в [models/__init__.py](../../../osc_tools/ml/models/__init__.py) и [runner.py](../../../osc_tools/ml/runner.py).
+- [run_phase2_6.py](../../../scripts/phase2_experiments/run_phase2_6.py): добавлены `cPhysicsKANv2` в `MODEL_COMPLEXITY`, ограничения `phase_polar`, снижение батча для heavy/harmonic, `input_size`/`use_mlp`-списки; опыт **2.6.13_stride** содержит все 7 моделей (`feature_mode=phase_polar`, `stride=16`, `aug`, `balancing=weights`, `target_level=base`).
+- [config_resolvers.py](../../../scripts/evaluation/_core/config_resolvers.py): v2-модели распознаются раньше базовых имён, чтобы не схлопываться в отчётах.
+- [draw_architectures.py](../../../osc_tools/visualization/draw_architectures.py): схемы `draw_physicskanv2/cphysicskanv2/rphysicskanv2`.
+- [architectures_description.md](../../architectures_description.md): таблица изображений + раздел 8.1–8.3 с описанием v2.
 
 ### Тесты
-- [test_ml_models_kan.py](tests/unit/test_ml_models_kan.py): обновлены/добавлены smoke- и контрактные тесты (forward, сохранение формы, резидуальность при `scale=0`, требования к чётности/кратности 4, `cPhysicsKANv2`, `ComplexPhysicsInteractionBlock`). Удалён устаревший тест на чётность `PhysicsInteractionBlock`. **24 passed.**
+- [test_ml_models_kan.py](../../../tests/unit/test_ml_models_kan.py): обновлены/добавлены smoke- и контрактные тесты (forward, сохранение формы, резидуальность при `scale=0`, требования к чётности/кратности 4, `cPhysicsKANv2`, `ComplexPhysicsInteractionBlock`). Удалён устаревший тест на чётность `PhysicsInteractionBlock`. **24 passed.**
 
 ## [2026-03-10] Обновление физической baseline-модели (THD + RMS Trend)
 
-### Модификация алгоритма [ozz_physics.py](osc_tools/analysis/ozz_physics.py)
+### Модификация алгоритма [ozz_physics.py](../../../osc_tools/analysis/ozz_physics.py)
 
 1. **Спектральный анализ (THD):**
    - Переписан `_rms_fundamental_sliding`: теперь возвращает кортеж `(rms_fund, rms_harm, thd_arr)`.
@@ -81,15 +81,15 @@
      - Переход на multi-label классификацию с возвратом `Set[int]`.
 
 4. **Документация и тесты:**
-   - Актуализировано описание алгоритма в [OZZ_PHYSICS_ALGORITHM.md](docs/OZZ_PHYSICS_ALGORITHM.md) (обновлены шаги, параметры и блок-схема).
-   - Обновлены unit-тесты в [test_ozz_physics.py](tests/unit/test_ozz_physics.py): добавлены проверки на THD (синус vs меандр) и адаптированы существующие сценарии под новый API.
+   - Актуализировано описание алгоритма в [OZZ_PHYSICS_ALGORITHM.md](../../OZZ_PHYSICS_ALGORITHM.md) (обновлены шаги, параметры и блок-схема).
+   - Обновлены unit-тесты в [test_ozz_physics.py](../../../tests/unit/test_ozz_physics.py): добавлены проверки на THD (синус vs меандр) и адаптированы существующие сценарии под новый API.
 
 ## [2026-03-08] Exp 2.6.11: Детектирование ОЗЗ/ДПОЗЗ + Физическая Baseline
 
 ### Выполненные работы
 
 1. **Физическая baseline-модель** (`predict_ozz_physics`)
-   - Создан модуль [osc_tools/analysis/ozz_physics.py](osc_tools/analysis/ozz_physics.py)
+   - Создан модуль [osc_tools/analysis/ozz_physics.py](../../../osc_tools/analysis/ozz_physics.py)
    - Реализован детерминированный алгоритм классификации ОЗЗ:
      - Вычисление $3U_0 = U_A + U_B + U_C$
      - Базовый критерий: RMS первой гармоники $3U_0$ > порог (3В)
@@ -99,7 +99,7 @@
    - Добавлены функции батчевого применения и оценки на DataFrame
 
 2. **Стратифицированное разбиение данных**
-   - Создан модуль [osc_tools/data_management/ozz_split.py](osc_tools/data_management/ozz_split.py)
+   - Создан модуль [osc_tools/data_management/ozz_split.py](../../../osc_tools/data_management/ozz_split.py)
    - Разбиение на уровне файлов с иерархической приоритизацией (ДПОЗЗ > Затухающее > Устойчивое)
    - Гарантированное представительство каждого класса в тестовой выборке
    - Добавлена функция `add_ozz_target_columns(df)` для формирования 3-классовых меток:
@@ -108,27 +108,27 @@
      - `Target_OZZ_dpozz` (ML_2_1_3)
 
 3. **Новый target_level='ozz' в системе меток**
-   - Обновлён [osc_tools/ml/labels.py](osc_tools/ml/labels.py): поддержка `get_target_columns('ozz')` и `prepare_labels_for_experiment(df, 'ozz')`
+   - Обновлён [osc_tools/ml/labels.py](../../../osc_tools/ml/labels.py): поддержка `get_target_columns('ozz')` и `prepare_labels_for_experiment(df, 'ozz')`
 
-4. **Эксперименты 2.6.11** в [scripts/phase2_experiments/run_phase2_6.py](scripts/phase2_experiments/run_phase2_6.py)
+4. **Эксперименты 2.6.11** в [scripts/phase2_experiments/run_phase2_6.py](../../../scripts/phase2_experiments/run_phase2_6.py)
    - `2.6.11_global_stride`: cPhysicsKAN + Global Balancing (light/medium/heavy)
    - `2.6.11_weights_stride`: cPhysicsKAN + Weighted Loss (light/medium/heavy)
    - `2.6.11_baselines_stride`: 6 базовых моделей (heavy) для сравнения
    - Все 3 конфигурации: `phase_polar + stride + any_in_window + aug`
 
 5. **Скрипт оценки физической модели**
-   - Создан [scripts/evaluation/evaluate_physics_baseline.py](scripts/evaluation/evaluate_physics_baseline.py)
+   - Создан [scripts/evaluation/evaluate_physics_baseline.py](../../../scripts/evaluation/evaluate_physics_baseline.py)
    - Результаты сохраняются в формате эксперимента (config.json + history.json)
    - Интеграция с отчётной системой через стандартный формат
 
 6. **Сглаживание предсказаний в plot_model_marking.py**
-   - Обновлён [scripts/evaluation/plot_model_marking.py](scripts/evaluation/plot_model_marking.py)
+   - Обновлён [scripts/evaluation/plot_model_marking.py](../../../scripts/evaluation/plot_model_marking.py)
    - Новая логика: каждое окно вносит свой вклад во все покрываемые точки
    - Итоговая вероятность = среднее по всем покрытиям (weighted averaging)
    - Устраняет артефакты «точечного» предсказания на единственную последнюю точку окна
 
 7. **Тестирование**
-   - Созданы unit-тесты в [tests/unit/test_ozz_physics.py](tests/unit/test_ozz_physics.py):
+   - Созданы unit-тесты в [tests/unit/test_ozz_physics.py](../../../tests/unit/test_ozz_physics.py):
      - Базовая работа `predict_ozz_physics` на синтетических данных
      - Корректность `add_ozz_target_columns`
      - Стратифицированное разбиение `stratified_ozz_split`
@@ -138,7 +138,7 @@
 ### Выполненные работы
 
 1. Реализована новая модель `cPhysicsKAN`
-   - Добавлен класс `cPhysicsKAN` в [osc_tools/ml/models/kan.py](osc_tools/ml/models/kan.py)
+   - Добавлен класс `cPhysicsKAN` в [osc_tools/ml/models/kan.py](../../../osc_tools/ml/models/kan.py)
    - Добавлены вспомогательные блоки:
      - `ComplexPairDropout` — согласованный dropout для пары `[A, φ]`
      - `ComplexPhysicsKANBlock` — KAN-обработка амплитуды и фазы с комплексным residual-сложением
@@ -152,16 +152,16 @@
    - Нормализация применяется только к амплитудам
 
 3. Интеграция в пайплайн обучения
-   - Экспорт модели добавлен в [osc_tools/ml/models/__init__.py](osc_tools/ml/models/__init__.py)
-   - Регистрация в раннере добавлена в [osc_tools/ml/runner.py](osc_tools/ml/runner.py)
+   - Экспорт модели добавлен в [osc_tools/ml/models/__init__.py](../../../osc_tools/ml/models/__init__.py)
+   - Регистрация в раннере добавлена в [osc_tools/ml/runner.py](../../../osc_tools/ml/runner.py)
 
 4. Добавлен эксперимент `2.6.9_stride`
-   - Конфигурация добавлена в [scripts/phase2_experiments/run_phase2_6.py](scripts/phase2_experiments/run_phase2_6.py)
+   - Конфигурация добавлена в [scripts/phase2_experiments/run_phase2_6.py](../../../scripts/phase2_experiments/run_phase2_6.py)
    - Параметры данных и обучения аналогичны `2.6.1_stride`
    - Для `light/medium/heavy` добавлены отдельные профили сложности `cPhysicsKAN`
 
 5. Тестирование
-   - Обновлены unit-тесты в [tests/unit/test_ml_models_kan.py](tests/unit/test_ml_models_kan.py):
+   - Обновлены unit-тесты в [tests/unit/test_ml_models_kan.py](../../../tests/unit/test_ml_models_kan.py):
      - smoke test `forward` для `cPhysicsKAN`
      - проверка инварианта чётности каналов
      - контрактные проверки формул `mul/div` в полярной форме
@@ -171,16 +171,16 @@
 ### Выполненные работы
 
 1. Добавлен режим меток по окну (сдвиг вправо)
-   - Поддержан `target_window_mode='any_in_window'` в [osc_tools/ml/dataset.py](osc_tools/ml/dataset.py)
-   - Поддержан аналогичный режим в [osc_tools/ml/precomputed_dataset.py](osc_tools/ml/precomputed_dataset.py)
-   - Добавлен новый эксперимент `2.6.8_stride` в [scripts/phase2_experiments/run_phase2_6.py](scripts/phase2_experiments/run_phase2_6.py)
+   - Поддержан `target_window_mode='any_in_window'` в [osc_tools/ml/dataset.py](../../../osc_tools/ml/dataset.py)
+   - Поддержан аналогичный режим в [osc_tools/ml/precomputed_dataset.py](../../../osc_tools/ml/precomputed_dataset.py)
+   - Добавлен новый эксперимент `2.6.8_stride` в [scripts/phase2_experiments/run_phase2_6.py](../../../scripts/phase2_experiments/run_phase2_6.py)
 
 2. Обновлена визуализация разметки
-   - Добавлен режим `confidence` для отображения уверенности с порогом в [scripts/evaluation/plot_model_marking.py](scripts/evaluation/plot_model_marking.py)
+   - Добавлен режим `confidence` для отображения уверенности с порогом в [scripts/evaluation/plot_model_marking.py](../../../scripts/evaluation/plot_model_marking.py)
    - Добавлена возможность выбора конкретных файлов и диапазонов времени (мс)
 
 3. Тестирование
-   - Добавлены тесты для режима `any_in_window` в [tests/unit/test_ml_dataset.py](tests/unit/test_ml_dataset.py) и [tests/unit/test_precomputed_dataset.py](tests/unit/test_precomputed_dataset.py)
+   - Добавлены тесты для режима `any_in_window` в [tests/unit/test_ml_dataset.py](../../../tests/unit/test_ml_dataset.py) и [tests/unit/test_precomputed_dataset.py](../../../tests/unit/test_precomputed_dataset.py)
 
 ## [2026-01-24] Добавление эксперимента 2.6.1 Вариант Б (Global Balancing)
 
@@ -684,33 +684,33 @@ reports/{experiment}/figures_advanced/
 1. **Реестр моделей обновлён под несколько комбинаций входов**
    - Генератор теперь сохраняет несколько моделей на архитектуру (разные `features`/`sampling`).
    - Реестр учитывает `phase2_5` и `phase2_6`, приоритеты сложности и уникальность комбинаций.
-   - Файл: [scripts/generate_model_registry.py](scripts/generate_model_registry.py)
+   - Файл: [scripts/generate_model_registry.py](../../../scripts/generate_model_registry.py)
 
 2. **Smoke‑тесты моделей синхронизированы с конфигами чекпойнтов**
    - Входы формируются по `in_channels`/`input_size`, а не по дефолтам.
    - Конфиг берётся из чекпойнта при наличии.
-   - Файл: [tests/integration/test_model_registry.py](tests/integration/test_model_registry.py)
+   - Файл: [tests/integration/test_model_registry.py](../../../tests/integration/test_model_registry.py)
 
 3. **Интеграционные тесты датасетов исправлены**
    - Убрано `chdir` в tests/, корень проекта всегда корректный.
    - Добавлены `skip` при отсутствии основного датасета и нормкоэфов.
-   - Файл: [tests/integration/test_dataset_manager_integration.py](tests/integration/test_dataset_manager_integration.py)
+   - Файл: [tests/integration/test_dataset_manager_integration.py](../../../tests/integration/test_dataset_manager_integration.py)
 
 4. **PrecomputedDataset тесты переведены в pytest‑формат**
    - Убрано выполнение на импорт.
    - Добавлены явные тест‑функции и `skip` при отсутствии датасета.
-   - Файл: [tests/integration/test_precomputed_dataset.py](tests/integration/test_precomputed_dataset.py)
+   - Файл: [tests/integration/test_precomputed_dataset.py](../../../tests/integration/test_precomputed_dataset.py)
 
 5. **Unit‑тесты устранения зависимостей от ФС**
    - Мокаем `ComtradeParser`/`ReadComtrade` и проверки `os.path.exists`.
-   - Файлы: [tests/unit/test_analysis_overvoltage.py](tests/unit/test_analysis_overvoltage.py),
-     [tests/unit/test_analysis_overvoltage_fixed.py](tests/unit/test_analysis_overvoltage_fixed.py)
+   - Файлы: [tests/unit/test_analysis_overvoltage.py](../../../tests/unit/test_analysis_overvoltage.py),
+     [tests/unit/test_analysis_overvoltage_fixed.py](../../../tests/unit/test_analysis_overvoltage_fixed.py)
 
 6. **Обновление ожиданий тестов под актуальную логику**
    - Аугментации стабилизированы: отключены случайные преобразования.
    - Прореживание `snapshot` теперь учитывает актуальную логику для коротких окон.
-   - Файлы: [tests/unit/test_augmentation.py](tests/unit/test_augmentation.py),
-     [tests/unit/test_downsampling.py](tests/unit/test_downsampling.py)
+   - Файлы: [tests/unit/test_augmentation.py](../../../tests/unit/test_augmentation.py),
+     [tests/unit/test_downsampling.py](../../../tests/unit/test_downsampling.py)
 
 7. **Удалены временные утилиты**
    - Удалён лишний скрипт запуска: run_model_tests.py
@@ -785,7 +785,7 @@ reports/{experiment}/figures_advanced/
    - `exp_params` расширен полем `"balancing"` для каждого эксперимента
    - Валидация использует `stride=4` для полного покрытия
 
-3. **ОБНОВЛЁН** `docs/phase_discription/PHASE_2p5_PLAN.md`:
+3. **ОБНОВЛЁН** `docs/phase_discription/phase_2/PHASE_2p5_PLAN.md`:
    - Добавлены описания экспериментов 2.5.1.2 и 2.5.1.3
    - Эксперимент с аугментацией переименован в 2.5.1.4
 

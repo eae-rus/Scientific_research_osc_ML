@@ -25,7 +25,7 @@
 | PDR-REVIEW | `docs/article/DISSERTATION_PDR_BAVR_SECTION.md` | Автор прямо просит использовать как вспомогательный материал, а не заменять им свой раздел |
 | PDR-LIT | `docs/article/PDR_NEW_PAPERS_ANALYSIS_AND_BENCHMARK_PROPOSAL.md`, `docs/article/Статьи РНМ/` | Кандидаты в обзор; проверять утверждения по первоисточникам |
 | PDR-REPORTS | `docs/phase_discription/PDR_analise/` | Отчёты 6–8 и `archive_literature/Report_1.md`–`Report_5.md`; различать исторические и актуальные срезы |
-| PDR-METHODS | `docs/phase_discription/PHASE_5_PDR_ALGORITHMS.md`, `PHASE_5_PDR_PIPELINE_GUIDE.md`, `PHASE_5_MANUAL_LABELING_GUIDE.md`, `PHASE_5_RTDS_GUIDE.md`, `PHASE_5_RTDS_CASES_GUIDE.md` | Проверка методики и воспроизводимости; руководство или план не подтверждает выполненный эксперимент |
+| PDR-METHODS | `docs/phase_discription/phase_5/PHASE_5_PDR_ALGORITHMS.md`, `PHASE_5_PDR_PIPELINE_GUIDE.md`, `PHASE_5_MANUAL_LABELING_GUIDE.md`, `PHASE_5_RTDS_GUIDE.md`, `PHASE_5_RTDS_CASES_GUIDE.md` | Проверка методики и воспроизводимости; руководство или план не подтверждает выполненный эксперимент |
 
 ## Графика и зависимости
 

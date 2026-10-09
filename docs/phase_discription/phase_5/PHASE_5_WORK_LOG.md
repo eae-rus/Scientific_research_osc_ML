@@ -801,7 +801,7 @@
 
 - **Глубокий анализ PDR-отчётов AI-ассистентов**:
   - Создана 7-главная глава 1 для диссертации пользователя [`DISSERTATION_PDR_BAVR_SECTION.md`](file:///d:/Программирование/Fork/Scientific_research_osc_ML/docs/article/DISSERTATION_PDR_BAVR_SECTION.md).
-  - Обновлён спецификационный документ [`PDR_CODEBASE_SPECIFICATION.md`](file:///d:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PDR_CODEBASE_SPECIFICATION.md).
+  - Обновлён спецификационный документ [`PDR_CODEBASE_SPECIFICATION.md`](file:///d:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PDR_CODEBASE_SPECIFICATION.md).
 - **Реструктуризация открытых алгоритмов РНМ по 4 фундаментальным физическим принципам**:
   - Дублирование по "брендам производителей" заменено на **4 физических алгоритма**:
     1. `PhasePDRAlgorithm` (`phase_pdr_basic`, `basic_phase.py`) — пофазный угловой алгоритм с поддержкой `quadrature_90` ($I_A \leftrightarrow U_{BC}$) и `direct` ($I_A \leftrightarrow U_A$) поляризаций.
@@ -879,6 +879,6 @@
 - **Генератор псевдоразметки и PyTorch Task Dataset** (`osc_tools/pdr/labeler.py`, `osc_tools/pdr/pdr_dataset.py`):
   - `PDRDatasetLabeler`: скользящее 10-периодное окно с расчётом 1-й гармоники Фурье. Зона разогрева помечается как `warmup_mask=True` и `direction=-999` (`UNLABELED`).
   - `PDRTaskDataset`: связывает спектральные токены KAN-Transformer с метками РНМ для дообучения.
-- **Обучение, аудит и документация** (`osc_tools/pdr/pdr_trainer.py`, `docs/phase_discription/PHASE_5_PDR_ALGORITHMS.md`; прежний отдельный audit-скрипт позднее объединён с основным анализом):
+- **Обучение, аудит и документация** (`osc_tools/pdr/pdr_trainer.py`, `docs/phase_discription/phase_5/PHASE_5_PDR_ALGORITHMS.md`; прежний отдельный audit-скрипт позднее объединён с основным анализом):
   - Описан контур тонкой настройки (`PDRTrainer`) с комбинированным лоссом (CrossEntropy + Huber Margin).
   - Очищены устаревшие legacy-файлы РНМ (`pdr_calculator.py`, `train_PDR.py`), функции перенесены в `phasor.py`.

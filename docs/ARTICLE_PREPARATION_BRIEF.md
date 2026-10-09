@@ -26,7 +26,7 @@
 | Статистика по реальным ОЗЗ | `reports/phase4/real_ozz_statistics/real_ozz_statistics.json` | Полная статистика событий |
 | Графики статистики реальных ОЗЗ | `reports/phase4/real_ozz_statistics/` | 3 png файла готово |
 | Интерпретируемость (gradient attribution) | `reports/phase4/interpretability/` | Heatmap + Channel dropout анализ |
-| Лог работ Фазы 4 | `docs/phase_discription/PHASE_4_WORK_LOG.md` | Полная хронология |
+| Лог работ Фазы 4 | `docs/phase_discription/phase_4/PHASE_4_WORK_LOG.md` | Полная хронология |
 | Отчёт Этапа 4.5 | `docs/PHASE_4_5_REPORT.md` | Описание датасета SimOZZ, пайплайна |
 | Описание датасета SimOZZ | `docs/PHASE_4_5_REPORT.md` разделы 1-4 | ~19 200 CSV, 62 ГБ, 4 типа дуги |
 | Fine-tune на базовых классах (≠ SimOZZ) | `experiments/phase4/base_finetune_*` | val_F1=0.840, val_AUC=0.942 |

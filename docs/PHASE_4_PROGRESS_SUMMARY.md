@@ -110,7 +110,7 @@
 
 | Файл | Назначение |
 |------|-----------|
-| `docs/phase_discription/PHASE_4_PLAN.md` | Полный план с чекбоксами |
+| `docs/phase_discription/phase_4/PHASE_4_PLAN.md` | Полный план с чекбоксами |
 | `docs/PHASE_4_TASK_DETAILS.md` | Подробное описание всех задач |
 | `scripts/phase4_experiments/run_phase4_pretrain.py` | Pretrain скрипт |
 | `scripts/phase4_experiments/run_phase4_finetune.py` | Finetune скрипт |

@@ -248,7 +248,7 @@ osc_tools/ml/
 
 ## 🧪 Фаза 2.6: Архитектурная эволюция и финальная калибровка
 
-**Статус:** Завершена. См. подробный план: `docs/phase_discription/PHASE_2p6_PLAN.md`.
+**Статус:** Завершена. См. подробный план: `docs/phase_discription/phase_2/PHASE_2p6_PLAN.md`.
 
 **Ключевые результаты:**
 - Введены и проверены иерархические стволы обработки каналов.
@@ -262,13 +262,13 @@ osc_tools/ml/
 
 **Фокус:** Поиск более эффективных и обучаемых архитектур KAN (State-of-the-Art реализации). Цель — найти замену текущему `pykan`/`efficient-kan`, которая обеспечит стабильную сходимость и высокую скорость, аналогичную ResNet, и проверить гипотезу о Residual KAN.
 
-**Подробный план:** `docs/phase_discription/PHASE_3_PLAN.md`.
+**Подробный план:** `docs/phase_discription/phase_3/PHASE_3_PLAN.md`.
 
 ---
 
 ## ⚡ Фаза 4: Развитие органов РЗА (Advanced)
 
-**Подробный план:** `docs/phase_discription/PHASE_4_PLAN.md`.
+**Подробный план:** `docs/phase_discription/phase_4/PHASE_4_PLAN.md`.
 
 ### Задача 4.1: Сегментация осциллограмм (Full Waveform Labeling)
 
@@ -298,7 +298,7 @@ osc_tools/ml/
 
 ## 📝 Фаза 5: Анализ и публикация
 
-**Подробный план:** `docs/phase_discription/PHASE_5_PLAN.md`.
+**Подробный план:** `docs/phase_discription/phase_5/PHASE_5_PLAN.md`.
 
 ### Задача 5.1: Интерпретация и визуализация
 

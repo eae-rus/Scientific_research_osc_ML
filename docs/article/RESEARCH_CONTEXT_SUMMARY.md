@@ -220,7 +220,7 @@ supervised loss. Они сохраняются отдельным transition cha
 задержки и устойчивости; основной результат считается вне этой зоны.
 
 Актуальную точку продолжения всегда брать из верхней записи
-`docs/phase_discription/PHASE_5_WORK_LOG.md`, а не из даты этого summary.
+`docs/phase_discription/phase_5/PHASE_5_WORK_LOG.md`, а не из даты этого summary.
 
 ## Научная дисциплина проекта
 

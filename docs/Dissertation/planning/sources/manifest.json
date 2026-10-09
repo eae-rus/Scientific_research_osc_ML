@@ -360,17 +360,17 @@
         "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PDR_analise/archive_literature/Report_3.md",
         "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PDR_analise/archive_literature/Report_4.md",
         "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PDR_analise/archive_literature/Report_5.md",
-        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_COMTRADE_EXPORT_REQUIREMENTS.md",
-        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_MANUAL_LABELING_GUIDE.md",
-        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_PDR_ALGORITHMS.md",
-        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_PDR_PIPELINE_GUIDE.md",
-        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_PDR_V5_REVIEW.md",
-        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_PLAN.md",
-        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_RTDS_CASES_GUIDE.md",
-        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_RTDS_CASES_GUIDE.pdf",
-        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_RTDS_GUIDE.md",
-        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_STATISTICAL_RESEARCH_PLAN.md",
-        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_WORK_LOG.md",
+        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_COMTRADE_EXPORT_REQUIREMENTS.md",
+        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_MANUAL_LABELING_GUIDE.md",
+        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_PDR_ALGORITHMS.md",
+        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_PDR_PIPELINE_GUIDE.md",
+        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_PDR_V5_REVIEW.md",
+        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_PLAN.md",
+        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_RTDS_CASES_GUIDE.md",
+        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_RTDS_CASES_GUIDE.pdf",
+        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_RTDS_GUIDE.md",
+        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_STATISTICAL_RESEARCH_PLAN.md",
+        "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_WORK_LOG.md",
         "D:/Программирование/Fork/Scientific_research_osc_ML/figures/fig10_expert_evaluation_comparison.png",
         "D:/Программирование/Fork/Scientific_research_osc_ML/figures/fig10a_h123_evaluation.png",
         "D:/Программирование/Fork/Scientific_research_osc_ML/figures/fig11_representative_cases.png",
@@ -1878,78 +1878,78 @@
       "sha256": "96a877b41863235dc31fb60bfa6ed63643de9573b8c87f55105b7f02a720c2f4",
       "bytes": 40069
     },
-    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_COMTRADE_EXPORT_REQUIREMENTS.md": {
-      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_COMTRADE_EXPORT_REQUIREMENTS.md",
+    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_COMTRADE_EXPORT_REQUIREMENTS.md": {
+      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_COMTRADE_EXPORT_REQUIREMENTS.md",
       "exists": true,
       "access": "read_only_source",
       "sha256": "485077e2b6608d33e98e82be491910e1180ae364ee62b3ae64c4c9eb76bfc2ab",
       "bytes": 27284
     },
-    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_MANUAL_LABELING_GUIDE.md": {
-      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_MANUAL_LABELING_GUIDE.md",
+    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_MANUAL_LABELING_GUIDE.md": {
+      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_MANUAL_LABELING_GUIDE.md",
       "exists": true,
       "access": "read_only_source",
       "sha256": "6361b165f380e280a47b974b77fd68075f9e5a41760dc89260c313f02bef5739",
       "bytes": 15891
     },
-    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_PDR_ALGORITHMS.md": {
-      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_PDR_ALGORITHMS.md",
+    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_PDR_ALGORITHMS.md": {
+      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_PDR_ALGORITHMS.md",
       "exists": true,
       "access": "read_only_source",
       "sha256": "1aa2264f8603b65cca7a283f326774e8b8132530732cb0eb6badd957b3996821",
       "bytes": 13006
     },
-    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_PDR_PIPELINE_GUIDE.md": {
-      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_PDR_PIPELINE_GUIDE.md",
+    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_PDR_PIPELINE_GUIDE.md": {
+      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_PDR_PIPELINE_GUIDE.md",
       "exists": true,
       "access": "read_only_source",
       "sha256": "ac52aebf6cf7617b3f7c49655736b2fcb6355c2b6e067e47c84ef2ddd0e8db5b",
       "bytes": 76997
     },
-    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_PDR_V5_REVIEW.md": {
-      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_PDR_V5_REVIEW.md",
+    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_PDR_V5_REVIEW.md": {
+      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_PDR_V5_REVIEW.md",
       "exists": true,
       "access": "read_only_source",
       "sha256": "55af71b36b4c19a82339cb95729135c5e2e0ccf197992ea641cafab17f2b7531",
       "bytes": 16282
     },
-    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_PLAN.md": {
-      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_PLAN.md",
+    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_PLAN.md": {
+      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_PLAN.md",
       "exists": true,
       "access": "read_only_source",
       "sha256": "ee3ca6964f6e10c3490bc69d80de0d6d2e96c8ee1c417e9fc7e58efeedcfdbc5",
       "bytes": 121942
     },
-    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_RTDS_CASES_GUIDE.md": {
-      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_RTDS_CASES_GUIDE.md",
+    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_RTDS_CASES_GUIDE.md": {
+      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_RTDS_CASES_GUIDE.md",
       "exists": true,
       "access": "read_only_source",
       "sha256": "8404a131ad26e3d8a3ffb7f173edc7a3d7fa5619fd342b6cafb90355fce2a2cb",
       "bytes": 27248
     },
-    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_RTDS_CASES_GUIDE.pdf": {
-      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_RTDS_CASES_GUIDE.pdf",
+    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_RTDS_CASES_GUIDE.pdf": {
+      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_RTDS_CASES_GUIDE.pdf",
       "exists": true,
       "access": "read_only_source",
       "sha256": "2fcff5b24a4c50d2ce4509453f7c720354f6082562140a5198c77476e04c0dc6",
       "bytes": 360539
     },
-    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_RTDS_GUIDE.md": {
-      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_RTDS_GUIDE.md",
+    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_RTDS_GUIDE.md": {
+      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_RTDS_GUIDE.md",
       "exists": true,
       "access": "read_only_source",
       "sha256": "fbe96bf886821ee550725c5f0792f7d5fc9b55a83c1e8fd7e852c3dea29928fd",
       "bytes": 18829
     },
-    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_STATISTICAL_RESEARCH_PLAN.md": {
-      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_STATISTICAL_RESEARCH_PLAN.md",
+    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_STATISTICAL_RESEARCH_PLAN.md": {
+      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_STATISTICAL_RESEARCH_PLAN.md",
       "exists": true,
       "access": "read_only_source",
       "sha256": "144c4fb4eddb6958761bc9a31c88c52471ac7615364be3f11dd17cef6d677fad",
       "bytes": 59552
     },
-    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_WORK_LOG.md": {
-      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_WORK_LOG.md",
+    "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_WORK_LOG.md": {
+      "path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_WORK_LOG.md",
       "exists": true,
       "access": "read_only_source",
       "sha256": "ebdd5aa947a2478a3b482dbdbf77de32a94bd1bd7f118b68e1dbc925092297a7",
@@ -5931,7 +5931,7 @@
   },
   "supporting_status_snapshots": [
     {
-      "source_path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/PHASE_5_WORK_LOG.md",
+      "source_path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/phase_discription/phase_5/PHASE_5_WORK_LOG.md",
       "sha256": "ebdd5aa947a2478a3b482dbdbf77de32a94bd1bd7f118b68e1dbc925092297a7",
       "snapshot_path": "docs/Dissertation/sources/PDR-05/ebdd5aa947a2478a3b482dbdbf77de32a94bd1bd7f118b68e1dbc925092297a7/PHASE_5_WORK_LOG.md",
       "scientific_use": "current_state_context; not recomputed experiment"

@@ -159,9 +159,9 @@ accuracy/F1 оставить для сопоставимости вместе с
    - `docs/phase_discription/PDR_analise/Report_8_phase5_status_and_training_coverage.md`;
    - `docs/phase_discription/PDR_analise/Report_7_training_pilot_v1.md`;
    - `docs/phase_discription/PDR_analise/Report_6_expert_v1.md`;
-   - `docs/phase_discription/PHASE_5_PLAN.md`;
-   - `docs/phase_discription/PHASE_5_WORK_LOG.md`;
-   - `docs/phase_discription/PHASE_5_PDR_V5_REVIEW.md`.
+   - `docs/phase_discription/phase_5/PHASE_5_PLAN.md`;
+   - `docs/phase_discription/phase_5/PHASE_5_WORK_LOG.md`;
+   - `docs/phase_discription/phase_5/PHASE_5_PDR_V5_REVIEW.md`.
 
 ## Где проверять математику РНМ
 
@@ -177,7 +177,7 @@ accuracy/F1 оставить для сопоставимости вместе с
   ветвью при несимметрии);
 - `osc_tools/pdr/pdr_signal_utils.py` (симметричные составляющие, фильтрация Фурье, расчет мощности);
 - `osc_tools/pdr/public_algorithms/PUBLIC_PDR_ALGORITHMS_DESCRIPTION.md`;
-- `docs/phase_discription/PHASE_5_PDR_ALGORITHMS.md`.
+- `docs/phase_discription/phase_5/PHASE_5_PDR_ALGORITHMS.md`.
 
 Закрытый адаптивный орган может находиться в `private/pdr_algorithms/`. Если
 этого каталога или описания нет на устройстве, не придумывай закрытую математику:

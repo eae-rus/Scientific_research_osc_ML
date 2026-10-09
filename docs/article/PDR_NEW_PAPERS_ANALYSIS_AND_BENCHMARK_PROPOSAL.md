@@ -6,7 +6,7 @@
 **Связанные документы:**  
 - `docs/article/PHASE_5_PDR_STATISTICAL_ARTICLE_DRAFT.md`  
 - `docs/article/PHASE_5_PDR_STATISTICAL_ARTICLE_CONTINUATION_PROMPT.md`  
-- `docs/phase_discription/PHASE_5_PDR_ALGORITHMS.md`  
+- `docs/phase_discription/phase_5/PHASE_5_PDR_ALGORITHMS.md`
 
 ---
 

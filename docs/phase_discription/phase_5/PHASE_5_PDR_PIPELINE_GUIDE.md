@@ -464,7 +464,7 @@ BATCH_NAME = "pilot"
 Готовую экспертную разметку не следует смешивать с исходными `batch_*`.
 Рекомендуемая структура статусов, правила переноса комплектов CFG/DAT/JSON и
 контракт будущего обратного импортёра приведены в
-`docs/phase_discription/PHASE_5_MANUAL_LABELING_GUIDE.md`.
+`docs/phase_discription/phase_5/PHASE_5_MANUAL_LABELING_GUIDE.md`.
 
 Текущая целевая квота Open_EE выше French/RTE в два раза: Open_EE ближе к
 схемам БАВР, а French/RTE используется как внешний домен и источник ёмкостных
