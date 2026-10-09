@@ -52,7 +52,8 @@ def main():
     files = [ROOT/'planning/integration/rewrite_proposals/ch03.md',
              ROOT/'planning/integration/rewrite_proposals/ch05.md',
              ROOT/'planning/handoffs/D00.md', ROOT/'planning/questions.md',
-             ROOT/'planning/sources/PDR-05/limitations_and_comments.md']
+             ROOT/'planning/sources/PDR-05/limitations_and_comments.md',
+             ROOT/'manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex']
     registry_path = ROOT/'review/issues/author_annotations.json'
     registry = json.loads(registry_path.read_text(encoding='utf-8')) if registry_path.exists() else {'schema_version':1,'notes':[]}
     disposition_path = ROOT/'review/issues/author_note_dispositions.json'

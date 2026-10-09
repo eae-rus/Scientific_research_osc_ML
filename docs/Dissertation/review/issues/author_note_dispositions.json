@@ -196,5 +196,35 @@
     "status": "DECISION_RECORDED",
     "decision": "S03 прочитано; сохранено для доработки статьи",
     "display": "S03 прочитано; сохранено для доработки статьи"
+  },
+  "manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex#1": {
+    "text_sha256": "95f377486c35c53a6f4e3139ca51265d4e017ba12ffbffe46e88952d75367d59",
+    "status": "DECISION_RECORDED",
+    "decision": "Internal versions moved out of scientific prose; author note retained.",
+    "display": "учтено и исправлено 09.10; сохранено в исходнике"
+  },
+  "manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex#2": {
+    "text_sha256": "c99d8aa72bee46e973c082064c72f0e524d51bd505533831b2660306a4c4e9bd",
+    "status": "DECISION_RECORDED",
+    "decision": "Own research stated directly; general rule recorded in AGENTS/START_PROMPT.",
+    "display": "учтено и исправлено 09.10; сохранено в исходнике"
+  },
+  "manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex#3": {
+    "text_sha256": "a5752b6b77d5ced334b107ccede37d58b78ee2bfffe5494bd5e44f2e4d4fa1bc",
+    "status": "DECISION_RECORDED",
+    "decision": "Current 1855 unique reviewed records used; old candidate counts retained internally; accepted-only table avoids mixing stages.",
+    "display": "учтено и исправлено 09.10; сохранено в исходнике"
+  },
+  "manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex#4": {
+    "text_sha256": "0174b443abf8d82ac883f48b37616b0e1fdc7c58e6f03c0273cbb4583947c698",
+    "status": "DECISION_RECORDED",
+    "decision": "Removed editorial wording about rebuilding figures.",
+    "display": "учтено и исправлено 09.10; сохранено в исходнике"
+  },
+  "manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex#5": {
+    "text_sha256": "a00dca92f72025dc8eda6e2f54abcec787f002eff84993c68cc18326710612bc",
+    "status": "DECISION_RECORDED",
+    "decision": "Old notebook CDF correct; missing interval calculation identified; shared scalar statistics used in notebook and audit.",
+    "display": "учтено и исправлено 09.10; сохранено в исходнике"
   }
 }

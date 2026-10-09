@@ -7,6 +7,7 @@ import argparse
 import csv
 import hashlib
 import json
+import sys
 from collections import Counter
 from pathlib import Path
 
@@ -18,6 +19,8 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 ROOT = Path(__file__).resolve().parents[3]
 DISS = ROOT / "docs/Dissertation"
+sys.path.insert(0, str(ROOT))
+from osc_tools.analysis.overvoltage_statistics import describe_overvoltages, interval_fraction, empirical_cdf
 PRIMARY = ROOT / "data/real_OZZ/overvoltage_report_T1_with_com_v1.7.csv"
 INPUT_SHA = "eb9f193dcf4e5ec8e37cd3269e90279ba9e5291da138009b64f0f34031806c5b"
 SNAPSHOT = DISS / "planning/sources/STAT-OZZ" / INPUT_SHA / PRIMARY.name
@@ -67,25 +70,20 @@ def main():
     assert len({r["filename"] for r in accepted}) == len(accepted) == 830
     values = np.array([float(r["overvoltage"]) for r in accepted])
     assert np.isfinite(values).all()
-    names = ["n", "mean", "median", "sample_sd", "sample_variance", "min", "q1", "q3", "max"]
-    stats = dict(zip(names, [len(values), float(values.mean()), float(np.median(values)),
-        float(values.std(ddof=1)), float(values.var(ddof=1)), float(values.min()),
-        float(np.quantile(values, .25, method="linear")),
-        float(np.quantile(values, .75, method="linear")), float(values.max())]))
+    stats = describe_overvoltages(values)
+    names = list(stats)
     published = dict(zip(names, [830, 1.960, 1.926, .274, .075, .862, 1.823, 2.099, 2.843]))
     assert all(abs(stats[k] - published[k]) <= .0005 + 1e-12 for k in names)
     expected_bins = {"< 1.2": 10, "1.2 - 1.71": 83, "1.71 - 1.75": 17,
         "1.75 - 2.0": 403, "2.0 - 2.5": 286, "2.5 - 3.0": 31}
     observed_bins = dict(Counter(r["overvoltage_group"] for r in accepted))
     assert observed_bins == expected_bins
-    conditions = {
-        "le_1.65": values <= 1.65,
-        "le_2.35": values <= 2.35,
-        "le_2.45": values <= 2.45,
-        "interval_1.65_2.35_inclusive": (values >= 1.65) & (values <= 2.35),
+    counts = {
+        "le_1.65": interval_fraction(values, upper=1.65),
+        "le_2.35": interval_fraction(values, upper=2.35),
+        "le_2.45": interval_fraction(values, upper=2.45),
+        "interval_1.65_2.35_inclusive": interval_fraction(values, lower=1.65, upper=2.35),
     }
-    counts = {k: {"count": int(mask.sum()), "denominator": len(values),
-        "percent": float(mask.mean() * 100)} for k, mask in conditions.items()}
     assert counts["interval_1.65_2.35_inclusive"]["count"] == 678
     pdfmetrics.registerFont(TTFont(FONT, "C:/Windows/Fonts/arial.ttf"))
     from reportlab.lib.colors import HexColor
@@ -102,13 +100,12 @@ def main():
     hist_path = figures / "ozz_overvoltage_histogram.pdf"
     renderPDF.drawToFile(d, str(hist_path))
     d, x, y = chart(100, "Доля записей, %", [0, 20, 40, 60, 80, 100])
-    unique, frequency = np.unique(values, return_counts=True)
+    unique, cdf = empirical_cdf(values)
     points = [x(.8), y(0)]
-    cumulative = 0
-    for value, number in zip(unique, frequency):
-        points.extend([x(value), y(cumulative / len(values) * 100)])
-        cumulative += int(number)
-        points.extend([x(value), y(cumulative / len(values) * 100)])
+    previous = 0.0
+    for value, fraction in zip(unique, cdf):
+        points.extend([x(value), y(previous * 100), x(value), y(fraction * 100)])
+        previous = fraction
     points.extend([x(2.9), y(100)])
     d.add(PolyLine(points, strokeColor=HexColor("#205a89"), strokeWidth=1.3))
     for threshold, key, color, label_y in [(1.65, "le_1.65", "#656565", 66),

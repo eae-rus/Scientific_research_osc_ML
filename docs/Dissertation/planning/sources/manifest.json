@@ -6,7 +6,8 @@
   "author_annotation_inputs": {
     "docs/Dissertation/planning/handoffs/D00.md": "40fa08e84ab178b551bab5835daf182f5bc26f2125ef81a09be5dc2b9cea657b",
     "docs/Dissertation/planning/integration/rewrite_proposals/ch03.md": "c7f1351a11dff80ac9287c1f0a8da5010b690846bdaee0205d251b5963990da0",
-    "docs/Dissertation/planning/integration/rewrite_proposals/ch05.md": "6c0b24caebe2a7975a0185ac5ad46e7bfe8c17c20860bf7fa6b6ac145e8a464c"
+    "docs/Dissertation/planning/integration/rewrite_proposals/ch05.md": "6c0b24caebe2a7975a0185ac5ad46e7bfe8c17c20860bf7fa6b6ac145e8a464c",
+    "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex": "ab33ecb555bbd2c2150e496a1ef4c7c95566b02830e2d827fcc9bbd0edac429c"
   },
   "sources": [
     {
@@ -5902,20 +5903,21 @@
     "docs/Dissertation/planning/handoffs/D00.md": "b038cbf0c0757d6ecf366ec7f0f15fe7e823f55fa8c2aecc4fa1c77285661cf4",
     "docs/Dissertation/planning/integration/rewrite_proposals/ch03.md": "de6d73ae2a95fecfebf68d33d2ea540bd7c5cf07d1a559a23fe4572724d07ba3",
     "docs/Dissertation/planning/integration/rewrite_proposals/ch05.md": "b4057fea4b1947ea7f3558bb52cf12bcfac967a14ef68319a3f514220c2e5ae2",
-    "docs/Dissertation/planning/questions.md": "2ce421df6aa74ea708beedb93c182a035a779c2f446641e3de12fa797a1ee104",
-    "docs/Dissertation/planning/sources/PDR-05/limitations_and_comments.md": "bf40ebd6091f5235bea00db2d9c5599fa51250dccfd872ea36c0c61661626072"
+    "docs/Dissertation/planning/questions.md": "4f3fa1452805cc8d831b3afcc78adf20a8f9be84f8aadb54b43c45304c8d129a",
+    "docs/Dissertation/planning/sources/PDR-05/limitations_and_comments.md": "bf40ebd6091f5235bea00db2d9c5599fa51250dccfd872ea36c0c61661626072",
+    "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex": "a2bb943daf835839aa338554050e295079fe9face4dcd8600f747a60468c5edc"
   },
   "verification_summary": {
     "unchanged_source_files": 290,
     "c02_steps": 45,
     "c03_tasks": 52,
     "original_comment_ids_covered": 333,
-    "author_annotations_preserved": 33,
+    "author_annotations_preserved": 38,
     "task_graph": "acyclic",
     "scientific_reading": "not_complete"
   },
   "reading_progress": {
-    "date": "2026-10-08",
+    "date": "2026-10-09",
     "completed_C02_steps": 22,
     "total_C02_steps": 45,
     "completed_C03_groups": 19,
@@ -5946,7 +5948,8 @@
       "D02-001",
       "D02-002",
       "D03-001",
-      "D03-002"
+      "D03-002",
+      "D03-003"
     ],
     "review_scoped_parts": [
       "C02-PDR-05-03-002"

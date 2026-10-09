@@ -309,7 +309,7 @@
       "status": "DECISION_RECORDED",
       "decision": "Author accepts arithmetic total 1865. Recheck original OOXML table, including first/last data rows and separate total. Keep source reported 1866 in provenance.",
       "last_seen_note_index": 1,
-      "last_seen_file_sha256": "2ce421df6aa74ea708beedb93c182a035a779c2f446641e3de12fa797a1ee104",
+      "last_seen_file_sha256": "4f3fa1452805cc8d831b3afcc78adf20a8f9be84f8aadb54b43c45304c8d129a",
       "reviewed_at": "2026-10-06",
       "display": "учтено: 1865; строки перепроверены",
       "author_input_date": "2026-10-06"
@@ -320,9 +320,9 @@
       "original_text": "(Примечание автора: Не совсем понял недоработку. Если считаешь нужным – можно сделать пометку и в будущем её сделать, данные вроде бы имеются все, можно будет провести / проверить.)",
       "text_sha256": "4186ea516ca8364e0e74d4d4a7a0a7cb1af835a52db1689ae2c6528cddd3dabf",
       "status": "DECISION_RECORDED",
-      "decision": "Keep unresolved central interval percentage as future numeric check; do not block transfer of verified statistics or assert 80/90 percent without underlying CDF. Completed 2026-10-08: 678/830 = 81.69% from immutable scalar snapshot; see D03-002-statistics.json.",
+      "decision": "Keep unresolved central interval percentage as future numeric check; do not block transfer of verified statistics or assert 80/90 percent without underlying CDF. Completed 2026-10-08: 678/830 = 81.69%; D03-002-statistics.json.",
       "last_seen_note_index": 2,
-      "last_seen_file_sha256": "2ce421df6aa74ea708beedb93c182a035a779c2f446641e3de12fa797a1ee104",
+      "last_seen_file_sha256": "4f3fa1452805cc8d831b3afcc78adf20a8f9be84f8aadb54b43c45304c8d129a",
       "reviewed_at": "2026-10-06",
       "display": "выполнено: доля проверена 08.10",
       "author_input_date": "2026-10-06",
@@ -336,7 +336,7 @@
       "status": "DECISION_RECORDED",
       "decision": "Author agrees on sample/measurement limits and on no automatic revision of insulation standards.",
       "last_seen_note_index": 3,
-      "last_seen_file_sha256": "2ce421df6aa74ea708beedb93c182a035a779c2f446641e3de12fa797a1ee104",
+      "last_seen_file_sha256": "4f3fa1452805cc8d831b3afcc78adf20a8f9be84f8aadb54b43c45304c8d129a",
       "reviewed_at": "2026-10-06",
       "display": "учтено: ограничения сохраняются",
       "author_input_date": "2026-10-06"
@@ -349,7 +349,7 @@
       "status": "DECISION_RECORDED",
       "decision": "RTDS section is part of present validation. Transfer current material, explain any remaining disagreement with actual case/metric; coordinate later edits of PDR article and dissertation.",
       "last_seen_note_index": 4,
-      "last_seen_file_sha256": "2ce421df6aa74ea708beedb93c182a035a779c2f446641e3de12fa797a1ee104",
+      "last_seen_file_sha256": "4f3fa1452805cc8d831b3afcc78adf20a8f9be84f8aadb54b43c45304c8d129a",
       "reviewed_at": "2026-10-06",
       "display": "учтено: переносим имеющееся; вопросы конкретизируем",
       "author_input_date": "2026-10-06"
@@ -362,7 +362,7 @@
       "status": "DECISION_RECORDED",
       "decision": "Keep raw Word comments, paths and author notes. Review while editing a bounded fragment; raise important unresolved questions with exact anchors in planning/questions.md. Do not silently delete source-link reminders.",
       "last_seen_note_index": 6,
-      "last_seen_file_sha256": "2ce421df6aa74ea708beedb93c182a035a779c2f446641e3de12fa797a1ee104",
+      "last_seen_file_sha256": "4f3fa1452805cc8d831b3afcc78adf20a8f9be84f8aadb54b43c45304c8d129a",
       "reviewed_at": "2026-10-06",
       "display": "учтено: комментарии и ссылки сохранены",
       "author_input_date": "2026-10-06"
@@ -377,7 +377,7 @@
       "display": "новые ответы прочитаны; адресные вопросы сохранены",
       "reviewed_at": "2026-10-08",
       "last_seen_note_index": 5,
-      "last_seen_file_sha256": "2ce421df6aa74ea708beedb93c182a035a779c2f446641e3de12fa797a1ee104"
+      "last_seen_file_sha256": "4f3fa1452805cc8d831b3afcc78adf20a8f9be84f8aadb54b43c45304c8d129a"
     },
     {
       "id": "AA030",
@@ -426,8 +426,63 @@
       "reviewed_at": "2026-10-08",
       "last_seen_note_index": 4,
       "last_seen_file_sha256": "bf40ebd6091f5235bea00db2d9c5599fa51250dccfd872ea36c0c61661626072"
+    },
+    {
+      "id": "AA034",
+      "file": "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex",
+      "original_text": "(Примечание автора: Эмм… А разве это уместно в диссертации, разве здесь есть этот номер v1.7? \nЕсли нет, то прост убери его описание вообще. Но я могу и ошибаться. \nЕсли он внутренний, можно примечанием, для нас оставить. \nКак я раньше делал свои комментарии с полезными ссылками. \nА в итоговой версии, это удаляется и в основном тексте отсутствует. \nНу либо как-то иначе обыграть, а то эта цифра из ниоткуда по сути)",
+      "text_sha256": "95f377486c35c53a6f4e3139ca51265d4e017ba12ffbffe46e88952d75367d59",
+      "status": "DECISION_RECORDED",
+      "decision": "Internal versions moved out of scientific prose; author note retained.",
+      "display": "учтено и исправлено 09.10; сохранено в исходнике",
+      "last_seen_note_index": 1,
+      "last_seen_file_sha256": "a2bb943daf835839aa338554050e295079fe9face4dcd8600f747a60468c5edc"
+    },
+    {
+      "id": "AA035",
+      "file": "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex",
+      "original_text": "(Примечание автора: Подожди подожди не надо писать о статье как о чём-то чужом. \nЭто моё и есть, как и все остальные. Да, можно делать ссылку на статью, а тут чуть иначе писать, \nно не надо писать что-то вроде «проверили данные, совпадают», то что берётся из статей – \nпрям факт, ну может и поправили его, но не надо на этом делать акценты, прост более современные факты будут и всё. \nКасается как текущих вставок, так и всех остальных и других частей текста, можешь прям в инструкцию это.)",
+      "text_sha256": "c99d8aa72bee46e973c082064c72f0e524d51bd505533831b2660306a4c4e9bd",
+      "status": "DECISION_RECORDED",
+      "decision": "Own research stated directly; general rule recorded in AGENTS/START_PROMPT.",
+      "display": "учтено и исправлено 09.10; сохранено в исходнике",
+      "last_seen_note_index": 2,
+      "last_seen_file_sha256": "a2bb943daf835839aa338554050e295079fe9face4dcd8600f747a60468c5edc"
+    },
+    {
+      "id": "AA036",
+      "file": "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex",
+      "original_text": "(Примечание автора: И тут не надо такого, прост новые цифры, \nа то, что разнятся, можешь примечанием нам, не более. Мы не сравниваем работы, мы вставляем более актуальные их версии.)",
+      "text_sha256": "a5752b6b77d5ced334b107ccede37d58b78ee2bfffe5494bd5e44f2e4d4fa1bc",
+      "status": "DECISION_RECORDED",
+      "decision": "Current 1855 unique reviewed records used; old candidate counts retained internally; accepted-only table avoids mixing stages.",
+      "display": "учтено и исправлено 09.10; сохранено в исходнике",
+      "last_seen_note_index": 3,
+      "last_seen_file_sha256": "a2bb943daf835839aa338554050e295079fe9face4dcd8600f747a60468c5edc"
+    },
+    {
+      "id": "AA037",
+      "file": "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex",
+      "original_text": "(Примечание автора: нафиг вот эти слова «заново».)",
+      "text_sha256": "0174b443abf8d82ac883f48b37616b0e1fdc7c58e6f03c0273cbb4583947c698",
+      "status": "DECISION_RECORDED",
+      "decision": "Removed editorial wording about rebuilding figures.",
+      "display": "учтено и исправлено 09.10; сохранено в исходнике",
+      "last_seen_note_index": 4,
+      "last_seen_file_sha256": "a2bb943daf835839aa338554050e295079fe9face4dcd8600f747a60468c5edc"
+    },
+    {
+      "id": "AA038",
+      "file": "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex",
+      "original_text": "(Примечание автора: нафиг вот эти слова «исходной статьи», мы делаем более актуальное. \nДа и странно, что не сходится, на самом деле, очень странно, данные ведь те же самые. \nВот обдумай и перепроверь всё это, и скажи, где в старом коде косяки. \nИ кстати, если есть функции и код построения чего-то в старых разделах для статей,\nто не надо прям для каждого графика лепить их тут новые. Надо бы делать систему единой, если много откуда идёт \n– то выносить на уровни выше как-то, в общие инструменты… \nА то я смотрю, много разных функций уже добавила и это надо бы обдумать. Ведь много где начнёт копиться.)",
+      "text_sha256": "a00dca92f72025dc8eda6e2f54abcec787f002eff84993c68cc18326710612bc",
+      "status": "DECISION_RECORDED",
+      "decision": "Old notebook CDF correct; missing interval calculation identified; shared scalar statistics used in notebook and audit.",
+      "display": "учтено и исправлено 09.10; сохранено в исходнике",
+      "last_seen_note_index": 5,
+      "last_seen_file_sha256": "a2bb943daf835839aa338554050e295079fe9face4dcd8600f747a60468c5edc"
     }
   ],
-  "updated": "2026-10-08",
+  "updated": "2026-10-09",
   "policy": "Original text retained; status means reviewed disposition, not automatic completion of related scientific work. Never silently delete notes."
 }
