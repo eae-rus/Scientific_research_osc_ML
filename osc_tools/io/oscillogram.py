@@ -22,9 +22,7 @@ import warnings
 import numpy as np
 import polars as pl
 
-
-class UnsupportedFormatError(ValueError):
-    """Файл не относится к поддерживаемым осциллограммам; тренды обрабатываются отдельно."""
+from .format_detection import UnsupportedFormatError, detect_format
 
 
 class OscillogramReadError(ValueError):
@@ -33,24 +31,6 @@ class OscillogramReadError(ValueError):
 
 class MissingCompanionError(FileNotFoundError):
     """Связанный файл записи или конфигурации отсутствует либо найден неоднозначно."""
-
-
-def detect_format(path: str | Path) -> str:
-    """Определяет формат по имени; содержимое и связанные файлы проверяются при чтении."""
-    path = Path(path)
-    ext = path.suffix.lower()
-    formats = {'.cfg': 'comtrade', '.dat': 'comtrade', '.cff': 'comtrade',
-               '.do': 'parma', '.dfr': 'ekra-dfr', '.brs': 'bresler',
-               '.bb': 'blackbox', '.sg2': 'res3'}
-    if ext in formats:
-        return formats[ext]
-    if re.fullmatch(r'\.d0\d+', ext):
-        return 'parma'
-    if re.fullmatch(r'\.os\d*', ext):
-        return 'neva'
-    if re.fullmatch(r'DR\d+F[0-3]\.\d+', path.name, re.IGNORECASE):
-        return 'ekra-ndr'
-    raise UnsupportedFormatError(f'Unsupported oscillogram: {path.name}')
 
 
 def _companion(path: Path, name: str) -> Path:
