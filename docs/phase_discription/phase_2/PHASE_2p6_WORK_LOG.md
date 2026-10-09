@@ -55,7 +55,7 @@
 - [run_phase2_6.py](../../../scripts/phase2_experiments/run_phase2_6.py): добавлены `cPhysicsKANv2` в `MODEL_COMPLEXITY`, ограничения `phase_polar`, снижение батча для heavy/harmonic, `input_size`/`use_mlp`-списки; опыт **2.6.13_stride** содержит все 7 моделей (`feature_mode=phase_polar`, `stride=16`, `aug`, `balancing=weights`, `target_level=base`).
 - [config_resolvers.py](../../../scripts/evaluation/_core/config_resolvers.py): v2-модели распознаются раньше базовых имён, чтобы не схлопываться в отчётах.
 - [draw_architectures.py](../../../osc_tools/visualization/draw_architectures.py): схемы `draw_physicskanv2/cphysicskanv2/rphysicskanv2`.
-- [architectures_description.md](../../architectures_description.md): таблица изображений + раздел 8.1–8.3 с описанием v2.
+- [architectures_description.md](../../reference/architectures_description.md): таблица изображений + раздел 8.1–8.3 с описанием v2.
 
 ### Тесты
 - [test_ml_models_kan.py](../../../tests/unit/test_ml_models_kan.py): обновлены/добавлены smoke- и контрактные тесты (forward, сохранение формы, резидуальность при `scale=0`, требования к чётности/кратности 4, `cPhysicsKANv2`, `ComplexPhysicsInteractionBlock`). Удалён устаревший тест на чётность `PhysicsInteractionBlock`. **24 passed.**
@@ -81,7 +81,7 @@
      - Переход на multi-label классификацию с возвратом `Set[int]`.
 
 4. **Документация и тесты:**
-   - Актуализировано описание алгоритма в [OZZ_PHYSICS_ALGORITHM.md](../../OZZ_PHYSICS_ALGORITHM.md) (обновлены шаги, параметры и блок-схема).
+   - Актуализировано описание алгоритма в [OZZ_PHYSICS_ALGORITHM.md](../../reference/OZZ_PHYSICS_ALGORITHM.md) (обновлены шаги, параметры и блок-схема).
    - Обновлены unit-тесты в [test_ozz_physics.py](../../../tests/unit/test_ozz_physics.py): добавлены проверки на THD (синус vs меандр) и адаптированы существующие сценарии под новый API.
 
 ## [2026-03-08] Exp 2.6.11: Детектирование ОЗЗ/ДПОЗЗ + Физическая Baseline

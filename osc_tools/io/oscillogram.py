@@ -3,7 +3,7 @@
 Время задаётся в секундах; аналоговые значения уже откалиброваны.
 Форматы производителей используют необязательный адаптер OscFormats на .NET.
 Для COMTRADE достаточно существующих зависимостей Python в проекте.
-Подробности приведены в docs/OSCILLOGRAM_FORMATS.md.
+Подробности приведены в docs/reference/OSCILLOGRAM_FORMATS.md.
 """
 from __future__ import annotations
 
@@ -219,7 +219,7 @@ def load_oscillogram(path: str | Path, *, wconfig: str | Path | None = None,
     default = Path(__file__).resolve().parents[2] / 'build' / 'osc_formats' / 'OscFormats.dll'
     executable = Path(bridge or os.environ.get('OSC_FORMATS_BRIDGE', default)).resolve()
     if not executable.is_file():
-        raise FileNotFoundError(f'OscFormats bridge not built: {executable}. See docs/OSCILLOGRAM_FORMATS.md')
+        raise FileNotFoundError(f'OscFormats bridge not built: {executable}. See docs/reference/OSCILLOGRAM_FORMATS.md')
     command = [str(executable)]
     if executable.suffix.lower() == '.dll':
         dotnet = shutil.which('dotnet')

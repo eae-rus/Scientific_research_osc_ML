@@ -332,7 +332,7 @@ Raw instantaneous    | 0.977  | 91.6%      | 60.1%      | 8.9
 | `scripts/phase4_experiments/real_ozz/collect_real_ozz_statistics.py` | Real OZZ статистика + CSV export |
 | `scripts/phase4_experiments/real_ozz/inference_real_ozz.py` | Визуализация одной осциллограммы |
 | `data/real_OZZ/overvoltage_report_T1_with_com_v1.7.csv` | Ground truth разметка |
-| `docs/ARTICLE_PREPARATION_BRIEF.md` | Общий план статьи |
+| `docs/phase_discription/phase_4/ARTICLE_PREPARATION_BRIEF.md` | Общий план статьи |
 | `docs/new_article.md` | Текущий черновик (§5 пока заглушка) |
 
 
@@ -427,7 +427,7 @@ Raw instantaneous    | 0.977  | 91.6%      | 60.1%      | 8.9
 5. **CSV регенерирован** (272K строк, IN absent в 96% файлов)
 6. **§9.5 architectures_description.md** переписана
 7. **448 тестов пройдены**, 3-epoch pretrain OK
-8. Файлы: см. `docs/phase4_continuation_prompt.md`
+8. Файлы: см. `docs/phase_discription/phase_4/phase4_continuation_prompt.md`
 
 ---
 

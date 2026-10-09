@@ -75,7 +75,7 @@
 - Это **главный критерий** качества pretrain
 
 **3. Ответы на вопросы по C2 (расширение датасета)**
-Подробный чеклист в `docs/PHASE_4_TASK_DETAILS.md`, раздел Q17:
+Подробный чеклист в `docs/phase_discription/phase_4/PHASE_4_TASK_DETAILS.md`, раздел Q17:
 - Какие CSV-файлы доступны? Пути, формат
 - Какие частоты дискретизации (f_rate)? Какие f_network?
 - Формат `unlabeled_50_1200.csv` — те же колонки что в `labeled.csv`?
@@ -111,7 +111,7 @@
 | Файл | Назначение |
 |------|-----------|
 | `docs/phase_discription/phase_4/PHASE_4_PLAN.md` | Полный план с чекбоксами |
-| `docs/PHASE_4_TASK_DETAILS.md` | Подробное описание всех задач |
+| `docs/phase_discription/phase_4/PHASE_4_TASK_DETAILS.md` | Подробное описание всех задач |
 | `scripts/phase4_experiments/run_phase4_pretrain.py` | Pretrain скрипт |
 | `scripts/phase4_experiments/run_phase4_finetune.py` | Finetune скрипт |
 | `scripts/phase4_experiments/evaluate_phase4.py` | Оценка: метрики, пороги, boundary |
