@@ -4,9 +4,16 @@
 % ==============================================================================
 
 % Кодировки и языковая поддержка
+% Unicode-карты, включая растровые шрифты T2A, для поиска и копирования.
+% Подключать до fontenc. Локальная cmap.sty взята из CTAN (лицензия LPPL).
+\usepackage{cmap}
 \usepackage[T2A]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
+% Сохранять обычный абзацный отступ и после заголовков.
+\usepackage{indentfirst}
+% Допустимый запас пробелов при переносе длинных строк с новым отступом.
+\setlength{\emergencystretch}{1em}
 
 % Математический аппарат
 \usepackage{amsmath,amssymb,amsfonts}

@@ -4202,8 +4202,9 @@
         "C02-STAT-OZZ-03",
         "C03-STAT-OZZ-005"
       ],
-      "status": "TODO",
-      "output": "planning/sources/STAT-OZZ/limitations_and_comments.md"
+      "status": "DONE",
+      "output": "planning/sources/STAT-OZZ/limitations_and_comments.md",
+      "completed": "2026-10-08"
     },
     {
       "id": "C02-STAT-OZZ-05",
@@ -4212,8 +4213,9 @@
       "after": [
         "C02-STAT-OZZ-04"
       ],
-      "status": "TODO",
-      "output": "planning/sources/STAT-OZZ/dissertation_role.md"
+      "status": "DONE",
+      "output": "planning/sources/STAT-OZZ/dissertation_role.md",
+      "completed": "2026-10-08"
     },
     {
       "id": "C03-STAT-OZZ-RAW",
@@ -4232,7 +4234,7 @@
       "after": [
         "C03-STAT-OZZ-RAW"
       ],
-      "status": "TODO",
+      "status": "DONE",
       "output": "planning/sources/STAT-OZZ/limitations_and_comments.md",
       "input": {
         "id": "C03-STAT-OZZ-001",
@@ -4244,8 +4246,11 @@
           "4",
           "5",
           "6"
-        ]
-      }
+        ],
+        "status": "DONE",
+        "completed": "2026-10-08"
+      },
+      "completed": "2026-10-08"
     },
     {
       "id": "C03-STAT-OZZ-002",
@@ -4254,7 +4259,7 @@
       "after": [
         "C03-STAT-OZZ-001"
       ],
-      "status": "TODO",
+      "status": "DONE",
       "output": "planning/sources/STAT-OZZ/limitations_and_comments.md",
       "input": {
         "id": "C03-STAT-OZZ-002",
@@ -4270,8 +4275,11 @@
           "11",
           "12",
           "13"
-        ]
-      }
+        ],
+        "status": "DONE",
+        "completed": "2026-10-08"
+      },
+      "completed": "2026-10-08"
     },
     {
       "id": "C03-STAT-OZZ-003",
@@ -4280,7 +4288,7 @@
       "after": [
         "C03-STAT-OZZ-002"
       ],
-      "status": "TODO",
+      "status": "DONE",
       "output": "planning/sources/STAT-OZZ/limitations_and_comments.md",
       "input": {
         "id": "C03-STAT-OZZ-003",
@@ -4289,8 +4297,11 @@
           "14",
           "15",
           "18"
-        ]
-      }
+        ],
+        "status": "DONE",
+        "completed": "2026-10-08"
+      },
+      "completed": "2026-10-08"
     },
     {
       "id": "C03-STAT-OZZ-004",
@@ -4299,7 +4310,7 @@
       "after": [
         "C03-STAT-OZZ-003"
       ],
-      "status": "TODO",
+      "status": "DONE",
       "output": "planning/sources/STAT-OZZ/limitations_and_comments.md",
       "input": {
         "id": "C03-STAT-OZZ-004",
@@ -4311,8 +4322,11 @@
           "6",
           "7",
           "8"
-        ]
-      }
+        ],
+        "status": "DONE",
+        "completed": "2026-10-08"
+      },
+      "completed": "2026-10-08"
     },
     {
       "id": "C03-STAT-OZZ-005",
@@ -4321,7 +4335,7 @@
       "after": [
         "C03-STAT-OZZ-004"
       ],
-      "status": "TODO",
+      "status": "DONE",
       "output": "planning/sources/STAT-OZZ/limitations_and_comments.md",
       "input": {
         "id": "C03-STAT-OZZ-005",
@@ -4333,8 +4347,11 @@
           "7",
           "8",
           "9"
-        ]
-      }
+        ],
+        "status": "DONE",
+        "completed": "2026-10-08"
+      },
+      "completed": "2026-10-08"
     },
     {
       "id": "C02-AI-01-01",
@@ -5447,7 +5464,8 @@
         "5",
         "6"
       ],
-      "status": "TODO"
+      "status": "DONE",
+      "completed": "2026-10-08"
     },
     {
       "id": "C03-STAT-OZZ-002",
@@ -5464,7 +5482,8 @@
         "12",
         "13"
       ],
-      "status": "TODO"
+      "status": "DONE",
+      "completed": "2026-10-08"
     },
     {
       "id": "C03-STAT-OZZ-003",
@@ -5474,7 +5493,8 @@
         "15",
         "18"
       ],
-      "status": "TODO"
+      "status": "DONE",
+      "completed": "2026-10-08"
     },
     {
       "id": "C03-STAT-OZZ-004",
@@ -5487,7 +5507,8 @@
         "7",
         "8"
       ],
-      "status": "TODO"
+      "status": "DONE",
+      "completed": "2026-10-08"
     },
     {
       "id": "C03-STAT-OZZ-005",
@@ -5500,7 +5521,8 @@
         "8",
         "9"
       ],
-      "status": "TODO"
+      "status": "DONE",
+      "completed": "2026-10-08"
     },
     {
       "id": "C03-AI-01-001",
@@ -5880,7 +5902,7 @@
     "docs/Dissertation/planning/handoffs/D00.md": "b038cbf0c0757d6ecf366ec7f0f15fe7e823f55fa8c2aecc4fa1c77285661cf4",
     "docs/Dissertation/planning/integration/rewrite_proposals/ch03.md": "de6d73ae2a95fecfebf68d33d2ea540bd7c5cf07d1a559a23fe4572724d07ba3",
     "docs/Dissertation/planning/integration/rewrite_proposals/ch05.md": "b4057fea4b1947ea7f3558bb52cf12bcfac967a14ef68319a3f514220c2e5ae2",
-    "docs/Dissertation/planning/questions.md": "f82aaf957f86b1080bdbb91e58fa0ccea078f14f078e62302ab6edd2e39265b2",
+    "docs/Dissertation/planning/questions.md": "2ce421df6aa74ea708beedb93c182a035a779c2f446641e3de12fa797a1ee104",
     "docs/Dissertation/planning/sources/PDR-05/limitations_and_comments.md": "bf40ebd6091f5235bea00db2d9c5599fa51250dccfd872ea36c0c61661626072"
   },
   "verification_summary": {
@@ -5894,9 +5916,9 @@
   },
   "reading_progress": {
     "date": "2026-10-08",
-    "completed_C02_steps": 20,
+    "completed_C02_steps": 22,
     "total_C02_steps": 45,
-    "completed_C03_groups": 14,
+    "completed_C03_groups": 19,
     "total_C03_groups": 43,
     "raw_export_done_source_ids": [
       "DATA-SD",
@@ -5909,9 +5931,9 @@
     ],
     "report": "planning/handoffs/C02.md",
     "author_review": "planning/questions.md",
-    "next_task": "C03-STAT-OZZ-001",
+    "next_task": "C02-AI-01-02",
     "main_manuscript_modified": true,
-    "completed_C03_tasks": 21,
+    "completed_C03_tasks": 26,
     "total_C03_tasks": 52,
     "completed_scoped_parts": [
       "C02-PDR-05-02a",
@@ -5923,7 +5945,8 @@
     "completed_integration_tasks": [
       "D02-001",
       "D02-002",
-      "D03-001"
+      "D03-001",
+      "D03-002"
     ],
     "review_scoped_parts": [
       "C02-PDR-05-03-002"
@@ -6293,7 +6316,13 @@
         "snapshot": "docs/Dissertation/sources/PDR-05/1aeeaa1e8922c64fdf17094c345f6156d401e9571254a6889134ff7028cfc879/review_weighting_sensitivity.csv"
       }
     ],
-    "policy": "Exact selected evidence only; full archived experiment and code-at-run-time not implied."
+    "policy": "Exact selected evidence only; full archived experiment and code-at-run-time not implied.",
+    "STAT-OZZ_scalar_20261008": {
+      "proof": "review/checks/D03-002-statistics.json",
+      "sha256": "eb9f193dcf4e5ec8e37cd3269e90279ba9e5291da138009b64f0f34031806c5b",
+      "retained": 830,
+      "interval_percent": 81.6867469879518
+    }
   },
   "source_revisions_20261008": [
     {

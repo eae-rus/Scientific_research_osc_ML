@@ -146,8 +146,8 @@
   "planning/questions.md#2": {
     "text_sha256": "4186ea516ca8364e0e74d4d4a7a0a7cb1af835a52db1689ae2c6528cddd3dabf",
     "status": "DECISION_RECORDED",
-    "decision": "Keep unresolved central interval percentage as future numeric check; do not block transfer of verified statistics or assert 80/90 percent without underlying CDF.",
-    "display": "учтено: проверка CDF отложена"
+    "decision": "Keep unresolved central interval percentage as future numeric check; do not block transfer of verified statistics or assert 80/90 percent without underlying CDF. Completed 2026-10-08: 678/830 = 81.69%; D03-002-statistics.json.",
+    "display": "выполнено: доля проверена 08.10"
   },
   "planning/questions.md#3": {
     "text_sha256": "1d9bc5c660b97e80f51be8c13e2c66210f68ed5bd6cc3d49527d56a8f3083f0a",

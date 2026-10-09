@@ -30,6 +30,9 @@ scratch/
 *.bak
 __pycache__/
 
+# Local scalar input snapshot; readable audit and manuscript figures are versioned.
+/planning/sources/STAT-OZZ/*/*.csv
+
 # Local PDR audit cache: copied code, logs, predictions and run metadata.
 # CSV inputs are local reproducibility snapshots too; readable audit outputs stay in Git.
 /sources/PDR-05/*/*.csv

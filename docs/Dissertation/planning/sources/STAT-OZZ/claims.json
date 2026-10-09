@@ -28,13 +28,14 @@
       "limitations": [
         "Заявленная описательная статистика; первичный CSV не пересчитан."
       ],
-      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "verification_status": "primary_scalar_recomputed; waveform_normalization_not_reverified",
       "dissertation_role": "самостоятельное исследование главы 3",
       "attribution": {
         "kind": "joint",
         "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
       },
-      "related_claim_ids": []
+      "related_claim_ids": [],
+      "primary_evidence": "review/checks/D03-002-statistics.json"
     },
     {
       "claim_id": "OZZ-STAT-mean",
@@ -61,13 +62,14 @@
       "limitations": [
         "Заявленная описательная статистика; первичный CSV не пересчитан."
       ],
-      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "verification_status": "primary_scalar_recomputed; waveform_normalization_not_reverified",
       "dissertation_role": "самостоятельное исследование главы 3",
       "attribution": {
         "kind": "joint",
         "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
       },
-      "related_claim_ids": []
+      "related_claim_ids": [],
+      "primary_evidence": "review/checks/D03-002-statistics.json"
     },
     {
       "claim_id": "OZZ-STAT-median",
@@ -94,13 +96,14 @@
       "limitations": [
         "Заявленная описательная статистика; первичный CSV не пересчитан."
       ],
-      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "verification_status": "primary_scalar_recomputed; waveform_normalization_not_reverified",
       "dissertation_role": "самостоятельное исследование главы 3",
       "attribution": {
         "kind": "joint",
         "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
       },
-      "related_claim_ids": []
+      "related_claim_ids": [],
+      "primary_evidence": "review/checks/D03-002-statistics.json"
     },
     {
       "claim_id": "OZZ-STAT-std",
@@ -127,13 +130,14 @@
       "limitations": [
         "Заявленная описательная статистика; первичный CSV не пересчитан."
       ],
-      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "verification_status": "primary_scalar_recomputed; waveform_normalization_not_reverified",
       "dissertation_role": "самостоятельное исследование главы 3",
       "attribution": {
         "kind": "joint",
         "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
       },
-      "related_claim_ids": []
+      "related_claim_ids": [],
+      "primary_evidence": "review/checks/D03-002-statistics.json"
     },
     {
       "claim_id": "OZZ-STAT-variance",
@@ -160,13 +164,14 @@
       "limitations": [
         "Заявленная описательная статистика; первичный CSV не пересчитан."
       ],
-      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "verification_status": "primary_scalar_recomputed; waveform_normalization_not_reverified",
       "dissertation_role": "самостоятельное исследование главы 3",
       "attribution": {
         "kind": "joint",
         "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
       },
-      "related_claim_ids": []
+      "related_claim_ids": [],
+      "primary_evidence": "review/checks/D03-002-statistics.json"
     },
     {
       "claim_id": "OZZ-STAT-min",
@@ -193,13 +198,14 @@
       "limitations": [
         "Заявленная описательная статистика; первичный CSV не пересчитан."
       ],
-      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "verification_status": "primary_scalar_recomputed; waveform_normalization_not_reverified",
       "dissertation_role": "самостоятельное исследование главы 3",
       "attribution": {
         "kind": "joint",
         "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
       },
-      "related_claim_ids": []
+      "related_claim_ids": [],
+      "primary_evidence": "review/checks/D03-002-statistics.json"
     },
     {
       "claim_id": "OZZ-STAT-Q1",
@@ -226,13 +232,14 @@
       "limitations": [
         "Заявленная описательная статистика; первичный CSV не пересчитан."
       ],
-      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "verification_status": "primary_scalar_recomputed; waveform_normalization_not_reverified",
       "dissertation_role": "самостоятельное исследование главы 3",
       "attribution": {
         "kind": "joint",
         "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
       },
-      "related_claim_ids": []
+      "related_claim_ids": [],
+      "primary_evidence": "review/checks/D03-002-statistics.json"
     },
     {
       "claim_id": "OZZ-STAT-Q3",
@@ -259,13 +266,14 @@
       "limitations": [
         "Заявленная описательная статистика; первичный CSV не пересчитан."
       ],
-      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "verification_status": "primary_scalar_recomputed; waveform_normalization_not_reverified",
       "dissertation_role": "самостоятельное исследование главы 3",
       "attribution": {
         "kind": "joint",
         "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
       },
-      "related_claim_ids": []
+      "related_claim_ids": [],
+      "primary_evidence": "review/checks/D03-002-statistics.json"
     },
     {
       "claim_id": "OZZ-STAT-max",
@@ -292,13 +300,14 @@
       "limitations": [
         "Заявленная описательная статистика; первичный CSV не пересчитан."
       ],
-      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "verification_status": "primary_scalar_recomputed; waveform_normalization_not_reverified",
       "dissertation_role": "самостоятельное исследование главы 3",
       "attribution": {
         "kind": "joint",
         "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
       },
-      "related_claim_ids": []
+      "related_claim_ids": [],
+      "primary_evidence": "review/checks/D03-002-statistics.json"
     },
     {
       "claim_id": "OZZ-STAT-Q95",
@@ -320,13 +329,14 @@
       "limitations": [
         "Только выбранные зарегистрированные случаи; неизвестна точная интерполяция/численность."
       ],
-      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "verification_status": "primary_scalar_recomputed; waveform_normalization_not_reverified",
       "dissertation_role": "самостоятельное исследование главы 3",
       "attribution": {
         "kind": "joint",
         "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
       },
-      "related_claim_ids": []
+      "related_claim_ids": [],
+      "primary_evidence": "review/checks/D03-002-statistics.json"
     },
     {
       "claim_id": "OZZ-STAT-RANGE",
@@ -346,22 +356,42 @@
           "text": "1) Эмпирическое распределение кратностей перенапряжений при ОЗЗ заметно отличается от классических теоретических оценок. В подавляющем большинстве случаев измеренные значения значительно ниже теоретического предела 3÷4 Uном. Большинство значений (90 %) находятся в диапазоне 1,65÷2,35 Uном. Медианное значение составляет 1,926 Uном, максимальное фиксированное — ≈2,843 Uном."
         }
       ],
-      "neutral_ru": "Аннотация заявляет 90% в интервале 1.65–2.35; основной текст даёт другие односторонние условия.",
+      "neutral_ru": "В закрытом интервале 1,65–2,35 находятся 678/830 записей (81,69%); не выше 2,35 находятся 750/830 (90,36%).",
       "experiment_id": "OZZ-STATS",
       "scope": "Поднабор выбранных реальных осциллограмм ОЗЗ; не все ОЗЗ энергосистемы.",
       "evidence": {
-        "status": "CDF interval fraction unresolved"
+        "le_1.65": {
+          "count": 72,
+          "denominator": 830,
+          "percent": 8.674698795180722
+        },
+        "le_2.35": {
+          "count": 750,
+          "denominator": 830,
+          "percent": 90.36144578313254
+        },
+        "le_2.45": {
+          "count": 790,
+          "denominator": 830,
+          "percent": 95.18072289156626
+        },
+        "interval_1.65_2.35_inclusive": {
+          "count": 678,
+          "denominator": 830,
+          "percent": 81.6867469879518
+        }
       },
       "limitations": [
-        "Центральную долю нужно получить как разность CDF; не заменять автоматически на 80%."
+        "Первичная скалярная таблица не заменяет проверку исходных сигналов и физической нормализации."
       ],
-      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "verification_status": "source_interval_claim_refuted_on_matching_scalar_subset",
       "dissertation_role": "самостоятельное исследование главы 3",
       "attribution": {
         "kind": "joint",
         "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
       },
-      "related_claim_ids": []
+      "related_claim_ids": [],
+      "primary_evidence": "review/checks/D03-002-statistics.json"
     },
     {
       "claim_id": "OZZ-STAT-IQR",
@@ -391,14 +421,15 @@
       "limitations": [
         "Округлённые квантили; не диапазон моды KDE."
       ],
-      "verification_status": "source_values_checked; primary_scalar_data_not_recomputed",
+      "verification_status": "primary_scalar_recomputed; waveform_normalization_not_reverified",
       "dissertation_role": "самостоятельное исследование главы 3",
       "attribution": {
         "kind": "joint",
         "basis": "титул; индивидуальные роли не устанавливаются порядком фамилий"
       },
-      "related_claim_ids": []
+      "related_claim_ids": [],
+      "primary_evidence": "review/checks/D03-002-statistics.json"
     }
   ],
-  "coverage": "Основные численные результаты, арифметические проверки, критические расхождения; первичные скаляры не пересчитаны, визуальная приёмка не выполнена."
+  "coverage": "Nine statistics, accepted source bins and three CDF thresholds recomputed; interval fraction corrected; original source statements retained."
 }

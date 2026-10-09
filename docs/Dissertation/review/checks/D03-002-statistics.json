@@ -1,0 +1,138 @@
+{
+  "task_id": "D03-002",
+  "date": "2026-10-08",
+  "source_path": "data\\real_OZZ\\overvoltage_report_T1_with_com_v1.7.csv",
+  "source_sha256": "eb9f193dcf4e5ec8e37cd3269e90279ba9e5291da138009b64f0f34031806c5b",
+  "snapshot_path": "planning\\sources\\STAT-OZZ\\eb9f193dcf4e5ec8e37cd3269e90279ba9e5291da138009b64f0f34031806c5b\\overvoltage_report_T1_with_com_v1.7.csv",
+  "delimiter": ";",
+  "source_rows": 1855,
+  "flags": {
+    "-": 1025,
+    "+": 830
+  },
+  "selection": "Проверка == \"+\"",
+  "unique_retained_filenames": 830,
+  "numpy_version": "2.3.5",
+  "statistics": {
+    "n": 830,
+    "mean": 1.9598356810722892,
+    "median": 1.926,
+    "sample_sd": 0.27414004934826913,
+    "sample_variance": 0.07515276665667142,
+    "min": 0.862,
+    "q1": 1.823,
+    "q3": 2.09875,
+    "max": 2.843
+  },
+  "published_rounded": {
+    "n": 830,
+    "mean": 1.96,
+    "median": 1.926,
+    "sample_sd": 0.274,
+    "sample_variance": 0.075,
+    "min": 0.862,
+    "q1": 1.823,
+    "q3": 2.099,
+    "max": 2.843
+  },
+  "all_nine_statistics_match": true,
+  "quantile_method": "linear",
+  "variance_ddof": 1,
+  "retained_source_bins": {
+    "< 1.2": 10,
+    "1.75 - 2.0": 403,
+    "1.2 - 1.71": 83,
+    "2.0 - 2.5": 286,
+    "1.71 - 1.75": 17,
+    "2.5 - 3.0": 31
+  },
+  "counts": {
+    "le_1.65": {
+      "count": 72,
+      "denominator": 830,
+      "percent": 8.674698795180722
+    },
+    "le_2.35": {
+      "count": 750,
+      "denominator": 830,
+      "percent": 90.36144578313254
+    },
+    "le_2.45": {
+      "count": 790,
+      "denominator": 830,
+      "percent": 95.18072289156626
+    },
+    "interval_1.65_2.35_inclusive": {
+      "count": 678,
+      "denominator": 830,
+      "percent": 81.6867469879518
+    }
+  },
+  "boundary_equal_counts": {
+    "1.65": 0,
+    "2.35": 1,
+    "2.45": 0
+  },
+  "histogram_edges": [
+    0.8,
+    0.9,
+    1.0,
+    1.1,
+    1.2,
+    1.2999999999999998,
+    1.4,
+    1.5,
+    1.5999999999999999,
+    1.6999999999999997,
+    1.7999999999999998,
+    1.8999999999999997,
+    1.9999999999999998,
+    2.0999999999999996,
+    2.1999999999999997,
+    2.3,
+    2.3999999999999995,
+    2.5,
+    2.5999999999999996,
+    2.6999999999999993,
+    2.8,
+    2.9
+  ],
+  "histogram_counts": [
+    1,
+    1,
+    4,
+    5,
+    4,
+    8,
+    14,
+    23,
+    27,
+    77,
+    215,
+    134,
+    110,
+    77,
+    40,
+    33,
+    26,
+    12,
+    10,
+    5,
+    4
+  ],
+  "histogram_convention": "left-closed right-open, last bin right-closed",
+  "cdf_method": "empirical right-continuous step; denominator 830; no smoothing",
+  "figures": {
+    "manuscript\\figures\\ozz_overvoltage_histogram.pdf": "a12c17fec53b65ea2f6d8afe4c3817c3e99e89506917d51b93f1883d26f934bb",
+    "manuscript\\figures\\ozz_overvoltage_cdf.pdf": "a792d3f9dbe87cf23b5337a095986ac8af0623dde76e641ae3178b308ebd2c84"
+  },
+  "limits": [
+    "Original 1865-candidate article snapshot is not identified with this 1855-row CSV.",
+    "830 unique filenames do not establish 830 independent physical events.",
+    "Scalar audit does not verify waveform maxima or the original normalization implementation.",
+    "Unknown original KDE bandwidth; its curve is not reproduced."
+  ],
+  "generator_path": "tools/audit_ozz_statistics.py",
+  "generator_sha256": "adc41344fda9b0a017e16272fe06765fcbf116e28c6a65f3b778857cf2fededb",
+  "reproduction_default": "immutable scalar snapshot, guarded by expected SHA-256"
+}

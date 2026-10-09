@@ -1,0 +1,56 @@
+{
+  "task_id": "D03-002",
+  "date": "2026-10-08",
+  "status": "DONE",
+  "authorization": "D03-001 accepted; larger coherent batches requested 2026-10-08.",
+  "scalar_proof": "review/checks/D03-002-statistics.json",
+  "scientific_source_sha256": "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323",
+  "target_path": "manuscript\\chapters\\ch03_dataset_preparation\\sec11_earth_fault_subset.tex",
+  "prior_target_sha256": "316066dbf8f61b5bee0c1a0b8c34cf5f650a8d4d670131d8071e4d3621e11e90",
+  "target_sha256": "b54fe6420f1191cb7e28ce1dd0f274ad4b18f3b3e9160470a5bab69366ec824e",
+  "conclusions_before_sha256": "2edf92f4bd87f16badf13c2d73c07ddbc3e1ca5cffba04414815a8fab96dcc9f",
+  "conclusions_after_sha256": "20d1565652fc465104a36298b88c3ac79a70e6985bd4c3b820468025f205b416",
+  "other_chapter_files_unchanged": {
+    "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec01_intro_and_methodology.tex": "ecb3008200c1f4806a194fb249766249b49b8d040f2954c68e649deb2b1b97cd",
+    "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec02_data_collection_and_db.tex": "8d27b569833f7b45c3d929ca4e7c458cc4200befc7b90278b195e9f535cbca8d",
+    "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec03_comtrade_intro.tex": "6d6c98ae6999e5fef271f40ae3566ba28a81244687b975aacfb9ce005ced6e13",
+    "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec04_dat_files_and_depersonalization.tex": "0549f8aeacf68db1df80e37b7c522ce39624f821ebf48549e35b7f43774e7762",
+    "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec05_signal_naming_unification.tex": "258526f269f5a6aa4167d76e4e9449e913b05d48f0c78c10b6a8051127b754e7",
+    "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec06_normalization_methodology.tex": "88b482cfbb0a74e81af9c4e1efddaf02e3e838bed4344c0c04cdbe639059a5a3",
+    "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec07_basis_algorithms_and_csv.tex": "e2b205e2a84baff87f212ec5d564243f287150d40e76f33fc17f3272e251a271",
+    "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec08_annotation_methodology.tex": "99784d2f84d0a1ddc15c28d6f76297202a634828ca7126f5feeb2afb07d8ad9c",
+    "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec09_empty_oscillograms_filtering.tex": "dc46bb1a42ba85fb8de4991f7066fc3dacab00ec3991300e4b53ac7a4e428cf6",
+    "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/tab01_analog_signals_parameters.tex": "94f049aab2af3a77225ce7a00bb5565ccccaf05545a5fd7028864a922ffec5f2",
+    "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/tab02_oscillograms_frequencies.tex": "1453eb3a0ea52941ab6afaf10e3ae70b02b8002180b6af539d1f17e9acaeb725",
+    "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/tab03_zero_sequence_basis.tex": "83c5f016aa6c25cbad2e562ebe1e7c92613250c3baa286de47b6e3c5d60f2a6d"
+  },
+  "comments_reviewed": 31,
+  "all_raw_texts_and_anchors_match": true,
+  "build": {
+    "passes": 3,
+    "exit_code": 0,
+    "pages": 137,
+    "undefined_references": 0,
+    "scope_overfull": 0,
+    "pdf_sha256": "7aaeead7462ce585ed63ba4af7993f9cea2a07310967632ee27666dc6bb9700a"
+  },
+  "visual_review": {
+    "physical_pages": [
+      112,
+      113,
+      114,
+      115,
+      116,
+      117
+    ],
+    "images": "build/reading/D03-002-final-112.png..117.png",
+    "result": "Whole section, both tables and plots, footnotes and revised conclusion reviewed; no clipping or overlapping."
+  },
+  "limits": [
+    "Original 1865-candidate article snapshot is not identified with this 1855-row CSV.",
+    "830 unique filenames do not establish 830 independent physical events.",
+    "Scalar audit does not verify waveform maxima or the original normalization implementation.",
+    "Unknown original KDE bandwidth; its curve is not reproduced.",
+    "Other inherited manuscript defects and B05/B06 not closed."
+  ]
+}

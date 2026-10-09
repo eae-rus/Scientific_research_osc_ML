@@ -15,8 +15,14 @@
 \pagenumbering{arabic}
 \input{frontmatter/title}
 
-% Точный перенос оглавления исходника v0.5 (DISS-005-B0033 .. DISS-005-B0113)
-\input{frontmatter/toc_source}
+% Рабочее оглавление строится по текущей рукописи.
+% Историческое оглавление v0.5 сохранено в frontmatter/toc_source.tex.
+\begingroup
+% Замечания остаются у заголовков в тексте, без повторных сносок в оглавлении.
+\renewcommand{\commentnote}[3]{}
+\renewcommand{\wordrevnote}[4]{}
+\tableofcontents
+\endgroup
 \clearpage
 
 \input{frontmatter/introduction}
