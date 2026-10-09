@@ -1,4 +1,4 @@
-"""Standard-library tests: folder preparation must not mislabel or lose files."""
+"""Проверки учёта и подготовки папок: корректные роли и сохранность файлов."""
 import copy
 from pathlib import Path
 import tempfile

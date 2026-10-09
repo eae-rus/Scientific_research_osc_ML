@@ -1,14 +1,14 @@
-"""Name-based format detection without loading array libraries or parsers."""
+"""Определение формата по имени, без загрузки библиотек массивов и парсеров."""
 from pathlib import Path
 import re
 
 
 class UnsupportedFormatError(ValueError):
-    """Unsupported recording; daily trends are handled separately."""
+    """Неподдерживаемая запись; суточные тренды обрабатываются отдельно."""
 
 
 def detect_format(path: str | Path) -> str:
-    """Identify a candidate by name; this does not validate its contents."""
+    """Определить формат кандидата по имени, без проверки его содержимого."""
     path = Path(path)
     ext = path.suffix.lower()
     formats = {'.cfg': 'comtrade', '.dat': 'comtrade', '.cff': 'comtrade',

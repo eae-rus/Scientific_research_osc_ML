@@ -1,1 +1,1 @@
-"""Preparation of document case folders, separate from signal analysis."""
+"""Подготовка папок комплектов документов отдельно от анализа сигналов."""

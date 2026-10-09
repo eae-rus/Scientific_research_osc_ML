@@ -1,9 +1,10 @@
-"""Read-only case inventories and explicit, reversible normalization plans.
+"""Учёт папок комплектов без изменения исходников и планы их подготовки.
 
-Run from the repository root:
+Запуск из корня проекта:
   python -m osc_tools.corpus.case_inventory scan --root CORPUS --output OUT.json
   python -m osc_tools.corpus.case_inventory plan --root CORPUS --output PLAN.json
-Neither command moves files, extracts archives, reads signals or calls an LLM.
+Обе команды только читают исходники: не перемещают файлы, не распаковывают
+архивы, не анализируют сигналы и не вызывают языковую модель.
 """
 from __future__ import annotations
 
@@ -25,6 +26,7 @@ ARCHIVES = {'.zip', '.7z', '.rar'}
 
 
 def sha256(path: Path) -> str:
+    """Вычислить хеш файла порциями, без загрузки всего содержимого в память."""
     result = hashlib.sha256()
     with path.open('rb') as stream:
         for chunk in iter(lambda: stream.read(1024 * 1024), b''):
@@ -33,6 +35,7 @@ def sha256(path: Path) -> str:
 
 
 def classify(name: str) -> dict:
+    """Предположить роль файла по имени; его содержимое здесь не проверяется."""
     p = Path(name)
     ext = p.suffix.lower()
     if p.name.startswith('~$'):
@@ -56,13 +59,14 @@ def classify(name: str) -> dict:
 
 
 def safe_member(name: str) -> bool:
+    """Проверить, не выходит ли имя элемента архива за относительный каталог."""
     value = name.replace('\\', '/')
     p = PurePosixPath(value)
     return bool(value) and not p.is_absolute() and '..' not in p.parts and not re.match(r'^[A-Za-z]:', value)
 
 
 def archive_listing(path: Path, max_members: int = 2000) -> dict:
-    """List names only. Never decompress members or infer a complete recording."""
+    """Получить только список элементов архива, без распаковки и чтения записей."""
     try:
         entries = []
         if path.suffix.lower() == '.zip':
@@ -77,7 +81,7 @@ def archive_listing(path: Path, max_members: int = 2000) -> dict:
                         'symlink': stat.S_ISLNK(item.external_attr >> 16),
                         **classify(item.filename)})
         elif path.suffix.lower() == '.7z':
-            import py7zr  # optional; absence is recorded, not hidden
+            import py7zr  # Необязательная библиотека; её отсутствие сохраняется в результате.
             with py7zr.SevenZipFile(path, mode='r') as archive:
                 info = archive.list()
                 for item in info[:max_members]:
@@ -85,7 +89,7 @@ def archive_listing(path: Path, max_members: int = 2000) -> dict:
                         entries.append({'name': item.filename, 'size': item.uncompressed,
                             'safe_path': safe_member(item.filename), **classify(item.filename)})
         else:
-            import rarfile  # optional; listing is not extraction
+            import rarfile  # Чтение списка не означает распаковку содержимого.
             with rarfile.RarFile(path) as archive:
                 info = archive.infolist()
                 for item in info[:max_members]:
@@ -102,6 +106,7 @@ def archive_listing(path: Path, max_members: int = 2000) -> dict:
 
 
 def folder_inventory(folder: Path, max_archive_members: int = 2000) -> dict:
+    """Учесть файлы папки, кандидаты записей, дубли и ограничения обхода."""
     folder = folder.resolve(strict=True)
     if not folder.is_dir():
         raise NotADirectoryError(folder)
@@ -155,6 +160,7 @@ def folder_inventory(folder: Path, max_archive_members: int = 2000) -> dict:
 
 
 def inventory_corpus(root: Path, registry: dict | None = None) -> dict:
+    """Обойти структуру «год → папка», сохраняя уже назначенные ID комплектов."""
     root = root.resolve(strict=True)
     if not root.is_dir():
         raise NotADirectoryError(root)
@@ -188,6 +194,7 @@ def inventory_corpus(root: Path, registry: dict | None = None) -> dict:
 
 
 def normalization_plan(root: Path) -> dict:
+    """Подготовить план размещения отдельных документов по папкам, без переноса."""
     root = root.resolve(strict=True)
     groups = []
     for year in sorted(root.iterdir()):
@@ -203,7 +210,7 @@ def normalization_plan(root: Path) -> dict:
             if target.exists():
                 state = 'target_exists'
             elif not stem or stem.endswith((' ', '.')):
-                # Windows would normalize such directory names silently.
+                # Windows может незаметно изменить имя папки с конечным пробелом или точкой.
                 state = 'needs_review'
             groups.append({'target': target.relative_to(root).as_posix(), 'status': state,
                 'files': [{'source': p.relative_to(root).as_posix(), 'size': p.stat().st_size,
@@ -213,7 +220,11 @@ def normalization_plan(root: Path) -> dict:
 
 
 def apply_normalization_plan(root: Path, plan: dict) -> None:
-    """Explicit API, not used by either CLI command. Check all paths first."""
+    """Применить явно переданный план после проверки путей и хешей.
+
+    Команды CLI эту функцию не вызывают. При ошибке выполненные переносы
+    откатываются; удаляются только созданные этим вызовом пустые папки.
+    """
     root = root.resolve(strict=True)
     if str(root) != plan['source_root']:
         raise ValueError('Plan belongs to another corpus')
@@ -254,13 +265,14 @@ def apply_normalization_plan(root: Path, plan: dict) -> None:
             if not source.exists():
                 destination.rename(source)
         for folder in reversed(created):
-            folder.rmdir()  # only directories created by this invocation, empty after rollback
+            folder.rmdir()  # Только созданные этим вызовом папки, пустые после отката.
         raise
     plan['applied'] = bool(moved)
     plan['applied_groups'] = [folder.relative_to(root).as_posix() for folder in created]
 
 
 def main() -> None:
+    """Запустить учёт или подготовку плана и сохранить JSON вне исходного корпуса."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=['scan', 'plan'])
     parser.add_argument('--root', type=Path, required=True)
