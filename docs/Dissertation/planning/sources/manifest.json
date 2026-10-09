@@ -4371,7 +4371,7 @@
       "after": [
         "C02-AI-01-01"
       ],
-      "status": "READY",
+      "status": "DONE",
       "output": "planning/sources/AI-01/protocol.md"
     },
     {
@@ -4381,7 +4381,7 @@
       "after": [
         "C02-AI-01-02"
       ],
-      "status": "TODO",
+      "status": "READY",
       "output": "planning/sources/AI-01/claims.json"
     },
     {
@@ -5903,22 +5903,22 @@
     "docs/Dissertation/planning/handoffs/D00.md": "b038cbf0c0757d6ecf366ec7f0f15fe7e823f55fa8c2aecc4fa1c77285661cf4",
     "docs/Dissertation/planning/integration/rewrite_proposals/ch03.md": "de6d73ae2a95fecfebf68d33d2ea540bd7c5cf07d1a559a23fe4572724d07ba3",
     "docs/Dissertation/planning/integration/rewrite_proposals/ch05.md": "b4057fea4b1947ea7f3558bb52cf12bcfac967a14ef68319a3f514220c2e5ae2",
-    "docs/Dissertation/planning/questions.md": "4f3fa1452805cc8d831b3afcc78adf20a8f9be84f8aadb54b43c45304c8d129a",
+    "docs/Dissertation/planning/questions.md": "1fcd0c11f457a21e545deb00e944e7b68567a0646382cffd27759934b66831d5",
     "docs/Dissertation/planning/sources/PDR-05/limitations_and_comments.md": "bf40ebd6091f5235bea00db2d9c5599fa51250dccfd872ea36c0c61661626072",
-    "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex": "a2bb943daf835839aa338554050e295079fe9face4dcd8600f747a60468c5edc"
+    "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex": "0a24e4c9137e8dee28b6db890175143043e7596da25faec2c76facb6d96266f9"
   },
   "verification_summary": {
     "unchanged_source_files": 290,
     "c02_steps": 45,
     "c03_tasks": 52,
     "original_comment_ids_covered": 333,
-    "author_annotations_preserved": 38,
+    "author_annotations_preserved": 39,
     "task_graph": "acyclic",
     "scientific_reading": "not_complete"
   },
   "reading_progress": {
     "date": "2026-10-09",
-    "completed_C02_steps": 22,
+    "completed_C02_steps": 23,
     "total_C02_steps": 45,
     "completed_C03_groups": 19,
     "total_C03_groups": 43,
@@ -5933,7 +5933,7 @@
     ],
     "report": "planning/handoffs/C02.md",
     "author_review": "planning/questions.md",
-    "next_task": "C02-AI-01-02",
+    "next_task": "C02-AI-01-03",
     "main_manuscript_modified": true,
     "completed_C03_tasks": 26,
     "total_C03_tasks": 52,
@@ -5949,7 +5949,8 @@
       "D02-002",
       "D03-001",
       "D03-002",
-      "D03-003"
+      "D03-003",
+      "D04-001"
     ],
     "review_scoped_parts": [
       "C02-PDR-05-03-002"

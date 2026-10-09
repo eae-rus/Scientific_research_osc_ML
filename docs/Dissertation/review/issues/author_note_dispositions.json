@@ -198,10 +198,10 @@
     "display": "S03 прочитано; сохранено для доработки статьи"
   },
   "manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex#1": {
-    "text_sha256": "95f377486c35c53a6f4e3139ca51265d4e017ba12ffbffe46e88952d75367d59",
+    "text_sha256": "3e89321e1c476f03761044870bfac9d01ec6a0a1ff218a7aa442ba976dfb05bf",
     "status": "DECISION_RECORDED",
-    "decision": "Internal versions moved out of scientific prose; author note retained.",
-    "display": "учтено и исправлено 09.10; сохранено в исходнике"
+    "decision": "Defer shortening OZZ and figure size/placement to whole-thesis proofreading as explicitly requested; scientific block unchanged.",
+    "display": "учтено 09.10; отложено до общей вычитки"
   },
   "manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex#2": {
     "text_sha256": "c99d8aa72bee46e973c082064c72f0e524d51bd505533831b2660306a4c4e9bd",
