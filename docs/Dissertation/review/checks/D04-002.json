@@ -1,0 +1,115 @@
+{
+  "task_id": "D04-002",
+  "status": "DONE",
+  "authorization": "Direct user request to substantially expand explanations, preserve the rewritten introduction, and use article text and prior figures as basis.",
+  "chapter_intro_before_sha256": "aec8e48ac67be731d102c8f3558ef78d78c119dc4fc3a633b526a5a310b84e19",
+  "section_before_sha256": "dfe04c2d4c7fe1a6097417e2cd7ae5241624503b36d83d9d68d847452f4d0a68",
+  "source_docx_sha256": "98e3fc97c6894b15ab7146de8061598b0060f5b2ad32af980ec87a6ec80deebd",
+  "source_paragraphs": "AI-01 P0064–P0092",
+  "original_figures": {
+    "word/media/image3.png": {
+      "sha256": "54f4565f66328f79bad436837f615f204c8df58e7ff95c65b954405bb8c42860",
+      "reviewed": true
+    },
+    "word/media/image4.png": {
+      "sha256": "e715c498f2d6f7a3d292e75c6a21dfa5da9d8c76654ca55f7b7c4461943925d9",
+      "reviewed": true
+    },
+    "word/media/image5.png": {
+      "sha256": "e6738093925195c313defdd47273fc917fded6ebd419ab280f50b80ecec631a9",
+      "reviewed": true
+    },
+    "word/media/image6.png": {
+      "sha256": "cf336abd9c7f913ebabb84618a631d2802d88382fec05d3747e5c256ee18bd62",
+      "reviewed": true
+    }
+  },
+  "implementation_sha256": {
+    "osc_tools/ml/models/baseline.py": "334cb35cdd7529eeae172f1969492849f1fe6c1ea39e144232200a56ba94bf4b",
+    "osc_tools/ml/models/cnn.py": "c5302e9c24f91c6e144c468f0859bacbc2d98dc5291ae97b7f3a1fc4dc7fd32c",
+    "osc_tools/ml/models/kan.py": "e710cbe7270c116b03a5298f513d86eb5248383fb98e159fa856d348c7c1b284",
+    "osc_tools/ml/layers/kan_layers.py": "71637fca5504e9b34e075ad57c601e0f394bcc94f401f63f3700f755df0b6ac4",
+    "osc_tools/ml/kan_conv/KANLinear.py": "a7ddb993dc66bf6a30ee5c5f7a0eaa46010e888045aed3a78e7076839ffa5cea",
+    "osc_tools/ml/kan_conv/arithmetic.py": "4b83c3ceed7a3176267f9a1aac926ee06db63746a8326b553dbfae7bbb447f32"
+  },
+  "limits": [
+    "Schemes are conceptual drafts, not trained weights or measured results.",
+    "Static current implementation does not prove identity with historical experiments.",
+    "No training, inference or phase-6 changes."
+  ],
+  "conditional_examples": {
+    "MLP": {
+      "C": 6,
+      "T": 32,
+      "input": 192,
+      "hidden": 64,
+      "linear_parameters": 12352
+    },
+    "CNN": {
+      "C": 6,
+      "outputs": 16,
+      "kernel": 3,
+      "convolution_parameters": 304
+    },
+    "complex": {
+      "U_amplitude": 10,
+      "U_phase_degrees": 0,
+      "I_amplitude": 2,
+      "I_phase_degrees": -30,
+      "product_amplitude": 20,
+      "product_phase_degrees": -30,
+      "UI_conjugate_phase_degrees": 30,
+      "I_over_U_amplitude": 0.2
+    }
+  },
+  "original_figure_corrections": [
+    "image3: output Softmax is not an unconditional layer of the inspected implementations.",
+    "image5: I/U is admittance-like, not impedance; ordinary complex product is not UI*.",
+    "image5: phase_bias_b is a configured float in inspected class, not established learnable per-phase parameter.",
+    "image6: preserve independent phase and gate branches; final inspected classifier does not contain the additional drawn ConvKAN backbone."
+  ],
+  "verification": {
+    "pdf_path": "docs/Dissertation/build/reading/latex/dissertation_review.pdf",
+    "pdf_sha256": "a6cf7e3843cd99a16381b98f187c77ab064cd064ee8294297cdeb1ec9fbac2fc",
+    "pdf_pages": 152,
+    "review_pages": [
+      121,
+      133
+    ],
+    "visual_review_pages": [
+      121,
+      122,
+      123,
+      124,
+      125,
+      126,
+      127,
+      128,
+      129,
+      130,
+      131,
+      132,
+      133
+    ],
+    "stable_toc": true,
+    "undefined_references": false,
+    "introduction_preserved_except_prepended_note": true,
+    "author_notes_AA040_AA043_preserved": true,
+    "accepted_OZZ_pages_112_120_unchanged": true,
+    "final_compile_pass": 8,
+    "final_relay_diagram_arrows_separated": true,
+    "account_resource_remaining_percent": {
+      "five_hour": 73,
+      "weekly": 69
+    }
+  },
+  "diagrams": {
+    "physkan_arithmetic_stem.pdf": "4ab90a7efc5272375b0f531b7974cb312b25fc2f0b1fe7778b90e1084ceec786",
+    "physkan_cnn.pdf": "beca90149436569d2b4e9f7c86d06efd06cf710be3a6d616ed2921fd4619cc54",
+    "physkan_complex_ops.pdf": "d9fccd55f820aa82d0a414c8d41a2f11bd3ae9565f26f6c5ecddb51fb78fb12b",
+    "physkan_kan_edge.pdf": "d0c91108c7daeb0fa3ec566544bfc1aeb99b0bda3017ab0a5f777d4ac8e909c7",
+    "physkan_mlp.pdf": "3969d0bb65575a3d7372e72b3d608416999de5c16f020fa550808900c2faf5c1",
+    "physkan_relay_gate.pdf": "35281ba26caea1f4ddbcde597bcccc253a07c59f9e09f776ba55a9db947c06ab",
+    "physkan_residual.pdf": "3d374cedb185a932c400d7e10e133ca04fef2fea21fe49284c0b10ec632e3b8e"
+  }
+}

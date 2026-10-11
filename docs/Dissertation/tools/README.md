@@ -90,3 +90,7 @@ cd docs/Dissertation/manuscript
 ## Общие расчёты статистики ОЗЗ
 
 Скалярные функции describe_overvoltages, interval_fraction и empirical_cdf находятся в общем модуле osc_tools/analysis/overvoltage_statistics.py. Их используют notebooks/003_analisis.ipynb и audit_ozz_statistics.py. Модуль принимает уже выбранные максимумы и не определяет физическую нормализацию или границы ОЗЗ. Построение диссертационных векторных рисунков остаётся в существующем audit_ozz_statistics.py; не создавать отдельный генератор на каждый рисунок. Сохранённые результаты D03-002 не перезаписывать рутинным повторным запуском аудита. При новой входной версии сохранять новое доказательство отдельно.
+
+## Черновые схемы главы 4
+
+`build_physkan_diagrams.py` создаёт семь векторных PDF в manuscript/figures из одной описанной структуры. Требуются Python, ReportLab и Arial. Запуск из корня репозитория `python docs/Dissertation/tools/build_physkan_diagrams.py`. Схемы условные, обученные зависимости не изображают. Задания для художественного улучшения и целевые имена файлов находятся в planning/integration/figure_specs/ch04_physkan.md.

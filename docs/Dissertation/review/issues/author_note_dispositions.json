@@ -226,5 +226,29 @@
     "status": "DECISION_RECORDED",
     "decision": "Old notebook CDF correct; missing interval calculation identified; shared scalar statistics used in notebook and audit.",
     "display": "учтено и исправлено 09.10; сохранено в исходнике"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#1": {
+    "text_sha256": "c4af5b65c56c32e8f854d8b2fcc20b45dc8afef05d87373ad0e5ec5def3874d7",
+    "status": "DECISION_RECORDED",
+    "decision": "Article figures reviewed; explanatory figure specifications include current/voltage and time structure; conceptual schemas are drafts, not invented measured data.",
+    "display": "учтено и развёрнуто D04-002; сохранено в исходнике"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#2": {
+    "text_sha256": "d2cfaba7fe96d0a76175ae8e35057ffd1736f988f926a6fc994b50b5d4a8e7a7",
+    "status": "DECISION_RECORDED",
+    "decision": "Methods expanded using article explanations and inspected implementations; technical basics explained for power engineers.",
+    "display": "учтено и развёрнуто D04-002; сохранено в исходнике"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#3": {
+    "text_sha256": "baeec357c75d3ab10f6d75bcc91c9d8103fc56de49b46f57fd611cc4bedf2463",
+    "status": "DECISION_RECORDED",
+    "decision": "MLP, CNN, ResNet and KAN explanations expanded with operations, dimensional examples and diagrams.",
+    "display": "учтено и развёрнуто D04-002; сохранено в исходнике"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#4": {
+    "text_sha256": "55e2d9aec6ce5fad1a1760e8b6d64495e06e1c2d2bbd815f5f6fcb92c3c83c9f",
+    "status": "DECISION_RECORDED",
+    "decision": "KAN nonlinear connection functions explained against fixed-activation MLP and physical nonlinear characteristic examples; no universal superiority claimed.",
+    "display": "учтено и развёрнуто D04-002; сохранено в исходнике"
   }
 }

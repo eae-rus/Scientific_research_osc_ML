@@ -309,7 +309,7 @@
       "status": "DECISION_RECORDED",
       "decision": "Author accepts arithmetic total 1865. Recheck original OOXML table, including first/last data rows and separate total. Keep source reported 1866 in provenance.",
       "last_seen_note_index": 1,
-      "last_seen_file_sha256": "1fcd0c11f457a21e545deb00e944e7b68567a0646382cffd27759934b66831d5",
+      "last_seen_file_sha256": "bc97514f58e3e56bf0de3df6bb18231275e7206c657b3886502a6fbfab981173",
       "reviewed_at": "2026-10-06",
       "display": "учтено: 1865; строки перепроверены",
       "author_input_date": "2026-10-06"
@@ -322,7 +322,7 @@
       "status": "DECISION_RECORDED",
       "decision": "Keep unresolved central interval percentage as future numeric check; do not block transfer of verified statistics or assert 80/90 percent without underlying CDF. Completed 2026-10-08: 678/830 = 81.69%; D03-002-statistics.json.",
       "last_seen_note_index": 2,
-      "last_seen_file_sha256": "1fcd0c11f457a21e545deb00e944e7b68567a0646382cffd27759934b66831d5",
+      "last_seen_file_sha256": "bc97514f58e3e56bf0de3df6bb18231275e7206c657b3886502a6fbfab981173",
       "reviewed_at": "2026-10-06",
       "display": "выполнено: доля проверена 08.10",
       "author_input_date": "2026-10-06",
@@ -336,7 +336,7 @@
       "status": "DECISION_RECORDED",
       "decision": "Author agrees on sample/measurement limits and on no automatic revision of insulation standards.",
       "last_seen_note_index": 3,
-      "last_seen_file_sha256": "1fcd0c11f457a21e545deb00e944e7b68567a0646382cffd27759934b66831d5",
+      "last_seen_file_sha256": "bc97514f58e3e56bf0de3df6bb18231275e7206c657b3886502a6fbfab981173",
       "reviewed_at": "2026-10-06",
       "display": "учтено: ограничения сохраняются",
       "author_input_date": "2026-10-06"
@@ -349,7 +349,7 @@
       "status": "DECISION_RECORDED",
       "decision": "RTDS section is part of present validation. Transfer current material, explain any remaining disagreement with actual case/metric; coordinate later edits of PDR article and dissertation.",
       "last_seen_note_index": 4,
-      "last_seen_file_sha256": "1fcd0c11f457a21e545deb00e944e7b68567a0646382cffd27759934b66831d5",
+      "last_seen_file_sha256": "bc97514f58e3e56bf0de3df6bb18231275e7206c657b3886502a6fbfab981173",
       "reviewed_at": "2026-10-06",
       "display": "учтено: переносим имеющееся; вопросы конкретизируем",
       "author_input_date": "2026-10-06"
@@ -362,7 +362,7 @@
       "status": "DECISION_RECORDED",
       "decision": "Keep raw Word comments, paths and author notes. Review while editing a bounded fragment; raise important unresolved questions with exact anchors in planning/questions.md. Do not silently delete source-link reminders.",
       "last_seen_note_index": 6,
-      "last_seen_file_sha256": "1fcd0c11f457a21e545deb00e944e7b68567a0646382cffd27759934b66831d5",
+      "last_seen_file_sha256": "bc97514f58e3e56bf0de3df6bb18231275e7206c657b3886502a6fbfab981173",
       "reviewed_at": "2026-10-06",
       "display": "учтено: комментарии и ссылки сохранены",
       "author_input_date": "2026-10-06"
@@ -377,7 +377,7 @@
       "display": "новые ответы прочитаны; адресные вопросы сохранены",
       "reviewed_at": "2026-10-08",
       "last_seen_note_index": 5,
-      "last_seen_file_sha256": "1fcd0c11f457a21e545deb00e944e7b68567a0646382cffd27759934b66831d5"
+      "last_seen_file_sha256": "bc97514f58e3e56bf0de3df6bb18231275e7206c657b3886502a6fbfab981173"
     },
     {
       "id": "AA030",
@@ -492,6 +492,50 @@
       "display": "учтено 09.10; отложено до общей вычитки",
       "last_seen_note_index": 1,
       "last_seen_file_sha256": "0a24e4c9137e8dee28b6db890175143043e7596da25faec2c76facb6d96266f9"
+    },
+    {
+      "id": "AA040",
+      "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex",
+      "original_text": "(Примечание автора: Есть мысли о том, чтобы картинки тут привести поясняющие схему, \nесли у меня в оригинальных работах есть. Убрать потом это, в случае чего будет не сложно, \nа пока что хочу максимально подробно переписывать статьи. \nКстати, об этом опять же можешь сделать пометку, она будет полезна для будущего текста\nПричём... Можно подумать о том, чтобы нарисовать какую-то другую картинку поясняющую, как я делал в будущих работах, \nя думаю современные ИИ модели могут помочь сдлеать её тут, надо будет только инструкцию хорошую написать для картинки,\nесли тебе сложно. И да, лучше через инструкцию сделать это, а не тебе самой выдумывать, причём я хочу тут иснтрукцию\nпоясняющую проблему для энергетики, где у меня подаются и ТОКИ и НАПРЯЖЕНИЯ и по времени распределены и они путаются.\nДа, давай попробуем через картинки такие новые.\nХмм... В статье есть картинки, но они довольно сложны, и не факт, что отражают физическую проблему)",
+      "text_sha256": "c4af5b65c56c32e8f854d8b2fcc20b45dc8afef05d87373ad0e5ec5def3874d7",
+      "status": "DECISION_RECORDED",
+      "decision": "Article figures reviewed; explanatory figure specifications include current/voltage and time structure; conceptual schemas are drafts, not invented measured data.",
+      "display": "учтено и развёрнуто D04-002; сохранено в исходнике",
+      "last_seen_note_index": 1,
+      "last_seen_file_sha256": "ea1d568dbefc9ab7e7591318093f74e6d561c3066ab8d291533f57b11a657fe6"
+    },
+    {
+      "id": "AA041",
+      "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex",
+      "original_text": "(Примечание автора: И да, ещё раз отмечу, давай побольше текста пока что из оригинальных работ писать сюда.\nДа, не весь и не всё, но важное, люди из энергетики многое базовое могу не понимать.)",
+      "text_sha256": "d2cfaba7fe96d0a76175ae8e35057ffd1736f988f926a6fc994b50b5d4a8e7a7",
+      "status": "DECISION_RECORDED",
+      "decision": "Methods expanded using article explanations and inspected implementations; technical basics explained for power engineers.",
+      "display": "учтено и развёрнуто D04-002; сохранено в исходнике",
+      "last_seen_note_index": 2,
+      "last_seen_file_sha256": "ea1d568dbefc9ab7e7591318093f74e6d561c3066ab8d291533f57b11a657fe6"
+    },
+    {
+      "id": "AA042",
+      "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex",
+      "original_text": "(Примечание автора: Ну да, как-то очень кратко... Мне-то понятно, но я всё это и написал ранее.)",
+      "text_sha256": "baeec357c75d3ab10f6d75bcc91c9d8103fc56de49b46f57fd611cc4bedf2463",
+      "status": "DECISION_RECORDED",
+      "decision": "MLP, CNN, ResNet and KAN explanations expanded with operations, dimensional examples and diagrams.",
+      "display": "учтено и развёрнуто D04-002; сохранено в исходнике",
+      "last_seen_note_index": 3,
+      "last_seen_file_sha256": "ea1d568dbefc9ab7e7591318093f74e6d561c3066ab8d291533f57b11a657fe6"
+    },
+    {
+      "id": "AA043",
+      "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex",
+      "original_text": "(Примечание автора: Из текста не очень понятно, чем это лучше предыдущего?\nЯ закладывал во многом то, чтобы могли возникать сильно нелинейные связи например от тока и т.д. Ну и да, побольше бы описания…)",
+      "text_sha256": "55e2d9aec6ce5fad1a1760e8b6d64495e06e1c2d2bbd815f5f6fcb92c3c83c9f",
+      "status": "DECISION_RECORDED",
+      "decision": "KAN nonlinear connection functions explained against fixed-activation MLP and physical nonlinear characteristic examples; no universal superiority claimed.",
+      "display": "учтено и развёрнуто D04-002; сохранено в исходнике",
+      "last_seen_note_index": 4,
+      "last_seen_file_sha256": "ea1d568dbefc9ab7e7591318093f74e6d561c3066ab8d291533f57b11a657fe6"
     }
   ],
   "updated": "2026-10-09",
