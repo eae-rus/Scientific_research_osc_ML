@@ -94,3 +94,5 @@ cd docs/Dissertation/manuscript
 ## Черновые схемы главы 4
 
 `build_physkan_diagrams.py` создаёт семь векторных PDF в manuscript/figures из одной описанной структуры. Требуются Python, ReportLab и Arial. Запуск из корня репозитория `python docs/Dissertation/tools/build_physkan_diagrams.py`. Схемы условные, обученные зависимости не изображают. Задания для художественного улучшения и целевые имена файлов находятся в planning/integration/figure_specs/ch04_physkan.md.
+
+Обновление 11.10.2026. Генератор build_physkan_diagrams.py сохранён как исторический источник семи черновиков. В текущей сборке используются авторские PNG; повторный запуск генератора для неё не требуется. Заменённые PDF-черновики удалены после проверки их SHA по D04-002.

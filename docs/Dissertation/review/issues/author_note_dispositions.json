@@ -228,27 +228,147 @@
     "display": "учтено и исправлено 09.10; сохранено в исходнике"
   },
   "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#1": {
-    "text_sha256": "c4af5b65c56c32e8f854d8b2fcc20b45dc8afef05d87373ad0e5ec5def3874d7",
+    "text_sha256": "716fec6c7b2e616c3b220f4d6ff5053b419e92ab2d883fd2e13556dc4374431d",
     "status": "DECISION_RECORDED",
-    "decision": "Article figures reviewed; explanatory figure specifications include current/voltage and time structure; conceptual schemas are drafts, not invented measured data.",
-    "display": "учтено и развёрнуто D04-002; сохранено в исходнике"
+    "decision": "D04-003: visible chapter map inserted; introduction synthesis deferred until all sections, original note retained inactive.",
+    "display": "план добавлен; введение дорабатывается после наполнения главы"
   },
   "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#2": {
-    "text_sha256": "d2cfaba7fe96d0a76175ae8e35057ffd1736f988f926a6fc994b50b5d4a8e7a7",
+    "text_sha256": "e7f16d4b396d30487103ae2012d4136764dfd5b6f1f0e3ef3859a0614ac10cdc",
     "status": "DECISION_RECORDED",
-    "decision": "Methods expanded using article explanations and inspected implementations; technical basics explained for power engineers.",
-    "display": "учтено и развёрнуто D04-002; сохранено в исходнике"
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
   },
   "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#3": {
-    "text_sha256": "baeec357c75d3ab10f6d75bcc91c9d8103fc56de49b46f57fd611cc4bedf2463",
+    "text_sha256": "6fc005989379a41328e10e537d95d867ecb6de95c65e8efb232efeb4b53235a3",
     "status": "DECISION_RECORDED",
-    "decision": "MLP, CNN, ResNet and KAN explanations expanded with operations, dimensional examples and diagrams.",
-    "display": "учтено и развёрнуто D04-002; сохранено в исходнике"
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
   },
   "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#4": {
+    "text_sha256": "775b9fe3c30f859446a6b916bfb8905a828cbdc1d53dfc3101aee20e1742e169",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#5": {
+    "text_sha256": "7915774ef0acbf1825248279cb3a357a0d692f219be8f4185b89fcf2558442d0",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: output-decision figure specification added to existing figure_specs; final new figure not generated.",
+    "display": "задание для рисунка добавлено D04-003"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#6": {
+    "text_sha256": "c4af5b65c56c32e8f854d8b2fcc20b45dc8afef05d87373ad0e5ec5def3874d7",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#7": {
+    "text_sha256": "d2cfaba7fe96d0a76175ae8e35057ffd1736f988f926a6fc994b50b5d4a8e7a7",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#8": {
+    "text_sha256": "0e13c44159c2a3223615eff98d6b2a648b9a3b340ef06e3fcf5c68add339ba96",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#9": {
+    "text_sha256": "19b6e2c553a0d96158e286622f3293e434780bc40becaee56488e9a4dcc51150",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#10": {
+    "text_sha256": "baeec357c75d3ab10f6d75bcc91c9d8103fc56de49b46f57fd611cc4bedf2463",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#11": {
+    "text_sha256": "78efa9a279a29e03042231636f3c5bab9d64ce1ab13f03d7af0482d271947e9c",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#12": {
+    "text_sha256": "0071ff4b63b8b5e1fe3782fe5e95488c163bf5ece3597745bc9e3ceed3d4038b",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#13": {
+    "text_sha256": "77d7a3a32398191ab2745b9cfe2bdb7f46c68f933fa761e9472b2991926b8ab0",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#14": {
+    "text_sha256": "f68619ba6c016b82f2f6b3115ef10b4161d84e453e3ea33936c451386e6ae8db",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#15": {
+    "text_sha256": "0560c4a5e30f6d3f3ad130265c5c3e1d3cf5619f635e256ef24f14073c7e72de",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#16": {
+    "text_sha256": "284a56e4cd5b95d5bf5010e63672a5d79c60156a76e0bbe9693e8580f9e92555",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#17": {
     "text_sha256": "55e2d9aec6ce5fad1a1760e8b6d64495e06e1c2d2bbd815f5f6fcb92c3c83c9f",
     "status": "DECISION_RECORDED",
-    "decision": "KAN nonlinear connection functions explained against fixed-activation MLP and physical nonlinear characteristic examples; no universal superiority claimed.",
-    "display": "учтено и развёрнуто D04-002; сохранено в исходнике"
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#18": {
+    "text_sha256": "8b723b050fe1a9c492b553db4df7c07822517d093fa74a42c66669a5c98223be",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#19": {
+    "text_sha256": "0bbcb3e6ace421aa70674a039b565ed475c09e1e88eb2153795099776b4c2ba0",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#20": {
+    "text_sha256": "297b6d1a6bb3a574d2364f3bc362e6c2c6d8d6405e5665a3205213128e8c1ee3",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#21": {
+    "text_sha256": "f6fce783ace9f1988353821d432d030d619b974d07f3fefffab5641b0c65fe7a",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#22": {
+    "text_sha256": "7ae4db78bbee628f982ffdd23a146acc926ac91135887703c541e400095580c3",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#23": {
+    "text_sha256": "53d0005e268fbb054f9fac4d2efb8f82bcf5e3080e2ea34ba8235148eb43d5bd",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#24": {
+    "text_sha256": "3a069678a19eb473b5fd12d8da22df54860db1943f2e30c92082d06705f8ed2e",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
   }
 }

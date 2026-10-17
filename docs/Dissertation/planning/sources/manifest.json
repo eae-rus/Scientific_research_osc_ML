@@ -5904,17 +5904,17 @@
     "docs/Dissertation/planning/handoffs/D00.md": "b038cbf0c0757d6ecf366ec7f0f15fe7e823f55fa8c2aecc4fa1c77285661cf4",
     "docs/Dissertation/planning/integration/rewrite_proposals/ch03.md": "de6d73ae2a95fecfebf68d33d2ea540bd7c5cf07d1a559a23fe4572724d07ba3",
     "docs/Dissertation/planning/integration/rewrite_proposals/ch05.md": "b4057fea4b1947ea7f3558bb52cf12bcfac967a14ef68319a3f514220c2e5ae2",
-    "docs/Dissertation/planning/questions.md": "bc97514f58e3e56bf0de3df6bb18231275e7206c657b3886502a6fbfab981173",
+    "docs/Dissertation/planning/questions.md": "8dd26690475ef5c371b0d2b2ad624305f4d7ca76e5f65f1f4c75bb91903e1720",
     "docs/Dissertation/planning/sources/PDR-05/limitations_and_comments.md": "bf40ebd6091f5235bea00db2d9c5599fa51250dccfd872ea36c0c61661626072",
     "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex": "0a24e4c9137e8dee28b6db890175143043e7596da25faec2c76facb6d96266f9",
-    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex": "ea1d568dbefc9ab7e7591318093f74e6d561c3066ab8d291533f57b11a657fe6"
+    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
   },
   "verification_summary": {
     "unchanged_source_files": 290,
     "c02_steps": 45,
     "c03_tasks": 52,
     "original_comment_ids_covered": 333,
-    "author_annotations_preserved": 43,
+    "author_annotations_preserved": 63,
     "task_graph": "acyclic",
     "scientific_reading": "not_complete"
   },
@@ -5953,7 +5953,8 @@
       "D03-002",
       "D03-003",
       "D04-001",
-      "D04-002"
+      "D04-002",
+      "D04-003"
     ],
     "review_scoped_parts": [
       "C02-PDR-05-03-002"
@@ -6344,11 +6345,38 @@
   ],
   "current_reading_pdf": {
     "path": "docs/Dissertation/build/reading/latex/dissertation_review.pdf",
-    "pages": 152,
-    "task": "D04-002",
+    "pages": 158,
+    "task": "D04-003",
     "review_pages": [
       121,
-      133
+      140
     ]
+  },
+  "author_input_revision_20261011": {
+    "section_before_sha256": "89a6dbcb821122d13663f735b14ec11898760a771a1d1ffce70871bd23610b07",
+    "proof": "review/checks/D04-003.json",
+    "new_note_ids": [
+      "AA044",
+      "AA045",
+      "AA046",
+      "AA047",
+      "AA048",
+      "AA049",
+      "AA050",
+      "AA051",
+      "AA052",
+      "AA053",
+      "AA054",
+      "AA055",
+      "AA056",
+      "AA057",
+      "AA058",
+      "AA059",
+      "AA060",
+      "AA061",
+      "AA062",
+      "AA063"
+    ],
+    "figure_policy": "Seven author PNGs used unchanged; obsolete PDF hashes retained in proof, files removed."
   }
 }
