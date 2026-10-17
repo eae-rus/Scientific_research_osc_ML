@@ -1,0 +1,1713 @@
+[
+  {
+    "original_comment_id": "0",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "0",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-21T12:43:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Так как я тут один автор, то предлагаю Андрею и Галине предложить ещё свои статьи, и куда их можно бы добавить?",
+      "",
+      "П.С.",
+      "Несколько и сейчас уже есть."
+    ],
+    "text": "Так как я тут один автор, то предлагаю Андрею и Галине предложить ещё свои статьи, и куда их можно бы добавить?\n\nП.С.\nНесколько и сейчас уже есть.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[2]/w:commentRangeStart",
+        "paragraph_index": 2,
+        "paragraph_text": "Евдаков Алексей Евгеньевич"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[2]/w:commentRangeEnd",
+        "paragraph_index": 2,
+        "paragraph_text": "Евдаков Алексей Евгеньевич"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[2]/w:r[2]/w:commentReference",
+        "paragraph_index": 2,
+        "paragraph_text": "Евдаков Алексей Евгеньевич"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "1",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "1",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-24T17:46:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "А как здесь записать, что я аспирант. И можно ли одновременно записать несколько? Т.е. ещё ООО «АПС» (правда надо будет и адрес лепить)",
+      "",
+      "В общем вопрос о этому"
+    ],
+    "text": "А как здесь записать, что я аспирант. И можно ли одновременно записать несколько? Т.е. ещё ООО «АПС» (правда надо будет и адрес лепить)\n\nВ общем вопрос о этому",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[3]/w:commentRangeStart",
+        "paragraph_index": 3,
+        "paragraph_text": "ФГБОУВО «Ивановский государственный энергетический университет имени В.И. Ленина», аспирант, Россия, Иваново, телефон +7-980-694-38-55, e-mail: eae_rus@mail.ru"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[3]/w:commentRangeEnd",
+        "paragraph_index": 3,
+        "paragraph_text": "ФГБОУВО «Ивановский государственный энергетический университет имени В.И. Ленина», аспирант, Россия, Иваново, телефон +7-980-694-38-55, e-mail: eae_rus@mail.ru"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[3]/w:r[4]/w:commentReference",
+        "paragraph_index": 3,
+        "paragraph_text": "ФГБОУВО «Ивановский государственный энергетический университет имени В.И. Ленина», аспирант, Россия, Иваново, телефон +7-980-694-38-55, e-mail: eae_rus@mail.ru"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "3",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "3",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-01T17:35:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "От Андрея замечание",
+      "«Так нельзя говорить, наши ‘ментры’ не оценят»"
+    ],
+    "text": "От Андрея замечание\n«Так нельзя говорить, наши ‘ментры’ не оценят»",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[11]/w:commentRangeStart[1]",
+        "paragraph_index": 11,
+        "paragraph_text": "Выводы. Внедрение «физических» блоков в топологию нейронных сетей повышает точность ИИ-моделей. Результаты формируют основу для создания адаптивных измерительных органов и систем предиктивной аналитики нового поколения. "
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[11]/w:commentRangeEnd[1]",
+        "paragraph_index": 11,
+        "paragraph_text": "Выводы. Внедрение «физических» блоков в топологию нейронных сетей повышает точность ИИ-моделей. Результаты формируют основу для создания адаптивных измерительных органов и систем предиктивной аналитики нового поколения. "
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[11]/w:r[14]/w:commentReference",
+        "paragraph_index": 11,
+        "paragraph_text": "Выводы. Внедрение «физических» блоков в топологию нейронных сетей повышает точность ИИ-моделей. Результаты формируют основу для создания адаптивных измерительных органов и систем предиктивной аналитики нового поколения. "
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "4",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "4",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-06T20:28:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      ""
+    ],
+    "text": "",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[11]/w:commentRangeStart[2]",
+        "paragraph_index": 11,
+        "paragraph_text": "Выводы. Внедрение «физических» блоков в топологию нейронных сетей повышает точность ИИ-моделей. Результаты формируют основу для создания адаптивных измерительных органов и систем предиктивной аналитики нового поколения. "
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[11]/w:commentRangeEnd[2]",
+        "paragraph_index": 11,
+        "paragraph_text": "Выводы. Внедрение «физических» блоков в топологию нейронных сетей повышает точность ИИ-моделей. Результаты формируют основу для создания адаптивных измерительных органов и систем предиктивной аналитики нового поколения. "
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[11]/w:r[15]/w:commentReference",
+        "paragraph_index": 11,
+        "paragraph_text": "Выводы. Внедрение «физических» блоков в топологию нейронных сетей повышает точность ИИ-моделей. Результаты формируют основу для создания адаптивных измерительных органов и систем предиктивной аналитики нового поколения. "
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "5",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "5",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-01T17:34:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Исправить, тут увеличению вычислительной сложности"
+    ],
+    "text": "Исправить, тут увеличению вычислительной сложности",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[23]/w:commentRangeStart",
+        "paragraph_index": 23,
+        "paragraph_text": "Results. It is shown that extensive scaling of classical neural networks leads to unnecessary microprocessor overhead without a proportional accuracy gain. The proposed PhysicsKAN architecture achieves accuracy comparable to heavy ResNet structures while utilizing several orders of magnitude fewer trainable parameters. Interpretability analysis confirms that the KAN spline weights successfully synthesize the threshold logic of protective measuring elements based on calculated power and impedance."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[23]/w:commentRangeEnd",
+        "paragraph_index": 23,
+        "paragraph_text": "Results. It is shown that extensive scaling of classical neural networks leads to unnecessary microprocessor overhead without a proportional accuracy gain. The proposed PhysicsKAN architecture achieves accuracy comparable to heavy ResNet structures while utilizing several orders of magnitude fewer trainable parameters. Interpretability analysis confirms that the KAN spline weights successfully synthesize the threshold logic of protective measuring elements based on calculated power and impedance."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[23]/w:r[5]/w:commentReference",
+        "paragraph_index": 23,
+        "paragraph_text": "Results. It is shown that extensive scaling of classical neural networks leads to unnecessary microprocessor overhead without a proportional accuracy gain. The proposed PhysicsKAN architecture achieves accuracy comparable to heavy ResNet structures while utilizing several orders of magnitude fewer trainable parameters. Interpretability analysis confirms that the KAN spline weights successfully synthesize the threshold logic of protective measuring elements based on calculated power and impedance."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "8",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "8",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-21T12:16:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Шнеерсон Э. М. Цифровая релейная защита. – 2007."
+    ],
+    "text": "Шнеерсон Э. М. Цифровая релейная защита. – 2007.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[29]/w:commentRangeStart[1]",
+        "paragraph_index": 29,
+        "paragraph_text": "Традиционные микропроцессорные устройства РЗА функционируют на базе жёстко прописанных алгоритмов, сравнивающих контролируемые параметры (действующие значения токов, напряжений или их симметричные составляющих) с заданными уставками [1]. Такой подход эффективен при простых повреждениях, однако сталкивается с трудностями при нестационарных режимах. Дуговые перемежающиеся замыкания на землю (ДПОЗЗ) с хаотичным горением дуги, глубокое насыщение измерительных трансформаторов тока [2,3] и пусковые токи мощных двигателей существенно искажают форму сигналов. В результате традиционные измерительные органы либо работают с задержками для отстройки от помех, либо подвергаются риску избыточного срабатывания или ложной блокировки. Это формирует потребность в методах, способных анализировать физический шаблон процесса целиком, выявляя аварийные режимы на ранней стадии."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[29]/w:commentRangeEnd[1]",
+        "paragraph_index": 29,
+        "paragraph_text": "Традиционные микропроцессорные устройства РЗА функционируют на базе жёстко прописанных алгоритмов, сравнивающих контролируемые параметры (действующие значения токов, напряжений или их симметричные составляющих) с заданными уставками [1]. Такой подход эффективен при простых повреждениях, однако сталкивается с трудностями при нестационарных режимах. Дуговые перемежающиеся замыкания на землю (ДПОЗЗ) с хаотичным горением дуги, глубокое насыщение измерительных трансформаторов тока [2,3] и пусковые токи мощных двигателей существенно искажают форму сигналов. В результате традиционные измерительные органы либо работают с задержками для отстройки от помех, либо подвергаются риску избыточного срабатывания или ложной блокировки. Это формирует потребность в методах, способных анализировать физический шаблон процесса целиком, выявляя аварийные режимы на ранней стадии."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[29]/w:r[20]/w:commentReference",
+        "paragraph_index": 29,
+        "paragraph_text": "Традиционные микропроцессорные устройства РЗА функционируют на базе жёстко прописанных алгоритмов, сравнивающих контролируемые параметры (действующие значения токов, напряжений или их симметричные составляющих) с заданными уставками [1]. Такой подход эффективен при простых повреждениях, однако сталкивается с трудностями при нестационарных режимах. Дуговые перемежающиеся замыкания на землю (ДПОЗЗ) с хаотичным горением дуги, глубокое насыщение измерительных трансформаторов тока [2,3] и пусковые токи мощных двигателей существенно искажают форму сигналов. В результате традиционные измерительные органы либо работают с задержками для отстройки от помех, либо подвергаются риску избыточного срабатывания или ложной блокировки. Это формирует потребность в методах, способных анализировать физический шаблон процесса целиком, выявляя аварийные режимы на ранней стадии."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "10",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "10",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-21T12:12:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Добрягина О. А. и др. Влияние высших гармоник на переходные процессы при дуговых замыканиях на землю в кабельных сетях 6-10 кв с изолированной нейтралью //Вестник Ивановского государственного энергетического университета. – 2020. – №. 2. – С. 30-40.",
+      "",
+      "Лебедев В. Д., Филатова Г. А., Петров А. Е. Исследование цифровых измерительных трансформаторов в условиях дуговых перемежающихся однофазных замыканий на землю с применением программно-аппаратного комплекса RTDS //Вестник Южно-Уральского государственного университета. Серия: Энергетика. – 2024. – Т. 24. – №. 2. – С. 5-17."
+    ],
+    "text": "Добрягина О. А. и др. Влияние высших гармоник на переходные процессы при дуговых замыканиях на землю в кабельных сетях 6-10 кв с изолированной нейтралью //Вестник Ивановского государственного энергетического университета. – 2020. – №. 2. – С. 30-40.\n\nЛебедев В. Д., Филатова Г. А., Петров А. Е. Исследование цифровых измерительных трансформаторов в условиях дуговых перемежающихся однофазных замыканий на землю с применением программно-аппаратного комплекса RTDS //Вестник Южно-Уральского государственного университета. Серия: Энергетика. – 2024. – Т. 24. – №. 2. – С. 5-17.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[29]/w:commentRangeStart[2]",
+        "paragraph_index": 29,
+        "paragraph_text": "Традиционные микропроцессорные устройства РЗА функционируют на базе жёстко прописанных алгоритмов, сравнивающих контролируемые параметры (действующие значения токов, напряжений или их симметричные составляющих) с заданными уставками [1]. Такой подход эффективен при простых повреждениях, однако сталкивается с трудностями при нестационарных режимах. Дуговые перемежающиеся замыкания на землю (ДПОЗЗ) с хаотичным горением дуги, глубокое насыщение измерительных трансформаторов тока [2,3] и пусковые токи мощных двигателей существенно искажают форму сигналов. В результате традиционные измерительные органы либо работают с задержками для отстройки от помех, либо подвергаются риску избыточного срабатывания или ложной блокировки. Это формирует потребность в методах, способных анализировать физический шаблон процесса целиком, выявляя аварийные режимы на ранней стадии."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[29]/w:commentRangeEnd[2]",
+        "paragraph_index": 29,
+        "paragraph_text": "Традиционные микропроцессорные устройства РЗА функционируют на базе жёстко прописанных алгоритмов, сравнивающих контролируемые параметры (действующие значения токов, напряжений или их симметричные составляющих) с заданными уставками [1]. Такой подход эффективен при простых повреждениях, однако сталкивается с трудностями при нестационарных режимах. Дуговые перемежающиеся замыкания на землю (ДПОЗЗ) с хаотичным горением дуги, глубокое насыщение измерительных трансформаторов тока [2,3] и пусковые токи мощных двигателей существенно искажают форму сигналов. В результате традиционные измерительные органы либо работают с задержками для отстройки от помех, либо подвергаются риску избыточного срабатывания или ложной блокировки. Это формирует потребность в методах, способных анализировать физический шаблон процесса целиком, выявляя аварийные режимы на ранней стадии."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[29]/w:r[29]/w:commentReference",
+        "paragraph_index": 29,
+        "paragraph_text": "Традиционные микропроцессорные устройства РЗА функционируют на базе жёстко прописанных алгоритмов, сравнивающих контролируемые параметры (действующие значения токов, напряжений или их симметричные составляющих) с заданными уставками [1]. Такой подход эффективен при простых повреждениях, однако сталкивается с трудностями при нестационарных режимах. Дуговые перемежающиеся замыкания на землю (ДПОЗЗ) с хаотичным горением дуги, глубокое насыщение измерительных трансформаторов тока [2,3] и пусковые токи мощных двигателей существенно искажают форму сигналов. В результате традиционные измерительные органы либо работают с задержками для отстройки от помех, либо подвергаются риску избыточного срабатывания или ложной блокировки. Это формирует потребность в методах, способных анализировать физический шаблон процесса целиком, выявляя аварийные режимы на ранней стадии."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "13",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "13",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-21T12:30:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Иванов С. О., Никандров М. В., Славутский Л. А. Нейросетевое моделирование релейной защиты с временной задержкой //Вестник Чувашского университета. – 2022. – №. 3. – С. 53-60.",
+      "",
+      "Куликов А. Л., Лоскутов А. А., Совина А. Н. Использование машинного обучения и искусственных нейронных сетей для распознавания витковых замыканий в силовых трансформаторах //Электричество. – 2022. – №. 10. – С. 34-44.",
+      "",
+      "Беззубов А. А. Разработка системы идентификации объема управляющих воздействий в энергосистемах на основе алгоритмов машинного обучения: магистерская диссертация : дис. – б. и., 2024.",
+      "",
+      "Кощеев М. И., Ларюхин А. А., Славутский А. Л. Использование адаптивных нейроалгоритмов для распознавания аномальных режимов систем вторичного оборудования электроэнергетики //Вестник Чувашского университета. – 2019. – №. 1. – С. 47-58."
+    ],
+    "text": "Иванов С. О., Никандров М. В., Славутский Л. А. Нейросетевое моделирование релейной защиты с временной задержкой //Вестник Чувашского университета. – 2022. – №. 3. – С. 53-60.\n\nКуликов А. Л., Лоскутов А. А., Совина А. Н. Использование машинного обучения и искусственных нейронных сетей для распознавания витковых замыканий в силовых трансформаторах //Электричество. – 2022. – №. 10. – С. 34-44.\n\nБеззубов А. А. Разработка системы идентификации объема управляющих воздействий в энергосистемах на основе алгоритмов машинного обучения: магистерская диссертация : дис. – б. и., 2024.\n\nКощеев М. И., Ларюхин А. А., Славутский А. Л. Использование адаптивных нейроалгоритмов для распознавания аномальных режимов систем вторичного оборудования электроэнергетики //Вестник Чувашского университета. – 2019. – №. 1. – С. 47-58.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[30]/w:commentRangeStart",
+        "paragraph_index": 30,
+        "paragraph_text": "Перспективным направлением преодоления ограничений существующей логики РЗА является применение методов машинного обучения (ML) и технологий искусственного интеллекта (ИИ). В последние годы наблюдается значительный рост числа исследований, посвящённых использованию нейронных сетей для классификации временных рядов [4-7], к которому относятся и осциллограммы аномальных и аварийных режимов. Тем не менее, массовое внедрение алгоритмов ИИ в промышленную эксплуатацию сдерживается рядом фундаментальных барьеров."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[30]/w:commentRangeEnd",
+        "paragraph_index": 30,
+        "paragraph_text": "Перспективным направлением преодоления ограничений существующей логики РЗА является применение методов машинного обучения (ML) и технологий искусственного интеллекта (ИИ). В последние годы наблюдается значительный рост числа исследований, посвящённых использованию нейронных сетей для классификации временных рядов [4-7], к которому относятся и осциллограммы аномальных и аварийных режимов. Тем не менее, массовое внедрение алгоритмов ИИ в промышленную эксплуатацию сдерживается рядом фундаментальных барьеров."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[30]/w:r[16]/w:commentReference",
+        "paragraph_index": 30,
+        "paragraph_text": "Перспективным направлением преодоления ограничений существующей логики РЗА является применение методов машинного обучения (ML) и технологий искусственного интеллекта (ИИ). В последние годы наблюдается значительный рост числа исследований, посвящённых использованию нейронных сетей для классификации временных рядов [4-7], к которому относятся и осциллограммы аномальных и аварийных режимов. Тем не менее, массовое внедрение алгоритмов ИИ в промышленную эксплуатацию сдерживается рядом фундаментальных барьеров."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "18",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "18",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-21T11:37:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Liu Z. et al. KAN: Kolmogorov–arnold networks //International conference on learning representations. – 2025. – Т. 2025. – С. 70367-70413."
+    ],
+    "text": "Liu Z. et al. KAN: Kolmogorov–arnold networks //International conference on learning representations. – 2025. – Т. 2025. – С. 70367-70413.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[32]/w:commentRangeStart[1]",
+        "paragraph_index": 32,
+        "paragraph_text": "Возможным ключом к решению проблемы интерпретируемости стало появление сетей Колмогорова-Арнольда (KAN) [8]. В отличие от классических перцептронов, где нелинейные функции активации жёстко зафиксированы в узлах (нейронах), архитектура KAN обучает сами функции активации, располагая их непосредственно на рёбрах графа вычислений в виде адаптивных одномерных сплайнов y = f(x). Данный подход обеспечивает сетям KAN иной уровень выразительности, поскольку они способны выучивать сложные нелинейные зависимости (например, полигональные характеристики реле сопротивления) при значительно меньшем числе параметров. Кроме того, обученные сплайны обладают физической наглядностью, позволяя анализировать выученные нелинейные связи напрямую, а не через скрытые признаки в абстрактных матрицах весов."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[32]/w:commentRangeEnd[1]",
+        "paragraph_index": 32,
+        "paragraph_text": "Возможным ключом к решению проблемы интерпретируемости стало появление сетей Колмогорова-Арнольда (KAN) [8]. В отличие от классических перцептронов, где нелинейные функции активации жёстко зафиксированы в узлах (нейронах), архитектура KAN обучает сами функции активации, располагая их непосредственно на рёбрах графа вычислений в виде адаптивных одномерных сплайнов y = f(x). Данный подход обеспечивает сетям KAN иной уровень выразительности, поскольку они способны выучивать сложные нелинейные зависимости (например, полигональные характеристики реле сопротивления) при значительно меньшем числе параметров. Кроме того, обученные сплайны обладают физической наглядностью, позволяя анализировать выученные нелинейные связи напрямую, а не через скрытые признаки в абстрактных матрицах весов."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[32]/w:r[5]/w:commentReference",
+        "paragraph_index": 32,
+        "paragraph_text": "Возможным ключом к решению проблемы интерпретируемости стало появление сетей Колмогорова-Арнольда (KAN) [8]. В отличие от классических перцептронов, где нелинейные функции активации жёстко зафиксированы в узлах (нейронах), архитектура KAN обучает сами функции активации, располагая их непосредственно на рёбрах графа вычислений в виде адаптивных одномерных сплайнов y = f(x). Данный подход обеспечивает сетям KAN иной уровень выразительности, поскольку они способны выучивать сложные нелинейные зависимости (например, полигональные характеристики реле сопротивления) при значительно меньшем числе параметров. Кроме того, обученные сплайны обладают физической наглядностью, позволяя анализировать выученные нелинейные связи напрямую, а не через скрытые признаки в абстрактных матрицах весов."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "20",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "20",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-01T17:38:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "От Андрея замечание",
+      "Было выделено слово, но там другая формулировка, так что может и нормально всё."
+    ],
+    "text": "От Андрея замечание\nБыло выделено слово, но там другая формулировка, так что может и нормально всё.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[32]/w:commentRangeStart[2]",
+        "paragraph_index": 32,
+        "paragraph_text": "Возможным ключом к решению проблемы интерпретируемости стало появление сетей Колмогорова-Арнольда (KAN) [8]. В отличие от классических перцептронов, где нелинейные функции активации жёстко зафиксированы в узлах (нейронах), архитектура KAN обучает сами функции активации, располагая их непосредственно на рёбрах графа вычислений в виде адаптивных одномерных сплайнов y = f(x). Данный подход обеспечивает сетям KAN иной уровень выразительности, поскольку они способны выучивать сложные нелинейные зависимости (например, полигональные характеристики реле сопротивления) при значительно меньшем числе параметров. Кроме того, обученные сплайны обладают физической наглядностью, позволяя анализировать выученные нелинейные связи напрямую, а не через скрытые признаки в абстрактных матрицах весов."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[32]/w:commentRangeEnd[2]",
+        "paragraph_index": 32,
+        "paragraph_text": "Возможным ключом к решению проблемы интерпретируемости стало появление сетей Колмогорова-Арнольда (KAN) [8]. В отличие от классических перцептронов, где нелинейные функции активации жёстко зафиксированы в узлах (нейронах), архитектура KAN обучает сами функции активации, располагая их непосредственно на рёбрах графа вычислений в виде адаптивных одномерных сплайнов y = f(x). Данный подход обеспечивает сетям KAN иной уровень выразительности, поскольку они способны выучивать сложные нелинейные зависимости (например, полигональные характеристики реле сопротивления) при значительно меньшем числе параметров. Кроме того, обученные сплайны обладают физической наглядностью, позволяя анализировать выученные нелинейные связи напрямую, а не через скрытые признаки в абстрактных матрицах весов."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[32]/w:r[38]/w:commentReference",
+        "paragraph_index": 32,
+        "paragraph_text": "Возможным ключом к решению проблемы интерпретируемости стало появление сетей Колмогорова-Арнольда (KAN) [8]. В отличие от классических перцептронов, где нелинейные функции активации жёстко зафиксированы в узлах (нейронах), архитектура KAN обучает сами функции активации, располагая их непосредственно на рёбрах графа вычислений в виде адаптивных одномерных сплайнов y = f(x). Данный подход обеспечивает сетям KAN иной уровень выразительности, поскольку они способны выучивать сложные нелинейные зависимости (например, полигональные характеристики реле сопротивления) при значительно меньшем числе параметров. Кроме того, обученные сплайны обладают физической наглядностью, позволяя анализировать выученные нелинейные связи напрямую, а не через скрытые признаки в абстрактных матрицах весов."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "21",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "21",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-21T11:56:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Raissi M., Perdikaris P., Karniadakis G. E. Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations //Journal of Computational physics. – 2019. – Т. 378. – С. 686-707.",
+      "",
+      "Karniadakis G. E. et al. Physics-informed machine learning //Nature Reviews Physics. – 2021. – Т. 3. – №. 6. – С. 422-440.",
+      "",
+      "Misyris G. S., Venzke A., Chatzivasileiadis S. Physics-informed neural networks for power systems //2020 IEEE power & energy society general meeting (PESGM). – IEEE, 2020. – С. 1-5."
+    ],
+    "text": "Raissi M., Perdikaris P., Karniadakis G. E. Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations //Journal of Computational physics. – 2019. – Т. 378. – С. 686-707.\n\nKarniadakis G. E. et al. Physics-informed machine learning //Nature Reviews Physics. – 2021. – Т. 3. – №. 6. – С. 422-440.\n\nMisyris G. S., Venzke A., Chatzivasileiadis S. Physics-informed neural networks for power systems //2020 IEEE power & energy society general meeting (PESGM). – IEEE, 2020. – С. 1-5.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[33]/w:commentRangeStart",
+        "paragraph_index": 33,
+        "paragraph_text": "Опираясь на потенциал KAN сетей, в данной работе выдвигается гипотеза о необходимости создания физически-информированных нейронных сетей [9-11] для задач РЗА. Речь идет не о замене детерминированной модели защиты, а о её интеграции с машинным обучением. Предлагаемая архитектурная модернизация (PhysicsKAN) подразумевает внедрение в структуру нейросети специализированных слоёв, отражающих базовые законы теоретической электротехники."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[33]/w:commentRangeEnd",
+        "paragraph_index": 33,
+        "paragraph_text": "Опираясь на потенциал KAN сетей, в данной работе выдвигается гипотеза о необходимости создания физически-информированных нейронных сетей [9-11] для задач РЗА. Речь идет не о замене детерминированной модели защиты, а о её интеграции с машинным обучением. Предлагаемая архитектурная модернизация (PhysicsKAN) подразумевает внедрение в структуру нейросети специализированных слоёв, отражающих базовые законы теоретической электротехники."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[33]/w:r[9]/w:commentReference",
+        "paragraph_index": 33,
+        "paragraph_text": "Опираясь на потенциал KAN сетей, в данной работе выдвигается гипотеза о необходимости создания физически-информированных нейронных сетей [9-11] для задач РЗА. Речь идет не о замене детерминированной модели защиты, а о её интеграции с машинным обучением. Предлагаемая архитектурная модернизация (PhysicsKAN) подразумевает внедрение в структуру нейросети специализированных слоёв, отражающих базовые законы теоретической электротехники."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "24",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "24",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-24T22:15:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Поменял на проводимость, так как она устойчивее, изучить в других местах"
+    ],
+    "text": "Поменял на проводимость, так как она устойчивее, изучить в других местах",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[34]/w:commentRangeStart[1]",
+        "paragraph_index": 34,
+        "paragraph_text": "В частности, добавляются операции попарного перемножения сигналов (для оценки величин, пропорциональных мощности S = U * I) и их деления (для оценки комплексной проводимости Y = I / U). При учитывается, что работа ведётся с комплексными числами (в полярных координатах), где при умножении фазовые углы складываются, а при делении – вычитаются. Предполагается, что такой подход избавит модель от необходимости тратить вычислительные ресурсы на «изобретение» законов физики с нуля (например, закон Ома), позволяя сплайнам сфокусироваться на выявлении тонких шаблонов нестационарных переходных процессов."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[34]/w:commentRangeEnd[1]",
+        "paragraph_index": 34,
+        "paragraph_text": "В частности, добавляются операции попарного перемножения сигналов (для оценки величин, пропорциональных мощности S = U * I) и их деления (для оценки комплексной проводимости Y = I / U). При учитывается, что работа ведётся с комплексными числами (в полярных координатах), где при умножении фазовые углы складываются, а при делении – вычитаются. Предполагается, что такой подход избавит модель от необходимости тратить вычислительные ресурсы на «изобретение» законов физики с нуля (например, закон Ома), позволяя сплайнам сфокусироваться на выявлении тонких шаблонов нестационарных переходных процессов."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[34]/w:r[24]/w:commentReference",
+        "paragraph_index": 34,
+        "paragraph_text": "В частности, добавляются операции попарного перемножения сигналов (для оценки величин, пропорциональных мощности S = U * I) и их деления (для оценки комплексной проводимости Y = I / U). При учитывается, что работа ведётся с комплексными числами (в полярных координатах), где при умножении фазовые углы складываются, а при делении – вычитаются. Предполагается, что такой подход избавит модель от необходимости тратить вычислительные ресурсы на «изобретение» законов физики с нуля (например, закон Ома), позволяя сплайнам сфокусироваться на выявлении тонких шаблонов нестационарных переходных процессов."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "25",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "25",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-01T17:41:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "От Андрея замечание",
+      "Перефразировал, Андрея предлагал добавить «и других»"
+    ],
+    "text": "От Андрея замечание\nПерефразировал, Андрея предлагал добавить «и других»",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[34]/w:commentRangeStart[2]",
+        "paragraph_index": 34,
+        "paragraph_text": "В частности, добавляются операции попарного перемножения сигналов (для оценки величин, пропорциональных мощности S = U * I) и их деления (для оценки комплексной проводимости Y = I / U). При учитывается, что работа ведётся с комплексными числами (в полярных координатах), где при умножении фазовые углы складываются, а при делении – вычитаются. Предполагается, что такой подход избавит модель от необходимости тратить вычислительные ресурсы на «изобретение» законов физики с нуля (например, закон Ома), позволяя сплайнам сфокусироваться на выявлении тонких шаблонов нестационарных переходных процессов."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[34]/w:commentRangeEnd[2]",
+        "paragraph_index": 34,
+        "paragraph_text": "В частности, добавляются операции попарного перемножения сигналов (для оценки величин, пропорциональных мощности S = U * I) и их деления (для оценки комплексной проводимости Y = I / U). При учитывается, что работа ведётся с комплексными числами (в полярных координатах), где при умножении фазовые углы складываются, а при делении – вычитаются. Предполагается, что такой подход избавит модель от необходимости тратить вычислительные ресурсы на «изобретение» законов физики с нуля (например, закон Ома), позволяя сплайнам сфокусироваться на выявлении тонких шаблонов нестационарных переходных процессов."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[34]/w:r[46]/w:commentReference",
+        "paragraph_index": 34,
+        "paragraph_text": "В частности, добавляются операции попарного перемножения сигналов (для оценки величин, пропорциональных мощности S = U * I) и их деления (для оценки комплексной проводимости Y = I / U). При учитывается, что работа ведётся с комплексными числами (в полярных координатах), где при умножении фазовые углы складываются, а при делении – вычитаются. Предполагается, что такой подход избавит модель от необходимости тратить вычислительные ресурсы на «изобретение» законов физики с нуля (например, закон Ома), позволяя сплайнам сфокусироваться на выявлении тонких шаблонов нестационарных переходных процессов."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "29",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "29",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-03-07T14:44:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Ссылка на статью про датасет",
+      "Evdakov, A., Filatova, G., Yablokov, A. et al. A dataset of real-world oscillograms from electrical power grids. Sci Data (2026). https://doi.org/10.1038/s41597-026-06587-8"
+    ],
+    "text": "Ссылка на статью про датасет\nEvdakov, A., Filatova, G., Yablokov, A. et al. A dataset of real-world oscillograms from electrical power grids. Sci Data (2026). https://doi.org/10.1038/s41597-026-06587-8",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[43]/w:commentRangeStart",
+        "paragraph_index": 43,
+        "paragraph_text": "Основой исследования является уникальный массив реальных осциллограмм аварий и нормальных режимов работы, зарегистрированных микропроцессорными терминалами РЗА на объектах с напряжением 0,4 ÷ 35 кВ. Подробное описание методологии сбора, анонимизации и верификации данного набора данных (датасета) приведено в ранее опубликованной работе [12]. "
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[43]/w:commentRangeEnd",
+        "paragraph_index": 43,
+        "paragraph_text": "Основой исследования является уникальный массив реальных осциллограмм аварий и нормальных режимов работы, зарегистрированных микропроцессорными терминалами РЗА на объектах с напряжением 0,4 ÷ 35 кВ. Подробное описание методологии сбора, анонимизации и верификации данного набора данных (датасета) приведено в ранее опубликованной работе [12]. "
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[43]/w:r[18]/w:commentReference",
+        "paragraph_index": 43,
+        "paragraph_text": "Основой исследования является уникальный массив реальных осциллограмм аварий и нормальных режимов работы, зарегистрированных микропроцессорными терминалами РЗА на объектах с напряжением 0,4 ÷ 35 кВ. Подробное описание методологии сбора, анонимизации и верификации данного набора данных (датасета) приведено в ранее опубликованной работе [12]. "
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "30",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "30",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-21T23:33:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Переписал в абзац, чтобы сократить объём строк, и так едва влазит в 10стр."
+    ],
+    "text": "Переписал в абзац, чтобы сократить объём строк, и так едва влазит в 10стр.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[44]/w:commentRangeStart",
+        "paragraph_index": 44,
+        "paragraph_text": "С целью обучения и тестирования моделей использовалась экспертно-размеченная выборка осциллограмм. Оценка способности ИИ-моделей извлекать признаки и анализировать переходные процессы основана на разделении всех осциллограмм на 4 базовых классах. Норма: установившиеся режимы работы сети и измерительный шум.; Рабочие коммутации: штатные пуски электродвигателей, включения силовых трансформаторов под напряжение и т.д. Аномальные режимы: искажения формы сигнала, устойчивые смещения нейтрали, не требующие мгновенного отключения. Аварийные события: критические повреждения (включая короткие замыкания), требующие немедленного срабатывания РЗА. Такое разделение служит полигоном для проверки селективности разрабатываемых алгоритмов."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[44]/w:commentRangeEnd",
+        "paragraph_index": 44,
+        "paragraph_text": "С целью обучения и тестирования моделей использовалась экспертно-размеченная выборка осциллограмм. Оценка способности ИИ-моделей извлекать признаки и анализировать переходные процессы основана на разделении всех осциллограмм на 4 базовых классах. Норма: установившиеся режимы работы сети и измерительный шум.; Рабочие коммутации: штатные пуски электродвигателей, включения силовых трансформаторов под напряжение и т.д. Аномальные режимы: искажения формы сигнала, устойчивые смещения нейтрали, не требующие мгновенного отключения. Аварийные события: критические повреждения (включая короткие замыкания), требующие немедленного срабатывания РЗА. Такое разделение служит полигоном для проверки селективности разрабатываемых алгоритмов."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[44]/w:r[34]/w:commentReference",
+        "paragraph_index": 44,
+        "paragraph_text": "С целью обучения и тестирования моделей использовалась экспертно-размеченная выборка осциллограмм. Оценка способности ИИ-моделей извлекать признаки и анализировать переходные процессы основана на разделении всех осциллограмм на 4 базовых классах. Норма: установившиеся режимы работы сети и измерительный шум.; Рабочие коммутации: штатные пуски электродвигателей, включения силовых трансформаторов под напряжение и т.д. Аномальные режимы: искажения формы сигнала, устойчивые смещения нейтрали, не требующие мгновенного отключения. Аварийные события: критические повреждения (включая короткие замыкания), требующие немедленного срабатывания РЗА. Такое разделение служит полигоном для проверки селективности разрабатываемых алгоритмов."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "33",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "33",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-21T23:11:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Вероятно надо добавить другие пункты, которые описаны в методах визуализации, например кривая Паррето, Лепестковая и т.д., если буду их использовать. Но там, стоит разобраться, какие именно данные она берёт"
+    ],
+    "text": "Вероятно надо добавить другие пункты, которые описаны в методах визуализации, например кривая Паррето, Лепестковая и т.д., если буду их использовать. Но там, стоит разобраться, какие именно данные она берёт",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[45]/w:commentRangeStart",
+        "paragraph_index": 45,
+        "paragraph_text": "2.2. Методология оценки качества моделей."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[45]/w:commentRangeEnd",
+        "paragraph_index": 45,
+        "paragraph_text": "2.2. Методология оценки качества моделей."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[45]/w:r[6]/w:commentReference",
+        "paragraph_index": 45,
+        "paragraph_text": "2.2. Методология оценки качества моделей."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "34",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "34",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-02T10:24:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "От Андрея замечание",
+      "В предыдущей версии сама формула была далеко, и Андрей предлагал перенести её выше. Но здесь, в целом, она идёт в следующем же абзаце вместе со всеми другими формулами, поэтому пока что не стал менять."
+    ],
+    "text": "От Андрея замечание\nВ предыдущей версии сама формула была далеко, и Андрей предлагал перенести её выше. Но здесь, в целом, она идёт в следующем же абзаце вместе со всеми другими формулами, поэтому пока что не стал менять.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[46]/w:commentRangeStart",
+        "paragraph_index": 46,
+        "paragraph_text": "Специфика анализа реальных данных энергосистем систем заключается в экстремальном дисбалансе классов. Большую часть времени сеть находится в нормальном режиме. В этих условиях стандартная метрика доли правильных ответов (Accuracy) становится неинформативной. Если нейросеть будет в тривиально классифицировать все окна как «Норма», Accuracy превысит 90%, однако для релейной защиты это будет означать катастрофический отказ в срабатывании."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[46]/w:commentRangeEnd",
+        "paragraph_index": 46,
+        "paragraph_text": "Специфика анализа реальных данных энергосистем систем заключается в экстремальном дисбалансе классов. Большую часть времени сеть находится в нормальном режиме. В этих условиях стандартная метрика доли правильных ответов (Accuracy) становится неинформативной. Если нейросеть будет в тривиально классифицировать все окна как «Норма», Accuracy превысит 90%, однако для релейной защиты это будет означать катастрофический отказ в срабатывании."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[46]/w:r[15]/w:commentReference",
+        "paragraph_index": 46,
+        "paragraph_text": "Специфика анализа реальных данных энергосистем систем заключается в экстремальном дисбалансе классов. Большую часть времени сеть находится в нормальном режиме. В этих условиях стандартная метрика доли правильных ответов (Accuracy) становится неинформативной. Если нейросеть будет в тривиально классифицировать все окна как «Норма», Accuracy превысит 90%, однако для релейной защиты это будет означать катастрофический отказ в срабатывании."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "35",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "35",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-24T18:07:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Записал тут, ибо и так страниц едва хватало, а другое выкидывать не хочется, да и сами формулы хочется оставить."
+    ],
+    "text": "Записал тут, ибо и так страниц едва хватало, а другое выкидывать не хочется, да и сами формулы хочется оставить.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[47]/w:commentRangeStart",
+        "paragraph_index": 47,
+        "paragraph_text": "В связи с экстремальным дисбалансом классов (доминирование нормального режима), метрика  является неинформативной. Объективная оценка проводилась с использованием системы сбалансированных метрик (рис. 1):  (селективность, минимизация ложных срабатываний),\n (чувствительность, отсутствие пропусков аварий) и их гармоническое среднее . Дополнительно оценивалась площадь под кривой ошибок \nROC-AUC (рис. 2), характеризующая гибкость настройки уставки чувствительности алгоритма к небалансам и помехам."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[47]/m:oMath[1]/w:commentRangeEnd",
+        "paragraph_index": 47,
+        "paragraph_text": "В связи с экстремальным дисбалансом классов (доминирование нормального режима), метрика  является неинформативной. Объективная оценка проводилась с использованием системы сбалансированных метрик (рис. 1):  (селективность, минимизация ложных срабатываний),\n (чувствительность, отсутствие пропусков аварий) и их гармоническое среднее . Дополнительно оценивалась площадь под кривой ошибок \nROC-AUC (рис. 2), характеризующая гибкость настройки уставки чувствительности алгоритма к небалансам и помехам."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[47]/m:oMath[1]/m:r[2]/w:commentReference",
+        "paragraph_index": 47,
+        "paragraph_text": "В связи с экстремальным дисбалансом классов (доминирование нормального режима), метрика  является неинформативной. Объективная оценка проводилась с использованием системы сбалансированных метрик (рис. 1):  (селективность, минимизация ложных срабатываний),\n (чувствительность, отсутствие пропусков аварий) и их гармоническое среднее . Дополнительно оценивалась площадь под кривой ошибок \nROC-AUC (рис. 2), характеризующая гибкость настройки уставки чувствительности алгоритма к небалансам и помехам."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "36",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "36",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-21T23:13:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Картинку скомуниздил, не моя, но очень хорошая))"
+    ],
+    "text": "Картинку скомуниздил, не моя, но очень хорошая))",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[2]/w:tr[2]/w:tc/w:p/w:commentRangeStart",
+        "paragraph_index": 53,
+        "paragraph_text": "Рисунок 2. Визуальное представление метрики ROC-AUC. "
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[2]/w:tr[2]/w:tc/w:p/w:commentRangeEnd",
+        "paragraph_index": 53,
+        "paragraph_text": "Рисунок 2. Визуальное представление метрики ROC-AUC. "
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[2]/w:tr[2]/w:tc/w:p/w:r[8]/w:commentReference",
+        "paragraph_index": 53,
+        "paragraph_text": "Рисунок 2. Визуальное представление метрики ROC-AUC. "
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "37",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "37",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-24T18:35:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Переписал в абзац, чтобы сократить объём строк, и так едва влазит в 10стр."
+    ],
+    "text": "Переписал в абзац, чтобы сократить объём строк, и так едва влазит в 10стр.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[53]/w:commentRangeStart",
+        "paragraph_index": 57,
+        "paragraph_text": "Сложные агрегированные метрики удобны для обучения моделей, однако для инженеров-энергетиков требуется более наглядная оценка надёжности в терминах «цены ошибки». Для этого в исследовании внедрена концепция инженерного визуального анализа на базе гистограмм и матриц ошибок. Доля правильных предсказаний (TP): отображается столбцами, направленными вверх, показывая уверенность модели в правильном диагнозе. Доля ошибок I и II рода (I – ложноположительные результаты (FP) и II – ложноотрицательные (FN), т.е. несрабатывания): отображается столбцами, направленными вниз. "
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[53]/w:commentRangeEnd",
+        "paragraph_index": 57,
+        "paragraph_text": "Сложные агрегированные метрики удобны для обучения моделей, однако для инженеров-энергетиков требуется более наглядная оценка надёжности в терминах «цены ошибки». Для этого в исследовании внедрена концепция инженерного визуального анализа на базе гистограмм и матриц ошибок. Доля правильных предсказаний (TP): отображается столбцами, направленными вверх, показывая уверенность модели в правильном диагнозе. Доля ошибок I и II рода (I – ложноположительные результаты (FP) и II – ложноотрицательные (FN), т.е. несрабатывания): отображается столбцами, направленными вниз. "
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[53]/w:r[3]/w:commentReference",
+        "paragraph_index": 57,
+        "paragraph_text": "Сложные агрегированные метрики удобны для обучения моделей, однако для инженеров-энергетиков требуется более наглядная оценка надёжности в терминах «цены ошибки». Для этого в исследовании внедрена концепция инженерного визуального анализа на базе гистограмм и матриц ошибок. Доля правильных предсказаний (TP): отображается столбцами, направленными вверх, показывая уверенность модели в правильном диагнозе. Доля ошибок I и II рода (I – ложноположительные результаты (FP) и II – ложноотрицательные (FN), т.е. несрабатывания): отображается столбцами, направленными вниз. "
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "38",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "38",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-21T23:28:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Ну я говорю об этом, конечно… Вот только вроде бы прям в описании нигде больше нет, может и в раздел «мыслей о дальнейших задачах» вынести"
+    ],
+    "text": "Ну я говорю об этом, конечно… Вот только вроде бы прям в описании нигде больше нет, может и в раздел «мыслей о дальнейших задачах» вынести",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[55]/w:commentRangeStart[1]",
+        "paragraph_index": 59,
+        "paragraph_text": "Так же в работе предлагается концепция разделения ошибок ИИ на «допустимые» и «критические». Допустимые ошибки – например, классификация «Аномалии» (просадки напряжения) как «Аварии». В худшем случае это приведет лишь к избыточному пуску регистратора аварийных событий БАВР для записи процесса. Критические ошибки – классификация «Рабочей коммутации» (пуск двигателя) как «Аварии» (что ведет к ложному отключению потребителя) или классификация «Аварии» как «Нормы» (пропуск повреждения, ведущий к разрушению оборудования). "
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[55]/w:commentRangeEnd[1]",
+        "paragraph_index": 59,
+        "paragraph_text": "Так же в работе предлагается концепция разделения ошибок ИИ на «допустимые» и «критические». Допустимые ошибки – например, классификация «Аномалии» (просадки напряжения) как «Аварии». В худшем случае это приведет лишь к избыточному пуску регистратора аварийных событий БАВР для записи процесса. Критические ошибки – классификация «Рабочей коммутации» (пуск двигателя) как «Аварии» (что ведет к ложному отключению потребителя) или классификация «Аварии» как «Нормы» (пропуск повреждения, ведущий к разрушению оборудования). "
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[55]/w:r[5]/w:commentReference",
+        "paragraph_index": 59,
+        "paragraph_text": "Так же в работе предлагается концепция разделения ошибок ИИ на «допустимые» и «критические». Допустимые ошибки – например, классификация «Аномалии» (просадки напряжения) как «Аварии». В худшем случае это приведет лишь к избыточному пуску регистратора аварийных событий БАВР для записи процесса. Критические ошибки – классификация «Рабочей коммутации» (пуск двигателя) как «Аварии» (что ведет к ложному отключению потребителя) или классификация «Аварии» как «Нормы» (пропуск повреждения, ведущий к разрушению оборудования). "
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "39",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "39",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-24T18:35:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Переписал в абзац, чтобы сократить объём строк, и так едва влазит в 10стр."
+    ],
+    "text": "Переписал в абзац, чтобы сократить объём строк, и так едва влазит в 10стр.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[55]/w:commentRangeStart[2]",
+        "paragraph_index": 59,
+        "paragraph_text": "Так же в работе предлагается концепция разделения ошибок ИИ на «допустимые» и «критические». Допустимые ошибки – например, классификация «Аномалии» (просадки напряжения) как «Аварии». В худшем случае это приведет лишь к избыточному пуску регистратора аварийных событий БАВР для записи процесса. Критические ошибки – классификация «Рабочей коммутации» (пуск двигателя) как «Аварии» (что ведет к ложному отключению потребителя) или классификация «Аварии» как «Нормы» (пропуск повреждения, ведущий к разрушению оборудования). "
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[55]/w:commentRangeEnd[2]",
+        "paragraph_index": 59,
+        "paragraph_text": "Так же в работе предлагается концепция разделения ошибок ИИ на «допустимые» и «критические». Допустимые ошибки – например, классификация «Аномалии» (просадки напряжения) как «Аварии». В худшем случае это приведет лишь к избыточному пуску регистратора аварийных событий БАВР для записи процесса. Критические ошибки – классификация «Рабочей коммутации» (пуск двигателя) как «Аварии» (что ведет к ложному отключению потребителя) или классификация «Аварии» как «Нормы» (пропуск повреждения, ведущий к разрушению оборудования). "
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[55]/w:r[8]/w:commentReference",
+        "paragraph_index": 59,
+        "paragraph_text": "Так же в работе предлагается концепция разделения ошибок ИИ на «допустимые» и «критические». Допустимые ошибки – например, классификация «Аномалии» (просадки напряжения) как «Аварии». В худшем случае это приведет лишь к избыточному пуску регистратора аварийных событий БАВР для записи процесса. Критические ошибки – классификация «Рабочей коммутации» (пуск двигателя) как «Аварии» (что ведет к ложному отключению потребителя) или классификация «Аварии» как «Нормы» (пропуск повреждения, ведущий к разрушению оборудования). "
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "42",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "42",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-24T18:37:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Переписал в абзац, чтобы сократить объём строк, и так едва влазит в 10стр."
+    ],
+    "text": "Переписал в абзац, чтобы сократить объём строк, и так едва влазит в 10стр.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[59]/w:commentRangeStart",
+        "paragraph_index": 63,
+        "paragraph_text": "С целью обеспечения корректности оценки каждая архитектура реализована в трёх конфигурациях сложности: лёгкая (Light): использует только 1-ю гармонику сигнала; средняя (Medium): использует первые 3 гармоники; тяжелая (Heavy): использует первые 9 гармоник. Это позволяет оценить их Парето-эффективность – баланс между точностью классификации и вычислительной задержкой на CPU."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[59]/w:commentRangeEnd",
+        "paragraph_index": 63,
+        "paragraph_text": "С целью обеспечения корректности оценки каждая архитектура реализована в трёх конфигурациях сложности: лёгкая (Light): использует только 1-ю гармонику сигнала; средняя (Medium): использует первые 3 гармоники; тяжелая (Heavy): использует первые 9 гармоник. Это позволяет оценить их Парето-эффективность – баланс между точностью классификации и вычислительной задержкой на CPU."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[59]/w:r[6]/w:commentReference",
+        "paragraph_index": 63,
+        "paragraph_text": "С целью обеспечения корректности оценки каждая архитектура реализована в трёх конфигурациях сложности: лёгкая (Light): использует только 1-ю гармонику сигнала; средняя (Medium): использует первые 3 гармоники; тяжелая (Heavy): использует первые 9 гармоник. Это позволяет оценить их Парето-эффективность – баланс между точностью классификации и вычислительной задержкой на CPU."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "44",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "44",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-22T16:53:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Liu Z. et al. KAN: Kolmogorov–arnold networks //International conference on learning representations. – 2025. – Т. 2025. – С. 70367-70413."
+    ],
+    "text": "Liu Z. et al. KAN: Kolmogorov–arnold networks //International conference on learning representations. – 2025. – Т. 2025. – С. 70367-70413.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[66]/w:commentRangeStart",
+        "paragraph_index": 70,
+        "paragraph_text": "С целью преодоления проблемы непрозрачности исследуется класс моделей – сети Колмогорова-Арнольда (KAN) [8]. Их отличие заключается в обучении одномерных B-сплайнов непосредственно на рёбрах графа вычислений (рис. 4). В терминах РЗА это означает, что сеть не просто умножает сигнал на веса, а пропускает его через гибкие кривые, самостоятельно синтезируя аналог характеристики срабатывания реле."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[66]/w:commentRangeEnd",
+        "paragraph_index": 70,
+        "paragraph_text": "С целью преодоления проблемы непрозрачности исследуется класс моделей – сети Колмогорова-Арнольда (KAN) [8]. Их отличие заключается в обучении одномерных B-сплайнов непосредственно на рёбрах графа вычислений (рис. 4). В терминах РЗА это означает, что сеть не просто умножает сигнал на веса, а пропускает его через гибкие кривые, самостоятельно синтезируя аналог характеристики срабатывания реле."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[66]/w:r[7]/w:commentReference",
+        "paragraph_index": 70,
+        "paragraph_text": "С целью преодоления проблемы непрозрачности исследуется класс моделей – сети Колмогорова-Арнольда (KAN) [8]. Их отличие заключается в обучении одномерных B-сплайнов непосредственно на рёбрах графа вычислений (рис. 4). В терминах РЗА это означает, что сеть не просто умножает сигнал на веса, а пропускает его через гибкие кривые, самостоятельно синтезируя аналог характеристики срабатывания реле."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "46",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "46",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-23T22:35:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Блин… ",
+      "",
+      "Я хотел вот эти блоки расчёта величин вставить в КАЖДЫЙ слой, а не один раз в начале, это надо обязательно исправить. По статье, быть может не совсем понятно, хотя в схемах – пожалуй да."
+    ],
+    "text": "Блин… \n\nЯ хотел вот эти блоки расчёта величин вставить в КАЖДЫЙ слой, а не один раз в начале, это надо обязательно исправить. По статье, быть может не совсем понятно, хотя в схемах – пожалуй да.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[68]/w:commentRangeStart",
+        "paragraph_index": 72,
+        "paragraph_text": "3.3. Интеграция законов электротехники: физически-информированные архитектуры"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[68]/w:commentRangeEnd",
+        "paragraph_index": 72,
+        "paragraph_text": "3.3. Интеграция законов электротехники: физически-информированные архитектуры"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[68]/w:r[4]/w:commentReference",
+        "paragraph_index": 72,
+        "paragraph_text": "3.3. Интеграция законов электротехники: физически-информированные архитектуры"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "47",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "47",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-24T16:38:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Графики на текущий момент сделаны нейронкой, и они очень близки к нужному, правил только для rPhysicsKAN ошибки. Если потребуется, то буду переводить вручную, правда это долго…"
+    ],
+    "text": "Графики на текущий момент сделаны нейронкой, и они очень близки к нужному, правил только для rPhysicsKAN ошибки. Если потребуется, то буду переводить вручную, правда это долго…",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[3]/w:tr[2]/w:tc/w:p[1]/w:commentRangeStart[1]",
+        "paragraph_index": 77,
+        "paragraph_text": "Рисунок 3. Исследуемые классические архитектуры глубокого обучения: "
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[3]/w:tr[2]/w:tc/w:p[1]/w:commentRangeEnd[1]",
+        "paragraph_index": 77,
+        "paragraph_text": "Рисунок 3. Исследуемые классические архитектуры глубокого обучения: "
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[3]/w:tr[2]/w:tc/w:p[1]/w:r[6]/w:commentReference",
+        "paragraph_index": 77,
+        "paragraph_text": "Рисунок 3. Исследуемые классические архитектуры глубокого обучения: "
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "48",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "48",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-02T11:52:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "И да, почти уверен, что потребуется, ибо многое мелко.."
+    ],
+    "text": "И да, почти уверен, что потребуется, ибо многое мелко..",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[3]/w:tr[2]/w:tc/w:p[1]/w:commentRangeStart[2]",
+        "paragraph_index": 77,
+        "paragraph_text": "Рисунок 3. Исследуемые классические архитектуры глубокого обучения: "
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[3]/w:tr[2]/w:tc/w:p[1]/w:commentRangeEnd[2]",
+        "paragraph_index": 77,
+        "paragraph_text": "Рисунок 3. Исследуемые классические архитектуры глубокого обучения: "
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[3]/w:tr[2]/w:tc/w:p[1]/w:r[7]/w:commentReference",
+        "paragraph_index": 77,
+        "paragraph_text": "Рисунок 3. Исследуемые классические архитектуры глубокого обучения: "
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "49",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "49",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-22T23:12:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Поправить картинку, в ней вроде бы есть косяки."
+    ],
+    "text": "Поправить картинку, в ней вроде бы есть косяки.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[6]/w:tr[2]/w:tc/w:p/w:commentRangeStart[1]",
+        "paragraph_index": 87,
+        "paragraph_text": "Рисунок 6. Релейная архитектура Колмогорова-Арнольда (rPhysicsKAN)"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[6]/w:tr[2]/w:tc/w:p/w:commentRangeEnd[1]",
+        "paragraph_index": 87,
+        "paragraph_text": "Рисунок 6. Релейная архитектура Колмогорова-Арнольда (rPhysicsKAN)"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[6]/w:tr[2]/w:tc/w:p/w:r[3]/w:commentReference",
+        "paragraph_index": 87,
+        "paragraph_text": "Рисунок 6. Релейная архитектура Колмогорова-Арнольда (rPhysicsKAN)"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "50",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "50",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-23T23:36:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Да и все бы надо перерисовать всё же…"
+    ],
+    "text": "Да и все бы надо перерисовать всё же…",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[6]/w:tr[2]/w:tc/w:p/w:commentRangeStart[2]",
+        "paragraph_index": 87,
+        "paragraph_text": "Рисунок 6. Релейная архитектура Колмогорова-Арнольда (rPhysicsKAN)"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[6]/w:tr[2]/w:tc/w:p/w:commentRangeEnd[2]",
+        "paragraph_index": 87,
+        "paragraph_text": "Рисунок 6. Релейная архитектура Колмогорова-Арнольда (rPhysicsKAN)"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[6]/w:tr[2]/w:tc/w:p/w:r[4]/w:commentReference",
+        "paragraph_index": 87,
+        "paragraph_text": "Рисунок 6. Релейная архитектура Колмогорова-Арнольда (rPhysicsKAN)"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "53",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "53",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-24T17:51:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Если будет время и посчитаны данные на разреженных данных, то добавить вот это описание.",
+      "",
+      "«и сильного (измерения в первый и последний период)»"
+    ],
+    "text": "Если будет время и посчитаны данные на разреженных данных, то добавить вот это описание.\n\n«и сильного (измерения в первый и последний период)»",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[86]/w:commentRangeStart",
+        "paragraph_index": 99,
+        "paragraph_text": "Для обеспечения корректности оценки классические архитектуры и модели семейства KAN исследовались в трёх унифицированных конфигурациях сложности (лёгкая – средняя – тяжёлая) на данных среднего уровня разреженности (2 измерения за период). Ключевым критерием применимости интеллектуального алгоритма в устройствах РЗА и БАВР является не только точность, но и аппаратная эффективность, определяемая объемом занимаемой памяти и скоростью принятия решения на CPU терминала."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[86]/w:commentRangeEnd",
+        "paragraph_index": 99,
+        "paragraph_text": "Для обеспечения корректности оценки классические архитектуры и модели семейства KAN исследовались в трёх унифицированных конфигурациях сложности (лёгкая – средняя – тяжёлая) на данных среднего уровня разреженности (2 измерения за период). Ключевым критерием применимости интеллектуального алгоритма в устройствах РЗА и БАВР является не только точность, но и аппаратная эффективность, определяемая объемом занимаемой памяти и скоростью принятия решения на CPU терминала."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[86]/w:r[4]/w:commentReference",
+        "paragraph_index": 99,
+        "paragraph_text": "Для обеспечения корректности оценки классические архитектуры и модели семейства KAN исследовались в трёх унифицированных конфигурациях сложности (лёгкая – средняя – тяжёлая) на данных среднего уровня разреженности (2 измерения за период). Ключевым критерием применимости интеллектуального алгоритма в устройствах РЗА и БАВР является не только точность, но и аппаратная эффективность, определяемая объемом занимаемой памяти и скоростью принятия решения на CPU терминала."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "54",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "54",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-02T11:53:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "От Андрея замечание",
+      "В Обозначения на графиках не видны, также, как и цвет."
+    ],
+    "text": "От Андрея замечание\nВ Обозначения на графиках не видны, также, как и цвет.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[7]/w:tr[5]/w:tc/w:p/w:commentRangeStart[1]",
+        "paragraph_index": 105,
+        "paragraph_text": "Рисунок 7. Оценка Парето."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[7]/w:tr[5]/w:tc/w:p/w:commentRangeEnd[1]",
+        "paragraph_index": 105,
+        "paragraph_text": "Рисунок 7. Оценка Парето."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[7]/w:tr[5]/w:tc/w:p/w:r[4]/w:commentReference",
+        "paragraph_index": 105,
+        "paragraph_text": "Рисунок 7. Оценка Парето."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "55",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "55",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-02T11:54:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Хмм… Размер как порпавить знаю, но что делать с цветом для этого графика – прям большой вопрос. "
+    ],
+    "text": "Хмм… Размер как порпавить знаю, но что делать с цветом для этого графика – прям большой вопрос. ",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[7]/w:tr[5]/w:tc/w:p/w:commentRangeStart[2]",
+        "paragraph_index": 105,
+        "paragraph_text": "Рисунок 7. Оценка Парето."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[7]/w:tr[5]/w:tc/w:p/w:commentRangeEnd[2]",
+        "paragraph_index": 105,
+        "paragraph_text": "Рисунок 7. Оценка Парето."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[7]/w:tr[5]/w:tc/w:p/w:r[5]/w:commentReference",
+        "paragraph_index": 105,
+        "paragraph_text": "Рисунок 7. Оценка Парето."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "57",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "57",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-24T18:43:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Переписал в абзац, чтобы сократить объём строк, и так едва влазит в 10стр."
+    ],
+    "text": "Переписал в абзац, чтобы сократить объём строк, и так едва влазит в 10стр.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[93]/w:commentRangeStart",
+        "paragraph_index": 111,
+        "paragraph_text": "Агрегированная метрика F1-Macro даёт общую математическую оценку качества моделей, однако для инженера-релейщика критически важно понимать, физический характер селективных ошибок от ИИ. С этой целью в работе проведён детальный анализ лучших моделей с использованием целого дополняющих друг друга методов: лепестковые диаграммы (рис. 8); двунаправленные гистограммы (рис. 9); матрицы перекрестных ошибок (табл. 1); графики предсказательной разметки на реальных осциллограммах (рис. 10). Такой разносторонний подход позволяет наглядно оценить применимость алгоритмов при их интеграции в микропроцессорные терминалы РЗА и БАВР."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[93]/w:commentRangeEnd",
+        "paragraph_index": 111,
+        "paragraph_text": "Агрегированная метрика F1-Macro даёт общую математическую оценку качества моделей, однако для инженера-релейщика критически важно понимать, физический характер селективных ошибок от ИИ. С этой целью в работе проведён детальный анализ лучших моделей с использованием целого дополняющих друг друга методов: лепестковые диаграммы (рис. 8); двунаправленные гистограммы (рис. 9); матрицы перекрестных ошибок (табл. 1); графики предсказательной разметки на реальных осциллограммах (рис. 10). Такой разносторонний подход позволяет наглядно оценить применимость алгоритмов при их интеграции в микропроцессорные терминалы РЗА и БАВР."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[93]/w:r[12]/w:commentReference",
+        "paragraph_index": 111,
+        "paragraph_text": "Агрегированная метрика F1-Macro даёт общую математическую оценку качества моделей, однако для инженера-релейщика критически важно понимать, физический характер селективных ошибок от ИИ. С этой целью в работе проведён детальный анализ лучших моделей с использованием целого дополняющих друг друга методов: лепестковые диаграммы (рис. 8); двунаправленные гистограммы (рис. 9); матрицы перекрестных ошибок (табл. 1); графики предсказательной разметки на реальных осциллограммах (рис. 10). Такой разносторонний подход позволяет наглядно оценить применимость алгоритмов при их интеграции в микропроцессорные терминалы РЗА и БАВР."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "58",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "58",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-24T16:28:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Модели",
+      "MLP – средняя",
+      "CNN – средняя",
+      "ResNet – средняя",
+      "SimpleKAN - лёгкая",
+      "ConvKAN – тяжёлая",
+      "PhisicsKAN – тяжёлая",
+      "cPhisicsKAN – тяжёлая",
+      "rPhisicsKAN – тяжёлая"
+    ],
+    "text": "Модели\nMLP – средняя\nCNN – средняя\nResNet – средняя\nSimpleKAN - лёгкая\nConvKAN – тяжёлая\nPhisicsKAN – тяжёлая\ncPhisicsKAN – тяжёлая\nrPhisicsKAN – тяжёлая",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[8]/w:tr[2]/w:tc/w:p/w:commentRangeStart",
+        "paragraph_index": 116,
+        "paragraph_text": "Рисунок 8. Лепестковая карта распознавания событий для лучшей модели."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[8]/w:tr[2]/w:tc/w:p/w:commentRangeEnd",
+        "paragraph_index": 116,
+        "paragraph_text": "Рисунок 8. Лепестковая карта распознавания событий для лучшей модели."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[8]/w:tr[2]/w:tc/w:p/w:r[11]/w:commentReference",
+        "paragraph_index": 116,
+        "paragraph_text": "Рисунок 8. Лепестковая карта распознавания событий для лучшей модели."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "59",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "59",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-24T11:21:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Проверить выводы на обновлённых графиках."
+    ],
+    "text": "Проверить выводы на обновлённых графиках.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[9]/w:tr[1]/w:tc/w:p/w:commentRangeStart",
+        "paragraph_index": 122,
+        "paragraph_text": ""
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[9]/w:tr[1]/w:tc/w:p/w:commentRangeEnd",
+        "paragraph_index": 122,
+        "paragraph_text": ""
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[9]/w:tr[1]/w:tc/w:p/w:r[2]/w:commentReference",
+        "paragraph_index": 122,
+        "paragraph_text": ""
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "60",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "60",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-24T16:28:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "«среднего» уровня"
+    ],
+    "text": "«среднего» уровня",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[10]/w:tr[3]/w:tc/w:p/w:commentRangeStart",
+        "paragraph_index": 136,
+        "paragraph_text": "для ResNet"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[10]/w:tr[3]/w:tc/w:p/w:commentRangeEnd",
+        "paragraph_index": 136,
+        "paragraph_text": "для ResNet"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[10]/w:tr[3]/w:tc/w:p/w:r[4]/w:commentReference",
+        "paragraph_index": 136,
+        "paragraph_text": "для ResNet"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "61",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "61",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-24T16:28:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "«тяжёлого» уровня"
+    ],
+    "text": "«тяжёлого» уровня",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[10]/w:tr[8]/w:tc/w:p/w:commentRangeStart",
+        "paragraph_index": 161,
+        "paragraph_text": "для rPhysicsKAN"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[10]/w:tr[8]/w:tc/w:p/w:commentRangeEnd",
+        "paragraph_index": 161,
+        "paragraph_text": "для rPhysicsKAN"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[10]/w:tr[8]/w:tc/w:p/w:r[4]/w:commentReference",
+        "paragraph_index": 161,
+        "paragraph_text": "для rPhysicsKAN"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "62",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "62",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-03-08T22:03:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Файл",
+      "mark_0d50f79a162f.png",
+      "в папке",
+      "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\reports\\Exp_2_5_and_start_Exp_2_6\\marking_plots\\train\\Exp_2.6.9_cPhysicsKAN_heavy_phase_polar_stride_base_weights_aug_train"
+    ],
+    "text": "Файл\nmark_0d50f79a162f.png\nв папке\nD:\\Программирование\\Fork\\Scientific_research_osc_ML\\reports\\Exp_2_5_and_start_Exp_2_6\\marking_plots\\train\\Exp_2.6.9_cPhysicsKAN_heavy_phase_polar_stride_base_weights_aug_train",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[11]/w:tr[1]/w:tc[1]/w:p/w:commentRangeStart[1]",
+        "paragraph_index": 190,
+        "paragraph_text": ""
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[11]/w:tr[1]/w:tc[1]/w:p/w:commentRangeEnd[1]",
+        "paragraph_index": 190,
+        "paragraph_text": ""
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[11]/w:tr[1]/w:tc[1]/w:p/w:r[2]/w:commentReference",
+        "paragraph_index": 190,
+        "paragraph_text": ""
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "63",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "63",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-03-08T22:05:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "+ Явно фазовая раскраска не верная.",
+      "Ну а по размеру… Не знаю, уж такова осциллограмма пуска двигателя. Ничего тут не поделать…"
+    ],
+    "text": "+ Явно фазовая раскраска не верная.\nНу а по размеру… Не знаю, уж такова осциллограмма пуска двигателя. Ничего тут не поделать…",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[11]/w:tr[1]/w:tc[1]/w:p/w:commentRangeStart[2]",
+        "paragraph_index": 190,
+        "paragraph_text": ""
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[11]/w:tr[1]/w:tc[1]/w:p/w:commentRangeEnd[2]",
+        "paragraph_index": 190,
+        "paragraph_text": ""
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[11]/w:tr[1]/w:tc[1]/w:p/w:r[3]/w:commentReference",
+        "paragraph_index": 190,
+        "paragraph_text": ""
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "65",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "65",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-03-08T22:14:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Осциллограмма с ОЗЗ и тут модель местами путает с аварией.",
+      "",
+      "Файл",
+      "mark_7a8bd50023cd.png",
+      "",
+      "В папке",
+      "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\reports\\Exp_2_5_and_start_Exp_2_6\\marking_plots\\train\\Exp_2.6.9_cPhysicsKAN_heavy_phase_polar_stride_base_weights_aug_train"
+    ],
+    "text": "Осциллограмма с ОЗЗ и тут модель местами путает с аварией.\n\nФайл\nmark_7a8bd50023cd.png\n\nВ папке\nD:\\Программирование\\Fork\\Scientific_research_osc_ML\\reports\\Exp_2_5_and_start_Exp_2_6\\marking_plots\\train\\Exp_2.6.9_cPhysicsKAN_heavy_phase_polar_stride_base_weights_aug_train",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[11]/w:tr[1]/w:tc[2]/w:p/w:commentRangeStart[1]",
+        "paragraph_index": 191,
+        "paragraph_text": ""
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[11]/w:tr[1]/w:tc[2]/w:p/w:commentRangeEnd[1]",
+        "paragraph_index": 191,
+        "paragraph_text": ""
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[11]/w:tr[1]/w:tc[2]/w:p/w:r[2]/w:commentReference",
+        "paragraph_index": 191,
+        "paragraph_text": ""
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "66",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "66",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-03-08T22:15:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "И для этой картинки надо бы сузить зону отображения до конца, чтобы лучше было видно."
+    ],
+    "text": "И для этой картинки надо бы сузить зону отображения до конца, чтобы лучше было видно.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[11]/w:tr[1]/w:tc[2]/w:p/w:commentRangeStart[2]",
+        "paragraph_index": 191,
+        "paragraph_text": ""
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[11]/w:tr[1]/w:tc[2]/w:p/w:commentRangeEnd[2]",
+        "paragraph_index": 191,
+        "paragraph_text": ""
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[11]/w:tr[1]/w:tc[2]/w:p/w:r[3]/w:commentReference",
+        "paragraph_index": 191,
+        "paragraph_text": ""
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "68",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "68",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-03-08T22:01:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "#Мысли_в_слух",
+      "НА самом деле это на обучающей выборке… На тестовой пока плохо и надо бы улучшать… И в таком масштабе плохо видно, наверное… Но обобщить с графиков вероятности (нижние) – сложно. Но важно то, как выглядят картинки. + потом для ОЗЗ можно привести"
+    ],
+    "text": "#Мысли_в_слух\nНА самом деле это на обучающей выборке… На тестовой пока плохо и надо бы улучшать… И в таком масштабе плохо видно, наверное… Но обобщить с графиков вероятности (нижние) – сложно. Но важно то, как выглядят картинки. + потом для ОЗЗ можно привести",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[11]/w:tr[3]/w:tc/w:p/w:commentRangeStart[1]",
+        "paragraph_index": 194,
+        "paragraph_text": "Рисунок 10. Разметка реальных осциллограмм с помощью rPhysicsKAN с отображение вероятности"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[11]/w:tr[3]/w:tc/w:p/w:commentRangeEnd[1]",
+        "paragraph_index": 194,
+        "paragraph_text": "Рисунок 10. Разметка реальных осциллограмм с помощью rPhysicsKAN с отображение вероятности"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[11]/w:tr[3]/w:tc/w:p/w:r[3]/w:commentReference",
+        "paragraph_index": 194,
+        "paragraph_text": "Рисунок 10. Разметка реальных осциллограмм с помощью rPhysicsKAN с отображение вероятности"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "69",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "69",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-24T16:31:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "+ построена на немного старых моделях, но менять пока что не хочется."
+    ],
+    "text": "+ построена на немного старых моделях, но менять пока что не хочется.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[11]/w:tr[3]/w:tc/w:p/w:commentRangeStart[2]",
+        "paragraph_index": 194,
+        "paragraph_text": "Рисунок 10. Разметка реальных осциллограмм с помощью rPhysicsKAN с отображение вероятности"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[11]/w:tr[3]/w:tc/w:p/w:commentRangeEnd[2]",
+        "paragraph_index": 194,
+        "paragraph_text": "Рисунок 10. Разметка реальных осциллограмм с помощью rPhysicsKAN с отображение вероятности"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[11]/w:tr[3]/w:tc/w:p/w:r[4]/w:commentReference",
+        "paragraph_index": 194,
+        "paragraph_text": "Рисунок 10. Разметка реальных осциллограмм с помощью rPhysicsKAN с отображение вероятности"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "72",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "72",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-06-02T11:48:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Лучше использовать проводимость, поменял, надо проверить и в других точках."
+    ],
+    "text": "Лучше использовать проводимость, поменял, надо проверить и в других точках.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[118]/w:commentRangeStart",
+        "paragraph_index": 209,
+        "paragraph_text": "Отключение же слоя деления (Y∼ I/U) влияет слабо и практически не снижает надёжность. Вероятно, это обусловлено вычислительной нестабильностью: при малых значениях напряжения деления стремится к бесконечности, создавая резкие выбросы градиентов. Несмотря на последующие нормализации сигналов, такое поведение может дестабилизировать обучение, поэтому данный блок требует дальнейшей доработки."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[118]/w:commentRangeEnd",
+        "paragraph_index": 209,
+        "paragraph_text": "Отключение же слоя деления (Y∼ I/U) влияет слабо и практически не снижает надёжность. Вероятно, это обусловлено вычислительной нестабильностью: при малых значениях напряжения деления стремится к бесконечности, создавая резкие выбросы градиентов. Несмотря на последующие нормализации сигналов, такое поведение может дестабилизировать обучение, поэтому данный блок требует дальнейшей доработки."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[118]/w:r[11]/w:commentReference",
+        "paragraph_index": 209,
+        "paragraph_text": "Отключение же слоя деления (Y∼ I/U) влияет слабо и практически не снижает надёжность. Вероятно, это обусловлено вычислительной нестабильностью: при малых значениях напряжения деления стремится к бесконечности, создавая резкие выбросы градиентов. Несмотря на последующие нормализации сигналов, такое поведение может дестабилизировать обучение, поэтому данный блок требует дальнейшей доработки."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "75",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "75",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2026-05-21T17:10:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Было заложено больше, но оставил столько, так как ограничение по страницам…"
+    ],
+    "text": "Было заложено больше, но оставил столько, так как ограничение по страницам…",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[141]/w:commentRangeStart",
+        "paragraph_index": 234,
+        "paragraph_text": "Список литературы"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[141]/w:commentRangeEnd",
+        "paragraph_index": 234,
+        "paragraph_text": "Список литературы"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[141]/w:r[2]/w:commentReference",
+        "paragraph_index": 234,
+        "paragraph_text": "Список литературы"
+      }
+    ],
+    "decision": "not_reviewed"
+  }
+]

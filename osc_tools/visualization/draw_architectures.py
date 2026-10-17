@@ -1,6 +1,6 @@
 """Генерация концептуальных схем архитектур нейронных сетей для научной статьи.
 
-Рисует модели из Фаз 2.6 (MLP, CNN, ResNet, SimpleKAN, ConvKAN, PhysicsKAN, cPhysicsKAN)
+Рисует модели из Фаз 2.6 (MLP, CNN, ResNet, SimpleKAN, ConvKAN, PhysicsKAN, cPhysicsKAN, rPhysicsKAN)
 и Фазы 4 (BaselineTransformer, PhysicalKANTransformer).
 
 Схемы — концептуальные (показывают принцип, а не точные гиперпараметры), но верные
@@ -10,6 +10,155 @@
 import graphviz
 from pathlib import Path
 import os
+import argparse
+import re
+
+
+# Локализованные подписи к архитектурным диаграммам.  Использование исходных диаграмм на
+# Русском языке делает их использование в диссертации обратно совместимым; те же самые
+# функции рисования позволяют по запросу создать набор диаграмм на английском языке, готовый к публикации.
+SUPPORTED_LANGUAGES = {'ru', 'en'}
+_LANGUAGE = 'ru'
+
+# Более длинные фрагменты должны предшествовать составляющим их словам.  Текст переведен на русский язык
+# конечный точечный источник, поэтому метки узлов, кластеров, ребер и заголовков графиков являются
+# последовательно описывается без дублирования каждой функции `draw_*`.
+EN_TRANSLATIONS = {
+    'Физически-информированный': 'Physically informed',
+    'Физический слой': 'Physical layer',
+    'Физический stem': 'Physical stem',
+    'Комплексный физический слой': 'Complex physical layer',
+    'Комплексный PhysicsKAN': 'Complex PhysicsKAN',
+    'Комплексный stem': 'Complex stem',
+    'Комплексные физ. блоки': 'complex physical blocks',
+    'комплексные физ. блоки': 'complex physical blocks',
+    'комплексная физика': 'complex physics',
+    'комплексное  · и ÷': 'complex  · and ÷',
+    'Комплексные S, Y': 'Complex S, Y',
+    'Релейный PhysicsKAN с gating из углов': 'Relay PhysicsKAN with angle gating',
+    'Relay-механизм': 'Relay mechanism',
+    'Релейный орган': 'Relay unit',
+    'релейный орган': 'relay unit',
+    'релейный': 'relay',
+    'релейные органы глубже и на выходе': 'relay units at deeper layers and at the output',
+    'Финальное реле': 'Final relay',
+    'направленное реле': 'directional relay',
+    'глубокие реле': 'deep relay units',
+    'глубокие физ. блоки': 'deep physical blocks',
+    'без глубокой физики': 'without deep physics',
+    'без физ. блоков': 'without physical blocks',
+    'физические блоки на глубоких слоях': 'physical blocks at deeper layers',
+    'как в PhysicsKAN': 'as in PhysicsKAN',
+    'как в cPhysicsKAN': 'as in cPhysicsKAN',
+    'Фаза 4': 'Phase 4',
+    'Спектральный Transformer': 'Spectral Transformer',
+    'Многослойный перцептрон': 'Multilayer perceptron',
+    'Одномерная свёрточная сеть': 'One-dimensional convolutional network',
+    'Остаточная свёрточная сеть': 'Residual convolutional network',
+    'Полносвязный Колмогоров-Арнольд': 'Fully connected Kolmogorov-Arnold network',
+    'Сверточный Колмогоров-Арнольд': 'Convolutional Kolmogorov-Arnold network',
+    'в полярных координатах': 'in polar coordinates',
+    'в полярн.': 'polar',
+    'Особенность KAN:': 'KAN characteristic:',
+    'нелинейность на рёбрах, узлы = суммы': 'nonlinearity on edges, nodes = sums',
+    'Вход (спектр., полярн.)': 'Input (spectral, polar)',
+    'Вход (спектр.)': 'Input (spectral)',
+    'Вход': 'Input',
+    'Токи': 'Currents',
+    'токи': 'currents',
+    'Напряжения': 'Voltages',
+    'напряж.': 'voltages',
+    'Амплитуды тока': 'Current amplitudes',
+    'Амплитуды напряж.': 'Voltage amplitudes',
+    'Амплитуды': 'Amplitudes',
+    'амплитудная ветвь': 'amplitude branch',
+    'амплитудной ветви': 'amplitude branch',
+    'Фазы тока': 'Current phases',
+    'Фазы': 'Phases',
+    'фазовая ветвь': 'phase branch',
+    'по фазе': 'by phase',
+    'по φ': 'by φ',
+    'Физически-информированный Transformer': 'Physically informed Transformer',
+    'Разделение и нормализация': 'Splitting and normalization',
+    'Разделение:': 'Split:',
+    'чётные': 'even',
+    'нечётные': 'odd',
+    'чередование': 'interleaving',
+    'чередующийся формат': 'interleaved format',
+    'пары I и U': 'I and U pairs',
+    'пар (a,b)': 'pairs (a,b)',
+    'пары': 'pairs',
+    'одна маска на пару': 'one mask per pair',
+    'по каналам': 'along channels',
+    'половина каналов': 'half of the channels',
+    '1-я': '1st',
+    '2-я': '2nd',
+    'каналов': 'channels',
+    'каналы': 'channels',
+    'обычные каналы': 'ordinary channels',
+    'как': 'as',
+    'A и φ': 'A and φ',
+    'обрабатывает': 'processes',
+    'только': 'only',
+    'поэлементно': 'elementwise',
+    'защита от 0': 'zero protection',
+    'обучаемый сдвиг': 'learnable shift',
+    'обучаемые пары': 'learnable pairs',
+    'раздельные W для A и φ': 'separate W for A and φ',
+    'Головы:': 'Heads:',
+    'опц.': 'optional',
+    'стадии': 'stages',
+    'стадия': 'stage',
+    'блоков': 'blocks',
+    'обычно': 'typically',
+    'по умолч.': 'by default',
+    'глубже': 'deeper',
+    'на выходе': 'at the output',
+    'на каждом слое': 'at each layer',
+    'на глубоких слоях': 'at deeper layers',
+    'абляция': 'ablation',
+    'маска': 'mask',
+    'малый': 'small',
+    'Нет': 'No',
+    'ограничен:': 'limited:',
+    '1-й слой': '1st layer',
+    'глубже ≈': 'deeper ≈',
+    'только relay': 'relay only',
+    'не гейтированные': 'ungated',
+    'НЕгейтированные': 'UNGATED',
+    'резидуал': 'residual',
+    'таnh': 'tanh',
+    'Финальное': 'Final',
+}
+
+
+def set_language(language: str) -> None:
+    """Выберите язык субтитров для последующего отображения архитектуры."""
+    normalized = language.lower()
+    if normalized not in SUPPORTED_LANGUAGES:
+        raise ValueError(f"Unsupported language {language!r}; choose one of {sorted(SUPPORTED_LANGUAGES)}")
+    global _LANGUAGE
+    _LANGUAGE = normalized
+
+
+def _localized_source(source: str) -> str:
+    if _LANGUAGE == 'ru':
+        return source
+    for russian in sorted(EN_TRANSLATIONS, key=len, reverse=True):
+        source = source.replace(russian, EN_TRANSLATIONS[russian])
+    untranslated = re.search(r'[А-Яа-яЁё]', source)
+    if untranslated:
+        raise ValueError(
+            'English diagram contains an untranslated Russian fragment: '
+            f'{source[untranslated.start():untranslated.start() + 80]!r}'
+        )
+    return source
+
+
+def _render(dot, filename: str) -> str:
+    """Визуализируйте диаграмму после применения выбранного словаря подписей."""
+    localized = graphviz.Source(_localized_source(dot.source), format='png', engine=dot.engine)
+    return localized.render(filename=filename, cleanup=True)
 
 # Единая палитра
 C_INPUT     = '#e6f2ff'   # Входы (амплитуды, обычные данные)
@@ -32,6 +181,9 @@ def setup_graph(name, title, rankdir='LR'):
              style='rounded,filled', fillcolor='white', fontsize='10')
     dot.attr('edge', fontname='Helvetica,Arial,sans-serif', fontsize='9')
     dot.attr(label=f'\n{title}', fontname='Helvetica-Bold', fontsize='14', labelloc='b')
+    # All existing draw functions retain their normal ``dot.render(...)`` call.
+    # Rendering through this small adapter applies the active captions dictionary.
+    dot.render = lambda filename, cleanup=True: _render(dot, filename)
     return dot
 
 
@@ -203,6 +355,209 @@ def draw_cphysicskan(output_dir):
     dot.render(filename=os.path.join(output_dir, 'cPhysicsKAN'), cleanup=True)
 
 
+def draw_rphysicskan(output_dir):
+    dot = setup_graph('rPhysicsKAN',
+                      'rPhysicsKAN (Релейный PhysicsKAN с gating из углов)')
+
+    with dot.subgraph(name='cluster_in') as c:
+        c.attr(label='Вход:  [A, φ, A, φ, …]   (пары I и U)',
+               style='dashed', color='gray', fontname='Helvetica-Bold')
+        c.node('AI', 'Амплитуды тока  |I|',       fillcolor=C_INPUT)
+        c.node('PI', 'Фазы тока  ∠I',             fillcolor=C_INPUT_PH)
+        c.node('AU', 'Амплитуды напряж.  |U|',    fillcolor=C_INPUT)
+        c.node('PU', 'Фазы напряж.  ∠U',          fillcolor=C_INPUT_PH)
+
+    with dot.subgraph(name='cluster_phys') as c:
+        c.attr(label='Комплексный физический слой', style='filled',
+               fillcolor=C_PHYS_BG, color='#98fb98', fontname='Helvetica-Bold')
+        c.node('cMul',
+               'ComplexMultiplicationLayer\n|S| = |I|·|U|,  ∠S = ∠I+∠U+bφ',
+               fillcolor=C_PHYS)
+        c.node('cDiv',
+               'ComplexDivisionLayer\n|Y| = |I|/max(|U|,ε),  ∠Y = ∠I−∠U+bφ',
+               fillcolor=C_PHYS)
+        c.node('Cat1',
+               'Concat [x, S, Y]\n→ 2C каналов',
+               shape='cds', fillcolor='#b3ffb3')
+
+    with dot.subgraph(name='cluster_split') as c:
+        c.attr(label='Разделение и нормализация', style='dashed',
+               color='gray', fontname='Helvetica-Bold')
+        c.node('SplitA', 'Амплитуды (чётные)\nBatchNorm → softplus', fillcolor=C_INPUT)
+        c.node('SplitP', 'Фазы (нечётные)\nBatchNorm',              fillcolor=C_INPUT_PH)
+
+    with dot.subgraph(name='cluster_relay') as c:
+        c.attr(label='Relay-механизм (направленное реле)',
+               style='filled', fillcolor='#fff8dc', color='#d4ac0d',
+               fontname='Helvetica-Bold')
+        c.node('AmpKAN',  'KAN_amp(A)\n(амплитудная ветвь)',   fillcolor=C_KAN)
+        c.node('PhKAN',   'KAN_phase(φ)\n(фазовая ветвь)',     fillcolor=C_KAN)
+        c.node('GateKAN', 'KAN_gate(φ)\n→ σ(·) ∈ [0,1]',      fillcolor=C_NORM)
+        c.node('Gated',   'H_gated = softplus(H_A) ⊙ G\n(relay gate)',
+               fillcolor=C_PHYS)
+
+    dot.node('Drop', 'ComplexPairDropout\n(одна маска на пару)', fillcolor=C_NORM)
+    dot.node('Stack', 'Stack [gated_A, φ]\n→ чередующийся формат', fillcolor=C_UTIL)
+    dot.node('Pool', 'AdaptiveAvgPool1d → Flatten', fillcolor=C_UTIL)
+    dot.node('Head', 'KANLinear × 2\n(logits)', fillcolor=C_KAN)
+    dot.node('Out',  'Logits', fillcolor=C_OUT)
+
+    # Связи
+    for src in ('AI', 'AU'):
+        dot.edge(src, 'cMul'); dot.edge(src, 'cDiv')
+    for src in ('PI', 'PU'):
+        dot.edge(src, 'cMul', style='dashed')
+        dot.edge(src, 'cDiv', style='dashed')
+    for src in ('AI', 'PI', 'AU', 'PU'):
+        dot.edge(src, 'Cat1', style='dotted', color='#1f4fe0')
+    dot.edge('cMul', 'Cat1'); dot.edge('cDiv', 'Cat1')
+
+    dot.edge('Cat1', 'SplitA'); dot.edge('Cat1', 'SplitP')
+    dot.edge('SplitA', 'AmpKAN')
+    dot.edge('SplitP', 'PhKAN')
+    dot.edge('SplitP', 'GateKAN')
+    dot.edge('AmpKAN', 'Gated')
+    dot.edge('GateKAN', 'Gated')
+    dot.edge('Gated', 'Drop'); dot.edge('PhKAN', 'Drop')
+    dot.edge('Drop', 'Stack')
+    dot.edge('Stack', 'Pool')
+    dot.edge('Pool', 'Head')
+    dot.edge('Head', 'Out')
+    dot.render(filename=os.path.join(output_dir, 'rPhysicsKAN'), cleanup=True)
+
+
+def draw_physicskanv2(output_dir):
+    dot = setup_graph('PhysicsKANv2',
+                      'PhysicsKANv2 (PhysicsKAN + физические блоки на глубоких слоях)')
+
+    with dot.subgraph(name='cluster_stem') as c:
+        c.attr(label='Физический stem (как в PhysicsKAN)', style='filled',
+               fillcolor=C_PHYS_BG, color='#98fb98', fontname='Helvetica-Bold')
+        c.node('In', 'Вход (B, C, T)\nтоки I + напряж. U', fillcolor=C_INPUT)
+        c.node('Stem', 'S = tanh(BN(tanh(I·U)))\nZ = tanh(BN(tanh(I/U)))\nConcat [I, U, S, Z] → 2C',
+               shape='cds', fillcolor='#b3ffb3')
+
+    with dot.subgraph(name='cluster_bb') as c:
+        c.attr(label='Backbone: KAN-Conv стадии + глубокие физ. блоки',
+               style='dashed', color='gray', fontname='Helvetica-Bold')
+        c.node('Conv', 'KANConv1d + BN\n(стадия)', fillcolor=C_CONV)
+        c.node('Phys',
+               'PhysicsInteractionBlock\noperand_proj → k пар (a,b)\ntanh(a·b), tanh(a/b)\nBN → tanh → KANConv1×1\n→ BN → tanh → x + scale·Δ',
+               fillcolor=C_PHYS)
+        c.node('Note',
+               'k ограничен:\n1-й слой ≈25% каналов,\nглубже ≈3-5',
+               shape='note', fillcolor='#fffacd')
+
+    dot.node('GAP', 'AdaptiveAvgPool → KANLinear×2', fillcolor=C_KAN)
+    dot.node('Out', 'Logits', fillcolor=C_OUT)
+
+    dot.edge('In', 'Stem')
+    dot.edge('Stem', 'Conv')
+    dot.edge('Conv', 'Phys')
+    dot.edge('Phys', 'Conv', style='dashed', color='gray', label='  × стадии')
+    dot.edge('Phys', 'Note', style='dotted', arrowhead='none', color='#d4ac0d')
+    dot.edge('Phys', 'GAP')
+    dot.edge('GAP', 'Out')
+    dot.render(filename=os.path.join(output_dir, 'PhysicsKANv2'), cleanup=True)
+
+
+def draw_cphysicskanv2(output_dir):
+    dot = setup_graph('cPhysicsKANv2',
+                      'cPhysicsKANv2 (cPhysicsKAN + комплексные физ. блоки глубже)')
+
+    with dot.subgraph(name='cluster_stem') as c:
+        c.attr(label='Комплексный stem (как в cPhysicsKAN)', style='filled',
+               fillcolor=C_PHYS_BG, color='#98fb98', fontname='Helvetica-Bold')
+        c.node('In', 'Вход [A, φ, A, φ, …]\n(пары I и U)', fillcolor=C_INPUT)
+        c.node('Stem',
+               '|S|=|I||U|, ∠S=∠I+∠U\n|Y|=|I|/|U|, ∠Y=∠I−∠U\ntanh(BN(tanh(amp))), wrap(φ)\nConcat 2C',
+               shape='cds', fillcolor='#b3ffb3')
+
+    with dot.subgraph(name='cluster_bb') as c:
+        c.attr(label='Backbone: KAN-Conv стадии + комплексные физ. блоки',
+               style='dashed', color='gray', fontname='Helvetica-Bold')
+        c.node('Conv', 'KANConv1d + BN\n(стадия)', fillcolor=C_CONV)
+        c.node('Phys',
+               'ComplexPhysicsInteractionBlock\nтаnh(softplus(amp_proj)) × пары\nwrap(phase_proj), tanh(div_amp)\nBN→tanh, KANConv→BN→tanh\nx + scale·Δ',
+               fillcolor=C_PHYS)
+
+    dot.node('GAP', 'AdaptiveAvgPool → KANLinear×2', fillcolor=C_KAN)
+    dot.node('Out', 'Logits', fillcolor=C_OUT)
+
+    dot.edge('In', 'Stem'); dot.edge('Stem', 'Conv')
+    dot.edge('Conv', 'Phys')
+    dot.edge('Phys', 'Conv', style='dashed', color='gray', label='  × стадии')
+    dot.edge('Phys', 'GAP'); dot.edge('GAP', 'Out')
+    dot.render(filename=os.path.join(output_dir, 'cPhysicsKANv2'), cleanup=True)
+
+
+def draw_rphysicskanv2(output_dir):
+    dot = setup_graph('rPhysicsKANv2',
+                      'rPhysicsKANv2 (cPhysicsKANv2 + релейные органы глубже и на выходе)')
+
+    with dot.subgraph(name='cluster_stem') as c:
+        c.attr(label='Комплексный stem (как в cPhysicsKAN)', style='filled',
+               fillcolor=C_PHYS_BG, color='#98fb98', fontname='Helvetica-Bold')
+        c.node('In', 'Вход [A, φ, A, φ, …]\n(пары I и U)', fillcolor=C_INPUT)
+        c.node('Stem', 'Комплексные S, Y\ntanh(BN(tanh(amp))), wrap(φ)\nConcat → 2C',
+               shape='cds', fillcolor='#b3ffb3')
+
+    with dot.subgraph(name='cluster_bb') as c:
+        c.attr(label='Backbone: стадия + комплексная физика + релейный орган',
+               style='dashed', color='gray', fontname='Helvetica-Bold')
+        c.node('Conv', 'KANConv1d + BN', fillcolor=C_CONV)
+        c.node('Phys', 'ComplexPhysicsInteractionBlock\n(tanh/wrap + BN→tanh→KAN→BN→tanh→резидуал)',
+               fillcolor=C_PHYS)
+        c.node('Relay',
+               'RelayGateBlock\ngate=σ(KANConv)\nx·(1 + scale·(gate−0.5))',
+               fillcolor='#fff8dc')
+
+    dot.node('Head', 'Финальное реле (на выходе)\nRelayGateBlock', fillcolor='#fff8dc')
+    dot.node('GAP', 'AdaptiveAvgPool → KANLinear×2', fillcolor=C_KAN)
+    dot.node('Out', 'Logits', fillcolor=C_OUT)
+
+    dot.edge('In', 'Stem'); dot.edge('Stem', 'Conv')
+    dot.edge('Conv', 'Phys'); dot.edge('Phys', 'Relay')
+    dot.edge('Relay', 'Conv', style='dashed', color='gray', label='  × стадии')
+    dot.edge('Relay', 'Head'); dot.edge('Head', 'GAP'); dot.edge('GAP', 'Out')
+    dot.render(filename=os.path.join(output_dir, 'rPhysicsKANv2'), cleanup=True)
+
+
+def draw_rkanv2(output_dir):
+    dot = setup_graph('rKANv2',
+                      'rKANv2 (deep relay only, без глубокой физики — абляция)')
+
+    with dot.subgraph(name='cluster_stem') as c:
+        c.attr(label='Комплексный stem (как в cPhysicsKAN)', style='filled',
+               fillcolor=C_PHYS_BG, color='#98fb98', fontname='Helvetica-Bold')
+        c.node('In', 'Вход [A, φ, A, φ, …]\n(пары I и U)', fillcolor=C_INPUT)
+        c.node('Stem',
+               '|S|=|I||U|, ∠S=∠I+∠U\n|Y|=|I|/|U|, ∠Y=∠I−∠U\ntanh(BN(tanh(amp))), wrap(φ)\nConcat 2C',
+               shape='cds', fillcolor='#b3ffb3')
+
+    with dot.subgraph(name='cluster_bb') as c:
+        c.attr(label='Backbone: KAN-Conv стадии + глубокие реле (без физ. блоков)',
+               style='dashed', color='gray', fontname='Helvetica-Bold')
+        c.node('Conv', 'KANConv1d + BN\n(стадия)', fillcolor=C_CONV)
+        c.node('Relay',
+               'RelayGateBlock\ngate=σ(KANConv)\nx·(1 + scale·(gate−0.5))',
+               fillcolor='#fff8dc')
+        c.node('Note',
+               'Нет ComplexPhysicsInteractionBlock\n(только relay на каждом слое)',
+               shape='note', fillcolor='#fffacd')
+
+    dot.node('Head', 'Финальное реле\nRelayGateBlock', fillcolor='#fff8dc')
+    dot.node('GAP', 'AdaptiveAvgPool → KANLinear×2', fillcolor=C_KAN)
+    dot.node('Out', 'Logits', fillcolor=C_OUT)
+
+    dot.edge('In', 'Stem'); dot.edge('Stem', 'Conv')
+    dot.edge('Conv', 'Relay')
+    dot.edge('Relay', 'Conv', style='dashed', color='gray', label='  × стадии')
+    dot.edge('Relay', 'Note', style='dotted', arrowhead='none', color='#d4ac0d')
+    dot.edge('Relay', 'Head'); dot.edge('Head', 'GAP'); dot.edge('GAP', 'Out')
+    dot.render(filename=os.path.join(output_dir, 'rKANv2'), cleanup=True)
+
+
 # =====================================================================
 # Фаза 4
 # =====================================================================
@@ -328,10 +683,11 @@ def draw_physical_kan_transformer(output_dir):
 # Main
 # =====================================================================
 
-if __name__ == '__main__':
-    output_directory = Path(__file__).parent / 'architecture_images'
+def generate_all(output_directory: Path, language: str = 'ru') -> None:
+    """Generate the complete set of architecture diagrams in ``language``."""
+    set_language(language)
     output_directory.mkdir(parents=True, exist_ok=True)
-    print(f'Генерация схем в  {output_directory} …')
+    print(f'Generating {_LANGUAGE} architecture diagrams in {output_directory} …')
 
     # Фаза 2.6
     draw_mlp(output_directory)
@@ -341,9 +697,30 @@ if __name__ == '__main__':
     draw_convkan(output_directory)
     draw_physicskan(output_directory)
     draw_cphysicskan(output_directory)
+    draw_rphysicskan(output_directory)
+    draw_physicskanv2(output_directory)
+    draw_cphysicskanv2(output_directory)
+    draw_rphysicskanv2(output_directory)
+    draw_rkanv2(output_directory)
 
     # Фаза 4
     draw_baseline_transformer(output_directory)
     draw_physical_kan_transformer(output_directory)
 
-    print('Готово.')
+    print('Done.')
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Генерируйте локализованные диаграммы архитектуры нейронной сети')
+    parser.add_argument('--lang', choices=sorted(SUPPORTED_LANGUAGES), default='ru',
+                        help='captions language (default: ru)')
+    parser.add_argument('--output-dir', type=Path,
+                        help='аталог для отрисованных PNG-файлов; по умолчанию используется architecture_images '
+                             'для русского языка и architecture_images/<lang> для другого языка')
+    args = parser.parse_args()
+
+    default_directory = Path(__file__).parent / 'architecture_images'
+    output_directory = args.output_dir or (
+        default_directory if args.lang == 'ru' else default_directory / args.lang
+    )
+    generate_all(output_directory, args.lang)

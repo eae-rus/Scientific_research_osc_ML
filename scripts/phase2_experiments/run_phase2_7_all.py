@@ -50,7 +50,7 @@ from osc_tools.data_management import DatasetManager
 # GPU МОНИТОРИНГ
 # ==============================================================================
 
-MAX_OOM_RETRIES = 3  # Макс. попыток с уменьшением batch при OOM
+MAX_OOM_RETRIES = 5  # Макс. попыток с уменьшением batch при OOM
 
 
 def get_gpu_memory_info() -> Dict[str, float]:

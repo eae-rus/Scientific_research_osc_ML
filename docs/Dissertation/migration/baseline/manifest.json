@@ -1,0 +1,7 @@
+{
+  "source": "docs/Dissertation/Архивное/Диссертация (Евдаков А.Е.) v0.5.docx",
+  "copy": "docs/Dissertation/migration/baseline/Диссертация (Евдаков А.Е.) v0.5.docx",
+  "sha256": "50516d7832e6ea133d77b11b48802c4ed1929283ea7601134b878fab0e0338f7",
+  "verified_at": "2026-09-17T10:07:22.5846921+03:00",
+  "operation": "Byte-for-byte copy; no document editing or conversion"
+}

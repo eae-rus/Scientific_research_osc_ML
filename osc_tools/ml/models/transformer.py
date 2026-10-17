@@ -247,6 +247,10 @@ class PhysicalKANTransformer(BaseModel):
             их данные — через cross-attention к encoder output.
         dropout: dropout для всех слоёв
         max_seq_len: максимальная длина последовательности для PE
+        cyclic_angle_encoding: периодическое ``sin/cos``-кодирование углов в
+            PhysicalStem и ComplexMHA. False сохраняет Phase 4 checkpoints.
+        use_provenance_embedding: добавить Phase 5 token-context из значений
+            missing/measured/derived. False не добавляет legacy-параметров.
     """
 
     def __init__(
@@ -274,6 +278,8 @@ class PhysicalKANTransformer(BaseModel):
         num_future_zones: int = 0,
         dropout: float = 0.1,
         max_seq_len: int = 128,
+        cyclic_angle_encoding: bool = False,
+        use_provenance_embedding: bool = False,
     ) -> None:
         super().__init__()
 
@@ -281,6 +287,7 @@ class PhysicalKANTransformer(BaseModel):
         self.d_model = d_model
         self.num_classes = num_classes
         self.zone_size = zone_size
+        self.use_provenance_embedding = use_provenance_embedding
 
         # --- 1. Sanitizer (NaN маркер отсутствующих каналов) ---
         self.sanitizer = DataSanitizer(num_channels=num_input_channels)
@@ -298,7 +305,12 @@ class PhysicalKANTransformer(BaseModel):
             use_layer_norm=use_mixed_layer_norm,
             dropout=dropout,
             disable_kan=disable_stem_kan,
+            cyclic_angle_encoding=cyclic_angle_encoding,
         )
+        self.provenance_embedding: nn.Embedding | None = None
+        if use_provenance_embedding:
+            # 0=missing, 1=measured, 2=derived; агрегация даёт token-level контекст.
+            self.provenance_embedding = nn.Embedding(3, d_model)
 
         # --- 3. Positional Encoding ---
         self.pos_encoder = SinusoidalPositionalEncoding(
@@ -316,6 +328,7 @@ class PhysicalKANTransformer(BaseModel):
                 d_model=d_model,
                 num_heads=num_heads,
                 dropout=dropout,
+                cyclic_angle_encoding=cyclic_angle_encoding,
             )
             if ffn_type == 'physical_kan':
                 ffn = PhysicalKANFeedForward(
@@ -394,11 +407,13 @@ class PhysicalKANTransformer(BaseModel):
         self,
         x: torch.Tensor,
         mode: str = 'ssl',
+        provenance: torch.Tensor | None = None,
     ) -> dict[str, torch.Tensor]:
         """
         Args:
             x: (B, C, T) — входные спектральные признаки
             mode: 'ssl' — реконструкция, 'classify' — классификация по зонам
+            provenance: (B, C, T), значения 0/1/2 для missing/measured/derived.
 
         Returns:
             dict с ключами:
@@ -411,6 +426,13 @@ class PhysicalKANTransformer(BaseModel):
 
         # 2. Physical Stem → (B, T, d_model)
         embedding = self.stem(x_safe, mask_missing)
+
+        if self.provenance_embedding is not None:
+            if provenance is None or provenance.shape != x.shape:
+                raise ValueError("Phase 5 provenance embedding требует provenance формы (B, C, T)")
+            provenance_ids = provenance.to(device=x.device, dtype=torch.long).clamp(0, 2)
+            provenance_context = self.provenance_embedding(provenance_ids).mean(dim=1)
+            embedding = embedding + provenance_context
 
         # 3. Positional Encoding
         embedding = self.pos_encoder(embedding)

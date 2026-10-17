@@ -1,0 +1,493 @@
+[
+  {
+    "original_comment_id": "1",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "1",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Valery Valery",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-13T15:28:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "VV"
+    },
+    "paragraphs": [
+      "Опасно, тогда ссылку на стандарты надо "
+    ],
+    "text": "Опасно, тогда ссылку на стандарты надо ",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[8]/w:commentRangeStart[1]",
+        "paragraph_index": 8,
+        "paragraph_text": "Состояние вопроса: Классические теоретические оценки, основанные на анализе переходных процессов при перемежающихся дуговых однофазных замыканиях на землю (ОЗЗ) в сетях 6÷35 кВ с изолированной нейтралью, предсказывают появление перенапряжений кратностью до 3÷4·Uном. Эти оценки исторически служили опорой при формировании требований к изоляции оборудования в нормативных и методических документах. Однако в открытых источниках недостаточно результатов масштабных исследований, основанных на верифицированных осциллограммах из реальных энергосистем, которые могли бы подтвердить или уточнить эти теоретические пределы в условиях современной эксплуатации."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[8]/w:commentRangeEnd[1]",
+        "paragraph_index": 8,
+        "paragraph_text": "Состояние вопроса: Классические теоретические оценки, основанные на анализе переходных процессов при перемежающихся дуговых однофазных замыканиях на землю (ОЗЗ) в сетях 6÷35 кВ с изолированной нейтралью, предсказывают появление перенапряжений кратностью до 3÷4·Uном. Эти оценки исторически служили опорой при формировании требований к изоляции оборудования в нормативных и методических документах. Однако в открытых источниках недостаточно результатов масштабных исследований, основанных на верифицированных осциллограммах из реальных энергосистем, которые могли бы подтвердить или уточнить эти теоретические пределы в условиях современной эксплуатации."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[8]/w:r[6]/w:commentReference",
+        "paragraph_index": 8,
+        "paragraph_text": "Состояние вопроса: Классические теоретические оценки, основанные на анализе переходных процессов при перемежающихся дуговых однофазных замыканиях на землю (ОЗЗ) в сетях 6÷35 кВ с изолированной нейтралью, предсказывают появление перенапряжений кратностью до 3÷4·Uном. Эти оценки исторически служили опорой при формировании требований к изоляции оборудования в нормативных и методических документах. Однако в открытых источниках недостаточно результатов масштабных исследований, основанных на верифицированных осциллограммах из реальных энергосистем, которые могли бы подтвердить или уточнить эти теоретические пределы в условиях современной эксплуатации."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "2",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "2",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T16:15:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Дальше приведено, особенно обширно в приложении 1"
+    ],
+    "text": "Дальше приведено, особенно обширно в приложении 1",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[8]/w:commentRangeStart[2]",
+        "paragraph_index": 8,
+        "paragraph_text": "Состояние вопроса: Классические теоретические оценки, основанные на анализе переходных процессов при перемежающихся дуговых однофазных замыканиях на землю (ОЗЗ) в сетях 6÷35 кВ с изолированной нейтралью, предсказывают появление перенапряжений кратностью до 3÷4·Uном. Эти оценки исторически служили опорой при формировании требований к изоляции оборудования в нормативных и методических документах. Однако в открытых источниках недостаточно результатов масштабных исследований, основанных на верифицированных осциллограммах из реальных энергосистем, которые могли бы подтвердить или уточнить эти теоретические пределы в условиях современной эксплуатации."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[8]/w:commentRangeEnd[2]",
+        "paragraph_index": 8,
+        "paragraph_text": "Состояние вопроса: Классические теоретические оценки, основанные на анализе переходных процессов при перемежающихся дуговых однофазных замыканиях на землю (ОЗЗ) в сетях 6÷35 кВ с изолированной нейтралью, предсказывают появление перенапряжений кратностью до 3÷4·Uном. Эти оценки исторически служили опорой при формировании требований к изоляции оборудования в нормативных и методических документах. Однако в открытых источниках недостаточно результатов масштабных исследований, основанных на верифицированных осциллограммах из реальных энергосистем, которые могли бы подтвердить или уточнить эти теоретические пределы в условиях современной эксплуатации."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[8]/w:r[7]/w:commentReference",
+        "paragraph_index": 8,
+        "paragraph_text": "Состояние вопроса: Классические теоретические оценки, основанные на анализе переходных процессов при перемежающихся дуговых однофазных замыканиях на землю (ОЗЗ) в сетях 6÷35 кВ с изолированной нейтралью, предсказывают появление перенапряжений кратностью до 3÷4·Uном. Эти оценки исторически служили опорой при формировании требований к изоляции оборудования в нормативных и методических документах. Однако в открытых источниках недостаточно результатов масштабных исследований, основанных на верифицированных осциллограммах из реальных энергосистем, которые могли бы подтвердить или уточнить эти теоретические пределы в условиях современной эксплуатации."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "4",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "4",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Valery Valery",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-13T15:30:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "VV"
+    },
+    "paragraphs": [
+      "Я вот тут не знаю, где чисто 3-4 UНом применяется. Может, и нигде) ",
+      "Может, это больше для правильности оценки наших моделей, на которых, в том числе, мы и РЗА проверяем"
+    ],
+    "text": "Я вот тут не знаю, где чисто 3-4 UНом применяется. Может, и нигде) \nМожет, это больше для правильности оценки наших моделей, на которых, в том числе, мы и РЗА проверяем",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[11]/w:commentRangeStart[1]",
+        "paragraph_index": 11,
+        "paragraph_text": "Выводы: Полученные статистические данные показывают, что экстремально высокие перенапряжения, теоретически возможные, в практике встречаются редко. Это не означает, что их нельзя ожидать, но эмпирическая частота их возникновения невелика. Результаты представляют статистически обоснованную базу, позволяющую уточнять технико-экономические расчёты при выборе и координации изоляции, а также оценку рисков, переводя подход от чисто детерминистического (\"какого максимального перенапряжения можно ожидать?\") к вероятностному (\"какова вероятность превышения заданной кратности?\")."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[11]/w:commentRangeEnd[1]",
+        "paragraph_index": 11,
+        "paragraph_text": "Выводы: Полученные статистические данные показывают, что экстремально высокие перенапряжения, теоретически возможные, в практике встречаются редко. Это не означает, что их нельзя ожидать, но эмпирическая частота их возникновения невелика. Результаты представляют статистически обоснованную базу, позволяющую уточнять технико-экономические расчёты при выборе и координации изоляции, а также оценку рисков, переводя подход от чисто детерминистического (\"какого максимального перенапряжения можно ожидать?\") к вероятностному (\"какова вероятность превышения заданной кратности?\")."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[11]/w:r[4]/w:commentReference",
+        "paragraph_index": 11,
+        "paragraph_text": "Выводы: Полученные статистические данные показывают, что экстремально высокие перенапряжения, теоретически возможные, в практике встречаются редко. Это не означает, что их нельзя ожидать, но эмпирическая частота их возникновения невелика. Результаты представляют статистически обоснованную базу, позволяющую уточнять технико-экономические расчёты при выборе и координации изоляции, а также оценку рисков, переводя подход от чисто детерминистического (\"какого максимального перенапряжения можно ожидать?\") к вероятностному (\"какова вероятность превышения заданной кратности?\")."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "5",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "5",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T16:14:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Переписал"
+    ],
+    "text": "Переписал",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[11]/w:commentRangeStart[2]",
+        "paragraph_index": 11,
+        "paragraph_text": "Выводы: Полученные статистические данные показывают, что экстремально высокие перенапряжения, теоретически возможные, в практике встречаются редко. Это не означает, что их нельзя ожидать, но эмпирическая частота их возникновения невелика. Результаты представляют статистически обоснованную базу, позволяющую уточнять технико-экономические расчёты при выборе и координации изоляции, а также оценку рисков, переводя подход от чисто детерминистического (\"какого максимального перенапряжения можно ожидать?\") к вероятностному (\"какова вероятность превышения заданной кратности?\")."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[11]/w:commentRangeEnd[2]",
+        "paragraph_index": 11,
+        "paragraph_text": "Выводы: Полученные статистические данные показывают, что экстремально высокие перенапряжения, теоретически возможные, в практике встречаются редко. Это не означает, что их нельзя ожидать, но эмпирическая частота их возникновения невелика. Результаты представляют статистически обоснованную базу, позволяющую уточнять технико-экономические расчёты при выборе и координации изоляции, а также оценку рисков, переводя подход от чисто детерминистического (\"какого максимального перенапряжения можно ожидать?\") к вероятностному (\"какова вероятность превышения заданной кратности?\")."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[11]/w:r[5]/w:commentReference",
+        "paragraph_index": 11,
+        "paragraph_text": "Выводы: Полученные статистические данные показывают, что экстремально высокие перенапряжения, теоретически возможные, в практике встречаются редко. Это не означает, что их нельзя ожидать, но эмпирическая частота их возникновения невелика. Результаты представляют статистически обоснованную базу, позволяющую уточнять технико-экономические расчёты при выборе и координации изоляции, а также оценку рисков, переводя подход от чисто детерминистического (\"какого максимального перенапряжения можно ожидать?\") к вероятностному (\"какова вероятность превышения заданной кратности?\")."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "6",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "6",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T11:44:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Поправить после корректировки русского текста."
+    ],
+    "text": "Поправить после корректировки русского текста.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[15]/w:commentRangeStart",
+        "paragraph_index": 15,
+        "paragraph_text": "STATISTICAL ANALYSIS OF OVERVOLTAGES DURING SINGLE-PHASE-TO-GROUND FAULTS BASED ON REAL-WORLD OSCILLOGRAMS"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[15]/w:commentRangeEnd",
+        "paragraph_index": 15,
+        "paragraph_text": "STATISTICAL ANALYSIS OF OVERVOLTAGES DURING SINGLE-PHASE-TO-GROUND FAULTS BASED ON REAL-WORLD OSCILLOGRAMS"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[15]/w:r[2]/w:commentReference",
+        "paragraph_index": 15,
+        "paragraph_text": "STATISTICAL ANALYSIS OF OVERVOLTAGES DURING SINGLE-PHASE-TO-GROUND FAULTS BASED ON REAL-WORLD OSCILLOGRAMS"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "8",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "8",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-12T22:47:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Требуется сделать",
+      "2) ужать до 4стр (провёл только первичное сжатие) + переразместить рисунки.",
+      "3) Внимательнее перечитать раздел по количественной оценке перенапряжений. Наверное его стоит скорректировать / улучшить.",
+      "4) !!Когда будет уточнена разметка ОЗЗ и перенапряжений от них – то обновить рисунки.!!",
+      "5) !!так же поправить ВСЕ цифры, так они могут чутка измениться!!"
+    ],
+    "text": "Требуется сделать\n2) ужать до 4стр (провёл только первичное сжатие) + переразместить рисунки.\n3) Внимательнее перечитать раздел по количественной оценке перенапряжений. Наверное его стоит скорректировать / улучшить.\n4) !!Когда будет уточнена разметка ОЗЗ и перенапряжений от них – то обновить рисунки.!!\n5) !!так же поправить ВСЕ цифры, так они могут чутка измениться!!",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[30]/w:commentRangeStart",
+        "paragraph_index": 30,
+        "paragraph_text": "Введение"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[30]/w:commentRangeEnd",
+        "paragraph_index": 30,
+        "paragraph_text": "Введение"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[30]/w:r[2]/w:commentReference",
+        "paragraph_index": 30,
+        "paragraph_text": "Введение"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "9",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "9",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-12T21:25:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Пока так указал, ибо в идеале – это ссылка на другую статью"
+    ],
+    "text": "Пока так указал, ибо в идеале – это ссылка на другую статью",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[35]/w:commentRangeStart",
+        "paragraph_index": 35,
+        "paragraph_text": "Исходные данные и методология анализа"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[35]/w:commentRangeEnd",
+        "paragraph_index": 35,
+        "paragraph_text": "Исходные данные и методология анализа"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[35]/w:r[3]/w:commentReference",
+        "paragraph_index": 35,
+        "paragraph_text": "Исходные данные и методология анализа"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "11",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "11",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-12T21:22:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Так-то, этот раздел, а точнее даже вот эта картинка главные в статье и по началу идея была только на это."
+    ],
+    "text": "Так-то, этот раздел, а точнее даже вот эта картинка главные в статье и по началу идея была только на это.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeStart",
+        "paragraph_index": 45,
+        "paragraph_text": "Распределение плотности вероятности перенапряжений при ОЗЗ"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeEnd",
+        "paragraph_index": 45,
+        "paragraph_text": "Распределение плотности вероятности перенапряжений при ОЗЗ"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:r[3]/w:commentReference",
+        "paragraph_index": 45,
+        "paragraph_text": "Распределение плотности вероятности перенапряжений при ОЗЗ"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "12",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "12",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Valery Valery",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-13T15:44:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "VV"
+    },
+    "paragraphs": [
+      "Опасно",
+      "Это мгновенное значение",
+      "И каких именно уставок, каких защит"
+    ],
+    "text": "Опасно\nЭто мгновенное значение\nИ каких именно уставок, каких защит",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[47]/w:commentRangeStart[1]",
+        "paragraph_index": 49,
+        "paragraph_text": "Кроме того, можно отметить, что менее 10% всех зафиксированных ОЗЗ сопровождались перенапряжениями ниже 1,65 Uном; и что 90% не выше 2,35 Uном. Медианное значение (50-й перцентиль) составляет 1,926 Uном, что означает, что половина всех случаев имела перенапряжения ниже этого уровня, а половина — выше."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[47]/w:commentRangeEnd[1]",
+        "paragraph_index": 49,
+        "paragraph_text": "Кроме того, можно отметить, что менее 10% всех зафиксированных ОЗЗ сопровождались перенапряжениями ниже 1,65 Uном; и что 90% не выше 2,35 Uном. Медианное значение (50-й перцентиль) составляет 1,926 Uном, что означает, что половина всех случаев имела перенапряжения ниже этого уровня, а половина — выше."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[47]/w:r[29]/w:commentReference",
+        "paragraph_index": 49,
+        "paragraph_text": "Кроме того, можно отметить, что менее 10% всех зафиксированных ОЗЗ сопровождались перенапряжениями ниже 1,65 Uном; и что 90% не выше 2,35 Uном. Медианное значение (50-й перцентиль) составляет 1,926 Uном, что означает, что половина всех случаев имела перенапряжения ниже этого уровня, а половина — выше."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "13",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "13",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-15T11:30:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Убрал участок, согласен, в РЗА как-то не шибко применяется эта инфа о перенапряжениях.",
+      "",
+      "Был текст",
+      "«Эти данные могут служить надежной основой для статистического обоснования выбора уставок защит по напряжению.»"
+    ],
+    "text": "Убрал участок, согласен, в РЗА как-то не шибко применяется эта инфа о перенапряжениях.\n\nБыл текст\n«Эти данные могут служить надежной основой для статистического обоснования выбора уставок защит по напряжению.»",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[47]/w:commentRangeStart[2]",
+        "paragraph_index": 49,
+        "paragraph_text": "Кроме того, можно отметить, что менее 10% всех зафиксированных ОЗЗ сопровождались перенапряжениями ниже 1,65 Uном; и что 90% не выше 2,35 Uном. Медианное значение (50-й перцентиль) составляет 1,926 Uном, что означает, что половина всех случаев имела перенапряжения ниже этого уровня, а половина — выше."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[47]/w:commentRangeEnd[2]",
+        "paragraph_index": 49,
+        "paragraph_text": "Кроме того, можно отметить, что менее 10% всех зафиксированных ОЗЗ сопровождались перенапряжениями ниже 1,65 Uном; и что 90% не выше 2,35 Uном. Медианное значение (50-й перцентиль) составляет 1,926 Uном, что означает, что половина всех случаев имела перенапряжения ниже этого уровня, а половина — выше."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[47]/w:r[30]/w:commentReference",
+        "paragraph_index": 49,
+        "paragraph_text": "Кроме того, можно отметить, что менее 10% всех зафиксированных ОЗЗ сопровождались перенапряжениями ниже 1,65 Uном; и что 90% не выше 2,35 Uном. Медианное значение (50-й перцентиль) составляет 1,926 Uном, что означает, что половина всех случаев имела перенапряжения ниже этого уровня, а половина — выше."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "14",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "14",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T13:25:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Перед публикацией надо будет перепроверить, так как при разрешении всех «?» может измениться число."
+    ],
+    "text": "Перед публикацией надо будет перепроверить, так как при разрешении всех «?» может измениться число.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[50]/w:commentRangeStart",
+        "paragraph_index": 54,
+        "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[50]/w:commentRangeEnd",
+        "paragraph_index": 54,
+        "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[50]/w:r[2]/w:commentReference",
+        "paragraph_index": 54,
+        "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "15",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "15",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T15:32:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Правда в рамках этих данных, это не лишние / неправильные данные, а прост редкие события, которые не перестают быть интересными"
+    ],
+    "text": "Правда в рамках этих данных, это не лишние / неправильные данные, а прост редкие события, которые не перестают быть интересными",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[54]/w:commentRangeStart",
+        "paragraph_index": 83,
+        "paragraph_text": "Диаграмма размаха (Рис. 3.а) наглядно показывает медиану (линия внутри ящика), межквартильный размах (высота ящика), а также весь диапазон значений за исключением выбросов («усы» диаграммы). Точки за пределами усов представляют собой статистические выбросы (редкие события). В нашем случае диаграмма подтверждает, что основная масса данных (50%) сконцентрирована в узком диапазоне 1,823÷2,099 Uном, а также выявляет наличие нескольких выбросов как в сторону меньших, так и в сторону больших значений."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[54]/w:commentRangeEnd",
+        "paragraph_index": 83,
+        "paragraph_text": "Диаграмма размаха (Рис. 3.а) наглядно показывает медиану (линия внутри ящика), межквартильный размах (высота ящика), а также весь диапазон значений за исключением выбросов («усы» диаграммы). Точки за пределами усов представляют собой статистические выбросы (редкие события). В нашем случае диаграмма подтверждает, что основная масса данных (50%) сконцентрирована в узком диапазоне 1,823÷2,099 Uном, а также выявляет наличие нескольких выбросов как в сторону меньших, так и в сторону больших значений."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[54]/w:r[22]/w:commentReference",
+        "paragraph_index": 83,
+        "paragraph_text": "Диаграмма размаха (Рис. 3.а) наглядно показывает медиану (линия внутри ящика), межквартильный размах (высота ящика), а также весь диапазон значений за исключением выбросов («усы» диаграммы). Точки за пределами усов представляют собой статистические выбросы (редкие события). В нашем случае диаграмма подтверждает, что основная масса данных (50%) сконцентрирована в узком диапазоне 1,823÷2,099 Uном, а также выявляет наличие нескольких выбросов как в сторону меньших, так и в сторону больших значений."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "18",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "18",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-15T11:36:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Не уверен, что магистерскую можно, но пусть пока будет, потом если что удалим."
+    ],
+    "text": "Не уверен, что магистерскую можно, но пусть пока будет, потом если что удалим.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[77]/w:commentRangeStart",
+        "paragraph_index": 106,
+        "paragraph_text": "Васильев, С. С. Влияние переходных процессов при однофазном коротком замыкании на действие релейной защиты в кабельных сетях 6-10 кВ : магистерская диссертация / С. С. Васильев ; Тольяттинский государственный университет. – Тольятти, 2017."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[77]/w:commentRangeEnd",
+        "paragraph_index": 106,
+        "paragraph_text": "Васильев, С. С. Влияние переходных процессов при однофазном коротком замыкании на действие релейной защиты в кабельных сетях 6-10 кВ : магистерская диссертация / С. С. Васильев ; Тольяттинский государственный университет. – Тольятти, 2017."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[77]/w:r[5]/w:commentReference",
+        "paragraph_index": 106,
+        "paragraph_text": "Васильев, С. С. Влияние переходных процессов при однофазном коротком замыкании на действие релейной защиты в кабельных сетях 6-10 кВ : магистерская диссертация / С. С. Васильев ; Тольяттинский государственный университет. – Тольятти, 2017."
+      }
+    ],
+    "decision": "not_reviewed"
+  }
+]

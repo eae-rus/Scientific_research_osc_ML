@@ -1,0 +1,191 @@
+=== TABLE 1 (TAB-013) STRUCTURE ===
+Rows: 21
+
+Row 00 (7 cells):
+  Col 0 [span=1, vmerge=None]: № / эксп. / .
+  Col 1 [span=1, vmerge=None]: № работающего ПЧ/ Срабатывание БАВР
+  Col 2 [span=1, vmerge=None]: Ввод 1 / (Т1)
+  Col 3 [span=1, vmerge=None]: Ввод 2 / (Т2)
+  Col 4 [span=1, vmerge=None]: i max
+  Col 5 [span=1, vmerge=None]: Кброск.
+  Col 6 [span=1, vmerge=None]: Время (от начала аварии до команд БАВР)
+
+Row 01 (1 cells):
+  Col 0 [span=7, vmerge=None]: Отключения ввода №2 (Т2)
+
+Row 02 (7 cells):
+  Col 0 [span=1, vmerge=restart]: 1
+  Col 1 [span=1, vmerge=None]: № работающего ПЧ
+  Col 2 [span=1, vmerge=None]: 1
+  Col 3 [span=1, vmerge=None]: 5
+  Col 4 [span=1, vmerge=restart]: 491 А
+  Col 5 [span=1, vmerge=restart]: 4,6
+  Col 6 [span=1, vmerge=restart]: 31,667 мс
+
+Row 03 (7 cells):
+  Col 0 [span=1, vmerge=continue]: 
+  Col 1 [span=1, vmerge=None]: Срабатывание БАВР
+  Col 2 [span=1, vmerge=None]: +
+  Col 3 [span=1, vmerge=None]: -
+  Col 4 [span=1, vmerge=continue]: 
+  Col 5 [span=1, vmerge=continue]: 
+  Col 6 [span=1, vmerge=continue]: 
+
+Row 04 (7 cells):
+  Col 0 [span=1, vmerge=continue]: 
+  Col 1 [span=1, vmerge=None]: Уровень колебаний
+  Col 2 [span=1, vmerge=None]: 5%
+  Col 3 [span=1, vmerge=None]: 34%
+  Col 4 [span=1, vmerge=continue]: 
+  Col 5 [span=1, vmerge=continue]: 
+  Col 6 [span=1, vmerge=continue]: 
+
+Row 05 (7 cells):
+  Col 0 [span=1, vmerge=restart]: 2
+  Col 1 [span=1, vmerge=None]: № работающего ПЧ
+  Col 2 [span=1, vmerge=None]: 1
+  Col 3 [span=1, vmerge=None]: 6
+  Col 4 [span=1, vmerge=restart]: 305 А
+  Col 5 [span=1, vmerge=restart]: 2,3
+  Col 6 [span=1, vmerge=restart]: 33,333 мс
+
+Row 06 (7 cells):
+  Col 0 [span=1, vmerge=continue]: 
+  Col 1 [span=1, vmerge=None]: Срабатывание БАВР
+  Col 2 [span=1, vmerge=None]: +
+  Col 3 [span=1, vmerge=None]: +
+  Col 4 [span=1, vmerge=continue]: 
+  Col 5 [span=1, vmerge=continue]: 
+  Col 6 [span=1, vmerge=continue]: 
+
+Row 07 (7 cells):
+  Col 0 [span=1, vmerge=continue]: 
+  Col 1 [span=1, vmerge=None]: Уровень колебаний
+  Col 2 [span=1, vmerge=None]: 10%
+  Col 3 [span=1, vmerge=None]: 38%
+  Col 4 [span=1, vmerge=continue]: 
+  Col 5 [span=1, vmerge=continue]: 
+  Col 6 [span=1, vmerge=continue]: 
+
+Row 08 (7 cells):
+  Col 0 [span=1, vmerge=restart]: 3
+  Col 1 [span=1, vmerge=None]: № работающего ПЧ
+  Col 2 [span=1, vmerge=None]: 3
+  Col 3 [span=1, vmerge=None]: 5
+  Col 4 [span=1, vmerge=restart]: 320 А
+  Col 5 [span=1, vmerge=restart]: 3
+  Col 6 [span=1, vmerge=restart]: 34,167 мс
+
+Row 09 (7 cells):
+  Col 0 [span=1, vmerge=continue]: 
+  Col 1 [span=1, vmerge=None]: С Срабатывание БАВР
+  Col 2 [span=1, vmerge=None]: +
+  Col 3 [span=1, vmerge=None]: +
+  Col 4 [span=1, vmerge=continue]: 
+  Col 5 [span=1, vmerge=continue]: 
+  Col 6 [span=1, vmerge=continue]: 
+
+Row 10 (7 cells):
+  Col 0 [span=1, vmerge=continue]: 
+  Col 1 [span=1, vmerge=None]: Уровень колебаний
+  Col 2 [span=1, vmerge=None]: 8%
+  Col 3 [span=1, vmerge=None]: 34%
+  Col 4 [span=1, vmerge=continue]: 
+  Col 5 [span=1, vmerge=continue]: 
+  Col 6 [span=1, vmerge=continue]: 
+
+Row 11 (1 cells):
+  Col 0 [span=7, vmerge=None]: Отключения ввода №1 (Т1)
+
+Row 12 (7 cells):
+  Col 0 [span=1, vmerge=restart]: 4
+  Col 1 [span=1, vmerge=None]: № работающего ПЧ
+  Col 2 [span=1, vmerge=None]: 1
+  Col 3 [span=1, vmerge=None]: 6
+  Col 4 [span=1, vmerge=restart]: 270 А
+  Col 5 [span=1, vmerge=restart]: 2,3
+  Col 6 [span=1, vmerge=restart]: 17,5 мс
+
+Row 13 (7 cells):
+  Col 0 [span=1, vmerge=continue]: 
+  Col 1 [span=1, vmerge=None]: Срабатывание БАВР
+  Col 2 [span=1, vmerge=None]: -
+  Col 3 [span=1, vmerge=None]: +
+  Col 4 [span=1, vmerge=continue]: 
+  Col 5 [span=1, vmerge=continue]: 
+  Col 6 [span=1, vmerge=continue]: 
+
+Row 14 (7 cells):
+  Col 0 [span=1, vmerge=continue]: 
+  Col 1 [span=1, vmerge=None]: Уровень колебаний
+  Col 2 [span=1, vmerge=None]: 28%
+  Col 3 [span=1, vmerge=None]: 31%
+  Col 4 [span=1, vmerge=continue]: 
+  Col 5 [span=1, vmerge=continue]: 
+  Col 6 [span=1, vmerge=continue]: 
+
+Row 15 (7 cells):
+  Col 0 [span=1, vmerge=restart]: 5
+  Col 1 [span=1, vmerge=None]: № работающего ПЧ
+  Col 2 [span=1, vmerge=None]: 2
+  Col 3 [span=1, vmerge=None]: 5
+  Col 4 [span=1, vmerge=restart]: 350 А
+  Col 5 [span=1, vmerge=restart]: 3,2
+  Col 6 [span=1, vmerge=restart]: 29,167 мс
+
+Row 16 (7 cells):
+  Col 0 [span=1, vmerge=continue]: 
+  Col 1 [span=1, vmerge=None]: Срабатывание БАВР
+  Col 2 [span=1, vmerge=None]: +
+  Col 3 [span=1, vmerge=None]: +
+  Col 4 [span=1, vmerge=continue]: 
+  Col 5 [span=1, vmerge=continue]: 
+  Col 6 [span=1, vmerge=continue]: 
+
+Row 17 (7 cells):
+  Col 0 [span=1, vmerge=continue]: 
+  Col 1 [span=1, vmerge=None]: Уровень колебаний
+  Col 2 [span=1, vmerge=None]: 36%
+  Col 3 [span=1, vmerge=None]: 22%
+  Col 4 [span=1, vmerge=continue]: 
+  Col 5 [span=1, vmerge=continue]: 
+  Col 6 [span=1, vmerge=continue]: 
+
+Row 18 (7 cells):
+  Col 0 [span=1, vmerge=restart]: 6
+  Col 1 [span=1, vmerge=None]: № работающего ПЧ
+  Col 2 [span=1, vmerge=None]: 3
+  Col 3 [span=1, vmerge=None]: 5
+  Col 4 [span=1, vmerge=restart]: 242 А
+  Col 5 [span=1, vmerge=restart]: 2,2
+  Col 6 [span=1, vmerge=restart]: 30,833 мс
+
+Row 19 (7 cells):
+  Col 0 [span=1, vmerge=continue]: 
+  Col 1 [span=1, vmerge=None]: Срабатывание БАВР
+  Col 2 [span=1, vmerge=None]: +
+  Col 3 [span=1, vmerge=None]: +
+  Col 4 [span=1, vmerge=continue]: 
+  Col 5 [span=1, vmerge=continue]: 
+  Col 6 [span=1, vmerge=continue]: 
+
+Row 20 (7 cells):
+  Col 0 [span=1, vmerge=continue]: 
+  Col 1 [span=1, vmerge=None]: Уровень колебаний
+  Col 2 [span=1, vmerge=None]: 17%
+  Col 3 [span=1, vmerge=None]: 40%
+  Col 4 [span=1, vmerge=continue]: 
+  Col 5 [span=1, vmerge=continue]: 
+  Col 6 [span=1, vmerge=continue]: 
+
+=== COMMENTS IN TABLE 1 ===
+[DISS-005-C0074] Author: Евдаков Алексей
+  Quoted: 'СТАНДАРТНЫМИ '
+  Text:
+Пока такое название, потом поправится.
+
+[DISS-005-C0075] Author: Алексей Евдаков [2]
+  Quoted: 'электроснабжения '
+  Text:
+Накидано нейронкой, но мне нравится.
+

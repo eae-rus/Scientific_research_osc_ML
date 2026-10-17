@@ -92,6 +92,18 @@ def split_by_verification(
     confirmed = report.filter(pl.col('verified') == '+')
     false_det = report.filter(pl.col('verified') == '-')
 
+    # TODO [ВЕРИФИКАЦИЯ ДЛЯ СТАТЬИ]: отчёт может иметь несколько строк на один файл
+    # (по одной на каждую секцию/bus). Поэтому кол-во строк != кол-во уникальных файлов.
+    # Пример: 830 строк confirmed != 830 уникальных .cfg файлов.
+    # Но по хорошему, такого быть не должно.
+    n_conf_rows = len(confirmed)
+    n_conf_unique = confirmed['filename'].n_unique() if 'filename' in confirmed.columns else n_conf_rows
+    n_false_rows = len(false_det)
+    n_false_unique = false_det['filename'].n_unique() if 'filename' in false_det.columns else n_false_rows
+    print(f"  Отчёт (строки / уникальных файлов): "
+          f"confirmed={n_conf_rows}/{n_conf_unique}, "
+          f"false_detection={n_false_rows}/{n_false_unique}")
+
     # Проверяем наличие файлов на диске
     if comtrade_dir.exists():
         existing_files = {p.stem for p in comtrade_dir.glob('*.cfg')}
@@ -99,11 +111,22 @@ def split_by_verification(
         confirmed_in = confirmed.filter(pl.col('filename').is_in(list(existing_files)))
         false_in = false_det.filter(pl.col('filename').is_in(list(existing_files)))
 
-        n_conf_missing = len(confirmed) - len(confirmed_in)
-        n_false_missing = len(false_det) - len(false_in)
+        n_conf_missing = n_conf_unique - confirmed_in['filename'].n_unique()
+        n_false_missing = n_false_unique - false_in['filename'].n_unique()
 
+        # TODO [ВЕРИФИКАЦИЯ ДЛЯ СТАТЬИ]: если n_conf_missing > 0, значит часть подтверждённых
+        # ОЗЗ из отчёта отсутствует на диске в osc_comtrade/. Возможные причины:
+        #   1) Файлы не были скопированы в рабочую папку (хранятся на другом носителе)
+        #   2) Расхождение имён (в отчёте MD5-хэш, на диске другое имя)
+        #   3) Файлы короче минимально допустимой длины и были отброшены ещё при формировании отчёта
+        # ДЕЙСТВИЕ: при следующем запуске добавить флаг --verbose и проверить вывод
+        #           'COMTRADE файлы не найдены: confirmed=N'
         if n_conf_missing > 0 or n_false_missing > 0:
-            print(f"  COMTRADE файлы не найдены: confirmed={n_conf_missing}, false_detection={n_false_missing}")
+            print(f"  COMTRADE файлы не найдены на диске: "
+                  f"confirmed={n_conf_missing} из {n_conf_unique}, "
+                  f"false_detection={n_false_missing} из {n_false_unique}")
+            print(f"  ВНИМАНИЕ: метрики Detection Rate считаются только по {confirmed_in['filename'].n_unique()} "
+                  f"файлам из {n_conf_unique} подтверждённых в отчёте!")
 
         confirmed = confirmed_in
         false_det = false_in

@@ -19,7 +19,8 @@ from osc_tools.ml.models import (
     HybridMLP, HybridCNN, HybridResNet,
     HybridSimpleKAN, HybridConvKAN, HybridPhysicsKAN,
     PDR_MLP_v2, FFT_MLP_COMPLEX_v1,
-    SimpleKAN, ConvKAN, PhysicsKAN, PhysicsKANConditional, cPhysicsKAN, rPhysicsKAN, AutoEncoder
+    SimpleKAN, ConvKAN, PhysicsKAN, PhysicsKANConditional, cPhysicsKAN, rPhysicsKAN,
+    PhysicsKANv2, cPhysicsKANv2, rPhysicsKANv2, rKANv2, AutoEncoder
 )
 from osc_tools.ml.class_weights import compute_pos_weight_from_loader
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, balanced_accuracy_score
@@ -80,6 +81,14 @@ class ExperimentRunner:
             model = cPhysicsKAN(**params)
         elif name == 'rPhysicsKAN':
             model = rPhysicsKAN(**params)
+        elif name == 'PhysicsKANv2':
+            model = PhysicsKANv2(**params)
+        elif name == 'cPhysicsKANv2':
+            model = cPhysicsKANv2(**params)
+        elif name == 'rPhysicsKANv2':
+            model = rPhysicsKANv2(**params)
+        elif name == 'rKANv2':
+            model = rKANv2(**params)
         elif name == 'AutoEncoder':
             model = AutoEncoder(**params)
         # Гибридные модели (Exp 2.6.3)

@@ -80,6 +80,7 @@ def build_config(
     config = get_sim_ozz_config()
     config.update(COMPLEXITY_LEVELS[complexity])
     config.update(EXPERIMENTS[exp_name])
+    config['exp_name'] = exp_name  # сохраняем для имени папки и идентификации
 
     if epochs is not None:
         config['epochs'] = epochs
@@ -126,9 +127,13 @@ def run_experiment(exp_name: str, args: argparse.Namespace) -> Path:
     print(f"complexity={args.complexity}, epochs={config['epochs']}")
     print("=" * 80)
 
+    resume_path = args.resume
+    if hasattr(args, 'resume_map') and isinstance(args.resume_map, dict):
+        resume_path = args.resume_map.get(exp_name, args.resume)
+
     return finetune_sim_ozz(
         config,
-        resume_path=args.resume,
+        resume_path=resume_path,
         reset_optimizer=args.reset_optimizer,
     )
 
@@ -138,13 +143,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--exp', choices=['spectral_baseline', 'physical_mlp', 'raw_instantaneous', 'all'],
                         default='all')
     parser.add_argument('--complexity', choices=['light', 'medium', 'heavy'], default='light')
-    parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--epochs', type=int, default=100)
     parser.add_argument('--batch-size', type=int, default=32)
     parser.add_argument('--accumulation-steps', type=int, default=8)
     parser.add_argument('--max-files', type=int, default=None,
                         help='Ограничить число SimOZZ файлов для smoke/отладки')
     parser.add_argument('--train-batches-per-epoch', type=int, default=256)
     parser.add_argument('--val-batches-per-epoch', type=int, default=16)
+    parser.add_argument('--resume-spectral-baseline', type=str, default=None,
+                        help='Checkpoint для продолжения spectral_baseline')
+    parser.add_argument('--resume-physical-mlp', type=str, default=None,
+                        help='Checkpoint для продолжения physical_mlp')
+    parser.add_argument('--resume-raw-instantaneous', type=str, default=None,
+                        help='Checkpoint для продолжения raw_instantaneous')
     parser.add_argument('--resume', type=str, default=None)
     parser.add_argument('--reset-optimizer', action='store_true')
     return parser.parse_args()
@@ -152,6 +163,11 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    args.resume_map = {
+        'spectral_baseline': args.resume_spectral_baseline,
+        'physical_mlp': args.resume_physical_mlp,
+        'raw_instantaneous': args.resume_raw_instantaneous,
+    }
     names = list(EXPERIMENTS.keys()) if args.exp == 'all' else [args.exp]
 
     results = []
@@ -180,14 +196,19 @@ if __name__ == '__main__':
         #   'all'                 — все три последовательно
         EXP = 'all'
         COMPLEXITY = 'light'           # 'light' | 'medium' | 'heavy'
-        EPOCHS = 50
+        EPOCHS = 100
         BATCH_SIZE = 32
         ACCUMULATION_STEPS = 8
         MAX_FILES = None               # None = все SimOZZ файлы; для smoke поставьте 100
         TRAIN_BATCHES_PER_EPOCH = 256
         VAL_BATCHES_PER_EPOCH = 16
-        RESUME = None                  # путь к checkpoint для дообучения
-        RESET_OPTIMIZER = False
+        RESUME = None                  # общий fallback путь для дообучения
+        RESUME_BY_EXP = {
+            'spectral_baseline': 'experiments/phase4/sim_ozz_finetune_spectral_baseline_BaselineTransformer_20260607_104508/latest_checkpoint.pt',
+            'physical_mlp': 'experiments/phase4/sim_ozz_finetune_physical_mlp_PhysicalMLPTransformer_20260608_042419/latest_checkpoint.pt',
+            'raw_instantaneous': 'experiments/phase4/sim_ozz_finetune_raw_instantaneous_BaselineTransformer_20260608_202845/latest_checkpoint.pt',
+        }        
+        RESET_OPTIMIZER = True  # True, если нужно сбросить оптимизатор и начать с 0 эпохи
 
         names = list(EXPERIMENTS.keys()) if EXP == 'all' else [EXP]
 
@@ -202,6 +223,7 @@ if __name__ == '__main__':
         _args.train_batches_per_epoch = TRAIN_BATCHES_PER_EPOCH
         _args.val_batches_per_epoch = VAL_BATCHES_PER_EPOCH
         _args.resume = RESUME
+        _args.resume_map = RESUME_BY_EXP
         _args.reset_optimizer = RESET_OPTIMIZER
 
         results = []

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class ComplexMSELoss(nn.Module):
@@ -84,6 +85,44 @@ class ComplexMSELoss(nn.Module):
             return diff_sq.sum()
         else:
             return diff_sq
+
+
+class RobustComplexLoss(nn.Module):
+    """SmoothL1 расстояние в комплексной плоскости для данных с выбросами.
+
+    Угол остаётся циклическим благодаря переходу ``A,phi -> Re,Im``. В отличие
+    от squared ComplexMSE, большие единичные выбросы после ``beta`` получают
+    линейный штраф и не доминируют над всей эпохой.
+    """
+
+    def __init__(self, beta: float = 0.1) -> None:
+        super().__init__()
+        if beta <= 0:
+            raise ValueError("Huber beta должен быть положительным")
+        self.beta = beta
+
+    def forward(
+        self,
+        pred_amp: torch.Tensor,
+        pred_phase: torch.Tensor,
+        true_amp: torch.Tensor,
+        true_phase: torch.Tensor,
+        mask: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        pred_amp = torch.nan_to_num(pred_amp, nan=0.0)
+        pred_phase = torch.nan_to_num(pred_phase, nan=0.0)
+        true_amp = torch.nan_to_num(true_amp, nan=0.0)
+        true_phase = torch.nan_to_num(true_phase, nan=0.0)
+        pred_re = pred_amp * torch.cos(pred_phase)
+        pred_im = pred_amp * torch.sin(pred_phase)
+        true_re = true_amp * torch.cos(true_phase)
+        true_im = true_amp * torch.sin(true_phase)
+        loss = F.smooth_l1_loss(pred_re, true_re, beta=self.beta, reduction="none")
+        loss = loss + F.smooth_l1_loss(pred_im, true_im, beta=self.beta, reduction="none")
+        if mask is None:
+            return loss.mean()
+        valid = (~mask).float()
+        return (loss * valid).sum() / valid.sum().clamp(min=1.0)
 
 
 class SpectralReconstructionLoss(nn.Module):

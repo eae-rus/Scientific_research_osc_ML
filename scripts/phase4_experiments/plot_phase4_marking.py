@@ -45,6 +45,10 @@ from osc_tools.ml.labels import (
     get_target_columns, prepare_labels_for_experiment,
     clean_labels, add_base_labels,
 )
+from scripts.phase4_experiments.threshold_utils import (
+    resolve_threshold_config,
+    thresholds_for_classes,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -245,7 +249,7 @@ def plot_marking(
     real_labels: dict[str, np.ndarray],
     pred_probs: dict[str, np.ndarray],
     title: str,
-    threshold: float = 0.5,
+    threshold: float | dict[str, float] = 0.5,
     coverage: Optional[np.ndarray] = None,
 ) -> None:
     """Строит комбинированный график: токи, напряжения, дискреты, кривые уверенности.
@@ -262,6 +266,7 @@ def plot_marking(
         coverage: (N,) число окон покрывающих каждую точку
     """
     labels = list(real_labels.keys())
+    threshold_values = thresholds_for_classes(labels, threshold)
     n_classes = len(labels)
     amplitudes = np.arange(1, n_classes + 1)
 
@@ -301,7 +306,7 @@ def plot_marking(
     ax_disc = fig.add_subplot(gs[2, 0], sharex=ax_curr)
     for i, label_name in enumerate(labels):
         color = _get_class_color(label_name, i)
-        pred_bin = (pred_probs[label_name] >= threshold).astype(np.int8)
+        pred_bin = (pred_probs[label_name] >= float(threshold_values[i])).astype(np.int8)
 
         # Реальные — наверх
         real_pos = np.where(real_labels[label_name] > 0, amplitudes[i], np.nan)
@@ -328,9 +333,10 @@ def plot_marking(
         ax_conf = fig.add_subplot(gs[3 + i, 0], sharex=ax_curr)
         color = _get_class_color(label_name, i)
         probs = pred_probs.get(label_name, np.zeros_like(time_axis))
+        class_threshold = float(threshold_values[i])
 
         ax_conf.plot(time_axis, probs, color=color, linewidth=1.2, alpha=0.6)
-        mask_above = probs >= threshold
+        mask_above = probs >= class_threshold
         if np.any(mask_above):
             ax_conf.scatter(time_axis[mask_above], probs[mask_above],
                             color=color, s=8, alpha=0.9)
@@ -341,11 +347,11 @@ def plot_marking(
             ax_conf.fill_between(time_axis, 0, 1,
                                  where=real > 0, alpha=0.1, color=color)
 
-        ax_conf.axhline(threshold, color='red', linewidth=0.9,
+        ax_conf.axhline(class_threshold, color='red', linewidth=0.9,
                         linestyle='--', alpha=0.7)
         ax_conf.set_ylim(-0.02, 1.02)
-        ax_conf.set_yticks([0.0, threshold, 1.0])
-        ax_conf.set_yticklabels(["0", f"{threshold:.2f}", "1"], fontsize=7)
+        ax_conf.set_yticks([0.0, class_threshold, 1.0])
+        ax_conf.set_yticklabels(["0", f"{class_threshold:.2f}", "1"], fontsize=7)
         ax_conf.set_ylabel(label_name, fontsize=8)
         ax_conf.grid(True, alpha=0.3, linestyle=':')
 
@@ -385,11 +391,12 @@ def generate_marking_plots(
     precomputed_file: str = 'test_precomputed.csv',
     split: str = 'val',
     step: int = 32,
-    threshold: float = 0.5,
+    threshold: float | dict[str, float] = 0.5,
     include_zero_current: bool = True,
     include_zero_voltage: bool = True,
     max_files: Optional[int] = None,
     selected_files: Optional[list[str]] = None,
+    thresholds_json: str | None = None,
 ) -> None:
     """Генерирует графики разметки для всех файлов из указанного сплита.
 
@@ -440,6 +447,11 @@ def generate_marking_plots(
 
     target_columns = get_target_columns(target_level, df)
     print(f"Целевые классы: {target_columns}")
+    threshold_config = resolve_threshold_config(
+        target_columns,
+        threshold=threshold,
+        thresholds_json=thresholds_json,
+    )
 
     # Split (тот же алгоритм, что при обучении)
     if target_level == 'ozz':
@@ -569,7 +581,7 @@ def generate_marking_plots(
             real_labels=real_labels,
             pred_probs=pred_probs,
             title=title,
-            threshold=threshold,
+            threshold=threshold_config['threshold_spec'],
             coverage=file_coverage,
         )
 
@@ -593,6 +605,8 @@ def parse_args() -> argparse.Namespace:
                         help='Шаг скользящего окна (32 = 1 период)')
     parser.add_argument('--threshold', type=float, default=0.5,
                         help='Порог бинаризации')
+    parser.add_argument('--thresholds-json', type=str, default=None,
+                        help='JSON с per-class порогами: evaluation_report.json, optimal_thresholds.json и т.п.')
     parser.add_argument('--max-files', type=int, default=None,
                         help='Максимум файлов для визуализации')
     parser.add_argument('--no-zero-current', action='store_true',
@@ -614,6 +628,7 @@ def main() -> None:
         split=args.split,
         step=args.step,
         threshold=args.threshold,
+        thresholds_json=args.thresholds_json,
         include_zero_current=not args.no_zero_current,
         include_zero_voltage=not args.no_zero_voltage,
         max_files=args.max_files,
@@ -648,8 +663,9 @@ if __name__ == '__main__':
         SPLIT = 'train'
 
         # --- Параметры визуализации ---
-        STEP = 16           # Шаг скользящего окна (32 = 1 период)
-        THRESHOLD = 0.5     # Порог бинаризации
+        STEP = 16                      # Шаг скользящего окна (32 = 1 период)
+        THRESHOLD = 0.5                # Порог бинаризации
+        THRESHOLDS_JSON = None         # ссылка на JSON с per-class порогами (evaluation_report.json, optimal_thresholds.json и т.п.)
         INCLUDE_ZERO_CURRENT = True
         INCLUDE_ZERO_VOLTAGE = True
 
@@ -667,6 +683,7 @@ if __name__ == '__main__':
             split=SPLIT,
             step=STEP,
             threshold=THRESHOLD,
+            thresholds_json=THRESHOLDS_JSON,
             include_zero_current=INCLUDE_ZERO_CURRENT,
             include_zero_voltage=INCLUDE_ZERO_VOLTAGE,
             max_files=MAX_FILES,

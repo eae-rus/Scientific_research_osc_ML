@@ -1,0 +1,123 @@
+[
+  {
+    "story_part": "word/document.xml",
+    "kind": "ins",
+    "locator": "/w:document/w:body/w:p[1]/w:ins",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "2",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:18:00Z"
+    },
+    "text": " В КАБЕЛЬНЫХ СЕТЯХ"
+  },
+  {
+    "story_part": "word/document.xml",
+    "kind": "ins",
+    "locator": "/w:document/w:body/w:p[9]/w:ins[1]",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "5",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:19:00Z"
+    },
+    "text": ", "
+  },
+  {
+    "story_part": "word/document.xml",
+    "kind": "ins",
+    "locator": "/w:document/w:body/w:p[9]/w:ins[2]",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "6",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:40:00Z"
+    },
+    "text": "полученного "
+  },
+  {
+    "story_part": "word/document.xml",
+    "kind": "ins",
+    "locator": "/w:document/w:body/w:p[9]/w:ins[3]",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "7",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:19:00Z"
+    },
+    "text": "преимущественно "
+  },
+  {
+    "story_part": "word/document.xml",
+    "kind": "ins",
+    "locator": "/w:document/w:body/w:p[9]/w:ins[4]",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "8",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:40:00Z"
+    },
+    "text": "из "
+  },
+  {
+    "story_part": "word/document.xml",
+    "kind": "ins",
+    "locator": "/w:document/w:body/w:p[9]/w:ins[5]",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "9",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:19:00Z"
+    },
+    "text": "кабельных сетей"
+  },
+  {
+    "story_part": "word/document.xml",
+    "kind": "ins",
+    "locator": "/w:document/w:body/w:p[40]/w:ins",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "14",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Valery Valery",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-13T15:10:00Z"
+    },
+    "text": " "
+  },
+  {
+    "story_part": "word/document.xml",
+    "kind": "ins",
+    "locator": "/w:document/w:body/w:p[76]/w:ins[1]",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "44",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:13:00Z"
+    },
+    "text": " "
+  },
+  {
+    "story_part": "word/document.xml",
+    "kind": "ins",
+    "locator": "/w:document/w:body/w:p[76]/w:ins[2]",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "48",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:15:00Z"
+    },
+    "text": "формы протекающих процессов при"
+  },
+  {
+    "story_part": "word/document.xml",
+    "kind": "ins",
+    "locator": "/w:document/w:body/w:p[76]/w:ins[3]",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "49",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:15:00Z"
+    },
+    "text": " и коммутациях"
+  },
+  {
+    "story_part": "word/document.xml",
+    "kind": "ins",
+    "locator": "/w:document/w:body/w:p[77]/w:ins",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "50",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-14T09:30:00Z"
+    },
+    "text": "релейной защиты и автоматик"
+  }
+]

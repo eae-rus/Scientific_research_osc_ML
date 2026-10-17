@@ -1,0 +1,1173 @@
+{
+  "source_id": "STAT-OZZ",
+  "date": "2026-10-08",
+  "versions": {
+    "3427ad2314f876c59788020b9e2efb700dfde6de0172bbbe430f991583ef3c61": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\article\\(Энергоинновации) Датасет+Статистика ОЗЗ\\_предыдущие версии\\Статистика ОЗЗ v2.0.docx",
+    "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\article\\(Энергоинновации) Датасет+Статистика ОЗЗ\\_предыдущие версии\\Статистика ОЗЗ v2.2.docx",
+    "704d9976787b8cfdb0788f7c17b23018f6b489d0730c2bb0c0544a97076088a5": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\article\\(Энергоинновации) Датасет+Статистика ОЗЗ\\_предыдущие версии\\Статистика ОЗЗ v2.3.docx",
+    "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\article\\(Энергоинновации) Датасет+Статистика ОЗЗ\\Статистика ОЗЗ v2.3.2 (+комм).docx"
+  },
+  "groups_completed": [
+    "C03-STAT-OZZ-001",
+    "C03-STAT-OZZ-002",
+    "C03-STAT-OZZ-003",
+    "C03-STAT-OZZ-004",
+    "C03-STAT-OZZ-005"
+  ],
+  "coverage": "All 31 comments of four commented versions reviewed; anchors retained verbatim.",
+  "comments": [
+    {
+      "source_sha256": "3427ad2314f876c59788020b9e2efb700dfde6de0172bbbe430f991583ef3c61",
+      "original_comment_id": "0",
+      "original_text": "Перевести, как сделаю русский вариант",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[15]/w:commentRangeStart",
+          "paragraph_index": 15,
+          "paragraph_text": "НАЗВАНИЕ ДОКЛАДА НА АНГЛИЙСКОМ ЯЗЫКЕ (Название доклада)**"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[15]/w:commentRangeEnd",
+          "paragraph_index": 15,
+          "paragraph_text": "НАЗВАНИЕ ДОКЛАДА НА АНГЛИЙСКОМ ЯЗЫКЕ (Название доклада)**"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[15]/w:r[3]/w:commentReference",
+          "paragraph_index": 15,
+          "paragraph_text": "НАЗВАНИЕ ДОКЛАДА НА АНГЛИЙСКОМ ЯЗЫКЕ (Название доклада)**"
+        }
+      ],
+      "group": "C03-STAT-OZZ-001",
+      "kind": "publication_reminder",
+      "semantic_family": "translation",
+      "decision": "Перевод относится к публикации. В диссертации используется русское связное изложение; исходная статья не редактируется.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f:6"
+      ]
+    },
+    {
+      "source_sha256": "3427ad2314f876c59788020b9e2efb700dfde6de0172bbbe430f991583ef3c61",
+      "original_comment_id": "1",
+      "original_text": "Требуется сделать\n1) Подготовить список литературы\n2) ужать до 4стр (провёл только первичное сжатие) + переразместить рисунки.\n3) Внимательнее перечитать раздел по количественной оценке перенапряжений. Наверное его стоит скорректировать / улучшить.\n4) !!Когда будет уточнена разметка ОЗЗ и перенапряжений от них – то обновить рисунки.!!\n5) !!так же поправить ВСЕ цифры, так они могут чутка измениться!!",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[31]/w:commentRangeStart",
+          "paragraph_index": 31,
+          "paragraph_text": "Введение"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[31]/w:commentRangeEnd",
+          "paragraph_index": 31,
+          "paragraph_text": "Введение"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[31]/w:r[2]/w:commentReference",
+          "paragraph_index": 31,
+          "paragraph_text": "Введение"
+        }
+      ],
+      "group": "C03-STAT-OZZ-001",
+      "kind": "version_dependency",
+      "semantic_family": "update",
+      "decision": "Ограничение четырьмя страницами не переносится на диссертацию. Девять статистик, все принятые диапазоны и доли CDF пересчитаны по снимку v1.7. Два новых рисунка имеют объявленный способ построения. Историческая KDE и полная повторная разметка не объявлены проверенными.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f:8",
+        "704d9976787b8cfdb0788f7c17b23018f6b489d0730c2bb0c0544a97076088a5:2",
+        "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323:3"
+      ]
+    },
+    {
+      "source_sha256": "3427ad2314f876c59788020b9e2efb700dfde6de0172bbbe430f991583ef3c61",
+      "original_comment_id": "2",
+      "original_text": "Пока так указал, ибо в идеале – это ссылка на другую статью",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[36]/w:commentRangeStart",
+          "paragraph_index": 36,
+          "paragraph_text": "Исходные данные и методология анализа"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[36]/w:commentRangeEnd",
+          "paragraph_index": 36,
+          "paragraph_text": "Исходные данные и методология анализа"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[36]/w:r[3]/w:commentReference",
+          "paragraph_index": 36,
+          "paragraph_text": "Исходные данные и методология анализа"
+        }
+      ],
+      "group": "C03-STAT-OZZ-001",
+      "kind": "provenance",
+      "semantic_family": "source",
+      "decision": "Подготовка поднабора изложена перед статистикой и связана с DATA-OZZ. Совместное авторство сохранено; порядок фамилий не доказывает личного вклада. Полное оформление библиографии остаётся отдельной зависимостью.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f:9"
+      ]
+    },
+    {
+      "source_sha256": "3427ad2314f876c59788020b9e2efb700dfde6de0172bbbe430f991583ef3c61",
+      "original_comment_id": "4",
+      "original_text": "Так-то, этот раздел, а точнее даже вот эта картинка главные в статье и по началу идея была только на это.",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeStart",
+          "paragraph_index": 46,
+          "paragraph_text": "Распределение плотности вероятности перенапряжений при ОЗЗ"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeEnd",
+          "paragraph_index": 46,
+          "paragraph_text": "Распределение плотности вероятности перенапряжений при ОЗЗ"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:r[3]/w:commentReference",
+          "paragraph_index": 46,
+          "paragraph_text": "Распределение плотности вероятности перенапряжений при ОЗЗ"
+        }
+      ],
+      "group": "C03-STAT-OZZ-001",
+      "kind": "scientific_emphasis",
+      "semantic_family": "figure",
+      "decision": "Распределение является основным результатом, поэтому включены гистограмма и эмпирическая накопленная доля, а не только числовая таблица. Неизвестная исходная KDE не воспроизводится произвольно.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f:11"
+      ]
+    },
+    {
+      "source_sha256": "3427ad2314f876c59788020b9e2efb700dfde6de0172bbbe430f991583ef3c61",
+      "original_comment_id": "5",
+      "original_text": "Перед публикацией надо будет перепроверить, так как при разрешении всех «?» может измениться число.",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[51]/w:commentRangeStart",
+          "paragraph_index": 55,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[51]/w:commentRangeEnd",
+          "paragraph_index": 55,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[51]/w:r[2]/w:commentReference",
+          "paragraph_index": 55,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        }
+      ],
+      "group": "C03-STAT-OZZ-001",
+      "kind": "version_dependency",
+      "semantic_family": "count",
+      "decision": "В текущем снимке 830 принятых записей без неопределённых отметок. Все девять статистик и групповые численности совпали со статьёй. 1855 строк текущих кандидатов не приравниваются к историческим 1865. Физический просмотр сигналов заново не проводился.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f:14",
+        "704d9976787b8cfdb0788f7c17b23018f6b489d0730c2bb0c0544a97076088a5:4",
+        "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323:5"
+      ]
+    },
+    {
+      "source_sha256": "3427ad2314f876c59788020b9e2efb700dfde6de0172bbbe430f991583ef3c61",
+      "original_comment_id": "6",
+      "original_text": "Правда в рамках этих данных, это не лишние / неправильные данные, а прост редкие события, которые не перестают быть интересными",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[56]/w:commentRangeStart",
+          "paragraph_index": 85,
+          "paragraph_text": "Диаграмма размаха (Рис. 4а) наглядно показывает медиану (линия внутри ящика), межквартильный размах (высота ящика), а также весь диапазон значений за исключением выбросов («усы» диаграммы). Точки за пределами усов представляют собой статистические выбросы (редкие события). В нашем случае диаграмма подтверждает, что основная масса данных (50%) сконцентрирована в узком диапазоне 1,83÷2,10 Uном, а также выявляет наличие нескольких выбросов как в сторону меньших, так и в сторону больших значений."
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[56]/w:commentRangeEnd",
+          "paragraph_index": 85,
+          "paragraph_text": "Диаграмма размаха (Рис. 4а) наглядно показывает медиану (линия внутри ящика), межквартильный размах (высота ящика), а также весь диапазон значений за исключением выбросов («усы» диаграммы). Точки за пределами усов представляют собой статистические выбросы (редкие события). В нашем случае диаграмма подтверждает, что основная масса данных (50%) сконцентрирована в узком диапазоне 1,83÷2,10 Uном, а также выявляет наличие нескольких выбросов как в сторону меньших, так и в сторону больших значений."
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[56]/w:r[6]/w:commentReference",
+          "paragraph_index": 85,
+          "paragraph_text": "Диаграмма размаха (Рис. 4а) наглядно показывает медиану (линия внутри ящика), межквартильный размах (высота ящика), а также весь диапазон значений за исключением выбросов («усы» диаграммы). Точки за пределами усов представляют собой статистические выбросы (редкие события). В нашем случае диаграмма подтверждает, что основная масса данных (50%) сконцентрирована в узком диапазоне 1,83÷2,10 Uном, а также выявляет наличие нескольких выбросов как в сторону меньших, так и в сторону больших значений."
+        }
+      ],
+      "group": "C03-STAT-OZZ-001",
+      "kind": "physical_interpretation",
+      "semantic_family": "rare",
+      "decision": "Все 830 принятых значений сохранены. Редкость наблюдения не является основанием его удаления. За пределами квартилей могут находиться физически интересные события.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f:15"
+      ]
+    },
+    {
+      "source_sha256": "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f",
+      "original_comment_id": "1",
+      "original_text": "Опасно, тогда ссылку на стандарты надо ",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[8]/w:commentRangeStart[1]",
+          "paragraph_index": 8,
+          "paragraph_text": "Состояние вопроса: Классические теоретические оценки, основанные на анализе переходных процессов при перемежающихся дуговых однофазных замыканиях на землю (ОЗЗ) в сетях 6÷35 кВ с изолированной нейтралью, предсказывают появление перенапряжений кратностью до 3÷4·Uном. Эти оценки исторически служили опорой при формировании требований к изоляции оборудования в нормативных и методических документах. Однако в открытых источниках недостаточно результатов масштабных исследований, основанных на верифицированных осциллограммах из реальных энергосистем, которые могли бы подтвердить или уточнить эти теоретические пределы в условиях современной эксплуатации."
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[8]/w:commentRangeEnd[1]",
+          "paragraph_index": 8,
+          "paragraph_text": "Состояние вопроса: Классические теоретические оценки, основанные на анализе переходных процессов при перемежающихся дуговых однофазных замыканиях на землю (ОЗЗ) в сетях 6÷35 кВ с изолированной нейтралью, предсказывают появление перенапряжений кратностью до 3÷4·Uном. Эти оценки исторически служили опорой при формировании требований к изоляции оборудования в нормативных и методических документах. Однако в открытых источниках недостаточно результатов масштабных исследований, основанных на верифицированных осциллограммах из реальных энергосистем, которые могли бы подтвердить или уточнить эти теоретические пределы в условиях современной эксплуатации."
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[8]/w:r[6]/w:commentReference",
+          "paragraph_index": 8,
+          "paragraph_text": "Состояние вопроса: Классические теоретические оценки, основанные на анализе переходных процессов при перемежающихся дуговых однофазных замыканиях на землю (ОЗЗ) в сетях 6÷35 кВ с изолированной нейтралью, предсказывают появление перенапряжений кратностью до 3÷4·Uном. Эти оценки исторически служили опорой при формировании требований к изоляции оборудования в нормативных и методических документах. Однако в открытых источниках недостаточно результатов масштабных исследований, основанных на верифицированных осциллограммах из реальных энергосистем, которые могли бы подтвердить или уточнить эти теоретические пределы в условиях современной эксплуатации."
+        }
+      ],
+      "group": "C03-STAT-OZZ-002",
+      "kind": "unsupported_inference",
+      "semantic_family": "standard",
+      "decision": "Из поднабора не выводятся нормативные уровни изоляции и уставки. Требуется проверка конкретных первичных нормативных источников для отдельного теоретического дополнения.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": []
+    },
+    {
+      "source_sha256": "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f",
+      "original_comment_id": "2",
+      "original_text": "Дальше приведено, особенно обширно в приложении 1",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[8]/w:commentRangeStart[2]",
+          "paragraph_index": 8,
+          "paragraph_text": "Состояние вопроса: Классические теоретические оценки, основанные на анализе переходных процессов при перемежающихся дуговых однофазных замыканиях на землю (ОЗЗ) в сетях 6÷35 кВ с изолированной нейтралью, предсказывают появление перенапряжений кратностью до 3÷4·Uном. Эти оценки исторически служили опорой при формировании требований к изоляции оборудования в нормативных и методических документах. Однако в открытых источниках недостаточно результатов масштабных исследований, основанных на верифицированных осциллограммах из реальных энергосистем, которые могли бы подтвердить или уточнить эти теоретические пределы в условиях современной эксплуатации."
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[8]/w:commentRangeEnd[2]",
+          "paragraph_index": 8,
+          "paragraph_text": "Состояние вопроса: Классические теоретические оценки, основанные на анализе переходных процессов при перемежающихся дуговых однофазных замыканиях на землю (ОЗЗ) в сетях 6÷35 кВ с изолированной нейтралью, предсказывают появление перенапряжений кратностью до 3÷4·Uном. Эти оценки исторически служили опорой при формировании требований к изоляции оборудования в нормативных и методических документах. Однако в открытых источниках недостаточно результатов масштабных исследований, основанных на верифицированных осциллограммах из реальных энергосистем, которые могли бы подтвердить или уточнить эти теоретические пределы в условиях современной эксплуатации."
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[8]/w:r[7]/w:commentReference",
+          "paragraph_index": 8,
+          "paragraph_text": "Состояние вопроса: Классические теоретические оценки, основанные на анализе переходных процессов при перемежающихся дуговых однофазных замыканиях на землю (ОЗЗ) в сетях 6÷35 кВ с изолированной нейтралью, предсказывают появление перенапряжений кратностью до 3÷4·Uном. Эти оценки исторически служили опорой при формировании требований к изоляции оборудования в нормативных и методических документах. Однако в открытых источниках недостаточно результатов масштабных исследований, основанных на верифицированных осциллограммах из реальных энергосистем, которые могли бы подтвердить или уточнить эти теоретические пределы в условиях современной эксплуатации."
+        }
+      ],
+      "group": "C03-STAT-OZZ-002",
+      "kind": "unverified_evidence",
+      "semantic_family": "appendix",
+      "decision": "Ответ сохранён. Упоминание приложения не подтверждает нормативное утверждение. Приложение явно обозначено как текст ChatGPT; его ссылки и пересказ не перенесены в диссертацию как проверенные факты.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": []
+    },
+    {
+      "source_sha256": "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f",
+      "original_comment_id": "4",
+      "original_text": "Я вот тут не знаю, где чисто 3-4 UНом применяется. Может, и нигде) \nМожет, это больше для правильности оценки наших моделей, на которых, в том числе, мы и РЗА проверяем",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[11]/w:commentRangeStart[1]",
+          "paragraph_index": 11,
+          "paragraph_text": "Выводы: Полученные статистические данные показывают, что экстремально высокие перенапряжения, теоретически возможные, в практике встречаются редко. Это не означает, что их нельзя ожидать, но эмпирическая частота их возникновения невелика. Результаты представляют статистически обоснованную базу, позволяющую уточнять технико-экономические расчёты при выборе и координации изоляции, а также оценку рисков, переводя подход от чисто детерминистического (\"какого максимального перенапряжения можно ожидать?\") к вероятностному (\"какова вероятность превышения заданной кратности?\")."
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[11]/w:commentRangeEnd[1]",
+          "paragraph_index": 11,
+          "paragraph_text": "Выводы: Полученные статистические данные показывают, что экстремально высокие перенапряжения, теоретически возможные, в практике встречаются редко. Это не означает, что их нельзя ожидать, но эмпирическая частота их возникновения невелика. Результаты представляют статистически обоснованную базу, позволяющую уточнять технико-экономические расчёты при выборе и координации изоляции, а также оценку рисков, переводя подход от чисто детерминистического (\"какого максимального перенапряжения можно ожидать?\") к вероятностному (\"какова вероятность превышения заданной кратности?\")."
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[11]/w:r[4]/w:commentReference",
+          "paragraph_index": 11,
+          "paragraph_text": "Выводы: Полученные статистические данные показывают, что экстремально высокие перенапряжения, теоретически возможные, в практике встречаются редко. Это не означает, что их нельзя ожидать, но эмпирическая частота их возникновения невелика. Результаты представляют статистически обоснованную базу, позволяющую уточнять технико-экономические расчёты при выборе и координации изоляции, а также оценку рисков, переводя подход от чисто детерминистического (\"какого максимального перенапряжения можно ожидать?\") к вероятностному (\"какова вероятность превышения заданной кратности?\")."
+        }
+      ],
+      "group": "C03-STAT-OZZ-002",
+      "kind": "scope",
+      "semantic_family": "model",
+      "decision": "Материал пригоден для сопоставления реальных примеров с моделированием при одинаковом определении величин. Верхний теоретический сценарий не является гипотезой о выборочном среднем; конкретные оценки 3–4 без проверки первоисточника не включены.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": []
+    },
+    {
+      "source_sha256": "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f",
+      "original_comment_id": "5",
+      "original_text": "Переписал",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[11]/w:commentRangeStart[2]",
+          "paragraph_index": 11,
+          "paragraph_text": "Выводы: Полученные статистические данные показывают, что экстремально высокие перенапряжения, теоретически возможные, в практике встречаются редко. Это не означает, что их нельзя ожидать, но эмпирическая частота их возникновения невелика. Результаты представляют статистически обоснованную базу, позволяющую уточнять технико-экономические расчёты при выборе и координации изоляции, а также оценку рисков, переводя подход от чисто детерминистического (\"какого максимального перенапряжения можно ожидать?\") к вероятностному (\"какова вероятность превышения заданной кратности?\")."
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[11]/w:commentRangeEnd[2]",
+          "paragraph_index": 11,
+          "paragraph_text": "Выводы: Полученные статистические данные показывают, что экстремально высокие перенапряжения, теоретически возможные, в практике встречаются редко. Это не означает, что их нельзя ожидать, но эмпирическая частота их возникновения невелика. Результаты представляют статистически обоснованную базу, позволяющую уточнять технико-экономические расчёты при выборе и координации изоляции, а также оценку рисков, переводя подход от чисто детерминистического (\"какого максимального перенапряжения можно ожидать?\") к вероятностному (\"какова вероятность превышения заданной кратности?\")."
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[11]/w:r[5]/w:commentReference",
+          "paragraph_index": 11,
+          "paragraph_text": "Выводы: Полученные статистические данные показывают, что экстремально высокие перенапряжения, теоретически возможные, в практике встречаются редко. Это не означает, что их нельзя ожидать, но эмпирическая частота их возникновения невелика. Результаты представляют статистически обоснованную базу, позволяющую уточнять технико-экономические расчёты при выборе и координации изоляции, а также оценку рисков, переводя подход от чисто детерминистического (\"какого максимального перенапряжения можно ожидать?\") к вероятностному (\"какова вероятность превышения заданной кратности?\")."
+        }
+      ],
+      "group": "C03-STAT-OZZ-002",
+      "kind": "historical_reply",
+      "semantic_family": "reply",
+      "decision": "Ответ о переписывании сохранён как история. Он не заменяет проверку новой научной формулировки или нормативного основания.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": []
+    },
+    {
+      "source_sha256": "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f",
+      "original_comment_id": "6",
+      "original_text": "Поправить после корректировки русского текста.",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[15]/w:commentRangeStart",
+          "paragraph_index": 15,
+          "paragraph_text": "STATISTICAL ANALYSIS OF OVERVOLTAGES DURING SINGLE-PHASE-TO-GROUND FAULTS BASED ON REAL-WORLD OSCILLOGRAMS"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[15]/w:commentRangeEnd",
+          "paragraph_index": 15,
+          "paragraph_text": "STATISTICAL ANALYSIS OF OVERVOLTAGES DURING SINGLE-PHASE-TO-GROUND FAULTS BASED ON REAL-WORLD OSCILLOGRAMS"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[15]/w:r[2]/w:commentReference",
+          "paragraph_index": 15,
+          "paragraph_text": "STATISTICAL ANALYSIS OF OVERVOLTAGES DURING SINGLE-PHASE-TO-GROUND FAULTS BASED ON REAL-WORLD OSCILLOGRAMS"
+        }
+      ],
+      "group": "C03-STAT-OZZ-002",
+      "kind": "publication_reminder",
+      "semantic_family": "translation",
+      "decision": "Перевод относится к публикации. В диссертации используется русское связное изложение; исходная статья не редактируется.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "3427ad2314f876c59788020b9e2efb700dfde6de0172bbbe430f991583ef3c61:0"
+      ]
+    },
+    {
+      "source_sha256": "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f",
+      "original_comment_id": "8",
+      "original_text": "Требуется сделать\n2) ужать до 4стр (провёл только первичное сжатие) + переразместить рисунки.\n3) Внимательнее перечитать раздел по количественной оценке перенапряжений. Наверное его стоит скорректировать / улучшить.\n4) !!Когда будет уточнена разметка ОЗЗ и перенапряжений от них – то обновить рисунки.!!\n5) !!так же поправить ВСЕ цифры, так они могут чутка измениться!!",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[30]/w:commentRangeStart",
+          "paragraph_index": 30,
+          "paragraph_text": "Введение"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[30]/w:commentRangeEnd",
+          "paragraph_index": 30,
+          "paragraph_text": "Введение"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[30]/w:r[2]/w:commentReference",
+          "paragraph_index": 30,
+          "paragraph_text": "Введение"
+        }
+      ],
+      "group": "C03-STAT-OZZ-002",
+      "kind": "version_dependency",
+      "semantic_family": "update",
+      "decision": "Ограничение четырьмя страницами не переносится на диссертацию. Девять статистик, все принятые диапазоны и доли CDF пересчитаны по снимку v1.7. Два новых рисунка имеют объявленный способ построения. Историческая KDE и полная повторная разметка не объявлены проверенными.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "3427ad2314f876c59788020b9e2efb700dfde6de0172bbbe430f991583ef3c61:1",
+        "704d9976787b8cfdb0788f7c17b23018f6b489d0730c2bb0c0544a97076088a5:2",
+        "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323:3"
+      ]
+    },
+    {
+      "source_sha256": "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f",
+      "original_comment_id": "9",
+      "original_text": "Пока так указал, ибо в идеале – это ссылка на другую статью",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[35]/w:commentRangeStart",
+          "paragraph_index": 35,
+          "paragraph_text": "Исходные данные и методология анализа"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[35]/w:commentRangeEnd",
+          "paragraph_index": 35,
+          "paragraph_text": "Исходные данные и методология анализа"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[35]/w:r[3]/w:commentReference",
+          "paragraph_index": 35,
+          "paragraph_text": "Исходные данные и методология анализа"
+        }
+      ],
+      "group": "C03-STAT-OZZ-002",
+      "kind": "provenance",
+      "semantic_family": "source",
+      "decision": "Подготовка поднабора изложена перед статистикой и связана с DATA-OZZ. Совместное авторство сохранено; порядок фамилий не доказывает личного вклада. Полное оформление библиографии остаётся отдельной зависимостью.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "3427ad2314f876c59788020b9e2efb700dfde6de0172bbbe430f991583ef3c61:2"
+      ]
+    },
+    {
+      "source_sha256": "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f",
+      "original_comment_id": "11",
+      "original_text": "Так-то, этот раздел, а точнее даже вот эта картинка главные в статье и по началу идея была только на это.",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeStart",
+          "paragraph_index": 45,
+          "paragraph_text": "Распределение плотности вероятности перенапряжений при ОЗЗ"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeEnd",
+          "paragraph_index": 45,
+          "paragraph_text": "Распределение плотности вероятности перенапряжений при ОЗЗ"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:r[3]/w:commentReference",
+          "paragraph_index": 45,
+          "paragraph_text": "Распределение плотности вероятности перенапряжений при ОЗЗ"
+        }
+      ],
+      "group": "C03-STAT-OZZ-002",
+      "kind": "scientific_emphasis",
+      "semantic_family": "figure",
+      "decision": "Распределение является основным результатом, поэтому включены гистограмма и эмпирическая накопленная доля, а не только числовая таблица. Неизвестная исходная KDE не воспроизводится произвольно.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "3427ad2314f876c59788020b9e2efb700dfde6de0172bbbe430f991583ef3c61:4"
+      ]
+    },
+    {
+      "source_sha256": "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f",
+      "original_comment_id": "12",
+      "original_text": "Опасно\nЭто мгновенное значение\nИ каких именно уставок, каких защит",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[47]/w:commentRangeStart[1]",
+          "paragraph_index": 49,
+          "paragraph_text": "Кроме того, можно отметить, что менее 10% всех зафиксированных ОЗЗ сопровождались перенапряжениями ниже 1,65 Uном; и что 90% не выше 2,35 Uном. Медианное значение (50-й перцентиль) составляет 1,926 Uном, что означает, что половина всех случаев имела перенапряжения ниже этого уровня, а половина — выше."
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[47]/w:commentRangeEnd[1]",
+          "paragraph_index": 49,
+          "paragraph_text": "Кроме того, можно отметить, что менее 10% всех зафиксированных ОЗЗ сопровождались перенапряжениями ниже 1,65 Uном; и что 90% не выше 2,35 Uном. Медианное значение (50-й перцентиль) составляет 1,926 Uном, что означает, что половина всех случаев имела перенапряжения ниже этого уровня, а половина — выше."
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[47]/w:r[29]/w:commentReference",
+          "paragraph_index": 49,
+          "paragraph_text": "Кроме того, можно отметить, что менее 10% всех зафиксированных ОЗЗ сопровождались перенапряжениями ниже 1,65 Uном; и что 90% не выше 2,35 Uном. Медианное значение (50-й перцентиль) составляет 1,926 Uном, что означает, что половина всех случаев имела перенапряжения ниже этого уровня, а половина — выше."
+        }
+      ],
+      "group": "C03-STAT-OZZ-002",
+      "kind": "measurement_definition",
+      "semantic_family": "instant",
+      "decision": "В тексте разделены зарегистрированный максимум, действующее напряжение и первая гармоника. Непосредственное применение к уставкам не утверждается; исходная нормализация сигналов этим скалярным аудитом не подтверждена.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": []
+    },
+    {
+      "source_sha256": "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f",
+      "original_comment_id": "13",
+      "original_text": "Убрал участок, согласен, в РЗА как-то не шибко применяется эта инфа о перенапряжениях.\n\nБыл текст\n«Эти данные могут служить надежной основой для статистического обоснования выбора уставок защит по напряжению.»",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[47]/w:commentRangeStart[2]",
+          "paragraph_index": 49,
+          "paragraph_text": "Кроме того, можно отметить, что менее 10% всех зафиксированных ОЗЗ сопровождались перенапряжениями ниже 1,65 Uном; и что 90% не выше 2,35 Uном. Медианное значение (50-й перцентиль) составляет 1,926 Uном, что означает, что половина всех случаев имела перенапряжения ниже этого уровня, а половина — выше."
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[47]/w:commentRangeEnd[2]",
+          "paragraph_index": 49,
+          "paragraph_text": "Кроме того, можно отметить, что менее 10% всех зафиксированных ОЗЗ сопровождались перенапряжениями ниже 1,65 Uном; и что 90% не выше 2,35 Uном. Медианное значение (50-й перцентиль) составляет 1,926 Uном, что означает, что половина всех случаев имела перенапряжения ниже этого уровня, а половина — выше."
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[47]/w:r[30]/w:commentReference",
+          "paragraph_index": 49,
+          "paragraph_text": "Кроме того, можно отметить, что менее 10% всех зафиксированных ОЗЗ сопровождались перенапряжениями ниже 1,65 Uном; и что 90% не выше 2,35 Uном. Медианное значение (50-й перцентиль) составляет 1,926 Uном, что означает, что половина всех случаев имела перенапряжения ниже этого уровня, а половина — выше."
+        }
+      ],
+      "group": "C03-STAT-OZZ-002",
+      "kind": "author_deletion",
+      "semantic_family": "removed",
+      "decision": "Удалённый автором вывод о надёжном обосновании уставок не возвращается. В диссертации прямо указано, что описательная статистика максимумов сама по себе уставки не задаёт.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": []
+    },
+    {
+      "source_sha256": "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f",
+      "original_comment_id": "14",
+      "original_text": "Перед публикацией надо будет перепроверить, так как при разрешении всех «?» может измениться число.",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:commentRangeStart",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:commentRangeEnd",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:r[2]/w:commentReference",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        }
+      ],
+      "group": "C03-STAT-OZZ-003",
+      "kind": "version_dependency",
+      "semantic_family": "count",
+      "decision": "В текущем снимке 830 принятых записей без неопределённых отметок. Все девять статистик и групповые численности совпали со статьёй. 1855 строк текущих кандидатов не приравниваются к историческим 1865. Физический просмотр сигналов заново не проводился.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "3427ad2314f876c59788020b9e2efb700dfde6de0172bbbe430f991583ef3c61:5",
+        "704d9976787b8cfdb0788f7c17b23018f6b489d0730c2bb0c0544a97076088a5:4",
+        "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323:5"
+      ]
+    },
+    {
+      "source_sha256": "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f",
+      "original_comment_id": "15",
+      "original_text": "Правда в рамках этих данных, это не лишние / неправильные данные, а прост редкие события, которые не перестают быть интересными",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[54]/w:commentRangeStart",
+          "paragraph_index": 83,
+          "paragraph_text": "Диаграмма размаха (Рис. 3.а) наглядно показывает медиану (линия внутри ящика), межквартильный размах (высота ящика), а также весь диапазон значений за исключением выбросов («усы» диаграммы). Точки за пределами усов представляют собой статистические выбросы (редкие события). В нашем случае диаграмма подтверждает, что основная масса данных (50%) сконцентрирована в узком диапазоне 1,823÷2,099 Uном, а также выявляет наличие нескольких выбросов как в сторону меньших, так и в сторону больших значений."
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[54]/w:commentRangeEnd",
+          "paragraph_index": 83,
+          "paragraph_text": "Диаграмма размаха (Рис. 3.а) наглядно показывает медиану (линия внутри ящика), межквартильный размах (высота ящика), а также весь диапазон значений за исключением выбросов («усы» диаграммы). Точки за пределами усов представляют собой статистические выбросы (редкие события). В нашем случае диаграмма подтверждает, что основная масса данных (50%) сконцентрирована в узком диапазоне 1,823÷2,099 Uном, а также выявляет наличие нескольких выбросов как в сторону меньших, так и в сторону больших значений."
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[54]/w:r[22]/w:commentReference",
+          "paragraph_index": 83,
+          "paragraph_text": "Диаграмма размаха (Рис. 3.а) наглядно показывает медиану (линия внутри ящика), межквартильный размах (высота ящика), а также весь диапазон значений за исключением выбросов («усы» диаграммы). Точки за пределами усов представляют собой статистические выбросы (редкие события). В нашем случае диаграмма подтверждает, что основная масса данных (50%) сконцентрирована в узком диапазоне 1,823÷2,099 Uном, а также выявляет наличие нескольких выбросов как в сторону меньших, так и в сторону больших значений."
+        }
+      ],
+      "group": "C03-STAT-OZZ-003",
+      "kind": "physical_interpretation",
+      "semantic_family": "rare",
+      "decision": "Все 830 принятых значений сохранены. Редкость наблюдения не является основанием его удаления. За пределами квартилей могут находиться физически интересные события.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "3427ad2314f876c59788020b9e2efb700dfde6de0172bbbe430f991583ef3c61:6"
+      ]
+    },
+    {
+      "source_sha256": "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f",
+      "original_comment_id": "18",
+      "original_text": "Не уверен, что магистерскую можно, но пусть пока будет, потом если что удалим.",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[77]/w:commentRangeStart",
+          "paragraph_index": 106,
+          "paragraph_text": "Васильев, С. С. Влияние переходных процессов при однофазном коротком замыкании на действие релейной защиты в кабельных сетях 6-10 кВ : магистерская диссертация / С. С. Васильев ; Тольяттинский государственный университет. – Тольятти, 2017."
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[77]/w:commentRangeEnd",
+          "paragraph_index": 106,
+          "paragraph_text": "Васильев, С. С. Влияние переходных процессов при однофазном коротком замыкании на действие релейной защиты в кабельных сетях 6-10 кВ : магистерская диссертация / С. С. Васильев ; Тольяттинский государственный университет. – Тольятти, 2017."
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[77]/w:r[5]/w:commentReference",
+          "paragraph_index": 106,
+          "paragraph_text": "Васильев, С. С. Влияние переходных процессов при однофазном коротком замыкании на действие релейной защиты в кабельных сетях 6-10 кВ : магистерская диссертация / С. С. Васильев ; Тольяттинский государственный университет. – Тольятти, 2017."
+        }
+      ],
+      "group": "C03-STAT-OZZ-003",
+      "kind": "bibliography_dependency",
+      "semantic_family": "reference",
+      "decision": "Неуверенность в магистерской работе как ссылке сохранена. Такая ссылка не используется здесь как доказательство физических пределов или нормативного требования; окончательный выбор литературы остаётся открытым.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": []
+    },
+    {
+      "source_sha256": "704d9976787b8cfdb0788f7c17b23018f6b489d0730c2bb0c0544a97076088a5",
+      "original_comment_id": "2",
+      "original_text": "Требуется сделать\n2) ужать до 4стр (провёл только первичное сжатие) + переразместить рисунки.\n3) Внимательнее перечитать раздел по количественной оценке перенапряжений. Наверное его стоит скорректировать / улучшить.\n4) !!Когда будет уточнена разметка ОЗЗ и перенапряжений от них – то обновить рисунки.!!\n5) !!так же поправить ВСЕ цифры, так они могут чутка измениться!!",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[30]/w:commentRangeStart",
+          "paragraph_index": 30,
+          "paragraph_text": "Введение"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[30]/w:commentRangeEnd",
+          "paragraph_index": 30,
+          "paragraph_text": "Введение"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[30]/w:r[2]/w:commentReference",
+          "paragraph_index": 30,
+          "paragraph_text": "Введение"
+        }
+      ],
+      "group": "C03-STAT-OZZ-004",
+      "kind": "version_dependency",
+      "semantic_family": "update",
+      "decision": "Ограничение четырьмя страницами не переносится на диссертацию. Девять статистик, все принятые диапазоны и доли CDF пересчитаны по снимку v1.7. Два новых рисунка имеют объявленный способ построения. Историческая KDE и полная повторная разметка не объявлены проверенными.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "3427ad2314f876c59788020b9e2efb700dfde6de0172bbbe430f991583ef3c61:1",
+        "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f:8",
+        "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323:3"
+      ]
+    },
+    {
+      "source_sha256": "704d9976787b8cfdb0788f7c17b23018f6b489d0730c2bb0c0544a97076088a5",
+      "original_comment_id": "4",
+      "original_text": "Перед публикацией надо будет перепроверить, так как при разрешении всех «?» может измениться число.",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:commentRangeStart[1]",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:commentRangeEnd[1]",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:r[2]/w:commentReference",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        }
+      ],
+      "group": "C03-STAT-OZZ-004",
+      "kind": "version_dependency",
+      "semantic_family": "count",
+      "decision": "В текущем снимке 830 принятых записей без неопределённых отметок. Все девять статистик и групповые численности совпали со статьёй. 1855 строк текущих кандидатов не приравниваются к историческим 1865. Физический просмотр сигналов заново не проводился.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "3427ad2314f876c59788020b9e2efb700dfde6de0172bbbe430f991583ef3c61:5",
+        "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f:14",
+        "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323:5"
+      ]
+    },
+    {
+      "source_sha256": "704d9976787b8cfdb0788f7c17b23018f6b489d0730c2bb0c0544a97076088a5",
+      "original_comment_id": "5",
+      "original_text": "Увеличить шрифт",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:commentRangeStart[2]",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:commentRangeEnd[2]",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:r[3]/w:commentReference",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        }
+      ],
+      "group": "C03-STAT-OZZ-004",
+      "kind": "layout",
+      "semantic_family": "font",
+      "decision": "Рисунки построены заново с читаемыми подписями и векторными линиями. Визуальная приёмка нового PDF выполняется отдельно; исходные изображения не перезаписываются.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323:6"
+      ]
+    },
+    {
+      "source_sha256": "704d9976787b8cfdb0788f7c17b23018f6b489d0730c2bb0c0544a97076088a5",
+      "original_comment_id": "6",
+      "original_text": "Как в примере сделал теперь 9",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:commentRangeStart[3]",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:commentRangeEnd[3]",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:r[4]/w:commentReference",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        }
+      ],
+      "group": "C03-STAT-OZZ-004",
+      "kind": "historical_reply",
+      "semantic_family": "font_reply",
+      "decision": "Ответ о размере 9 сохранён, но сам по себе не доказывает читаемость в масштабе диссертации. Новые рисунки проверяются в рабочей странице.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323:7"
+      ]
+    },
+    {
+      "source_sha256": "704d9976787b8cfdb0788f7c17b23018f6b489d0730c2bb0c0544a97076088a5",
+      "original_comment_id": "7",
+      "original_text": "Мб отступ?",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[52]/w:commentRangeStart[1]",
+          "paragraph_index": 76,
+          "paragraph_text": "Данные таблицы подтверждают и дополняют выводы, сделанные на основе графического анализа. Близость среднего значения (1,96) и медианы (1,926) указывает на ограниченное влияние экстремальных выбросов на центральную тенденцию данных. Небольшое значение стандартного отклонения (0,274) указывает на низкую степень разброса данных вокруг среднего — большинство значений сгруппированы в узком диапазоне. Межквартильный размах (разница между Q3 и Q1) составляет всего 0,276, что означает, что 50% всех «типичных» событий укладываются в диапазон от 1,823 до 2,099 Uном. Важно отметить, что максимальное зафиксированное значение в верифицированной выборке составляет 2,843 Uном, что значительно ниже теоретически возможных пределов для дуговых перенапряжений."
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[52]/w:commentRangeEnd[1]",
+          "paragraph_index": 76,
+          "paragraph_text": "Данные таблицы подтверждают и дополняют выводы, сделанные на основе графического анализа. Близость среднего значения (1,96) и медианы (1,926) указывает на ограниченное влияние экстремальных выбросов на центральную тенденцию данных. Небольшое значение стандартного отклонения (0,274) указывает на низкую степень разброса данных вокруг среднего — большинство значений сгруппированы в узком диапазоне. Межквартильный размах (разница между Q3 и Q1) составляет всего 0,276, что означает, что 50% всех «типичных» событий укладываются в диапазон от 1,823 до 2,099 Uном. Важно отметить, что максимальное зафиксированное значение в верифицированной выборке составляет 2,843 Uном, что значительно ниже теоретически возможных пределов для дуговых перенапряжений."
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[52]/w:r[2]/w:commentReference",
+          "paragraph_index": 76,
+          "paragraph_text": "Данные таблицы подтверждают и дополняют выводы, сделанные на основе графического анализа. Близость среднего значения (1,96) и медианы (1,926) указывает на ограниченное влияние экстремальных выбросов на центральную тенденцию данных. Небольшое значение стандартного отклонения (0,274) указывает на низкую степень разброса данных вокруг среднего — большинство значений сгруппированы в узком диапазоне. Межквартильный размах (разница между Q3 и Q1) составляет всего 0,276, что означает, что 50% всех «типичных» событий укладываются в диапазон от 1,823 до 2,099 Uном. Важно отметить, что максимальное зафиксированное значение в верифицированной выборке составляет 2,843 Uном, что значительно ниже теоретически возможных пределов для дуговых перенапряжений."
+        }
+      ],
+      "group": "C03-STAT-OZZ-004",
+      "kind": "layout",
+      "semantic_family": "indent",
+      "decision": "Для нового текста используется единая LaTeX-вёрстка абзацев. Историческое оформление DOCX не изменено.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323:8"
+      ]
+    },
+    {
+      "source_sha256": "704d9976787b8cfdb0788f7c17b23018f6b489d0730c2bb0c0544a97076088a5",
+      "original_comment_id": "8",
+      "original_text": "+",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[52]/w:commentRangeStart[2]",
+          "paragraph_index": 76,
+          "paragraph_text": "Данные таблицы подтверждают и дополняют выводы, сделанные на основе графического анализа. Близость среднего значения (1,96) и медианы (1,926) указывает на ограниченное влияние экстремальных выбросов на центральную тенденцию данных. Небольшое значение стандартного отклонения (0,274) указывает на низкую степень разброса данных вокруг среднего — большинство значений сгруппированы в узком диапазоне. Межквартильный размах (разница между Q3 и Q1) составляет всего 0,276, что означает, что 50% всех «типичных» событий укладываются в диапазон от 1,823 до 2,099 Uном. Важно отметить, что максимальное зафиксированное значение в верифицированной выборке составляет 2,843 Uном, что значительно ниже теоретически возможных пределов для дуговых перенапряжений."
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[52]/w:commentRangeEnd[2]",
+          "paragraph_index": 76,
+          "paragraph_text": "Данные таблицы подтверждают и дополняют выводы, сделанные на основе графического анализа. Близость среднего значения (1,96) и медианы (1,926) указывает на ограниченное влияние экстремальных выбросов на центральную тенденцию данных. Небольшое значение стандартного отклонения (0,274) указывает на низкую степень разброса данных вокруг среднего — большинство значений сгруппированы в узком диапазоне. Межквартильный размах (разница между Q3 и Q1) составляет всего 0,276, что означает, что 50% всех «типичных» событий укладываются в диапазон от 1,823 до 2,099 Uном. Важно отметить, что максимальное зафиксированное значение в верифицированной выборке составляет 2,843 Uном, что значительно ниже теоретически возможных пределов для дуговых перенапряжений."
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[52]/w:r[3]/w:commentReference",
+          "paragraph_index": 76,
+          "paragraph_text": "Данные таблицы подтверждают и дополняют выводы, сделанные на основе графического анализа. Близость среднего значения (1,96) и медианы (1,926) указывает на ограниченное влияние экстремальных выбросов на центральную тенденцию данных. Небольшое значение стандартного отклонения (0,274) указывает на низкую степень разброса данных вокруг среднего — большинство значений сгруппированы в узком диапазоне. Межквартильный размах (разница между Q3 и Q1) составляет всего 0,276, что означает, что 50% всех «типичных» событий укладываются в диапазон от 1,823 до 2,099 Uном. Важно отметить, что максимальное зафиксированное значение в верифицированной выборке составляет 2,843 Uном, что значительно ниже теоретически возможных пределов для дуговых перенапряжений."
+        }
+      ],
+      "group": "C03-STAT-OZZ-004",
+      "kind": "historical_reply",
+      "semantic_family": "ack",
+      "decision": "Знак согласия сохранён как ответ на замечание об оформлении. Он не трактуется как принятие всех научных выводов.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323:9"
+      ]
+    },
+    {
+      "source_sha256": "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323",
+      "original_comment_id": "3",
+      "original_text": "Требуется сделать\n2) ужать до 4стр (провёл только первичное сжатие) + переразместить рисунки.\n3) Внимательнее перечитать раздел по количественной оценке перенапряжений. Наверное его стоит скорректировать / улучшить.\n4) !!Когда будет уточнена разметка ОЗЗ и перенапряжений от них – то обновить рисунки.!!\n5) !!так же поправить ВСЕ цифры, так они могут чутка измениться!!",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[30]/w:commentRangeStart",
+          "paragraph_index": 30,
+          "paragraph_text": "Введение"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[30]/w:commentRangeEnd",
+          "paragraph_index": 30,
+          "paragraph_text": "Введение"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[30]/w:r[2]/w:commentReference",
+          "paragraph_index": 30,
+          "paragraph_text": "Введение"
+        }
+      ],
+      "group": "C03-STAT-OZZ-005",
+      "kind": "version_dependency",
+      "semantic_family": "update",
+      "decision": "Ограничение четырьмя страницами не переносится на диссертацию. Девять статистик, все принятые диапазоны и доли CDF пересчитаны по снимку v1.7. Два новых рисунка имеют объявленный способ построения. Историческая KDE и полная повторная разметка не объявлены проверенными.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "3427ad2314f876c59788020b9e2efb700dfde6de0172bbbe430f991583ef3c61:1",
+        "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f:8",
+        "704d9976787b8cfdb0788f7c17b23018f6b489d0730c2bb0c0544a97076088a5:2"
+      ]
+    },
+    {
+      "source_sha256": "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323",
+      "original_comment_id": "5",
+      "original_text": "Перед публикацией надо будет перепроверить, так как при разрешении всех «?» может измениться число.",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:commentRangeStart[1]",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:commentRangeEnd[1]",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:r[2]/w:commentReference",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        }
+      ],
+      "group": "C03-STAT-OZZ-005",
+      "kind": "version_dependency",
+      "semantic_family": "count",
+      "decision": "В текущем снимке 830 принятых записей без неопределённых отметок. Все девять статистик и групповые численности совпали со статьёй. 1855 строк текущих кандидатов не приравниваются к историческим 1865. Физический просмотр сигналов заново не проводился.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "3427ad2314f876c59788020b9e2efb700dfde6de0172bbbe430f991583ef3c61:5",
+        "182b1d104ff49d4f62cb0f367b717fae4cfdc2c4e54544c29005aed84369968f:14",
+        "704d9976787b8cfdb0788f7c17b23018f6b489d0730c2bb0c0544a97076088a5:4"
+      ]
+    },
+    {
+      "source_sha256": "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323",
+      "original_comment_id": "6",
+      "original_text": "Увеличить шрифт",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:commentRangeStart[2]",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:commentRangeEnd[2]",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:r[3]/w:commentReference",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        }
+      ],
+      "group": "C03-STAT-OZZ-005",
+      "kind": "layout",
+      "semantic_family": "font",
+      "decision": "Рисунки построены заново с читаемыми подписями и векторными линиями. Визуальная приёмка нового PDF выполняется отдельно; исходные изображения не перезаписываются.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "704d9976787b8cfdb0788f7c17b23018f6b489d0730c2bb0c0544a97076088a5:5"
+      ]
+    },
+    {
+      "source_sha256": "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323",
+      "original_comment_id": "7",
+      "original_text": "Как в примере сделал теперь 9",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:commentRangeStart[3]",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:commentRangeEnd[3]",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[50]/w:r[4]/w:commentReference",
+          "paragraph_index": 54,
+          "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+        }
+      ],
+      "group": "C03-STAT-OZZ-005",
+      "kind": "historical_reply",
+      "semantic_family": "font_reply",
+      "decision": "Ответ о размере 9 сохранён, но сам по себе не доказывает читаемость в масштабе диссертации. Новые рисунки проверяются в рабочей странице.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "704d9976787b8cfdb0788f7c17b23018f6b489d0730c2bb0c0544a97076088a5:6"
+      ]
+    },
+    {
+      "source_sha256": "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323",
+      "original_comment_id": "8",
+      "original_text": "Мб отступ?",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[52]/w:commentRangeStart[1]",
+          "paragraph_index": 76,
+          "paragraph_text": "Данные таблицы подтверждают и дополняют выводы, сделанные на основе графического анализа. Близость среднего значения (1,96) и медианы (1,926) указывает на ограниченное влияние экстремальных выбросов на центральную тенденцию данных. Небольшое значение стандартного отклонения (0,274) указывает на низкую степень разброса данных вокруг среднего — большинство значений сгруппированы в узком диапазоне. Межквартильный размах (разница между Q3 и Q1) составляет всего 0,276, что означает, что 50 % всех «типичных» событий укладываются в диапазон от 1,823 до 2,099 Uном. Важно отметить, что максимальное зафиксированное значение в верифицированной выборке составляет 2,843 Uном, что значительно ниже теоретически возможных пределов для дуговых перенапряжений."
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[52]/w:commentRangeEnd[1]",
+          "paragraph_index": 76,
+          "paragraph_text": "Данные таблицы подтверждают и дополняют выводы, сделанные на основе графического анализа. Близость среднего значения (1,96) и медианы (1,926) указывает на ограниченное влияние экстремальных выбросов на центральную тенденцию данных. Небольшое значение стандартного отклонения (0,274) указывает на низкую степень разброса данных вокруг среднего — большинство значений сгруппированы в узком диапазоне. Межквартильный размах (разница между Q3 и Q1) составляет всего 0,276, что означает, что 50 % всех «типичных» событий укладываются в диапазон от 1,823 до 2,099 Uном. Важно отметить, что максимальное зафиксированное значение в верифицированной выборке составляет 2,843 Uном, что значительно ниже теоретически возможных пределов для дуговых перенапряжений."
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[52]/w:r[2]/w:commentReference",
+          "paragraph_index": 76,
+          "paragraph_text": "Данные таблицы подтверждают и дополняют выводы, сделанные на основе графического анализа. Близость среднего значения (1,96) и медианы (1,926) указывает на ограниченное влияние экстремальных выбросов на центральную тенденцию данных. Небольшое значение стандартного отклонения (0,274) указывает на низкую степень разброса данных вокруг среднего — большинство значений сгруппированы в узком диапазоне. Межквартильный размах (разница между Q3 и Q1) составляет всего 0,276, что означает, что 50 % всех «типичных» событий укладываются в диапазон от 1,823 до 2,099 Uном. Важно отметить, что максимальное зафиксированное значение в верифицированной выборке составляет 2,843 Uном, что значительно ниже теоретически возможных пределов для дуговых перенапряжений."
+        }
+      ],
+      "group": "C03-STAT-OZZ-005",
+      "kind": "layout",
+      "semantic_family": "indent",
+      "decision": "Для нового текста используется единая LaTeX-вёрстка абзацев. Историческое оформление DOCX не изменено.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "704d9976787b8cfdb0788f7c17b23018f6b489d0730c2bb0c0544a97076088a5:7"
+      ]
+    },
+    {
+      "source_sha256": "16a60e76d9031884d6f549fde54e0111c28d40631355823ccd1c6968b93d0323",
+      "original_comment_id": "9",
+      "original_text": "+",
+      "anchors": [
+        {
+          "kind": "commentRangeStart",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[52]/w:commentRangeStart[2]",
+          "paragraph_index": 76,
+          "paragraph_text": "Данные таблицы подтверждают и дополняют выводы, сделанные на основе графического анализа. Близость среднего значения (1,96) и медианы (1,926) указывает на ограниченное влияние экстремальных выбросов на центральную тенденцию данных. Небольшое значение стандартного отклонения (0,274) указывает на низкую степень разброса данных вокруг среднего — большинство значений сгруппированы в узком диапазоне. Межквартильный размах (разница между Q3 и Q1) составляет всего 0,276, что означает, что 50 % всех «типичных» событий укладываются в диапазон от 1,823 до 2,099 Uном. Важно отметить, что максимальное зафиксированное значение в верифицированной выборке составляет 2,843 Uном, что значительно ниже теоретически возможных пределов для дуговых перенапряжений."
+        },
+        {
+          "kind": "commentRangeEnd",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[52]/w:commentRangeEnd[2]",
+          "paragraph_index": 76,
+          "paragraph_text": "Данные таблицы подтверждают и дополняют выводы, сделанные на основе графического анализа. Близость среднего значения (1,96) и медианы (1,926) указывает на ограниченное влияние экстремальных выбросов на центральную тенденцию данных. Небольшое значение стандартного отклонения (0,274) указывает на низкую степень разброса данных вокруг среднего — большинство значений сгруппированы в узком диапазоне. Межквартильный размах (разница между Q3 и Q1) составляет всего 0,276, что означает, что 50 % всех «типичных» событий укладываются в диапазон от 1,823 до 2,099 Uном. Важно отметить, что максимальное зафиксированное значение в верифицированной выборке составляет 2,843 Uном, что значительно ниже теоретически возможных пределов для дуговых перенапряжений."
+        },
+        {
+          "kind": "commentReference",
+          "story_part": "word/document.xml",
+          "locator": "/w:document/w:body/w:p[52]/w:r[3]/w:commentReference",
+          "paragraph_index": 76,
+          "paragraph_text": "Данные таблицы подтверждают и дополняют выводы, сделанные на основе графического анализа. Близость среднего значения (1,96) и медианы (1,926) указывает на ограниченное влияние экстремальных выбросов на центральную тенденцию данных. Небольшое значение стандартного отклонения (0,274) указывает на низкую степень разброса данных вокруг среднего — большинство значений сгруппированы в узком диапазоне. Межквартильный размах (разница между Q3 и Q1) составляет всего 0,276, что означает, что 50 % всех «типичных» событий укладываются в диапазон от 1,823 до 2,099 Uном. Важно отметить, что максимальное зафиксированное значение в верифицированной выборке составляет 2,843 Uном, что значительно ниже теоретически возможных пределов для дуговых перенапряжений."
+        }
+      ],
+      "group": "C03-STAT-OZZ-005",
+      "kind": "historical_reply",
+      "semantic_family": "ack",
+      "decision": "Знак согласия сохранён как ответ на замечание об оформлении. Он не трактуется как принятие всех научных выводов.",
+      "status": "REVIEWED",
+      "implementation_status": "Scoped D03-002; historical source unchanged; remaining dependencies explicitly retained.",
+      "related_comment_keys": [
+        "704d9976787b8cfdb0788f7c17b23018f6b489d0730c2bb0c0544a97076088a5:8"
+      ]
+    }
+  ],
+  "limits": [
+    "Review completion is not publication approval.",
+    "Original KDE and normative appendix remain unverified; original articles unchanged."
+  ]
+}

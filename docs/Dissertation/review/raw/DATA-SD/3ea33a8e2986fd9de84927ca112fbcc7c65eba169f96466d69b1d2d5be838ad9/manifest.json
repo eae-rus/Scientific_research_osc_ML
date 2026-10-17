@@ -1,0 +1,56 @@
+{
+  "source_id": "DATA-SD",
+  "source_sha256": "3ea33a8e2986fd9de84927ca112fbcc7c65eba169f96466d69b1d2d5be838ad9",
+  "source_path": "D:/Учебное/Аспирантура/4) Научные исследования/2) Публикация статей/2025-2026/(Scientific_Data) Подготовка датасета/_ответы ревью/Ревью-1 (вопрос 3).docx",
+  "preserved_parts": [
+    {
+      "path": "[Content_Types].xml",
+      "sha256": "dfa90f373b8fd8147ee3e4bfe1ee059e536cc1b068f7ec140c3fc0e6554f331a"
+    },
+    {
+      "path": "_rels/.rels",
+      "sha256": "e19238d7a71fa7a2490776252686f70e2de6238c87cd509b5e3a3cc07c2ea4df"
+    },
+    {
+      "path": "word/document.xml",
+      "sha256": "25b1c07970a920cfbf4d61258eb7fffd23fb9bd3de747fb86ce90c22e5789875"
+    },
+    {
+      "path": "word/_rels/document.xml.rels",
+      "sha256": "b725d5476e76f555fc24ecb908474fd29b671687336e5e1177a5c4c35cb5939f"
+    },
+    {
+      "path": "word/theme/theme1.xml",
+      "sha256": "66112b00cf96d9f52a52d711740925ee944679b6b46f0a1abe5cddd9ce7c500e"
+    },
+    {
+      "path": "word/settings.xml",
+      "sha256": "c877209307813c92affc9136b0898491afdcd73fc5a1f3a6230c162741ca4460"
+    },
+    {
+      "path": "word/styles.xml",
+      "sha256": "eb2560e9c826b551c5059446b182d755dab466abe296af8d3cd99664237c35ac"
+    },
+    {
+      "path": "word/webSettings.xml",
+      "sha256": "a935be2dde349160ee390cc5b6a06aa057cfd44feac230f6eff440889f53902f"
+    },
+    {
+      "path": "word/fontTable.xml",
+      "sha256": "a209f340ba4f13ab0b8eaa8db2e3b219371f84b111cec516c9a4932b5a5bf793"
+    },
+    {
+      "path": "docProps/core.xml",
+      "sha256": "772c3d0e7f926381dacda2f27b29e44f34ff05ec74f9945a72f68d93a931b5b5"
+    },
+    {
+      "path": "docProps/app.xml",
+      "sha256": "4cedde87449781b0017b37f926647cba84ec529f64e37ad1b449d15008fd8c28"
+    }
+  ],
+  "non_xml_preserved_in_docx": [],
+  "paragraph_count": 23,
+  "comment_count": 0,
+  "revision_count": 0,
+  "semantics": "w:t and w:delText exported; no tracked changes accepted or rejected; paragraph context is not an exact text range"
+}

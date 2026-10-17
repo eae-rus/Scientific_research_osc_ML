@@ -62,10 +62,15 @@ def parse_experiment_info(folder_name: str) -> Dict[str, str]:
     models_map = {
         'SimpleMLP': 'MLP',
         'SimpleCNN': 'CNN',
+        'rPhysicsKANv2': 'rPhysicsKANv2',
+        'cPhysicsKANv2': 'cPhysicsKANv2',
+        'PhysicsKANv2': 'PhysicsKANv2',
+        'rKANv2': 'rKANv2',
         'rPhysicsKAN': 'rPhysicsKAN',
         'cPhysicsKAN': 'cPhysicsKAN',
         'ConvKAN': 'ConvKAN',
         'SimpleKAN': 'SimpleKAN',
+        'PhysicsKANConditional': 'PhysicsKANConditional',
         'PhysicsKAN': 'PhysicsKAN',
         'PhysicsBaseline': 'PhysicsBaseline',
         'ResNet1D': 'ResNet',
@@ -73,8 +78,13 @@ def parse_experiment_info(folder_name: str) -> Dict[str, str]:
     
     found_model = False
     
-    # Сначала проверяем специализированные варианты, так как PhysicsKAN является подстрокой
-    for special_model in ('rPhysicsKAN', 'cPhysicsKAN'):
+    # Сначала проверяем специализированные варианты, так как короткие имена
+    # (PhysicsKAN, cPhysicsKAN, ...) являются подстроками v2/релейных моделей.
+    # Порядок важен: v2 -> релейные/комплексные -> базовые.
+    for special_model in (
+        'rPhysicsKANv2', 'cPhysicsKANv2', 'PhysicsKANv2', 'rKANv2',
+        'rPhysicsKAN', 'cPhysicsKAN', 'PhysicsKANConditional',
+    ):
         if special_model in folder_name:
             info["model_family"] = special_model
             found_model = True

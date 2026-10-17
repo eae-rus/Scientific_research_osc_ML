@@ -1,0 +1,714 @@
+{
+  "date": "2026-10-07",
+  "status": "passed_scoped_checks",
+  "sources": [
+    {
+      "path": "experiments/phase5/pdr_weak_snapshot_2_stride5/config.json",
+      "sha256": "89d1c47dee520a5e51183caa002e81bcb4e1e13ced841a04410111976ef9498b",
+      "snapshot": "docs/Dissertation/sources/PDR-05/89d1c47dee520a5e51183caa002e81bcb4e1e13ced841a04410111976ef9498b/config.json"
+    },
+    {
+      "path": "experiments/phase5/pdr_weak_snapshot_2_stride5/training_log.jsonl",
+      "sha256": "9f9d51e40dd70e141aa287cd43dd346f5c26c65d058760ed72cf65c46068224e",
+      "snapshot": "docs/Dissertation/sources/PDR-05/9f9d51e40dd70e141aa287cd43dd346f5c26c65d058760ed72cf65c46068224e/training_log.jsonl"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_snapshot_2_stride5/config.json",
+      "sha256": "f7a481f1c49bbd4fd0d9b0800862f8f3dd27377ed20724c1d4240677d7abe58b",
+      "snapshot": "docs/Dissertation/sources/PDR-05/f7a481f1c49bbd4fd0d9b0800862f8f3dd27377ed20724c1d4240677d7abe58b/config.json"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_snapshot_2_stride5/training_log.jsonl",
+      "sha256": "5bc30cbca29bc4ef5c9b576b6cec56a573d7713297b80f024747a9f1295aa87a",
+      "snapshot": "docs/Dissertation/sources/PDR-05/5bc30cbca29bc4ef5c9b576b6cec56a573d7713297b80f024747a9f1295aa87a/training_log.jsonl"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_weak_initial.json",
+      "sha256": "ae50d663f8f7198aa19951c939e4c640a52d906a5417dfc1deb8be5330bddd47",
+      "snapshot": "docs/Dissertation/sources/PDR-05/ae50d663f8f7198aa19951c939e4c640a52d906a5417dfc1deb8be5330bddd47/snapshot_2_weak_initial.json"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_weak_initial__validation__open_ee.npz",
+      "sha256": "e6eb90c687a1359dbfd0110137def5874a713e834ecddf422ffc9bb7761f82bb",
+      "snapshot": "docs/Dissertation/sources/PDR-05/e6eb90c687a1359dbfd0110137def5874a713e834ecddf422ffc9bb7761f82bb/snapshot_2_weak_initial__validation__open_ee.npz"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_weak_initial__validation__french_rte.npz",
+      "sha256": "a2b832869773c31140abe4a895c76cd86aa8679d57d3f347a7019c35cbf85c7f",
+      "snapshot": "docs/Dissertation/sources/PDR-05/a2b832869773c31140abe4a895c76cd86aa8679d57d3f347a7019c35cbf85c7f/snapshot_2_weak_initial__validation__french_rte.npz"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_weak_best.json",
+      "sha256": "99bfbacf9b031bcddaa97974981ed986a30288220b4a81e5630208098c9abb4b",
+      "snapshot": "docs/Dissertation/sources/PDR-05/99bfbacf9b031bcddaa97974981ed986a30288220b4a81e5630208098c9abb4b/snapshot_2_weak_best.json"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_weak_best__validation__open_ee.npz",
+      "sha256": "6d6f3e24b8404db26a8a4d00cb2c04cf436ae897ecb8c753a1fc98affb59fb7b",
+      "snapshot": "docs/Dissertation/sources/PDR-05/6d6f3e24b8404db26a8a4d00cb2c04cf436ae897ecb8c753a1fc98affb59fb7b/snapshot_2_weak_best__validation__open_ee.npz"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_weak_best__validation__french_rte.npz",
+      "sha256": "0204ea219aa833ae390304e378168591d2a01dd550e1554073010f22196b7aa3",
+      "snapshot": "docs/Dissertation/sources/PDR-05/0204ea219aa833ae390304e378168591d2a01dd550e1554073010f22196b7aa3/snapshot_2_weak_best__validation__french_rte.npz"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_expert_best.json",
+      "sha256": "11b69bd478163a7a67c40fca0676068b95f6ea907d3baa68f6769a41050355a0",
+      "snapshot": "docs/Dissertation/sources/PDR-05/11b69bd478163a7a67c40fca0676068b95f6ea907d3baa68f6769a41050355a0/snapshot_2_expert_best.json"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_expert_best__validation__open_ee.npz",
+      "sha256": "7284841425ac40a65fae457e8aa588681ee2e08697c4dd6cf2981d236b8b88d7",
+      "snapshot": "docs/Dissertation/sources/PDR-05/7284841425ac40a65fae457e8aa588681ee2e08697c4dd6cf2981d236b8b88d7/snapshot_2_expert_best__validation__open_ee.npz"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_expert_best__validation__french_rte.npz",
+      "sha256": "d2f62cd65ef19a0536e235bacafa2a45b36665d8cce67b829a7eddb205a3b1a1",
+      "snapshot": "docs/Dissertation/sources/PDR-05/d2f62cd65ef19a0536e235bacafa2a45b36665d8cce67b829a7eddb205a3b1a1/snapshot_2_expert_best__validation__french_rte.npz"
+    },
+    {
+      "path": "experiments/phase5/pdr_weak_snapshot_5_stride5/config.json",
+      "sha256": "cbbcb8710ac316a15cc2acd854df819444416d59176272b35e8f06f86f4e97e0",
+      "snapshot": "docs/Dissertation/sources/PDR-05/cbbcb8710ac316a15cc2acd854df819444416d59176272b35e8f06f86f4e97e0/config.json"
+    },
+    {
+      "path": "experiments/phase5/pdr_weak_snapshot_5_stride5/training_log.jsonl",
+      "sha256": "2ad29bb94e8e7de27049d1eebd0d5976dfcb08ae8e917071a8edc870984601ef",
+      "snapshot": "docs/Dissertation/sources/PDR-05/2ad29bb94e8e7de27049d1eebd0d5976dfcb08ae8e917071a8edc870984601ef/training_log.jsonl"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_snapshot_5_stride5/config.json",
+      "sha256": "57a09f82d9ad4175b1bb4393defbdb03cbdc41cf2872a0bdae182bcc29363f6e",
+      "snapshot": "docs/Dissertation/sources/PDR-05/57a09f82d9ad4175b1bb4393defbdb03cbdc41cf2872a0bdae182bcc29363f6e/config.json"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_snapshot_5_stride5/training_log.jsonl",
+      "sha256": "a91164f5295d3d5a5a2b063a7f702a64a32bbbd85a18c0f905fcd82411fbadd0",
+      "snapshot": "docs/Dissertation/sources/PDR-05/a91164f5295d3d5a5a2b063a7f702a64a32bbbd85a18c0f905fcd82411fbadd0/training_log.jsonl"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_weak_initial.json",
+      "sha256": "15e7d1fd4a9faf5487ce041282782e331c87be4dd378a4d871a6d148fac2c5f0",
+      "snapshot": "docs/Dissertation/sources/PDR-05/15e7d1fd4a9faf5487ce041282782e331c87be4dd378a4d871a6d148fac2c5f0/snapshot_5_weak_initial.json"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_weak_initial__validation__open_ee.npz",
+      "sha256": "9df25aba9037d91e49ec34aafead07d1ce78d5e95c2c1e5ef0ad6241c29bd091",
+      "snapshot": "docs/Dissertation/sources/PDR-05/9df25aba9037d91e49ec34aafead07d1ce78d5e95c2c1e5ef0ad6241c29bd091/snapshot_5_weak_initial__validation__open_ee.npz"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_weak_initial__validation__french_rte.npz",
+      "sha256": "1f4b009a6d37f191531bab706e7ec97f54ffc9e7bb443d7b3751ce7b8695dd7e",
+      "snapshot": "docs/Dissertation/sources/PDR-05/1f4b009a6d37f191531bab706e7ec97f54ffc9e7bb443d7b3751ce7b8695dd7e/snapshot_5_weak_initial__validation__french_rte.npz"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_weak_best.json",
+      "sha256": "d67e8291c9957b746de532a320e41f239daa8216e65665fb409ab5b52c17fd26",
+      "snapshot": "docs/Dissertation/sources/PDR-05/d67e8291c9957b746de532a320e41f239daa8216e65665fb409ab5b52c17fd26/snapshot_5_weak_best.json"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_weak_best__validation__open_ee.npz",
+      "sha256": "33aadd134a3e1b18306d151fabb75b70b35b33cd7d588e817c53d18893fe6a59",
+      "snapshot": "docs/Dissertation/sources/PDR-05/33aadd134a3e1b18306d151fabb75b70b35b33cd7d588e817c53d18893fe6a59/snapshot_5_weak_best__validation__open_ee.npz"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_weak_best__validation__french_rte.npz",
+      "sha256": "afa1607fbf5d7f3f550eb46fdd6c2f4fe0595bbbc4cd45891eee165bc6d25bd3",
+      "snapshot": "docs/Dissertation/sources/PDR-05/afa1607fbf5d7f3f550eb46fdd6c2f4fe0595bbbc4cd45891eee165bc6d25bd3/snapshot_5_weak_best__validation__french_rte.npz"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_expert_best.json",
+      "sha256": "048e7fa0685a755e6da1bc81bc879651afa44555bd517d75c7272d07b607e5cf",
+      "snapshot": "docs/Dissertation/sources/PDR-05/048e7fa0685a755e6da1bc81bc879651afa44555bd517d75c7272d07b607e5cf/snapshot_5_expert_best.json"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_expert_best__validation__open_ee.npz",
+      "sha256": "632a374eae1dbd7b4fadc26caf84e51b5c0a9f49a68583c19325bf11b9ccf3b1",
+      "snapshot": "docs/Dissertation/sources/PDR-05/632a374eae1dbd7b4fadc26caf84e51b5c0a9f49a68583c19325bf11b9ccf3b1/snapshot_5_expert_best__validation__open_ee.npz"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_expert_best__validation__french_rte.npz",
+      "sha256": "92c17f8e65e81767a31c66e9a7ebf0e9ba8328101f04a0ce1c3463c57e7bd7b5",
+      "snapshot": "docs/Dissertation/sources/PDR-05/92c17f8e65e81767a31c66e9a7ebf0e9ba8328101f04a0ce1c3463c57e7bd7b5/snapshot_5_expert_best__validation__french_rte.npz"
+    },
+    {
+      "path": "experiments/phase5/pdr_weak_sequence_1_8_stride5/config.json",
+      "sha256": "62c06e0ff4c6719f13ac1cc1aa9908ff747dc28d3f3509c3a86b7564072ffb6f",
+      "snapshot": "docs/Dissertation/sources/PDR-05/62c06e0ff4c6719f13ac1cc1aa9908ff747dc28d3f3509c3a86b7564072ffb6f/config.json"
+    },
+    {
+      "path": "experiments/phase5/pdr_weak_sequence_1_8_stride5/training_log.jsonl",
+      "sha256": "ec56c6b73d98a9c90d52333e4aae872f8ccb04c893491eae4f2fe1c4e86f1a93",
+      "snapshot": "docs/Dissertation/sources/PDR-05/ec56c6b73d98a9c90d52333e4aae872f8ccb04c893491eae4f2fe1c4e86f1a93/training_log.jsonl"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_sequence_1_8_stride5/config.json",
+      "sha256": "bea2c7f7df9a7a09a678584ed800587212cde4a7e5be19515b184037cc15253e",
+      "snapshot": "docs/Dissertation/sources/PDR-05/bea2c7f7df9a7a09a678584ed800587212cde4a7e5be19515b184037cc15253e/config.json"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_sequence_1_8_stride5/training_log.jsonl",
+      "sha256": "969e407af6220872b8000b740dcb4c62b7a5dfed9607ff8b37d34719f9cd54f5",
+      "snapshot": "docs/Dissertation/sources/PDR-05/969e407af6220872b8000b740dcb4c62b7a5dfed9607ff8b37d34719f9cd54f5/training_log.jsonl"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_weak_initial.json",
+      "sha256": "35335ae6de445e46a68390f2ae8d628302ffb079ddb94d779b15cbdaff0cb549",
+      "snapshot": "docs/Dissertation/sources/PDR-05/35335ae6de445e46a68390f2ae8d628302ffb079ddb94d779b15cbdaff0cb549/sequence_1_8_weak_initial.json"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_weak_initial__validation__open_ee.npz",
+      "sha256": "28eafebb35a996b776fead709c7a54a08ab163c20eef75f055c96e57bc8b2be4",
+      "snapshot": "docs/Dissertation/sources/PDR-05/28eafebb35a996b776fead709c7a54a08ab163c20eef75f055c96e57bc8b2be4/sequence_1_8_weak_initial__validation__open_ee.npz"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_weak_initial__validation__french_rte.npz",
+      "sha256": "7e146b3ab2b5a9eea1d0a3e797f83a2a653f290eb46b571f7e2899328f740003",
+      "snapshot": "docs/Dissertation/sources/PDR-05/7e146b3ab2b5a9eea1d0a3e797f83a2a653f290eb46b571f7e2899328f740003/sequence_1_8_weak_initial__validation__french_rte.npz"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_weak_best.json",
+      "sha256": "92037193fef3d0070933c44924b9d7d3dd2cb7069a3e453acb27b03a5b63327c",
+      "snapshot": "docs/Dissertation/sources/PDR-05/92037193fef3d0070933c44924b9d7d3dd2cb7069a3e453acb27b03a5b63327c/sequence_1_8_weak_best.json"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_weak_best__validation__open_ee.npz",
+      "sha256": "3706b817adc45b7d14deb6689d786ae1b6b09366c861ab50489ea685ba7d9b5d",
+      "snapshot": "docs/Dissertation/sources/PDR-05/3706b817adc45b7d14deb6689d786ae1b6b09366c861ab50489ea685ba7d9b5d/sequence_1_8_weak_best__validation__open_ee.npz"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_weak_best__validation__french_rte.npz",
+      "sha256": "c27c05bf85f9237b6b4136cc80e16d69707ec19357c3449c3fb489aed7f4f847",
+      "snapshot": "docs/Dissertation/sources/PDR-05/c27c05bf85f9237b6b4136cc80e16d69707ec19357c3449c3fb489aed7f4f847/sequence_1_8_weak_best__validation__french_rte.npz"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_expert_best.json",
+      "sha256": "09a0a8fa5912438cd17e2a25b0b13c3b5561bfa4a37495b94a8fb02b4c3dc25c",
+      "snapshot": "docs/Dissertation/sources/PDR-05/09a0a8fa5912438cd17e2a25b0b13c3b5561bfa4a37495b94a8fb02b4c3dc25c/sequence_1_8_expert_best.json"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_expert_best__validation__open_ee.npz",
+      "sha256": "728113c2b6d37ac9da9112b288e53fe1f94e8a540f076a8cb7b0ea85a321404f",
+      "snapshot": "docs/Dissertation/sources/PDR-05/728113c2b6d37ac9da9112b288e53fe1f94e8a540f076a8cb7b0ea85a321404f/sequence_1_8_expert_best__validation__open_ee.npz"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_expert_best__validation__french_rte.npz",
+      "sha256": "86f4cee58570cba9ff111c79b1b73d85d5198ec87dc963f797a5f9a63c5abbfc",
+      "snapshot": "docs/Dissertation/sources/PDR-05/86f4cee58570cba9ff111c79b1b73d85d5198ec87dc963f797a5f9a63c5abbfc/sequence_1_8_expert_best__validation__french_rte.npz"
+    },
+    {
+      "path": "data/phase5/pdr_engineering_review/expert/full/progress.json",
+      "sha256": "0da733893e6303d210bd36c4c75329f34dd2d3bdf49b43a14a0d064f27d1f855",
+      "snapshot": "docs/Dissertation/sources/PDR-05/0da733893e6303d210bd36c4c75329f34dd2d3bdf49b43a14a0d064f27d1f855/progress.json"
+    },
+    {
+      "path": "data/phase5/pdr_engineering_review/expert/full/summary.json",
+      "sha256": "9921949d8ffcbe1b1c527fbf18ebcc5aebc95b72325861ed6fdbe4917572f22e",
+      "snapshot": "docs/Dissertation/sources/PDR-05/9921949d8ffcbe1b1c527fbf18ebcc5aebc95b72325861ed6fdbe4917572f22e/summary.json"
+    },
+    {
+      "path": "data/phase5/pdr_engineering_review/rtds/full/progress.json",
+      "sha256": "7ea43d7db622dfc987b801e17ceba93a38906819c7da8ae6e486cb405e94eb6f",
+      "snapshot": "docs/Dissertation/sources/PDR-05/7ea43d7db622dfc987b801e17ceba93a38906819c7da8ae6e486cb405e94eb6f/progress.json"
+    },
+    {
+      "path": "data/phase5/pdr_engineering_review/rtds/full/summary.json",
+      "sha256": "787ff8648f48046d0ab6fa5912128f542a893d4dce4c8fe19ce5ac8d351a24c4",
+      "snapshot": "docs/Dissertation/sources/PDR-05/787ff8648f48046d0ab6fa5912128f542a893d4dce4c8fe19ce5ac8d351a24c4/summary.json"
+    },
+    {
+      "path": "docs/phase_discription/PDR_analise/Report_8_phase5_status_and_training_coverage.md",
+      "sha256": "6455cffcfc6d74a87f72e2126529820073f7d3adc5afc5ba8bb07326c9c6df83",
+      "snapshot": "docs/Dissertation/sources/PDR-05/6455cffcfc6d74a87f72e2126529820073f7d3adc5afc5ba8bb07326c9c6df83/Report_8_phase5_status_and_training_coverage.md"
+    },
+    {
+      "path": "data/phase5/pdr_expert_labels_v1/summary.json",
+      "sha256": "344b5f67e0db3145010d4952fb497664822d5fb62883b4ff41773120c5979cda",
+      "snapshot": "docs/Dissertation/sources/PDR-05/344b5f67e0db3145010d4952fb497664822d5fb62883b4ff41773120c5979cda/summary.json"
+    },
+    {
+      "path": "data/phase5/pdr_analysis_v6/summary.json",
+      "sha256": "2a75bb349fe0c8aa570087aaf7fdeeeb7d636af2f2cf87522e5a37d6e8869f01",
+      "snapshot": "docs/Dissertation/sources/PDR-05/2a75bb349fe0c8aa570087aaf7fdeeeb7d636af2f2cf87522e5a37d6e8869f01/summary.json"
+    },
+    {
+      "path": "experiments/phase5/pdr_expert_evaluation_v3/paired_comparison_summary.json",
+      "sha256": "2c415e4fc6d5fbc01849d0102d38c4c94af6d5394e4f7f9ec66daf87ad7694c7",
+      "snapshot": "docs/Dissertation/sources/PDR-05/2c415e4fc6d5fbc01849d0102d38c4c94af6d5394e4f7f9ec66daf87ad7694c7/paired_comparison_summary.json"
+    }
+  ],
+  "training": [
+    {
+      "mode": "snapshot_2",
+      "stage": "weak",
+      "epochs": 300,
+      "selected_epoch": 48,
+      "samples_per_epoch": 20000,
+      "total_presentations": 6000000,
+      "expert_record_coverage": null,
+      "config": "experiments/phase5/pdr_weak_snapshot_2_stride5/config.json",
+      "batch_size": 32,
+      "learning_rate": 0.0001,
+      "weight_decay": 0.0001,
+      "seed": 42,
+      "augmentation_probability": 0.5
+    },
+    {
+      "mode": "snapshot_2",
+      "stage": "expert",
+      "epochs": 100,
+      "selected_epoch": 44,
+      "samples_per_epoch": 20000,
+      "total_presentations": 2000000,
+      "expert_record_coverage": {
+        "expert_open_ee": [
+          1.0
+        ],
+        "expert_french_rte": [
+          1.0
+        ]
+      },
+      "config": "experiments/phase5/pdr_expert_snapshot_2_stride5/config.json",
+      "batch_size": 32,
+      "learning_rate": 0.0001,
+      "weight_decay": 0.0001,
+      "seed": 42,
+      "augmentation_probability": 0.5
+    },
+    {
+      "mode": "snapshot_5",
+      "stage": "weak",
+      "epochs": 300,
+      "selected_epoch": 151,
+      "samples_per_epoch": 20000,
+      "total_presentations": 6000000,
+      "expert_record_coverage": null,
+      "config": "experiments/phase5/pdr_weak_snapshot_5_stride5/config.json",
+      "batch_size": 32,
+      "learning_rate": 0.0001,
+      "weight_decay": 0.0001,
+      "seed": 42,
+      "augmentation_probability": 0.5
+    },
+    {
+      "mode": "snapshot_5",
+      "stage": "expert",
+      "epochs": 100,
+      "selected_epoch": 19,
+      "samples_per_epoch": 20000,
+      "total_presentations": 2000000,
+      "expert_record_coverage": {
+        "expert_open_ee": [
+          1.0
+        ],
+        "expert_french_rte": [
+          1.0
+        ]
+      },
+      "config": "experiments/phase5/pdr_expert_snapshot_5_stride5/config.json",
+      "batch_size": 32,
+      "learning_rate": 0.0001,
+      "weight_decay": 0.0001,
+      "seed": 42,
+      "augmentation_probability": 0.5
+    },
+    {
+      "mode": "sequence_1_8",
+      "stage": "weak",
+      "epochs": 300,
+      "selected_epoch": 111,
+      "samples_per_epoch": 20000,
+      "total_presentations": 6000000,
+      "expert_record_coverage": null,
+      "config": "experiments/phase5/pdr_weak_sequence_1_8_stride5/config.json",
+      "batch_size": 32,
+      "learning_rate": 0.0001,
+      "weight_decay": 0.0001,
+      "seed": 42,
+      "augmentation_probability": 0.5
+    },
+    {
+      "mode": "sequence_1_8",
+      "stage": "expert",
+      "epochs": 100,
+      "selected_epoch": 16,
+      "samples_per_epoch": 20000,
+      "total_presentations": 2000000,
+      "expert_record_coverage": {
+        "expert_open_ee": [
+          1.0
+        ],
+        "expert_french_rte": [
+          1.0
+        ]
+      },
+      "config": "experiments/phase5/pdr_expert_sequence_1_8_stride5/config.json",
+      "batch_size": 32,
+      "learning_rate": 0.0001,
+      "weight_decay": 0.0001,
+      "seed": 42,
+      "augmentation_probability": 0.5
+    }
+  ],
+  "evaluations": [
+    {
+      "mode": "snapshot_2",
+      "weights": "weak_initial",
+      "json_path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_weak_initial.json",
+      "direction_counts": {
+        "tp": 6150,
+        "tn": 2745,
+        "fp": 1071,
+        "fn": 215
+      },
+      "applicability_counts": {
+        "tp": 10170,
+        "tn": 2538,
+        "fp": 223,
+        "fn": 11
+      },
+      "n_direction_points": 10181,
+      "n_applicability_points": 12942,
+      "macro_f1_direction": 0.8577781254784989,
+      "mcc_direction": 0.7308109660407234,
+      "macro_f1_applicability": 0.9722793125435591,
+      "joint_state_accuracy": 0.882630196260238,
+      "grid_signature": {
+        "open_ee": {
+          "sha256": "42ad59e4af72463da4e711a35cac9edf9ef6bca9fc6f586066fd1b3deb3590b4",
+          "records": 32,
+          "points": 7310
+        },
+        "french_rte": {
+          "sha256": "3b0c4cc6c029fe33ff6c2fdda6af366bdd305bb5d07941655229b4e4ce37956c",
+          "records": 22,
+          "points": 5632
+        }
+      },
+      "checkpoint_hash_verified": true,
+      "config_hash_verified": true
+    },
+    {
+      "mode": "snapshot_2",
+      "weights": "weak_best",
+      "json_path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_weak_best.json",
+      "direction_counts": {
+        "tp": 5964,
+        "tn": 3305,
+        "fp": 511,
+        "fn": 401
+      },
+      "applicability_counts": {
+        "tp": 10078,
+        "tn": 2537,
+        "fp": 224,
+        "fn": 103
+      },
+      "n_direction_points": 10181,
+      "n_applicability_points": 12942,
+      "macro_f1_direction": 0.9038638063549413,
+      "mcc_direction": 0.8079689398628698,
+      "macro_f1_applicability": 0.9617455990143171,
+      "joint_state_accuracy": 0.9043424509349405,
+      "grid_signature": {
+        "open_ee": {
+          "sha256": "42ad59e4af72463da4e711a35cac9edf9ef6bca9fc6f586066fd1b3deb3590b4",
+          "records": 32,
+          "points": 7310
+        },
+        "french_rte": {
+          "sha256": "3b0c4cc6c029fe33ff6c2fdda6af366bdd305bb5d07941655229b4e4ce37956c",
+          "records": 22,
+          "points": 5632
+        }
+      },
+      "checkpoint_hash_verified": true,
+      "config_hash_verified": true
+    },
+    {
+      "mode": "snapshot_2",
+      "weights": "expert_best",
+      "json_path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_2_expert_best.json",
+      "direction_counts": {
+        "tp": 6179,
+        "tn": 3605,
+        "fp": 211,
+        "fn": 186
+      },
+      "applicability_counts": {
+        "tp": 10097,
+        "tn": 2544,
+        "fp": 217,
+        "fn": 84
+      },
+      "n_direction_points": 10181,
+      "n_applicability_points": 12942,
+      "macro_f1_direction": 0.9583430887507571,
+      "mcc_direction": 0.9166993303301988,
+      "macro_f1_applicability": 0.9647294863159261,
+      "joint_state_accuracy": 0.9462216040797404,
+      "grid_signature": {
+        "open_ee": {
+          "sha256": "42ad59e4af72463da4e711a35cac9edf9ef6bca9fc6f586066fd1b3deb3590b4",
+          "records": 32,
+          "points": 7310
+        },
+        "french_rte": {
+          "sha256": "3b0c4cc6c029fe33ff6c2fdda6af366bdd305bb5d07941655229b4e4ce37956c",
+          "records": 22,
+          "points": 5632
+        }
+      },
+      "checkpoint_hash_verified": true,
+      "config_hash_verified": true
+    },
+    {
+      "mode": "snapshot_5",
+      "weights": "weak_initial",
+      "json_path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_weak_initial.json",
+      "direction_counts": {
+        "tp": 6179,
+        "tn": 2937,
+        "fp": 879,
+        "fn": 186
+      },
+      "applicability_counts": {
+        "tp": 10172,
+        "tn": 2532,
+        "fp": 229,
+        "fn": 9
+      },
+      "n_direction_points": 10181,
+      "n_applicability_points": 12942,
+      "macro_f1_direction": 0.8835891212658427,
+      "mcc_direction": 0.7772515876433236,
+      "macro_f1_applicability": 0.9717738883367635,
+      "joint_state_accuracy": 0.8993200432699737,
+      "grid_signature": {
+        "open_ee": {
+          "sha256": "42ad59e4af72463da4e711a35cac9edf9ef6bca9fc6f586066fd1b3deb3590b4",
+          "records": 32,
+          "points": 7310
+        },
+        "french_rte": {
+          "sha256": "3b0c4cc6c029fe33ff6c2fdda6af366bdd305bb5d07941655229b4e4ce37956c",
+          "records": 22,
+          "points": 5632
+        }
+      },
+      "checkpoint_hash_verified": true,
+      "config_hash_verified": true
+    },
+    {
+      "mode": "snapshot_5",
+      "weights": "weak_best",
+      "json_path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_weak_best.json",
+      "direction_counts": {
+        "tp": 6065,
+        "tn": 3178,
+        "fp": 638,
+        "fn": 300
+      },
+      "applicability_counts": {
+        "tp": 10161,
+        "tn": 2532,
+        "fp": 229,
+        "fn": 20
+      },
+      "n_direction_points": 10181,
+      "n_applicability_points": 12942,
+      "macro_f1_direction": 0.8998113808356349,
+      "mcc_direction": 0.8019508160043767,
+      "macro_f1_applicability": 0.9705147019284904,
+      "joint_state_accuracy": 0.9082831092566837,
+      "grid_signature": {
+        "open_ee": {
+          "sha256": "42ad59e4af72463da4e711a35cac9edf9ef6bca9fc6f586066fd1b3deb3590b4",
+          "records": 32,
+          "points": 7310
+        },
+        "french_rte": {
+          "sha256": "3b0c4cc6c029fe33ff6c2fdda6af366bdd305bb5d07941655229b4e4ce37956c",
+          "records": 22,
+          "points": 5632
+        }
+      },
+      "checkpoint_hash_verified": true,
+      "config_hash_verified": true
+    },
+    {
+      "mode": "snapshot_5",
+      "weights": "expert_best",
+      "json_path": "experiments/phase5/pdr_expert_evaluation_v3/snapshot_5_expert_best.json",
+      "direction_counts": {
+        "tp": 6213,
+        "tn": 3702,
+        "fp": 114,
+        "fn": 152
+      },
+      "applicability_counts": {
+        "tp": 10076,
+        "tn": 2539,
+        "fp": 222,
+        "fn": 105
+      },
+      "n_direction_points": 10181,
+      "n_applicability_points": 12942,
+      "macro_f1_direction": 0.97218067125202,
+      "mcc_direction": 0.9443919991938237,
+      "macro_f1_applicability": 0.9617664429964334,
+      "joint_state_accuracy": 0.9549528666357595,
+      "grid_signature": {
+        "open_ee": {
+          "sha256": "42ad59e4af72463da4e711a35cac9edf9ef6bca9fc6f586066fd1b3deb3590b4",
+          "records": 32,
+          "points": 7310
+        },
+        "french_rte": {
+          "sha256": "3b0c4cc6c029fe33ff6c2fdda6af366bdd305bb5d07941655229b4e4ce37956c",
+          "records": 22,
+          "points": 5632
+        }
+      },
+      "checkpoint_hash_verified": true,
+      "config_hash_verified": true
+    },
+    {
+      "mode": "sequence_1_8",
+      "weights": "weak_initial",
+      "json_path": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_weak_initial.json",
+      "direction_counts": {
+        "tp": 6137,
+        "tn": 2615,
+        "fp": 1201,
+        "fn": 228
+      },
+      "applicability_counts": {
+        "tp": 10134,
+        "tn": 2540,
+        "fp": 221,
+        "fn": 47
+      },
+      "n_direction_points": 10181,
+      "n_applicability_points": 12942,
+      "macro_f1_direction": 0.8405597401033665,
+      "mcc_direction": 0.700765838046803,
+      "macro_f1_applicability": 0.9684187776563418,
+      "joint_state_accuracy": 0.868876526039252,
+      "grid_signature": {
+        "open_ee": {
+          "sha256": "42ad59e4af72463da4e711a35cac9edf9ef6bca9fc6f586066fd1b3deb3590b4",
+          "records": 32,
+          "points": 7310
+        },
+        "french_rte": {
+          "sha256": "3b0c4cc6c029fe33ff6c2fdda6af366bdd305bb5d07941655229b4e4ce37956c",
+          "records": 22,
+          "points": 5632
+        }
+      },
+      "checkpoint_hash_verified": true,
+      "config_hash_verified": true
+    },
+    {
+      "mode": "sequence_1_8",
+      "weights": "weak_best",
+      "json_path": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_weak_best.json",
+      "direction_counts": {
+        "tp": 6173,
+        "tn": 2644,
+        "fp": 1172,
+        "fn": 192
+      },
+      "applicability_counts": {
+        "tp": 10103,
+        "tn": 2539,
+        "fp": 222,
+        "fn": 78
+      },
+      "n_direction_points": 10181,
+      "n_applicability_points": 12942,
+      "macro_f1_direction": 0.8477297318871758,
+      "mcc_direction": 0.7156093918798377,
+      "macro_f1_applicability": 0.9647936583391479,
+      "joint_state_accuracy": 0.8714263637768506,
+      "grid_signature": {
+        "open_ee": {
+          "sha256": "42ad59e4af72463da4e711a35cac9edf9ef6bca9fc6f586066fd1b3deb3590b4",
+          "records": 32,
+          "points": 7310
+        },
+        "french_rte": {
+          "sha256": "3b0c4cc6c029fe33ff6c2fdda6af366bdd305bb5d07941655229b4e4ce37956c",
+          "records": 22,
+          "points": 5632
+        }
+      },
+      "checkpoint_hash_verified": true,
+      "config_hash_verified": true
+    },
+    {
+      "mode": "sequence_1_8",
+      "weights": "expert_best",
+      "json_path": "experiments/phase5/pdr_expert_evaluation_v3/sequence_1_8_expert_best.json",
+      "direction_counts": {
+        "tp": 6292,
+        "tn": 3216,
+        "fp": 600,
+        "fn": 73
+      },
+      "applicability_counts": {
+        "tp": 10014,
+        "tn": 2546,
+        "fp": 215,
+        "fn": 167
+      },
+      "n_direction_points": 10181,
+      "n_applicability_points": 12942,
+      "macro_f1_direction": 0.9272561700039552,
+      "mcc_direction": 0.8605096027367762,
+      "macro_f1_applicability": 0.955749624477531,
+      "joint_state_accuracy": 0.9197187451707619,
+      "grid_signature": {
+        "open_ee": {
+          "sha256": "42ad59e4af72463da4e711a35cac9edf9ef6bca9fc6f586066fd1b3deb3590b4",
+          "records": 32,
+          "points": 7310
+        },
+        "french_rte": {
+          "sha256": "3b0c4cc6c029fe33ff6c2fdda6af366bdd305bb5d07941655229b4e4ce37956c",
+          "records": 22,
+          "points": 5632
+        }
+      },
+      "checkpoint_hash_verified": true,
+      "config_hash_verified": true
+    }
+  ],
+  "engineering_completeness": [
+    {
+      "scope": "expert",
+      "records": 54,
+      "progress": {
+        "status": "complete",
+        "completed": 54,
+        "total": 54
+      },
+      "summary_sha256": "9921949d8ffcbe1b1c527fbf18ebcc5aebc95b72325861ed6fdbe4917572f22e",
+      "matches_Report_8_15": true
+    },
+    {
+      "scope": "rtds",
+      "records": 100,
+      "progress": {
+        "status": "complete",
+        "completed": 100,
+        "total": 100
+      },
+      "summary_sha256": "787ff8648f48046d0ab6fa5912128f542a893d4dce4c8fe19ce5ac8d351a24c4",
+      "matches_Report_8_15": true
+    }
+  ],
+  "limits": "Recomputed metrics from saved predictions, not rerun inference/training. Grid equality does not remove train/validation leakage or checkpoint-selection optimism. No bootstrap resampling rerun; H123 predictions and RTDS per-record outputs not audited here."
+}

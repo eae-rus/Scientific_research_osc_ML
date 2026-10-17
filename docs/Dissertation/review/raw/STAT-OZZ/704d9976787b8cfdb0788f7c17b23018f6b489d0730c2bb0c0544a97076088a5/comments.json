@@ -1,0 +1,228 @@
+[
+  {
+    "original_comment_id": "2",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "2",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-12T22:47:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Требуется сделать",
+      "2) ужать до 4стр (провёл только первичное сжатие) + переразместить рисунки.",
+      "3) Внимательнее перечитать раздел по количественной оценке перенапряжений. Наверное его стоит скорректировать / улучшить.",
+      "4) !!Когда будет уточнена разметка ОЗЗ и перенапряжений от них – то обновить рисунки.!!",
+      "5) !!так же поправить ВСЕ цифры, так они могут чутка измениться!!"
+    ],
+    "text": "Требуется сделать\n2) ужать до 4стр (провёл только первичное сжатие) + переразместить рисунки.\n3) Внимательнее перечитать раздел по количественной оценке перенапряжений. Наверное его стоит скорректировать / улучшить.\n4) !!Когда будет уточнена разметка ОЗЗ и перенапряжений от них – то обновить рисунки.!!\n5) !!так же поправить ВСЕ цифры, так они могут чутка измениться!!",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[30]/w:commentRangeStart",
+        "paragraph_index": 30,
+        "paragraph_text": "Введение"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[30]/w:commentRangeEnd",
+        "paragraph_index": 30,
+        "paragraph_text": "Введение"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[30]/w:r[2]/w:commentReference",
+        "paragraph_index": 30,
+        "paragraph_text": "Введение"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "4",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "4",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T13:25:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Перед публикацией надо будет перепроверить, так как при разрешении всех «?» может измениться число."
+    ],
+    "text": "Перед публикацией надо будет перепроверить, так как при разрешении всех «?» может измениться число.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[50]/w:commentRangeStart[1]",
+        "paragraph_index": 54,
+        "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[50]/w:commentRangeEnd[1]",
+        "paragraph_index": 54,
+        "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[50]/w:r[2]/w:commentReference",
+        "paragraph_index": 54,
+        "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "5",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "5",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Valery Valery",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-18T12:13:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "VV"
+    },
+    "paragraphs": [
+      "Увеличить шрифт"
+    ],
+    "text": "Увеличить шрифт",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[50]/w:commentRangeStart[2]",
+        "paragraph_index": 54,
+        "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[50]/w:commentRangeEnd[2]",
+        "paragraph_index": 54,
+        "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[50]/w:r[3]/w:commentReference",
+        "paragraph_index": 54,
+        "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "6",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "6",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-21T09:06:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "Как в примере сделал теперь 9"
+    ],
+    "text": "Как в примере сделал теперь 9",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[50]/w:commentRangeStart[3]",
+        "paragraph_index": 54,
+        "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[50]/w:commentRangeEnd[3]",
+        "paragraph_index": 54,
+        "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[50]/w:r[4]/w:commentReference",
+        "paragraph_index": 54,
+        "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "7",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "7",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Valery Valery",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-18T12:14:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "VV"
+    },
+    "paragraphs": [
+      "Мб отступ?"
+    ],
+    "text": "Мб отступ?",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[52]/w:commentRangeStart[1]",
+        "paragraph_index": 76,
+        "paragraph_text": "Данные таблицы подтверждают и дополняют выводы, сделанные на основе графического анализа. Близость среднего значения (1,96) и медианы (1,926) указывает на ограниченное влияние экстремальных выбросов на центральную тенденцию данных. Небольшое значение стандартного отклонения (0,274) указывает на низкую степень разброса данных вокруг среднего — большинство значений сгруппированы в узком диапазоне. Межквартильный размах (разница между Q3 и Q1) составляет всего 0,276, что означает, что 50% всех «типичных» событий укладываются в диапазон от 1,823 до 2,099 Uном. Важно отметить, что максимальное зафиксированное значение в верифицированной выборке составляет 2,843 Uном, что значительно ниже теоретически возможных пределов для дуговых перенапряжений."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[52]/w:commentRangeEnd[1]",
+        "paragraph_index": 76,
+        "paragraph_text": "Данные таблицы подтверждают и дополняют выводы, сделанные на основе графического анализа. Близость среднего значения (1,96) и медианы (1,926) указывает на ограниченное влияние экстремальных выбросов на центральную тенденцию данных. Небольшое значение стандартного отклонения (0,274) указывает на низкую степень разброса данных вокруг среднего — большинство значений сгруппированы в узком диапазоне. Межквартильный размах (разница между Q3 и Q1) составляет всего 0,276, что означает, что 50% всех «типичных» событий укладываются в диапазон от 1,823 до 2,099 Uном. Важно отметить, что максимальное зафиксированное значение в верифицированной выборке составляет 2,843 Uном, что значительно ниже теоретически возможных пределов для дуговых перенапряжений."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[52]/w:r[2]/w:commentReference",
+        "paragraph_index": 76,
+        "paragraph_text": "Данные таблицы подтверждают и дополняют выводы, сделанные на основе графического анализа. Близость среднего значения (1,96) и медианы (1,926) указывает на ограниченное влияние экстремальных выбросов на центральную тенденцию данных. Небольшое значение стандартного отклонения (0,274) указывает на низкую степень разброса данных вокруг среднего — большинство значений сгруппированы в узком диапазоне. Межквартильный размах (разница между Q3 и Q1) составляет всего 0,276, что означает, что 50% всех «типичных» событий укладываются в диапазон от 1,823 до 2,099 Uном. Важно отметить, что максимальное зафиксированное значение в верифицированной выборке составляет 2,843 Uном, что значительно ниже теоретически возможных пределов для дуговых перенапряжений."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "8",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "8",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Евдаков Алексей",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-21T09:06:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "EAE"
+    },
+    "paragraphs": [
+      "+"
+    ],
+    "text": "+",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[52]/w:commentRangeStart[2]",
+        "paragraph_index": 76,
+        "paragraph_text": "Данные таблицы подтверждают и дополняют выводы, сделанные на основе графического анализа. Близость среднего значения (1,96) и медианы (1,926) указывает на ограниченное влияние экстремальных выбросов на центральную тенденцию данных. Небольшое значение стандартного отклонения (0,274) указывает на низкую степень разброса данных вокруг среднего — большинство значений сгруппированы в узком диапазоне. Межквартильный размах (разница между Q3 и Q1) составляет всего 0,276, что означает, что 50% всех «типичных» событий укладываются в диапазон от 1,823 до 2,099 Uном. Важно отметить, что максимальное зафиксированное значение в верифицированной выборке составляет 2,843 Uном, что значительно ниже теоретически возможных пределов для дуговых перенапряжений."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[52]/w:commentRangeEnd[2]",
+        "paragraph_index": 76,
+        "paragraph_text": "Данные таблицы подтверждают и дополняют выводы, сделанные на основе графического анализа. Близость среднего значения (1,96) и медианы (1,926) указывает на ограниченное влияние экстремальных выбросов на центральную тенденцию данных. Небольшое значение стандартного отклонения (0,274) указывает на низкую степень разброса данных вокруг среднего — большинство значений сгруппированы в узком диапазоне. Межквартильный размах (разница между Q3 и Q1) составляет всего 0,276, что означает, что 50% всех «типичных» событий укладываются в диапазон от 1,823 до 2,099 Uном. Важно отметить, что максимальное зафиксированное значение в верифицированной выборке составляет 2,843 Uном, что значительно ниже теоретически возможных пределов для дуговых перенапряжений."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[52]/w:r[3]/w:commentReference",
+        "paragraph_index": 76,
+        "paragraph_text": "Данные таблицы подтверждают и дополняют выводы, сделанные на основе графического анализа. Близость среднего значения (1,96) и медианы (1,926) указывает на ограниченное влияние экстремальных выбросов на центральную тенденцию данных. Небольшое значение стандартного отклонения (0,274) указывает на низкую степень разброса данных вокруг среднего — большинство значений сгруппированы в узком диапазоне. Межквартильный размах (разница между Q3 и Q1) составляет всего 0,276, что означает, что 50% всех «типичных» событий укладываются в диапазон от 1,823 до 2,099 Uном. Важно отметить, что максимальное зафиксированное значение в верифицированной выборке составляет 2,843 Uном, что значительно ниже теоретически возможных пределов для дуговых перенапряжений."
+      }
+    ],
+    "decision": "not_reviewed"
+  }
+]

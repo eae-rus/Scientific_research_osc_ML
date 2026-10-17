@@ -1,0 +1,313 @@
+{
+  "scope": "C02-PDR-05-02b; metadata and scalar identities, not archive recomputation",
+  "date": "2026-10-07",
+  "sources": [
+    {
+      "path": "docs/article/PHASE_5_PDR_STATISTICAL_ARTICLE_DRAFT.md",
+      "sha256": "a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55",
+      "snapshot": "docs/Dissertation/sources/PDR-05/a600f076da6631de7e20937ec468827360e1300836050ce83ffc87230dbc2a55/PHASE_5_PDR_STATISTICAL_ARTICLE_DRAFT.md"
+    },
+    {
+      "path": "data/phase5/pdr_labels_v6/config.json",
+      "sha256": "5cce28e9d957949df845b5588086edce92e0ae262a0111c08d14128f64b1a208",
+      "snapshot": "docs/Dissertation/sources/PDR-05/5cce28e9d957949df845b5588086edce92e0ae262a0111c08d14128f64b1a208/config.json"
+    },
+    {
+      "path": "osc_tools/pdr/pdr_signal_utils.py",
+      "sha256": "082cc13b07292a5a054fb4ca389286e817cab2ed9b2c8ac838d8aa0693fe805f",
+      "snapshot": "docs/Dissertation/sources/PDR-05/082cc13b07292a5a054fb4ca389286e817cab2ed9b2c8ac838d8aa0693fe805f/pdr_signal_utils.py"
+    },
+    {
+      "path": "osc_tools/pdr/study.py",
+      "sha256": "af5f673194ab1ee41231c73c7f8b05ec47879f415f1bfd44ab487b10d181ae5c",
+      "snapshot": "docs/Dissertation/sources/PDR-05/af5f673194ab1ee41231c73c7f8b05ec47879f415f1bfd44ab487b10d181ae5c/study.py"
+    },
+    {
+      "path": "scripts/phase5_experiments/run_pdr_dataset_study.py",
+      "sha256": "b1a9503e30215b826f715d8714175ffddd7ff474a062da072112281b23f5c84b",
+      "snapshot": "docs/Dissertation/sources/PDR-05/b1a9503e30215b826f715d8714175ffddd7ff474a062da072112281b23f5c84b/run_pdr_dataset_study.py"
+    },
+    {
+      "path": "scripts/phase5_experiments/analyze_pdr_dataset_study.py",
+      "sha256": "f4f7d3d208801a96fafe2eb3af402ba245b1e1374d1d4cfe6b4058004b1f82c5",
+      "snapshot": "docs/Dissertation/sources/PDR-05/f4f7d3d208801a96fafe2eb3af402ba245b1e1374d1d4cfe6b4058004b1f82c5/analyze_pdr_dataset_study.py"
+    },
+    {
+      "path": "osc_tools/pdr/public_algorithms/basic_phase.py",
+      "sha256": "cc944e5273be13701e769802b580db39206aa9dae441f8a6feebe9f5e0d02cd5",
+      "snapshot": "docs/Dissertation/sources/PDR-05/cc944e5273be13701e769802b580db39206aa9dae441f8a6feebe9f5e0d02cd5/basic_phase.py"
+    },
+    {
+      "path": "osc_tools/pdr/public_algorithms/basic_pos_seq.py",
+      "sha256": "048ae59fd128d525c9009206f14993e0ad45308f4ae53512591747712cc54604",
+      "snapshot": "docs/Dissertation/sources/PDR-05/048ae59fd128d525c9009206f14993e0ad45308f4ae53512591747712cc54604/basic_pos_seq.py"
+    },
+    {
+      "path": "osc_tools/pdr/public_algorithms/basic_phase_power.py",
+      "sha256": "b8b109f163b37ea5c39ff36337bed38cf9014265a0b9f0ed56e8a5bfe8b5fbc3",
+      "snapshot": "docs/Dissertation/sources/PDR-05/b8b109f163b37ea5c39ff36337bed38cf9014265a0b9f0ed56e8a5bfe8b5fbc3/basic_phase_power.py"
+    },
+    {
+      "path": "osc_tools/pdr/public_algorithms/basic_pos_seq_power.py",
+      "sha256": "c84ff9e88e3b9261ebf486f14a700fe3c72840339eb354965a029342235a21a8",
+      "snapshot": "docs/Dissertation/sources/PDR-05/c84ff9e88e3b9261ebf486f14a700fe3c72840339eb354965a029342235a21a8/basic_pos_seq_power.py"
+    },
+    {
+      "path": "osc_tools/pdr/public_algorithms/advanced_literature_algorithms.py",
+      "sha256": "1b15f52288c5688f02be48c3623ea406db477db5669305c9b29f3b317415fb00",
+      "snapshot": "docs/Dissertation/sources/PDR-05/1b15f52288c5688f02be48c3623ea406db477db5669305c9b29f3b317415fb00/advanced_literature_algorithms.py"
+    }
+  ],
+  "settings": [
+    {
+      "algorithm_id": "phase_pdr_basic",
+      "path": "osc_tools/pdr/public_algorithms/basic_phase.py",
+      "class_line": 35,
+      "params": {
+        "phi_mch_deg": 45.0,
+        "u_min_pu": 0.05,
+        "i_min_pu": 0.05,
+        "sector_width_deg": 180.0,
+        "polarization_mode": "quadrature_90",
+        "scale_profile": "dataset_peak_phasor"
+      },
+      "parameter_fingerprint": "8441f08459913440445391c7084a507eba7e6b4aaea55937a7bf1c4772076165",
+      "stored_fingerprint": "8441f08459913440445391c7084a507eba7e6b4aaea55937a7bf1c4772076165",
+      "matches_run_settings": true
+    },
+    {
+      "algorithm_id": "pos_seq_pdr_basic",
+      "path": "osc_tools/pdr/public_algorithms/basic_pos_seq.py",
+      "class_line": 26,
+      "params": {
+        "phi_mch_deg": 45.0,
+        "u_min_pu": 0.05,
+        "i_min_pu": 0.05,
+        "sector_width_deg": 180.0,
+        "scale_profile": "dataset_peak_phasor"
+      },
+      "parameter_fingerprint": "15f2038412598b051b83ae1645a969cae0b1916bf399c737442fc75b5074d5d1",
+      "stored_fingerprint": "15f2038412598b051b83ae1645a969cae0b1916bf399c737442fc75b5074d5d1",
+      "matches_run_settings": true
+    },
+    {
+      "algorithm_id": "phase_power_pdr_basic",
+      "path": "osc_tools/pdr/public_algorithms/basic_phase_power.py",
+      "class_line": 31,
+      "params": {
+        "phi_mch_deg": 45.0,
+        "i_min_pu": 0.05,
+        "u_min_pu": 0.05,
+        "p_thresh_pu": 0.05,
+        "scale_profile": "dataset_peak_phasor"
+      },
+      "parameter_fingerprint": "0d34498d71854c4aa8a5633284ecaf99e393a882c9be65c1efec15278553d7fd",
+      "stored_fingerprint": "0d34498d71854c4aa8a5633284ecaf99e393a882c9be65c1efec15278553d7fd",
+      "matches_run_settings": true
+    },
+    {
+      "algorithm_id": "pos_seq_power_pdr_basic",
+      "path": "osc_tools/pdr/public_algorithms/basic_pos_seq_power.py",
+      "class_line": 29,
+      "params": {
+        "mta_deg": 45.0,
+        "u_min_pu": 0.05,
+        "i_min_pu": 0.05,
+        "p_thresh_pu": 0.05,
+        "scale_profile": "dataset_peak_phasor"
+      },
+      "parameter_fingerprint": "4b16af73cb56c0cdeb0def9effd11a33f3b27e08aab292db4ce2d5e664cafde5",
+      "stored_fingerprint": "4b16af73cb56c0cdeb0def9effd11a33f3b27e08aab292db4ce2d5e664cafde5",
+      "matches_run_settings": true
+    },
+    {
+      "algorithm_id": "pdr_sivokobylenko_2pt",
+      "path": "osc_tools/pdr/public_algorithms/advanced_literature_algorithms.py",
+      "class_line": 175,
+      "params": {
+        "sample_interval_ms": 1.0,
+        "mta_deg": 60.0,
+        "sector_width_deg": 180.0,
+        "u_min_pu": 0.05,
+        "i_min_pu": 0.05,
+        "scale_profile": "dataset_peak_phasor"
+      },
+      "parameter_fingerprint": "77d4c2ed35880a79be5c1d4eaded70b78ca3d114988c7f062bdf6d80789d6060",
+      "stored_fingerprint": "77d4c2ed35880a79be5c1d4eaded70b78ca3d114988c7f062bdf6d80789d6060",
+      "matches_run_settings": true
+    },
+    {
+      "algorithm_id": "pdr_sivokobylenko_5pt",
+      "path": "osc_tools/pdr/public_algorithms/advanced_literature_algorithms.py",
+      "class_line": 291,
+      "params": {
+        "sample_interval_ms": 1.0,
+        "mta_deg": 60.0,
+        "u_min_pu": 0.05,
+        "i_min_pu": 0.05,
+        "p_thresh_pu": 0.001,
+        "history_periods": 10.0,
+        "scale_profile": "dataset_peak_phasor"
+      },
+      "parameter_fingerprint": "9c0be7bcb60e2b5619f68a0230af692b1066d3c839237b4df5241c7cd1d7fa5a",
+      "stored_fingerprint": "9c0be7bcb60e2b5619f68a0230af692b1066d3c839237b4df5241c7cd1d7fa5a",
+      "matches_run_settings": true
+    },
+    {
+      "algorithm_id": "pdr_bmrz_q_assisted",
+      "path": "osc_tools/pdr/public_algorithms/advanced_literature_algorithms.py",
+      "class_line": 426,
+      "params": {
+        "u_min_pu": 0.05,
+        "i_min_pu": 0.05,
+        "u2_start_pu": 0.08,
+        "reactive_current_start_pu": 0.05,
+        "p_thresh_pu": 0.001,
+        "angle_hysteresis_deg": 8.0,
+        "scale_profile": "dataset_peak_phasor"
+      },
+      "parameter_fingerprint": "03101b7122509138383ed58f22e9bb6a7f1d389bf2cccd3a8bedfc9f0fdfc478",
+      "stored_fingerprint": "03101b7122509138383ed58f22e9bb6a7f1d389bf2cccd3a8bedfc9f0fdfc478",
+      "matches_run_settings": true
+    },
+    {
+      "algorithm_id": "pdr_bavr072_crosspol",
+      "path": "osc_tools/pdr/public_algorithms/advanced_literature_algorithms.py",
+      "class_line": 514,
+      "params": {
+        "u_min_pu": 0.05,
+        "i_min_pu": 0.05,
+        "memory_weight": 0.3,
+        "mta_deg": 45.0,
+        "p_thresh_pu": 0.0,
+        "history_periods": 10.0,
+        "scale_profile": "dataset_peak_phasor"
+      },
+      "parameter_fingerprint": "f35d2c87c6bf73fc5827cc0f45c714f278aca6520510885ed6500ddc7b70158a",
+      "stored_fingerprint": "f35d2c87c6bf73fc5827cc0f45c714f278aca6520510885ed6500ddc7b70158a",
+      "matches_run_settings": true
+    }
+  ],
+  "all_public_settings_match_v6": true,
+  "scale_profile": "dataset_peak_phasor",
+  "rms_thresholds": {
+    "U": 0.05,
+    "I": 0.05,
+    "P": 0.05
+  },
+  "converted_peak_internal": {
+    "U": 0.013608276348795436,
+    "I": 0.003535533905932738,
+    "P": 0.0009622504486493764
+  },
+  "balanced_phase_sequence_moments": [
+    {
+      "lag_angle_deg": -135,
+      "phase_moment": -1.0,
+      "sequence_moment": -0.9999999999999998
+    },
+    {
+      "lag_angle_deg": -45,
+      "phase_moment": -3.8285686989269494e-16,
+      "sequence_moment": 3.700743415417185e-17
+    },
+    {
+      "lag_angle_deg": 0,
+      "phase_moment": 0.7071067811865472,
+      "sequence_moment": 0.7071067811865474
+    },
+    {
+      "lag_angle_deg": 45,
+      "phase_moment": 1.0,
+      "sequence_moment": 0.9999999999999999
+    },
+    {
+      "lag_angle_deg": 135,
+      "phase_moment": 5.053215498074303e-16,
+      "sequence_moment": -3.700743415417185e-17
+    }
+  ],
+  "quantized_sample_intervals": [
+    {
+      "sampling_rate_hz": 1200,
+      "sample_lag": 1,
+      "two_sample_delay_ms": 0.8333333333333334,
+      "five_sample_window_ms": 3.3333333333333335,
+      "five_sample_estimate_delay_ms": 1.6666666666666667
+    },
+    {
+      "sampling_rate_hz": 1600,
+      "sample_lag": 2,
+      "two_sample_delay_ms": 1.25,
+      "five_sample_window_ms": 5.0,
+      "five_sample_estimate_delay_ms": 2.5
+    },
+    {
+      "sampling_rate_hz": 6400,
+      "sample_lag": 6,
+      "two_sample_delay_ms": 0.9375,
+      "five_sample_window_ms": 3.75,
+      "five_sample_estimate_delay_ms": 1.875
+    },
+    {
+      "sampling_rate_hz": 20000,
+      "sample_lag": 20,
+      "two_sample_delay_ms": 1.0,
+      "five_sample_window_ms": 4.0,
+      "five_sample_estimate_delay_ms": 2.0
+    }
+  ],
+  "actual_bit_order": [
+    "adaptive_pdr_mir",
+    "phase_pdr_basic",
+    "pos_seq_pdr_basic",
+    "phase_power_pdr_basic",
+    "pos_seq_power_pdr_basic",
+    "pdr_sivokobylenko_2pt",
+    "pdr_sivokobylenko_5pt",
+    "pdr_bmrz_q_assisted",
+    "pdr_bavr072_crosspol"
+  ],
+  "findings": [
+    {
+      "id": "PDR-M01",
+      "article_lines": [
+        196,
+        307,
+        317
+      ],
+      "kind": "description_scope",
+      "detail": "All-algorithm Fourier statement excludes raw-sample estimation exceptions."
+    },
+    {
+      "id": "PDR-M02",
+      "article_lines": [
+        154,
+        155,
+        156,
+        271
+      ],
+      "kind": "scale_or_setting_mismatch",
+      "detail": "Current two power baselines have physical RMS p_thresh_pu=0.05, mapping to internal peak 0.0009622504486493763; source 0.0025/0.001 require explicit scale and version."
+    },
+    {
+      "id": "PDR-M03",
+      "article_lines": [
+        433,
+        435
+      ],
+      "kind": "order_mismatch",
+      "detail": "100000000 is adaptive-only for config/CSV order, which differs from article table row order."
+    },
+    {
+      "id": "PDR-M04",
+      "article_lines": [
+        313,
+        335
+      ],
+      "kind": "timing_scope",
+      "detail": "h=1ms is quantized to samples; batch study starts its end_indices after one full period. Minimal estimator delay is not complete pipeline response delay."
+    }
+  ],
+  "limits": "Parameter fingerprints do not establish identical implementation code at experiment time. Adaptive private internals are not inspected. Runtime defects, test labels and archived model outputs are outside these scalar checks."
+}

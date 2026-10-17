@@ -1,0 +1,228 @@
+[
+  {
+    "original_comment_id": "0",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "0",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T11:44:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Перевести, как сделаю русский вариант"
+    ],
+    "text": "Перевести, как сделаю русский вариант",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[15]/w:commentRangeStart",
+        "paragraph_index": 15,
+        "paragraph_text": "НАЗВАНИЕ ДОКЛАДА НА АНГЛИЙСКОМ ЯЗЫКЕ (Название доклада)**"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[15]/w:commentRangeEnd",
+        "paragraph_index": 15,
+        "paragraph_text": "НАЗВАНИЕ ДОКЛАДА НА АНГЛИЙСКОМ ЯЗЫКЕ (Название доклада)**"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[15]/w:r[3]/w:commentReference",
+        "paragraph_index": 15,
+        "paragraph_text": "НАЗВАНИЕ ДОКЛАДА НА АНГЛИЙСКОМ ЯЗЫКЕ (Название доклада)**"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "1",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "1",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-12T22:47:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Требуется сделать\n1) Подготовить список литературы",
+      "2) ужать до 4стр (провёл только первичное сжатие) + переразместить рисунки.",
+      "3) Внимательнее перечитать раздел по количественной оценке перенапряжений. Наверное его стоит скорректировать / улучшить.",
+      "4) !!Когда будет уточнена разметка ОЗЗ и перенапряжений от них – то обновить рисунки.!!",
+      "5) !!так же поправить ВСЕ цифры, так они могут чутка измениться!!"
+    ],
+    "text": "Требуется сделать\n1) Подготовить список литературы\n2) ужать до 4стр (провёл только первичное сжатие) + переразместить рисунки.\n3) Внимательнее перечитать раздел по количественной оценке перенапряжений. Наверное его стоит скорректировать / улучшить.\n4) !!Когда будет уточнена разметка ОЗЗ и перенапряжений от них – то обновить рисунки.!!\n5) !!так же поправить ВСЕ цифры, так они могут чутка измениться!!",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[31]/w:commentRangeStart",
+        "paragraph_index": 31,
+        "paragraph_text": "Введение"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[31]/w:commentRangeEnd",
+        "paragraph_index": 31,
+        "paragraph_text": "Введение"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[31]/w:r[2]/w:commentReference",
+        "paragraph_index": 31,
+        "paragraph_text": "Введение"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "2",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "2",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-12T21:25:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Пока так указал, ибо в идеале – это ссылка на другую статью"
+    ],
+    "text": "Пока так указал, ибо в идеале – это ссылка на другую статью",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[36]/w:commentRangeStart",
+        "paragraph_index": 36,
+        "paragraph_text": "Исходные данные и методология анализа"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[36]/w:commentRangeEnd",
+        "paragraph_index": 36,
+        "paragraph_text": "Исходные данные и методология анализа"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[36]/w:r[3]/w:commentReference",
+        "paragraph_index": 36,
+        "paragraph_text": "Исходные данные и методология анализа"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "4",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "4",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-12T21:22:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Так-то, этот раздел, а точнее даже вот эта картинка главные в статье и по началу идея была только на это."
+    ],
+    "text": "Так-то, этот раздел, а точнее даже вот эта картинка главные в статье и по началу идея была только на это.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeStart",
+        "paragraph_index": 46,
+        "paragraph_text": "Распределение плотности вероятности перенапряжений при ОЗЗ"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeEnd",
+        "paragraph_index": 46,
+        "paragraph_text": "Распределение плотности вероятности перенапряжений при ОЗЗ"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:r[3]/w:commentReference",
+        "paragraph_index": 46,
+        "paragraph_text": "Распределение плотности вероятности перенапряжений при ОЗЗ"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "5",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "5",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T13:25:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Перед публикацией надо будет перепроверить, так как при разрешении всех «?» может измениться число."
+    ],
+    "text": "Перед публикацией надо будет перепроверить, так как при разрешении всех «?» может измениться число.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[51]/w:commentRangeStart",
+        "paragraph_index": 55,
+        "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[51]/w:commentRangeEnd",
+        "paragraph_index": 55,
+        "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[51]/w:r[2]/w:commentReference",
+        "paragraph_index": 55,
+        "paragraph_text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "6",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "6",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T15:32:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Правда в рамках этих данных, это не лишние / неправильные данные, а прост редкие события, которые не перестают быть интересными"
+    ],
+    "text": "Правда в рамках этих данных, это не лишние / неправильные данные, а прост редкие события, которые не перестают быть интересными",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[56]/w:commentRangeStart",
+        "paragraph_index": 85,
+        "paragraph_text": "Диаграмма размаха (Рис. 4а) наглядно показывает медиану (линия внутри ящика), межквартильный размах (высота ящика), а также весь диапазон значений за исключением выбросов («усы» диаграммы). Точки за пределами усов представляют собой статистические выбросы (редкие события). В нашем случае диаграмма подтверждает, что основная масса данных (50%) сконцентрирована в узком диапазоне 1,83÷2,10 Uном, а также выявляет наличие нескольких выбросов как в сторону меньших, так и в сторону больших значений."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[56]/w:commentRangeEnd",
+        "paragraph_index": 85,
+        "paragraph_text": "Диаграмма размаха (Рис. 4а) наглядно показывает медиану (линия внутри ящика), межквартильный размах (высота ящика), а также весь диапазон значений за исключением выбросов («усы» диаграммы). Точки за пределами усов представляют собой статистические выбросы (редкие события). В нашем случае диаграмма подтверждает, что основная масса данных (50%) сконцентрирована в узком диапазоне 1,83÷2,10 Uном, а также выявляет наличие нескольких выбросов как в сторону меньших, так и в сторону больших значений."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[56]/w:r[6]/w:commentReference",
+        "paragraph_index": 85,
+        "paragraph_text": "Диаграмма размаха (Рис. 4а) наглядно показывает медиану (линия внутри ящика), межквартильный размах (высота ящика), а также весь диапазон значений за исключением выбросов («усы» диаграммы). Точки за пределами усов представляют собой статистические выбросы (редкие события). В нашем случае диаграмма подтверждает, что основная масса данных (50%) сконцентрирована в узком диапазоне 1,83÷2,10 Uном, а также выявляет наличие нескольких выбросов как в сторону меньших, так и в сторону больших значений."
+      }
+    ],
+    "decision": "not_reviewed"
+  }
+]

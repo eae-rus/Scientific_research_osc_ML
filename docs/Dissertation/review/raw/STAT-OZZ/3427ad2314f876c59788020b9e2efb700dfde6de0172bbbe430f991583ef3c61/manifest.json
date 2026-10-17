@@ -1,0 +1,85 @@
+{
+  "source_id": "STAT-OZZ",
+  "source_sha256": "3427ad2314f876c59788020b9e2efb700dfde6de0172bbbe430f991583ef3c61",
+  "source_path": "D:/Программирование/Fork/Scientific_research_osc_ML/docs/article/(Энергоинновации) Датасет+Статистика ОЗЗ/_предыдущие версии/Статистика ОЗЗ v2.0.docx",
+  "preserved_parts": [
+    {
+      "path": "[Content_Types].xml",
+      "sha256": "7fac26a6e2d2dea434e2471699ea01d01c5716821e6bcb8b2a1495dd689f84b8"
+    },
+    {
+      "path": "_rels/.rels",
+      "sha256": "e19238d7a71fa7a2490776252686f70e2de6238c87cd509b5e3a3cc07c2ea4df"
+    },
+    {
+      "path": "word/document.xml",
+      "sha256": "d404f4fd9e7431cfd5b603c954ec91e098363f237d66f946ea3e83cacb4b1538"
+    },
+    {
+      "path": "word/_rels/document.xml.rels",
+      "sha256": "57d1ef6c17ac0215fdeec7c1117cadae277d5e6910077cce51a356c004ed6a7a"
+    },
+    {
+      "path": "word/comments.xml",
+      "sha256": "70d2dd38128dd540d4f4046af2a46407afaf5bcb27dfb5e2b585737faab1fe01"
+    },
+    {
+      "path": "word/theme/theme1.xml",
+      "sha256": "d640f297bce534b10c897a63964b5647d531f5ad8fc53cfd83c7e3d3a1630abc"
+    },
+    {
+      "path": "word/settings.xml",
+      "sha256": "f10319ced75a1bbfdbfe38045542fcbdcffbdaed38714f19e214c1ba40377f2a"
+    },
+    {
+      "path": "word/numbering.xml",
+      "sha256": "bea9674d24654759e8746715c0ccf1fd01b05cb488a6bf2f46751fc1f785d14a"
+    },
+    {
+      "path": "word/styles.xml",
+      "sha256": "a345cb9b4aa1be08b3a759906f73e4d16ff9b520346e6f5826afbde20facec93"
+    },
+    {
+      "path": "word/webSettings.xml",
+      "sha256": "87b48d7b559199d6cc3d0cb58fa1d0c818d9fd7907276a6346b7ba5e3fb8c788"
+    },
+    {
+      "path": "word/commentsExtended.xml",
+      "sha256": "2e4449e98f8d2e2ef776638f6e65c47137d0d87992c31458818827d8c10a8a5c"
+    },
+    {
+      "path": "word/commentsIds.xml",
+      "sha256": "0ee8062f4a837c3252e62a867b453a818fb3ef035bb963e96bec9fb1a80ce855"
+    },
+    {
+      "path": "word/commentsExtensible.xml",
+      "sha256": "dfe0ed9056951bbb7ffaa520936489d2cea4d71ae880300d69ff9a840ccb65c3"
+    },
+    {
+      "path": "word/fontTable.xml",
+      "sha256": "fabd36409085e5b74f53e411429c31484cb6c2c15ac27607a4ba96989a668b01"
+    },
+    {
+      "path": "word/people.xml",
+      "sha256": "b2434c83325452fd6ea1307285d6e8774c1a3c2f8fe9d02582dae0b9e837f215"
+    },
+    {
+      "path": "docProps/core.xml",
+      "sha256": "f0739a2a8bf957709f60d2e810cdf96879f190dc460daec8e2205b4ada540b59"
+    },
+    {
+      "path": "docProps/app.xml",
+      "sha256": "0bcda2b617deb58b79110f9b0dd217b9b5c4e695b71abaf4f161a0c7d88b6426"
+    }
+  ],
+  "non_xml_preserved_in_docx": [
+    "word/media/image1.png",
+    "word/media/image2.png",
+    "word/media/image3.png",
+    "word/media/image4.png"
+  ],
+  "paragraph_count": 112,
+  "comment_count": 6,
+  "revision_count": 0,
+  "semantics": "w:t and w:delText exported; no tracked changes accepted or rejected; paragraph context is not an exact text range"
+}

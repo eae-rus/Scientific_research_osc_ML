@@ -1,0 +1,485 @@
+[
+  {
+    "original_comment_id": "0",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "0",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T11:44:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Перевести, как сделаю русский вариант"
+    ],
+    "text": "Перевести, как сделаю русский вариант",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[15]/w:commentRangeStart",
+        "paragraph_index": 15,
+        "paragraph_text": "НАЗВАНИЕ ДОКЛАДА НА АНГЛИЙСКОМ ЯЗЫКЕ (Название доклада)**"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[15]/w:commentRangeEnd",
+        "paragraph_index": 15,
+        "paragraph_text": "НАЗВАНИЕ ДОКЛАДА НА АНГЛИЙСКОМ ЯЗЫКЕ (Название доклада)**"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[15]/w:r[3]/w:commentReference",
+        "paragraph_index": 15,
+        "paragraph_text": "НАЗВАНИЕ ДОКЛАДА НА АНГЛИЙСКОМ ЯЗЫКЕ (Название доклада)**"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "1",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "1",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-12T22:13:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Требуется сделать\n1) Подготовить список литературы",
+      "2) Привести картинки к удобном виду",
+      "3) ужать до 4стр (провёл только первичное сжатие) + переразместить рисунки."
+    ],
+    "text": "Требуется сделать\n1) Подготовить список литературы\n2) Привести картинки к удобном виду\n3) ужать до 4стр (провёл только первичное сжатие) + переразместить рисунки.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[31]/w:commentRangeStart",
+        "paragraph_index": 31,
+        "paragraph_text": "Введение"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[31]/w:commentRangeEnd",
+        "paragraph_index": 31,
+        "paragraph_text": "Введение"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[31]/w:r[2]/w:commentReference",
+        "paragraph_index": 31,
+        "paragraph_text": "Введение"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "2",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "2",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T12:49:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Вот ссылка на него https://figshare.com/articles/dataset/Open_Dataset_of_Real-World_Oscillograms_from_Electric_Power_Grids/28465427/5"
+    ],
+    "text": "Вот ссылка на него https://figshare.com/articles/dataset/Open_Dataset_of_Real-World_Oscillograms_from_Electric_Power_Grids/28465427/5",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[38]/w:commentRangeStart",
+        "paragraph_index": 38,
+        "paragraph_text": "Основой для исследования послужил открытый набор данных «A Dataset of Real-World Oscillograms from Electric Power Grids»[X], содержащий 50 765 осциллограмм в формате COMTRADE. Несмотря на предварительную стандартизацию, проведенную авторами набора, для целенаправленного анализа ОЗЗ исходный массив обладал рядом критических недостатков:"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[38]/w:commentRangeEnd",
+        "paragraph_index": 38,
+        "paragraph_text": "Основой для исследования послужил открытый набор данных «A Dataset of Real-World Oscillograms from Electric Power Grids»[X], содержащий 50 765 осциллограмм в формате COMTRADE. Несмотря на предварительную стандартизацию, проведенную авторами набора, для целенаправленного анализа ОЗЗ исходный массив обладал рядом критических недостатков:"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[38]/w:r[13]/w:commentReference",
+        "paragraph_index": 38,
+        "paragraph_text": "Основой для исследования послужил открытый набор данных «A Dataset of Real-World Oscillograms from Electric Power Grids»[X], содержащий 50 765 осциллограмм в формате COMTRADE. Несмотря на предварительную стандартизацию, проведенную авторами набора, для целенаправленного анализа ОЗЗ исходный массив обладал рядом критических недостатков:"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "3",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "3",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T13:11:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Можно будет удалить описание, оставить прост название пунктов, если нужно будет сжать"
+    ],
+    "text": "Можно будет удалить описание, оставить прост название пунктов, если нужно будет сжать",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[45]/w:commentRangeStart",
+        "paragraph_index": 45,
+        "paragraph_text": "\tНормализация сигналов. Загрузка коэффициентов нормализации и приведение мгновенных значений токов и напряжений к безразмерным относительным единицам."
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[45]/w:commentRangeEnd",
+        "paragraph_index": 45,
+        "paragraph_text": "\tНормализация сигналов. Загрузка коэффициентов нормализации и приведение мгновенных значений токов и напряжений к безразмерным относительным единицам."
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[45]/w:r[3]/w:commentReference",
+        "paragraph_index": 45,
+        "paragraph_text": "\tНормализация сигналов. Загрузка коэффициентов нормализации и приведение мгновенных значений токов и напряжений к безразмерным относительным единицам."
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "4",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "4",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T14:18:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Наверное, прост удалю. Не очень знаю пока, как подробно изобразить, да и надо ли. А здесь очень грубо описано. Да и ужимать надо бы текст."
+    ],
+    "text": "Наверное, прост удалю. Не очень знаю пока, как подробно изобразить, да и надо ли. А здесь очень грубо описано. Да и ужимать надо бы текст.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeStart[1]",
+        "paragraph_index": 50,
+        "paragraph_text": "Алгоритм первичного отбора осциллограмм ОЗЗ"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeEnd[1]",
+        "paragraph_index": 50,
+        "paragraph_text": "Алгоритм первичного отбора осциллограмм ОЗЗ"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:r[3]/w:commentReference",
+        "paragraph_index": 50,
+        "paragraph_text": "Алгоритм первичного отбора осциллограмм ОЗЗ"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "5",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "5",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T15:39:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Так-то код довольно большой и сложный, хотя сами критерия там и можно выписать. Но надо ли это здесь вообще?"
+    ],
+    "text": "Так-то код довольно большой и сложный, хотя сами критерия там и можно выписать. Но надо ли это здесь вообще?",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeStart[2]",
+        "paragraph_index": 50,
+        "paragraph_text": "Алгоритм первичного отбора осциллограмм ОЗЗ"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:commentRangeEnd[2]",
+        "paragraph_index": 50,
+        "paragraph_text": "Алгоритм первичного отбора осциллограмм ОЗЗ"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p/w:r[4]/w:commentReference",
+        "paragraph_index": 50,
+        "paragraph_text": "Алгоритм первичного отбора осциллограмм ОЗЗ"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "6",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "6",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-12T21:53:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "Ручную возможно скорректирую на днях."
+    ],
+    "text": "Ручную возможно скорректирую на днях.",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[2]/w:tr[3]/w:tc[3]/w:p/w:commentRangeStart",
+        "paragraph_index": 64,
+        "paragraph_text": "8"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[2]/w:tr[3]/w:tc[3]/w:p/w:commentRangeEnd",
+        "paragraph_index": 64,
+        "paragraph_text": "8"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[2]/w:tr[3]/w:tc[3]/w:p/w:r[2]/w:commentReference",
+        "paragraph_index": 64,
+        "paragraph_text": "8"
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "8",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "8",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T16:05:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "91520d105c0e0f6d5ba179d5ead3e967"
+    ],
+    "text": "91520d105c0e0f6d5ba179d5ead3e967",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[3]/w:tr[1]/w:tc/w:p/w:commentRangeStart",
+        "paragraph_index": 103,
+        "paragraph_text": ""
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[3]/w:tr[1]/w:tc/w:p/w:commentRangeEnd",
+        "paragraph_index": 103,
+        "paragraph_text": ""
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[3]/w:tr[1]/w:tc/w:p/w:r[2]/w:commentReference",
+        "paragraph_index": 103,
+        "paragraph_text": ""
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "9",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "9",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T16:05:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "e0cfe7f6aea62f117cf2b595798c4324"
+    ],
+    "text": "e0cfe7f6aea62f117cf2b595798c4324",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[1]/w:tc/w:p/w:commentRangeStart",
+        "paragraph_index": 107,
+        "paragraph_text": ""
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[1]/w:tc/w:p/w:commentRangeEnd",
+        "paragraph_index": 107,
+        "paragraph_text": ""
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[4]/w:tr[1]/w:tc/w:p/w:r[2]/w:commentReference",
+        "paragraph_index": 107,
+        "paragraph_text": ""
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "10",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "10",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T16:05:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "d52ba93e0421174d3b64b3d6ef25129c"
+    ],
+    "text": "d52ba93e0421174d3b64b3d6ef25129c",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[5]/w:tr[1]/w:tc/w:p/w:commentRangeStart",
+        "paragraph_index": 112,
+        "paragraph_text": ""
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[5]/w:tr[1]/w:tc/w:p/w:commentRangeEnd",
+        "paragraph_index": 112,
+        "paragraph_text": ""
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[5]/w:tr[1]/w:tc/w:p/w:r[1]/w:commentReference",
+        "paragraph_index": 112,
+        "paragraph_text": ""
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "11",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "11",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T16:05:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "63d63c7f35aeb29aa0e02d81f09c3157"
+    ],
+    "text": "63d63c7f35aeb29aa0e02d81f09c3157",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[6]/w:tr[1]/w:tc/w:p/w:commentRangeStart",
+        "paragraph_index": 115,
+        "paragraph_text": ""
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[6]/w:tr[1]/w:tc/w:p/w:commentRangeEnd",
+        "paragraph_index": 115,
+        "paragraph_text": ""
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[6]/w:tr[1]/w:tc/w:p/w:r[1]/w:commentReference",
+        "paragraph_index": 115,
+        "paragraph_text": ""
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "12",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "12",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-05T16:13:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "d8e57e692fd29447706bec5885daebf3"
+    ],
+    "text": "d8e57e692fd29447706bec5885daebf3",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[7]/w:tr[1]/w:tc/w:p/w:commentRangeStart",
+        "paragraph_index": 119,
+        "paragraph_text": ""
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[7]/w:tr[1]/w:tc/w:p/w:commentRangeEnd",
+        "paragraph_index": 119,
+        "paragraph_text": ""
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:tbl[7]/w:tr[1]/w:tc/w:p/w:r[2]/w:commentReference",
+        "paragraph_index": 119,
+        "paragraph_text": ""
+      }
+    ],
+    "decision": "not_reviewed"
+  },
+  {
+    "original_comment_id": "14",
+    "attributes": {
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id": "14",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}author": "Алексей Евдаков",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}date": "2025-10-12T21:10:00Z",
+      "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}initials": "АЕ"
+    },
+    "paragraphs": [
+      "ПОПРАВИТЬ!"
+    ],
+    "text": "ПОПРАВИТЬ!",
+    "anchors": [
+      {
+        "kind": "commentRangeStart",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[77]/w:commentRangeStart",
+        "paragraph_index": 130,
+        "paragraph_text": "Список литературы"
+      },
+      {
+        "kind": "commentRangeEnd",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[77]/w:commentRangeEnd",
+        "paragraph_index": 130,
+        "paragraph_text": "Список литературы"
+      },
+      {
+        "kind": "commentReference",
+        "story_part": "word/document.xml",
+        "locator": "/w:document/w:body/w:p[77]/w:r[3]/w:commentReference",
+        "paragraph_index": 130,
+        "paragraph_text": "Список литературы"
+      }
+    ],
+    "decision": "not_reviewed"
+  }
+]

@@ -1,0 +1,4166 @@
+{
+  "source_id": "DISS-005",
+  "source_sha256": "50516d7832e6ea133d77b11b48802c4ed1929283ea7601134b878fab0e0338f7",
+  "total_entries": 136,
+  "entries_with_citations": 85,
+  "uncited_entries": 51,
+  "placeholders_count": 11,
+  "subheadings_count": 1,
+  "entries": [
+    {
+      "entry_num": 1,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2085",
+      "key": "bavr_bib_001_shabad_2003",
+      "aliases": [
+        "bib:001",
+        "bavr:001"
+      ],
+      "kind": "reference",
+      "entry_type": "book",
+      "language": "russian",
+      "raw_source": "Шабад М. А. Расчеты релейной защиты и автоматики распределительных сетей: Монография / М. А. Шабад. - 4-е изд., перераб. и доп. - СПб.: ПЭИПК, 2003 - 350 стр., ил.",
+      "parsed_fields": {
+        "title": "Расчеты релейной защиты и автоматики распределительных сетей : Монография",
+        "authors": "Шабад М. А.",
+        "year": "2003",
+        "language": "russian",
+        "journal": null,
+        "booktitle": null,
+        "publisher": "М. А. Шабад. - 4-е изд., перераб. и доп. - СПб.: ПЭИПК, 2003 - 350 стр., ил.",
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0001",
+          "block_id": "DISS-005-B0208",
+          "raw_citation": "[1,2]",
+          "cited_number": 1
+        }
+      ],
+      "comments": [
+        {
+          "issue_id": "DISS-005-C0137",
+          "author": "Евдаков Алексей",
+          "text": "Надо будет по всем пройтись, перевести на русский, те, которые наши",
+          "quote": "Шабад "
+        }
+      ]
+    },
+    {
+      "entry_num": 2,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2086",
+      "key": "bavr_bib_002_sto_2020",
+      "aliases": [
+        "bib:002",
+        "bavr:002"
+      ],
+      "kind": "reference",
+      "entry_type": "standard",
+      "language": "russian",
+      "raw_source": "СТО 56947007-29.120.70.305-2020 Методические указания для выбора параметров настройки и срабатывания МП устройств РЗА оборудования 6-35 кВ объектов ЕНЭС (Дата введения: 15.05.2020), ПАО «ФСК ЕЭС",
+      "parsed_fields": {
+        "title": "СТО 56947007-29.120.70.305-2020 Методические указания для выбора параметров настройки и срабатывания МП устройств РЗА оборудования 6-35 кВ объектов ЕНЭС (Дата введения: 15.05.2020), ПАО «ФСК ЕЭС",
+        "authors": null,
+        "year": "2020",
+        "language": "russian",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0001",
+          "block_id": "DISS-005-B0208",
+          "raw_citation": "[1,2]",
+          "cited_number": 2
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 3,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2087",
+      "key": "bavr_bib_003_operating_2023",
+      "aliases": [
+        "bib:003",
+        "bavr:003"
+      ],
+      "kind": "reference",
+      "entry_type": "manual",
+      "language": "english",
+      "raw_source": "Operating manual. General technical requirements. Complete device SHE-APS-FABT automation cabinet for fast automatic bus transfer in networks 6÷35 kV / APDL.656435003 RE ed. 3 from 08/31/2023, 44p,.",
+      "parsed_fields": {
+        "title": "Operating manual. General technical requirements. Complete device SHE-APS-FABT automation cabinet for fast automatic bus transfer in networks 6÷35 kV / APDL.656435003 RE ed. 3 from 08/31/2023, 44p,.",
+        "authors": null,
+        "year": "2023",
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": "44"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0002",
+          "block_id": "DISS-005-B0210",
+          "raw_citation": "[3-9]",
+          "cited_number": 3
+        },
+        {
+          "cite_id": "DISS-005-CITE-0013",
+          "block_id": "DISS-005-B0659",
+          "raw_citation": "[3,4]",
+          "cited_number": 3
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 4,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2088",
+      "key": "bavr_bib_004_operating_2024",
+      "aliases": [
+        "bib:004",
+        "bavr:004"
+      ],
+      "kind": "reference",
+      "entry_type": "manual",
+      "language": "english",
+      "raw_source": "Operating manual. Operator's manual. Microprocessor-based device Fast Automatic Bus Transfer with Restoration of Normal power supply Mode FABT «MIR» / APDL.656121003 RE2 ed. 1 from 07/10/2024, 214p.",
+      "parsed_fields": {
+        "title": "Operating manual. Operator's manual. Microprocessor-based device Fast Automatic Bus Transfer with Restoration of Normal power supply Mode FABT «MIR» / APDL.656121003 RE2 ed. 1 from 07/10/2024, 214p.",
+        "authors": null,
+        "year": "2024",
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": "214"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0002",
+          "block_id": "DISS-005-B0210",
+          "raw_citation": "[3-9]",
+          "cited_number": 4
+        },
+        {
+          "cite_id": "DISS-005-CITE-0007",
+          "block_id": "DISS-005-B0233",
+          "raw_citation": "[4]",
+          "cited_number": 4
+        },
+        {
+          "cite_id": "DISS-005-CITE-0008",
+          "block_id": "DISS-005-B0303",
+          "raw_citation": "[4]",
+          "cited_number": 4
+        },
+        {
+          "cite_id": "DISS-005-CITE-0013",
+          "block_id": "DISS-005-B0659",
+          "raw_citation": "[3,4]",
+          "cited_number": 4
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 5,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2089",
+      "key": "bavr_bib_005_phadke_2009",
+      "aliases": [
+        "bib:005",
+        "bavr:005"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "english",
+      "raw_source": "Phadke, Arun G., and James S. Thorp. Computer relaying for power systems. John Wiley & Sons, 2009.",
+      "parsed_fields": {
+        "title": "Phadke, Arun G., and James S. Thorp. Computer relaying for power systems. John Wiley & Sons, 2009.",
+        "authors": null,
+        "year": "2009",
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0002",
+          "block_id": "DISS-005-B0210",
+          "raw_citation": "[3-9]",
+          "cited_number": 5
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 6,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2090",
+      "key": "bavr_bib_006_the_1988",
+      "aliases": [
+        "bib:006",
+        "bavr:006"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "english",
+      "raw_source": "The BE8302M type fast automatic bus transfer (Developed in 1988)",
+      "parsed_fields": {
+        "title": "The BE8302M type fast automatic bus transfer (Developed in 1988)",
+        "authors": null,
+        "year": "1988",
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0002",
+          "block_id": "DISS-005-B0210",
+          "raw_citation": "[3-9]",
+          "cited_number": 6
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 7,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2091",
+      "key": "bavr_bib_007_the_nd",
+      "aliases": [
+        "bib:007",
+        "bavr:007"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "english",
+      "raw_source": "The BMRZ-156-TAVR-01 type fast automatic bus transfer",
+      "parsed_fields": {
+        "title": "The BMRZ-156-TAVR-01 type fast automatic bus transfer",
+        "authors": null,
+        "year": null,
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0002",
+          "block_id": "DISS-005-B0210",
+          "raw_citation": "[3-9]",
+          "cited_number": 7
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 8,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2092",
+      "key": "bavr_bib_008_instruction_nd",
+      "aliases": [
+        "bib:008",
+        "bavr:008"
+      ],
+      "kind": "reference",
+      "entry_type": "manual",
+      "language": "english",
+      "raw_source": "Instruction Book: Digital Motor Bus Transfer System M‑4272. (Manufactured by: Beckwith Electric, USA)",
+      "parsed_fields": {
+        "title": "Instruction Book: Digital Motor Bus Transfer System M‑4272. (Manufactured by: Beckwith Electric, USA)",
+        "authors": null,
+        "year": null,
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0002",
+          "block_id": "DISS-005-B0210",
+          "raw_citation": "[3-9]",
+          "cited_number": 8
+        },
+        {
+          "cite_id": "DISS-005-CITE-0003",
+          "block_id": "DISS-005-B0210",
+          "raw_citation": "[8, 9]",
+          "cited_number": 8
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 9,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2093",
+      "key": "bavr_bib_009_instruction_nd",
+      "aliases": [
+        "bib:009",
+        "bavr:009"
+      ],
+      "kind": "reference",
+      "entry_type": "manual",
+      "language": "english",
+      "raw_source": "Instruction Book: SUE 3000 High Speed Transfer System HSTS. (Manufactured in Germany)",
+      "parsed_fields": {
+        "title": "Instruction Book: SUE 3000 High Speed Transfer System HSTS. (Manufactured in Germany)",
+        "authors": null,
+        "year": null,
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0002",
+          "block_id": "DISS-005-B0210",
+          "raw_citation": "[3-9]",
+          "cited_number": 9
+        },
+        {
+          "cite_id": "DISS-005-CITE-0003",
+          "block_id": "DISS-005-B0210",
+          "raw_citation": "[8, 9]",
+          "cited_number": 9
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 10,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2094",
+      "key": "bavr_bib_010_kundur_2007",
+      "aliases": [
+        "bib:010",
+        "bavr:010"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "Kundur, Prabha. \"Power system stability.\" Power system stability and control 10 (2007): 7-1.",
+      "parsed_fields": {
+        "title": "Power system stability.",
+        "authors": "Kundur, Prabha",
+        "year": "2007",
+        "language": "english",
+        "journal": "Power system stability and control 10 (2007): 7-1.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0004",
+          "block_id": "DISS-005-B0225",
+          "raw_citation": "[10, 11]",
+          "cited_number": 10
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 11,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2095",
+      "key": "bavr_bib_011_nikulov_2012",
+      "aliases": [
+        "bib:011",
+        "bavr:011"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "russian",
+      "raw_source": "Никулов И.И., Жуков В.А., Пупин В.М.. Комплекс БАВР. Быстродействие повышает надежность электроснабжения // Новости ЭлектроТехники № 4(76) 2012. С. 2–4.",
+      "parsed_fields": {
+        "title": "И.И., Жуков В.А., Пупин В.М.. Комплекс БАВР. Быстродействие повышает надежность электроснабжения",
+        "authors": "Никулов",
+        "year": "2012",
+        "language": "russian",
+        "journal": "Новости ЭлектроТехники № 4(76) 2012. С. 2–4.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "2–4"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0004",
+          "block_id": "DISS-005-B0225",
+          "raw_citation": "[10, 11]",
+          "cited_number": 11
+        },
+        {
+          "cite_id": "DISS-005-CITE-0005",
+          "block_id": "DISS-005-B0233",
+          "raw_citation": "[11]",
+          "cited_number": 11
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 12,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2096",
+      "key": "bavr_bib_012_a_2020",
+      "aliases": [
+        "bib:012",
+        "bavr:012"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "A.Yu.Sulchakova, “Testing of industrial samples of devices for fast automatic bus transfer (FABT) for oil pumping stations on RTDS. Development of a test scheme for testing FABT devices on RTDS,” dokl. at the meeting of JSC \"STC UES\" 2020, unpublished",
+      "parsed_fields": {
+        "title": "Testing of industrial samples of devices for fast automatic bus transfer (FABT) for oil pumping stations on RTDS. Development of a test scheme for testing FABT devices on RTDS,",
+        "authors": "A.Yu.Sulchakova",
+        "year": "2020",
+        "language": "english",
+        "journal": "dokl. at the meeting of JSC \"STC UES\" 2020, unpublished",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0006",
+          "block_id": "DISS-005-B0233",
+          "raw_citation": "[12]",
+          "cited_number": 12
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 13,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2097",
+      "key": "bavr_bib_013_a_2016",
+      "aliases": [
+        "bib:013",
+        "bavr:013"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "A.A Yablokov, “Development and research of a primary voltage converter measuring transformer for a 110-220 kV digital substation”, dis. cand. those., Sciences: 05.14.02, 2016., 237 p.",
+      "parsed_fields": {
+        "title": "Development and research of a primary voltage converter measuring transformer for a 110-220 kV digital substation",
+        "authors": "A.A Yablokov",
+        "year": "2016",
+        "language": "english",
+        "journal": "dis. cand. those., Sciences: 05.14.02, 2016., 237 p.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "237"
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 14,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2098",
+      "key": "bavr_bib_014_oppenheim_1997",
+      "aliases": [
+        "bib:014",
+        "bavr:014"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "english",
+      "raw_source": "Oppenheim, Alan V., Alan S. Willsky, and Syed Hamid Nawab. Signals & systems. Pearson Educación, 1997.",
+      "parsed_fields": {
+        "title": "Oppenheim, Alan V., Alan S. Willsky, and Syed Hamid Nawab. Signals & systems. Pearson Educación, 1997.",
+        "authors": null,
+        "year": "1997",
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 15,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2099",
+      "key": "bavr_bib_015_hrbac_2020",
+      "aliases": [
+        "bib:015",
+        "bavr:015"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "Hrbac, Roman, et al. \"A development of a capacitive voltage divider for high voltage measurement as part of a combined current and voltage sensor.\" Elektronika ir Elektrotechnika 26.4 (2020): 25-31.",
+      "parsed_fields": {
+        "title": "A development of a capacitive voltage divider for high voltage measurement as part of a combined current and voltage sensor.",
+        "authors": "Hrbac, Roman, et al",
+        "year": "2020",
+        "language": "english",
+        "journal": "Elektronika ir Elektrotechnika 26.4 (2020): 25-31.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 16,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2100",
+      "key": "bavr_bib_016_kuhnke_2023",
+      "aliases": [
+        "bib:016",
+        "bavr:016"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "Kuhnke, Tobias, et al. \"Frequency analysis of a novel 10 kV RC voltage divider module composed of SMD-components on printed circuit boards.\" 2023 IEEE Belgrade PowerTech. IEEE, 2023.",
+      "parsed_fields": {
+        "title": "Frequency analysis of a novel 10 kV RC voltage divider module composed of SMD-components on printed circuit boards.",
+        "authors": "Kuhnke, Tobias, et al",
+        "year": "2023",
+        "language": "english",
+        "journal": "2023 IEEE Belgrade PowerTech. IEEE, 2023.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 17,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2101",
+      "key": "bavr_bib_017_kaczmarek_2024",
+      "aliases": [
+        "bib:017",
+        "bavr:017"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "Kaczmarek, Michal, and Slawomir Wiak. \"Applicability of Combined Transducers for Distorted Current Metering in Electrical Substations.\" Energies 17.22 (2024): 5738.",
+      "parsed_fields": {
+        "title": "Applicability of Combined Transducers for Distorted Current Metering in Electrical Substations.",
+        "authors": "Kaczmarek, Michal, and Slawomir Wiak",
+        "year": "2024",
+        "language": "english",
+        "journal": "Energies 17.22 (2024): 5738.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 18,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2102",
+      "key": "bavr_bib_018_kuhnke_2023",
+      "aliases": [
+        "bib:018",
+        "bavr:018"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "Kuhnke, Tobias, et al. \"Frequency analysis of a novel 10 kV RC voltage divider module composed of SMD-components on printed circuit boards.\" 2023 IEEE Belgrade PowerTech. IEEE, 2023.",
+      "parsed_fields": {
+        "title": "Frequency analysis of a novel 10 kV RC voltage divider module composed of SMD-components on printed circuit boards.",
+        "authors": "Kuhnke, Tobias, et al",
+        "year": "2023",
+        "language": "english",
+        "journal": "2023 IEEE Belgrade PowerTech. IEEE, 2023.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 19,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2103",
+      "key": "bavr_bib_019_li_2011",
+      "aliases": [
+        "bib:019",
+        "bavr:019"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "Li, You, et al. \"Study on methods of reduce resistive voltage dividers' phase shift.\" IEEE 2011 10th International Conference on Electronic Measurement & Instruments. Vol. 3. IEEE, 2011.",
+      "parsed_fields": {
+        "title": "Study on methods of reduce resistive voltage dividers' phase shift.",
+        "authors": "Li, You, et al",
+        "year": "2011",
+        "language": "english",
+        "journal": null,
+        "booktitle": "IEEE 2011 10th International Conference on Electronic Measurement & Instruments. Vol. 3. IEEE, 2011.",
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 20,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2104",
+      "key": "bavr_bib_020_grechukhin_2006",
+      "aliases": [
+        "bib:020",
+        "bavr:020"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "Grechukhin, V. N. \"Electronic current and voltage transformers. state prospects of development and implementation of 110–750 k V stations and substations of power systems on the ORU.\" Vestnik IGEU 4 (2006): 1-9.",
+      "parsed_fields": {
+        "title": "Electronic current and voltage transformers. state prospects of development and implementation of 110–750 k V stations and substations of power systems on the ORU.",
+        "authors": "Grechukhin, V. N",
+        "year": "2006",
+        "language": "english",
+        "journal": "Vestnik IGEU 4 (2006): 1-9.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 21,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2105",
+      "key": "bavr_bib_021_k_2013",
+      "aliases": [
+        "bib:021",
+        "bavr:021"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "K.A. Klimenko, “Study of the electromagnetic field of industrial frequency transformers with short-circuited turns,” dis. cand. those., Sciences: 09/05/01: protected 12/25/13: approved. 05.05.12, 2013., 157 p.",
+      "parsed_fields": {
+        "title": "Study of the electromagnetic field of industrial frequency transformers with short-circuited turns,",
+        "authors": "K.A. Klimenko",
+        "year": "2013",
+        "language": "english",
+        "journal": "dis. cand. those., Sciences: 09/05/01: protected 12/25/13: approved. 05.05.12, 2013., 157 p.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "157"
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 22,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2106",
+      "key": "bavr_bib_022_s_2020",
+      "aliases": [
+        "bib:022",
+        "bavr:022"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "S.L. Kuzhekov, A.A. Degtyarev, N.A. Doni, A.A. Shurupov, “On the problem of selecting and replacing current transformers for relay protection devices,” News of universities. Electromechanics. 2020. T. 63. No. 6 - pp. 72-82",
+      "parsed_fields": {
+        "title": "On the problem of selecting and replacing current transformers for relay protection devices,",
+        "authors": "S.L. Kuzhekov, A.A. Degtyarev, N.A. Doni, A.A. Shurupov",
+        "year": "2020",
+        "language": "english",
+        "journal": "News of universities. Electromechanics. 2020. T. 63. No. 6 - pp. 72-82",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "72-82"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0018",
+          "block_id": "DISS-005-B0855",
+          "raw_citation": "[22]",
+          "cited_number": 22
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 23,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2107",
+      "key": "bavr_bib_023_chothani_2014",
+      "aliases": [
+        "bib:023",
+        "bavr:023"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "Chothani, Nilesh G., and Bhavesh R. Bhalja. \"New algorithm for current transformer saturation detection and compensation based on derivatives of secondary currents and Newton's backward difference formulae.\" IET Generation, Transmission & Distribution 8.5 (2014): 841-850.",
+      "parsed_fields": {
+        "title": "New algorithm for current transformer saturation detection and compensation based on derivatives of secondary currents and Newton's backward difference formulae.",
+        "authors": "Chothani, Nilesh G., and Bhavesh R. Bhalja",
+        "year": "2014",
+        "language": "english",
+        "journal": "IET Generation, Transmission & Distribution 8.5 (2014): 841-850.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 24,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2108",
+      "key": "bavr_bib_024_operating_nd",
+      "aliases": [
+        "bib:024",
+        "bavr:024"
+      ],
+      "kind": "reference",
+      "entry_type": "manual",
+      "language": "english",
+      "raw_source": "Operating manual for switchgear TER_Sec10_Etalon_T1, Version 5.0 – 102p.",
+      "parsed_fields": {
+        "title": "Operating manual for switchgear TER_Sec10_Etalon_T1, Version 5.0 – 102p.",
+        "authors": null,
+        "year": null,
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": "102"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0017",
+          "block_id": "DISS-005-B0821",
+          "raw_citation": "[24]",
+          "cited_number": 24
+        },
+        {
+          "cite_id": "DISS-005-CITE-0021",
+          "block_id": "DISS-005-B1319",
+          "raw_citation": "[24]",
+          "cited_number": 24
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 25,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2109",
+      "key": "bavr_bib_025_sheng_2014",
+      "aliases": [
+        "bib:025",
+        "bavr:025"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "Sheng, Zhang Zhou, Bao Han, and Ma Ai Qing. \"The analysis of the factors affecting the performance of Clamp Rogowski coil.\" 2014 International conference on power system technology. IEEE, 2014.",
+      "parsed_fields": {
+        "title": "The analysis of the factors affecting the performance of Clamp Rogowski coil.",
+        "authors": "Sheng, Zhang Zhou, Bao Han, and Ma Ai Qing",
+        "year": "2014",
+        "language": "english",
+        "journal": null,
+        "booktitle": "2014 International conference on power system technology. IEEE, 2014.",
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0020",
+          "block_id": "DISS-005-B1297",
+          "raw_citation": "[25]",
+          "cited_number": 25
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 26,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2110",
+      "key": "bavr_bib_026_suomalainen_2008",
+      "aliases": [
+        "bib:026",
+        "bavr:026"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "Suomalainen, Esa-Pekka, and Jari K. Hallstrom. \"Onsite calibration of a current transformer using a Rogowski coil.\" IEEE Transactions on instrumentation and measurement 58.4 (2008): 1054-1058.",
+      "parsed_fields": {
+        "title": "Onsite calibration of a current transformer using a Rogowski coil.",
+        "authors": "Suomalainen, Esa-Pekka, and Jari K. Hallstrom",
+        "year": "2008",
+        "language": "english",
+        "journal": "IEEE Transactions on instrumentation and measurement 58.4 (2008): 1054-1058.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 27,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2111",
+      "key": "bavr_bib_027_huangfu_2024",
+      "aliases": [
+        "bib:027",
+        "bavr:027"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "Huangfu, Youpeng, et al. \"Transient Performance Characterization for a Shielded Rogowski Coil Based Low Power Current Transformer.\" 2024 IEEE 21st Biennial Conference on Electromagnetic Field Computation (CEFC). IEEE, 2024.",
+      "parsed_fields": {
+        "title": "Transient Performance Characterization for a Shielded Rogowski Coil Based Low Power Current Transformer.",
+        "authors": "Huangfu, Youpeng, et al",
+        "year": "2024",
+        "language": "english",
+        "journal": null,
+        "booktitle": "2024 IEEE 21st Biennial Conference on Electromagnetic Field Computation (CEFC). IEEE, 2024.",
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 28,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2112",
+      "key": "bavr_bib_028_gong_2025",
+      "aliases": [
+        "bib:028",
+        "bavr:028"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "Gong, Jiakun, et al. \"Overcurrent Protection Enabled by Broadband Rogowski Coil Current Sensor for Medium Voltage SiC MOSFET.\" IEEE Transactions on Power Electronics (2025).",
+      "parsed_fields": {
+        "title": "Overcurrent Protection Enabled by Broadband Rogowski Coil Current Sensor for Medium Voltage SiC MOSFET.",
+        "authors": "Gong, Jiakun, et al",
+        "year": "2025",
+        "language": "english",
+        "journal": "IEEE Transactions on Power Electronics (2025).",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 29,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2113",
+      "key": "bavr_bib_029_m_2024",
+      "aliases": [
+        "bib:029",
+        "bavr:029"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "Mühlthaler, Johannes, Bastian Lehner, and Andreas Reeh. \"Detection of Inter-Turn Short-Circuits in Permanent Magnet Machines Based on Rogowski & Search Coil Based Monitoring.\" 2024 International Conference on Electrical Machines (ICEM). IEEE, 2024.",
+      "parsed_fields": {
+        "title": "Detection of Inter-Turn Short-Circuits in Permanent Magnet Machines Based on Rogowski & Search Coil Based Monitoring.",
+        "authors": "Mühlthaler, Johannes, Bastian Lehner, and Andreas Reeh",
+        "year": "2024",
+        "language": "english",
+        "journal": null,
+        "booktitle": "2024 International Conference on Electrical Machines (ICEM). IEEE, 2024.",
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 30,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2114",
+      "key": "bavr_bib_030_kishore_2024",
+      "aliases": [
+        "bib:030",
+        "bavr:030"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "Kishore, PT Nandh, Sumit Kumar Pramanick, and Soumya Shubhra Nag. \"Analytical Modelling of Fault Transient in a GaN HEMT Half Bridge and its Overcurrent Protection with PCB Embedded Rogowski Coils.\" IEEE Transactions on Industry Applications (2024).",
+      "parsed_fields": {
+        "title": "Analytical Modelling of Fault Transient in a GaN HEMT Half Bridge and its Overcurrent Protection with PCB Embedded Rogowski Coils.",
+        "authors": "Kishore, PT Nandh, Sumit Kumar Pramanick, and Soumya Shubhra Nag",
+        "year": "2024",
+        "language": "english",
+        "journal": "IEEE Transactions on Industry Applications (2024).",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 31,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2115",
+      "key": "bavr_bib_031_sun_2024",
+      "aliases": [
+        "bib:031",
+        "bavr:031"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "Sun, Hongyu, Songling Huang, and Lisha Peng. \"High-Current Sensing Technology for Transparent Power Grids: a Review.\" IEEE Open Journal of the Industrial Electronics Society (2024).",
+      "parsed_fields": {
+        "title": "High-Current Sensing Technology for Transparent Power Grids: a Review.",
+        "authors": "Sun, Hongyu, Songling Huang, and Lisha Peng",
+        "year": "2024",
+        "language": "english",
+        "journal": "IEEE Open Journal of the Industrial Electronics Society (2024).",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 32,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2116",
+      "key": "bavr_bib_032_lebedev_2023",
+      "aliases": [
+        "bib:032",
+        "bavr:032"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "Lebedev, Vladimir, Galina Filatova, and Natalya Kuzmina. \"Improvement of the Primary Current Converter as Part of Devices Installed on the Wires of 6–10 Kv Overhead Power Lines for Electricity Metering and Relay Protection.\" 2023 International Ural Conference on Electrical Power Engineering (UralCon). IEEE, 2023.",
+      "parsed_fields": {
+        "title": "Improvement of the Primary Current Converter as Part of Devices Installed on the Wires of 6–10 Kv Overhead Power Lines for Electricity Metering and Relay Protection.",
+        "authors": "Lebedev, Vladimir, Galina Filatova, and Natalya Kuzmina",
+        "year": "2023",
+        "language": "english",
+        "journal": null,
+        "booktitle": "2023 International Ural Conference on Electrical Power Engineering (UralCon). IEEE, 2023.",
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 33,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2117",
+      "key": "bavr_bib_033_evdakov_2024",
+      "aliases": [
+        "bib:033",
+        "bavr:033"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "Evdakov Aleksey, Andrey Yablokov, and Galina Filatova. \"Investigation of the Use of Rogovsky Coils for Fast Automatic Bus Transfer.\" 2024 6th International Youth Conference on Radio Electronics, Electrical and Power Engineering (REEPE). IEEE, 2024.",
+      "parsed_fields": {
+        "title": "Investigation of the Use of Rogovsky Coils for Fast Automatic Bus Transfer.",
+        "authors": "Evdakov Aleksey, Andrey Yablokov, and Galina Filatova",
+        "year": "2024",
+        "language": "english",
+        "journal": null,
+        "booktitle": "2024 6th International Youth Conference on Radio Electronics, Electrical and Power Engineering (REEPE). IEEE, 2024.",
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0016",
+          "block_id": "DISS-005-B0796",
+          "raw_citation": "[33]",
+          "cited_number": 33
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 34,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2118",
+      "key": "bavr_bib_034_evdakov_2024",
+      "aliases": [
+        "bib:034",
+        "bavr:034"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "Evdakov, Aleksey, Andrey Yablokov, and Galina Filatova. \"Investigation of the Use of Rogowski Coils for Power Direction Relays in Fast Automatic Bus Transfer.\" 2024 International Conference on Industrial Engineering, Applications and Manufacturing (ICIEAM). IEEE, 2024.",
+      "parsed_fields": {
+        "title": "Investigation of the Use of Rogowski Coils for Power Direction Relays in Fast Automatic Bus Transfer.",
+        "authors": "Evdakov, Aleksey, Andrey Yablokov, and Galina Filatova",
+        "year": "2024",
+        "language": "english",
+        "journal": null,
+        "booktitle": "2024 International Conference on Industrial Engineering, Applications and Manufacturing (ICIEAM). IEEE, 2024.",
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 35,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2119",
+      "key": "bavr_bib_035_a_2008",
+      "aliases": [
+        "bib:035",
+        "bavr:035"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "english",
+      "raw_source": "A.A.Zhukov “Improving the efficiency of fast ABT for substations with electric motor load”: dis. ... candidate of Technical Sciences : 05.09.03; Moscow, 2008 - 167 p.",
+      "parsed_fields": {
+        "title": "A.A.Zhukov “Improving the efficiency of fast ABT for substations with electric motor load”: dis. ... candidate of Technical Sciences : 05.09.03; Moscow, 2008 - 167 p.",
+        "authors": null,
+        "year": "2008",
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": "167"
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 36,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2120",
+      "key": "bavr_bib_036_proakis_2001",
+      "aliases": [
+        "bib:036",
+        "bavr:036"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "english",
+      "raw_source": "Proakis, John G. Digital signal processing: principles algorithms and applications. Pearson Education India, 2001.",
+      "parsed_fields": {
+        "title": "Proakis, John G. Digital signal processing: principles algorithms and applications. Pearson Education India, 2001.",
+        "authors": null,
+        "year": "2001",
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0019",
+          "block_id": "DISS-005-B0863",
+          "raw_citation": "[36, 37]",
+          "cited_number": 36
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 37,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2121",
+      "key": "bavr_bib_037_oppenheim_1999",
+      "aliases": [
+        "bib:037",
+        "bavr:037"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "english",
+      "raw_source": "Oppenheim, Alan V. Discrete-time signal processing. Pearson Education India, 1999.",
+      "parsed_fields": {
+        "title": "Oppenheim, Alan V. Discrete-time signal processing. Pearson Education India, 1999.",
+        "authors": null,
+        "year": "1999",
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0019",
+          "block_id": "DISS-005-B0863",
+          "raw_citation": "[36, 37]",
+          "cited_number": 37
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 38,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2122",
+      "key": "bavr_bib_038_harris_1978",
+      "aliases": [
+        "bib:038",
+        "bavr:038"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "Harris, Fredric J. \"On the use of windows for harmonic analysis with the discrete Fourier transform.\" Proceedings of the IEEE 66.1 (1978): 51-83.",
+      "parsed_fields": {
+        "title": "On the use of windows for harmonic analysis with the discrete Fourier transform.",
+        "authors": "Harris, Fredric J",
+        "year": "1978",
+        "language": "english",
+        "journal": null,
+        "booktitle": "Proceedings of the IEEE 66.1 (1978): 51-83.",
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 39,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2123",
+      "key": "bavr_bib_039_prabhu_2014",
+      "aliases": [
+        "bib:039",
+        "bavr:039"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "english",
+      "raw_source": "Prabhu, KM Muraleedhara. Window functions and their applications in signal processing. Taylor & Francis, 2014.",
+      "parsed_fields": {
+        "title": "Prabhu, KM Muraleedhara. Window functions and their applications in signal processing. Taylor & Francis, 2014.",
+        "authors": null,
+        "year": "2014",
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 40,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2124",
+      "key": "bavr_bib_040_sto_2012",
+      "aliases": [
+        "bib:040",
+        "bavr:040"
+      ],
+      "kind": "reference",
+      "entry_type": "standard",
+      "language": "russian",
+      "raw_source": "СТО 59012820.29.020.002-2012. Стандарт организации. Релейная защита и автоматика. Взаимодействие субъектов электроэнергетики, потребителей электрической энергии при создании (модернизации) и организации эксплуатации. – Текст : непосредственный",
+      "parsed_fields": {
+        "title": "СТО 59012820.29.020.002-2012. Стандарт организации. Релейная защита и автоматика. Взаимодействие субъектов электроэнергетики, потребителей электрической энергии при создании (модернизации) и организации эксплуатации. – Текст : непосредственный",
+        "authors": null,
+        "year": "2012",
+        "language": "russian",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0022",
+          "block_id": "DISS-005-B1394",
+          "raw_citation": "[40, 41]",
+          "cited_number": 40
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 41,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2125",
+      "key": "bavr_bib_041_sto_2009",
+      "aliases": [
+        "bib:041",
+        "bavr:041"
+      ],
+      "kind": "reference",
+      "entry_type": "standard",
+      "language": "russian",
+      "raw_source": "СТО 56947007-29.240.10.028-2009. «Нормы технологического проектирования подстанций переменного тока с высшим напряжением 35-750 кВ». Москва. «Издательство НЦ ЭНАС». 2009;",
+      "parsed_fields": {
+        "title": "СТО 56947007-29.240.10.028-2009. «Нормы технологического проектирования подстанций переменного тока с высшим напряжением 35-750 кВ». Москва. «Издательство НЦ ЭНАС». 2009;",
+        "authors": null,
+        "year": "2009",
+        "language": "russian",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0022",
+          "block_id": "DISS-005-B1394",
+          "raw_citation": "[40, 41]",
+          "cited_number": 41
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 42,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2126",
+      "key": "bavr_bib_042_pravila_2002",
+      "aliases": [
+        "bib:042",
+        "bavr:042"
+      ],
+      "kind": "reference",
+      "entry_type": "standard",
+      "language": "russian",
+      "raw_source": "Правила устройства электроустановок ПУЭ. - 7-е изд. Глава 3.3 Автоматика и телемеханика. Автоматическое включение резервного питания и оборудования (АВР) – М.: Энергоатомиздат, 2002. – 648 с",
+      "parsed_fields": {
+        "title": "Правила устройства электроустановок ПУЭ. - 7-е изд. Глава 3.3 Автоматика и телемеханика. Автоматическое включение резервного питания и оборудования (АВР) – М.: Энергоатомиздат, 2002. – 648 с",
+        "authors": null,
+        "year": "2002",
+        "language": "russian",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0023",
+          "block_id": "DISS-005-B1405",
+          "raw_citation": "[42]",
+          "cited_number": 42
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 43,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2127",
+      "key": "bavr_bib_043_rukovodstvo_2024",
+      "aliases": [
+        "bib:043",
+        "bavr:043"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "russian",
+      "raw_source": "Руководство эксплуатации. Микропроцессорное устройство быстродействующего автоматического ввода резерва с восстановлением нормального режима электроснабжения БАВР «МИР»/ АПДЛ.656121003 РЭ2. Редакция №2 от 10.07.2024, 217 с",
+      "parsed_fields": {
+        "title": "Руководство эксплуатации. Микропроцессорное устройство быстродействующего автоматического ввода резерва с восстановлением нормального режима электроснабжения БАВР «МИР»/ АПДЛ.656121003 РЭ2. Редакция №2 от 10.07.2024, 217 с",
+        "authors": null,
+        "year": "2024",
+        "language": "russian",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0024",
+          "block_id": "DISS-005-B1416",
+          "raw_citation": "[43]",
+          "cited_number": 43
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 44,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2128",
+      "key": "bavr_bib_044_rukovodstvo_2017",
+      "aliases": [
+        "bib:044",
+        "bavr:044"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "russian",
+      "raw_source": "Руководство по эксплуатации. БПВА.656121.007 РЭ, Реле автоматического ввода резерва «Сириус-АВР», редакция 1.02 от 08.12.2017, - 63 с.",
+      "parsed_fields": {
+        "title": "Руководство по эксплуатации. БПВА.656121.007 РЭ, Реле автоматического ввода резерва «Сириус-АВР», редакция 1.02 от 08.12.2017, - 63 с.",
+        "authors": null,
+        "year": "2017",
+        "language": "russian",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 45,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2129",
+      "key": "bavr_bib_045_rukovodstvo_2021",
+      "aliases": [
+        "bib:045",
+        "bavr:045"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "russian",
+      "raw_source": "Руководство по эксплуатации. ДИВГ.648228.082-12.01 РЭ, Блок микропроцессорный релейной защиты БМРЗ-БАВР-01, редакция от 27.04.2021, - 67 с",
+      "parsed_fields": {
+        "title": "Руководство по эксплуатации. ДИВГ.648228.082-12.01 РЭ, Блок микропроцессорный релейной защиты БМРЗ-БАВР-01, редакция от 27.04.2021, - 67 с",
+        "authors": null,
+        "year": "2021",
+        "language": "russian",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 46,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2130",
+      "key": "bavr_bib_046_rukovodstvo_2014",
+      "aliases": [
+        "bib:046",
+        "bavr:046"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "russian",
+      "raw_source": "Руководство по эксплуатации. ЭКРА.656122.008/212 1301 РЭ. Терминал быстрого автоматического включения резерва с возможностью последующего восстановления нормального режима энергоснабжения типа ЭКРА 212 1301, редакция от 26.02.2014, - 70 с",
+      "parsed_fields": {
+        "title": "Руководство по эксплуатации. ЭКРА.656122.008/212 1301 РЭ. Терминал быстрого автоматического включения резерва с возможностью последующего восстановления нормального режима энергоснабжения типа ЭКРА 212 1301, редакция от 26.02.2014, - 70 с",
+        "authors": null,
+        "year": "2014",
+        "language": "russian",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 47,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2131",
+      "key": "bavr_bib_047_pravila_2002",
+      "aliases": [
+        "bib:047",
+        "bavr:047"
+      ],
+      "kind": "reference",
+      "entry_type": "standard",
+      "language": "russian",
+      "raw_source": "Правила устройства электроустановок ПУЭ. - 7-е изд. Глава 1.2. Электроснабжение и электрические сети Категории электроприемников и обеспечение надежности электроснабжения (АВР) – М.: Энергоатомиздат, 2002. – 648 с",
+      "parsed_fields": {
+        "title": "Правила устройства электроустановок ПУЭ. - 7-е изд. Глава 1.2. Электроснабжение и электрические сети Категории электроприемников и обеспечение надежности электроснабжения (АВР) – М.: Энергоатомиздат, 2002. – 648 с",
+        "authors": null,
+        "year": "2002",
+        "language": "russian",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0025",
+          "block_id": "DISS-005-B1425",
+          "raw_citation": "[47]",
+          "cited_number": 47
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 48,
+      "block_id": "DISS-005-B2132",
+      "key": "bavr_bib_048_placeholder",
+      "aliases": [
+        "bib:048",
+        "bavr:048"
+      ],
+      "kind": "placeholder",
+      "entry_type": "misc",
+      "language": "russian",
+      "raw_source": "В",
+      "parsed_fields": {
+        "title": "[Заглушка автора «В» в рукописи v0.5]"
+      },
+      "note": "Заглушка автора в рукописи v0.5 (блок DISS-005-B2132)",
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 49,
+      "block_id": "DISS-005-B2133",
+      "key": "bavr_bib_049_placeholder",
+      "aliases": [
+        "bib:049",
+        "bavr:049"
+      ],
+      "kind": "placeholder",
+      "entry_type": "misc",
+      "language": "russian",
+      "raw_source": "В",
+      "parsed_fields": {
+        "title": "[Заглушка автора «В» в рукописи v0.5]"
+      },
+      "note": "Заглушка автора в рукописи v0.5 (блок DISS-005-B2133)",
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 50,
+      "block_id": "DISS-005-B2134",
+      "key": "bavr_bib_050_dataset_heading",
+      "aliases": [
+        "bib:050",
+        "bavr:050"
+      ],
+      "kind": "subheading",
+      "entry_type": "misc",
+      "language": "russian",
+      "raw_source": "СТАТЬИ ДЛЯ ГЛАВЫ ПРО ПОДГОТОВКУ ДАТАСЕТА",
+      "parsed_fields": {
+        "title": "СТАТЬИ ДЛЯ ГЛАВЫ ПРО ПОДГОТОВКУ ДАТАСЕТА"
+      },
+      "note": "Рубрикатор-заголовок списка литературы в рукописи v0.5 (блок DISS-005-B2134)",
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 51,
+      "bracket_num": 1,
+      "block_id": "DISS-005-B2135",
+      "key": "bavr_bib_051_m_2002",
+      "aliases": [
+        "bib:051",
+        "bavr:051"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[1] M. Perry and T. Fuller, “A historical perspective of fuel cell technology in the 20th century,” Journal of The Electrochemical Society, vol. 149, no. 7, pp. S59–S67, 2002.",
+      "parsed_fields": {
+        "title": "A historical perspective of fuel cell technology in the 20th century,",
+        "authors": "M. Perry and T. Fuller",
+        "year": "2002",
+        "language": "english",
+        "journal": "Journal of The Electrochemical Society, vol. 149, no. 7, pp. S59–S67, 2002.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0026",
+          "block_id": "DISS-005-B1472",
+          "raw_citation": "[51, 52, 53, 54, 55]",
+          "cited_number": 51
+        }
+      ],
+      "comments": [
+        {
+          "issue_id": "DISS-005-C0138",
+          "author": "Алексей Евдаков [2]",
+          "text": "Для удобства поиска, потом удалю",
+          "quote": "1"
+        },
+        {
+          "issue_id": "DISS-005-C0139",
+          "author": "Алексей Евдаков [2]",
+          "text": "НЕ ЗАБЫТЬ УДАЛИТЬ!!",
+          "quote": "1"
+        }
+      ]
+    },
+    {
+      "entry_num": 52,
+      "bracket_num": 2,
+      "block_id": "DISS-005-B2136",
+      "key": "bavr_bib_052_m_2023",
+      "aliases": [
+        "bib:052",
+        "bavr:052"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[2] M. IEA, “Electricity grids and secure energy transitions,” 2023.",
+      "parsed_fields": {
+        "title": "Electricity grids and secure energy transitions,",
+        "authors": "M. IEA",
+        "year": "2023",
+        "language": "english",
+        "journal": "2023.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0026",
+          "block_id": "DISS-005-B1472",
+          "raw_citation": "[51, 52, 53, 54, 55]",
+          "cited_number": 52
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 53,
+      "bracket_num": 3,
+      "block_id": "DISS-005-B2137",
+      "key": "bavr_bib_053_z_2021",
+      "aliases": [
+        "bib:053",
+        "bavr:053"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[3] Z. Zhang, T. Dragicevic, J. C. Vasquez, and J. M. Guerrero, “Review of a disruptive vision of future power grids: A new path based on hybrid ac/dc grids and solid-state transformers,” Sustainability, vol. 13, no. 16, p. 9423, 2021.",
+      "parsed_fields": {
+        "title": "Review of a disruptive vision of future power grids: A new path based on hybrid ac/dc grids and solid-state transformers,",
+        "authors": "Z. Zhang, T. Dragicevic, J. C. Vasquez, and J. M. Guerrero",
+        "year": "2021",
+        "language": "english",
+        "journal": "Sustainability, vol. 13, no. 16, p. 9423, 2021.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0026",
+          "block_id": "DISS-005-B1472",
+          "raw_citation": "[51, 52, 53, 54, 55]",
+          "cited_number": 53
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 54,
+      "bracket_num": 4,
+      "block_id": "DISS-005-B2138",
+      "key": "bavr_bib_054_s_2020",
+      "aliases": [
+        "bib:054",
+        "bavr:054"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[4] S. Mandelli, J. Barbieri, R. Mereu, and E. Colombo, “A retrospective analysis of energy access with a focus on the role of mini-grids,” Sustainability, vol. 12, no. 5, p. 1793, 2020.",
+      "parsed_fields": {
+        "title": "A retrospective analysis of energy access with a focus on the role of mini-grids,",
+        "authors": "S. Mandelli, J. Barbieri, R. Mereu, and E. Colombo",
+        "year": "2020",
+        "language": "english",
+        "journal": "Sustainability, vol. 12, no. 5, p. 1793, 2020.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0026",
+          "block_id": "DISS-005-B1472",
+          "raw_citation": "[51, 52, 53, 54, 55]",
+          "cited_number": 54
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 55,
+      "bracket_num": 5,
+      "block_id": "DISS-005-B2139",
+      "key": "bavr_bib_055_j_2017",
+      "aliases": [
+        "bib:055",
+        "bavr:055"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[5] J. R. Ag¨uero, E. Takayesu, D. Novosel, and R. Masiello, “Grid modernization: challenges and opportunities,” The Electricity Journal, vol. 30, no. 4, pp. 1–6, 2017.",
+      "parsed_fields": {
+        "title": "Grid modernization: challenges and opportunities,",
+        "authors": "J. R. Ag¨uero, E. Takayesu, D. Novosel, and R. Masiello",
+        "year": "2017",
+        "language": "english",
+        "journal": "The Electricity Journal, vol. 30, no. 4, pp. 1–6, 2017.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "1–6"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0026",
+          "block_id": "DISS-005-B1472",
+          "raw_citation": "[51, 52, 53, 54, 55]",
+          "cited_number": 55
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 56,
+      "bracket_num": 6,
+      "block_id": "DISS-005-B2140",
+      "key": "bavr_bib_056_a_2002",
+      "aliases": [
+        "bib:056",
+        "bavr:056"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[6] A. Guide, “Network protection & automation guide,” 2002.",
+      "parsed_fields": {
+        "title": "Network protection & automation guide,",
+        "authors": "A. Guide",
+        "year": "2002",
+        "language": "english",
+        "journal": "2002.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0027",
+          "block_id": "DISS-005-B1472",
+          "raw_citation": "[56]",
+          "cited_number": 56
+        },
+        {
+          "cite_id": "DISS-005-CITE-0030",
+          "block_id": "DISS-005-B1473",
+          "raw_citation": "[56]",
+          "cited_number": 56
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 57,
+      "bracket_num": 7,
+      "block_id": "DISS-005-B2141",
+      "key": "bavr_bib_057_l_2022",
+      "aliases": [
+        "bib:057",
+        "bavr:057"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[7] L. F. Yunzhi Cheng et al., “Real-world subsynchronous oscillation events in power grids with high penetrations of inverter-based resources,” IEEE Transactions on Power Systems, pp. 316 – 330, 2022.",
+      "parsed_fields": {
+        "title": "Real-world subsynchronous oscillation events in power grids with high penetrations of inverter-based resources,",
+        "authors": "L. F. Yunzhi Cheng et al.",
+        "year": "2022",
+        "language": "english",
+        "journal": "IEEE Transactions on Power Systems, pp. 316 – 330, 2022.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0028",
+          "block_id": "DISS-005-B1473",
+          "raw_citation": "[57, 58]",
+          "cited_number": 57
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 58,
+      "bracket_num": 8,
+      "block_id": "DISS-005-B2142",
+      "key": "bavr_bib_058_ieee_2023",
+      "aliases": [
+        "bib:058",
+        "bavr:058"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "[8] IEEE, “Challenges and prospect of relay protection in power grids with large-scale renewable power,” IET Conference Publication, 2023.",
+      "parsed_fields": {
+        "title": "Challenges and prospect of relay protection in power grids with large-scale renewable power,",
+        "authors": "IEEE",
+        "year": "2023",
+        "language": "english",
+        "journal": null,
+        "booktitle": "IET Conference Publication, 2023.",
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0028",
+          "block_id": "DISS-005-B1473",
+          "raw_citation": "[57, 58]",
+          "cited_number": 58
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 59,
+      "bracket_num": 9,
+      "block_id": "DISS-005-B2143",
+      "key": "bavr_bib_059_s_2015",
+      "aliases": [
+        "bib:059",
+        "bavr:059"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[9] S. Soltan, D. Mazauric, and G. Zussman, “Analysis of failures in power grids,” IEEE Transactions on Control of Network Systems, vol. 4, no. 2, pp. 288–300, 2015.",
+      "parsed_fields": {
+        "title": "Analysis of failures in power grids,",
+        "authors": "S. Soltan, D. Mazauric, and G. Zussman",
+        "year": "2015",
+        "language": "english",
+        "journal": "IEEE Transactions on Control of Network Systems, vol. 4, no. 2, pp. 288–300, 2015.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "288–300"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0029",
+          "block_id": "DISS-005-B1473",
+          "raw_citation": "[59, 60]",
+          "cited_number": 59
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 60,
+      "bracket_num": 10,
+      "block_id": "DISS-005-B2144",
+      "key": "bavr_bib_060_f_2023",
+      "aliases": [
+        "bib:060",
+        "bavr:060"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[10] F. M. Shakiba, S. M. Azizi, M. Zhou, and A. Abusorrah, “Application of machine learning methods in fault detection and classification of power transmission lines: a survey,” Artificial Intelligence Review, vol. 56, no. 7, pp. 5799–5836, 2023.",
+      "parsed_fields": {
+        "title": "Application of machine learning methods in fault detection and classification of power transmission lines: a survey,",
+        "authors": "F. M. Shakiba, S. M. Azizi, M. Zhou, and A. Abusorrah",
+        "year": "2023",
+        "language": "english",
+        "journal": "Artificial Intelligence Review, vol. 56, no. 7, pp. 5799–5836, 2023.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "5799–5836"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0029",
+          "block_id": "DISS-005-B1473",
+          "raw_citation": "[59, 60]",
+          "cited_number": 60
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 61,
+      "bracket_num": 11,
+      "block_id": "DISS-005-B2145",
+      "key": "bavr_bib_061_disconnector_2020",
+      "aliases": [
+        "bib:061",
+        "bavr:061"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "english",
+      "raw_source": "[11] Disconnectors and Circuit Breakers Technical Guide, GE Vernova,2020. [Online]. Available: https://www.gevernova.com/grid-solutions",
+      "parsed_fields": {
+        "title": "Disconnectors and Circuit Breakers Technical Guide, GE Vernova,2020. [Online]. Available: https://www.gevernova.com/grid-solutions",
+        "authors": null,
+        "year": "2020",
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0031",
+          "block_id": "DISS-005-B1473",
+          "raw_citation": "[61]",
+          "cited_number": 61
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 62,
+      "bracket_num": 12,
+      "block_id": "DISS-005-B2146",
+      "key": "bavr_bib_062_y_2025",
+      "aliases": [
+        "bib:062",
+        "bavr:062"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "english",
+      "raw_source": "[12] Y. Chen, Basic Theories of Power System Relay Protection. Wiley-IEEEPress, 2025.",
+      "parsed_fields": {
+        "title": "Y. Chen, Basic Theories of Power System Relay Protection. Wiley-IEEEPress, 2025.",
+        "authors": null,
+        "year": "2025",
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0032",
+          "block_id": "DISS-005-B1473",
+          "raw_citation": "[62]",
+          "cited_number": 62
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 63,
+      "bracket_num": 13,
+      "block_id": "DISS-005-B2147",
+      "key": "bavr_bib_063_z_2016",
+      "aliases": [
+        "bib:063",
+        "bavr:063"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[13] Z. Bo, X. Lin, Q. Wang, Y. Yi, and F. Zhou, “Developments of power system protection and control,” Protection and Control of Modern Power Systems, vol. 1, no. 1, pp. 1–8, 2016.",
+      "parsed_fields": {
+        "title": "Developments of power system protection and control,",
+        "authors": "Z. Bo, X. Lin, Q. Wang, Y. Yi, and F. Zhou",
+        "year": "2016",
+        "language": "english",
+        "journal": "Protection and Control of Modern Power Systems, vol. 1, no. 1, pp. 1–8, 2016.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "1–8"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0033",
+          "block_id": "DISS-005-B1473",
+          "raw_citation": "[63]",
+          "cited_number": 63
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 64,
+      "bracket_num": 14,
+      "block_id": "DISS-005-B2148",
+      "key": "bavr_bib_064_j_2024",
+      "aliases": [
+        "bib:064",
+        "bavr:064"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "[14] J. Doe and A. Smith, “From conventional to smart substations: A classification model,” in IEEE Power Engineering Conference, 2024.",
+      "parsed_fields": {
+        "title": "From conventional to smart substations: A classification model,",
+        "authors": "J. Doe and A. Smith",
+        "year": "2024",
+        "language": "english",
+        "journal": null,
+        "booktitle": "in IEEE Power Engineering Conference, 2024.",
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0034",
+          "block_id": "DISS-005-B1474",
+          "raw_citation": "[64]",
+          "cited_number": 64
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 65,
+      "bracket_num": 15,
+      "block_id": "DISS-005-B2149",
+      "key": "bavr_bib_065_a_2017",
+      "aliases": [
+        "bib:065",
+        "bavr:065"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "english",
+      "raw_source": "[15] A. Phadke and J. Thorp, Synchronized Phasor Measurements and TheirApplications. Springer, 2017.",
+      "parsed_fields": {
+        "title": "A. Phadke and J. Thorp, Synchronized Phasor Measurements and TheirApplications. Springer, 2017.",
+        "authors": null,
+        "year": "2017",
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0035",
+          "block_id": "DISS-005-B1474",
+          "raw_citation": "[65, 66, 67]",
+          "cited_number": 65
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 66,
+      "bracket_num": 16,
+      "block_id": "DISS-005-B2150",
+      "key": "bavr_bib_066_h_2014",
+      "aliases": [
+        "bib:066",
+        "bavr:066"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "english",
+      "raw_source": "[16] H. Bevrani, Robust Power System Frequency Control. Springer, 2014.",
+      "parsed_fields": {
+        "title": "H. Bevrani, Robust Power System Frequency Control. Springer, 2014.",
+        "authors": null,
+        "year": "2014",
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0035",
+          "block_id": "DISS-005-B1474",
+          "raw_citation": "[65, 66, 67]",
+          "cited_number": 66
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 67,
+      "bracket_num": 17,
+      "block_id": "DISS-005-B2151",
+      "key": "bavr_bib_067_q_2023",
+      "aliases": [
+        "bib:067",
+        "bavr:067"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "[17] Q. e. a. Zhang, “A new method of data fusion calculation for relay protection setting calculation,” IEEE Conference Publication, 2023.",
+      "parsed_fields": {
+        "title": "A new method of data fusion calculation for relay protection setting calculation,",
+        "authors": "Q. e. a. Zhang",
+        "year": "2023",
+        "language": "english",
+        "journal": null,
+        "booktitle": "IEEE Conference Publication, 2023.",
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0035",
+          "block_id": "DISS-005-B1474",
+          "raw_citation": "[65, 66, 67]",
+          "cited_number": 67
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 68,
+      "bracket_num": 18,
+      "block_id": "DISS-005-B2152",
+      "key": "bavr_bib_068_h_2011",
+      "aliases": [
+        "bib:068",
+        "bavr:068"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "[18] H. Zhang and S. Li, “Design of adaptive line protection under smart grid,” in 2011 International Conference on Advanced Power SystemAutomation and Protection, vol. 1. IEEE, 2011, pp. 599–603.",
+      "parsed_fields": {
+        "title": "Design of adaptive line protection under smart grid,",
+        "authors": "H. Zhang and S. Li",
+        "year": "2011",
+        "language": "english",
+        "journal": null,
+        "booktitle": "in 2011 International Conference on Advanced Power SystemAutomation and Protection, vol. 1. IEEE, 2011, pp. 599–603.",
+        "publisher": null,
+        "pages": "599–603"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0036",
+          "block_id": "DISS-005-B1475",
+          "raw_citation": "[68, 69, 70, 71, 72, 73, 74]",
+          "cited_number": 68
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 69,
+      "bracket_num": 19,
+      "block_id": "DISS-005-B2153",
+      "key": "bavr_bib_069_s_2017",
+      "aliases": [
+        "bib:069",
+        "bavr:069"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[19] S. Wu, “An adaptive limited wide area differential protection for powergrid with micro-sources,” Protection and Control of Modern Power Systems, vol. 2, no. 3, pp. 1–9, 2017.",
+      "parsed_fields": {
+        "title": "An adaptive limited wide area differential protection for powergrid with micro-sources,",
+        "authors": "S. Wu",
+        "year": "2017",
+        "language": "english",
+        "journal": "Protection and Control of Modern Power Systems, vol. 2, no. 3, pp. 1–9, 2017.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "1–9"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0036",
+          "block_id": "DISS-005-B1475",
+          "raw_citation": "[68, 69, 70, 71, 72, 73, 74]",
+          "cited_number": 69
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 70,
+      "bracket_num": 19,
+      "block_id": "DISS-005-B2154",
+      "key": "bavr_bib_070_s_2017",
+      "aliases": [
+        "bib:070",
+        "bavr:070"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[19] S. Wu, “An adaptive limited wide area differential protection for powergrid with micro-sources,” Protection and Control of Modern Power Systems, vol. 2, no. 3, pp. 1–9, 2017.",
+      "parsed_fields": {
+        "title": "An adaptive limited wide area differential protection for powergrid with micro-sources,",
+        "authors": "S. Wu",
+        "year": "2017",
+        "language": "english",
+        "journal": "Protection and Control of Modern Power Systems, vol. 2, no. 3, pp. 1–9, 2017.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "1–9"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0036",
+          "block_id": "DISS-005-B1475",
+          "raw_citation": "[68, 69, 70, 71, 72, 73, 74]",
+          "cited_number": 70
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 71,
+      "bracket_num": 21,
+      "block_id": "DISS-005-B2155",
+      "key": "bavr_bib_071_a_2022",
+      "aliases": [
+        "bib:071",
+        "bavr:071"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "[21] A. Summers, T. Patel, R. Matthews, and M. J. Reno, “Prediction of relay settings in an adaptive protection system,” in 2022 IEEE Power & Energy Society Innovative Smart Grid Technologies Conference (ISGT). IEEE, 2022, pp. 1–5.",
+      "parsed_fields": {
+        "title": "Prediction of relay settings in an adaptive protection system,",
+        "authors": "A. Summers, T. Patel, R. Matthews, and M. J. Reno",
+        "year": "2022",
+        "language": "english",
+        "journal": null,
+        "booktitle": "in 2022 IEEE Power & Energy Society Innovative Smart Grid Technologies Conference (ISGT). IEEE, 2022, pp. 1–5.",
+        "publisher": null,
+        "pages": "1–5"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0036",
+          "block_id": "DISS-005-B1475",
+          "raw_citation": "[68, 69, 70, 71, 72, 73, 74]",
+          "cited_number": 71
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 72,
+      "bracket_num": 22,
+      "block_id": "DISS-005-B2156",
+      "key": "bavr_bib_072_a_2022",
+      "aliases": [
+        "bib:072",
+        "bavr:072"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[22] A. L. Kulikov, A. Loskutov, and D. Bezdushniy, “Relay protection andautomation algorithms based on machine learning,” Energies, 2022.",
+      "parsed_fields": {
+        "title": "Relay protection andautomation algorithms based on machine learning,",
+        "authors": "A. L. Kulikov, A. Loskutov, and D. Bezdushniy",
+        "year": "2022",
+        "language": "english",
+        "journal": "Energies, 2022.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0036",
+          "block_id": "DISS-005-B1475",
+          "raw_citation": "[68, 69, 70, 71, 72, 73, 74]",
+          "cited_number": 72
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 73,
+      "bracket_num": 23,
+      "block_id": "DISS-005-B2157",
+      "key": "bavr_bib_073_v_2023",
+      "aliases": [
+        "bib:073",
+        "bavr:073"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "[23] V. Lachugin, D. Vertoguzov, S. Danilov, V. Sazanov, A. Voloshin, andA. Kovalenko, “Development of solutions for automatic computation of relay protection and automation operation parameters,” in 2023 6th International Scientific and Technical Conference on Relay Protection and Automation (RPA), vol. 1. IEEE, 2023, pp. 1–14.",
+      "parsed_fields": {
+        "title": "Development of solutions for automatic computation of relay protection and automation operation parameters,",
+        "authors": "V. Lachugin, D. Vertoguzov, S. Danilov, V. Sazanov, A. Voloshin, andA. Kovalenko",
+        "year": "2023",
+        "language": "english",
+        "journal": null,
+        "booktitle": "in 2023 6th International Scientific and Technical Conference on Relay Protection and Automation (RPA), vol. 1. IEEE, 2023, pp. 1–14.",
+        "publisher": null,
+        "pages": "1–14"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0036",
+          "block_id": "DISS-005-B1475",
+          "raw_citation": "[68, 69, 70, 71, 72, 73, 74]",
+          "cited_number": 73
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 74,
+      "bracket_num": 24,
+      "block_id": "DISS-005-B2158",
+      "key": "bavr_bib_074_z_2024",
+      "aliases": [
+        "bib:074",
+        "bavr:074"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "[24] Z. e. a. Liu, “Construction of the relay protection device model data center,” IEEE Conference Publication, 2024.",
+      "parsed_fields": {
+        "title": "Construction of the relay protection device model data center,",
+        "authors": "Z. e. a. Liu",
+        "year": "2024",
+        "language": "english",
+        "journal": null,
+        "booktitle": "IEEE Conference Publication, 2024.",
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0036",
+          "block_id": "DISS-005-B1475",
+          "raw_citation": "[68, 69, 70, 71, 72, 73, 74]",
+          "cited_number": 74
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 75,
+      "bracket_num": 25,
+      "block_id": "DISS-005-B2159",
+      "key": "bavr_bib_075_a_2023",
+      "aliases": [
+        "bib:075",
+        "bavr:075"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[25] A. N. Sheta, G. M. Abdulsalam, B. E. Sedhom, and A. A. Eladl, “Comparative framework for ac-microgrid protection schemes: challenges,solutions, real applications, and future trends,” Protection and control of modern power systems, vol. 8, no. 2, pp. 1–40, 2023.",
+      "parsed_fields": {
+        "title": "Comparative framework for ac-microgrid protection schemes: challenges,solutions, real applications, and future trends,",
+        "authors": "A. N. Sheta, G. M. Abdulsalam, B. E. Sedhom, and A. A. Eladl",
+        "year": "2023",
+        "language": "english",
+        "journal": "Protection and control of modern power systems, vol. 8, no. 2, pp. 1–40, 2023.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "1–40"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0037",
+          "block_id": "DISS-005-B1475",
+          "raw_citation": "[75, 76, 77, 78, 79]",
+          "cited_number": 75
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 76,
+      "bracket_num": 26,
+      "block_id": "DISS-005-B2160",
+      "key": "bavr_bib_076_h_2024",
+      "aliases": [
+        "bib:076",
+        "bavr:076"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[26] H. e. a. Wang, “A setting optimization ensemble for a distributed power grid protective relay system,” Applied Sciences, vol. 14, no. 6, p. 2278, 2024.",
+      "parsed_fields": {
+        "title": "A setting optimization ensemble for a distributed power grid protective relay system,",
+        "authors": "H. e. a. Wang",
+        "year": "2024",
+        "language": "english",
+        "journal": "Applied Sciences, vol. 14, no. 6, p. 2278, 2024.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0037",
+          "block_id": "DISS-005-B1475",
+          "raw_citation": "[75, 76, 77, 78, 79]",
+          "cited_number": 76
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 77,
+      "bracket_num": 27,
+      "block_id": "DISS-005-B2161",
+      "key": "bavr_bib_077_p_2024",
+      "aliases": [
+        "bib:077",
+        "bavr:077"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[27] P. Singh, U. Kumar, N. K. Choudhary, and N. Singh, “Advancements in protection coordination of microgrids: a comprehensive review of protection  challenges and mitigation schemes for grid stability,” Protection and Control of Modern Power Systems, vol. 9, no. 6, pp. 156–183, 2024.",
+      "parsed_fields": {
+        "title": "Advancements in protection coordination of microgrids: a comprehensive review of protection  challenges and mitigation schemes for grid stability,",
+        "authors": "P. Singh, U. Kumar, N. K. Choudhary, and N. Singh",
+        "year": "2024",
+        "language": "english",
+        "journal": "Protection and Control of Modern Power Systems, vol. 9, no. 6, pp. 156–183, 2024.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "156–183"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0037",
+          "block_id": "DISS-005-B1475",
+          "raw_citation": "[75, 76, 77, 78, 79]",
+          "cited_number": 77
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 78,
+      "bracket_num": 28,
+      "block_id": "DISS-005-B2162",
+      "key": "bavr_bib_078_z_2024",
+      "aliases": [
+        "bib:078",
+        "bavr:078"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[28] Z. Yang, H. Wang, W. Liao, C. L. Bak, and Z. Chen, “Protection challenges and solutions for ac systems with renewable energy sources: A review,” Protection and Control of Modern Power Systems, vol. 10, no. 1, pp. 18–39, 2024.",
+      "parsed_fields": {
+        "title": "Protection challenges and solutions for ac systems with renewable energy sources: A review,",
+        "authors": "Z. Yang, H. Wang, W. Liao, C. L. Bak, and Z. Chen",
+        "year": "2024",
+        "language": "english",
+        "journal": "Protection and Control of Modern Power Systems, vol. 10, no. 1, pp. 18–39, 2024.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "18–39"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0037",
+          "block_id": "DISS-005-B1475",
+          "raw_citation": "[75, 76, 77, 78, 79]",
+          "cited_number": 78
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 79,
+      "bracket_num": 29,
+      "block_id": "DISS-005-B2163",
+      "key": "bavr_bib_079_j_2025",
+      "aliases": [
+        "bib:079",
+        "bavr:079"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[29] J. W. Yan Li et al., “Fast searching of extreme operating conditions for relay protection setting calculation based on graph neural network and reinforcement learning,” arXiv preprint, 2025. [Online]. Available: https://arxiv.org/abs/2501.09399",
+      "parsed_fields": {
+        "title": "Fast searching of extreme operating conditions for relay protection setting calculation based on graph neural network and reinforcement learning,",
+        "authors": "J. W. Yan Li et al.",
+        "year": "2025",
+        "language": "english",
+        "journal": "arXiv preprint, 2025. [Online]. Available: https://arxiv.org/abs/2501.09399",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0037",
+          "block_id": "DISS-005-B1475",
+          "raw_citation": "[75, 76, 77, 78, 79]",
+          "cited_number": 79
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 80,
+      "bracket_num": 30,
+      "block_id": "DISS-005-B2164",
+      "key": "bavr_bib_080_d_2019",
+      "aliases": [
+        "bib:080",
+        "bavr:080"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "[30] D. A. Stepanova and A. V. Naumov, “Deep learning in relay protection of digital power industry,” International Youth Scientific and Technical Conference on Relay Protection and Automation (RPA), 2019. [Online]. Available: https://www.semanticscholar.org/paper/ Deep-Learning-in-Relay-Protection-of-Digital- Power-Stepanova-Naumov",
+      "parsed_fields": {
+        "title": "Deep learning in relay protection of digital power industry,",
+        "authors": "D. A. Stepanova and A. V. Naumov",
+        "year": "2019",
+        "language": "english",
+        "journal": null,
+        "booktitle": "International Youth Scientific and Technical Conference on Relay Protection and Automation (RPA), 2019. [Online]. Available: https://www.semanticscholar.org/paper/ Deep-Learning-in-Relay-Protection-of-Digital- Power-Stepanova-Naumov",
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0038",
+          "block_id": "DISS-005-B1476",
+          "raw_citation": "[80, 81]",
+          "cited_number": 80
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 81,
+      "bracket_num": 31,
+      "block_id": "DISS-005-B2165",
+      "key": "bavr_bib_081_x_2024",
+      "aliases": [
+        "bib:081",
+        "bavr:081"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[31] X. e. a. Li, “Fault diagnosis of intelligent substation relay protection system based on transformer architecture and migration training model,” Energy Informatics, vol. 7, p. 120, 2024.",
+      "parsed_fields": {
+        "title": "Fault diagnosis of intelligent substation relay protection system based on transformer architecture and migration training model,",
+        "authors": "X. e. a. Li",
+        "year": "2024",
+        "language": "english",
+        "journal": "Energy Informatics, vol. 7, p. 120, 2024.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0038",
+          "block_id": "DISS-005-B1476",
+          "raw_citation": "[80, 81]",
+          "cited_number": 81
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 82,
+      "bracket_num": 32,
+      "block_id": "DISS-005-B2166",
+      "key": "bavr_bib_082_a_2024",
+      "aliases": [
+        "bib:082",
+        "bavr:082"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[32] A. Varbella et al., “Powergraph: A power grid benchmark dataset for graph neural networks,” arXiv preprint, 2024.",
+      "parsed_fields": {
+        "title": "Powergraph: A power grid benchmark dataset for graph neural networks,",
+        "authors": "A. Varbella et al.",
+        "year": "2024",
+        "language": "english",
+        "journal": "arXiv preprint, 2024.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0039",
+          "block_id": "DISS-005-B1476",
+          "raw_citation": "[82]",
+          "cited_number": 82
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 83,
+      "bracket_num": 33,
+      "block_id": "DISS-005-B2167",
+      "key": "bavr_bib_083_a_2022",
+      "aliases": [
+        "bib:083",
+        "bavr:083"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[33] A. Kulikov, A. Loskutov, and D. Bezdushniy, “Relay protection and automation algorithms of electrical networks based on simulation and machine learning methods,” Energies, vol. 15, no. 18, p. 6525, 2022.",
+      "parsed_fields": {
+        "title": "Relay protection and automation algorithms of electrical networks based on simulation and machine learning methods,",
+        "authors": "A. Kulikov, A. Loskutov, and D. Bezdushniy",
+        "year": "2022",
+        "language": "english",
+        "journal": "Energies, vol. 15, no. 18, p. 6525, 2022.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0040",
+          "block_id": "DISS-005-B1478",
+          "raw_citation": "[83, 84]",
+          "cited_number": 83
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 84,
+      "bracket_num": 34,
+      "block_id": "DISS-005-B2168",
+      "key": "bavr_bib_084_a_2023",
+      "aliases": [
+        "bib:084",
+        "bavr:084"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[34] A. Kulikov, A. Loskutov, D. Bezdushniy, and I. Petrov, “Decision tree models and machine learning algorithms in the fault recognition on power lines with branches,” Energies, vol. 16, no. 14, p. 5563, 2023.",
+      "parsed_fields": {
+        "title": "Decision tree models and machine learning algorithms in the fault recognition on power lines with branches,",
+        "authors": "A. Kulikov, A. Loskutov, D. Bezdushniy, and I. Petrov",
+        "year": "2023",
+        "language": "english",
+        "journal": "Energies, vol. 16, no. 14, p. 5563, 2023.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0040",
+          "block_id": "DISS-005-B1478",
+          "raw_citation": "[83, 84]",
+          "cited_number": 84
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 85,
+      "bracket_num": 35,
+      "block_id": "DISS-005-B2169",
+      "key": "bavr_bib_085_r_2021",
+      "aliases": [
+        "bib:085",
+        "bavr:085"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[35] R. Machlev, A. Chachkes, J. Belikov, Y. Beck, and Y. Levron, “Open source dataset generator for power quality disturbances with deeplearning reference classifiers,” Electric Power Systems Research, vol. 195, p. 107152, 2021.",
+      "parsed_fields": {
+        "title": "Open source dataset generator for power quality disturbances with deeplearning reference classifiers,",
+        "authors": "R. Machlev, A. Chachkes, J. Belikov, Y. Beck, and Y. Levron",
+        "year": "2021",
+        "language": "english",
+        "journal": "Electric Power Systems Research, vol. 195, p. 107152, 2021.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0041",
+          "block_id": "DISS-005-B1484",
+          "raw_citation": "[85]",
+          "cited_number": 85
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 86,
+      "bracket_num": 36,
+      "block_id": "DISS-005-B2170",
+      "key": "bavr_bib_086_r_2023",
+      "aliases": [
+        "bib:086",
+        "bavr:086"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[36] R. A. de Oliveira and M. H. Bollen, “Deep learning for power quality,”Electric Power Systems Research, vol. 214, p. 108887, 2023.",
+      "parsed_fields": {
+        "title": "Deep learning for power quality,",
+        "authors": "R. A. de Oliveira and M. H. Bollen",
+        "year": "2023",
+        "language": "english",
+        "journal": "Electric Power Systems Research, vol. 214, p. 108887, 2023.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0042",
+          "block_id": "DISS-005-B1484",
+          "raw_citation": "[86, 87]",
+          "cited_number": 86
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 87,
+      "bracket_num": 37,
+      "block_id": "DISS-005-B2171",
+      "key": "bavr_bib_087_v_2024",
+      "aliases": [
+        "bib:087",
+        "bavr:087"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[37] V. Pozdnyakov, A. Kovalenko, I. Makarov, M. Drobyshevskiy, and K. Lukyanov, “Adversarial attacks and defenses in fault detection and diagnosis: A comprehensive benchmark on the tennessee eastman process,” IEEE Open Journal of the Industrial Electronics Society, 2024.",
+      "parsed_fields": {
+        "title": "Adversarial attacks and defenses in fault detection and diagnosis: A comprehensive benchmark on the tennessee eastman process,",
+        "authors": "V. Pozdnyakov, A. Kovalenko, I. Makarov, M. Drobyshevskiy, and K. Lukyanov",
+        "year": "2024",
+        "language": "english",
+        "journal": "IEEE Open Journal of the Industrial Electronics Society, 2024.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0042",
+          "block_id": "DISS-005-B1484",
+          "raw_citation": "[86, 87]",
+          "cited_number": 87
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 88,
+      "bracket_num": 38,
+      "block_id": "DISS-005-B2172",
+      "key": "bavr_bib_088_h_2021",
+      "aliases": [
+        "bib:088",
+        "bavr:088"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[38] H. Aguinis, N. S. Hill, and J. R. Bailey, “Best practices in data collection and preparation: Recommendations for reviewers, editors, and authors,” Organizational Research Methods, vol. 24, no. 4, pp. 678–693, 2021.",
+      "parsed_fields": {
+        "title": "Best practices in data collection and preparation: Recommendations for reviewers, editors, and authors,",
+        "authors": "H. Aguinis, N. S. Hill, and J. R. Bailey",
+        "year": "2021",
+        "language": "english",
+        "journal": "Organizational Research Methods, vol. 24, no. 4, pp. 678–693, 2021.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "678–693"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0043",
+          "block_id": "DISS-005-B1500",
+          "raw_citation": "[88, 89, 90, 91]",
+          "cited_number": 88
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 89,
+      "bracket_num": 39,
+      "block_id": "DISS-005-B2173",
+      "key": "bavr_bib_089_q_2024",
+      "aliases": [
+        "bib:089",
+        "bavr:089"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[39] Q. Huang and T. Zhao, “Data collection and labeling techniques for machine learning,” arXiv preprint arXiv:2407.12793, 2024.",
+      "parsed_fields": {
+        "title": "Data collection and labeling techniques for machine learning,",
+        "authors": "Q. Huang and T. Zhao",
+        "year": "2024",
+        "language": "english",
+        "journal": "arXiv preprint arXiv:2407.12793, 2024.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0043",
+          "block_id": "DISS-005-B1500",
+          "raw_citation": "[88, 89, 90, 91]",
+          "cited_number": 89
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 90,
+      "bracket_num": 40,
+      "block_id": "DISS-005-B2174",
+      "key": "bavr_bib_090_s_2023",
+      "aliases": [
+        "bib:090",
+        "bavr:090"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[40] S. E. Whang, Y. Roh, H. Song, and J.-G. Lee, “Data collection and quality challenges in deep learning: A data-centric ai perspective,” The VLDB Journal, vol. 32, no. 4, pp. 791–813, 2023.",
+      "parsed_fields": {
+        "title": "Data collection and quality challenges in deep learning: A data-centric ai perspective,",
+        "authors": "S. E. Whang, Y. Roh, H. Song, and J.-G. Lee",
+        "year": "2023",
+        "language": "english",
+        "journal": "The VLDB Journal, vol. 32, no. 4, pp. 791–813, 2023.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "791–813"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0043",
+          "block_id": "DISS-005-B1500",
+          "raw_citation": "[88, 89, 90, 91]",
+          "cited_number": 90
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 91,
+      "bracket_num": 41,
+      "block_id": "DISS-005-B2175",
+      "key": "bavr_bib_091_s_2021",
+      "aliases": [
+        "bib:091",
+        "bavr:091"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[41] S. A. Mazhar, R. Anjum, A. I. Anwar, and A. A. Khan, “Methods of data collection: A fundamental tool of research,” Journal of Integrated Community Health (ISSN 2319-9113), vol. 10, no. 1, pp. 6–10, 2021.",
+      "parsed_fields": {
+        "title": "Methods of data collection: A fundamental tool of research,",
+        "authors": "S. A. Mazhar, R. Anjum, A. I. Anwar, and A. A. Khan",
+        "year": "2021",
+        "language": "english",
+        "journal": "Journal of Integrated Community Health (ISSN 2319-9113), vol. 10, no. 1, pp. 6–10, 2021.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "6–10"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0043",
+          "block_id": "DISS-005-B1500",
+          "raw_citation": "[88, 89, 90, 91]",
+          "cited_number": 91
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 92,
+      "bracket_num": 42,
+      "block_id": "DISS-005-B2176",
+      "key": "bavr_bib_092_a_2014",
+      "aliases": [
+        "bib:092",
+        "bavr:092"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "[42] A. Narayanan and E. Felten, “No silver bullet: De-identification still hard,” in IEEE Symposium on Security and Privacy, 2014, pp. 345–358.",
+      "parsed_fields": {
+        "title": "No silver bullet: De-identification still hard,",
+        "authors": "A. Narayanan and E. Felten",
+        "year": "2014",
+        "language": "english",
+        "journal": null,
+        "booktitle": "in IEEE Symposium on Security and Privacy, 2014, pp. 345–358.",
+        "publisher": null,
+        "pages": "345–358"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0044",
+          "block_id": "DISS-005-B1519",
+          "raw_citation": "[92, 93, 94]",
+          "cited_number": 92
+        },
+        {
+          "cite_id": "DISS-005-CITE-0046",
+          "block_id": "DISS-005-B1622",
+          "raw_citation": "[92, 93, 94]",
+          "cited_number": 92
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 93,
+      "bracket_num": 43,
+      "block_id": "DISS-005-B2177",
+      "key": "bavr_bib_093_l_2002",
+      "aliases": [
+        "bib:093",
+        "bavr:093"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[43] L. Sweeney, “k-anonymity: A model for protecting privacy,” International Journal of Uncertainty, Fuzziness and Knowledge-Based Systems, vol. 10, no. 5, pp. 557–570, 2002.",
+      "parsed_fields": {
+        "title": "k-anonymity: A model for protecting privacy,",
+        "authors": "L. Sweeney",
+        "year": "2002",
+        "language": "english",
+        "journal": "International Journal of Uncertainty, Fuzziness and Knowledge-Based Systems, vol. 10, no. 5, pp. 557–570, 2002.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "557–570"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0044",
+          "block_id": "DISS-005-B1519",
+          "raw_citation": "[92, 93, 94]",
+          "cited_number": 93
+        },
+        {
+          "cite_id": "DISS-005-CITE-0046",
+          "block_id": "DISS-005-B1622",
+          "raw_citation": "[92, 93, 94]",
+          "cited_number": 93
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 94,
+      "bracket_num": 44,
+      "block_id": "DISS-005-B2178",
+      "key": "bavr_bib_094_general_2016",
+      "aliases": [
+        "bib:094",
+        "bavr:094"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "english",
+      "raw_source": "[44] “General data protection regulation (gdpr),” Official Journal of the European Union, 2016.",
+      "parsed_fields": {
+        "title": "“General data protection regulation (gdpr),” Official Journal of the European Union, 2016.",
+        "authors": null,
+        "year": "2016",
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0044",
+          "block_id": "DISS-005-B1519",
+          "raw_citation": "[92, 93, 94]",
+          "cited_number": 94
+        },
+        {
+          "cite_id": "DISS-005-CITE-0046",
+          "block_id": "DISS-005-B1622",
+          "raw_citation": "[92, 93, 94]",
+          "cited_number": 94
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 95,
+      "bracket_num": 45,
+      "block_id": "DISS-005-B2179",
+      "key": "bavr_bib_095_a_2024",
+      "aliases": [
+        "bib:095",
+        "bavr:095"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "[45] A. Evdakov, A. Yablokov, and G. Filatova, “Investigation of the use of rogowski coils for power direction relays in fast automatic bus transfer,” in 2024 International Conference on Industrial Engineering, Applications and Manufacturing (ICIEAM). IEEE, 2024, pp. 124–129.",
+      "parsed_fields": {
+        "title": "Investigation of the use of rogowski coils for power direction relays in fast automatic bus transfer,",
+        "authors": "A. Evdakov, A. Yablokov, and G. Filatova",
+        "year": "2024",
+        "language": "english",
+        "journal": null,
+        "booktitle": "in 2024 International Conference on Industrial Engineering, Applications and Manufacturing (ICIEAM). IEEE, 2024, pp. 124–129.",
+        "publisher": null,
+        "pages": "124–129"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0045",
+          "block_id": "DISS-005-B1528",
+          "raw_citation": "[95, 96]",
+          "cited_number": 95
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 96,
+      "bracket_num": 46,
+      "block_id": "DISS-005-B2180",
+      "key": "bavr_bib_096_g_2024",
+      "aliases": [
+        "bib:096",
+        "bavr:096"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "[46] G. Filatova, D. Piskunov, and A. Evdakov, “Automated method for the research of the relay protection function implemented in 6 (10) kv digital instrument transformers using real oscillograms,” in 2024 International Russian Automation Conference (RusAutoCon). IEEE, 2024, pp. 362– 367.",
+      "parsed_fields": {
+        "title": "Automated method for the research of the relay protection function implemented in 6 (10) kv digital instrument transformers using real oscillograms,",
+        "authors": "G. Filatova, D. Piskunov, and A. Evdakov",
+        "year": "2024",
+        "language": "english",
+        "journal": null,
+        "booktitle": "in 2024 International Russian Automation Conference (RusAutoCon). IEEE, 2024, pp. 362– 367.",
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0045",
+          "block_id": "DISS-005-B1528",
+          "raw_citation": "[95, 96]",
+          "cited_number": 96
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 97,
+      "bracket_num": 47,
+      "block_id": "DISS-005-B2181",
+      "key": "bavr_bib_097_y_1998",
+      "aliases": [
+        "bib:097",
+        "bavr:097"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "[47] Y. LeCun, L. Bottou, Y. Bengio, and P. Haffner, “Gradient-based learning applied to document recognition,” Proceedings of the IEEE, vol. 86, no. 11, pp. 2278–2324, 1998.",
+      "parsed_fields": {
+        "title": "Gradient-based learning applied to document recognition,",
+        "authors": "Y. LeCun, L. Bottou, Y. Bengio, and P. Haffner",
+        "year": "1998",
+        "language": "english",
+        "journal": null,
+        "booktitle": "Proceedings of the IEEE, vol. 86, no. 11, pp. 2278–2324, 1998.",
+        "publisher": null,
+        "pages": "2278–2324"
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 98,
+      "bracket_num": 48,
+      "block_id": "DISS-005-B2182",
+      "key": "bavr_bib_098_h_2019",
+      "aliases": [
+        "bib:098",
+        "bavr:098"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[48] H. Ismail Fawaz, G. Forestier, J. Weber, L. Idoumghar, and P.-A. Muller, “Deep learning for time series classification: a review,” Data mining and knowledge discovery, vol. 33, no. 4, pp. 917–963, 2019.",
+      "parsed_fields": {
+        "title": "Deep learning for time series classification: a review,",
+        "authors": "H. Ismail Fawaz, G. Forestier, J. Weber, L. Idoumghar, and P.-A. Muller",
+        "year": "2019",
+        "language": "english",
+        "journal": "Data mining and knowledge discovery, vol. 33, no. 4, pp. 917–963, 2019.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "917–963"
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 99,
+      "bracket_num": 49,
+      "block_id": "DISS-005-B2183",
+      "key": "bavr_bib_099_i_2018",
+      "aliases": [
+        "bib:099",
+        "bavr:099"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "[49] I. Makarov, A. Korinevskaya, and V. Aliev, “Sparse depth map interpolation using deep convolutional neural networks,” in 2018 41st international conference on telecommunications and signal processing (TSP). IEEE, 2018, pp. 1–5.",
+      "parsed_fields": {
+        "title": "Sparse depth map interpolation using deep convolutional neural networks,",
+        "authors": "I. Makarov, A. Korinevskaya, and V. Aliev",
+        "year": "2018",
+        "language": "english",
+        "journal": null,
+        "booktitle": "in 2018 41st international conference on telecommunications and signal processing (TSP). IEEE, 2018, pp. 1–5.",
+        "publisher": null,
+        "pages": "1–5"
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 100,
+      "bracket_num": 50,
+      "block_id": "DISS-005-B2184",
+      "key": "bavr_bib_100_d_2021",
+      "aliases": [
+        "bib:100",
+        "bavr:100"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "[50] D. Chen, Y. Liu, X. Wang, and R. Zhang, “Spectral temporal graph neural network for multivariate time-series forecasting,” Advances in Neural Information Processing Systems, vol. 34, pp. 17 766–17 779, 2021.",
+      "parsed_fields": {
+        "title": "Spectral temporal graph neural network for multivariate time-series forecasting,",
+        "authors": "D. Chen, Y. Liu, X. Wang, and R. Zhang",
+        "year": "2021",
+        "language": "english",
+        "journal": null,
+        "booktitle": "Advances in Neural Information Processing Systems, vol. 34, pp. 17 766–17 779, 2021.",
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 101,
+      "bracket_num": 51,
+      "block_id": "DISS-005-B2185",
+      "key": "bavr_bib_101_z_2017",
+      "aliases": [
+        "bib:101",
+        "bavr:101"
+      ],
+      "kind": "reference",
+      "entry_type": "inproceedings",
+      "language": "english",
+      "raw_source": "[51] Z. Wang, W. Yan, and T. Oates, “Time series classification using multi-channels deep convolutional neural networks,” IEEE International Conference on Data Mining, pp. 787–796, 2017.",
+      "parsed_fields": {
+        "title": "Time series classification using multi-channels deep convolutional neural networks,",
+        "authors": "Z. Wang, W. Yan, and T. Oates",
+        "year": "2017",
+        "language": "english",
+        "journal": null,
+        "booktitle": "IEEE International Conference on Data Mining, pp. 787–796, 2017.",
+        "publisher": null,
+        "pages": "787–796"
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 102,
+      "bracket_num": 52,
+      "block_id": "DISS-005-B2186",
+      "key": "bavr_bib_102_n_2002",
+      "aliases": [
+        "bib:102",
+        "bavr:102"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[52] N. V. Chawla, K. W. Bowyer, L. O. Hall, and W. P. Kegelmeyer, “Smote: Synthetic minority over-sampling technique,” Journal of Artificial Intelligence Research, vol. 16, pp. 321–357, 2002.",
+      "parsed_fields": {
+        "title": "Smote: Synthetic minority over-sampling technique,",
+        "authors": "N. V. Chawla, K. W. Bowyer, L. O. Hall, and W. P. Kegelmeyer",
+        "year": "2002",
+        "language": "english",
+        "journal": "Journal of Artificial Intelligence Research, vol. 16, pp. 321–357, 2002.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "321–357"
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 103,
+      "bracket_num": 53,
+      "block_id": "DISS-005-B2187",
+      "key": "bavr_bib_103_c_1979",
+      "aliases": [
+        "bib:103",
+        "bavr:103"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[53] C. van Rijsbergen, “Information retrieval,” Butterworth-Heinemann, 1979.",
+      "parsed_fields": {
+        "title": "Information retrieval,",
+        "authors": "C. van Rijsbergen",
+        "year": "1979",
+        "language": "english",
+        "journal": "Butterworth-Heinemann, 1979.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 104,
+      "bracket_num": 54,
+      "block_id": "DISS-005-B2188",
+      "key": "bavr_bib_104_a_2020",
+      "aliases": [
+        "bib:104",
+        "bavr:104"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "[54] A. Tharwat, “Classification assessment methods,” Applied Computing and Informatics, vol. 17, no. 1, pp. 168–192, 2020.",
+      "parsed_fields": {
+        "title": "Classification assessment methods,",
+        "authors": "A. Tharwat",
+        "year": "2020",
+        "language": "english",
+        "journal": "Applied Computing and Informatics, vol. 17, no. 1, pp. 168–192, 2020.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "168–192"
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 105,
+      "bracket_num": 55,
+      "block_id": "DISS-005-B2189",
+      "key": "bavr_bib_105_iec_2010",
+      "aliases": [
+        "bib:105",
+        "bavr:105"
+      ],
+      "kind": "reference",
+      "entry_type": "standard",
+      "language": "english",
+      "raw_source": "[55] IEC 61850-7-4: Communication networks and systems for power utility automation, International Electrotechnical Commission Std., 2010.",
+      "parsed_fields": {
+        "title": "IEC 61850-7-4: Communication networks and systems for power utility automation, International Electrotechnical Commission Std., 2010.",
+        "authors": null,
+        "year": "2010",
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 106,
+      "block_id": "DISS-005-B2190",
+      "key": "bavr_bib_106_placeholder",
+      "aliases": [
+        "bib:106",
+        "bavr:106"
+      ],
+      "kind": "placeholder",
+      "entry_type": "misc",
+      "language": "russian",
+      "raw_source": "в",
+      "parsed_fields": {
+        "title": "[Заглушка автора «в» в рукописи v0.5]"
+      },
+      "note": "Заглушка автора в рукописи v0.5 (блок DISS-005-B2190)",
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 107,
+      "block_id": "DISS-005-B2191",
+      "key": "bavr_bib_107_placeholder",
+      "aliases": [
+        "bib:107",
+        "bavr:107"
+      ],
+      "kind": "placeholder",
+      "entry_type": "misc",
+      "language": "russian",
+      "raw_source": "В",
+      "parsed_fields": {
+        "title": "[Заглушка автора «В» в рукописи v0.5]"
+      },
+      "note": "Заглушка автора в рукописи v0.5 (блок DISS-005-B2191)",
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 108,
+      "block_id": "DISS-005-B2192",
+      "key": "bavr_bib_108_placeholder",
+      "aliases": [
+        "bib:108",
+        "bavr:108"
+      ],
+      "kind": "placeholder",
+      "entry_type": "misc",
+      "language": "russian",
+      "raw_source": "В",
+      "parsed_fields": {
+        "title": "[Заглушка автора «В» в рукописи v0.5]"
+      },
+      "note": "Заглушка автора в рукописи v0.5 (блок DISS-005-B2192)",
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 109,
+      "block_id": "DISS-005-B2193",
+      "key": "bavr_bib_109_placeholder",
+      "aliases": [
+        "bib:109",
+        "bavr:109"
+      ],
+      "kind": "placeholder",
+      "entry_type": "misc",
+      "language": "russian",
+      "raw_source": "В",
+      "parsed_fields": {
+        "title": "[Заглушка автора «В» в рукописи v0.5]"
+      },
+      "note": "Заглушка автора в рукописи v0.5 (блок DISS-005-B2193)",
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 110,
+      "block_id": "DISS-005-B2194",
+      "key": "bavr_bib_110_placeholder",
+      "aliases": [
+        "bib:110",
+        "bavr:110"
+      ],
+      "kind": "placeholder",
+      "entry_type": "misc",
+      "language": "russian",
+      "raw_source": "В",
+      "parsed_fields": {
+        "title": "[Заглушка автора «В» в рукописи v0.5]"
+      },
+      "note": "Заглушка автора в рукописи v0.5 (блок DISS-005-B2194)",
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 111,
+      "block_id": "DISS-005-B2195",
+      "key": "bavr_bib_111_placeholder",
+      "aliases": [
+        "bib:111",
+        "bavr:111"
+      ],
+      "kind": "placeholder",
+      "entry_type": "misc",
+      "language": "russian",
+      "raw_source": "В",
+      "parsed_fields": {
+        "title": "[Заглушка автора «В» в рукописи v0.5]"
+      },
+      "note": "Заглушка автора в рукописи v0.5 (блок DISS-005-B2195)",
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 112,
+      "block_id": "DISS-005-B2196",
+      "key": "bavr_bib_112_placeholder",
+      "aliases": [
+        "bib:112",
+        "bavr:112"
+      ],
+      "kind": "placeholder",
+      "entry_type": "misc",
+      "language": "russian",
+      "raw_source": "В",
+      "parsed_fields": {
+        "title": "[Заглушка автора «В» в рукописи v0.5]"
+      },
+      "note": "Заглушка автора в рукописи v0.5 (блок DISS-005-B2196)",
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 113,
+      "block_id": "DISS-005-B2197",
+      "key": "bavr_bib_113_placeholder",
+      "aliases": [
+        "bib:113",
+        "bavr:113"
+      ],
+      "kind": "placeholder",
+      "entry_type": "misc",
+      "language": "russian",
+      "raw_source": "в",
+      "parsed_fields": {
+        "title": "[Заглушка автора «в» в рукописи v0.5]"
+      },
+      "note": "Заглушка автора в рукописи v0.5 (блок DISS-005-B2197)",
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 114,
+      "block_id": "DISS-005-B2198",
+      "key": "bavr_bib_114_placeholder",
+      "aliases": [
+        "bib:114",
+        "bavr:114"
+      ],
+      "kind": "placeholder",
+      "entry_type": "misc",
+      "language": "russian",
+      "raw_source": "Вв",
+      "parsed_fields": {
+        "title": "[Заглушка автора «Вв» в рукописи v0.5]"
+      },
+      "note": "Заглушка автора в рукописи v0.5 (блок DISS-005-B2198)",
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 115,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2199",
+      "key": "bavr_bib_115_shabad_2003",
+      "aliases": [
+        "bib:115",
+        "bavr:115"
+      ],
+      "kind": "reference",
+      "entry_type": "book",
+      "language": "russian",
+      "raw_source": "Шабад М. А. Расчеты релейной защиты и автоматики распределительных сетей: Монография / М. А. Шабад. - 4-е изд., перераб. и доп. - СПб.: ПЭИПК, 2003 - 350 стр., ил.",
+      "parsed_fields": {
+        "title": "Расчеты релейной защиты и автоматики распределительных сетей : Монография",
+        "authors": "Шабад М. А.",
+        "year": "2003",
+        "language": "russian",
+        "journal": null,
+        "booktitle": null,
+        "publisher": "М. А. Шабад. - 4-е изд., перераб. и доп. - СПб.: ПЭИПК, 2003 - 350 стр., ил.",
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 116,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2200",
+      "key": "bavr_bib_116_sto_2020",
+      "aliases": [
+        "bib:116",
+        "bavr:116"
+      ],
+      "kind": "reference",
+      "entry_type": "standard",
+      "language": "russian",
+      "raw_source": "СТО 56947007-29.120.70.305-2020 Методические указания для выбора параметров настройки и срабатывания МП устройств РЗА оборудования 6-35 кВ объектов ЕНЭС (Дата введения: 15.05.2020), ПАО «ФСК ЕЭС».",
+      "parsed_fields": {
+        "title": "СТО 56947007-29.120.70.305-2020 Методические указания для выбора параметров настройки и срабатывания МП устройств РЗА оборудования 6-35 кВ объектов ЕНЭС (Дата введения: 15.05.2020), ПАО «ФСК ЕЭС».",
+        "authors": null,
+        "year": "2020",
+        "language": "russian",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 117,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2201",
+      "key": "bavr_bib_117_nikulov_2012",
+      "aliases": [
+        "bib:117",
+        "bavr:117"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "russian",
+      "raw_source": "Никулов И.И., Жуков В.А., Пупин В.М.. Комплекс БАВР. Быстродействие повышает надежность электроснабжения // Новости ЭлектроТехники № 4(76) 2012. С. 2–4.",
+      "parsed_fields": {
+        "title": "И.И., Жуков В.А., Пупин В.М.. Комплекс БАВР. Быстродействие повышает надежность электроснабжения",
+        "authors": "Никулов",
+        "year": "2012",
+        "language": "russian",
+        "journal": "Новости ЭлектроТехники № 4(76) 2012. С. 2–4.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "2–4"
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 118,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2202",
+      "key": "bavr_bib_118_sulchakova_2020",
+      "aliases": [
+        "bib:118",
+        "bavr:118"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "russian",
+      "raw_source": "Сульчакова А.Ю. Испытания промышленных образцов устройств быстродействующего автоматического ввода резерва (БАВР) для нефтеперекачивающих станций на RTDS. Разработка тестовой схемы для испытаний устройств БАВР на RTDS: докл. на заседании АО «НТЦ ЕЭС» 2020 г.",
+      "parsed_fields": {
+        "title": "Сульчакова А.Ю. Испытания промышленных образцов устройств быстродействующего автоматического ввода резерва (БАВР) для нефтеперекачивающих станций на RTDS. Разработка тестовой схемы для испытаний устройств БАВР на RTDS: докл. на заседании АО «НТЦ ЕЭС» 2020 г.",
+        "authors": null,
+        "year": "2020",
+        "language": "russian",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 119,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2203",
+      "key": "bavr_bib_119_yu_1998",
+      "aliases": [
+        "bib:119",
+        "bavr:119"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "russian",
+      "raw_source": "Андреенко Ю. А. Измерительное устройство дифференциальной токовой защиты шин / Ю. А. Андреенко [и др.]. - (Электроэнергетика). - Текст : непосредственный // Известия вузов. Проблемы энергетики. - 2011. - № 7/8. - С. 62-70 : схемы, граф. - Библиогр.: с. 69-70 (10 назв. ). - Примеч.: с. 70. - ISSN 1998-9903.",
+      "parsed_fields": {
+        "title": "Андреенко Ю. А. Измерительное устройство дифференциальной токовой защиты шин",
+        "authors": "Ю. А. Андреенко [и др.]. - (Электроэнергетика). - Текст : непосредственный",
+        "year": "1998",
+        "language": "russian",
+        "journal": "Известия вузов. Проблемы энергетики. - 2011. - № 7/8. - С. 62-70 : схемы, граф. - Библиогр.: с. 69-70 (10 назв. ). - Примеч.: с. 70. - ISSN 1998-9903.",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "62-70"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0015",
+          "block_id": "DISS-005-B0659",
+          "raw_citation": "[119-121]",
+          "cited_number": 119
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 120,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2204",
+      "key": "bavr_bib_120_siamak_2020",
+      "aliases": [
+        "bib:120",
+        "bavr:120"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "Siamak Bahari. A New Stabilizing Method of Differential Protection Against Current Transformer Saturation Using Current Derivatives / Siamak Bahari, Tohid Hasani, Heresh Seyedi // 14th International Conference on Protection & Automation in Power System - pp. 33-38, April 2020",
+      "parsed_fields": {
+        "title": "Siamak Bahari. A New Stabilizing Method of Differential Protection Against Current Transformer Saturation Using Current Derivatives",
+        "authors": "Siamak Bahari, Tohid Hasani, Heresh Seyedi",
+        "year": "2020",
+        "language": "english",
+        "journal": "14th International Conference on Protection & Automation in Power System - pp. 33-38, April 2020",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "33-38"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0015",
+          "block_id": "DISS-005-B0659",
+          "raw_citation": "[119-121]",
+          "cited_number": 120
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 121,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2205",
+      "key": "bavr_bib_121_chothani_2014",
+      "aliases": [
+        "bib:121",
+        "bavr:121"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "english",
+      "raw_source": "Chothani, N.G., Bhalja, B.R., New algorithm for current transformer saturation detection and compensation based on derivatives of secondary currents and Newton’s backward difference formulae, IET Generation, Transmission & Distribution, Vol. 8, pp. 841-850, May 2014",
+      "parsed_fields": {
+        "title": "Chothani, N.G., Bhalja, B.R., New algorithm for current transformer saturation detection and compensation based on derivatives of secondary currents and Newton’s backward difference formulae, IET Generation, Transmission & Distribution, Vol. 8, pp. 841-850, May 2014",
+        "authors": null,
+        "year": "2014",
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": "841-850"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0015",
+          "block_id": "DISS-005-B0659",
+          "raw_citation": "[119-121]",
+          "cited_number": 121
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 122,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2206",
+      "key": "bavr_bib_122_rukovodstvo_nd",
+      "aliases": [
+        "bib:122",
+        "bavr:122"
+      ],
+      "kind": "reference",
+      "entry_type": "book",
+      "language": "russian",
+      "raw_source": "Руководство по эксплуатации КРУ TER_Sec10_Etalon_T1 / Версия 5.0 – 102 стр., ил.",
+      "parsed_fields": {
+        "title": "по эксплуатации КРУ TER_Sec10_Etalon_T1",
+        "authors": "Руководство",
+        "year": null,
+        "language": "russian",
+        "journal": null,
+        "booktitle": null,
+        "publisher": "Версия 5.0 – 102 стр., ил.",
+        "pages": "102"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0012",
+          "block_id": "DISS-005-B0659",
+          "raw_citation": "[122]",
+          "cited_number": 122
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 123,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2207",
+      "key": "bavr_bib_123_rukovodstvo_2023",
+      "aliases": [
+        "bib:123",
+        "bavr:123"
+      ],
+      "kind": "reference",
+      "entry_type": "book",
+      "language": "russian",
+      "raw_source": "Руководство по эксплуатации. Руководство по эксплуатации. Общие технические требования. Комплектное устройство ШЭ-АПС-БАВР шкаф автоматики быстродействующего автоматического ввода резерва в сетях 6÷35 кв / АПДЛ.656435003 РЭ ред. 3 от 31.08.2023 – 44 стр., ил.",
+      "parsed_fields": {
+        "title": "по эксплуатации. Руководство по эксплуатации. Общие технические требования. Комплектное устройство ШЭ-АПС-БАВР шкаф автоматики быстродействующего автоматического ввода резерва в сетях 6÷35 кв",
+        "authors": "Руководство",
+        "year": "2023",
+        "language": "russian",
+        "journal": null,
+        "booktitle": null,
+        "publisher": "АПДЛ.656435003 РЭ ред. 3 от 31.08.2023 – 44 стр., ил.",
+        "pages": "44"
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 124,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2208",
+      "key": "bavr_bib_124_rukovodstvo_2023",
+      "aliases": [
+        "bib:124",
+        "bavr:124"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "russian",
+      "raw_source": "Руководство по эксплуатации. Руководство оператора. Микропроцессорное устройтсво быстродействующего автоматического ввода резерва с восстановлением нормального режима электроснабжения БАВР «МИР» / АПДЛ.656121003 РЭ2 ред. 1 от 13.07.2023 – 179 стр., ил.",
+      "parsed_fields": {
+        "title": "Руководство по эксплуатации. Руководство оператора. Микропроцессорное устройтсво быстродействующего автоматического ввода резерва с восстановлением нормального режима электроснабжения БАВР «МИР» / АПДЛ.656121003 РЭ2 ред. 1 от 13.07.2023 – 179 стр., ил.",
+        "authors": null,
+        "year": "2023",
+        "language": "russian",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": "179"
+      },
+      "citations": [],
+      "comments": []
+    },
+    {
+      "entry_num": 125,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2209",
+      "key": "bavr_bib_125_e_2014",
+      "aliases": [
+        "bib:125",
+        "bavr:125"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "russian",
+      "raw_source": "Ломтев Е.А. Принципы построения и конструкции высоковольных ёмкостных делителей напряжения / Е.А. Ломтев, Д.И. Нефедьев // Измерение. Мониторинг. Управление. Контроль. – 2014 - №4(10). – с 4-8",
+      "parsed_fields": {
+        "title": "Ломтев Е.А. Принципы построения и конструкции высоковольных ёмкостных делителей напряжения",
+        "authors": "Е.А. Ломтев, Д.И. Нефедьев",
+        "year": "2014",
+        "language": "russian",
+        "journal": "Измерение. Мониторинг. Управление. Контроль. – 2014 - №4(10). – с 4-8",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0009",
+          "block_id": "DISS-005-B0658",
+          "raw_citation": "[125,126]",
+          "cited_number": 125
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 126,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2210",
+      "key": "bavr_bib_126_roman_2020",
+      "aliases": [
+        "bib:126",
+        "bavr:126"
+      ],
+      "kind": "reference",
+      "entry_type": "book",
+      "language": "english",
+      "raw_source": "Roman Hrbac. A Development of a Capacitive Voltage Divider for High Voltage Measurement as Part of a Combined Current and Voltage Sensor / Roman Hrbac, Vaclav Kolar, Mikolaj Bartlomiejczyk, Tomas Mlcak// ELEKTRONIKA IR ELEKTROTECHNIKA, ISSN 1392-1215, VOL. 26, NO. 4, 2020 - pp. 25-31",
+      "parsed_fields": {
+        "title": "Roman Hrbac. A Development of a Capacitive Voltage Divider for High Voltage Measurement as Part of a Combined Current and Voltage Sensor",
+        "authors": null,
+        "year": "2020",
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": "Roman Hrbac, Vaclav Kolar, Mikolaj Bartlomiejczyk, Tomas Mlcak// ELEKTRONIKA IR ELEKTROTECHNIKA, ISSN 1392-1215, VOL. 26, NO. 4, 2020 - pp. 25-31",
+        "pages": "25-31"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0009",
+          "block_id": "DISS-005-B0658",
+          "raw_citation": "[125,126]",
+          "cited_number": 126
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 127,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2211",
+      "key": "bavr_bib_127_tobias_2023",
+      "aliases": [
+        "bib:127",
+        "bavr:127"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "russian",
+      "raw_source": "Tobias Kuhnke. Frequency Analysis of a novel 10 kV RC Voltage Divider Module composed of SMD-Components on Printed Circuit Boards / Tobias Kuhnke; Saskia Düsdieker; Frank Jenau; Mohammad Razavifar // IEEE Belgrade PowerTech, August 2023 – pp ХХ-ХХ",
+      "parsed_fields": {
+        "title": "Tobias Kuhnke. Frequency Analysis of a novel 10 kV RC Voltage Divider Module composed of SMD-Components on Printed Circuit Boards",
+        "authors": "Tobias Kuhnke; Saskia Düsdieker; Frank Jenau; Mohammad Razavifar",
+        "year": "2023",
+        "language": "russian",
+        "journal": "IEEE Belgrade PowerTech, August 2023 – pp ХХ-ХХ",
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0010",
+          "block_id": "DISS-005-B0658",
+          "raw_citation": "[127,128]",
+          "cited_number": 127
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 128,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2212",
+      "key": "bavr_bib_128_you_2011",
+      "aliases": [
+        "bib:128",
+        "bavr:128"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "You Li. Study on methods of reduce resistive voltage dividers' phase shift / You Li; Li Yalu; Liu Min; Jin Haibin // IEEE 2011 10th International Conference on Electronic Measurement & Instruments, October 2011 – pp. 90-93",
+      "parsed_fields": {
+        "title": "You Li. Study on methods of reduce resistive voltage dividers' phase shift",
+        "authors": "You Li; Li Yalu; Liu Min; Jin Haibin",
+        "year": "2011",
+        "language": "english",
+        "journal": "IEEE 2011 10th International Conference on Electronic Measurement & Instruments, October 2011 – pp. 90-93",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "90-93"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0010",
+          "block_id": "DISS-005-B0658",
+          "raw_citation": "[127,128]",
+          "cited_number": 128
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 129,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2213",
+      "key": "bavr_bib_129_grechukhin_2006",
+      "aliases": [
+        "bib:129",
+        "bavr:129"
+      ],
+      "kind": "reference",
+      "entry_type": "misc",
+      "language": "russian",
+      "raw_source": "Гречухин В.Н. Электронные трансформаторы тока и напряжения.состояние, перспективы развития и внедрения на ОРУ 110–750 кв станций и подстанций энергосистем / Гречухин В.Н. // «Вестник ИГЭУ» Вып. 4 2006 г., стр. 1-9",
+      "parsed_fields": {
+        "title": "Гречухин В.Н. Электронные трансформаторы тока и напряжения.состояние, перспективы развития и внедрения на ОРУ 110–750 кв станций и подстанций энергосистем / Гречухин В.Н. // «Вестник ИГЭУ» Вып. 4 2006 г., стр. 1-9",
+        "authors": null,
+        "year": "2006",
+        "language": "russian",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0011",
+          "block_id": "DISS-005-B0659",
+          "raw_citation": "[129-131]",
+          "cited_number": 129
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 130,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2214",
+      "key": "bavr_bib_130_klimenko_2013",
+      "aliases": [
+        "bib:130",
+        "bavr:130"
+      ],
+      "kind": "reference",
+      "entry_type": "book",
+      "language": "russian",
+      "raw_source": "Клименко К.А. Исследование электромагнитного поля трансформаторов промышленной частоты с короткозамкнутыми витками: дис. ... канд. тех. наук: 05.09.01: защищена 25.12.13: утв. 05.05.12 / Клименко Ксения Александровна., 2013. - 157 с.",
+      "parsed_fields": {
+        "title": "Исследование электромагнитного поля трансформаторов промышленной частоты с короткозамкнутыми витками : дис. ... канд. тех. наук",
+        "authors": "Клименко К.А.",
+        "year": "2013",
+        "language": "russian",
+        "journal": null,
+        "booktitle": null,
+        "publisher": "Клименко Ксения Александровна., 2013. - 157 с.",
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0011",
+          "block_id": "DISS-005-B0659",
+          "raw_citation": "[129-131]",
+          "cited_number": 130
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 131,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2215",
+      "key": "bavr_bib_131_kuzhekov_2020",
+      "aliases": [
+        "bib:131",
+        "bavr:131"
+      ],
+      "kind": "reference",
+      "entry_type": "book",
+      "language": "russian",
+      "raw_source": "Кужеков С.Л. О проблеме выбора и замены трансформаторов тока для устройств релейной защиты / С.Л. Кужеков, А.А. Дегтярёв, Н.А. Дони, А.А. Шурупов// Известия вузов. Электромеханика. 2020. Т. 63. № 6 - с 72-82",
+      "parsed_fields": {
+        "title": "О проблеме выбора и замены трансформаторов тока для устройств релейной защиты",
+        "authors": "Кужеков С.Л.",
+        "year": "2020",
+        "language": "russian",
+        "journal": null,
+        "booktitle": null,
+        "publisher": "С.Л. Кужеков, А.А. Дегтярёв, Н.А. Дони, А.А. Шурупов// Известия вузов. Электромеханика. 2020. Т. 63. № 6 - с 72-82",
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0011",
+          "block_id": "DISS-005-B0659",
+          "raw_citation": "[129-131]",
+          "cited_number": 131
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 132,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2216",
+      "key": "bavr_bib_132_pc_2021",
+      "aliases": [
+        "bib:132",
+        "bavr:132"
+      ],
+      "kind": "reference",
+      "entry_type": "standard",
+      "language": "english",
+      "raw_source": "PC37.235/D15, Mar 2021 - IEEE Approved Draft Guide for the Application of Rogowski Coils Used for Protective Relaying Purposes, November 2021 - pp XXX",
+      "parsed_fields": {
+        "title": "PC37.235/D15, Mar 2021 - IEEE Approved Draft Guide for the Application of Rogowski Coils Used for Protective Relaying Purposes, November 2021 - pp XXX",
+        "authors": null,
+        "year": "2021",
+        "language": "english",
+        "journal": null,
+        "booktitle": null,
+        "publisher": null,
+        "pages": null
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0014",
+          "block_id": "DISS-005-B0659",
+          "raw_citation": "[132-136]",
+          "cited_number": 132
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 133,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2217",
+      "key": "bavr_bib_133_zhang_2014",
+      "aliases": [
+        "bib:133",
+        "bavr:133"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "Zhang Zhou sheng. The analysis of the factors affecting the performance of Clamp Rogowski coil / Zhang Zhou sheng, Bao Han, Ma ai qing // 2014 International Conference on Power System Technology (POWERCON 2014) – pp. 1446-1450",
+      "parsed_fields": {
+        "title": "Zhang Zhou sheng. The analysis of the factors affecting the performance of Clamp Rogowski coil",
+        "authors": "Zhang Zhou sheng, Bao Han, Ma ai qing",
+        "year": "2014",
+        "language": "english",
+        "journal": "2014 International Conference on Power System Technology (POWERCON 2014) – pp. 1446-1450",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "1446-1450"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0014",
+          "block_id": "DISS-005-B0659",
+          "raw_citation": "[132-136]",
+          "cited_number": 133
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 134,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2218",
+      "key": "bavr_bib_134_esa_2009",
+      "aliases": [
+        "bib:134",
+        "bavr:134"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "Esa-Pekka Suomalainen. Onsite Calibration of a Current Transformer Using a Rogowski Coil / Esa-Pekka Suomalainen, Jari K. Hällström // IEEE TRANSACTIONS ON INSTRUMENTATION AND MEASUREMENT, VOL. 58, NO. 4, APRIL 2009 – pp. 1054-1058",
+      "parsed_fields": {
+        "title": "Esa-Pekka Suomalainen. Onsite Calibration of a Current Transformer Using a Rogowski Coil",
+        "authors": "Esa-Pekka Suomalainen, Jari K. Hällström",
+        "year": "2009",
+        "language": "english",
+        "journal": "IEEE TRANSACTIONS ON INSTRUMENTATION AND MEASUREMENT, VOL. 58, NO. 4, APRIL 2009 – pp. 1054-1058",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "1054-1058"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0014",
+          "block_id": "DISS-005-B0659",
+          "raw_citation": "[132-136]",
+          "cited_number": 134
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 135,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2219",
+      "key": "bavr_bib_135_peng_2007",
+      "aliases": [
+        "bib:135",
+        "bavr:135"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "Peng Wang. Planar Rogowski Coil Current Transducer Used for Three-phase Plate-form Busbars / Peng Wang, Guixin Zhang, Xiaomei Zhu, Chengmu Luo // Instrumentation and Measurement Technology Conference - IMTC 2007 Warsaw, Poland, May 1-3, 2007 – pp. 1-4",
+      "parsed_fields": {
+        "title": "Peng Wang. Planar Rogowski Coil Current Transducer Used for Three-phase Plate-form Busbars",
+        "authors": "Peng Wang, Guixin Zhang, Xiaomei Zhu, Chengmu Luo",
+        "year": "2007",
+        "language": "english",
+        "journal": "Instrumentation and Measurement Technology Conference - IMTC 2007 Warsaw, Poland, May 1-3, 2007 – pp. 1-4",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "1-4"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0014",
+          "block_id": "DISS-005-B0659",
+          "raw_citation": "[132-136]",
+          "cited_number": 135
+        }
+      ],
+      "comments": []
+    },
+    {
+      "entry_num": 136,
+      "bracket_num": null,
+      "block_id": "DISS-005-B2220",
+      "key": "bavr_bib_136_lj_2007",
+      "aliases": [
+        "bib:136",
+        "bavr:136"
+      ],
+      "kind": "reference",
+      "entry_type": "article",
+      "language": "english",
+      "raw_source": "Lj. A. Kojovic. Comparative Performance Characteristics of Current Transformers and Rogowski Coils used for Protective Relaying Purposes / Lj. A. Kojovic // IEEE Power Engineering Society General Meeting - July 2007, pp. 1-6",
+      "parsed_fields": {
+        "title": "Lj. A. Kojovic. Comparative Performance Characteristics of Current Transformers and Rogowski Coils used for Protective Relaying Purposes",
+        "authors": "Lj. A. Kojovic",
+        "year": "2007",
+        "language": "english",
+        "journal": "IEEE Power Engineering Society General Meeting - July 2007, pp. 1-6",
+        "booktitle": null,
+        "publisher": null,
+        "pages": "1-6"
+      },
+      "citations": [
+        {
+          "cite_id": "DISS-005-CITE-0014",
+          "block_id": "DISS-005-B0659",
+          "raw_citation": "[132-136]",
+          "cited_number": 136
+        }
+      ],
+      "comments": []
+    }
+  ],
+  "unlinked_citations": [
+    {
+      "cite_id": "DISS-005-CITE-0102",
+      "block_id": "DISS-005-B2240",
+      "raw_citation": "[2020]",
+      "cited_number": 2020,
+      "note": "Citation number outside 1..136 range (e.g. informal year or missing target)"
+    },
+    {
+      "cite_id": "DISS-005-CITE-0103",
+      "block_id": "DISS-005-B2241",
+      "raw_citation": "[20222]",
+      "cited_number": 20222,
+      "note": "Citation number outside 1..136 range (e.g. informal year or missing target)"
+    }
+  ]
+}

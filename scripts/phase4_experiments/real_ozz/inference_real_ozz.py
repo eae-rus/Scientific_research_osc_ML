@@ -42,6 +42,11 @@ from osc_tools.data_management.real_ozz_split import (
     load_real_ozz_report, split_by_verification, get_bus_for_file,
 )
 from scripts.phase4_experiments.evaluate_phase4 import load_model_from_checkpoint
+from scripts.phase4_experiments.threshold_utils import (
+    any_positive_mask,
+    resolve_threshold_config,
+    thresholds_for_classes,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -57,12 +62,27 @@ PHASE_COLORS = {
     'UA': '#FFD700', 'UB': '#228B22', 'UC': '#FF4500', 'UN': '#1E90FF',
 }
 CLASS_COLORS = ['#E74C3C', '#F39C12', '#8E44AD', '#2980B9']
+CLASS_NAMES = ['Stable_SPGF', 'Petersen_AIGF', 'PetersSlepyan_AIGF', 'Belyakov_AIGF']
 CLASS_LABELS = ['Stable SPGF', 'Petersen AIGF', 'Peters-Slepyan AIGF', 'Belyakov AIGF']
 
 
 # ---------------------------------------------------------------------------
 # Парсинг COMTRADE → сырые сигналы для inference
 # ---------------------------------------------------------------------------
+
+def _build_channel_map(bus: str) -> dict[str, list[str]]:
+    """Возвращает маппинг коротких имён → кандидаты имён столбцов для данного bus."""
+    return {
+        'IA': [f'I | Bus-{bus} | phase: A'],
+        'IB': [f'I | Bus-{bus} | phase: B'],
+        'IC': [f'I | Bus-{bus} | phase: C'],
+        'IN': [f'I | Bus-{bus} | phase: N'],
+        'UA': [f'U | BusBar-{bus} | phase: A', f'U | CableLine-{bus} | phase: A'],
+        'UB': [f'U | BusBar-{bus} | phase: B', f'U | CableLine-{bus} | phase: B'],
+        'UC': [f'U | BusBar-{bus} | phase: C', f'U | CableLine-{bus} | phase: C'],
+        'UN': [f'U | BusBar-{bus} | phase: N', f'U | CableLine-{bus} | phase: N'],
+    }
+
 
 def load_comtrade_raw(
     cfg_path: Path,
@@ -80,10 +100,14 @@ def load_comtrade_raw(
         (raw_8ch_display, raw_8ch_model, fs, time_arr, signal_info)
         - raw_8ch_display: (N, 8) оригинальные значения для графика
         - raw_8ch_model: (N, 8) нормализованные значения для inference
-        - raw_8ch: (N, 8) numpy array [IA, IB, IC, IN, UA, UB, UC, UN] или None
         - fs: частота дискретизации (Гц)
         - time_arr: (N,) массив времени (с)
         - signal_info: dict с информацией о найденных сигналах
+
+    Примечания:
+        - IB (фаза B тока) необязательна: при отсутствии заполняется нулями.
+          Модель специально обучалась на этот случай (PhaseCurrentDropout p_drop_b=0.45).
+        - Если каналы для запрошенного bus не найдены — автоматически пробуется bus='1'.
     """
     reader = ReadComtrade()
     rec, raw_df = reader.read_comtrade(str(cfg_path))
@@ -98,42 +122,41 @@ def load_comtrade_raw(
     # Время
     time_arr = np.array(rec.time, dtype=np.float64)
 
-    # Ищем каналы для указанной секции (bus)
     cols = set(raw_df.columns)
 
-    # Маппинг длинных имён -> короткие
-    channel_map = {
-        'IA': [f'I | Bus-{bus} | phase: A'],
-        'IB': [f'I | Bus-{bus} | phase: B'],
-        'IC': [f'I | Bus-{bus} | phase: C'],
-        'IN': [f'I | Bus-{bus} | phase: N'],
-        'UA': [f'U | BusBar-{bus} | phase: A', f'U | CableLine-{bus} | phase: A'],
-        'UB': [f'U | BusBar-{bus} | phase: B', f'U | CableLine-{bus} | phase: B'],
-        'UC': [f'U | BusBar-{bus} | phase: C', f'U | CableLine-{bus} | phase: C'],
-        'UN': [f'U | BusBar-{bus} | phase: N', f'U | CableLine-{bus} | phase: N'],
-    }
+    def resolve_channels(target_bus: str) -> dict[str, str | None]:
+        """Разрешает имена каналов для заданного bus."""
+        result = {}
+        for short_name, candidates in _build_channel_map(target_bus).items():
+            result[short_name] = next((c for c in candidates if c in cols), None)
+        return result
 
-    resolved = {}
-    signal_info = {}
-    for short_name, candidates in channel_map.items():
-        found = False
-        for cand in candidates:
-            if cand in cols:
-                resolved[short_name] = cand
-                signal_info[short_name] = cand
-                found = True
-                break
-        if not found:
-            resolved[short_name] = None
+    # Ищем каналы для запрошенного bus
+    resolved = resolve_channels(bus)
+    signal_info: dict = {k: v for k, v in resolved.items() if v is not None}
 
-    # Проверяем минимум каналов (хотя бы 3 тока + 3 напряжения)
-    available = [k for k, v in resolved.items() if v is not None]
-    required_currents = {'IA', 'IB', 'IC'}
-    required_voltages = {'UA', 'UB', 'UC'}
-    if not required_currents.issubset(set(available)):
-        return None, None, fs, time_arr, signal_info
-    if not required_voltages.issubset(set(available)):
-        return None, None, fs, time_arr, signal_info
+    # Минимальный набор: IA, IC (IB опционален — маскируется нулём) + UA, UB, UC
+    required_hard = {'IA', 'IC', 'UA', 'UB', 'UC'}
+    available = {k for k, v in resolved.items() if v is not None}
+
+    if not required_hard.issubset(available):
+        # Fallback: пробуем bus='1', если запрошенный bus не дал результата
+        if bus != '1':
+            resolved_fb = resolve_channels('1')
+            available_fb = {k for k, v in resolved_fb.items() if v is not None}
+            if required_hard.issubset(available_fb):
+                resolved = resolved_fb
+                signal_info = {k: v for k, v in resolved.items() if v is not None}
+                signal_info['_bus_fallback'] = f'bus={bus}→bus=1'
+                available = available_fb
+            else:
+                return None, None, fs, time_arr, signal_info
+        else:
+            return None, None, fs, time_arr, signal_info
+
+    # IB отсутствует → будет заполнен нулями (модель обучена на PhaseCurrentDropout)
+    if resolved.get('IB') is None:
+        signal_info['_IB_masked'] = True
 
     # Собираем 8 каналов ОРИГИНАЛЬНЫХ (для графика)
     order = ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']
@@ -414,11 +437,12 @@ def plot_real_ozz_marking(
     coverage: np.ndarray,
     fs: float,
     title: str,
-    threshold: float = 0.5,
+    threshold: float | dict[str, float] = 0.5,
     auto_crop: bool = True,
     f_network: float = 50.0,
 ) -> None:
     """Строит график разметки для реальной COMTRADE осциллограммы."""
+    threshold_values = thresholds_for_classes(CLASS_NAMES, threshold)
     N = raw_data.shape[0]
     num_classes = probs.shape[1]
     time_ms = np.arange(N) * 1000.0 / fs
@@ -467,14 +491,15 @@ def plot_real_ozz_marking(
         p = probs[:, ci]
         color = CLASS_COLORS[ci % len(CLASS_COLORS)]
         label = CLASS_LABELS[ci] if ci < len(CLASS_LABELS) else f'Class {ci}'
+        class_threshold = float(threshold_values[ci]) if ci < len(threshold_values) else 0.5
 
         ax.plot(time_ms, p, color=color, linewidth=1.2, alpha=0.7)
-        mask_high = p >= threshold
+        mask_high = p >= class_threshold
         if np.any(mask_high & ~np.isnan(p)):
             ax.fill_between(time_ms, 0, p, where=mask_high & ~np.isnan(p),
                             alpha=0.2, color=color)
 
-        ax.axhline(threshold, color='red', linewidth=0.8, linestyle='--', alpha=0.6)
+        ax.axhline(class_threshold, color='red', linewidth=0.8, linestyle='--', alpha=0.6)
         ax.set_ylim(-0.02, 1.02)
         ax.set_ylabel(label, fontsize=8)
         ax.grid(True, alpha=0.3, linestyle=':')
@@ -502,7 +527,7 @@ def run_inference_on_real_ozz(
     output_dir: str | None = None,
     subset: str = 'all',
     max_files: int | None = None,
-    threshold: float = 0.5,
+    threshold: float | dict[str, float] = 0.5,
     auto_crop: bool = True,
     buses_filter: list[str] | None = None,
     mask_neutral: bool = True,
@@ -512,6 +537,7 @@ def run_inference_on_real_ozz(
     pseudo_margin_periods: int = 10,
     pseudo_merge_gap_periods: int = 5,
     pseudo_csv_dir: str | None = None,
+    thresholds_json: str | None = None,
 ) -> dict:
     """Inference на реальных COMTRADE файлах.
 
@@ -522,7 +548,7 @@ def run_inference_on_real_ozz(
             'unknown' — файлы из COMTRADE_DIR, которых нет в overvoltage_report
             (используется для авторазметки и расширения базы no-OZZ примеров).
         max_files: ограничение числа файлов
-        threshold: порог бин. классификации
+        threshold: порог бин. классификации (scalar или per-class)
         auto_crop: автокроп вокруг обнаруженного ОЗЗ
         buses_filter: ограничить секции (например ['1'])
         mask_neutral: маскировать IN/UN (без нулевых последовательностей)
@@ -544,6 +570,15 @@ def run_inference_on_real_ozz(
     ckpt_path = Path(checkpoint_path)
     model, config = load_model_from_checkpoint(ckpt_path, device)
     print(f"Модель: {config.get('model_type')}")
+    threshold_config = resolve_threshold_config(
+        CLASS_NAMES,
+        threshold=threshold,
+        thresholds_json=thresholds_json,
+    )
+    if threshold_config['mode'] == 'per_class':
+        print(f"Пороги: per-class ({threshold_config['source']})")
+    else:
+        print(f"Порог: fixed = {threshold_config['default_threshold']:.3f}")
     if mask_neutral:
         print("Режим: IN/UN маскированы (=0) — без нулевых последовательностей")
 
@@ -612,6 +647,12 @@ def run_inference_on_real_ozz(
         'total_files': len(unique_files),
         'processed': 0,
         'skipped': 0,
+        # Диагностика причин пропуска (для проверки 477 vs 830 confirmed):
+        'skip_not_on_disk': 0,        # .cfg файл отсутствует в osc_comtrade/
+        'skip_no_channels': 0,        # Отсутствуют каналы IA/IC или UA/UB/UC (критичные)
+        'skip_too_short': 0,          # Файл короче 10 периодов (~220мс)
+        'ib_masked': 0,               # IB отсутствует → заполнен нулём (модель обучена на это)
+        'bus_fallback': 0,            # bus не найден → использован fallback bus=1
         'detected_ozz': 0,
         'no_ozz_detected': 0,
         'unknown_detected': 0,
@@ -619,6 +660,12 @@ def run_inference_on_real_ozz(
         'pseudo_segments': 0,
         'fast_mode': fast_mode,
         'subset': subset,
+        'thresholding': {
+            'mode': threshold_config['mode'],
+            'default_threshold': threshold_config['default_threshold'],
+            'source': threshold_config['source'],
+            'per_class_thresholds': threshold_config['per_class_thresholds'],
+        },
     }
 
     # Лог авторазметки unknown-файлов (для дальнейшей перепроверки человеком).
@@ -629,6 +676,7 @@ def run_inference_on_real_ozz(
         cfg_path = COMTRADE_DIR / f'{fname}.cfg'
         if not cfg_path.exists():
             stats['skipped'] += 1
+            stats['skip_not_on_disk'] += 1
             continue
 
         # Категория файла: 'confirmed' | 'false_det' | 'unknown'
@@ -667,10 +715,20 @@ def run_inference_on_real_ozz(
             )
 
             if raw_display is None:
+                stats['skip_no_channels'] += 1
+                print(f"    SKIP channels: {fname} bus={bus} | доступные: {list(sig_info.keys())}")
                 continue
 
+            # Счётчики: IB маскирован / bus fallback
+            if sig_info.get('_IB_masked'):
+                stats['ib_masked'] += 1
+            if sig_info.get('_bus_fallback'):
+                stats['bus_fallback'] += 1
+
             bus_suffix = f'_bus{bus}' if len(file_buses) > 1 else ''
-            print(f"  [{file_idx+1}/{len(unique_files)}] {fname}{bus_suffix} "
+            ib_note = ' [IB=0]' if sig_info.get('_IB_masked') else ''
+            fb_note = f' [fb:{sig_info.get("_bus_fallback", "")}]' if sig_info.get('_bus_fallback') else ''
+            print(f"  [{file_idx+1}/{len(unique_files)}] {fname}{bus_suffix}{ib_note}{fb_note} "
                   f"(N={raw_display.shape[0]}, Fs={fs:.0f}, {label})")
 
             # Inference — на НОРМАЛИЗОВАННЫХ данных
@@ -685,10 +743,16 @@ def run_inference_on_real_ozz(
                 model, raw_for_model, config, device, fs=fs, fast_mode=fast_mode,
             )
 
+            # Диагностика: если все NaN — файл слишком короткий
+            if np.all(np.isnan(probs)):
+                stats['skip_too_short'] += 1
+                stats['skipped'] += 1
+
             # Определяем, есть ли ОЗЗ
+            sample_hits = any_positive_mask(probs, CLASS_NAMES, threshold_config['threshold_spec'])
             max_prob_per_sample = np.nanmax(probs, axis=1)
             max_prob_value = float(np.nanmax(max_prob_per_sample)) if np.any(~np.isnan(max_prob_per_sample)) else 0.0
-            has_ozz = max_prob_value >= threshold
+            has_ozz = bool(np.any(sample_hits))
 
             if has_ozz:
                 stats['detected_ozz'] += 1
@@ -727,7 +791,7 @@ def run_inference_on_real_ozz(
                     coverage=cov,
                     fs=fs,
                     title=title,
-                    threshold=threshold,
+                    threshold=threshold_config['threshold_spec'],
                     auto_crop=auto_crop and has_ozz,
                 )
 
@@ -741,7 +805,7 @@ def run_inference_on_real_ozz(
                     probs=probs,
                     coverage=cov,
                     fs=fs,
-                    threshold=threshold,
+                    threshold=threshold_config['threshold_spec'],
                     margin_periods=pseudo_margin_periods,
                     merge_gap_periods=pseudo_merge_gap_periods,
                 )
@@ -754,7 +818,12 @@ def run_inference_on_real_ozz(
     print(f"\n{'='*60}")
     print(f"ИТОГО:")
     print(f"  Обработано: {stats['processed']}")
-    print(f"  Пропущено: {stats['skipped']}")
+    print(f"  Пропущено итого: {stats['skipped']}")
+    print(f"    - нет на диске: {stats['skip_not_on_disk']}")
+    print(f"    - нет каналов (критичные): {stats['skip_no_channels']}")
+    print(f"    - слишком коротко: {stats['skip_too_short']}")
+    print(f"  IB маскирован нулём (обучен): {stats['ib_masked']}")
+    print(f"  Bus fallback (→bus=1): {stats['bus_fallback']}")
     print(f"  ОЗЗ обнаружено: {stats['detected_ozz']}")
     print(f"  ОЗЗ не обнаружено: {stats['no_ozz_detected']}")
     if subset == 'unknown' or stats['unknown_detected'] or stats['unknown_clean']:
@@ -800,6 +869,8 @@ def main():
                         help='Подмножество файлов. unknown — файлы вне overvoltage_report.')
     parser.add_argument('--max-files', type=int, default=None)
     parser.add_argument('--threshold', type=float, default=0.5)
+    parser.add_argument('--thresholds-json', type=str, default=None,
+                        help='JSON с per-class порогами: sim_ozz_evaluation.json, optimal_thresholds.json и т.п.')
     parser.add_argument('--no-crop', action='store_true',
                         help='Не кропить графики вокруг ОЗЗ')
     parser.add_argument('--no-mask-neutral', action='store_true',
@@ -825,6 +896,7 @@ def main():
         subset=args.subset,
         max_files=args.max_files,
         threshold=args.threshold,
+        thresholds_json=args.thresholds_json,
         auto_crop=not args.no_crop,
         buses_filter=buses,
         mask_neutral=not args.no_mask_neutral,
@@ -847,7 +919,7 @@ if __name__ == '__main__':
         # РУЧНОЙ РЕЖИМ — отредактируйте константы ниже
         # =====================================================
         # Укажите путь после обучения
-        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260428_174217/latest_checkpoint.pt'
+        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt'
         # Пример: CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_.../best_model.pt'
 
         # 'all' | 'confirmed' | 'false_detection' | 'unknown'
@@ -856,6 +928,7 @@ if __name__ == '__main__':
         SUBSET = 'all'
         MAX_FILES = None       # None = все файлы
         THRESHOLD = 0.5
+        THRESHOLDS_JSON = None # Добавить ссылку на JSON с per-class порогами, если нужно (например, sim_ozz_evaluation.json или optimal_thresholds.json)
         AUTO_CROP = True
         MASK_NEUTRAL = False    # True = обнулять IN/UN перед inference
 
@@ -894,6 +967,7 @@ if __name__ == '__main__':
                 subset=SUBSET,
                 max_files=MAX_FILES,
                 threshold=THRESHOLD,
+                thresholds_json=THRESHOLDS_JSON,
                 auto_crop=AUTO_CROP,
                 mask_neutral=MASK_NEUTRAL,
                 fast_mode=FAST_MODE,

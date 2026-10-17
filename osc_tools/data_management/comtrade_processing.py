@@ -10,11 +10,18 @@ class ReadComtrade():
       
       
     def read_comtrade(self, file_name):
-        """Загружает и читает содержимое файлов comtrade.
+        """Читает COMTRADE или поддерживаемый нативный формат осциллограммы.
 
-        Возвращает кортеж (Comtrade, DataFrame) или (None, None) при ошибке.
+        Возвращает (Comtrade/NativeOscillogram, DataFrame) либо (None, None).
+        Для wconfig, recover_incomplete и строгих ошибок используйте
+        osc_tools.io.oscillogram.load_oscillogram.
         """
         try:
+            # Сохраняем существующий способ чтения COMTRADE и обработку ошибок.
+            # Записи производителей предоставляют данные и метаданные для тех же обработчиков.
+            if file_name and os.path.splitext(os.fspath(file_name))[1].lower() not in ('.cfg', '.dat', '.cff'):
+                from osc_tools.io.oscillogram import ReadOscillogram
+                return ReadOscillogram().read_oscillogram(file_name)
             rec = Comtrade()
             # rec.load загружает данные в сам объект rec и не возвращает значения
             rec.load(file_name)

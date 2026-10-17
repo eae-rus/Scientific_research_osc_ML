@@ -649,6 +649,9 @@ def evaluate_full_test_dataset(
         
         start_time = time.perf_counter()
         
+        best_path = exp_dir / "best_model.pt"
+        final_path = exp_dir / "final_model.pt"
+
         model = _create_model_from_config(config)
         if model is None:
             return results
@@ -658,7 +661,6 @@ def evaluate_full_test_dataset(
         use_hier_eval = (mode == 'multilabel' and target_level in ('full', 'full_by_levels'))
         
         # Оценка best_model.pt
-        best_path = exp_dir / "best_model.pt"
         if best_path.exists():
             try:
                 checkpoint = torch.load(best_path, map_location='cpu', weights_only=False)
@@ -723,7 +725,6 @@ def evaluate_full_test_dataset(
                     torch.cuda.empty_cache()
         
         # Оценка final_model.pt
-        final_path = exp_dir / "final_model.pt"
         if final_path.exists():
             try:
                 checkpoint = torch.load(final_path, map_location='cpu', weights_only=False)

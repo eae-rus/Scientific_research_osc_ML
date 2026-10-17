@@ -1,0 +1,870 @@
+[
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 1,
+    "locator": "/w:document/w:body/w:p[1]",
+    "style": "papertitle",
+    "text": "СТАТИСТИЧЕСКИЙ АНАЛИЗ ПЕРЕНАПРЯЖЕНИЙ "
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 2,
+    "locator": "/w:document/w:body/w:p[2]",
+    "style": "papertitle",
+    "text": "ПРИ ОДНОФАЗНЫХ ЗАМЫКАНИЯХ НА ЗЕМЛЮ ПО ДАННЫМ РЕАЛЬНЫХ ОСЦИЛЛОГРАММ"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 3,
+    "locator": "/w:document/w:body/w:p[3]",
+    "style": "Author",
+    "text": "Евдаков А.Е., Филатова Г.А., Яблоков А.А."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 4,
+    "locator": "/w:document/w:body/w:p[4]",
+    "style": "Affiliation",
+    "text": "Ивановский государственный энергетический университет имени В.И. Ленина "
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 5,
+    "locator": "/w:document/w:body/w:p[5]",
+    "style": "Affiliation",
+    "text": "153003 г. Иваново, ул. Рабфаковская 34"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 6,
+    "locator": "/w:document/w:body/w:p[6]",
+    "style": "Affiliation",
+    "text": "E-mail: eae_rus@mail.ru"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 7,
+    "locator": "/w:document/w:body/w:p[7]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 8,
+    "locator": "/w:document/w:body/w:p[8]",
+    "style": "",
+    "text": "Аннотация"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 9,
+    "locator": "/w:document/w:body/w:p[9]",
+    "style": "",
+    "text": "Состояние вопроса: Классические теоретические оценки перенапряжений при дуговых перемежающихся дуговых однофазных замыканиях на землю (ОЗЗ) в сетях 6÷35 кВ достигают 3÷4 Uном. Однако в открытых источниках недостаточно масштабных исследований на реальных осциллограммах, которые могли бы уточнить эти пределы для современных условий эксплуатации"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 10,
+    "locator": "/w:document/w:body/w:p[10]",
+    "style": "",
+    "text": "Материалы и методы: Исследование основано на верифицированном наборе из 830 реальных осциллограмм ОЗЗ. Для анализа распределения кратностей перенапряжений применены методы математической статистики (KDE, CDF, описательные статистики)."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 11,
+    "locator": "/w:document/w:body/w:p[11]",
+    "style": "",
+    "text": "Результаты: Установлено, что эмпирическое распределение кратностей перенапряжений существенно отличается от классических теоретических оценок. В 95% случаев перенапряжения не превышали 2,45 Uном, а медианное значение составило 1,926 Uном. Большая часть значений (90%) находится в диапазоне 1,65÷2,35 Uном. Максимальное зафиксированное значение — 2,843 Uном."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 12,
+    "locator": "/w:document/w:body/w:p[12]",
+    "style": "",
+    "text": "Выводы: Полученные данные показывают, что экстремально высокие перенапряжения на практике редки. Результаты представляют статистически обоснованную базу для уточнения подходов к координации изоляции и оценке рисков, реализуя переход от детерминистического подхода к вероятностному."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 13,
+    "locator": "/w:document/w:body/w:p[13]",
+    "style": "",
+    "text": "Ключевые слова: однофазное замыкание на землю, ОЗЗ, перенапряжение, статистический анализ, распределение вероятностей, релейная защита, осциллограммы, кратность перенапряжения."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 14,
+    "locator": "/w:document/w:body/w:p[14]",
+    "style": "papertitle",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 15,
+    "locator": "/w:document/w:body/w:p[15]",
+    "style": "papertitle",
+    "text": "STATISTICAL ANALYSIS OF OVERVOLTAGES DURING SINGLE-PHASE-TO-GROUND FAULTS BASED ON REAL-WORLD OSCILLOGRAMS"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 16,
+    "locator": "/w:document/w:body/w:p[16]",
+    "style": "papersubtitle",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 17,
+    "locator": "/w:document/w:body/w:p[17]",
+    "style": "Author",
+    "text": "Evdakov A.E., Filatova G.A. Yablokov A.A."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 18,
+    "locator": "/w:document/w:body/w:p[18]",
+    "style": "Affiliation",
+    "text": "Ivanovo State Power University named after V.I. Lenin"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 19,
+    "locator": "/w:document/w:body/w:p[19]",
+    "style": "Affiliation",
+    "text": " 34 Rabfakovskaya Street, Ivanovo, 153003"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 20,
+    "locator": "/w:document/w:body/w:p[20]",
+    "style": "Affiliation",
+    "text": "E-mail: eae_rus@mail.ru"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 21,
+    "locator": "/w:document/w:body/w:p[21]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 22,
+    "locator": "/w:document/w:body/w:p[22]",
+    "style": "",
+    "text": "Abstract"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 23,
+    "locator": "/w:document/w:body/w:p[23]",
+    "style": "",
+    "text": "Background: Classical theoretical estimates predict overvoltages with a multiplicity of up to 3÷4 Unom during intermittent arc single-phase earth fault (SPEF) in 6÷35 kV networks. However, open sources lack large-scale studies based on real-world oscillograms that could refine these theoretical limits for modern operating conditions."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 24,
+    "locator": "/w:document/w:body/w:p[24]",
+    "style": "",
+    "text": "Materials and Methods: The study is based on a verified dataset of 830 real-world oscillograms from SPEF events. Methods of mathematical statistics, including Kernel Density Estimation (KDE), Cumulative Distribution Function (CDF), and descriptive statistics, were used to analyze the distribution of overvoltage multiplicities."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 25,
+    "locator": "/w:document/w:body/w:p[25]",
+    "style": "",
+    "text": "Results: It was found that the empirical distribution of overvoltage multiplicities significantly differs from classical theoretical estimates. In 95% of the analyzed cases, the overvoltage multiplicity did not exceed 2,45 Unom, and the median value was 1,926 Unom. Most of the values (90%) are in the range of 1.65÷2.35 Unom. The maximum recorded value was 2,843 Unom."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 26,
+    "locator": "/w:document/w:body/w:p[26]",
+    "style": "",
+    "text": "Conclusions: The obtained data show that extremely high overvoltages are rare in practice. The results provide a statistically justified basis for refining approaches to insulation coordination and risk assessment, enabling a shift from a deterministic to a probabilistic approach."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 27,
+    "locator": "/w:document/w:body/w:p[27]",
+    "style": "",
+    "text": "Key words: single-phase earth fault, SPEF, overvoltage, statistical analysis, probability distribution, relay protection, oscillograms, overvoltage multiplicity."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 28,
+    "locator": "/w:document/w:body/w:p[28]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 29,
+    "locator": "/w:document/w:body/w:p[29]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 30,
+    "locator": "/w:document/w:body/w:p[30]",
+    "style": "1",
+    "text": "Введение"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 31,
+    "locator": "/w:document/w:body/w:p[31]",
+    "style": "a3",
+    "text": "Однофазные замыкания на землю (ОЗЗ) в распределительных сетях 6÷35 кВ с изолированной нейтралью сопровождаются возникновением перенапряжений на неповреждённых фазах. Теоретические исследования и математическое моделирование показывают, что при определённых условиях, особенно при перемежающихся дуговых замыканиях, кратность таких перенапряжений может достигать 3÷4 номинального фазного напряжения и более. Эти оценки заложены в литературе и в отраслевых руководящих документах как ориентиры для требований к изоляции электрооборудования [1-4]."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 32,
+    "locator": "/w:document/w:body/w:p[32]",
+    "style": "a3",
+    "text": "В то же время, теоретические модели используют ряд допущений и не всегда способны учесть всё многообразие факторов реальной энергосистемы: реальный ток дуги, сопротивление заземления, влияние ёмкостей и паразитных ёмкостей фаз, резонансные явления, нелинейности."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 33,
+    "locator": "/w:document/w:body/w:p[33]",
+    "style": "a3",
+    "text": "Однако эксплуатационные данные часто отличаются от расчётных. Современные цифровые устройства позволяют проверить теорию на большом массиве реальных осциллограмм и получить объективную статистику"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 34,
+    "locator": "/w:document/w:body/w:p[34]",
+    "style": "a3",
+    "text": "Цель данной работы – количественный анализ распределения кратностей перенапряжений при ОЗЗ для сопоставления эмпирических данных в сетях 6÷35 кВ с теоретическими оценками"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 35,
+    "locator": "/w:document/w:body/w:p[35]",
+    "style": "1",
+    "text": "Исходные данные и методология анализа"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 36,
+    "locator": "/w:document/w:body/w:p[36]",
+    "style": "a3",
+    "text": "Основой для настоящего исследования послужил целевой верифицированный набор данных, содержащий 830 осциллограмм однофазных замыканий на землю. Данный набор был сформирован из большого промышленного архива [5] (более 50 тыс. записей) путём применения многоэтапной методики, включающей автоматизированный отбор и последующую ручную экспертную проверку для исключения нецелевых и ошибочно классифицированных событий. Все осциллограммы в наборе представляют реальные аварийные процессы, зафиксированные на действующих подстанциях в первую очередь, в кабельных распределительных сетях 6÷35 кВ."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 37,
+    "locator": "/w:document/w:body/w:p[37]",
+    "style": "a3",
+    "text": "Для каждой осциллограммы из набора была рассчитана максимальная кратность перенапряжения на неповрежденных фазах относительно номинального фазного напряжения (Uном). Этот показатель стал ключевым для последующего статистического анализа."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 38,
+    "locator": "/w:document/w:body/w:p[38]",
+    "style": "1",
+    "text": "Количественный анализ перенапряжений при ОЗЗ"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 39,
+    "locator": "/w:document/w:body/w:p[39]",
+    "style": "a3",
+    "text": "Статистический анализ перенапряжений является ключевым этапом исследования, позволяющим перейти от качественных наблюдений к количественным оценкам. На основе верифицированной выборки из 830 осциллограмм был проведён комплексный анализ распределения кратностей перенапряжений при ОЗЗ. Полученные результаты позволяют сформировать объективную картину, характеризующую реальные, а не теоретические, уровни перенапряжений в распределительных сетях."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 40,
+    "locator": "/w:document/w:body/w:p[40]",
+    "style": "2",
+    "text": "\t\tГрафик плотности (KDE)"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 41,
+    "locator": "/w:document/w:body/w:p[41]",
+    "style": "a3",
+    "text": "Оценка плотности распределения (Kernel Density Estimation, KDE) предоставляет наглядное представление о том, какие значения кратности перенапряжения являются наиболее вероятными. "
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 42,
+    "locator": "/w:document/w:body/w:p[42]",
+    "style": "a3",
+    "text": "Анализ графика (Рисунок 1) показывает, что распределение является унимодальным с ярко выраженным пиком в районе 1,823÷2,099 Uном. Распределение является асимметричным с более длинным «хвостом» в сторону бóльших значений. Среднее арифметическое значение кратности перенапряжения для всей выборки составило 1,96 Uном, в то время как медианное значение — 1,93 Uном. Близость этих двух показателей центральной тенденции подтверждает, что в выборке отсутствуют экстремальные выбросы, способные значительно исказить среднее значение."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 43,
+    "locator": "/w:document/w:body/w:tbl[1]/w:tr[1]/w:tc/w:p",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 44,
+    "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p",
+    "style": "figurecaption",
+    "text": "Распределение плотности вероятности перенапряжений при ОЗЗ"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 45,
+    "locator": "/w:document/w:body/w:p[43]",
+    "style": "2",
+    "text": "\t\tКумулятивная функция (CDF)"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 46,
+    "locator": "/w:document/w:body/w:p[44]",
+    "style": "a3",
+    "text": "Если график плотности отвечает на вопрос «какое значение наиболее вероятно?», то функция кумулятивного распределения (Cumulative Distribution Function — CDF) дает ответ на вопрос «какова вероятность того, что перенапряжение не превысит заданный уровень?». Этот инструмент является более практичным для инженерных приложений, в частности, для выбора уставок релейной защиты. На Рисунке 2 представлена эмпирическая CDF для исследуемой выборки."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 47,
+    "locator": "/w:document/w:body/w:p[45]",
+    "style": "a3",
+    "text": "Данный график позволяет сделать ряд практически значимых выводов. В 95% проанализированных случаев кратность перенапряжения при ОЗЗ не превышала 2,45 Uном. Это является крайне важным наблюдением, так как оно расходится с часто цитируемыми в теоретической литературе значениями в 3÷4 Uном, которые, как показывает анализ реальных данных, в реальной сети является исчезающе малой (<1%) в рамках исследованной выборки. Однако не стоит забывать про имеющиеся ограничения измерительных датчиков и тот факт, что мы лишь статистически оцениваем события."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 48,
+    "locator": "/w:document/w:body/w:p[46]",
+    "style": "a3",
+    "text": "Кроме того, можно отметить, что менее 10% всех зафиксированных ОЗЗ сопровождались перенапряжениями ниже 1,65 Uном; и что 90% не выше 2,35 Uном. Медианное значение (50-й перцентиль) составляет 1,926 Uном, что означает, что половина всех случаев имела перенапряжения ниже этого уровня, а половина — выше."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 49,
+    "locator": "/w:document/w:body/w:p[47]",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 50,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[1]/w:tc/w:p",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 51,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[2]/w:tc/w:p",
+    "style": "figurecaption",
+    "text": "Функция кумулятивного распределения перенапряжений"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 52,
+    "locator": "/w:document/w:body/w:p[48]",
+    "style": "2",
+    "text": "\t\tСтатистическая таблица"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 53,
+    "locator": "/w:document/w:body/w:p[49]",
+    "style": "a3",
+    "text": "Детальная описательная статистика выборки (Таблица 1) количественно подтверждает наблюдения, сделанные по графикам."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 54,
+    "locator": "/w:document/w:body/w:p[50]",
+    "style": "tablehead",
+    "text": "Базовая статистическая оценка выборки кратностей перенапряжений"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 55,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[1]/w:tc[1]/w:p",
+    "style": "tablecolhead",
+    "text": "Показатель"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 56,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[1]/w:tc[2]/w:p",
+    "style": "tablecolhead",
+    "text": "Значение"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 57,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[2]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "Количество наблюдений"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 58,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[2]/w:tc[2]/w:p",
+    "style": "",
+    "text": "830"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 59,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[3]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "Среднее арифметическое"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 60,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[3]/w:tc[2]/w:p",
+    "style": "",
+    "text": "1,960"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 61,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[4]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "Медиана (50-й перцентиль)"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 62,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[4]/w:tc[2]/w:p",
+    "style": "",
+    "text": "1,926"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 63,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[5]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "Стандартное отклонение"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 64,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[5]/w:tc[2]/w:p",
+    "style": "",
+    "text": "0,274"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 65,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[6]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "Дисперсия"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 66,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[6]/w:tc[2]/w:p",
+    "style": "",
+    "text": "0,075"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 67,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[7]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "Минимальное значение"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 68,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[7]/w:tc[2]/w:p",
+    "style": "",
+    "text": "0,862"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 69,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[8]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "25-й перцентиль (Q1)"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 70,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[8]/w:tc[2]/w:p",
+    "style": "",
+    "text": "1,823"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 71,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[9]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "75-й перцентиль (Q3)"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 72,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[9]/w:tc[2]/w:p",
+    "style": "",
+    "text": "2,099"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 73,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[10]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "Максимальное значение"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 74,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[10]/w:tc[2]/w:p",
+    "style": "",
+    "text": "2,843"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 75,
+    "locator": "/w:document/w:body/w:p[51]",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 76,
+    "locator": "/w:document/w:body/w:p[52]",
+    "style": "a3",
+    "text": "Данные таблицы подтверждают и дополняют выводы, сделанные на основе графического анализа. Близость среднего значения (1,96) и медианы (1,926) указывает на ограниченное влияние экстремальных выбросов на центральную тенденцию данных. Небольшое значение стандартного отклонения (0,274) указывает на низкую степень разброса данных вокруг среднего — большинство значений сгруппированы в узком диапазоне. Межквартильный размах (разница между Q3 и Q1) составляет всего 0,276, что означает, что 50% всех «типичных» событий укладываются в диапазон от 1,823 до 2,099 Uном. Важно отметить, что максимальное зафиксированное значение в верифицированной выборке составляет 2,843 Uном, что значительно ниже теоретически возможных пределов для дуговых перенапряжений."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 77,
+    "locator": "/w:document/w:body/w:p[53]",
+    "style": "2",
+    "text": "\t\tBox Plot и Violin Plot"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 78,
+    "locator": "/w:document/w:body/w:p[54]",
+    "style": "a3",
+    "text": "Для дополнительной визуализации структуры распределения и выявления сильных отклонений были использованы диаграмма размаха (Box Plot) и скрипичная диаграмма (Violin Plot), представленные на Рисунке 3. Эти методы позволяют в компактной форме отобразить ключевые статистические характеристики выборки."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 79,
+    "locator": "/w:document/w:body/w:p[55]",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 80,
+    "locator": "/w:document/w:body/w:tbl[4]/w:tr[1]/w:tc/w:p",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 81,
+    "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p",
+    "style": "a3",
+    "text": "а)"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 82,
+    "locator": "/w:document/w:body/w:tbl[4]/w:tr[3]/w:tc/w:p",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 83,
+    "locator": "/w:document/w:body/w:tbl[4]/w:tr[4]/w:tc/w:p",
+    "style": "a3",
+    "text": "б)"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 84,
+    "locator": "/w:document/w:body/w:tbl[4]/w:tr[5]/w:tc/w:p",
+    "style": "figurecaption",
+    "text": "Диаграмма размаха (а) и скрипичная диаграмма (б) для распределения перенапряжений"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 85,
+    "locator": "/w:document/w:body/w:p[56]",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 86,
+    "locator": "/w:document/w:body/w:p[57]",
+    "style": "a3",
+    "text": "Диаграмма размаха (Рис. 3.а) наглядно показывает медиану (линия внутри «ящика»), межквартильный размах (высота «ящика»), а также весь диапазон значений за исключением выбросов («усы» диаграммы). Точки за пределами «усов» представляют собой статистические выбросы (редкие события). В нашем случае диаграмма подтверждает, что основная масса данных (50%) сконцентрирована в узком диапазоне 1,823÷2,099 Uном, а также выявляет наличие нескольких выбросов как в сторону меньших, так и в сторону больших значений."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 87,
+    "locator": "/w:document/w:body/w:p[58]",
+    "style": "a3",
+    "text": "Скрипичная диаграмма (Рис. 3.б) является гибридом диаграммы размаха и графика плотности вероятности (KDE). Форма «скрипки» повторяет контуры KDE-графика, показывая, где сконцентрировано большинство данных. Утолщение в центральной части диаграммы ещё раз подтверждает, что наиболее частые значения перенапряжений находятся вблизи медианы (~1,926 Uном). Этот вид визуализации особенно полезен для сравнения нескольких распределений, так как позволяет одновременно оценить и их статистические показатели, и форму."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 88,
+    "locator": "/w:document/w:body/w:p[59]",
+    "style": "2",
+    "text": "\t\tОбщий вывод по разделу"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 89,
+    "locator": "/w:document/w:body/w:p[60]",
+    "style": "a3",
+    "text": "Проведенный количественный анализ убедительно демонстрирует, что реальные уровни перенапряжений при ОЗЗ в распределительных сетях статистически значимо ниже классических теоретических оценок. Однако это не отрицает возможность возникновения больших перенапряжений, а лишь отражает их вероятность. Полученное эмпирическое распределение является ценным инструментом для оптимизации настроек релейной защиты и проведения более точных расчетов рисков для изоляции электрооборудования."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 90,
+    "locator": "/w:document/w:body/w:p[61]",
+    "style": "1",
+    "text": "Обсуждение результатов и перспективы исследований"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 91,
+    "locator": "/w:document/w:body/w:p[62]",
+    "style": "a3",
+    "text": "Анализ показал значительное расхождение между теоретическими оценками (3÷4 Uном) [1-4] и реальными данными (95% случаев < 2,45 Uном). Это не означает, что теоретические модели неверны; скорее, это указывает на то, что условия, приводящие к экстремальным перенапряжениям (например, перемежающаяся дуга с повторными зажиганиями в момент максимума напряжения), на практике реализуются статистически редко."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 92,
+    "locator": "/w:document/w:body/w:p[63]",
+    "style": "a3",
+    "text": "Однако, несмотря на ценность полученных обобщенных оценок, важно понимать их ограничения. Статистический анализ оперирует итоговыми скалярными значениями (максимальной амплитудой), полностью игнорируя динамику переходного процесса. Форма сигнала, наличие высокочастотных колебаний, длительность процесса — вся эта информация теряется при агрегации данных до одного числа. Кроме того, на регистрируемые значения могут оказывать влияние ограничения измерительного тракта, в частности, нелинейность измерительных трансформаторов напряжения (ТН) при высоких кратностях первичного напряжения и ограниченность АЦП."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 93,
+    "locator": "/w:document/w:body/w:p[64]",
+    "style": "a3",
+    "text": "Ограничения классической статистики открывают перспективы для методов машинного обучения (МО), способных не только к анализу, но и к классификации и прогнозированию."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 94,
+    "locator": "/w:document/w:body/w:p[65]",
+    "style": "a3",
+    "text": "Сложность и многообразие форм сигналов при ОЗЗ, их схожесть с другими событиями (например, коммутациями) создают серьёзные трудности для традиционных алгоритмов РЗА, основанных на детерминированных пороговых критериях. Модели МО, в частности, свёрточные и рекуррентные нейронные сети, способны работать не со скалярными значениями, а непосредственно с временными рядами (сырыми данными осциллограмм). Они могут автоматически извлекать сложные, нелинейные признаки и скрытые закономерности из формы сигналов тока и напряжения, анализируя не только пиковые значения, но и всю динамику процесса."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 95,
+    "locator": "/w:document/w:body/w:p[66]",
+    "style": "a3",
+    "text": "Данная работа является фундаментальным подготовительным этапом для разработки интеллектуальных систем РЗА."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 96,
+    "locator": "/w:document/w:body/w:p[67]",
+    "style": "bulletlist",
+    "text": "\tВо-первых, был создан и верифицирован уникальный массив данных из 830 реальных осциллограмм. В отличие от синтетических, эти данные содержат реальные шумы, искажения и артефакты, что критически важно для обучения робастных ML-моделей, способных устойчиво работать в промышленных условиях."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 97,
+    "locator": "/w:document/w:body/w:p[68]",
+    "style": "bulletlist",
+    "text": "\tВо-вторых, полученные статистические оценки служат точкой отсчета для оценки качества будущих моделей и позволяют понять естественный баланс классов в выборке."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 98,
+    "locator": "/w:document/w:body/w:p[69]",
+    "style": "a3",
+    "text": "Таким образом, настоящее исследование не только предоставляет ценные практические результаты для текущей инженерной практики, но и формирует необходимую эмпирическую основу для следующего шага — создания алгоритмов машинного обучения для интеллектуальной диагностики и защиты электрических сетей."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 99,
+    "locator": "/w:document/w:body/w:p[70]",
+    "style": "1",
+    "text": "Выводы"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 100,
+    "locator": "/w:document/w:body/w:p[71]",
+    "style": "a3",
+    "text": "На основе анализа верифицированной выборки из 830 реальных осциллограмм однофазных замыканий на землю (ОЗЗ) в сетях 6÷35 кВ получены следующие результаты:"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 101,
+    "locator": "/w:document/w:body/w:p[72]",
+    "style": "a3",
+    "text": "1) Эмпирическое распределение кратностей перенапряжений при ОЗЗ заметно отличается от классических теоретических оценок. В подавляющем большинстве случаев измеренные значения значительно ниже теоретического предела 3÷4·Uном. Большинство значений (90%) находятся в диапазоне 1,65÷2,35 Uном. Медианное значение составляет 1,926 Uном, максимальное фиксированное — ≈2,843 Uном."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 102,
+    "locator": "/w:document/w:body/w:p[73]",
+    "style": "a3",
+    "text": "2) Определены вероятностные пороги, практично значимые: в 95% зарегистрированных случаев кратность не превысила 2,45 Uном."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 103,
+    "locator": "/w:document/w:body/w:p[74]",
+    "style": "a3",
+    "text": "3) Результаты исследования не отрицают теоретическую возможность возникновения экстремально высоких перенапряжений, но количественно характеризуют их как статистически редкие события. Эти данные позволяют сместить акцент: вместо поиска максимального теоретического значения — оценивать риски и вероятности возникновения перенапряжения заданной кратности. При этом следует учитывать возможные ограничения измерительной аппаратуры (нелинейность трансформаторов напряжения, характеристики АЦП), что может влиять на зарегистрированные значения."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 104,
+    "locator": "/w:document/w:body/w:p[75]",
+    "style": "a3",
+    "text": "4) Полученный верифицированный массив осциллограмм и статистические оценки может использоваться для разработки и тестирования алгоритмов релейной защиты, особенно на основе машинного обучения. Реальные данные содержат фактические шумы и искажения, которые отсутствуют в синтетических данных."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 105,
+    "locator": "/w:document/w:body/w:p[76]",
+    "style": "5",
+    "text": "Список литературы"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 106,
+    "locator": "/w:document/w:body/w:p[77]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 107,
+    "locator": "/w:document/w:body/w:p[78]",
+    "style": "references",
+    "text": "Методические указания по применению ограничителей перенапряжений нелинейных в электрических сетях 6-35 кВ / ОАО \"Институт \"Энергосетьпроект\", ОАО ВНИИЭ, НТК \"ЭЛ-ПРОЕКТ\" ; утв. Департаментом научно-технической политики и развития РАО \"ЕЭС России\" 27.04.01. – Москва, 2001. – 75 с."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 108,
+    "locator": "/w:document/w:body/w:p[79]",
+    "style": "references",
+    "text": "Васильев, С. С. Влияние переходных процессов при однофазном коротком замыкании на действие релейной защиты в кабельных сетях 6-10 кВ : магистерская диссертация / С. С. Васильев ; Тольяттинский государственный университет. – Тольятти, 2017."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 109,
+    "locator": "/w:document/w:body/w:p[80]",
+    "style": "references",
+    "text": "СТО 18-2013. Руководящие указания по выбору режима заземления нейтрали в электрических сетях напряжением 6-35 кВ / ОАО «Ленэнерго». – Введ. 2013-06-25. – Санкт-Петербург : ОАО «Ленэнерго», 2013. – 76 с."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 110,
+    "locator": "/w:document/w:body/w:p[81]",
+    "style": "references",
+    "text": "СТО Газпром 2-1.11-070-2006. Методические указания по выбору режима заземления нейтрали в сетях напряжением 6 и 10 кВ дочерних обществ и организаций ОАО \"Газпром\". – Введ. 2006-03-20. – Москва : ВНИИГАЗ ; ИРЦ Газпром, 2006. – 24 с. В"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 111,
+    "locator": "/w:document/w:body/w:p[82]",
+    "style": "references",
+    "text": "Евдаков А.Е., Филатова Г.А. A A Dataset of Real-World Oscillograms from Electric Power Grids. V. 5 : [Набор данных]. – Figshare, 2024. – URL: https://doi.org/10.6084/m9.figshare.28465427.v5 (дата обращения: 14.10.2025). – DOI: 10.6084/m9.figshare.28465427.v5"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 112,
+    "locator": "/w:document/w:body/w:p[83]",
+    "style": "",
+    "text": "Приложение 1. Разбор перенапряжений, актуально для диссертации."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 113,
+    "locator": "/w:document/w:body/w:p[84]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 114,
+    "locator": "/w:document/w:body/w:p[85]",
+    "style": "",
+    "text": "Текст от ChatGPT, режим «глубокое исследование»."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 115,
+    "locator": "/w:document/w:body/w:p[86]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 116,
+    "locator": "/w:document/w:body/w:p[87]",
+    "style": "",
+    "text": "Перенапряжения при дуговых замыканиях на землю"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 117,
+    "locator": "/w:document/w:body/w:p[88]",
+    "style": "",
+    "text": "Теоретические исследования показывают, что при перемежающемся горении дуги в сетях 6 – 35 кВ с изолированной нейтралью на здоровых фазах могут возникать перенапряжения в несколько раз выше фазного напряжения. Так, по классической теории Дж. Петерса многократное зажигание дуги при вершине синусоиды даёт кратности порядка 4·Uф и более (dspace.tltsu.ru), тогда как расчёты Слепяна и Н. Н. Белякова ограничивают их величину примерно 3,2–3,6·Uф (dspace.tltsu.ru). Моделирование переходного процесса показывает, что при изолированной нейтрали при повторном пробое дуги (на возросшем до ≈2,0·Uф фоне напряжения больной фазы) перенапряжение на неповреждённых фазах достигает примерно 3,0–3,2·Uф (meganorm.ru). При очень малом токе замыкания (< 10 А) амплитуда перенапряжений ещё выше: до 3,5–3,8·Uф (files.stroyinf.ru), а с ростом тока дуги величина падает (при токах 10–20 А – ≈3,0·Uф, при 20–50 А – ≈2,7·Uф (rutas.group) )."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 118,
+    "locator": "/w:document/w:body/w:p[89]",
+    "style": "",
+    "text": "Нормативные оценки и стандарты"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 119,
+    "locator": "/w:document/w:body/w:p[90]",
+    "style": "",
+    "text": "Отечественные методические указания и стандарты подтверждают эти порядки. Например, методические указания РАО «ЕЭС России» (2001) по применению ограничителей перенапряжений отмечают, что при резистивном заземлении нейтрали опасные дуговые перенапряжения обычно ограничиваются уровнем 2,2–2,4·Uф (meganorm.ru). В руководящих указаниях Ленэнерго (СТО 182013) при изолированной нейтрали отмечено, что при перемежающейся дуге и малом токе (до ~10 А) амплитуда перенапряжений может достигать 3,5–3,8·Uф (files.stroyinf.ru), а при больших токах – порядка 2,7–3,0·Uф (rutas.group). Эти ориентиры согласуются с тем, что для оборудования 6–10 кВ номинальное фазное напряжение допускается к координации с испытательными уровнями около 2,9·Uф, а изоляция проектируется с учётом кратностей порядка 1,1–1,3 от номинала."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 120,
+    "locator": "/w:document/w:body/w:p[91]",
+    "style": "",
+    "text": "Зарубежные источники приводят схожие цифры: теории по дуговым переходным процессам в средневольтных сетях дают значения максимальных кратностей ~3–4·Uф при повторных зажиганиях дуги (dspace.tltsu.ru). Международные практики и IEC-стандарты, описывающие режимы «изолированная нейтраль», также указывают на рост напряжения в 3–4 раза при неустойчивом дуговом замыкании."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 121,
+    "locator": "/w:document/w:body/w:p[92]",
+    "style": "",
+    "text": "Вывод: на основании литературных и нормативных данных для сетей 6–35 кВ с изолированной нейтралью следует принимать ориентир 3·Uф (с верхней оценкой до ≈3,5–3,8·Uф) при перемежающемся дуговом замыкании. Для сетей с резистивным заземлением нейтрали соответствующие оценки ниже (≈2,2–2,4·Uф) (meganorm.ru). Эти значения можно использовать в статье, снабдив обоснованием по российским источникам (meganorm.rufiles.stroyinf.ru)."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 122,
+    "locator": "/w:document/w:body/w:p[93]",
+    "style": "",
+    "text": "Источники: российские методические указания и стандарты (СТО, ГОСТы) и расчётные публикацииdspace.tltsu.rumeganorm.rufiles.stroyinf.rurutas.groupmeganorm.ru."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 123,
+    "locator": "/w:document/w:body/w:p[94]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 124,
+    "locator": "/w:document/w:body/w:p[95]",
+    "style": "",
+    "text": ""
+  }
+]

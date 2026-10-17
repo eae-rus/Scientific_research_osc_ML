@@ -4,6 +4,9 @@ _ALL_OSC/
 raw_data/
 data/
 
+# Local closed-source PDR algorithms and private research materials
+private/
+
 # Ignore __pycache__ folder in all subdirectories
 __pycache__/
 
@@ -23,6 +26,7 @@ pytest_log_*.txt
 
 # pytest cache
 .pytest_cache/
+.matplotlib_cache/
 
 # IDE and environment files
 .vscode/
@@ -33,5 +37,10 @@ pytest_log_*.txt
 dist/
 build/
 
-# Experiments folder
+# Experiments and scratch folders
 experiments/
+scratch/
+
+# Результаты сборки адаптера форматов осциллограмм производителей
+tools/osc_formats/bin/
+tools/osc_formats/obj/

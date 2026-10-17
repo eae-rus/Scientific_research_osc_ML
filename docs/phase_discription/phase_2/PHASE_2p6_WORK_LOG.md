@@ -1,0 +1,1013 @@
+# Лог работ по Фазе 2.6 (Архитектурные улучшения)
+
+## [2026-05-30] Стабилизация PhysicsKANv2/cPhysicsKANv2/rPhysicsKANv2 после loss-взрывов на validation
+
+### Проблема
+При запуске `Exp_2.6.13_PhysicsKANv2_medium_phase_polar_stride_base_weights_aug` обучение на train выглядело стабильным (`Train Loss ≈ 0.8–0.9`), но `Val Loss` периодически уходил в диапазон миллионов/миллиардов/триллионов. Это указывает не на обычную плохую сходимость, а на выбросы логитов на отдельных validation-батчах. Наиболее вероятный источник — делительные физические каналы: при малом знаменателе `a/b` создаёт экстремальные значения, которые затем попадают в KAN-свёртки за пределы рабочей сетки.
+
+### Что перенесено из стабильной Transformer-архитектуры
+В [transformer_blocks.py](../../../osc_tools/ml/layers/transformer_blocks.py) `ComplexInteractionBlock` уже использует архитектурную защиту: результат деления сжимается через `tanh(|z|)` с сохранением угла. Этот принцип перенесён в v2-KAN блоки без удаления физики.
+
+### Изменения в [kan.py](../../../osc_tools/ml/models/kan.py)
+1. Добавлены служебные функции `_finite_tanh()` и `_wrap_phase()`.
+2. `PhysicsInteractionBlock`:
+   - вход для физической ветки ограничивается через `tanh`;
+   - `mult` и особенно `div` сжимаются через `tanh` до BatchNorm;
+   - после BatchNorm добавлен повторный `tanh`, чтобы KANConv получал bounded-вход;
+   - после KANConv добавлен `delta_bn + tanh`, поэтому резидуальная добавка ограничена: `x + scale·tanh(norm(Δ))`.
+3. `ComplexPhysicsInteractionBlock`:
+   - амплитуды ограничиваются через `tanh(softplus(...))`;
+   - `div_amp` сжимается через `tanh`;
+   - фазы возвращаются в диапазон `[-pi, pi]` через `_wrap_phase()`;
+   - добавлен `delta_bn + tanh` перед резидуалом.
+4. `PhysicsKANv2` stem: физические каналы `S=I·U` и `Z=I/U` теперь ограничиваются через `tanh` до/после BatchNorm перед конкатенацией.
+5. Комплексный v2-stem (`_ComplexStemMixin`): амплитудные физические каналы ограничиваются через `tanh`, фазы приводятся к главному угловому диапазону.
+
+Физические блоки не удалены: сохранены `mult/div`, комплексные `amp/phase` операции и релейные блоки. Изменён только масштаб прохождения физического пути, чтобы он не мог численно разрушать backbone.
+
+### Тесты и проверка
+- [test_ml_models_kan.py](../../../tests/unit/test_ml_models_kan.py): добавлены регрессионные тесты на почти нулой знаменатель в real/complex div-ветках; резидуальная добавка остаётся bounded и finite.
+- `C:/ProgramData/anaconda3/python.exe -m pytest tests/unit/test_ml_models_kan.py -q` → **26 passed**.
+- `py_compile` для [kan.py](../../../osc_tools/ml/models/kan.py), [test_ml_models_kan.py](../../../tests/unit/test_ml_models_kan.py), [run_phase2_6.py](../../../scripts/phase2_experiments/run_phase2_6.py) → **OK**.
+- Smoke-forward `PhysicsKANv2` medium на входе с почти нулевыми знаменателями: logits finite, `max_abs ≈ 0.144`; `cPhysicsKANv2` и `rPhysicsKANv2` также finite.
+
+## [2026-03-11] Version 2: физика и реле на глубоких слоях (PhysicsKANv2 / cPhysicsKANv2 / rPhysicsKANv2)
+
+### Мотивация
+В исходных Physics-моделях (`PhysicsKAN`, `cPhysicsKAN`, `rPhysicsKAN`) физические операции (умножение/деление) и релейный орган применяются **только на входе (stem)**. Цель версии 2 — проверить гипотезу о пользе их применения **на скрытых слоях**, сохранив при этом возможность валидного вложенного сравнения (меняется ровно одна переменная за раз). Существующие модели и запуски не затрагиваются — все классы новые.
+
+### Новые блоки (см. [kan.py](../../../osc_tools/ml/models/kan.py))
+1. **`PhysicsInteractionBlock`** — резидуальный вещественный физический блок для скрытых слоёв. Все каналы линейно проецируются (`Conv1d` 1×1) в `2k` операндов, считаются `mult`/`div` (`k` взаимодействий), результат смешивается KAN-свёрткой обратно в `C` каналов. Форма `[B, C, T]` сохраняется; добавка резидуальная `x + scale·Δ` (init `scale=0.1`). Проекция операндов допускает **межсигнальные** комбинации каналов. Чётность каналов больше не требуется.
+2. **`ComplexPhysicsInteractionBlock`** — комплексный (полярный) аналог: амплитуды (через `softplus`, `>0`) перемножаются/делятся, фазы складываются/вычитаются; нормируются только амплитуды. Требует чётное число каналов.
+3. **`RelayGateBlock`** — релейный орган `x·(1 + scale·(gate−0.5))`, `gate=σ(KANConv(x))`, применим на любом слое и «на выходе».
+4. **`_BlockConvKAN`** — обобщённый ConvKAN-backbone со стратегией `placement` (`all`/`last`/`none`), вставкой physics/relay блоков и опциональным head-relay. Число взаимодействий ограничено: на первом слое со вставкой `round(first_interaction_ratio·C_out)` (~25%), далее `min(deep_interactions, C_out)` (≈4) — для контроля параметров и VRAM на RTX 3060 Ti.
+5. **`_ComplexStemMixin`** — общий комплексный stem для `cPhysicsKANv2`/`rPhysicsKANv2`.
+
+### Новые модели
+- **`PhysicsKANv2`** — вещественный stem `PhysicsKAN` + `PhysicsInteractionBlock` на скрытых слоях.
+- **`cPhysicsKANv2`** — комплексный stem `cPhysicsKAN` + `ComplexPhysicsInteractionBlock` (полная аналогия с `PhysicsKANv2`, но в комплексной плоскости). Требует каналы кратные 4.
+- **`rPhysicsKANv2`** — `cPhysicsKANv2` + `RelayGateBlock` на слоях и финальное реле на выходе (`relay_at_head=True`). Изолирует именно вклад реле относительно `cPhysicsKANv2`.
+
+Семейство валидных сравнений: `ConvKAN` → `PhysicsKAN`→`PhysicsKANv2` → `cPhysicsKAN`→`cPhysicsKANv2` → `rPhysicsKAN`→`rPhysicsKANv2`.
+
+### Интеграция
+- Регистрация в [models/__init__.py](../../../osc_tools/ml/models/__init__.py) и [runner.py](../../../osc_tools/ml/runner.py).
+- [run_phase2_6.py](../../../scripts/phase2_experiments/run_phase2_6.py): добавлены `cPhysicsKANv2` в `MODEL_COMPLEXITY`, ограничения `phase_polar`, снижение батча для heavy/harmonic, `input_size`/`use_mlp`-списки; опыт **2.6.13_stride** содержит все 7 моделей (`feature_mode=phase_polar`, `stride=16`, `aug`, `balancing=weights`, `target_level=base`).
+- [config_resolvers.py](../../../scripts/evaluation/_core/config_resolvers.py): v2-модели распознаются раньше базовых имён, чтобы не схлопываться в отчётах.
+- [draw_architectures.py](../../../osc_tools/visualization/draw_architectures.py): схемы `draw_physicskanv2/cphysicskanv2/rphysicskanv2`.
+- [architectures_description.md](../../reference/architectures_description.md): таблица изображений + раздел 8.1–8.3 с описанием v2.
+
+### Тесты
+- [test_ml_models_kan.py](../../../tests/unit/test_ml_models_kan.py): обновлены/добавлены smoke- и контрактные тесты (forward, сохранение формы, резидуальность при `scale=0`, требования к чётности/кратности 4, `cPhysicsKANv2`, `ComplexPhysicsInteractionBlock`). Удалён устаревший тест на чётность `PhysicsInteractionBlock`. **24 passed.**
+
+## [2026-03-10] Обновление физической baseline-модели (THD + RMS Trend)
+
+### Модификация алгоритма [ozz_physics.py](../../../osc_tools/analysis/ozz_physics.py)
+
+1. **Спектральный анализ (THD):**
+   - Переписан `_rms_fundamental_sliding`: теперь возвращает кортеж `(rms_fund, rms_harm, thd_arr)`.
+   - Добавлен расчет скользящего **THD** (Total Harmonic Distortion) на окне в 1 период (32 отсчета) через RFFT.
+   - Внедрен критерий ДПОЗЗ по 90-му перцентилю THD на активном участке окна (порог `thd_threshold=0.15`).
+
+2. **Анализ тренда (RMS Decay):**
+   - Полностью удалена логика на базе **преобразования Гильберта** (`scipy.signal.hilbert`) и огибающей. Это устранило краевые артефакты и повысило стабильность.
+   - Реализовано детектирование затухания через анализ тренда `u0_rms_arr`: сравнение максимума с "хвостом" окна (последние 15%) и проверка позиции пика (`peak_pos < 0.7 * Window`).
+
+3. **Логика классификации:**
+   - Обновлен `OzzPrecomputedFeatures`: поле `envelope` заменено на `thd_arr`.
+   - Реорганизован `classify_window_from_features`:
+     - Основной канал ДПОЗЗ — спектральный (THD).
+     - Резервный канал ДПОЗЗ — пики производной (сохранен для коротких пробоев).
+     - Переход на multi-label классификацию с возвратом `Set[int]`.
+
+4. **Документация и тесты:**
+   - Актуализировано описание алгоритма в [OZZ_PHYSICS_ALGORITHM.md](../../reference/OZZ_PHYSICS_ALGORITHM.md) (обновлены шаги, параметры и блок-схема).
+   - Обновлены unit-тесты в [test_ozz_physics.py](../../../tests/unit/test_ozz_physics.py): добавлены проверки на THD (синус vs меандр) и адаптированы существующие сценарии под новый API.
+
+## [2026-03-08] Exp 2.6.11: Детектирование ОЗЗ/ДПОЗЗ + Физическая Baseline
+
+### Выполненные работы
+
+1. **Физическая baseline-модель** (`predict_ozz_physics`)
+   - Создан модуль [osc_tools/analysis/ozz_physics.py](../../../osc_tools/analysis/ozz_physics.py)
+   - Реализован детерминированный алгоритм классификации ОЗЗ:
+     - Вычисление $3U_0 = U_A + U_B + U_C$
+     - Базовый критерий: RMS первой гармоники $3U_0$ > порог (3В)
+     - Критерий ДПОЗЗ: кол-во пиков производной + наличие запертого заряда
+     - Критерий затухающего ОЗЗ: огибающая (Гильберт) + проверка спада амплитуды
+     - Критерий устойчивого ОЗЗ: стабильная $3U_0$ без затухания и без переходных процессов
+   - Добавлены функции батчевого применения и оценки на DataFrame
+
+2. **Стратифицированное разбиение данных**
+   - Создан модуль [osc_tools/data_management/ozz_split.py](../../../osc_tools/data_management/ozz_split.py)
+   - Разбиение на уровне файлов с иерархической приоритизацией (ДПОЗЗ > Затухающее > Устойчивое)
+   - Гарантированное представительство каждого класса в тестовой выборке
+   - Добавлена функция `add_ozz_target_columns(df)` для формирования 3-классовых меток:
+     - `Target_OZZ_stable` (ML_2_1 ∨ ML_2_1_1, без decay/dpozz)
+     - `Target_OZZ_decay` (ML_2_1_2)
+     - `Target_OZZ_dpozz` (ML_2_1_3)
+
+3. **Новый target_level='ozz' в системе меток**
+   - Обновлён [osc_tools/ml/labels.py](../../../osc_tools/ml/labels.py): поддержка `get_target_columns('ozz')` и `prepare_labels_for_experiment(df, 'ozz')`
+
+4. **Эксперименты 2.6.11** в [scripts/phase2_experiments/run_phase2_6.py](../../../scripts/phase2_experiments/run_phase2_6.py)
+   - `2.6.11_global_stride`: cPhysicsKAN + Global Balancing (light/medium/heavy)
+   - `2.6.11_weights_stride`: cPhysicsKAN + Weighted Loss (light/medium/heavy)
+   - `2.6.11_baselines_stride`: 6 базовых моделей (heavy) для сравнения
+   - Все 3 конфигурации: `phase_polar + stride + any_in_window + aug`
+
+5. **Скрипт оценки физической модели**
+   - Создан [scripts/evaluation/evaluate_physics_baseline.py](../../../scripts/evaluation/evaluate_physics_baseline.py)
+   - Результаты сохраняются в формате эксперимента (config.json + history.json)
+   - Интеграция с отчётной системой через стандартный формат
+
+6. **Сглаживание предсказаний в plot_model_marking.py**
+   - Обновлён [scripts/evaluation/plot_model_marking.py](../../../scripts/evaluation/plot_model_marking.py)
+   - Новая логика: каждое окно вносит свой вклад во все покрываемые точки
+   - Итоговая вероятность = среднее по всем покрытиям (weighted averaging)
+   - Устраняет артефакты «точечного» предсказания на единственную последнюю точку окна
+
+7. **Тестирование**
+   - Созданы unit-тесты в [tests/unit/test_ozz_physics.py](../../../tests/unit/test_ozz_physics.py):
+     - Базовая работа `predict_ozz_physics` на синтетических данных
+     - Корректность `add_ozz_target_columns`
+     - Стратифицированное разбиение `stratified_ozz_split`
+
+## [2026-03-07] cPhysicsKAN (комплексная полярная версия) + Exp 2.6.9
+
+### Выполненные работы
+
+1. Реализована новая модель `cPhysicsKAN`
+   - Добавлен класс `cPhysicsKAN` в [osc_tools/ml/models/kan.py](../../../osc_tools/ml/models/kan.py)
+   - Добавлены вспомогательные блоки:
+     - `ComplexPairDropout` — согласованный dropout для пары `[A, φ]`
+     - `ComplexPhysicsKANBlock` — KAN-обработка амплитуды и фазы с комплексным residual-сложением
+   - Реализованы физические операции в полярной форме:
+     - умножение: $A=A_1\cdot A_2$, $\varphi=\varphi_1+\varphi_2$
+     - деление: $A=A_1/A_2$, $\varphi=\varphi_1-\varphi_2$
+
+2. Добавлены ограничения и инварианты модели
+   - Модель принимает только чётное число каналов (пары амплитуда/фаза)
+   - На уровне эксперимента зафиксировано использование только `feature_mode='phase_polar'`
+   - Нормализация применяется только к амплитудам
+
+3. Интеграция в пайплайн обучения
+   - Экспорт модели добавлен в [osc_tools/ml/models/__init__.py](../../../osc_tools/ml/models/__init__.py)
+   - Регистрация в раннере добавлена в [osc_tools/ml/runner.py](../../../osc_tools/ml/runner.py)
+
+4. Добавлен эксперимент `2.6.9_stride`
+   - Конфигурация добавлена в [scripts/phase2_experiments/run_phase2_6.py](../../../scripts/phase2_experiments/run_phase2_6.py)
+   - Параметры данных и обучения аналогичны `2.6.1_stride`
+   - Для `light/medium/heavy` добавлены отдельные профили сложности `cPhysicsKAN`
+
+5. Тестирование
+   - Обновлены unit-тесты в [tests/unit/test_ml_models_kan.py](../../../tests/unit/test_ml_models_kan.py):
+     - smoke test `forward` для `cPhysicsKAN`
+     - проверка инварианта чётности каналов
+     - контрактные проверки формул `mul/div` в полярной форме
+
+## [2026-02-10] Exp 2.6.8 и обновление визуализации уверенности
+
+### Выполненные работы
+
+1. Добавлен режим меток по окну (сдвиг вправо)
+   - Поддержан `target_window_mode='any_in_window'` в [osc_tools/ml/dataset.py](../../../osc_tools/ml/dataset.py)
+   - Поддержан аналогичный режим в [osc_tools/ml/precomputed_dataset.py](../../../osc_tools/ml/precomputed_dataset.py)
+   - Добавлен новый эксперимент `2.6.8_stride` в [scripts/phase2_experiments/run_phase2_6.py](../../../scripts/phase2_experiments/run_phase2_6.py)
+
+2. Обновлена визуализация разметки
+   - Добавлен режим `confidence` для отображения уверенности с порогом в [scripts/evaluation/plot_model_marking.py](../../../scripts/evaluation/plot_model_marking.py)
+   - Добавлена возможность выбора конкретных файлов и диапазонов времени (мс)
+
+3. Тестирование
+   - Добавлены тесты для режима `any_in_window` в [tests/unit/test_ml_dataset.py](../../../tests/unit/test_ml_dataset.py) и [tests/unit/test_precomputed_dataset.py](../../../tests/unit/test_precomputed_dataset.py)
+
+## [2026-01-24] Добавление эксперимента 2.6.1 Вариант Б (Global Balancing)
+
+### Выполненные работы
+
+Добавлен сравнительный эксперимент для базовых моделей с использованием активной балансировки выборки.
+
+#### 1. Обновлён `run_phase2_6.py`
+- Добавлен параметр `"2.6.1_global_stride"` в `exp_params`.
+- Включен `2.6.1_global_stride` в список `EXPS` для автоматического запуска.
+- Конфигурация: `Phase Polar` + `Stride` (16), аугментация включена, балансировка `global`, уровень меток `base`.
+
+#### 2. Обновлён `PHASE_2p6_PLAN.md`
+- Добавлено описание "Вариант Б (Global Balancing)" в раздел `Exp 2.6.1`.
+
+## [2026-01-22] Реализация 6 гибридных моделей (Exp 2.6.3)
+
+### Выполненные работы
+
+Переработана архитектура гибридных моделей для соответствия 6 базовым моделям.
+
+#### 1. Новые гибридные модели — `osc_tools/ml/models/hybrid.py`
+
+Вместо 3 кастомных гибридных моделей создано 6, аналогичных базовым:
+
+| Базовая модель | Гибридная модель | Особенности |
+|----------------|------------------|-------------|
+| SimpleMLP | **HybridMLP** | Две MLP ветки (raw + features) → Fusion |
+| SimpleCNN | **HybridCNN** | Две CNN ветки → Fusion |
+| ResNet1D | **HybridResNet** | Две ResNet ветки → Fusion |
+| SimpleKAN | **HybridSimpleKAN** | Две KANLinear ветки → KAN Fusion |
+| ConvKAN | **HybridConvKAN** | Две KANConv1d ветки → KAN Fusion |
+| PhysicsKAN | **HybridPhysicsKAN** | Физические операции + ConvKAN × 2 |
+
+**Архитектурный принцип:**
+- Параметры по ширине уменьшены вдвое для каждой ветки (суммарно ≈ столько же как у базовой модели)
+- Ветка 1: Raw данные (8 каналов: IA, IB, IC, IN, UA, UB, UC, UN)
+- Ветка 2: Features — спектральные признаки (16 каналов Phase Polar)
+- Late Fusion: `FusionHead(concat(raw_out, feat_out) → FC → num_classes)`
+
+**Вспомогательные компоненты:**
+- `SafeMaxPool1d` — Pooling с защитой от малых размеров входа
+- `FusionHead` — Слой слияния двух веток с BatchNorm и Dropout
+- `_ResBlock1D`, `_ResNetBranch` — Локальные классы для HybridResNet
+
+#### 2. Обновлён `run_phase2_6.py`
+
+**MODEL_COMPLEXITY** — добавлены конфигурации для 6 гибридных моделей:
+```python
+'HybridMLP': {'hidden_sizes': [32, 16], 'dropout': 0.2},  # light
+'HybridCNN': {'channels': [8, 16], 'dropout': 0.2},
+'HybridResNet': {'layers': [1, 1, 1, 1], 'base_filters': 8},
+'HybridSimpleKAN': {'hidden_sizes': [32, 16], 'grid_size': 3, 'dropout': 0.1},
+'HybridConvKAN': {'channels': [4, 8], 'dropout': 0.1, 'grid_size': 3},
+'HybridPhysicsKAN': {'channels': [4, 8], 'dropout': 0.1, 'grid_size': 3}
+```
+
+**exp_params** — добавлены эксперименты 2.6.3:
+- `2.6.3_stride` — гибридные модели с stride sampling
+- `2.6.3_snapshot` — гибридные модели с snapshot sampling
+
+**Автоматический выбор моделей:**
+- `exp.startswith("2.6.3")` → HybridMLP, HybridCNN, HybridResNet, HybridSimpleKAN, HybridConvKAN, HybridPhysicsKAN
+
+#### 3. Обновлены импорты
+
+- `osc_tools/ml/models/__init__.py` — экспорт 6 новых гибридных моделей
+- `osc_tools/ml/runner.py` — регистрация 6 гибридных моделей в `_init_model()`
+
+#### 4. Тестирование
+
+Все 6 гибридных моделей успешно проходят forward pass:
+```
+HybridCNN: torch.Size([2, 24, 64]) -> torch.Size([2, 4])
+HybridMLP: torch.Size([2, 24, 64]) -> torch.Size([2, 4])
+HybridResNet: torch.Size([2, 24, 64]) -> torch.Size([2, 4])
+HybridSimpleKAN: torch.Size([2, 24, 64]) -> torch.Size([2, 4])
+HybridConvKAN: torch.Size([2, 24, 64]) -> torch.Size([2, 4])
+HybridPhysicsKAN: torch.Size([2, 24, 64]) -> torch.Size([2, 4])
+```
+
+---
+
+## [2026-01-22] Подготовка к экспериментам 2.6.3 и 2.6.4 (начальная версия)
+
+### Выполненные работы
+
+Реализованы компоненты для проведения экспериментов с гибридными моделями (Exp 2.6.3) и гранулярностью меток (Exp 2.6.4).
+
+#### 1. Гибридные модели (Exp 2.6.3) — `osc_tools/ml/models/hybrid.py`
+
+Создан новый модуль с двухголовыми архитектурами:
+
+| Модель | Описание | Применение |
+|--------|----------|------------|
+| `HybridTwoHeadedCNN` | CNN для Raw + CNN для Features | Stride режим |
+| `HybridTwoHeadedMLP` | MLP для Raw + MLP для Features | Snapshot режим |
+| `HybridKANCNN` | CNN для Raw + KAN-like для Features | Интерпретируемость |
+
+**Архитектура:**
+- **Ветка 1 (Fast):** Обрабатывает Raw данные (8 каналов: IA, IB, IC, IN, UA, UB, UC, UN) — ловит резкие фронты
+- **Ветка 2 (Precise):** Обрабатывает спектральные признаки (Phase Polar, 16 каналов) — точная классификация
+- **Fusion:** Конкатенация выходов веток + FC слой
+- **Head:** Классификатор на 4 класса (base_labels)
+
+**Поддерживаемые сложности:** light, medium, heavy через `create_hybrid_model()` фабрику.
+
+#### 2. Гранулярность меток (Exp 2.6.4) — `osc_tools/ml/labels.py`
+
+Расширен модуль работы с метками:
+
+| Уровень | Описание | Колонки |
+|---------|----------|---------|
+| `base_labels` | 4 обобщённых класса | Target_Normal, Target_ML_1, Target_ML_2, Target_ML_3 |
+| `full` | Все ML_* метки | ML_1, ML_1_1, ML_1_1_1, ML_2, ML_2_1, ... |
+| `full_by_levels` | С распространением иерархии | ML_2_3_1=1 → ML_2_3=1 → ML_2=1 |
+
+**Новые функции:**
+- `propagate_hierarchical_labels(df)` — распространяет метки вверх по иерархии
+- `prepare_labels_for_experiment(df, target_level)` — подготавливает DataFrame для эксперимента
+- `get_target_columns(level, df)` — возвращает список целевых колонок (расширена для 'full', 'full_by_levels')
+- `get_label_hierarchy()` — статическая структура иерархии меток
+- `add_intermediate_labels(df)` — добавляет промежуточные уровни (Target_Level2_*)
+
+#### 3. Многоуровневая оценка (Multi-Level Evaluation) — `osc_tools/ml/evaluation.py`
+
+Создан новый модуль для оценки моделей на разных уровнях гранулярности:
+
+**Класс `MultiLevelEvaluator`:**
+- `evaluate_multilabel()` — метрики для multilabel классификации
+- `evaluate_per_class()` — метрики по каждому классу отдельно
+- `compute_hierarchical_accuracy()` — **ключевая метрика**: обучаем на Full, проверяем на Base
+- `_aggregate_to_base()` — агрегация полных предсказаний в 4 базовых класса
+- `_aggregate_to_level()` — агрегация до указанного уровня иерархии (Level 1, Level 2)
+
+**Удобные функции:**
+- `evaluate_model_multilevel(model, dataloader, device, target_columns)` — полная оценка модели
+- `compute_confusion_at_levels()` — confusion matrices на разных уровнях
+
+**Пример использования Hierarchical Accuracy:**
+```python
+evaluator = MultiLevelEvaluator(
+    target_level='full',
+    full_target_columns=get_ml_columns(df)
+)
+results = evaluator.compute_hierarchical_accuracy(predictions, targets)
+
+# results содержит:
+# - base_metrics: F1/Precision/Recall на 4 классах
+# - full_metrics: метрики на всех ML_* 
+# - level1_metrics: ML_1, ML_2, ML_3
+# - level2_metrics: ML_X_Y
+# - per_class_*: метрики по каждому классу
+```
+
+#### 4. Обновлён Runner — `osc_tools/ml/runner.py`
+
+Добавлена поддержка гибридных моделей:
+- `HybridTwoHeadedCNN`
+- `HybridTwoHeadedMLP`
+- `HybridKANCNN`
+
+#### 5. Обновлён экспорт моделей — `osc_tools/ml/models/__init__.py`
+
+Добавлены экспорты:
+- `HybridTwoHeadedCNN`, `HybridTwoHeadedMLP`, `HybridKANCNN`
+- `create_hybrid_model`
+
+### Тестирование
+
+Проверено:
+- ✅ Синтаксис всех новых файлов
+- ✅ Импорты работают корректно
+- ✅ Обратная совместимость старого кода
+- ✅ `get_target_columns('base')` и `get_target_columns('base_labels')` возвращают одинаковый результат
+- ✅ `HybridTwoHeadedCNN` forward pass: input (2, 24, 100) → output (2, 4)
+- ✅ `propagate_hierarchical_labels` корректно распространяет метки
+
+### Как проверять точность на разных уровнях (план для Exp 2.6.4)
+
+1. **Обучение:** Модель обучается на `target_level='full'` (все ML_* метки)
+2. **Оценка:**
+   - `full_metrics` — точность на полном наборе меток
+   - `base_metrics` — **Hierarchical Accuracy** (агрегация до 4 классов)
+   - `level1_metrics`, `level2_metrics` — промежуточные уровни
+3. **Сравнение:** Модели, обученные на `base_labels`, сравниваются с моделями на `full` по base_metrics
+
+---
+
+## [2026-01-22] Доработка системы визуализации v2.1
+
+### Выполненные работы
+
+Внесены улучшения в систему визуализации на основе обратной связи.
+
+#### 1. Heatmaps по лучшим моделям
+
+Добавлены новые heatmaps помимо средних значений:
+- `heatmap_model_features_mean.png` — средняя F1 (как было)
+- `heatmap_model_features_best.png` — **лучшая F1** для каждой комбинации
+- `heatmap_model_sampling_mean.png` — средняя F1 по sampling
+- `heatmap_model_sampling_best.png` — **лучшая F1** по sampling
+
+#### 2. Исправлены кривые обучения (learning_curves)
+
+**Проблема:** Графики строились для каждой модели отдельно, а не для сравнения.
+
+**Решение:** Теперь для каждого эксперимента (ExpID) строится **один график**, на котором отображаются **все модели** этого эксперимента.
+
+- Группировка: "все параметры одинаковые, отличается только тип модели"
+- На одном графике: MLP, CNN, ConvKAN, PhysicsKAN и др. для одного ExpID
+- 3 подграфика: Val Loss, Val F1, Val Acc
+- Различие по цвету (модель) и стилю линии (сложность: L=сплошная, M=пунктир, H=точки)
+- Файлы: `learning_curves/exp_{ExpID}_all_models.png`
+
+#### 3. Согласованность обозначений Парето
+
+Унифицированы обозначения между `pareto_cpu_time/` и `pareto_params/`:
+- Фиксированный порядок моделей: MLP → CNN → ResNet → SimpleKAN → ConvKAN → PhysicsKAN
+- Фиксированный порядок сложности: Light → Medium → Heavy
+- Единый формат меток: `Model (L/M/H)` вместо `Model (Light/Medium/Heavy)`
+- Легенда отсортирована одинаково на всех графиках
+
+#### 4. Radar charts по классам
+
+Добавлены radar (spider) charts для анализа F1 по отдельным классам:
+- **Классы:** Норма, Коммутации, Аномалии, Аварии
+- `radar_top5_models.png` — топ-5 моделей по общей F1
+- `radar_by_model_type.png` — усреднённые значения по типам моделей
+
+**Изменения в aggregate_reports.py:**
+- Добавлены колонки: `Class_0_F1`, `Class_1_F1`, `Class_2_F1`, `Class_3_F1`
+- Значения берутся из `full_best_per_class_f1` при расчёте full_eval
+- Поддержка кэширования per-class метрик
+
+### Структура выходных файлов (обновлённая)
+
+```
+figures_advanced/
+├── pareto_cpu_time/         # 4 Парето (согласованные обозначения)
+├── pareto_params/           # 4 Парето (согласованные обозначения)
+├── learning_curves/         # ИЗМЕНЕНО: один файл на ExpID
+│   └── exp_{ExpID}_all_models.png
+├── data_type_analysis/
+│   └── {Model}/
+└── additional/
+    ├── heatmaps/
+    │   ├── heatmap_model_features_mean.png
+    │   ├── heatmap_model_features_best.png  # НОВОЕ
+    │   ├── heatmap_model_sampling_mean.png
+    │   └── heatmap_model_sampling_best.png  # НОВОЕ
+    ├── boxplots/
+    └── radar/               # НОВОЕ
+        ├── radar_top5_models.png
+        └── radar_by_model_type.png
+```
+
+### Технические детали
+
+- Per-class F1 вычисляется через `sklearn.metrics.f1_score(average=None)`
+- Radar charts используют `matplotlib` с `polar=True`
+- Совместимость: старый код продолжает работать, новые графики опциональны
+
+---
+
+## [2026-01-22] Реализация расширенной системы визуализации (Report Engine 2.0)
+
+### Выполненные работы
+
+Реализована полноценная система расширенной визуализации для анализа результатов экспериментов.
+
+#### 1. Создан модуль `scripts/visualization/advanced_plots.py`
+
+Новый класс `AdvancedVisualizer` с поддержкой русского и английского языков.
+
+#### 2. Реализованы 8 графиков Парето
+
+| № | Ось Y | Ось X | Назначение |
+|---|-------|-------|------------|
+| 1 | Val F1 | CPU time (ms) | Метрика валидации vs скорость |
+| 2 | Val Accuracy | CPU time (ms) | Точность валидации vs скорость |
+| 3 | Best Full F1 | CPU time (ms) | Лучшая из Full Best/Final F1 vs скорость |
+| 4 | Best Full Acc | CPU time (ms) | Лучшая из Full Best/Final Acc vs скорость |
+| 5 | Val F1 | Params | Метрика vs размер модели |
+| 6 | Val Accuracy | Params | Точность vs размер модели |
+| 7 | Best Full F1 | Params | Full F1 vs размер модели |
+| 8 | Best Full Acc | Params | Full Acc vs размер модели |
+
+На всех графиках:
+- Цвет точки = тип модели (MLP, CNN, ConvKAN, PhysicsKAN, etc.)
+- Форма маркера = сложность (Light ●, Medium ■, Heavy ▲)
+- Отображается фронт Парето (пунктирная линия)
+
+#### 3. Кривые обучения по сложности
+
+- Для каждого эксперимента (ExpID) строятся отдельные графики для Light / Medium / Heavy
+- 3 подграфика: Val Loss (с ограничением 2.0), Val F1, Val Acc
+- Все модели одной сложности на одном графике для удобного сравнения
+- Сплошная линия = Base архитектура, пунктир = Hierarchical
+
+#### 4. Парето по типам данных для каждой модели
+
+Отдельный график для каждой модели (MLP, CNN, ConvKAN, PhysicsKAN, ResNet, SimpleKAN):
+- **Цвет** = тип входных данных (Raw 🟢, PhasePolar 🔵, Symmetric 🟣, Power 🔴)
+- **Маркер** = стратегия sampling (Stride ●, Snapshot ■, NoneSampling ▲)
+- Буква около точки = сложность (L/M/H)
+- Ось X: CPU время инференса (лог. шкала)
+- Ось Y: лучшая Full Test F1
+
+#### 5. Дополнительные аналитические графики
+
+- **Heatmap Model×Features** — средняя F1 для каждой комбинации модели и типа данных
+- **Heatmap Model×Sampling** — влияние стратегии sampling на разные модели
+- **Boxplot по моделям** — распределение F1 (медиана, квартили, выбросы)
+- **Boxplot по типам данных** — сравнение Raw, PhasePolar, Symmetric
+- **Complexity comparison** — grouped bar chart: модели × сложность
+- **Top-20 ranking** — таблица лучших моделей (CSV + Markdown)
+
+#### 6. Интеграция в `aggregate_reports.py`
+
+- Добавлен флаг `--advanced-plots` в CLI
+- Добавлена константа `ADVANCED_PLOTS = True` в MANUAL режим
+- Автоматическое создание структуры папок
+
+### Структура выходных файлов
+
+```
+reports/{experiment}/figures_advanced/
+├── pareto_cpu_time/
+│   ├── pareto_val_f1_cpu.png
+│   ├── pareto_val_acc_cpu.png
+│   ├── pareto_full_f1_cpu.png
+│   └── pareto_full_acc_cpu.png
+├── pareto_params/
+│   ├── pareto_val_f1_params.png
+│   ├── pareto_val_acc_params.png
+│   ├── pareto_full_f1_params.png
+│   └── pareto_full_acc_params.png
+├── learning_curves/
+│   ├── light/
+│   ├── medium/
+│   └── heavy/
+├── data_type_analysis/
+│   ├── MLP/
+│   ├── CNN/
+│   ├── ConvKAN/
+│   └── ...
+└── additional/
+    ├── heatmaps/
+    ├── boxplots/
+    └── rankings/
+```
+
+### Технические детали
+
+- Использованы библиотеки: matplotlib, seaborn
+- Поддержка русского языка в графиках (DejaVu Sans)
+- Реализован расчёт фронта Парето (недоминируемые точки)
+- Автоматическое определение лучшей метрики между Full Best и Full Final
+
+### Научная ценность
+
+Данная система визуализации позволяет:
+1. Выбрать оптимальную модель для конкретных требований (скорость vs точность)
+2. Определить лучший тип входных данных для каждой архитектуры
+3. Оценить влияние стратегии sampling на качество
+4. Сравнить эффективность увеличения сложности модели
+
+---
+
+## [2026-01-20] Отчёт / мысли о том, что и как отображать
+
+Это отличный момент для систематизации. Вы проделали огромную работу по генерации данных (Phase 2.5 и начало 2.6), и теперь у нас есть «сырье» для серьезной научной публикации.
+
+Проблема текущего `aggregate_reports.py` в том, что он создает **таблицу данных**, но не **аналитику**. Глазами искать закономерности в CSV на 100+ строк невозможно.
+
+Ниже представлен **План модернизации системы отчетности (Report Engine 2.0)**. Он разбит на логические блоки: от парсинга структуры до генерации графиков для статьи.
+
+---
+
+# 🚀 План модернизации: Report Engine 2.0
+
+Цель: Превратить папку с логами в набор иллюстраций для статьи и PDF-отчет, который можно читать как историю экспериментов.
+
+## 1. Структурирование данных (Parsing & Tagging)
+
+Сейчас скрипт просто читает папки. Нам нужно превратить имя папки и конфиг в **структурированные теги**.
+
+**Задача:** Обновить загрузчик в `aggregate_reports.py`, чтобы он создавал не просто плоский список, а два DataFrame:
+1.  **`df_summary`**: Одна строка на эксперимент (лучшие метрики, параметры, теги).
+    *   *Колонки:* `ExpID` (напр. "2.5.4.0"), `ModelType` ("SimpleCNN"), `Complexity` ("Medium"), `Feature` ("Phase Polar"), `Strategy` ("Strided"), `Best_F1`, `Inference_Time`, `Params_Count`, ...
+2.  **`df_history`**: История обучения (все эпохи всех моделей).
+    *   *Колонки:* `ExpID`, `ModelType`, ..., `Epoch`, `Train_Loss`, `Val_Loss`, `Val_F1`.
+
+**Зачем:** Это позволит нам делать группировку (groupby) и фильтрацию одной строкой кода (например: "Показать средний F1 для всех моделей на стратегии Stride").
+
+---
+
+## 2. Визуализация по группам опытов (Experiment Group Plots)
+
+Это то, о чем ты просил: "Опыт такой-то" -> 6 линий на графике.
+
+**Алгоритм:**
+1.  Группируем `df_history` по `ExpID` (например, `2.5.4.0_strided`).
+2.  Для каждой группы создаем холст (Figure) с двумя подграфиками:
+    *   **Subplot A (Loss):** Кривые `Val Loss` для всех моделей в этом опыте.
+        *   *Фишка:* Ограничение по Y (ylim), например `[0, 2.0]`, чтобы "взорвавшиеся" модели (PhysicsKAN с Loss=100) не сплющивали остальные графики в ноль.
+    *   **Subplot B (Metric):** Кривые `Val F1-Macro` (или Balanced Acc).
+3.  **Легенда:** Цветовое кодирование по типу модели (например, ConvKAN = красный, SimpleCNN = синий, ResNet = зеленый).
+4.  **Сохранение:** `reports/figures/exp_comparison/{ExpID}_learning_curves.png`.
+
+---
+
+## 3. Аналитические графики (для статьи)
+
+Помимо динамики обучения, для статьи нужны **сводные графики**, отвечающие на исследовательские вопросы.
+
+### А. Диаграмма "Скорость vs Качество" (Pareto Frontier)
+Самый важный график для RZA (нам нужно быстро и точно).
+*   **Тип:** Scatter Plot (Точечная диаграмма).
+*   **Ось X:** Inference Time (ms) на CPU (логарифмическая шкала).
+*   **Ось Y:** F1-Score (или Balanced Accuracy).
+*   **Точки:** Каждая точка — модель. Цвет — тип модели. Форма точки — сложность (Light/Med/Heavy).
+*   **Что покажет:** Какие модели находятся в "верхнем левом углу" (быстро и точно). Скорее всего, там будут ConvKAN Light и SimpleCNN.
+
+### Б. Тепловая карта "Признаки vs Архитектуры" (Feature Heatmap)
+Чтобы визуально доказать вывод "Phase Polar лучше для всех".
+*   **Тип:** Heatmap.
+*   **Строки:** Типы моделей (ConvKAN, CNN, ResNet...).
+*   **Столбцы:** Типы признаков (Raw, Sym, Polar, Power).
+*   **Ячейка:** Цвет зависит от лучшего F1-Score.
+*   **Что покажет:** Яркие столбцы покажут лучшие признаки, яркие строки — лучшие архитектуры.
+
+### В. Радарная диаграмма классов (Class Radar Chart)
+Чтобы показать, какая модель лучше ловит аварии, а какая — норму.
+*   **Тип:** Radar Chart (Spider Plot).
+*   **Оси:** Классы (`Normal`, `Switching`, `Abnormal`, `Fault`).
+*   **Линии:** Топовые модели (например, Best CNN vs Best KAN).
+*   **Что покажет:** ResNet может иметь высокий общий F1, но проседать на классе `Fault`, а KAN может быть сбалансированнее.
+
+### Г. График масштабируемости (Complexity Scaling)
+*   **Тип:** Line Chart.
+*   **Ось X:** Сложность (Light -> Medium -> Heavy).
+*   **Ось Y:** F1-Score.
+*   **Линии:** Разные архитектуры.
+*   **Что покажет:** Как ResNet "падает" на Heavy (переобучение), а ConvKAN растет.
+
+---
+
+## 4. Сбор статистики и Таблицы (LaTeX ready)
+
+Генерация таблиц, которые можно почти копировать в статью.
+
+1.  **Top-10 Leaderboard:** Сводная таблица лучших моделей по F1.
+2.  **Stability Report:** Таблица, где для каждой модели считается дисперсия метрик на последних 5 эпохах (насколько стабильно она сходится).
+3.  **Confusion Matrix Report:** (Требует доработки) Скрипт должен проходиться по сохраненным `best_model.pt`, прогонять валидацию и сохранять матрицу ошибок (картинкой и CSV). Это критично для анализа ошибок между "Аномалией" и "Аварией".
+
+---
+
+## 5. Техническая реализация (Что я буду делать)
+
+Я предлагаю создать новый класс `ReportVisualizer` внутри `aggregate_reports.py` (или отдельным модулем), который будет отвечать только за отрисовку.
+
+**План работ по коду:**
+
+1.  **Модернизация `aggregate_reports.py`:**
+    *   Добавить парсинг имен папок (`parse_experiment_name`) для извлечения метаданных (ID, Complexity, etc.).
+    *   Сбор `df_history` (сейчас собирается только summary).
+
+2.  **Реализация `plot_experiment_group`:**
+    *   Функция, принимающая `ExpID` и список путей к логам.
+    *   Рисует Loss/F1 на одном холсте.
+    *   Добавляет "Clipping" для Loss (чтобы график был читаемым).
+
+3.  **Реализация `plot_scatter_performance`:**
+    *   График Скорость/Точность.
+
+4.  **Реализация `plot_feature_heatmap`:**
+    *   Сводная матрица эффективности признаков.
+
+5.  **Генерация Markdown/HTML отчета:**
+    *   Вместо просто CSV, скрипт сгенерирует `SUMMARY_REPORT.md`, где будут вставлены эти картинки и таблицы. Это удобно просматривать (как этот чат).
+
+---
+
+**Важное замечание:** Для построения *Confusion Matrix* мне нужно будет загружать модели (`.pt`) и прогонять данные. Это долго. Предлагаю это сделать опциональным флагом `--deep-analyze`, а пока сосредоточиться на метриках из логов (это мгновенно).
+
+
+## [2026-01-19] Восстановление стабильности тестов и реестра моделей
+
+### Контекст проблемы
+
+После очистки/перестройки экспериментов 2.5–2.6 часть тестов стала падать из‑за:
+- некорректных относительных путей (корень указывал на tests/),
+- прямого доступа к файловой системе в unit‑тестах,
+- изменения логики прореживания и аугментаций,
+- устаревших ожиданий в интеграционных тестах.
+
+### Что сделано
+
+1. **Реестр моделей обновлён под несколько комбинаций входов**
+   - Генератор теперь сохраняет несколько моделей на архитектуру (разные `features`/`sampling`).
+   - Реестр учитывает `phase2_5` и `phase2_6`, приоритеты сложности и уникальность комбинаций.
+   - Файл: [scripts/generate_model_registry.py](../../../scripts/generate_model_registry.py)
+
+2. **Smoke‑тесты моделей синхронизированы с конфигами чекпойнтов**
+   - Входы формируются по `in_channels`/`input_size`, а не по дефолтам.
+   - Конфиг берётся из чекпойнта при наличии.
+   - Файл: [tests/integration/test_model_registry.py](../../../tests/integration/test_model_registry.py)
+
+3. **Интеграционные тесты датасетов исправлены**
+   - Убрано `chdir` в tests/, корень проекта всегда корректный.
+   - Добавлены `skip` при отсутствии основного датасета и нормкоэфов.
+   - Файл: [tests/integration/test_dataset_manager_integration.py](../../../tests/integration/test_dataset_manager_integration.py)
+
+4. **PrecomputedDataset тесты переведены в pytest‑формат**
+   - Убрано выполнение на импорт.
+   - Добавлены явные тест‑функции и `skip` при отсутствии датасета.
+   - Файл: [tests/integration/test_precomputed_dataset.py](../../../tests/integration/test_precomputed_dataset.py)
+
+5. **Unit‑тесты устранения зависимостей от ФС**
+   - Мокаем `ComtradeParser`/`ReadComtrade` и проверки `os.path.exists`.
+   - Файлы: [tests/unit/test_analysis_overvoltage.py](../../../tests/unit/test_analysis_overvoltage.py),
+     [tests/unit/test_analysis_overvoltage_fixed.py](../../../tests/unit/test_analysis_overvoltage_fixed.py)
+
+6. **Обновление ожиданий тестов под актуальную логику**
+   - Аугментации стабилизированы: отключены случайные преобразования.
+   - Прореживание `snapshot` теперь учитывает актуальную логику для коротких окон.
+   - Файлы: [tests/unit/test_augmentation.py](../../../tests/unit/test_augmentation.py),
+     [tests/unit/test_downsampling.py](../../../tests/unit/test_downsampling.py)
+
+7. **Удалены временные утилиты**
+   - Удалён лишний скрипт запуска: run_model_tests.py
+
+### Результат
+
+- Реестр моделей отражает несколько конфигураций входов на архитектуру.
+- Smoke‑тесты используют реальные параметры и перестали падать из‑за форм входа.
+- Основные unit/integration тесты больше не зависят от локальной структуры ФС.
+
+## [2026-01-14] Добавление балансировки классов и улучшенной валидации
+
+### Контекст проблемы
+
+В экспериментах 2.5.1.1 мы использовали `pos_weight` для учёта несбалансированности 
+классов. Однако при случайном сэмплировании (12 точек из каждой осциллограммы) 
+редкие события всё равно выпадают непропорционально редко.
+
+**Пример:** если аварийных режимов 5% от всех данных, то из 10,000 точек за эпоху 
+только ~500 будут аварийными. Модель просто не видит достаточно примеров редких классов.
+
+### Реализованное решение
+
+#### 1. Новый модуль `osc_tools/ml/class_balancing.py`
+
+Реализованы два балансировщика:
+
+**GlobalClassBalancer** (Exp 2.5.1.2):
+- Анализирует весь датасет и группирует примеры по классам
+- При формировании батча равномерно берёт из каждого класса
+- Batch size = 64 (по 16 от каждого из 4 базовых классов)
+- ~156 шагов на эпоху = ~10,000 примеров
+- Кэширует результаты анализа в `data/ml_datasets/balancing_cache/`
+
+**OscillogramClassBalancer** (Exp 2.5.1.3):
+- Для каждой осциллограммы определяет присутствующие классы
+- Из каждой осциллограммы берёт равное количество примеров каждого класса
+- Применяет глобальное взвешивание осциллограмм по редкости их классов
+- Предотвращает переобучение на осциллограммы с перекосом событий
+
+#### 2. Улучшенная валидация (sliding window stride=4)
+
+Раньше валидация использовала stride=160 (половина окна), что давало ~3,000 точек.
+Теперь используется stride=4 как в `aggregate_reports.py`, что даёт полное покрытие.
+
+**Изменения в `run_phase2_5_all.py`:**
+- `VAL_STRIDE = 4` вместо `window_size // 2`
+- Больший batch_size для валидации (128 вместо 64) для скорости
+
+#### 3. Перенумерация экспериментов
+
+Старая нумерация:
+- 2.5.1.2 — Аугментация
+
+Новая нумерация:
+- 2.5.1.2 — **Глобальная балансировка** (`balancing_strategy='global'`)
+- 2.5.1.3 — **Балансировка по осциллограммам** (`balancing_strategy='oscillogram'`)
+- 2.5.1.4 — Аугментация (сдвинута)
+
+### Затронутые файлы
+
+1. **НОВЫЙ** `osc_tools/ml/class_balancing.py`:
+   - `BalancingConfig` — конфигурация
+   - `GlobalClassBalancer` — глобальная балансировка
+   - `OscillogramClassBalancer` — балансировка по осциллограммам
+   - `get_balancing_strategy()` — фабричная функция
+
+2. **ОБНОВЛЁН** `scripts/phase2_experiments/run_phase2_5_all.py`:
+   - Добавлен импорт балансировщиков
+   - Добавлена функция `get_or_create_balancer()` с кэшированием
+   - `run_experiment()` получил параметры `balancing_strategy`, `balancer`, `val_stride`
+   - `exp_params` расширен полем `"balancing"` для каждого эксперимента
+   - Валидация использует `stride=4` для полного покрытия
+
+3. **ОБНОВЛЁН** `docs/phase_discription/phase_2/PHASE_2p5_PLAN.md`:
+   - Добавлены описания экспериментов 2.5.1.2 и 2.5.1.3
+   - Эксперимент с аугментацией переименован в 2.5.1.4
+
+### Как запустить новые эксперименты
+
+```python
+# В run_phase2_5_all.py:
+EXPS = ["2.5.1.2", "2.5.1.3"]  # Новые эксперименты с балансировкой
+MODEL_TYPE = "all"
+SELECTED_COMPLEXITY = "all"
+```
+
+Или через командную строку:
+```bash
+python scripts/phase2_experiments/run_phase2_5_all.py --exp 2.5.1.2 --model all
+python scripts/phase2_experiments/run_phase2_5_all.py --exp 2.5.1.3 --model all
+```
+
+### Ожидаемый эффект
+
+1. **Exp 2.5.1.2 (Global Balancing):**
+   - Каждый класс гарантированно получает 16 примеров в батче
+   - Модель видит редкие классы в 4× чаще чем при случайном сэмплировании
+   - Ожидается рост Recall для ML_3 (аварии)
+
+2. **Exp 2.5.1.3 (Oscillogram Balancing):**
+   - Защита от переобучения на конкретные осциллограммы
+   - Модель учит признаки события, а не особенности файла
+   - Ожидается лучшая генерализация на новые данные
+
+---
+
+## [2026-01-14] Оптимизация и cleanup
+
+### Сделано
+
+1. **Очистка debug файлов:**
+   - Удалено: `scripts/evaluation/debug_normalization.py`
+   - Удалено: `scripts/evaluation/debug_data_comparison.py`
+   - Удалено: `scripts/evaluation/compare_same_file.py`
+   - Удалено: `scripts/test_fft_comparison.py`
+   - Удалено: `scripts/quick_test.py`
+
+2. **Перемещение тестов:**
+   - `scripts/evaluation/test_full_eval.py` → `tests/integration/test_full_eval.py`
+
+3. **Оптимизация `aggregate_reports.py`:**
+   - Использование `PrecomputedDataset` вместо `OscillogramDataset` (×10-20 быстрее)
+   - Автоматическое определение `feature_mode` из `in_channels` или `input_size`:
+     - `in_channels=16` или `input_size % 16 == 0` → `phase_polar`
+     - `in_channels=12` или `input_size % 12 == 0` → `symmetric`
+     - `in_channels=8` → `raw`
+   - Добавлен `tqdm` прогресс-бар для итерации по моделям
+   - Исправлена ошибка "Несоответствие размера: ожидалось 24, получено 32" для SymSnapshot моделей
+
+4. **Полезные утилиты оставлены:**
+   - `scripts/regen_precomputed.py` — для регенерации test_precomputed.csv
+
+---
+
+## [2026-01-14] Критические исправления в пайплайне данных
+
+### Обнаруженные проблемы
+
+При попытке добавить полную оценку на тестовой выборке (`aggregate_reports.py`) 
+обнаружено, что модели предсказывают один и тот же выход `[1,0,0,1]` независимо 
+от входных данных с accuracy ~0.05%.
+
+Расследование выявило **три критические ошибки**:
+
+#### 1. Баг нормализации в OscillogramDataset (КРИТИЧНО)
+**Файл:** `osc_tools/ml/dataset.py`, строка 216
+
+**Было (НЕПРАВИЛЬНО):**
+```python
+parts = file_name[0].split('_Bus ')  # BUG: file_name[0] = первый символ '0'!
+```
+
+**Стало (ИСПРАВЛЕНО):**
+```python
+parts = file_name.split('_Bus ')  # CORRECT: file_name это уже строка
+```
+
+**Последствия:** Физическая нормализация **НИКОГДА не применялась** во время 
+обучения Phase 2.6. Модели обучались на ненормализованных данных (UA_mag ≈ 40 
+вместо ≈ 0.14).
+
+#### 2. Несогласованность углов (relative vs absolute)
+**Файл:** `osc_tools/data_management/dataset_manager.py`
+
+OscillogramDataset использовал **относительные углы** (от UA), а 
+`create_precomputed_test_csv()` выдавал **абсолютные углы**.
+
+**Исправление:** Добавлен расчёт относительных углов в `create_precomputed_test_csv()`:
+- Phase Polar: углы относительно UA (UA_angle = 0)
+- Symmetric: углы относительно U1 (U1_angle ≈ 0)
+
+#### 3. Разное окно FFT (×2 разница амплитуд)
+**Файлы:** 
+- `osc_tools/features/pdr_calculator.py` — использует окно Ханнинга
+- `osc_tools/data_management/dataset_manager.py` — использовал прямоугольное окно
+
+Окно Ханнинга уменьшает амплитуду в ~2 раза по сравнению с прямоугольным.
+
+**Исправление:** Переписан метод `_compute_fft_phasors()` в dataset_manager.py:
+- Добавлено окно Ханнинга (`np.hanning`)
+- Используется `sliding_window_view` как в pdr_calculator
+- Результат синхронизирован с OscillogramDataset
+
+### Произведённые изменения
+
+1. **osc_tools/ml/dataset.py:216** — Исправлен `file_name[0]` → `file_name`
+2. **osc_tools/data_management/dataset_manager.py** — Полностью переписан FFT
+3. **data/ml_datasets/test_precomputed.csv** — Перегенерирован с корректным FFT
+
+### Верификация
+
+После исправлений сравнение данных OscillogramDataset vs PrecomputedDataset:
+- **До:** MSE = 0.66, Ratio ≈ 2.07x
+- **После:** MSE = 0.0024, Ratio ≈ 1.005x
+- **Статус:** ✓ Данные практически идентичны
+
+### Влияние на модели
+
+**ВСЕ модели Phase 2.6 были обучены с некорректными данными** из-за бага 
+нормализации. Необходимо **переобучение**.
+
+Текущая accuracy 35% на исправленных данных объясняется тем, что:
+- Модели обучались на данных с UA_mag ≈ 40
+- Тестируются на данных с UA_mag ≈ 0.14 (в 300 раз меньше)
+
+---
+
+## [2026-01-13] Полная реализация системы управления датасетами
+
+### 1. Новый DatasetManager (`osc_tools/data_management/dataset_manager.py`)
+Полностью переписан модуль управления датасетами с расширенным функционалом:
+- **Фиксированный split на файлы**: `ensure_train_test_split()` создаёт `train.csv` и `test.csv` (80/20) на уровне файлов (не строк), что гарантирует отсутствие утечек данных.
+- **Предрассчитанные признаки**: `create_precomputed_test_csv()` генерирует CSV с 89 колонками:
+  - Метаданные: `sample`, `file_name`
+  - Raw аналоговые (8): `IA`, `IB`, `IC`, `IN`, `UA`, `UB`, `UC`, `UN`
+  - Phase Polar (16): `*_mag`, `*_angle` для каждого канала
+  - Symmetric (12): `I1`, `I2`, `I0`, `U1`, `U2`, `U0` (mag, angle)
+  - Phase Complex (16): `*_re`, `*_im` для каждого канала
+  - Метки: `Target_*`, `ML_*`
+- **Warmup FFT**: Первые 31 точка расчётных колонок содержат 0 (warmup), валидные данные с точки 32.
+
+### 2. PrecomputedDataset (`osc_tools/ml/precomputed_dataset.py`)
+Создан новый класс Dataset для работы с предрассчитанными признаками:
+- Поддерживает режимы: `raw`, `phase_polar`, `symmetric`, `phase_complex`
+- Автоматически применяет sampling strategy (`snapshot`, `stride`, `none`)
+- **Не выполняет FFT расчёты** — мгновенное извлечение признаков из CSV
+- Совместим с PyTorch DataLoader
+
+### 3. Интеграция в скрипты экспериментов
+Обновлены `run_phase2_5_all.py` и `run_phase2_6.py`:
+- Автоматическая инициализация DatasetManager в начале скрипта
+- Train Dataset использует OscillogramDataset (с расчётами на лету для аугментации)
+- Val Dataset использует PrecomputedDataset (без FFT для ускорения)
+- Fallback на расчёт "на лету" если `num_harmonics > 1` (предрассчитаны только для 1 гармоники)
+
+### 4. Тестирование
+Smoke tests успешно пройдены:
+- Все feature_mode: `raw`, `phase_polar`, `symmetric`, `phase_complex`
+- Размерности Train и Val совпадают
+- DataLoader работает корректно
+- Обучение SimpleMLP на 1 эпоху прошло успешно
+
+### Структура файлов данных
+```
+data/ml_datasets/
+├── labeled_2025_12_03.csv  # Исходный датасет (не изменяется)
+├── train.csv               # 80% данных для обучения
+├── test.csv                # 20% данных для тестирования
+└── test_precomputed.csv    # Предрассчитанные признаки для теста
+```
+
+---
+
+## [2026-01-13] Оптимизация валидации и инфраструктура данных (предыдущая версия)
+
+### 1. Оптимизация производительности (Dataset Manager)
+Реализована система предвычисления признаков для ускорения валидации (`osc_tools/data_management/dataset_manager.py`):
+- **Фиксированный split**: Внедрено разделение на `train.csv` и `test.csv` (80/20) на уровне файлов, что гарантирует отсутствие утечек данных между эпохами и стабильность тестовой выборки.
+- **Препроцессинг-кэш**: Создан инструмент генерации `test_precomputed.pt`. Вместо расчета FFT при каждой итерации валидации, признаки (симметричные составляющие, фазные векторы) рассчитываются один раз для всей длины всей тестовой осциллограммы.
+- **Алгоритм "32-й точки"**: Использована векторная реализация скользящего БПФ (через свёртку), обеспечивающая появление валидных данных на 32-м отсчете (20 мс при 1600 Гц). Это исключает задержки в цикле обучения и соответствует физике работы РЗА.
+
+### 2. Рефакторинг OscillogramDataset
+- **Унифицированный загрузчик**: Обновлен `__getitem__` в `osc_tools/ml/dataset.py` для прозрачной работы как с сырыми DataFrame, так и с предвычисленными тензорами. 
+- **Эффективное хранение**: Данные в кэше хранятся в формате `[Raw(8) | Derived(28) | Targets]`. Извлечение признаков в режиме `snapshot` теперь выполняется мгновенным срезом тензора без циклов.
+- **Исправление ошибок**: Исправлена ошибка парсинга `norm_coef_all_v1.4.csv` (несоответствие типов int/float) путем настройки `infer_schema_length`.
+
+### 3. Обновление скриптов запуска
+- Экспериментальные скрипты Фазы 2.5 и 2.6 адаптированы под `DatasetManager`.
+- Добавлена логика автоматического отключения кэша (Fallback), если параметры эксперимента (например, `num_harmonics > 1`) не совпадают с составом кэша.
+
+## [2026-01-07] Старт Фазы 2.6: Иерархические модели и рефакторинг
+
+### 1. Архитектурные изменения
+Реализован новый класс моделей с иерархической обработкой сигналов (`osc_tools/ml/models/advanced.py`):
+- **HierarchicalStem**: Входной блок, разделяющий обработку на этапы.
+  1. **Independent Stage**: Каждый канал (фаза тока/напряжения) обрабатывается отдельным фильтром (`groups=in_channels`).
+  2. **Grouped Stage**: Каналы объединяются в физические группы (Токи и Напряжения, `groups=2`).
+  3. **Global Stage**: Полное смешивание признаков в Backbone.
+
+Добавлены модели-обертки:
+- `HierarchicalCNN`: Использует Conv1d.
+- `HierarchicalConvKAN`: Использует KANConv1d.
+- `HierarchicalMLP`: Использует Pointwise Convolutions (kernel_size=1) для эмуляции MLP с сохранением структуры каналов.
+
+### 2. Исправления и настройка данных
+- **Dataset**: В `osc_tools/ml/dataset.py` восстановлены настройки аугментации "Фазы 2" (только геометрические преобразования, без аддитивного шума), чтобы исключить влияние шума на проверку гипотез архитектуры.
+- **Run Script**: Обновлен скрипт `scripts/phase2_experiments/run_phase2_6.py`.
+  - Добавлен автоматический детект `in_channels` из датасета (решает проблему `TypeError` при инициализации моделей).
+  - Структура приведена к формату списка словарей (как в Фазе 2.5) для удобного ручного управления экспериментами.
+  - Все комментарии и логи переведены на русский язык.
+
+### 3. Результаты предварительных тестов
+- Успешно запущен эксперимент **Exp2.6.1_CNN_Medium_PhaseStride**.
+- Ошибок потока данных (shape mismatch) не обнаружено.
+- Обучение стабильно, лосс падает.
+
+### План дальнейших действий
+- Запуск полного сравнения Baseline vs Hierarchical моделей (Exp 2.6.1 vs 2.6.2).
+- Анализ влияния групповой свертки на интерпретируемость (по возможности визуализация весов 1-го слоя).

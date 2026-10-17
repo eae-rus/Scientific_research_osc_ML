@@ -1,0 +1,41 @@
+% ==============================================================================
+% ЕДИНЫЙ ИСТОЧНИК ДИССЕРТАЦИИ (Фаза B: Точный перенос версии v0.5)
+% Составлен по реальной структуре DISS-005 без содержательных изменений
+% ==============================================================================
+\documentclass[12pt,a4paper,oneside]{report}
+
+% Подключение изолированной преамбулы (пакеты, геометрия, служебные макросы)
+\input{preamble}
+
+\begin{document}
+
+% ------------------------------------------------------------------------------
+% ВВОДНАЯ ЧАСТЬ (Frontmatter)
+% ------------------------------------------------------------------------------
+\pagenumbering{arabic}
+\input{frontmatter/title}
+
+% Точный перенос оглавления исходника v0.5 (DISS-005-B0033 .. DISS-005-B0113)
+\input{frontmatter/toc_source}
+\clearpage
+
+\input{frontmatter/introduction}
+
+% ------------------------------------------------------------------------------
+% ОСНОВНЫЕ ГЛАВЫ (Chapters)
+% ------------------------------------------------------------------------------
+\input{chapters/ch01_bavr_problems/chapter}
+\input{chapters/ch02_bavr_modernization/chapter}
+\input{chapters/ch03_dataset_preparation/chapter}
+\input{chapters/ch04_statistical_analysis/chapter}
+\input{chapters/ch05_ml_adaptive_algorithms/chapter}
+
+% ------------------------------------------------------------------------------
+% ЗАКЛЮЧИТЕЛЬНАЯ ЧАСТЬ И ПРИЛОЖЕНИЯ (Backmatter)
+% ------------------------------------------------------------------------------
+\input{backmatter/bibliography}
+\input{backmatter/appendix01}
+\input{backmatter/notes_informal}
+\input{backmatter/supplementary_elements}
+
+\end{document}

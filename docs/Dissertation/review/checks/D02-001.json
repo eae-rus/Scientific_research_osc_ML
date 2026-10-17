@@ -1,0 +1,86 @@
+{
+  "task_id": "D02-001",
+  "date": "2026-10-06",
+  "basis_sha256": "50516d7832e6ea133d77b11b48802c4ed1929283ea7601134b878fab0e0338f7",
+  "target_path": "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec01_intro_and_methodology.tex",
+  "before_sha256": "614964f00278cff757a19ed6212ba2dd3776e93ccc42cc47ddff06188d9d32b5",
+  "basis_checks": [
+    {
+      "block_id": "DISS-005-B1492",
+      "locator": "/w:document/w:body/w:p[659]",
+      "source_text": "Ключевые результаты данного раздела включают:",
+      "XML_text_checked": true
+    },
+    {
+      "block_id": "DISS-005-B1493",
+      "locator": "/w:document/w:body/w:p[660]",
+      "source_text": "\t\tОбширный датасет реальных осциллограмм: Представлен общедоступный датасет, включающий 50 765 реальных осциллограмм, которые охватывают широкий спектр аварийных событий, различных эксплуатационных сценариев, а также записи режимов без существенных событий (шумовые записи)",
+      "XML_text_checked": true
+    },
+    {
+      "block_id": "DISS-005-B1494",
+      "locator": "/w:document/w:body/w:p[661]",
+      "source_text": "\t\tСтандартизированный конвейер обработки данных: Мы предлагаем систематическую методологию сбора, унификации, анонимизации и нормализации осциллограмм.",
+      "XML_text_checked": true
+    },
+    {
+      "block_id": "DISS-005-B1495",
+      "locator": "/w:document/w:body/w:p[662]",
+      "source_text": "В настоящей главе подробно описываются этапы сбора, предобработки и подготовки датасета для его последующего использования в задачах, связанных с анализом и модернизацией устройств БАВР. Особое внимание уделяется методам унификации, деперсонализации и нормализации данных, а также подходам к их разметке для обучения моделей машинного обучения.",
+      "XML_text_checked": true
+    }
+  ],
+  "transferred_B1493_checked": true,
+  "comment_ids_before": [
+    "DISS-005-C0104",
+    "DISS-005-C0105",
+    "DISS-005-C0106",
+    "DISS-005-C0107",
+    "DISS-005-C0108",
+    "DISS-005-C0109",
+    "DISS-005-C0110",
+    "DISS-005-C0111"
+  ],
+  "new_claim_ids": [
+    "SD-001",
+    "SD-004",
+    "SD-006"
+  ],
+  "objects_added": 0,
+  "status": "passed_scoped_task",
+  "after_sha256": "0876db67ea37b24c301fae2dfdebc9b27dd508534c394fc16e5065d973abb367",
+  "comment_ids_after": [
+    "DISS-005-C0104",
+    "DISS-005-C0105",
+    "DISS-005-C0106",
+    "DISS-005-C0107",
+    "DISS-005-C0108",
+    "DISS-005-C0109",
+    "DISS-005-C0110",
+    "DISS-005-C0111"
+  ],
+  "comment_text_policy": "All pre-existing commentnote calls retained verbatim; C0105 is still a source reminder, not deleted.",
+  "build": {
+    "exit_code": 0,
+    "passes": 4,
+    "pages": 133,
+    "undefined_references": 0,
+    "pdf_sha256": "0bdadb239c4658f878ede5de4e3e49cd52f3aab4eda28ff8ebc94b49b46fe7b9",
+    "command": "pdflatex --disable-installer -interaction=nonstopmode -halt-on-error -file-line-error -output-directory=../build/reading/latex main.tex",
+    "aux_resolution": "MiKTeX read the stale AUX in manuscript cwd; latest generated AUX copied there before final pass.",
+    "new_subsection_overfull": 0,
+    "existing_warnings": "Inherited overfull boxes and oversized float in other text remain; no claim of whole-document visual acceptance."
+  },
+  "visual_review": {
+    "physical_pages": [
+      80,
+      81,
+      82
+    ],
+    "images": "build/reading/latex/final-page-080.png..082.png",
+    "result": "New subsection, footnotes and adjacent transition inspected; no clipping or overlapping text in scoped addition."
+  },
+  "limits": "D02-001 only. C02/C03/C04/C06/D02 and B05/B06 remain incomplete or REVIEW as previously recorded.",
+  "commentnote_calls_identical_to_author_input": true,
+  "author_notes_verbatim_checked_against_git": 28
+}

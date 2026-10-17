@@ -1,0 +1,64 @@
+# LaTeX compilation artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.bbl
+*.blg
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# Local LaTeX build output folders
+build/
+manuscript/build/
+scratch/
+
+# Temporary test PDF builds
+*build.pdf
+*test.pdf
+
+# Reproducible working renders; archived source/release PDFs stay versioned
+/manuscript/main.pdf
+/manuscript/test_skeleton.pdf
+
+# Office lock files and local caches
+~$*
+*.tmp
+*.bak
+__pycache__/
+
+# Local scalar input snapshot; readable audit and manuscript figures are versioned.
+/planning/sources/STAT-OZZ/*/*.csv
+
+# Local PDR audit cache: copied code, logs, predictions and run metadata.
+# CSV inputs are local reproducibility snapshots too; readable audit outputs stay in Git.
+/sources/PDR-05/*/*.csv
+# Article/review snapshots and origin.json remain versioned.
+# Readable protocols, claims and audit reports are outside this cache.
+/sources/PDR-05/*/*.py
+/sources/PDR-05/*/*.npz
+/sources/PDR-05/*/config.json
+/sources/PDR-05/*/progress.json
+/sources/PDR-05/*/summary.json
+/sources/PDR-05/*/training_log.jsonl
+/sources/PDR-05/*/*_expert_best.json
+/sources/PDR-05/*/*_weak_best.json
+/sources/PDR-05/*/*_weak_initial.json
+/sources/PDR-05/*/paired_comparison_summary.json
+
+# Local PDR audit cache: copied code, logs, predictions and run metadata.
+# Article/review snapshots and origin.json remain versioned.
+# Readable protocols, claims and audit reports are outside this cache.
+/sources/PDR-05/*/*.py
+/sources/PDR-05/*/*.npz
+/sources/PDR-05/*/config.json
+/sources/PDR-05/*/progress.json
+/sources/PDR-05/*/summary.json
+/sources/PDR-05/*/training_log.jsonl
+/sources/PDR-05/*/*_expert_best.json
+/sources/PDR-05/*/*_weak_best.json
+/sources/PDR-05/*/*_weak_initial.json
+/sources/PDR-05/*/paired_comparison_summary.json

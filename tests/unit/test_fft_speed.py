@@ -6,7 +6,7 @@ import numpy as np
 ROOT_DIR = Path(__file__).resolve().parents[2]
 sys.path.append(str(ROOT_DIR))
 
-from osc_tools.features.pdr_calculator import sliding_window_fft
+from osc_tools.features.phasor import sliding_window_fft
 
 
 def test_sliding_window_fft_shape():

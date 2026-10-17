@@ -1,0 +1,108 @@
+{
+  "task_id": "D03-003",
+  "date": "2026-10-09",
+  "status": "DONE",
+  "before_sha256": "ab33ecb555bbd2c2150e496a1ef4c7c95566b02830e2d827fcc9bbd0edac429c",
+  "author_notes_preserved": [
+    "(Примечание автора: Эмм… А разве это уместно в диссертации, разве здесь есть этот номер v1.7? \nЕсли нет, то прост убери его описание вообще. Но я могу и ошибаться. \nЕсли он внутренний, можно примечанием, для нас оставить. \nКак я раньше делал свои комментарии с полезными ссылками. \nА в итоговой версии, это удаляется и в основном тексте отсутствует. \nНу либо как-то иначе обыграть, а то эта цифра из ниоткуда по сути)",
+    "(Примечание автора: Подожди подожди не надо писать о статье как о чём-то чужом. \nЭто моё и есть, как и все остальные. Да, можно делать ссылку на статью, а тут чуть иначе писать, \nно не надо писать что-то вроде «проверили данные, совпадают», то что берётся из статей – \nпрям факт, ну может и поправили его, но не надо на этом делать акценты, прост более современные факты будут и всё. \nКасается как текущих вставок, так и всех остальных и других частей текста, можешь прям в инструкцию это.)",
+    "(Примечание автора: И тут не надо такого, прост новые цифры, \nа то, что разнятся, можешь примечанием нам, не более. Мы не сравниваем работы, мы вставляем более актуальные их версии.)",
+    "(Примечание автора: нафиг вот эти слова «заново».)",
+    "(Примечание автора: нафиг вот эти слова «исходной статьи», мы делаем более актуальное. \nДа и странно, что не сходится, на самом деле, очень странно, данные ведь те же самые. \nВот обдумай и перепроверь всё это, и скажи, где в старом коде косяки. \nИ кстати, если есть функции и код построения чего-то в старых разделах для статей,\nто не надо прям для каждого графика лепить их тут новые. Надо бы делать систему единой, если много откуда идёт \n– то выносить на уровни выше как-то, в общие инструменты… \nА то я смотрю, много разных функций уже добавила и это надо бы обдумать. Ведь много где начнёт копиться.)"
+  ],
+  "figures": {
+    "ozz_voltage_clipping.png": "982b93e4b131ec0f7eb6538cb49b09ef67e29fc212df3f98f2ae052400336a24",
+    "ozz_measurement_fault.png": "72c8d83e68246e0f98138f4450a1568ba3873461069b240b8299ec0f9c6a63ff",
+    "ozz_developing_fault.png": "2a03d1ccfaca9bdf90def00284d194754cbd36641fbc74346f884683edd607d3",
+    "ozz_switching_peak.png": "c3736966350da17d5c2a15114c9f41f8554f8a0ff4b2d846eca9a6a6310c99ef",
+    "ozz_switching_imitation.png": "3ce1a2200f480ba8876cf76ac1f7dd58c1604b8e38290153457ef5a0cb973eae",
+    "ozz_weak_process.png": "1814169d5f100fbe2ff9b55b7cb143123166c5c02d058cd1eee009106b64e8a4"
+  },
+  "figure_source_sha256": "f4993e3efd914536101e056dbe4d8b210bbff0404d7c04688b5b5270d2cad5f3",
+  "figure_source_parts": {
+    "ozz_voltage_clipping.png": "word/media/image2.png",
+    "ozz_measurement_fault.png": "word/media/image3.png",
+    "ozz_developing_fault.png": "word/media/image4.png",
+    "ozz_switching_peak.png": "word/media/image5.png",
+    "ozz_switching_imitation.png": "word/media/image6.png",
+    "ozz_weak_process.png": "word/media/image7.png"
+  },
+  "claim_locators": [
+    "DATA-OZZ P0101–P0133",
+    "AI-04 P0066"
+  ],
+  "limits": [
+    "Illustrations copied without editing; waveform file IDs and calibrated time axes not recovered.",
+    "Record-level presence of OZZ is not a complete temporal arc-class label."
+  ],
+  "scalar_audit": {
+    "csv_sha256": "eb9f193dcf4e5ec8e37cd3269e90279ba9e5291da138009b64f0f34031806c5b",
+    "reviewed_records": 1855,
+    "unique_reviewed_filenames": 1855,
+    "accepted_records": 830,
+    "unused_records": 1025,
+    "statistics": {
+      "n": 830,
+      "mean": 1.9598356810722892,
+      "median": 1.926,
+      "sample_sd": 0.27414004934826913,
+      "sample_variance": 0.07515276665667142,
+      "min": 0.862,
+      "q1": 1.823,
+      "q3": 2.09875,
+      "max": 2.843
+    },
+    "central_interval": {
+      "count": 678,
+      "denominator": 830,
+      "percent": 81.6867469879518
+    },
+    "independent_pandas_agreement": true,
+    "old_notebook_finding": "ECDF computation correct; central interval was not calculated; statement 90% confused one-sided fraction with interval.",
+    "notebook_source_sha256": "c0cbae9ad485203a9eece459d166e7df1b52311e03537bc6e9ebcecf3235e68a",
+    "shared_module": "osc_tools/analysis/overvoltage_statistics.py",
+    "notebook_outputs": "Retained, not re-executed; scalar functions independently evaluated.",
+    "boundary_1_71": {
+      "strictly_below": 91,
+      "equal": 1,
+      "at_or_below": 92
+    }
+  },
+  "target_sha256": "a2bb943daf835839aa338554050e295079fe9face4dcd8600f747a60468c5edc",
+  "author_annotation_ids": [
+    "AA034",
+    "AA035",
+    "AA036",
+    "AA037",
+    "AA038"
+  ],
+  "all_38_author_notes_preserved": true,
+  "pdf": {
+    "pages": 140,
+    "sha256": "83fa4cee8fb524d6bd53056672c104e3aa3a981d4c0bdad4103b212e87717ba2",
+    "reviewed_pages": [
+      112,
+      113,
+      114,
+      115,
+      116,
+      117,
+      118,
+      119,
+      120
+    ],
+    "final_footnote_page_reviewed": 112,
+    "passes": 4,
+    "toc_stable": true,
+    "undefined_references": 0,
+    "new_section_overfull": 0,
+    "russian_text_extraction_checked": true,
+    "historical_document_overfull_not_resolved": true
+  },
+  "code_checks": {
+    "notebook_code_cells_ast_parse": 5,
+    "shared_module_sha256": "3726e0607506c08545d3d3b7a5355a4f75c6ebe780597c383a8bf728e527e436",
+    "pandas_crosscheck": true,
+    "notebook_full_execution": false
+  }
+}

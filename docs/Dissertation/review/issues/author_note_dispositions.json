@@ -1,0 +1,374 @@
+{
+  "planning/integration/rewrite_proposals/ch03.md#1": {
+    "text_sha256": "89aa08df917fba3d94fb7689676834ddb99d8f07a315aa19bcdc1ab373b834c7",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch03.md#2": {
+    "text_sha256": "05e7b92968b092395814b9f3c5c440353b9b14744256012f4e3971a7aa7d9f9e",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch03.md#3": {
+    "text_sha256": "33862d6732a8959a3800ea5b57f864db9eab15c2567c6606320aed8138dea042",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch03.md#4": {
+    "text_sha256": "883d0be4c59e71d152487ea0c26dc9edcc4e2b0f8d3c50708ab69dc6929796f2",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch03.md#5": {
+    "text_sha256": "5ee6278c0c364e5b3e498dd273dcd7b2641b52ed2ab96171d5806e4063f74ced",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch03.md#6": {
+    "text_sha256": "58cbea296f6990e930a7bdaae25c88ea5feb0660a6a12e47fcb2065440717e5e",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch03.md#7": {
+    "text_sha256": "7c958912533cf4fc38be00f55c29e85b11d41f8b853bfc4667e7d4d71c9247bc",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch03.md#8": {
+    "text_sha256": "4336ae62eb7e52ac39d01e665e180e1da4be31c4dc9aed4776bb91b654097de5",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch03.md#9": {
+    "text_sha256": "5ef0b3bc8a4732551dbea3342e1d28c8a311cd369c936e5ee001930c6a804661",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch03.md#10": {
+    "text_sha256": "560242dbbf8f9d1aed540200a98f11991c36912f8f8b57262f2acab975d877e6",
+    "status": "DECISION_RECORDED",
+    "decision": "Possible obsolescence is not automatic resolution of Word C0126/C0128; check when editing their exact fragments.",
+    "display": "прочитано; актуальность старых замечаний проверяется"
+  },
+  "planning/integration/rewrite_proposals/ch03.md#11": {
+    "text_sha256": "f77f82ff99c6f39d88b4bc5ddc7bdbaa92f1b5fd15048c975498cde2aaad54fb",
+    "status": "DECISION_RECORDED",
+    "decision": "Future labeling research: retained verbatim; confidential specifics excluded from dissertation; generic perspective only until results.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch05.md#1": {
+    "text_sha256": "20546dc45b204df4616b408e345d2c2ffb78aa6d4e38fcd99c2e211b692d1e71",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch05.md#2": {
+    "text_sha256": "3525685ca84b8e273c253ba9c8401b166dceff761dcd9749997f4f214ac8e857",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch05.md#3": {
+    "text_sha256": "efcd3a6ac5055bbf9ce8c69bf3586e8569c0dc2738a4969cc409683070484447",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch05.md#4": {
+    "text_sha256": "451a70fa507474f60d89e3b1cfb08f04a188ef26aab9fac5145e2bae5e2d39cf",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch05.md#5": {
+    "text_sha256": "728ed8f621dcba2614df716df22b2b9a4e8b4d4257ed7822688ca6285bef6c57",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/integration/rewrite_proposals/ch05.md#6": {
+    "text_sha256": "0f7983c6fc501c061aad818edf5a9bc57626579b1a312993f94ddbbeb419eaab",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/handoffs/D00.md#1": {
+    "text_sha256": "c53d4750afc4208d7ca128debef97d5d937b9a5d16e5e3dc9fd5f9c3dd0d906a",
+    "status": "DECISION_RECORDED",
+    "decision": "Visible IDs and dispositions added; original texts retained.",
+    "display": "учтено: старые примечания помечены"
+  },
+  "planning/handoffs/D00.md#2": {
+    "text_sha256": "7a16055500fd4fca3ae732d580470da4d8ce66e9ed525ea4c65552199a67e74b",
+    "status": "DECISION_RECORDED",
+    "decision": "Omit details of recent multi-format support; if needed acknowledge APS participation. Do not attribute collective code solely to author.",
+    "display": "учтено: форматы без технического углубления"
+  },
+  "planning/handoffs/D00.md#3": {
+    "text_sha256": "c275bbfd7b5c285056374a926f13456a320120942ed47a7e2a3e4b116731fa4d",
+    "status": "DECISION_RECORDED",
+    "decision": "Found docs/phase_discription/PHASE_6_RESEARCH_PLAN.md v0.1, 2026-10-06. Draft not read/approved by author; no results claimed. Only generic perspective in dissertation.",
+    "display": "учтено: новая Фаза 6 — пока перспектива"
+  },
+  "planning/handoffs/D00.md#4": {
+    "text_sha256": "c5c2e067b271d9bd0bf82e8e243b81b7d0444c17a50f9e50c0c845f6db0ed4a7",
+    "status": "DECISION_RECORDED",
+    "decision": "PDR labeling remains in progress, not cancelled. Current evidence can be transferred with dated snapshot; later PDR corrections coordinated between article and dissertation.",
+    "display": "учтено: разметка продолжается"
+  },
+  "planning/handoffs/D00.md#5": {
+    "text_sha256": "80b3e5c4890c94214dfd922896d9f5d900b64807d0c3bbd4d23099abdade1ee0",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/handoffs/D00.md#6": {
+    "text_sha256": "7902f83b764162cd454668dd4f1024d2f4a24dace4fbb869c8f8bf76546ff43e",
+    "status": "DECISION_RECORDED",
+    "decision": "Previously reviewed in planning/handoffs/D00.md and DECISIONS (2026-10-05); direction accepted, scientific implementation follows scoped tasks.",
+    "display": "учтено 05.10; исполнение по очереди"
+  },
+  "planning/questions.md#1": {
+    "text_sha256": "1d01f8bd1963dc9ef5a5402d414a7bb03cabe6a5479d28bda7ea6aa68086d7f5",
+    "status": "DECISION_RECORDED",
+    "decision": "Author accepts arithmetic total 1865. Recheck original OOXML table, including first/last data rows and separate total. Keep source reported 1866 in provenance.",
+    "display": "учтено: 1865; строки перепроверены"
+  },
+  "planning/questions.md#2": {
+    "text_sha256": "4186ea516ca8364e0e74d4d4a7a0a7cb1af835a52db1689ae2c6528cddd3dabf",
+    "status": "DECISION_RECORDED",
+    "decision": "Keep unresolved central interval percentage as future numeric check; do not block transfer of verified statistics or assert 80/90 percent without underlying CDF. Completed 2026-10-08: 678/830 = 81.69%; D03-002-statistics.json.",
+    "display": "выполнено: доля проверена 08.10"
+  },
+  "planning/questions.md#3": {
+    "text_sha256": "1d9bc5c660b97e80f51be8c13e2c66210f68ed5bd6cc3d49527d56a8f3083f0a",
+    "status": "DECISION_RECORDED",
+    "decision": "Author agrees on sample/measurement limits and on no automatic revision of insulation standards.",
+    "display": "учтено: ограничения сохраняются"
+  },
+  "planning/questions.md#4": {
+    "text_sha256": "9e562cff8b9984751bdfb15441a122d6f08daf60373b65e2acf6edcd8c43caa6",
+    "status": "DECISION_RECORDED",
+    "decision": "RTDS section is part of present validation. Transfer current material, explain any remaining disagreement with actual case/metric; coordinate later edits of PDR article and dissertation.",
+    "display": "учтено: переносим имеющееся; вопросы конкретизируем"
+  },
+  "planning/questions.md#5": {
+    "text_sha256": "b7ce4481bbd149853112b8c28ff29e6e04198b23f4b0e997b74683f2e3618eec",
+    "status": "DECISION_RECORDED",
+    "decision": "новые ответы прочитаны; адресные вопросы сохранены",
+    "display": "новые ответы прочитаны; адресные вопросы сохранены"
+  },
+  "planning/questions.md#6": {
+    "text_sha256": "4b4b3d1ab8f730180ff3d49abc7ea29d9a7126d6a1cc73d6e2ff1fe1c1a59636",
+    "status": "DECISION_RECORDED",
+    "decision": "Keep raw Word comments, paths and author notes. Review while editing a bounded fragment; raise important unresolved questions with exact anchors in planning/questions.md. Do not silently delete source-link reminders.",
+    "display": "учтено: комментарии и ссылки сохранены"
+  },
+  "planning/sources/PDR-05/limitations_and_comments.md#1": {
+    "text_sha256": "f672ec783e50967ed013866dd0c7db74406d740255b7373d4ba2f0c03734da7e",
+    "status": "DECISION_RECORDED",
+    "decision": "замечание S01 внесено в статью; исправление отдельной партией",
+    "display": "замечание S01 внесено в статью; исправление отдельной партией"
+  },
+  "planning/sources/PDR-05/limitations_and_comments.md#2": {
+    "text_sha256": "bb7cb67c9596c6723e157f5fae46cc58951d108f7bd269a6282fcc2d02439caa",
+    "status": "DECISION_RECORDED",
+    "decision": "продолжаем другие разделы; РНМ оставлен на доработку",
+    "display": "продолжаем другие разделы; РНМ оставлен на доработку"
+  },
+  "planning/sources/PDR-05/limitations_and_comments.md#3": {
+    "text_sha256": "994761c5bf57c5e7e5a5ee975756e59fda24d829e17246d3f81c9d7695c2605a",
+    "status": "DECISION_RECORDED",
+    "decision": "S02 внесено в статью и инструкцию Фазы 5",
+    "display": "S02 внесено в статью и инструкцию Фазы 5"
+  },
+  "planning/sources/PDR-05/limitations_and_comments.md#4": {
+    "text_sha256": "58c4d0fa39803bd27c568d21c337ab940293937b24a44fb8a5d1948847f97977",
+    "status": "DECISION_RECORDED",
+    "decision": "S03 прочитано; сохранено для доработки статьи",
+    "display": "S03 прочитано; сохранено для доработки статьи"
+  },
+  "manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex#1": {
+    "text_sha256": "3e89321e1c476f03761044870bfac9d01ec6a0a1ff218a7aa442ba976dfb05bf",
+    "status": "DECISION_RECORDED",
+    "decision": "Defer shortening OZZ and figure size/placement to whole-thesis proofreading as explicitly requested; scientific block unchanged.",
+    "display": "учтено 09.10; отложено до общей вычитки"
+  },
+  "manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex#2": {
+    "text_sha256": "c99d8aa72bee46e973c082064c72f0e524d51bd505533831b2660306a4c4e9bd",
+    "status": "DECISION_RECORDED",
+    "decision": "Own research stated directly; general rule recorded in AGENTS/START_PROMPT.",
+    "display": "учтено и исправлено 09.10; сохранено в исходнике"
+  },
+  "manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex#3": {
+    "text_sha256": "a5752b6b77d5ced334b107ccede37d58b78ee2bfffe5494bd5e44f2e4d4fa1bc",
+    "status": "DECISION_RECORDED",
+    "decision": "Current 1855 unique reviewed records used; old candidate counts retained internally; accepted-only table avoids mixing stages.",
+    "display": "учтено и исправлено 09.10; сохранено в исходнике"
+  },
+  "manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex#4": {
+    "text_sha256": "0174b443abf8d82ac883f48b37616b0e1fdc7c58e6f03c0273cbb4583947c698",
+    "status": "DECISION_RECORDED",
+    "decision": "Removed editorial wording about rebuilding figures.",
+    "display": "учтено и исправлено 09.10; сохранено в исходнике"
+  },
+  "manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex#5": {
+    "text_sha256": "a00dca92f72025dc8eda6e2f54abcec787f002eff84993c68cc18326710612bc",
+    "status": "DECISION_RECORDED",
+    "decision": "Old notebook CDF correct; missing interval calculation identified; shared scalar statistics used in notebook and audit.",
+    "display": "учтено и исправлено 09.10; сохранено в исходнике"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#1": {
+    "text_sha256": "716fec6c7b2e616c3b220f4d6ff5053b419e92ab2d883fd2e13556dc4374431d",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: visible chapter map inserted; introduction synthesis deferred until all sections, original note retained inactive.",
+    "display": "план добавлен; введение дорабатывается после наполнения главы"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#2": {
+    "text_sha256": "e7f16d4b396d30487103ae2012d4136764dfd5b6f1f0e3ef3859a0614ac10cdc",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#3": {
+    "text_sha256": "6fc005989379a41328e10e537d95d867ecb6de95c65e8efb232efeb4b53235a3",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#4": {
+    "text_sha256": "775b9fe3c30f859446a6b916bfb8905a828cbdc1d53dfc3101aee20e1742e169",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#5": {
+    "text_sha256": "7915774ef0acbf1825248279cb3a357a0d692f219be8f4185b89fcf2558442d0",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: output-decision figure specification added to existing figure_specs; final new figure not generated.",
+    "display": "задание для рисунка добавлено D04-003"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#6": {
+    "text_sha256": "c4af5b65c56c32e8f854d8b2fcc20b45dc8afef05d87373ad0e5ec5def3874d7",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#7": {
+    "text_sha256": "d2cfaba7fe96d0a76175ae8e35057ffd1736f988f926a6fc994b50b5d4a8e7a7",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#8": {
+    "text_sha256": "0e13c44159c2a3223615eff98d6b2a648b9a3b340ef06e3fcf5c68add339ba96",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#9": {
+    "text_sha256": "19b6e2c553a0d96158e286622f3293e434780bc40becaee56488e9a4dcc51150",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#10": {
+    "text_sha256": "baeec357c75d3ab10f6d75bcc91c9d8103fc56de49b46f57fd611cc4bedf2463",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#11": {
+    "text_sha256": "78efa9a279a29e03042231636f3c5bab9d64ce1ab13f03d7af0482d271947e9c",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#12": {
+    "text_sha256": "0071ff4b63b8b5e1fe3782fe5e95488c163bf5ece3597745bc9e3ceed3d4038b",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#13": {
+    "text_sha256": "77d7a3a32398191ab2745b9cfe2bdb7f46c68f933fa761e9472b2991926b8ab0",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#14": {
+    "text_sha256": "f68619ba6c016b82f2f6b3115ef10b4161d84e453e3ea33936c451386e6ae8db",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#15": {
+    "text_sha256": "0560c4a5e30f6d3f3ad130265c5c3e1d3cf5619f635e256ef24f14073c7e72de",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#16": {
+    "text_sha256": "284a56e4cd5b95d5bf5010e63672a5d79c60156a76e0bbe9693e8580f9e92555",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#17": {
+    "text_sha256": "55e2d9aec6ce5fad1a1760e8b6d64495e06e1c2d2bbd815f5f6fcb92c3c83c9f",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#18": {
+    "text_sha256": "8b723b050fe1a9c492b553db4df7c07822517d093fa74a42c66669a5c98223be",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#19": {
+    "text_sha256": "0bbcb3e6ace421aa70674a039b565ed475c09e1e88eb2153795099776b4c2ba0",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#20": {
+    "text_sha256": "297b6d1a6bb3a574d2364f3bc362e6c2c6d8d6405e5665a3205213128e8c1ee3",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#21": {
+    "text_sha256": "f6fce783ace9f1988353821d432d030d619b974d07f3fefffab5641b0c65fe7a",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#22": {
+    "text_sha256": "7ae4db78bbee628f982ffdd23a146acc926ac91135887703c541e400095580c3",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#23": {
+    "text_sha256": "53d0005e268fbb054f9fac4d2efb8f82bcf5e3080e2ea34ba8235148eb43d5bd",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  },
+  "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#24": {
+    "text_sha256": "3a069678a19eb473b5fd12d8da22df54860db1943f2e30c92082d06705f8ed2e",
+    "status": "DECISION_RECORDED",
+    "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
+    "display": "учтено D04-003; исходное примечание сохранено"
+  }
+}

@@ -1,0 +1,3050 @@
+{
+  "summary": {
+    "total_bib_entries": 136,
+    "entries_with_citations": 85,
+    "uncited_entries": 51,
+    "placeholders_count": 11,
+    "subheadings_count": 1,
+    "total_manuscript_labels": 163,
+    "total_manuscript_refs": 6,
+    "missing_manuscript_refs": 0,
+    "total_word_ref_fields": 150,
+    "word_unresolved_references": 2
+  },
+  "latex_labels": {
+    "ch:appendix01": [
+      {
+        "file": "manuscript/backmatter/appendix01.tex",
+        "line": 9
+      }
+    ],
+    "ch:bibliography": [
+      {
+        "file": "manuscript/backmatter/bibliography_part1.tex",
+        "line": 9
+      }
+    ],
+    "ch:notes_informal": [
+      {
+        "file": "manuscript/backmatter/notes_informal_part1.tex",
+        "line": 9
+      }
+    ],
+    "ch:bavr_problems": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/chapter.tex",
+        "line": 6
+      }
+    ],
+    "sec:ch1_intro": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec01_intro.tex",
+        "line": 7
+      }
+    ],
+    "fig:bavr_schemes": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec01_intro.tex",
+        "line": 58
+      }
+    ],
+    "sec:ch1_statistics": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec02_statistics_and_basic_problems.tex",
+        "line": 7
+      }
+    ],
+    "sec:ch1_pdr_problems": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec02_statistics_and_basic_problems.tex",
+        "line": 39
+      }
+    ],
+    "sec:ch1_base_organs_problems": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec03_base_organs_problems.tex",
+        "line": 2
+      }
+    ],
+    "fig:ch1_img5": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec03_base_organs_problems.tex",
+        "line": 10
+      }
+    ],
+    "fig:ch1_img6": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec03_base_organs_problems.tex",
+        "line": 19
+      }
+    ],
+    "fig:ch1_img8": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec03_base_organs_problems.tex",
+        "line": 32
+      }
+    ],
+    "fig:ch1_img9": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec03_base_organs_problems.tex",
+        "line": 41
+      }
+    ],
+    "fig:ch1_img10_11": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec03_base_organs_problems.tex",
+        "line": 61
+      }
+    ],
+    "fig:ch1_img12": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec03_base_organs_problems.tex",
+        "line": 79
+      }
+    ],
+    "fig:ch1_img13": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec03_base_organs_problems.tex",
+        "line": 87
+      }
+    ],
+    "sec:ch1_adaptive_functions": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec04_adaptive_functions.tex",
+        "line": 2
+      }
+    ],
+    "fig:ch1_img14": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec04_adaptive_functions.tex",
+        "line": 12
+      }
+    ],
+    "fig:ch1_img15": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec04_adaptive_functions.tex",
+        "line": 21
+      }
+    ],
+    "fig:ch1_img16": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec04_adaptive_functions.tex",
+        "line": 30
+      }
+    ],
+    "sec:ch1_manufacturers_analysis": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec05_manufacturers_analysis_part1.tex",
+        "line": 2
+      }
+    ],
+    "fig:ch1_img17": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec05_manufacturers_analysis_part1.tex",
+        "line": 18
+      }
+    ],
+    "fig:ch1_img18": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec05_manufacturers_analysis_part1.tex",
+        "line": 39
+      }
+    ],
+    "fig:ch1_img20": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec05_manufacturers_analysis_part1.tex",
+        "line": 61
+      }
+    ],
+    "sec:ch1_complex_cases": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec07_complex_cases_time.tex",
+        "line": 2
+      }
+    ],
+    "fig:ch1_img21": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec07_complex_cases_time.tex",
+        "line": 14
+      }
+    ],
+    "fig:ch1_img22": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec07_complex_cases_time.tex",
+        "line": 28
+      }
+    ],
+    "tab:bavr_operation_title": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec07_complex_cases_time.tex",
+        "line": 41
+      }
+    ],
+    "sec:ch1_adaptive_dropout": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec08_adaptive_dropout.tex",
+        "line": 18
+      }
+    ],
+    "fig:ch1_img23": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec08_adaptive_dropout.tex",
+        "line": 31
+      }
+    ],
+    "fig:ch1_img24": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec08_adaptive_dropout.tex",
+        "line": 39
+      }
+    ],
+    "fig:ch1_img25": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec08_adaptive_dropout.tex",
+        "line": 69
+      }
+    ],
+    "fig:ch1_img26": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec08_adaptive_dropout.tex",
+        "line": 86
+      }
+    ],
+    "sec:ch1_external_two_phase_blocking": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec09_external_two_phase_blocking.tex",
+        "line": 10
+      }
+    ],
+    "fig:ch1_img27_29": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec09_external_two_phase_blocking.tex",
+        "line": 43
+      }
+    ],
+    "fig:ch1_img30": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec09_external_two_phase_blocking.tex",
+        "line": 57
+      }
+    ],
+    "fig:ch1_img31": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec09_external_two_phase_blocking.tex",
+        "line": 68
+      }
+    ],
+    "fig:ch1_img32_33": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec09_external_two_phase_blocking.tex",
+        "line": 104
+      }
+    ],
+    "fig:ch1_img34_35": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec09_external_two_phase_blocking.tex",
+        "line": 121
+      }
+    ],
+    "fig:ch1_img36": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec09_external_two_phase_blocking.tex",
+        "line": 135
+      }
+    ],
+    "fig:ch1_img37": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec09_external_two_phase_blocking.tex",
+        "line": 146
+      }
+    ],
+    "fig:ch1_img38": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec09_external_two_phase_blocking.tex",
+        "line": 157
+      }
+    ],
+    "fig:ch1_img39": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec09_external_two_phase_blocking.tex",
+        "line": 176
+      }
+    ],
+    "fig:ch1_img40": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec09_external_two_phase_blocking.tex",
+        "line": 188
+      }
+    ],
+    "sec:ch1_rogowski_and_capacitive": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec10_rogowski_and_zero_sequence.tex",
+        "line": 10
+      }
+    ],
+    "fig:ch1_img41_43": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec10_rogowski_and_zero_sequence.tex",
+        "line": 40
+      }
+    ],
+    "fig:ch1_img44": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec10_rogowski_and_zero_sequence.tex",
+        "line": 66
+      }
+    ],
+    "fig:ch1_img45": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec10_rogowski_and_zero_sequence.tex",
+        "line": 74
+      }
+    ],
+    "sec:ch1_zero_sequence_rnm": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec10_rogowski_and_zero_sequence.tex",
+        "line": 79
+      }
+    ],
+    "fig:ch1_img46": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec10_rogowski_and_zero_sequence.tex",
+        "line": 104
+      }
+    ],
+    "fig:ch1_img47": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec10_rogowski_and_zero_sequence.tex",
+        "line": 112
+      }
+    ],
+    "sec:ch1_ferroresonance_ozz": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec11_ferroresonance_ozz.tex",
+        "line": 10
+      }
+    ],
+    "fig:ch1_img48": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec11_ferroresonance_ozz.tex",
+        "line": 35
+      }
+    ],
+    "fig:ch1_img49": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec11_ferroresonance_ozz.tex",
+        "line": 46
+      }
+    ],
+    "fig:ch1_img50": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec11_ferroresonance_ozz.tex",
+        "line": 63
+      }
+    ],
+    "fig:ch1_img51": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec11_ferroresonance_ozz.tex",
+        "line": 74
+      }
+    ],
+    "fig:ch1_img52": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec11_ferroresonance_ozz.tex",
+        "line": 85
+      }
+    ],
+    "fig:ch1_img53": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec11_ferroresonance_ozz.tex",
+        "line": 96
+      }
+    ],
+    "sec:ch1_conclusions": [
+      {
+        "file": "manuscript/chapters/ch01_bavr_problems/sec12_conclusions.tex",
+        "line": 10
+      }
+    ],
+    "ch:bavr_modernization": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/chapter.tex",
+        "line": 6
+      }
+    ],
+    "sec:ch2_intro": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec01_intro_and_rogowski_theory.tex",
+        "line": 9
+      }
+    ],
+    "sec:ch2_rnm_rogowski": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec01_intro_and_rogowski_theory.tex",
+        "line": 32
+      }
+    ],
+    "subsec:ch2_theoretical_study": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec01_intro_and_rogowski_theory.tex",
+        "line": 53
+      }
+    ],
+    "fig:ch2_signal_scheme": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec01_intro_and_rogowski_theory.tex",
+        "line": 65
+      }
+    ],
+    "eq:kz_current": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec01_intro_and_rogowski_theory.tex",
+        "line": 80
+      }
+    ],
+    "eq:rogowski_derivative": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec01_intro_and_rogowski_theory.tex",
+        "line": 94
+      }
+    ],
+    "fig:ch2_primary_current": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec01_intro_and_rogowski_theory.tex",
+        "line": 106
+      }
+    ],
+    "eq:k_cr": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec01_intro_and_rogowski_theory.tex",
+        "line": 118
+      }
+    ],
+    "fig:ch2_tt_kr_signals": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec01_intro_and_rogowski_theory.tex",
+        "line": 134
+      }
+    ],
+    "fig:ch2_transient_max_aperiodic": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec01_intro_and_rogowski_theory.tex",
+        "line": 161
+      }
+    ],
+    "eq:i_averaged": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec01_intro_and_rogowski_theory.tex",
+        "line": 171
+      }
+    ],
+    "fig:ch2_transient_time_limits": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec01_intro_and_rogowski_theory.tex",
+        "line": 184
+      }
+    ],
+    "sec:ch02_transient_and_harmonics": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec02_transient_and_harmonics.tex",
+        "line": 8
+      }
+    ],
+    "fig:ch02_hodograph": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec02_transient_and_harmonics.tex",
+        "line": 28
+      }
+    ],
+    "fig:ch02_transient_time_factors": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec02_transient_and_harmonics.tex",
+        "line": 71
+      }
+    ],
+    "sec:ch02_higher_harmonics": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec02_transient_and_harmonics.tex",
+        "line": 76
+      }
+    ],
+    "eq:ch02_harmonics_signals": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec02_transient_and_harmonics.tex",
+        "line": 89
+      }
+    ],
+    "fig:ch02_harmonics_currents": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec02_transient_and_harmonics.tex",
+        "line": 113
+      }
+    ],
+    "sec:ch02_instantaneous_values": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec02_transient_and_harmonics.tex",
+        "line": 121
+      }
+    ],
+    "fig:ch02_initial_transient": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec02_transient_and_harmonics.tex",
+        "line": 138
+      }
+    ],
+    "sec:ch02_fourier_theory": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec03_fourier_theory.tex",
+        "line": 8
+      }
+    ],
+    "eq:ch02_max_amplitude_deviation": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec03_fourier_theory.tex",
+        "line": 47
+      }
+    ],
+    "tab:ch02_window_functions": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec03_fourier_theory.tex",
+        "line": 93
+      }
+    ],
+    "sec:ch02_rnm_tt_kr_comparison": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec04_rnm_tt_kr_comparison.tex",
+        "line": 8
+      }
+    ],
+    "fig:ch02_simulink_substation_model": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec04_rnm_tt_kr_comparison.tex",
+        "line": 19
+      }
+    ],
+    "eq:ch02_pdr_tt": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec04_rnm_tt_kr_comparison.tex",
+        "line": 35
+      }
+    ],
+    "eq:ch02_pdr_kr": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec04_rnm_tt_kr_comparison.tex",
+        "line": 53
+      }
+    ],
+    "eq:ch02_hybrid_signal": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec04_rnm_tt_kr_comparison.tex",
+        "line": 86
+      }
+    ],
+    "fig:ch02_hodographs_external_fault": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec04_rnm_tt_kr_comparison.tex",
+        "line": 134
+      }
+    ],
+    "fig:ch02_hodographs_internal_fault": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec04_rnm_tt_kr_comparison.tex",
+        "line": 175
+      }
+    ],
+    "sec:ch02_kr_industrial_application": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec05_industrial_application_kr.tex",
+        "line": 8
+      }
+    ],
+    "fig:ch02_bavr_kr_tt_oscillograms": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec05_industrial_application_kr.tex",
+        "line": 45
+      }
+    ],
+    "fig:ch02_bavr_kr_ukrm_vnr": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec05_industrial_application_kr.tex",
+        "line": 75
+      }
+    ],
+    "sec:ch02_conclusions_rogowski": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec05_industrial_application_kr.tex",
+        "line": 83
+      }
+    ],
+    "sec:ch02_vnr_algorithms": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec06_vnr_algorithms.tex",
+        "line": 8
+      }
+    ],
+    "fig:ch02_logic_avr_vnr": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec06_vnr_algorithms.tex",
+        "line": 34
+      }
+    ],
+    "sec:ch02_vnr_existing_requirements": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec06_vnr_algorithms.tex",
+        "line": 41
+      }
+    ],
+    "sec:ch02_vnr_series_parallel": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec06_vnr_algorithms.tex",
+        "line": 51
+      }
+    ],
+    "sec:ch02_vnr_blocking_ground_fault": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec06_vnr_algorithms.tex",
+        "line": 58
+      }
+    ],
+    "sec:ch02_vnr_blocking_angle_exceedance": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec06_vnr_algorithms.tex",
+        "line": 74
+      }
+    ],
+    "fig:ch02_bavr_angle_exceedance_repair": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec06_vnr_algorithms.tex",
+        "line": 102
+      }
+    ],
+    "sec:ch02_vnr_blocking_frequency": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec06_vnr_algorithms.tex",
+        "line": 110
+      }
+    ],
+    "fig:ch02_vnr_no_angle_order_control": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec06_vnr_algorithms.tex",
+        "line": 132
+      }
+    ],
+    "sec:ch02_vnr_reduce_simultaneous": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec06_vnr_algorithms.tex",
+        "line": 153
+      }
+    ],
+    "sec:ch02_vnr_conclusions": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec06_vnr_algorithms.tex",
+        "line": 169
+      }
+    ],
+    "sec:ch02_conclusions": [
+      {
+        "file": "manuscript/chapters/ch02_bavr_modernization/sec07_conclusions.tex",
+        "line": 9
+      }
+    ],
+    "ch:dataset_preparation": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/chapter.tex",
+        "line": 6
+      }
+    ],
+    "sec:ch3_intro": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec01_intro_and_methodology.tex",
+        "line": 9
+      }
+    ],
+    "sec:dataset_methodology": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec01_intro_and_methodology.tex",
+        "line": 87
+      }
+    ],
+    "subsec:dataset_stages": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec01_intro_and_methodology.tex",
+        "line": 90
+      }
+    ],
+    "subsec:dataset_challenges": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec01_intro_and_methodology.tex",
+        "line": 120
+      }
+    ],
+    "sec:ch3_data_collection": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec02_data_collection_and_db.tex",
+        "line": 9
+      }
+    ],
+    "sec:ch3_data_sources": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec02_data_collection_and_db.tex",
+        "line": 15
+      }
+    ],
+    "fig:ch3_empty_oscillogram": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec02_data_collection_and_db.tex",
+        "line": 26
+      }
+    ],
+    "fig:ch3_bavr_operation_example": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec02_data_collection_and_db.tex",
+        "line": 49
+      }
+    ],
+    "sec:ch3_auto_search": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec02_data_collection_and_db.tex",
+        "line": 53
+      }
+    ],
+    "sec:ch3_single_db": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec02_data_collection_and_db.tex",
+        "line": 80
+      }
+    ],
+    "fig:ch3_data_collection_scheme": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec02_data_collection_and_db.tex",
+        "line": 94
+      }
+    ],
+    "fig:ch3_public_dataset_structure": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec02_data_collection_and_db.tex",
+        "line": 102
+      }
+    ],
+    "sec:ch3_terminal_search": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec02_data_collection_and_db.tex",
+        "line": 106
+      }
+    ],
+    "sec:ch3_preprocessing_depersonalization": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec03_comtrade_intro.tex",
+        "line": 9
+      }
+    ],
+    "sec:ch3_comtrade_aspects": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec03_comtrade_intro.tex",
+        "line": 15
+      }
+    ],
+    "sec:ch3_comtrade_cfg": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec03_comtrade_intro.tex",
+        "line": 21
+      }
+    ],
+    "tab:ch03_analog_signals_parameters": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec03_comtrade_intro.tex",
+        "line": 37
+      }
+    ],
+    "sec:ch3_dat_file": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec04_dat_files_and_depersonalization.tex",
+        "line": 9
+      }
+    ],
+    "sec:ch3_depersonalization_necessity": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec04_dat_files_and_depersonalization.tex",
+        "line": 25
+      }
+    ],
+    "sec:ch3_depersonalization_process": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec04_dat_files_and_depersonalization.tex",
+        "line": 34
+      }
+    ],
+    "sec:ch3_parameters_unification": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec04_dat_files_and_depersonalization.tex",
+        "line": 57
+      }
+    ],
+    "sec:ch3_frequency_grouping": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec04_dat_files_and_depersonalization.tex",
+        "line": 63
+      }
+    ],
+    "tab:ch03_oscillograms_frequency_parameters": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec04_dat_files_and_depersonalization.tex",
+        "line": 86
+      }
+    ],
+    "sec:ch3_signal_names_unification": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec05_signal_naming_unification.tex",
+        "line": 9
+      }
+    ],
+    "fig:ch03_substation_measurement_points": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec05_signal_naming_unification.tex",
+        "line": 47
+      }
+    ],
+    "fig:ch03_analog_signal_naming_example": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec05_signal_naming_unification.tex",
+        "line": 67
+      }
+    ],
+    "fig:ch03_analog_signals_structure": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec05_signal_naming_unification.tex",
+        "line": 78
+      }
+    ],
+    "fig:ch03_discrete_signals_structure_layout": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec05_signal_naming_unification.tex",
+        "line": 111
+      }
+    ],
+    "fig:ch03_discrete_signals_structure_diagram": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec05_signal_naming_unification.tex",
+        "line": 121
+      }
+    ],
+    "sec:ch3_removing_irrelevant_signals": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec05_signal_naming_unification.tex",
+        "line": 175
+      }
+    ],
+    "sec:ch3_normalization_and_formats": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec06_normalization_methodology.tex",
+        "line": 7
+      }
+    ],
+    "sec:ch3_basis_values_methodology": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec06_normalization_methodology.tex",
+        "line": 16
+      }
+    ],
+    "sec:ch3_signal_groups": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec06_normalization_methodology.tex",
+        "line": 22
+      }
+    ],
+    "sec:ch3_primary_secondary_values": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec06_normalization_methodology.tex",
+        "line": 44
+      }
+    ],
+    "sec:ch3_basis_determination_algorithm": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec06_normalization_methodology.tex",
+        "line": 53
+      }
+    ],
+    "tab:ch03_voltage_basis_algorithm": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec06_normalization_methodology.tex",
+        "line": 68
+      }
+    ],
+    "tab:ch03_phase_current_basis": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec07_basis_algorithms_and_csv.tex",
+        "line": 10
+      }
+    ],
+    "tab:ch03_zero_seq_current_basis": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec07_basis_algorithms_and_csv.tex",
+        "line": 57
+      }
+    ],
+    "sec:ch3_normalization_coefficients_table": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec07_basis_algorithms_and_csv.tex",
+        "line": 125
+      }
+    ],
+    "sec:ch3_csv_transformation": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec07_basis_algorithms_and_csv.tex",
+        "line": 155
+      }
+    ],
+    "sec:ch3_oscillogram_annotation": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec08_annotation_methodology.tex",
+        "line": 7
+      }
+    ],
+    "sec:ch3_annotation_necessity": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec08_annotation_methodology.tex",
+        "line": 33
+      }
+    ],
+    "fig:ch03_classification_hierarchy": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec08_annotation_methodology.tex",
+        "line": 59
+      }
+    ],
+    "fig:ch03_ml_signal_decoding": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec08_annotation_methodology.tex",
+        "line": 75
+      }
+    ],
+    "sec:ch3_manual_annotation_prep": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec08_annotation_methodology.tex",
+        "line": 81
+      }
+    ],
+    "sec:ch3_annotation_automation": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec08_annotation_methodology.tex",
+        "line": 103
+      }
+    ],
+    "sec:ch3_empty_oscillograms_filter": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec08_annotation_methodology.tex",
+        "line": 128
+      }
+    ],
+    "tab:ch03_empty_filter_settings": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec09_empty_oscillograms_filtering.tex",
+        "line": 8
+      }
+    ],
+    "sec:ch03_conclusions": [
+      {
+        "file": "manuscript/chapters/ch03_dataset_preparation/sec10_conclusions.tex",
+        "line": 9
+      }
+    ],
+    "ch:statistical_analysis": [
+      {
+        "file": "manuscript/chapters/ch04_statistical_analysis/chapter.tex",
+        "line": 9
+      }
+    ],
+    "sec:ch04_intro": [
+      {
+        "file": "manuscript/chapters/ch04_statistical_analysis/chapter.tex",
+        "line": 13
+      }
+    ],
+    "ch:ml_adaptive_algorithms": [
+      {
+        "file": "manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex",
+        "line": 9
+      }
+    ],
+    "sec:ch05_intro": [
+      {
+        "file": "manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex",
+        "line": 13
+      }
+    ],
+    "ch:introduction": [
+      {
+        "file": "manuscript/frontmatter/introduction.tex",
+        "line": 9
+      }
+    ],
+    "eq:test_kz": [
+      {
+        "file": "manuscript/test_skeleton.tex",
+        "line": 22
+      }
+    ],
+    "fig:test_img": [
+      {
+        "file": "manuscript/test_skeleton.tex",
+        "line": 33
+      }
+    ]
+  },
+  "latex_refs": {
+    "fig:ch02_simulink_substation_model": {
+      "used_in": [
+        {
+          "file": "manuscript/chapters/ch02_bavr_modernization/sec04_rnm_tt_kr_comparison.tex",
+          "line": 11
+        },
+        {
+          "file": "manuscript/chapters/ch02_bavr_modernization/sec04_rnm_tt_kr_comparison.tex",
+          "line": 97
+        }
+      ],
+      "is_resolved": true
+    },
+    "fig:ch02_hodographs_external_fault": {
+      "used_in": [
+        {
+          "file": "manuscript/chapters/ch02_bavr_modernization/sec04_rnm_tt_kr_comparison.tex",
+          "line": 97
+        }
+      ],
+      "is_resolved": true
+    },
+    "fig:ch02_hodographs_internal_fault": {
+      "used_in": [
+        {
+          "file": "manuscript/chapters/ch02_bavr_modernization/sec04_rnm_tt_kr_comparison.tex",
+          "line": 138
+        }
+      ],
+      "is_resolved": true
+    },
+    "fig:ch02_bavr_kr_tt_oscillograms": {
+      "used_in": [
+        {
+          "file": "manuscript/chapters/ch02_bavr_modernization/sec05_industrial_application_kr.tex",
+          "line": 26
+        },
+        {
+          "file": "manuscript/chapters/ch02_bavr_modernization/sec05_industrial_application_kr.tex",
+          "line": 26
+        }
+      ],
+      "is_resolved": true
+    },
+    "fig:ch02_bavr_kr_ukrm_vnr": {
+      "used_in": [
+        {
+          "file": "manuscript/chapters/ch02_bavr_modernization/sec05_industrial_application_kr.tex",
+          "line": 52
+        },
+        {
+          "file": "manuscript/chapters/ch02_bavr_modernization/sec05_industrial_application_kr.tex",
+          "line": 55
+        }
+      ],
+      "is_resolved": true
+    },
+    "fig:test_img": {
+      "used_in": [
+        {
+          "file": "manuscript/test_skeleton.tex",
+          "line": 35
+        }
+      ],
+      "is_resolved": true
+    }
+  },
+  "word_ref_fields": [
+    {
+      "field_id": "DISS-005-FLD-0080",
+      "block_id": "DISS-005-B0208",
+      "target_bookmark": "_Ref198730235",
+      "displayed_text": "1",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2085",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Шабад М. А. Расчеты релейной защиты и автоматики распределительных сетей: Монография / М. А. Шабад. "
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0081",
+      "block_id": "DISS-005-B0208",
+      "target_bookmark": "_Ref198730238",
+      "displayed_text": "2",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2086",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "СТО 56947007-29.120.70.305-2020 Методические указания для выбора параметров настройки и срабатывания"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0082",
+      "block_id": "DISS-005-B0210",
+      "target_bookmark": "_Ref198730275",
+      "displayed_text": "3",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2087",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Operating manual. General technical requirements. Complete device SHE-APS-FABT automation cabinet fo"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0083",
+      "block_id": "DISS-005-B0210",
+      "target_bookmark": "_Ref198730280",
+      "displayed_text": "9",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2093",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Instruction Book: SUE 3000 High Speed Transfer System HSTS. (Manufactured in Germany)"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0084",
+      "block_id": "DISS-005-B0210",
+      "target_bookmark": "_Ref198730796",
+      "displayed_text": "8",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2092",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Instruction Book: Digital Motor Bus Transfer System M‑4272. (Manufactured by: Beckwith Electric, USA"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0085",
+      "block_id": "DISS-005-B0210",
+      "target_bookmark": "_Ref198730280",
+      "displayed_text": "9",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2093",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Instruction Book: SUE 3000 High Speed Transfer System HSTS. (Manufactured in Germany)"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0086",
+      "block_id": "DISS-005-B0225",
+      "target_bookmark": "_Ref198731694",
+      "displayed_text": "10",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2094",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Kundur, Prabha. \"Power system stability.\" Power system stability and control 10 (2007): 7-1."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0087",
+      "block_id": "DISS-005-B0225",
+      "target_bookmark": "_Ref198732581",
+      "displayed_text": "11",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2095",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Никулов И.И., Жуков В.А., Пупин В.М.. Комплекс БАВР. Быстродействие повышает надежность электроснабж"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0088",
+      "block_id": "DISS-005-B0233",
+      "target_bookmark": "_Ref198731764",
+      "displayed_text": "11",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2095",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Никулов И.И., Жуков В.А., Пупин В.М.. Комплекс БАВР. Быстродействие повышает надежность электроснабж"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0089",
+      "block_id": "DISS-005-B0233",
+      "target_bookmark": "_Ref198731778",
+      "displayed_text": "12",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2096",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "A.Yu.Sulchakova, “Testing of industrial samples of devices for fast automatic bus transfer (FABT) fo"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0090",
+      "block_id": "DISS-005-B0233",
+      "target_bookmark": "_Ref198731722",
+      "displayed_text": "4",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2088",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Operating manual. Operator's manual. Microprocessor-based device Fast Automatic Bus Transfer with Re"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0091",
+      "block_id": "DISS-005-B0303",
+      "target_bookmark": "_Ref198731722",
+      "displayed_text": "4",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2088",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Operating manual. Operator's manual. Microprocessor-based device Fast Automatic Bus Transfer with Re"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0092",
+      "block_id": "DISS-005-B0658",
+      "target_bookmark": "_Ref159017314",
+      "displayed_text": "125",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2209",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Ломтев Е.А. Принципы построения и конструкции высоковольных ёмкостных делителей напряжения / Е.А. Ло"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0093",
+      "block_id": "DISS-005-B0658",
+      "target_bookmark": "_Ref159017326",
+      "displayed_text": "126",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2210",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Roman Hrbac. A Development of a Capacitive Voltage Divider for High Voltage Measurement as Part of a"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0094",
+      "block_id": "DISS-005-B0658",
+      "target_bookmark": "_Ref159017330",
+      "displayed_text": "127",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2211",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Tobias Kuhnke. Frequency Analysis of a novel 10 kV RC Voltage Divider Module composed of SMD-Compone"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0095",
+      "block_id": "DISS-005-B0658",
+      "target_bookmark": "_Ref159017336",
+      "displayed_text": "128",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2212",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "You Li. Study on methods of reduce resistive voltage dividers' phase shift / You Li; Li Yalu; Liu Mi"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0096",
+      "block_id": "DISS-005-B0659",
+      "target_bookmark": "_Ref159017415",
+      "displayed_text": "129",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2213",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Гречухин В.Н. Электронные трансформаторы тока и напряжения.состояние, перспективы развития и внедрен"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0097",
+      "block_id": "DISS-005-B0659",
+      "target_bookmark": "_Ref159017432",
+      "displayed_text": "131",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2215",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Кужеков С.Л. О проблеме выбора и замены трансформаторов тока для устройств релейной защиты / С.Л. Ку"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0098",
+      "block_id": "DISS-005-B0659",
+      "target_bookmark": "_Ref159017451",
+      "displayed_text": "122",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2206",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Руководство по эксплуатации КРУ TER_Sec10_Etalon_T1 / Версия 5.0 – 102 стр., ил."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0099",
+      "block_id": "DISS-005-B0659",
+      "target_bookmark": "_Ref198730275",
+      "displayed_text": "3",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2087",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Operating manual. General technical requirements. Complete device SHE-APS-FABT automation cabinet fo"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0100",
+      "block_id": "DISS-005-B0659",
+      "target_bookmark": "_Ref198731722",
+      "displayed_text": "4",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2088",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Operating manual. Operator's manual. Microprocessor-based device Fast Automatic Bus Transfer with Re"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0101",
+      "block_id": "DISS-005-B0659",
+      "target_bookmark": "_Ref159017460",
+      "displayed_text": "132",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2216",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "PC37.235/D15, Mar 2021 - IEEE Approved Draft Guide for the Application of Rogowski Coils Used for Pr"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0102",
+      "block_id": "DISS-005-B0659",
+      "target_bookmark": "_Ref159017468",
+      "displayed_text": "136",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2220",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Lj. A. Kojovic. Comparative Performance Characteristics of Current Transformers and Rogowski Coils u"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0103",
+      "block_id": "DISS-005-B0659",
+      "target_bookmark": "_Ref159017480",
+      "displayed_text": "119",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2203",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Андреенко Ю. А. Измерительное устройство дифференциальной токовой защиты шин / Ю. А. Андреенко [и др"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0104",
+      "block_id": "DISS-005-B0659",
+      "target_bookmark": "_Ref159017489",
+      "displayed_text": "121",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2205",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Chothani, N.G., Bhalja, B.R., New algorithm for current transformer saturation detection and compens"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0105",
+      "block_id": "DISS-005-B0760",
+      "target_bookmark": "_Ref200802794",
+      "displayed_text": "2.2",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0764",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Функционирования РНМ с катушками Роговского "
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0106",
+      "block_id": "DISS-005-B0761",
+      "target_bookmark": "_Ref200802825",
+      "displayed_text": "2.3",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1393",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Совершенствование алгоритмов функционирования восстановления нормального режима "
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0107",
+      "block_id": "DISS-005-B0772",
+      "target_bookmark": "_Ref198922611",
+      "displayed_text": "Рисунок 2.1",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0775",
+        "target_object_id": "DISS-005-FIG-051",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.1 Схема получения исследуемых сигналов: i(t) – мгновенные значения первичного тока, iCT(t)"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0108",
+      "block_id": "DISS-005-B0772",
+      "target_bookmark": "_Ref198921407",
+      "displayed_text": "Ошибка! Источник ссылки не найден.",
+      "is_resolved": false,
+      "target_info": null
+    },
+    {
+      "field_id": "DISS-005-FLD-0111",
+      "block_id": "DISS-005-B0778",
+      "target_bookmark": "_Ref198922055",
+      "displayed_text": "Ошибка! Источник ссылки не найден.",
+      "is_resolved": false,
+      "target_info": null
+    },
+    {
+      "field_id": "DISS-005-FLD-0112",
+      "block_id": "DISS-005-B0778",
+      "target_bookmark": "_Ref198923908",
+      "displayed_text": "(2.1)",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0781",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "(2.1)"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0115",
+      "block_id": "DISS-005-B0783",
+      "target_bookmark": "_Ref198923969",
+      "displayed_text": "(2.2)",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0786",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "(2.2)"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0120",
+      "block_id": "DISS-005-B0791",
+      "target_bookmark": "_Ref198924140",
+      "displayed_text": "(2.3)",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0794",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "(2.3)"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0123",
+      "block_id": "DISS-005-B0796",
+      "target_bookmark": "_Ref198924755",
+      "displayed_text": "Рисунок 2.3",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0798",
+        "target_object_id": "DISS-005-FIG-053",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.3 Схема Исследуемые сигналы с ТТ и КР."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0124",
+      "block_id": "DISS-005-B0796",
+      "target_bookmark": "_Ref198805011",
+      "displayed_text": "33",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2117",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Evdakov Aleksey, Andrey Yablokov, and Galina Filatova. \"Investigation of the Use of Rogovsky Coils f"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0127",
+      "block_id": "DISS-005-B0800",
+      "target_bookmark": "_Ref198924792",
+      "displayed_text": "Рисунок 2.4",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0805",
+        "target_object_id": "DISS-005-FIG-054",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.4 Переходный процесс при максимальной доле апериодической составляющей и постоянной времен"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0130",
+      "block_id": "DISS-005-B0806",
+      "target_bookmark": "_Ref198924180",
+      "displayed_text": "(2.4)",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0809",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "(2.4)"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0133",
+      "block_id": "DISS-005-B0810",
+      "target_bookmark": "_Ref198924943",
+      "displayed_text": "Рисунок 2.5",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0812",
+        "target_object_id": "DISS-005-FIG-056",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.5 Отображение границ для определения времени переходного процесса и начала наступление уст"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0136",
+      "block_id": "DISS-005-B0814",
+      "target_bookmark": "_Ref198924943",
+      "displayed_text": "Рисунок 2.5",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0812",
+        "target_object_id": "DISS-005-FIG-056",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.5 Отображение границ для определения времени переходного процесса и начала наступление уст"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0137",
+      "block_id": "DISS-005-B0815",
+      "target_bookmark": "_Ref198925117",
+      "displayed_text": "Рисунок 2.6",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0819",
+        "target_object_id": "DISS-005-FIG-057",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.6 Годограф вектора тока получаемого с классических ТТ при различных углах КЗ (CT_0 – CT_90"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0138",
+      "block_id": "DISS-005-B0815",
+      "target_bookmark": "_Ref198925117",
+      "displayed_text": "Рисунок 2.6",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0819",
+        "target_object_id": "DISS-005-FIG-057",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.6 Годограф вектора тока получаемого с классических ТТ при различных углах КЗ (CT_0 – CT_90"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0139",
+      "block_id": "DISS-005-B0816",
+      "target_bookmark": "_Ref198925117",
+      "displayed_text": "Рисунок 2.6",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0819",
+        "target_object_id": "DISS-005-FIG-057",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.6 Годограф вектора тока получаемого с классических ТТ при различных углах КЗ (CT_0 – CT_90"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0140",
+      "block_id": "DISS-005-B0816",
+      "target_bookmark": "_Ref198924943",
+      "displayed_text": "Рисунок 2.5",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0812",
+        "target_object_id": "DISS-005-FIG-056",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.5 Отображение границ для определения времени переходного процесса и начала наступление уст"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0143",
+      "block_id": "DISS-005-B0821",
+      "target_bookmark": "_Ref198923908",
+      "displayed_text": "(2.1)",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0781",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "(2.1)"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0144",
+      "block_id": "DISS-005-B0821",
+      "target_bookmark": "_Ref198925521",
+      "displayed_text": "Рисунок 2.7",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0834",
+        "target_object_id": "DISS-005-FIG-060",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.7 Время переходного процесса:"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0145",
+      "block_id": "DISS-005-B0823",
+      "target_bookmark": "_Ref198925521",
+      "displayed_text": "Рисунок 2.7",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0834",
+        "target_object_id": "DISS-005-FIG-060",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.7 Время переходного процесса:"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0148",
+      "block_id": "DISS-005-B0839",
+      "target_bookmark": "_Ref198924236",
+      "displayed_text": "(2.5)",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0842",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "(2.5)"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0153",
+      "block_id": "DISS-005-B0847",
+      "target_bookmark": "_Ref198925665",
+      "displayed_text": "Рисунок 2.8",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0846",
+        "target_object_id": "DISS-005-FIG-062",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.8 Исследуемые сигналы с ТТ без учёта насыщения и КР с наличием 2, 3, и 10 гармоник в сигна"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0154",
+      "block_id": "DISS-005-B0849",
+      "target_bookmark": "_Ref198925789",
+      "displayed_text": "Рисунок 2.9",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0854",
+        "target_object_id": "DISS-005-FIG-063",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.9 Переходный процесс, амплитуды первой гармоники: а) при максимальной доле аппериодической"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0157",
+      "block_id": "DISS-005-B0863",
+      "target_bookmark": "_Ref198808305",
+      "displayed_text": "36",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2120",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Proakis, John G. Digital signal processing: principles algorithms and applications. Pearson Educatio"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0158",
+      "block_id": "DISS-005-B0863",
+      "target_bookmark": "_Ref198808312",
+      "displayed_text": "37",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2121",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Oppenheim, Alan V. Discrete-time signal processing. Pearson Education India, 1999."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0161",
+      "block_id": "DISS-005-B1293",
+      "target_bookmark": "_Ref198925939",
+      "displayed_text": "Рисунок 2.10",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1295",
+        "target_object_id": "DISS-005-FIG-065",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.10 Модель исследуемой подстанции 230/11кВ в среде Simulink."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0164",
+      "block_id": "DISS-005-B1297",
+      "target_bookmark": "_Ref198812603",
+      "displayed_text": "25",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2109",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Sheng, Zhang Zhou, Bao Han, and Ma Ai Qing. \"The analysis of the factors affecting the performance o"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0165",
+      "block_id": "DISS-005-B1298",
+      "target_bookmark": "_Ref198924373",
+      "displayed_text": "(2.7)",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1301",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "(2.7)"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0168",
+      "block_id": "DISS-005-B1303",
+      "target_bookmark": "_Ref198924357",
+      "displayed_text": "(2.8)",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1306",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "(2.8)"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0171",
+      "block_id": "DISS-005-B1309",
+      "target_bookmark": "_Ref198924373",
+      "displayed_text": "(2.7)",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1301",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "(2.7)"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0172",
+      "block_id": "DISS-005-B1309",
+      "target_bookmark": "_Ref198924357",
+      "displayed_text": "(2.8)",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1306",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "(2.8)"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0173",
+      "block_id": "DISS-005-B1309",
+      "target_bookmark": "_Ref198924180",
+      "displayed_text": "(2.4)",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B0809",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "(2.4)"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0174",
+      "block_id": "DISS-005-B1313",
+      "target_bookmark": "_Ref198924595",
+      "displayed_text": "(2.9)",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1316",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "(2.9)"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0177",
+      "block_id": "DISS-005-B1317",
+      "target_bookmark": "_Ref198924373",
+      "displayed_text": "(2.7)",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1301",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "(2.7)"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0178",
+      "block_id": "DISS-005-B1319",
+      "target_bookmark": "_Ref198925939",
+      "displayed_text": "Рисунок 2.10",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1295",
+        "target_object_id": "DISS-005-FIG-065",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.10 Модель исследуемой подстанции 230/11кВ в среде Simulink."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0179",
+      "block_id": "DISS-005-B1319",
+      "target_bookmark": "_Ref198926003",
+      "displayed_text": "Рисунок 2.11",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1331",
+        "target_object_id": "DISS-005-FIG-068",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.11 Годографы векторов РНМ при внешнем коротком замыкании:"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0182",
+      "block_id": "DISS-005-B1334",
+      "target_bookmark": "_Ref198926121",
+      "displayed_text": "Рисунок 2.12",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1346",
+        "target_object_id": "DISS-005-FIG-072",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.12 Годографы векторов РНМ при внутреннем коротком замыкании:"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0185",
+      "block_id": "DISS-005-B1356",
+      "target_bookmark": "_Ref198926381",
+      "displayed_text": "Рисунок 2.13",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1361",
+        "target_object_id": "DISS-005-FIG-074",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.13 Срабатывание БАВР, t1 – начало аварии, t2 – момент срабатывания БАВР \nа) с применением "
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0186",
+      "block_id": "DISS-005-B1356",
+      "target_bookmark": "_Ref198926381",
+      "displayed_text": "Рисунок 2.13",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1361",
+        "target_object_id": "DISS-005-FIG-074",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.13 Срабатывание БАВР, t1 – начало аварии, t2 – момент срабатывания БАВР \nа) с применением "
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0189",
+      "block_id": "DISS-005-B1364",
+      "target_bookmark": "_Ref198926570",
+      "displayed_text": "Рисунок 2.14",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1370",
+        "target_object_id": "DISS-005-FIG-076",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.14 Осциллограммы терминала БАВР с применением КР:"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0190",
+      "block_id": "DISS-005-B1365",
+      "target_bookmark": "_Ref198926570",
+      "displayed_text": "Рисунок 2.14",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1370",
+        "target_object_id": "DISS-005-FIG-076",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.14 Осциллограммы терминала БАВР с применением КР:"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0193",
+      "block_id": "DISS-005-B1394",
+      "target_bookmark": "_Ref200798337",
+      "displayed_text": "40",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2124",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "СТО 59012820.29.020.002-2012. Стандарт организации. Релейная защита и автоматика. Взаимодействие суб"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0194",
+      "block_id": "DISS-005-B1394",
+      "target_bookmark": "_Ref200798346",
+      "displayed_text": "41",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2125",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "СТО 56947007-29.240.10.028-2009. «Нормы технологического проектирования подстанций переменного тока "
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0195",
+      "block_id": "DISS-005-B1395",
+      "target_bookmark": "_Ref200799428",
+      "displayed_text": "Рисунок 2.15",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1402",
+        "target_object_id": "DISS-005-FIG-078",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.15 Логика подачи команд автоматикой при возникновении аварии (АВР) и его последующего восс"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0196",
+      "block_id": "DISS-005-B1395",
+      "target_bookmark": "_Ref200799428",
+      "displayed_text": "Рисунок 2.15",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1402",
+        "target_object_id": "DISS-005-FIG-078",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.15 Логика подачи команд автоматикой при возникновении аварии (АВР) и его последующего восс"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0199",
+      "block_id": "DISS-005-B1405",
+      "target_bookmark": "_Ref200798590",
+      "displayed_text": "42",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2126",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Правила устройства электроустановок ПУЭ. - 7-е изд. Глава 3.3 Автоматика и телемеханика. Автоматичес"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0200",
+      "block_id": "DISS-005-B1410",
+      "target_bookmark": "_Ref200798814",
+      "displayed_text": "43",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2127",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Руководство эксплуатации. Микропроцессорное устройство быстродействующего автоматического ввода резе"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0201",
+      "block_id": "DISS-005-B1410",
+      "target_bookmark": "_Ref200798830",
+      "displayed_text": "44",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2128",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Руководство по эксплуатации. БПВА.656121.007 РЭ, Реле автоматического ввода резерва «Сириус-АВР», ре"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0202",
+      "block_id": "DISS-005-B1410",
+      "target_bookmark": "_Ref200798832",
+      "displayed_text": "45",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2129",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Руководство по эксплуатации. ДИВГ.648228.082-12.01 РЭ, Блок микропроцессорный релейной защиты БМРЗ-Б"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0203",
+      "block_id": "DISS-005-B1410",
+      "target_bookmark": "_Ref200798834",
+      "displayed_text": "46",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2130",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Руководство по эксплуатации. ЭКРА.656122.008/212 1301 РЭ. Терминал быстрого автоматического включени"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0204",
+      "block_id": "DISS-005-B1416",
+      "target_bookmark": "_Ref200798814",
+      "displayed_text": "43",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2127",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Руководство эксплуатации. Микропроцессорное устройство быстродействующего автоматического ввода резе"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0205",
+      "block_id": "DISS-005-B1416",
+      "target_bookmark": "_Ref200799806",
+      "displayed_text": "Рисунок 2.16",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1422",
+        "target_object_id": "DISS-005-FIG-080",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.16 Срабатывание БАВР по превышению угла при проведении ремонтных работ."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0208",
+      "block_id": "DISS-005-B1425",
+      "target_bookmark": "_Ref200798975",
+      "displayed_text": "47",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2131",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Правила устройства электроустановок ПУЭ. - 7-е изд. Глава 1.2. Электроснабжение и электрические сети"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0209",
+      "block_id": "DISS-005-B1428",
+      "target_bookmark": "_Ref200800168",
+      "displayed_text": "Рисунок 2.17",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1430",
+        "target_object_id": "DISS-005-FIG-081",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.17 Срабатывание ВНР без контроля угла и очерёдности функционирования."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0212",
+      "block_id": "DISS-005-B1439",
+      "target_bookmark": "_Ref200800168",
+      "displayed_text": "Рисунок 2.17",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1430",
+        "target_object_id": "DISS-005-FIG-081",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 2.17 Срабатывание ВНР без контроля угла и очерёдности функционирования."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0213",
+      "block_id": "DISS-005-B1472",
+      "target_bookmark": "_Ref200814191",
+      "displayed_text": "51",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2135",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[1] M. Perry and T. Fuller, “A historical perspective of fuel cell technology in the 20th century,” "
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0214",
+      "block_id": "DISS-005-B1472",
+      "target_bookmark": "_Ref200814193",
+      "displayed_text": "52",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2136",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[2] M. IEA, “Electricity grids and secure energy transitions,” 2023."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0215",
+      "block_id": "DISS-005-B1472",
+      "target_bookmark": "_Ref200814194",
+      "displayed_text": "53",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2137",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[3] Z. Zhang, T. Dragicevic, J. C. Vasquez, and J. M. Guerrero, “Review of a disruptive vision of fu"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0216",
+      "block_id": "DISS-005-B1472",
+      "target_bookmark": "_Ref200814196",
+      "displayed_text": "54",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2138",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[4] S. Mandelli, J. Barbieri, R. Mereu, and E. Colombo, “A retrospective analysis of energy access w"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0217",
+      "block_id": "DISS-005-B1472",
+      "target_bookmark": "_Ref200814197",
+      "displayed_text": "55",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2139",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[5] J. R. Ag¨uero, E. Takayesu, D. Novosel, and R. Masiello, “Grid modernization: challenges and opp"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0218",
+      "block_id": "DISS-005-B1472",
+      "target_bookmark": "_Ref200814226",
+      "displayed_text": "56",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2140",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[6] A. Guide, “Network protection & automation guide,” 2002."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0219",
+      "block_id": "DISS-005-B1473",
+      "target_bookmark": "_Ref200814255",
+      "displayed_text": "57",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2141",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[7] L. F. Yunzhi Cheng et al., “Real-world subsynchronous oscillation events in power grids with hig"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0220",
+      "block_id": "DISS-005-B1473",
+      "target_bookmark": "_Ref200814261",
+      "displayed_text": "58",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2142",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[8] IEEE, “Challenges and prospect of relay protection in power grids with large-scale renewable pow"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0221",
+      "block_id": "DISS-005-B1473",
+      "target_bookmark": "_Ref200814288",
+      "displayed_text": "59",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2143",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[9] S. Soltan, D. Mazauric, and G. Zussman, “Analysis of failures in power grids,” IEEE Transactions"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0222",
+      "block_id": "DISS-005-B1473",
+      "target_bookmark": "_Ref200814293",
+      "displayed_text": "60",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2144",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[10] F. M. Shakiba, S. M. Azizi, M. Zhou, and A. Abusorrah, “Application of machine learning methods"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0223",
+      "block_id": "DISS-005-B1473",
+      "target_bookmark": "_Ref200814226",
+      "displayed_text": "56",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2140",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[6] A. Guide, “Network protection & automation guide,” 2002."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0224",
+      "block_id": "DISS-005-B1473",
+      "target_bookmark": "_Ref200814338",
+      "displayed_text": "61",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2145",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[11] Disconnectors and Circuit Breakers Technical Guide, GE Vernova,2020. [Online]. Available: https"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0225",
+      "block_id": "DISS-005-B1473",
+      "target_bookmark": "_Ref200814351",
+      "displayed_text": "62",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2146",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[12] Y. Chen, Basic Theories of Power System Relay Protection. Wiley-IEEEPress, 2025."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0226",
+      "block_id": "DISS-005-B1473",
+      "target_bookmark": "_Ref200814374",
+      "displayed_text": "63",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2147",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[13] Z. Bo, X. Lin, Q. Wang, Y. Yi, and F. Zhou, “Developments of power system protection and contro"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0227",
+      "block_id": "DISS-005-B1474",
+      "target_bookmark": "_Ref200814391",
+      "displayed_text": "64",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2148",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[14] J. Doe and A. Smith, “From conventional to smart substations: A classification model,” in IEEE "
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0228",
+      "block_id": "DISS-005-B1474",
+      "target_bookmark": "_Ref200814425",
+      "displayed_text": "65",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2149",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[15] A. Phadke and J. Thorp, Synchronized Phasor Measurements and TheirApplications. Springer, 2017."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0229",
+      "block_id": "DISS-005-B1474",
+      "target_bookmark": "_Ref200814433",
+      "displayed_text": "66",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2150",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[16] H. Bevrani, Robust Power System Frequency Control. Springer, 2014."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0230",
+      "block_id": "DISS-005-B1474",
+      "target_bookmark": "_Ref200814439",
+      "displayed_text": "67",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2151",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[17] Q. e. a. Zhang, “A new method of data fusion calculation for relay protection setting calculati"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0231",
+      "block_id": "DISS-005-B1475",
+      "target_bookmark": "_Ref200814464",
+      "displayed_text": "68",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2152",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[18] H. Zhang and S. Li, “Design of adaptive line protection under smart grid,” in 2011 Internationa"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0232",
+      "block_id": "DISS-005-B1475",
+      "target_bookmark": "_Ref200814466",
+      "displayed_text": "69",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2153",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[19] S. Wu, “An adaptive limited wide area differential protection for powergrid with micro-sources,"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0233",
+      "block_id": "DISS-005-B1475",
+      "target_bookmark": "_Ref200814468",
+      "displayed_text": "70",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2154",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[19] S. Wu, “An adaptive limited wide area differential protection for powergrid with micro-sources,"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0234",
+      "block_id": "DISS-005-B1475",
+      "target_bookmark": "_Ref200814470",
+      "displayed_text": "71",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2155",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[21] A. Summers, T. Patel, R. Matthews, and M. J. Reno, “Prediction of relay settings in an adaptive"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0235",
+      "block_id": "DISS-005-B1475",
+      "target_bookmark": "_Ref200814472",
+      "displayed_text": "72",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2156",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[22] A. L. Kulikov, A. Loskutov, and D. Bezdushniy, “Relay protection andautomation algorithms based"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0236",
+      "block_id": "DISS-005-B1475",
+      "target_bookmark": "_Ref200814474",
+      "displayed_text": "73",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2157",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[23] V. Lachugin, D. Vertoguzov, S. Danilov, V. Sazanov, A. Voloshin, andA. Kovalenko, “Development "
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0237",
+      "block_id": "DISS-005-B1475",
+      "target_bookmark": "_Ref200814476",
+      "displayed_text": "74",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2158",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[24] Z. e. a. Liu, “Construction of the relay protection device model data center,” IEEE Conference "
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0238",
+      "block_id": "DISS-005-B1475",
+      "target_bookmark": "_Ref200814525",
+      "displayed_text": "75",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2159",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[25] A. N. Sheta, G. M. Abdulsalam, B. E. Sedhom, and A. A. Eladl, “Comparative framework for ac-mic"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0239",
+      "block_id": "DISS-005-B1475",
+      "target_bookmark": "_Ref200814527",
+      "displayed_text": "76",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2160",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[26] H. e. a. Wang, “A setting optimization ensemble for a distributed power grid protective relay s"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0240",
+      "block_id": "DISS-005-B1475",
+      "target_bookmark": "_Ref200814529",
+      "displayed_text": "77",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2161",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[27] P. Singh, U. Kumar, N. K. Choudhary, and N. Singh, “Advancements in protection coordination of "
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0241",
+      "block_id": "DISS-005-B1475",
+      "target_bookmark": "_Ref200814532",
+      "displayed_text": "78",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2162",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[28] Z. Yang, H. Wang, W. Liao, C. L. Bak, and Z. Chen, “Protection challenges and solutions for ac "
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0242",
+      "block_id": "DISS-005-B1475",
+      "target_bookmark": "_Ref200814534",
+      "displayed_text": "79",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2163",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[29] J. W. Yan Li et al., “Fast searching of extreme operating conditions for relay protection setti"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0243",
+      "block_id": "DISS-005-B1476",
+      "target_bookmark": "_Ref200814623",
+      "displayed_text": "80",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2164",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[30] D. A. Stepanova and A. V. Naumov, “Deep learning in relay protection of digital power industry,"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0244",
+      "block_id": "DISS-005-B1476",
+      "target_bookmark": "_Ref200814625",
+      "displayed_text": "81",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2165",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[31] X. e. a. Li, “Fault diagnosis of intelligent substation relay protection system based on transf"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0245",
+      "block_id": "DISS-005-B1476",
+      "target_bookmark": "_Ref200814650",
+      "displayed_text": "82",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2166",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[32] A. Varbella et al., “Powergraph: A power grid benchmark dataset for graph neural networks,” arX"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0246",
+      "block_id": "DISS-005-B1478",
+      "target_bookmark": "_Ref200814690",
+      "displayed_text": "83",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2167",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[33] A. Kulikov, A. Loskutov, and D. Bezdushniy, “Relay protection and automation algorithms of elec"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0247",
+      "block_id": "DISS-005-B1478",
+      "target_bookmark": "_Ref200814692",
+      "displayed_text": "84",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2168",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[34] A. Kulikov, A. Loskutov, D. Bezdushniy, and I. Petrov, “Decision tree models and machine learni"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0248",
+      "block_id": "DISS-005-B1484",
+      "target_bookmark": "_Ref200814732",
+      "displayed_text": "85",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2169",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[35] R. Machlev, A. Chachkes, J. Belikov, Y. Beck, and Y. Levron, “Open source dataset generator for"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0249",
+      "block_id": "DISS-005-B1484",
+      "target_bookmark": "_Ref200814752",
+      "displayed_text": "86",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2170",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[36] R. A. de Oliveira and M. H. Bollen, “Deep learning for power quality,”Electric Power Systems Re"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0250",
+      "block_id": "DISS-005-B1484",
+      "target_bookmark": "_Ref200814754",
+      "displayed_text": "87",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2171",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[37] V. Pozdnyakov, A. Kovalenko, I. Makarov, M. Drobyshevskiy, and K. Lukyanov, “Adversarial attack"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0251",
+      "block_id": "DISS-005-B1500",
+      "target_bookmark": "_Ref200822096",
+      "displayed_text": "88",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2172",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[38] H. Aguinis, N. S. Hill, and J. R. Bailey, “Best practices in data collection and preparation: R"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0252",
+      "block_id": "DISS-005-B1500",
+      "target_bookmark": "_Ref200822098",
+      "displayed_text": "89",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2173",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[39] Q. Huang and T. Zhao, “Data collection and labeling techniques for machine learning,” arXiv pre"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0253",
+      "block_id": "DISS-005-B1500",
+      "target_bookmark": "_Ref200822100",
+      "displayed_text": "90",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2174",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[40] S. E. Whang, Y. Roh, H. Song, and J.-G. Lee, “Data collection and quality challenges in deep le"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0254",
+      "block_id": "DISS-005-B1500",
+      "target_bookmark": "_Ref200822101",
+      "displayed_text": "91",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2175",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[41] S. A. Mazhar, R. Anjum, A. I. Anwar, and A. A. Khan, “Methods of data collection: A fundamental"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0255",
+      "block_id": "DISS-005-B1519",
+      "target_bookmark": "_Ref200823159",
+      "displayed_text": "92",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2176",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[42] A. Narayanan and E. Felten, “No silver bullet: De-identification still hard,” in IEEE Symposium"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0256",
+      "block_id": "DISS-005-B1519",
+      "target_bookmark": "_Ref200823161",
+      "displayed_text": "93",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2177",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[43] L. Sweeney, “k-anonymity: A model for protecting privacy,” International Journal of Uncertainty"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0257",
+      "block_id": "DISS-005-B1519",
+      "target_bookmark": "_Ref200823164",
+      "displayed_text": "94",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2178",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[44] “General data protection regulation (gdpr),” Official Journal of the European Union, 2016."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0258",
+      "block_id": "DISS-005-B1528",
+      "target_bookmark": "_Ref200824281",
+      "displayed_text": "95",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2179",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[45] A. Evdakov, A. Yablokov, and G. Filatova, “Investigation of the use of rogowski coils for power"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0259",
+      "block_id": "DISS-005-B1528",
+      "target_bookmark": "_Ref200824285",
+      "displayed_text": "96",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2180",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[46] G. Filatova, D. Piskunov, and A. Evdakov, “Automated method for the research of the relay prote"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0260",
+      "block_id": "DISS-005-B1528",
+      "target_bookmark": "_Ref200824689",
+      "displayed_text": "Рисунок 3.1",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1530",
+        "target_object_id": "DISS-005-FIG-082",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 3.1 Пример «Пустой» осциллограммы."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0263",
+      "block_id": "DISS-005-B1531",
+      "target_bookmark": "_Ref200824912",
+      "displayed_text": "Рисунок 3.2",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1538",
+        "target_object_id": "DISS-005-FIG-083",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 3.2 Пример осциллограммы срабатывания быстродействующего автоматического ввода резерва. Диск"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0264",
+      "block_id": "DISS-005-B1532",
+      "target_bookmark": "_Ref200825134",
+      "displayed_text": "3.2",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1498",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Методология формирования датасета реальных осциллограмм"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0267",
+      "block_id": "DISS-005-B1550",
+      "target_bookmark": "_Ref200826366",
+      "displayed_text": "Рисунок 3.3",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1552",
+        "target_object_id": "DISS-005-FIG-085",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 3.3 Схема сбора и подготовки осциллограмм."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0268",
+      "block_id": "DISS-005-B1550",
+      "target_bookmark": "_Ref200826440",
+      "displayed_text": "Рисунок 3.4",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1554",
+        "target_object_id": "DISS-005-FIG-086",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 3.4 Структура публичного датасета."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0273",
+      "block_id": "DISS-005-B1556",
+      "target_bookmark": "_Ref200898648",
+      "displayed_text": "3.4.3",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1624",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Процесс деперсонализации"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0274",
+      "block_id": "DISS-005-B1622",
+      "target_bookmark": "_Ref200823159",
+      "displayed_text": "92",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2176",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[42] A. Narayanan and E. Felten, “No silver bullet: De-identification still hard,” in IEEE Symposium"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0275",
+      "block_id": "DISS-005-B1622",
+      "target_bookmark": "_Ref200823161",
+      "displayed_text": "93",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2177",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[43] L. Sweeney, “k-anonymity: A model for protecting privacy,” International Journal of Uncertainty"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0276",
+      "block_id": "DISS-005-B1622",
+      "target_bookmark": "_Ref200823164",
+      "displayed_text": "94",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B2178",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "[44] “General data protection regulation (gdpr),” Official Journal of the European Union, 2016."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0277",
+      "block_id": "DISS-005-B1623",
+      "target_bookmark": "_Ref200829231",
+      "displayed_text": "3.3.4",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1555",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Поиск осциллограмм, относящихся к конкретным терминалам/объектам"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0278",
+      "block_id": "DISS-005-B1640",
+      "target_bookmark": "_Ref200899291",
+      "displayed_text": "3.6.4",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1998",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Фильтрация «пустых» осциллограмм "
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0279",
+      "block_id": "DISS-005-B1640",
+      "target_bookmark": "_Ref200837131",
+      "displayed_text": "3.4.4.2",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1801",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Унификация имен аналоговых и дискретных сигналов"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0280",
+      "block_id": "DISS-005-B1807",
+      "target_bookmark": "_Ref200833019",
+      "displayed_text": "Рисунок 3.5",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1813",
+        "target_object_id": "DISS-005-FIG-087",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 3.5 Типичная схема расположения секций подстанции и точек измерения сигнала."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0283",
+      "block_id": "DISS-005-B1814",
+      "target_bookmark": "_Ref200833107",
+      "displayed_text": "Рисунок 3.6",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1819",
+        "target_object_id": "DISS-005-FIG-088",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 3.6 Пример названия аналогового сигнала."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0286",
+      "block_id": "DISS-005-B1820",
+      "target_bookmark": "_Ref200833394",
+      "displayed_text": "Рисунок 3.7",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1822",
+        "target_object_id": "DISS-005-FIG-089",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 3.7 Структура аналоговых сигналов."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0289",
+      "block_id": "DISS-005-B1823",
+      "target_bookmark": "_Ref200833766",
+      "displayed_text": "Рисунок 3.8",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1832",
+        "target_object_id": "DISS-005-FIG-090",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 3.8 Структура аналоговых сигналов."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0290",
+      "block_id": "DISS-005-B1830",
+      "target_bookmark": "_Ref200833778",
+      "displayed_text": "Рисунок 3.9",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1835",
+        "target_object_id": "DISS-005-FIG-091",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 3.9 Структура аналоговых сигналов."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0295",
+      "block_id": "DISS-005-B1865",
+      "target_bookmark": "_Ref200837131",
+      "displayed_text": "3.4.4.2",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1801",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Унификация имен аналоговых и дискретных сигналов"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0296",
+      "block_id": "DISS-005-B1955",
+      "target_bookmark": "_Ref200837131",
+      "displayed_text": "3.4.4.2",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1801",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Унификация имен аналоговых и дискретных сигналов"
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0297",
+      "block_id": "DISS-005-B1969",
+      "target_bookmark": "_Ref200889536",
+      "displayed_text": "Рисунок 3.10",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1975",
+        "target_object_id": "DISS-005-FIG-092",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 3.10 Упрощенная схема иерархии классификации."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0300",
+      "block_id": "DISS-005-B1977",
+      "target_bookmark": "_Ref200889527",
+      "displayed_text": "Рисунок 3.11",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1979",
+        "target_object_id": "DISS-005-FIG-093",
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Рисунок 3.11 Пример декодирования сигнала ML.."
+      }
+    },
+    {
+      "field_id": "DISS-005-FLD-0303",
+      "block_id": "DISS-005-B2039",
+      "target_bookmark": "_Ref200891160",
+      "displayed_text": "3.5.2",
+      "is_resolved": true,
+      "target_info": {
+        "target_block_id": "DISS-005-B1951",
+        "target_object_id": null,
+        "kind": "cross_reference_anchor",
+        "text_snippet": "Применение нормализации и преобразование осциллограмм в формат CSV"
+      }
+    }
+  ],
+  "unresolved_word_references": [
+    {
+      "field_id": "DISS-005-FLD-0108",
+      "field_syntax": "complex_fldChar",
+      "command": "REF",
+      "block_id": "DISS-005-B0772",
+      "locator": "/w:document/w:body/w:p[446]",
+      "instruction": "REF _Ref198921407 \\r \\h",
+      "target_bookmark": "_Ref198921407",
+      "displayed_text": "Ошибка! Источник ссылки не найден.",
+      "is_resolved": false,
+      "target_block_id": null,
+      "target_object_id": null,
+      "notes": "Unresolved reference in source Word document: target bookmark missing"
+    },
+    {
+      "field_id": "DISS-005-FLD-0111",
+      "field_syntax": "complex_fldChar",
+      "command": "REF",
+      "block_id": "DISS-005-B0778",
+      "locator": "/w:document/w:body/w:p[449]",
+      "instruction": "REF  _Ref198922055 \\h \\r",
+      "target_bookmark": "_Ref198922055",
+      "displayed_text": "Ошибка! Источник ссылки не найден.",
+      "is_resolved": false,
+      "target_block_id": null,
+      "target_object_id": null,
+      "notes": "Unresolved reference in source Word document: target bookmark missing"
+    }
+  ],
+  "unlinked_citations": [
+    {
+      "cite_id": "DISS-005-CITE-0102",
+      "block_id": "DISS-005-B2240",
+      "raw_citation": "[2020]",
+      "cited_number": 2020,
+      "note": "Citation number outside 1..136 range (e.g. informal year or missing target)"
+    },
+    {
+      "cite_id": "DISS-005-CITE-0103",
+      "block_id": "DISS-005-B2241",
+      "raw_citation": "[20222]",
+      "cited_number": 20222,
+      "note": "Citation number outside 1..136 range (e.g. informal year or missing target)"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "source_id": "DISS-005",
+  "source_sha256": "50516d7832e6ea133d77b11b48802c4ed1929283ea7601134b878fab0e0338f7",
+  "scan_summary": {
+    "parts_scanned": 20,
+    "total_revisions_found": 1,
+    "insertions_count": 1,
+    "deletions_count": 0,
+    "moves_count": 0,
+    "property_changes_count": 0
+  },
+  "revisions": [
+    {
+      "revision_id": "DISS-005-REV0001",
+      "original_id": "12",
+      "type": "insertion",
+      "tag": "w:ins",
+      "author": "Евдаков Алексей",
+      "date": "2025-01-27T16:40:00Z",
+      "story_part": "word/document.xml",
+      "locator": "/w:document/w:body/w:tbl[1]/w:tr[5]/w:tc[1]/w:p[1]",
+      "block_id": "DISS-005-B0223",
+      "block_kind": "table_cell_paragraph",
+      "paragraph_style": "figurecaption",
+      "text_inserted": ".",
+      "text_deleted": null,
+      "text_before_in_block": "Схемы а) подключения БАВР; б) логики срабатывания БАВР",
+      "text_after_in_block": "",
+      "full_text_without_revision": "Схемы а) подключения БАВР; б) логики срабатывания БАВР",
+      "full_text_with_revision": "Схемы а) подключения БАВР; б) логики срабатывания БАВР.",
+      "raw_xml": "<w:ins xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" w:id=\"12\" w:author=\"Евдаков Алексей\" w:date=\"2025-01-27T16:40:00Z\"><w:r><w:rPr><w:lang w:val=\"ru-RU\"/></w:rPr><w:t>.</w:t></w:r></w:ins>",
+      "affects_fields": false,
+      "affects_math": false,
+      "affects_tables": false,
+      "affects_figures": true,
+      "notes": "Подпись к рисунку 1 (подрисуночные схемы а и б БАВР). Авторская правка: вставка завершающей точки в конце подрисуночной надписи."
+    }
+  ]
+}

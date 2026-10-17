@@ -1,0 +1,811 @@
+Исходная ссылка
+https://www.overleaf.com/project/6a53cc8b49adad6c1f01c6c6
+
+\documentclass{ieeeojies}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+
+
+
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+\title{Engineering Optimal Feature Spaces for Real-Time Deep Learning in Power System Protection: A Comparative Study on Field-Recorded Oscillograms}
+\author{\uppercase{Aleksey Evdakov}\authorrefmark{1,2},
+\uppercase{Aleksandr Kovalenko}\authorrefmark{3,4},
+\uppercase{Galina Filatova}\authorrefmark{2},
+\uppercase{Andrey Yablokov}\authorrefmark{2}
+and \uppercase{Ilya Makarov}\authorrefmark{3,4}, (Member, IEEE)}
+
+%\address[1]{[Affiliation, City, Postcode, Country] (e-mail: author@example.org)}
+
+% Наверное стоит попправить
+\address[1]{LLC "APS", Moscow, Russia}
+\address[2]{ISPEU, Ivanovo, Russia}
+\address[3]{Artificial Intelligence Research Center, National Research Nuclear University MEPhI, Moscow, Russia}
+\address[4]{AIRI, Moscow, Russia}
+
+
+
+\tfootnote{The work was supported by the grant for research centers in the field of artificial intelligence provided by the Ministry of Economic Development of the RF under the subsidy agreement (agreement identifier 000000C313925P3Q0002) with National Research Nuclear University MEPhI and the agreement with National Research Nuclear University MEPhI No. 139-15-2025-005.}
+
+
+\markboth{Author \headeretal: Engineering Optimal Feature Spaces for Real-Time DL in Power System Protection}
+{Author \headeretal: Engineering Optimal Feature Spaces for Real-Time DL in Power System Protection}
+
+\corresp{Corresponding author: Aleksandr Kovalenko (e-mail: kovalenko@airi.net).}
+\begin{abstract}
+The choice of feature space for neural-network algorithms in relay protection and automation is usually based on expert preference and lacks systematic justification from real-world data. This work presents a systematic comparison of six feature representations and seven neural-network architectures on 990 expert-verified industrial oscillograms from 6 to 35 kV power grids sampled at 1600 Hz. A full factorial grid of 9450 training runs, covering every combination of the six representations, the seven architectures, three time-sampling modes, and three complexity levels under five-fold cross-validation with five random seeds, shows that the spread of the macro-averaged F1 score across feature representations, about 0.16, exceeds the spread across architectures, about 0.11: the choice of feature space affects the result more than the choice of model. Polar spectral representations systematically outperform the direct use of instantaneous values. A ``compressed-strategy paradox'' is observed, in which a representation built from two spectral snapshots, one taken before the fault and one at the fault instant, falls short of the full 320-sample window by only 0.01 to 0.03 in macro-averaged F1 while reducing the input dimensionality by a large factor. The results yield practical engineering recommendations for designing embedded neural-network measuring elements in microprocessor-based protection terminals.
+\end{abstract}
+\begin{keywords}
+Deep learning, digital substations, feature design, relay protection and automation, spectral analysis.
+\end{keywords}
+\titlepgskip=-15pt
+\maketitle
+
+\section{Introduction}
+
+The evolution of modern electric power systems is inseparably linked to their growing structural and technological complexity. The widespread adoption of distributed generation, power-electronic converters, and variable-frequency-driven motors distorts signal waveforms and introduces higher harmonics and high-frequency decaying noise into electromagnetic transient processes \cite{ref1}. The reliability and speed of relay protection and automation (RPA) systems, including fast automatic bus transfer (FABT) devices, directly determine the continuity of power supply to critical loads.
+
+Conventional microprocessor-based protection terminals operate on the basis of hard-coded algorithms that compare monitored quantities (typically the root-mean-square (RMS) values of currents, voltages, or their symmetric components) against predefined settings. This approach is reliable for the most common regimes, such as solid short circuits, but under non-stationary processes, the rigid logic faces a fundamental adaptation problem. The application of machine and deep learning is regarded as a promising direction for overcoming this limitation \cite{ref2}.
+
+Nevertheless, the large-scale deployment of artificial-intelligence algorithms in industrial protection practice is held back by several barriers. One of them is the ``black-box'' problem. Classical architectures — the multilayer perceptron (MLP), convolutional neural networks (CNN), and residual networks (ResNet) — are powerful approximators, but their internal structure is opaque to the protection engineer, which is unacceptable in a conservative industry when investigating false operations. A possible step toward interpretability came with the emergence of Kolmogorov–Arnold networks (KAN) \cite{ref3}, in which the nonlinear activation functions are learned on the edges of the graph as adaptive piecewise-polynomial functions that potentially admit a physical interpretation as the threshold characteristics of measuring elements.
+
+However, before evaluating architectural novelties, a more basic question remains open: which representation of the input signal should be fed to the network. Most existing works either feed instantaneous values (without using knowledge of the harmonic nature of the processes and requiring the network to extract the spectral structure on its own) or use spectral features without justifying the choice. A systematic comparison of which signal representation is optimal for neural-network protection tasks, and more broadly for the classification of oscillatory processes with spectral structure, is not available in the literature \cite{ref4, ref5}. Moreover, the overwhelming majority of publications are validated on synthetic data from PSCAD or MATLAB/Simulink environments, which do not reflect the real noise of the measurement path, transformer nonlinearities, or ferroresonant phenomena.
+
+The goal of this work is to conduct a controlled comparison of feature representations and neural-network architectures on a corpus of real protection oscillograms. The contributions of the work are as follows:
+
+\begin{enumerate}
+\item a comparison of six feature representations and seven neural-network architectures on real industrial oscillograms is carried out (a full factorial grid of 9450 training runs with 5-fold cross-validation and 5 seeds);
+\item it is shown that the choice of feature space affects classification quality more strongly than the choice of architecture (the Macro-F1 spread across representations exceeds the spread across architectures);
+\item a ``compressed-strategy paradox'' is discovered, whereby a representation built from two spectral snapshots is practically as good as the full 320-sample window;
+\item engineering recommendations for embedded implementation in microprocessor-based protection terminals are formulated, with a quantitative assessment of the trade-offs.
+\end{enumerate}
+
+The overall design of the study is summarized in Fig.\ref{fig1}. Section II reviews related work. Section III describes the dataset and methodology. Section IV systematically presents the design of the six feature spaces. Section V describes the architectures. Section VI presents the experimental protocol. Section VII contains the results and analysis. Section VIII formulates the engineering recommendations. Sections IX and X are the discussion and conclusion.
+
+\section{Related Work}
+
+\subsection{Feature Selection for Machine Learning in Power Engineering}
+
+Classical approaches to extracting features of fault and abnormal regimes rely on time–frequency analysis. The wavelet transform (WT) is used to localize transients and extract fault features \cite{ref6}; in recent works, the wavelet transform has been embedded directly into the trainable layers of a neural network, combining a time–frequency representation with the memory of a recurrent network \cite{ref7}. The Fourier transform (FT) and its short-time version (STFT) provide spectral descriptors, and a direct comparison of the FT, the STFT, and the continuous and discrete wavelet transforms (CWT and DWT) on the same signals shows that the choice of basis noticeably affects event separability \cite{ref5}. A separate line is formed by the apparatus of symmetric components (Fortescue): feeding symmetric components and phasors as engineered features improves classifier accuracy compared with raw phase quantities \cite{ref8}. In power-quality classification tasks, the fusion of time–frequency and time-domain features \cite{ref9, ref11} and the parallel extraction of one- and two-dimensional representations \cite{ref10} are common. Reviews of feature-extraction techniques catalog dozens of representations, among them the FT, the STFT, the WT, the S-transform, the Hilbert–Huang transform (HHT), and variational mode decomposition (VMD) \cite{ref1}. What none of them report is which representation is best to feed to a neural-network model \cite{ref4}.
+
+\subsection{Deep Learning in Protection Tasks}
+
+In the literature, deep-learning approaches to regime diagnosis gravitate toward two lines: feeding raw current and voltage oscillograms into convolutional and recurrent networks, and feeding spectral or phasor descriptors into fully connected networks. The first line includes one-dimensional convolutional and capsule networks for fault classification \cite{ref12, ref13}, recurrent networks with long short-term memory (LSTM) and gated recurrent units (GRU), as well as temporal convolutional networks (TCN) for fault detection, classification, and location \cite{ref14, ref15, ref16}, as well as hybrid CNN-LSTM models \cite{ref17, ref18}; a separate group is formed by comparative studies of several architectures on the same signals \cite{ref19, ref16}. Related tasks are fault location and classification from phasor measurement unit (PMU) data \cite{ref20} and transient-event classification \cite{ref21, ref22}. These lines are usually compared in isolation, without a joint sweep of the ``representation $\times$ architecture'' space; in contrast to this practice, in the present work, each representation is fed into all architectures. Most published models are trained and validated on synthetic data (PSCAD/EMTDC, MATLAB/Simulink, RTDS) \cite{ref23, ref15, ref20}; synthetic data are often generated even to augment small real samples \cite{ref21}. Works on real field oscillograms are rare \cite{ref22, ref24}, which has motivated the appearance of specialized open datasets of real power-grid oscillograms ($\approx$50,000 records) \cite{ref25}. This gap between the abundance of synthetic data and the shortage of validation on real data motivates the present work.
+
+\subsection{Kolmogorov--Arnold Networks as a New Class of Architectures}
+
+Kolmogorov–Arnold networks (KAN) were proposed as an alternative to the multilayer perceptron: instead of fixed activations at the nodes, KAN learns the functions themselves on the edges of the graph as splines \cite{ref3}; a development of the architecture for scientific tasks (multiplication nodes, symbolic regression) is given in KAN 2.0 \cite{ref26}. A family of variants with different bases quickly emerged: Gaussian radial functions (FastKAN) \cite{ref27}, wavelets (Wav-KAN) \cite{ref28}, Chebyshev polynomials \cite{ref29}, and rational and Jacobi bases (rKAN) \cite{ref30}. Adaptations for time series have appeared: the direct application of KAN to forecasting \cite{ref31} and recurrent temporal KAN (TKAN) \cite{ref32}. Applications of KAN in power engineering are still isolated (for example, dissolved-gas diagnosis of power transformers \cite{ref33}). No evaluation of the KAN family on real field oscillograms has been reported so far.
+
+\section{Dataset and Methodology}
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{figs/evdak1.pdf}
+\caption{Conceptual pipeline: a field oscillogram (8 channels) is transformed through six feature spaces and three time-samplings and fed to seven architectures for a four-class multi-label task.}
+\label{fig1}
+\end{figure*}
+
+\subsection{Dataset and Problem Statement}\label{sec:dataset}
+
+We work with a corpus of real oscillograms of fault and normal regimes recorded by microprocessor-based protection terminals at 6 to 35 kV facilities. The base sampling rate is 1600 Hz (32 samples per 50 Hz period), the resolution commonly used by digital fault recorders. For training and evaluation, we take 990 expert-verified files from an open dataset of real power-grid oscillograms \cite{ref25}. Operational Switching is present in 137 of them, Abnormal Events in 51, and Fault Events in 104; the labeling is multi-label, so one file may carry several event types, while the remainder are predominantly in the normal regime. In total, the corpus comprises $\approx$ 1.55 million labeled samples over eight logical channels. The dataset is de-identified, so we cannot state the number of substations or the years of recording.
+
+We assess quality by five-fold cross-validation split strictly by unique files rather than by windows: each file falls into the test set of exactly one fold, the split is 792/198 files per fold, the folds do not overlap, and no separate fixed test set is held out. We stratify the split by which top-level events a file contains.
+
+The task itself is a multi-label classification using a sliding window over four independent classes: No Event, Operational Switching, Abnormal Events, and Fault Events. Each window receives a binary vector of four labels, one per class; the classes do not form a hierarchy and are treated independently, with a component-wise binary cross-entropy (BCE) objective. These four groups follow the labeling of the open dataset \cite{ref25}, in which the identifiers ML$_1$, ML$_2$, ML$_3$ denote Operational Switching, Abnormal Events (including single-phase-to-ground faults), and Fault Events (critical short circuits). The source labeling also carries a finer hierarchical tree of event subtypes, which we do not use here.
+
+\subsection{Data processing}
+
+A training sample is formed from a file in four steps: windowing, channel reconstruction, normalization, and augmentation. Signals are grouped into windows of 200 ms (320 samples at 1600 Hz = 10 periods of the power frequency). The window step is one sample. The label of a window is determined by its last point (the upstream labeling convention). In the current implementation, both the label and the point of the fault snapshot are taken at the very last sample of the window; a variant with a small offset from the end was tested separately and did not improve quality; therefore, both the label and the second snapshot are taken at the last sample of the window.
+
+The window is formed over eight logical channels: three phase currents (IA, IB, IC) and voltages (UA, UB, UC), together with the zero-sequence current (IN) and voltage (UN) taken from separate measurement circuits. If one of the phase currents is missing, it is reconstructed analytically from Kirchhoff's first law. If the neutral current is measured (the IN signal is taken from a zero-sequence current transformer), the zero-sequence current is included in the current balance; if it is absent, the sum of the phase currents is assumed to be zero, which corresponds to the ungrounded-neutral networks that predominate in the dataset. A flag indicating the presence of the neutral current is recorded for each file. Normalization is two-stage: (a) physical conversion to per-unit values using transformation ratios; (b) global Z-normalization, whose statistics are computed only on the training set. 
+
+Finally, three physically grounded augmentations are applied to the raw 8-channel windows: (a) synchronous polarity inversion of all currents and voltages (preserving the sign of the instantaneous power $P = U\cdot I$); (b) amplitude scaling (currents by $\pm 20\%$, voltages by $\pm 5\%$); (c) cyclic phase permutation A$\to$B$\to$C$\to$A simultaneously across all channels for invariance to the faulted phase.
+
+\section{Feature Space Design}
+
+Six representations of the input signal are considered. For each, a formal expression and a physical interpretation are given; Fig. \ref{fig2} shows all six computed on the same real fault oscillogram. All spectral representations use a fixed number of power-frequency harmonics, namely nine. This choice is not arbitrary: classical high-frequency protections, including single-phase-to-ground fault detection elements, traditionally operate with a comparable number of harmonic components; fixing the number of harmonics across all complexity levels additionally avoids conflating model complexity with feature richness. Two input-dimensionality transformations are additionally described: compression to two points and decimation.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{figs/evdak2.png}
+\caption{The six feature representations computed on one real oscillogram of a fault event (class Fault Events, ML-3): (a) raw instantaneous values; (b) symmetric components in Cartesian coordinates; (c) symmetric components in polar coordinates; (d) per-phase phasors in polar coordinates; (e) instantaneous power; (f) Clarke transform. The dotted vertical line marks the event onset near 200 ms.}
+\label{fig2}
+\end{figure*}
+
+\subsection{Time-domain representations}
+
+Three of the six representations remain in the time domain and require no spectral estimation. The first is the direct feeding of the 8-channel window without transformation, $x \in \mathbb{R}^{320\times 8}$. This is the reference representation against which the spectral ones are evaluated. The other two are derived pointwise from it. The instantaneous power is computed as the per-channel product of current and voltage.
+
+\begin{equation}
+p(t)=u(t)\,i(t),
+\label{eq:power}
+\end{equation}
+
+where $u(t)$ and $i(t)$ are the instantaneous voltage and current of the channel; quantity~\eqref{eq:power} carries information about the direction of energy flow. The Clarke transform converts the three-phase quantities $x_a$, $x_b$, and $x_c$ into the orthogonal $\alpha$-$\beta$-0 components,
+
+\begin{equation}
+\begin{aligned}
+{[x_\alpha, x_\beta, x_0]}^{\mathsf{T}} &= \mathbf{C}\,[x_a, x_b, x_c]^{\mathsf{T}},\\[2pt]
+\mathbf{C} &= \tfrac{1}{3}\begin{bmatrix}
+2 & -1 & -1\\
+0 & \sqrt{3} & -\sqrt{3}\\
+1 & 1 & 1\end{bmatrix},
+\end{aligned}
+\label{eq:clarke}
+\end{equation}
+
+where $\mathbf{C}$ is the amplitude-invariant Clarke matrix, such that the $\alpha$ component coincides with phase $a$ in the balanced regime. Representations~\eqref{eq:power} and~\eqref{eq:clarke} are evaluated on the same footing as the spectral ones.
+
+\subsection{Spectral representations}
+
+The remaining three representations are spectral: all of them are built from the same nine power-frequency harmonics and differ in how the three-phase information is arranged.
+
+The Fortescue transform converts the instantaneous phase quantities into positive, negative, and zero-sequence components. For each of the nine harmonics, the real and imaginary parts of the three sequences are retained. The angular shifts of $\pm$120$^\circ$ are captured in the matrix $\mathbf{A}$ through the rotation operator $a = e^{\,j\cdot 2\pi/3}$, so that
+
+\begin{equation}
+\begin{aligned}
+{[U_1, U_2, U_0]}^{\mathsf{T}} &= \tfrac{1}{3}\,\mathbf{A}\,[U_a, U_b, U_c]^{\mathsf{T}},\\[2pt]
+\mathbf{A} &= \begin{bmatrix}1 & a & a^2\\ 1 & a^2 & a\\ 1 & 1 & 1\end{bmatrix},
+\end{aligned}
+\label{eq:fortescue}
+\end{equation}
+
+where $U_a$, $U_b$, and $U_c$ are the phase phasors of the harmonic under consideration, and $U_1$, $U_2$, and $U_0$ are the corresponding positive, negative, and zero-sequence phasors.
+
+Transform~\eqref{eq:fortescue} acts on each harmonic as a linear change of basis of the three phasors, so it is valid for any harmonic order. In the balanced regime, harmonics are distributed across sequences by the rule $h \bmod 3$: harmonics $h = 1, 4, 7, \ldots$ give the positive sequence, $h = 2, 5, 8, \ldots$ the negative sequence, and multiples of three ($h = 3, 6, 9, \ldots$) provide the zero sequence (since the phase shift $3\times 120^\circ = 360^\circ \equiv 0$). In the normal regime, each harmonic is concentrated in its own sequence, while the other two are close to zero and become significant only under asymmetry or fault, which is what makes these components informative features of fault regimes.
+
+The same three sequences can be represented by magnitude and phase,
+
+\begin{equation}
+U_k = |U_k|\,e^{\,j\varphi_k},\quad k\in\{0,1,2\},
+\label{eq:polar}
+\end{equation}
+
+where $|U_k|$ and $\varphi_k$ are the magnitude and the argument of the $k$-th sequence phasor. To avoid a gradient discontinuity at the $[0, 2\pi]$ boundary, the phase in~\eqref{eq:polar} is encoded by the pair $(\sin\varphi,\ \cos\varphi)$; thus, each component is fed as a triple $(|U|,\ \sin\varphi,\ \cos\varphi)$. The transition to polar coordinates relieves the network of the need to ``invent'' trigonometric transformations on its own: the amplitude carries information about the magnitude of the imbalance, and the phase carries information about its direction.
+
+The third spectral representation abandons the sequence basis altogether and keeps each phase separate.
+Each phase (a, b, c) is described by its own amplitude–phase vector for each harmonic ($3 \times 9 \times 2$ features per sample in the magnitude/phase encoding). Unlike the symmetric components, here the individual information about each phase is preserved, which is important for detecting single-phase events.
+
+\subsection{Input compression}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figs/evdak3.png}
+\caption{Two-point snapshot on a real fault oscillogram: (a) the pre-fault snapshot $t_{\mathrm{pre}}$ and the fault-instant snapshot $t_{\mathrm{event}}$ on the positive-sequence magnitude trace, shown against the phase-$a$ current; (b) the corresponding phasors and the change vector $\Delta$ in the complex plane.}
+\label{fig3}
+\end{figure}
+
+Instead of the full 320-sample window, only two spectral snapshots are fed: (i) a pre-fault snapshot and (ii) a snapshot at the moment of the event (Fig. \ref{fig3}). The first snapshot is taken not at the first sample of the window but at the first sample for which a fast Fourier transform (FFT) can be computed (starting from the 32nd sample at the given sampling rate); the second is taken at the end of the window. Importantly, these are spectral snapshots and not two instantaneous values, the latter of which would indicate label leakage. The input dimensionality is reduced from 320 to 2 samples per channel. Physically, this is explained by the fact that, for most directional measuring elements (power-direction relays, distance protections, restraint-based protections), the diagnostically significant quantity is the vector of change of the parameters from the normal regime to the fault, rather than the entire shape of the intermediate transient. This principle underlies incremental-quantity (delta) directional protections, which respond to the increment of quantities relative to the pre-fault regime rather than to their absolute values \cite{ref34, ref35, ref36, ref37, ref38}.
+
+We also examined the choice of the second snapshot point: on the best snapshot configurations, a snapshot offset by 4/8/16 samples from the end of the window did not improve quality but monotonically reduced it (on average from $-$0.006 to $-$0.015 Macro-F1 at offsets of 4 and 16, respectively; recurrent models are more sensitive, while GRU/heavy is practically unaffected). This is consistent with the last frame carrying the maximum information about the event; therefore, the second snapshot is taken at the last available frame of the window.
+
+An intermediate regime between the full window and two points: every k-th spectral sample is taken from the window. Three time-sampling modes are compared in the experiments: dense (full window), stride (decimation), and snapshot (two snapshots).
+
+\section{Neural Network Architectures}
+
+Each architecture is implemented in three complexity configurations, Light, Medium, and Heavy, by proportionally scaling the internal dimensions (the number of input harmonics is fixed at 9). The complexity levels are chosen so that Heavy corresponds to roughly ten times the number of parameters of Medium; the resulting parameter counts are listed in Table \ref{tab1}.
+
+\subsection{Classical Architectures}
+
+SimpleMLP is a fully connected network that processes samples as independent features. SimpleCNN is a one-dimensional convolutional network whose filters act as adaptive digital filters. ResNet1D is a deep residual network with skip connections, the upper bound on the number of parameters among the classical models.
+
+\subsection{Recurrent Architectures}
+
+To explicitly model the temporal structure of the window, a bidirectional LSTM and a unidirectional GRU (for contrast in the number of parameters) are included. The classification output is taken from the last hidden state, which naturally fits the ``one prediction per window at the last point'' formulation.
+
+
+\subsection{The Kolmogorov-Arnold Family}
+
+SimpleKAN is a direct alternative to the MLP, in which the nonlinear activations are represented by learnable functions on the edges of the graph. ConvKAN is a hybrid of one-dimensional convolutions and KAN. In both models, Chebyshev polynomials of degree 3 (rather than B-splines) are used as the basis; this is a valid KAN basis with a compact implementation that requires no knot-grid management.
+
+
+\begin{table}[!t]
+\caption{Number of trainable parameters by complexity configuration (thousands)}\label{tab1}
+\centering
+\begin{tabular}{lrrr}
+\hline
+Architecture & Light & Medium & Heavy\\ \hline
+SimpleMLP & 2997 & 6002 & 12028\\
+SimpleCNN & 10 & 35 & 106\\
+ResNet1D & 25 & 95 & 1028\\
+LSTM & 117 & 300 & 2439\\
+GRU & 44 & 113 & 718\\
+SimpleKAN & 6087 & 12088 & 24106\\
+ConvKAN & 17 & 38 & 88\\ \hline
+\end{tabular}
+\par\vspace{2pt}{\footnotesize Number of trainable parameters (thousands) for the symmetric-polar input / full window (162 channels $\times$ 289 samples). The values depend on the input dimensionality: under compression to two snapshots, the parameters of the fully connected models (SimpleMLP, SimpleKAN) shrink by an order of magnitude.}
+\end{table}
+
+\section{Experimental Protocol}
+
+\subsection{Splitting and cross-validation}
+
+The train/test split is performed strictly by unique oscillogram files (not by windows), with stratification by event type; leakage at the window level is thereby eliminated by construction. Five-fold stratified cross-validation by files is applied, and on each fold, training is repeated five times with different random seeds, resulting in 25 runs per configuration. The full factorial grid is 6 representations × 7 architectures × 3 sampling modes × 3 complexity levels × 5 folds × 5 seeds = 9450 training runs in total.
+
+\subsection{Training and evaluation}
+
+
+
+A weighted Binary Cross-Entropy with Logits Loss is used, with component-wise coefficients $\mathit{pos\_weight} = N_{\mathrm{neg}}/N_{\mathrm{pos}}$ computed on the training set (multi-label). The primary metric is Macro-F1; per-class F1 and the area under the precision–recall curve (AUPRC), preferable under class imbalance to the area under the receiver operating characteristic curve (ROC-AUC), are additionally reported. 
+
+Computational characteristics — number of parameters, floating-point operations (FLOPs), and CPU inference latency — are considered separately from quality because, for an embedded implementation, the cost that matters is that of the complete chain: the preliminary spectral computation (sliding FFT) plus the model itself. The number of parameters and FLOPs are platform-independent; the latency was measured on an Intel Core Ultra 7 165U CPU in a single thread, as the median over 50 runs per window.
+
+\subsection{Statistical Tests}
+
+Comparisons are performed at the fold level: for each configuration, F1 is averaged over the 5 seeds within a fold, yielding 5 fold level independent values. On these, a paired Wilcoxon signed-rank test is performed, supplemented by a bootstrap estimate of the 95\% confidence interval of the difference of means (10,000 resamples); for multiple comparisons, the Bonferroni correction is applied, $\alpha$ = 0.05. A note on statistical power: with 5 folds, the exact two-sided Wilcoxon test reaches a minimum of p = 0.0625, so the leading evidence is provided by the confidence intervals of the difference that exclude zero.
+
+\section{Results and Analysis}
+
+\subsection{Comparison of Feature Spaces}
+
+The main result is already visible in the marginal means (averaging over all architectures, sampling modes, complexity levels, folds, and seeds): the Macro-F1 spread across feature representations (from 0.606 for symmetric components in polar coordinates to 0.446 for instantaneous power, a range of $\approx$ 0.16) exceeds the spread across architectures (from 0.604 for GRU to 0.498 for SimpleKAN, a range of $\approx$ 0.11). On these data, the choice of feature space affects quality more than the choice of model; the statistical significance of the key pairwise differences is summarized in Table \ref{tab3}. Polar spectral representations lead; Cartesian symmetric components and instantaneous values form a middle tier; instantaneous power is, on average, the worst (Fig. 4).
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figs/evdak4.png}
+\caption{Macro-F1 by feature representation (marginal means over all models, samplings, complexities, folds and seeds). Polar spectral representations lead; instantaneous power is weakest.}
+\label{fig4}
+\end{figure}
+
+The full ``representation $\times$ architecture'' breakdown is given in Table~\ref{tab2} and in the heatmap (Fig. 5). The heatmap reveals an important nuance: on the weakest representation (instantaneous power), recurrent networks hold F1 $\approx$ 0.565, whereas convolutional networks, MLP, and part of the KAN family collapse to 0.37–0.39. Thus, recurrent architectures are more robust to a poor choice of features.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.7\textwidth]{figs/evdak5.png}
+\caption{Macro-F1 heatmap (feature representation $\times$ model). Note the collapse of non-recurrent models on the power representation (bottom row).}
+\label{fig5}
+\end{figure*}
+
+\begin{table*}[!t]
+\caption{Macro-F1 (mean $\pm$ std) by representation and architecture}\label{tab2}
+\centering
+\begin{tabular}{lccccccc}
+\hline
+Representation & GRU & LSTM & CNN & ResNet1D & MLP & ConvKAN & SimpleKAN\\ \hline
+symmetric-polar & \textbf{0.68}$\pm$0.08 & 0.67$\pm$0.08 & 0.59$\pm$0.09 & 0.59$\pm$0.09 & 0.60$\pm$0.06 & 0.55$\pm$0.06 & 0.58$\pm$0.07\\
+phase-polar & \textbf{0.65}$\pm$0.08 & 0.64$\pm$0.08 & 0.57$\pm$0.10 & 0.57$\pm$0.09 & 0.59$\pm$0.08 & 0.55$\pm$0.05 & 0.59$\pm$0.05\\
+symmetric & \textbf{0.61}$\pm$0.09 & 0.60$\pm$0.08 & 0.58$\pm$0.07 & 0.56$\pm$0.07 & 0.54$\pm$0.07 & 0.52$\pm$0.06 & 0.52$\pm$0.06\\
+alpha-beta (Clarke) & \textbf{0.57}$\pm$0.08 & 0.56$\pm$0.07 & 0.54$\pm$0.07 & 0.53$\pm$0.08 & 0.50$\pm$0.07 & 0.50$\pm$0.04 & 0.45$\pm$0.05\\
+raw (instant.) & \textbf{0.56}$\pm$0.08 & 0.55$\pm$0.07 & 0.53$\pm$0.07 & 0.54$\pm$0.07 & 0.50$\pm$0.07 & 0.49$\pm$0.05 & 0.47$\pm$0.06\\
+power & \textbf{0.57}$\pm$0.07 & \textbf{0.57}$\pm$0.07 & 0.37$\pm$0.12 & 0.38$\pm$0.10 & 0.39$\pm$0.09 & 0.48$\pm$0.07 & 0.38$\pm$0.08\\ \hline
+Mean (model) & 0.60 & 0.60 & 0.53 & 0.53 & 0.52 & 0.51 & 0.50\\ \hline
+\end{tabular}
+\par\vspace{2pt}{\footnotesize Aggregated over 3 sampling modes $\times$ 3 complexity levels $\times$ 5 folds $\times$ 5 seeds (225 runs per cell). In bold, the best model in the row (GRU everywhere; in the power row, GRU and LSTM).}
+\end{table*}
+
+\begin{table}[!t]
+\caption{Significance of key differences (fold level, $n=5$)}\label{tab3}
+\centering\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lccc}
+\hline
+Comparison & $\Delta$ F1 & 95\% CI & Wilcoxon $p$\\ \hline
+symmetric-polar $>$ raw & +0.086 & [+0.056, +0.114] & 0.063\\
+symmetric-polar $>$ symmetric & +0.047 & [+0.031, +0.061] & 0.063\\
+phase-polar $>$ raw & +0.073 & [+0.039, +0.100] & 0.063\\
+GRU $>$ LSTM & +0.008 & [+0.005, +0.012] & 0.063\\
+GRU $>$ CNN & +0.076 & [+0.067, +0.085] & 0.063\\
+dense $>$ snapshot & +0.015 & [+0.007, +0.025] & 0.063\\
+stride $>$ snapshot & +0.008 & [+0.000, +0.015] & 0.313\\ \hline
+\end{tabular}
+\par\vspace{2pt}{\footnotesize $\Delta$ F1 is the difference in Macro-F1; confidence intervals are bootstrap estimates (10,000 resamples). All differences except stride $>$ snapshot are sign-consistent across all 5 folds (p = 0.0625, the exact minimum for n = 5) and have a CI that excludes zero.}
+\end{table}
+
+\subsection{The Compressed-Strategy Paradox}
+
+The time-sampling mode has a weak effect on quality: the mean Macro-F1 values are 0.548 (dense), 0.541 (stride), and 0.533 (snapshot), a range of only $\approx$ 0.015. Compressing the full window to two spectral snapshots costs, on average, only $\approx$ 0.015 Macro-F1. The effect is non-uniform across architectures (Fig. 6, Table~\ref{tab4}): recurrent networks and SimpleKAN lose the most (GRU $-$0.031, SimpleKAN $-$0.037), whereas convolutional networks and MLP are practically unaffected (CNN +0.002, MLP +0.004 in favor of snapshot).
+
+Convolutional networks and MLP are unaffected by compression because, even at the full window, they do not extract the shape of the transient; their quality is close to their own ``ceiling'' regardless of the sampling mode. In contrast, the advantage of recurrent networks at the full window was, in fact, provided by sequence modeling. In addition, compression to two snapshots reduces not only the model's input size but also the spectral computation itself (two FFT windows instead of a full sliding FFT over all 320 samples), lowering the preprocessing cost on an embedded platform.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.7\textwidth]{figs/evdak6.png}
+\caption{Effect of input compression (full window / stride / two-point snapshot) on Macro-F1 per model. Two-point snapshot closely tracks the full window; the gap is largest for recurrent models and near-zero for CNN/MLP.}
+\label{fig6}
+\end{figure*}
+
+\begin{table}[!t]
+\caption{Effect of the sampling mode on Macro-F1 (mean over complexities, folds, seeds)}\label{tab4}
+\centering\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{lcccc}
+\hline
+Model & Full window (dense) & Stride & Two snapshots & $\Delta$\\ \hline
+GRU & 0.618 & 0.608 & 0.587 & +0.031\\
+LSTM & 0.601 & 0.598 & 0.589 & +0.012\\
+CNN & 0.529 & 0.526 & 0.531 & $-$0.002\\
+ResNet1D & 0.534 & 0.523 & 0.522 & +0.012\\
+MLP & 0.517 & 0.519 & 0.520 & $-$0.004\\
+ConvKAN & 0.526 & 0.509 & 0.508 & +0.018\\
+SimpleKAN & 0.513 & 0.504 & 0.476 & +0.037\\ \hline
+Mean & 0.548 & 0.541 & 0.533 & +0.015\\ \hline
+\end{tabular}
+\par\vspace{2pt}{\footnotesize $\Delta$ = (full window) $-$ (two snapshots). A positive value is the loss under compression; a negative value means two snapshots are no worse than the full window.}
+\end{table}
+
+\subsection{Architecture Comparison}
+
+The best architectures turned out to be the recurrent ones: GRU (0.604) and LSTM (0.596); then the convolutional family and MLP (0.519–0.529), and the KAN family (ConvKAN 0.514, SimpleKAN 0.498) (Fig. 7). ConvKAN is a special case: its average accuracy is at the level of the simple models, but it shows the smallest spread of all architectures ($\sigma$ $\approx$ 0.063 vs. 0.09–0.12 for the others) and the least degradation on the weakest representation. On the instantaneous-power representation, convolutional networks, ResNet1D, MLP, and SimpleKAN collapse to 0.37–0.39, whereas ConvKAN holds $\approx$ 0.48; across all representations, ConvKAN stays within the narrow range 0.48–0.55. This makes ConvKAN a promising starting point for further improvements of KAN architectures.
+
+A second observation concerns convergence: after training is stabilized (input normalization, activation clamping, reduced learning rate), KAN converges everywhere (minimum SimpleKAN 0.235, ConvKAN 0.333; not a single degenerate cell), although in terms of average quality, it sits at the tail of the ranking. On this task, KAN provides no accuracy advantage, and their value is associated with stability and potential interpretability rather than classification quality.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figs/evdak7.png}
+\caption{Macro-F1 by model (marginal over all features, samplings and complexities), grouped as recurrent / KAN-family / other. Recurrent models lead; ConvKAN is the most stable (lowest spread).}
+\label{fig7}
+\end{figure}
+
+\subsection{Per-Class Analysis of the Best Configuration}
+
+The best configuration, symmetric-polar / GRU / Heavy / stride, reaches Macro-F1 = 0.6915 $\pm$ 0.086 (AUPRC 0.787) over 25 runs. The per-class breakdown (Fig. 8, Table \ref{tab5}) shows a pronounced non-uniformity in class difficulty: the ``Abnormal Events'' class is recognized confidently (F1 0.887), whereas ``Fault Events'' is the hardest and most unstable (F1 0.566 $\pm$ 0.238). ``No Event'' and ``Operational Switching'' occupy an intermediate position. A confusion matrix is not provided as a published artifact (to avoid conflating alarm-grade and trip-grade interpretations of errors); the analysis is limited to component-wise F1 and AUPRC.
+
+The ranking of class difficulty admits a physical interpretation. Abnormal Events, despite being the rarest class in the corpus (51 files), produce a persistent signature dominated by the zero- and negative-sequence components, which the polar spectral representation exposes directly — hence the confident recognition (F1 0.887). Fault Events, by contrast, are short transients with heterogeneous signatures: critical short circuits of different types and durations do not share a single stable spectral pattern, and the 200-ms window may capture the event at different stages of its development. This suggests that further gains for this class are more likely to come from enlarging the corpus of verified fault records than from architectural changes.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figs/evdak8.png}
+\caption{Per-class Macro-F1 and AUPRC for the best configuration (symmetric-polar / GRU / Heavy / stride). Classes: No Event, Operational Switching, Abnormal Events, Fault Events. Fault Events is the hardest and most variable class.}
+\label{fig8}
+\end{figure}
+
+\begin{table}[!t]
+\caption{Per-class metrics of the best configuration (symmetric-polar / GRU / Heavy / stride)}\label{tab5}
+\centering
+\begin{tabular}{lcc}
+\hline
+Class & F1 (mean $\pm$ std) & AUPRC \\ \hline
+No Event & 0.732 $\pm$ 0.074 & 0.76\\
+Operational Switching & 0.581 $\pm$ 0.136 & 0.74\\
+Abnormal Events & 0.887 $\pm$ 0.038 & 0.95\\
+Fault Events & 0.566 $\pm$ 0.238 & 0.71\\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Computational Efficiency}
+
+Profiling was performed on an Intel Core Ultra 7 165U CPU in a single thread (median latency over 50 runs per window). The number of parameters and FLOPs are platform-independent; the latency is given for the specified CPU as a representative one. By the number of parameters (Fig. 9), the fully connected SimpleMLP and SimpleKAN are the heaviest (3–24 million on the full window, due to unrolling the 162$\times$289 input); whereas the convolutional and recurrent models are one to two orders of magnitude more compact; the recurrent GRU/LSTM lies on the optimal accuracy–size front.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figs/evdak9.png}
+\caption{Macro-F1 versus model size for the symmetric-polar representation on the full window; the horizontal axis is logarithmic and the dashed line is the Pareto front. SimpleMLP and SimpleKAN sit far off the front (millions of parameters).}
+\label{fig9}
+\end{figure}
+
+By CPU latency, the picture is different (Fig. 10): the most accurate recurrent models turn out to be the slowest when fed the full window, at GRU/heavy 36.8 ms and LSTM/heavy 53.0 ms per window, since recurrence is sequential over the 289 samples and does not parallelize (SimpleKAN, 108 ms). The convolutional models are substantially faster (CNN 2.0 ms, ConvKAN 5.9 ms).
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figs/evdak10.png}
+\caption{Macro-F1 versus CPU latency per window, measured on an Intel Core Ultra 7 165U in a single thread; the horizontal axis is logarithmic and the dashed line is the Pareto front. Circles denote the full window and triangles the two-point snapshot; the compressed configurations form the front.}
+\label{fig10}
+\end{figure}
+
+The largest gain comes from input compression: moving from the full window to two snapshots reduces latency by one to two orders of magnitude (Table 6: GRU 36.8$\to$0.57 ms, $\times$64; LSTM 53.0$\to$3.2 ms, $\times$16; SimpleKAN 108$\to$0.65 ms, $\times$166) with practically no loss of quality. The optimal F1–latency Pareto front is, therefore, formed by the compressed configurations: the best point is GRU on polar spectral features with snapshots/decimation (Macro-F1 $\approx$ 0.69 at $\approx$ 2.5 ms/window), whereas the same model on the full window costs $\approx$ 37 ms at the same quality. Thus, the combination of polar spectral features and input compression lies on the optimal front, reducing both inference time and the cost of spectral preprocessing (fewer FFT windows).
+
+\begin{table}[!t]
+\caption{CPU latency per window (ms), heavy configuration: full window vs two snapshots}\label{tab6}
+\centering\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lccc}
+\hline
+Model & Full window & Two snapshots & Speedup\\ \hline
+GRU & 36.8 & 0.57 & $\times$64\\
+LSTM & 53.0 & 3.22 & $\times$16\\
+SimpleKAN & 108.2 & 0.65 & $\times$166\\
+ConvKAN & 5.85 & 0.58 & $\times$10\\
+ResNet1D & 4.84 & 1.79 & $\times$3\\
+SimpleCNN & 2.03 & 0.23 & $\times$9\\
+SimpleMLP & 3.31 & 0.14 & $\times$23\\ \hline
+\end{tabular}
+\par\vspace{2pt}{\footnotesize Median over 50 runs, Intel Core Ultra 7 165U, 1 thread. The FLOPs counter (fvcore) does not account for the recurrent loop, so FLOPs are underestimated for GRU/LSTM; the recurrent models are therefore compared by measured latency rather than by FLOPs.}
+\end{table}
+
+\section{Engineering Recommendations}
+
+\textbf{Choice of feature representation.}
+For embedded protection terminals, it is recommended to use spectral representations in polar coordinates (symmetric components or per-phase phasors) together with strong input decimation, down to a few spectral snapshots (two in the limit). Such compression yields quality close to the best while greatly reducing the input dimensionality and the cost of spectral preprocessing. The number of snapshots to retain should be chosen according to the nature of the process. For fast fault transients, two points are sufficient, whereas for slow oscillatory regimes, somewhat more may be required (on the order of five) so that the adaptive element does not lose information about the low-frequency dynamics. For devices with a large computational margin, a full spectral representation with moderate decimation is justified.
+
+\textbf{Choice of architecture.}
+As a reliable default choice, recurrent networks (GRU/LSTM) are recommended: they lead in average quality and are the most robust to the choice of features. Among the compact convolutional models, ConvKAN stands out for its greatest stability. The KAN family as a whole provides no accuracy advantage on this task and is justified where interpretability is a priority.
+
+\textbf{Choice of representation depending on the task type.}
+For tasks where fine phase information matters (single-phase-to-ground faults, directional elements), polar spectral features are preferable. For regimes determined by the shape of the transient, the full window may be useful. 
+
+\textbf{Quantitative trade-offs.}
+Compression to two snapshots costs, on average, $\approx$ 0.015 Macro-F1 (up to 0.03 for recurrent networks) but accelerates CPU inference by one to two orders of magnitude (e.g., GRU 36.8$\to$0.57 ms per window, $\times$64) and reduces the cost of spectral preprocessing, which, in many applications, justifies the negligible loss of accuracy.
+
+\section{Discussion and Limitations}
+The results obtained should be viewed with a number of caveats. First, the work was performed at a single sampling rate (1600 Hz); for industrial power engineering (50/60 Hz), this limitation is insignificant, but transfer to fundamentally different sampling rates requires separate verification. Second, the volume of the expert-verified sample is limited (990 files). Third, and this is more important than the frequency or voltage class, the results were obtained predominantly for ungrounded-neutral networks; generalization to networks with a different type of neutral grounding (for example, 110 kV and above) requires separate validation. Fourth, the statistical comparisons rely on 5 folds, which limits the power of the Wilcoxon test.
+
+The key architectural limitation is the ``one prediction per window at the last point'' formulation. Approaches with per-zone labeling (transformer models) produce a prediction for each temporal zone of the window; extending the methodology in this direction and comparing it with transformers is a subject for subsequent work. The development of physics-informed KAN architectures also belongs to subsequent work.
+
+\section{Conclusion}
+
+This work carried out a systematic comparison of six feature representations and seven neural-network architectures on a corpus of 990 real oscillograms recorded at 6 to 35 kV facilities. For this class of tasks, the input representation proves to be the more consequential design decision: its effect on classification quality exceeds that of the architecture by roughly half again. The practical consequence for protection engineering is that the effort invested in a physically motivated description of the signal—spectral quantities in polar coordinates, which separate the magnitude of the imbalance from its direction—pays off more reliably than the effort invested in a more elaborate model.
+
+The same conclusion has a direct embedded reading. Because the informative content of the window is concentrated in the transition between the pre-fault and the fault regime rather than in the shape of the intermediate transient, two spectral snapshots reproduce the quality of the full 320-sample window closely enough for practical use while removing most of the cost of both spectral preprocessing and inference. This makes the polar-spectral representation with strong input compression a realistic candidate for measuring elements running on the processors of present-day protection terminals rather than an offline research configuration. Extending the study to per-zone labeling, to higher voltage classes, and to solidly earthed networks is the natural continuation of this work.
+
+\bibliographystyle{bibliography/IEEEtranIES}
+\bibliography{refs}
+
+
+
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{bibliography/Aleksey_Evdakov.png}}]{Aleksey Evdakov} graduated from Ivanovo State Power Engineering University (ISPEU, Russia) in 2020 with a Master's degree in "Relay Protection and Automation of Electric Power Systems". Currently, he is a PhD student at ISPEU in the field of "Power Stations and Electric Power Systems" and works as the Head of the Relay Protection and Automation Department at APS LLC. His research interests include the study of measuring current sensors under transient conditions, the improvement of algorithms for Fast Automatic Bus Transfer devices, as well as the application of modern machine learning methods (statistical analysis and neural networks of various architectures) to enhance relay protection algorithms and oscillogram analysis.
+\end{IEEEbiography}
+
+
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{bibliography/koval.png}}]{Aleksandr Kovalenko} received the Specialist degree in Microelectronics from Saint Petersburg Electrotechnical University "LETI", St. Petersburg, Russia, and a Master's degree in Data Science from HSE University, Moscow, Russia. Since 2012 he has worked with industrial equipment as an electronics service engineer. Now, he is an AI researcher at the Artificial Intelligence Research Institute, Moscow, Russia. His scientific interests include digital twins and deep learning for sensor data analysis.
+\end{IEEEbiography}
+
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{bibliography/Galina_Filatova.jpg}}]{Galina Filatova} received her Master's degree in Electric Power Engineering from the Ivanovo State Power Engineering University (ISPEU), Ivanovo, Russia, in 2013. In 2017, she received her Candidate of Sciences (PhD) degree. Her PhD dissertation was devoted to determining the location of a single-phase ground fault on cable lines without disconnecting them. In 2020, she received the academic title of Associate Professor. She is a recipient of the Russian Presidential Scholarship for Young Scientists (2021–2023) and the head of the Russian Science Foundation grant in 2023–2024. Her research interests include simulation modeling, fault location, cable networks, relay protection and automation of industrial power supply systems, and machine learning.
+\end{IEEEbiography}
+
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{bibliography/Andrey_Yablokov.jpg}}]{Andrey Yablokov} graduated from Ivanovo State Power Engineering University (Russia) in 2012 with a degree in "Management and Informatics in Technical Systems." In 2016, he was awarded the degree of Candidate of Technical Sciences (PhD equivalent) in the field of "Power Stations and Electric Power Systems." Currently, he works at Ivanovo State Power Engineering University as an Associate Professor at the Department of Automatic Control of Electric Power Systems and serves as Deputy Dean for Research at the Faculty of Electric Power Engineering. His research interests include the study of measuring current and voltage transformers under transient conditions (transformer saturation, ferroresonance phenomena), the development of software packages for modeling electric power facilities, the application of machine learning in electric power engineering, digital substations of centralized and cluster types and their testing equipment, as well as the improvement of algorithms for the operation of relay protection and automation devices.
+\end{IEEEbiography}
+
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{bibliography/makar.eps}}]{Ilya Makarov} 
+(Member, IEEE) received the specialist degree in mathematics from Lomonosov Moscow State University, Moscow, Russia, in 2011, and the Ph.D. degree in computer science from the University of Ljubljana, Ljubljana, Slovenia, in 2021.
+
+Since 2011, he has been a Lecturer with the School of Data Analysis and Artificial Intelligence, HSE University, Moscow, Russia, where from 2012 to 2016, he was the School Deputy Head, and is Associate Professor and Senior Research Fellow. He was also the Program Director of BigData Academy MADE from VK, and a Researcher with Samsung-PDMI Joint AI Center, St. Petersburg Department of V.A, Steklov Mathematical Institute, Russian Academy of Sciences, Saint Petersburg, Russia. He is currently a Senior Research Fellow with the Artificial Intelligence Research Institute (AIRI), Moscow, Russia, where he leads research on industrial AI.
+\end{IEEEbiography}
+
+\EOD
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@article{ref1,
+  title={Comprehensive review on detection and classification of power quality disturbances in utility grid with renewable energy penetration},
+  author={Chawda, Gajendra Singh and Shaik, Abdul Gafoor and Shaik, Mahmood and Padmanaban, Sanjeevikumar and Holm-Nielsen, Jens Bo and Mahela, Om Prakash and Kaliannan, Palanisamy},
+  journal={IEEE Access},
+  volume={8},
+  pages={146807--146830},
+  year={2020},
+  publisher={IEEE}
+}
+@article{ref2,
+  title={A review of machine learning applications in power system protection and emergency control: opportunities, challenges, and future directions},
+  author={Porawagamage, Gayashan and Dharmapala, Kalana and Chaves, J Sebastian and Villegas, Daniel and Rajapakse, Athula},
+  journal={Frontiers in Smart Grids},
+  volume={3},
+  pages={1371153},
+  year={2024},
+  publisher={Frontiers Media SA}
+}
+@inproceedings{ref3,
+  title={KAN: Kolmogorov-{A}rnold networks},
+  author={Liu, Ziming and Wang, Yixuan and Vaidya, Sachin and Ruehle, Fabian and Halverson, James and Soljacic, Marin and Hou, Thomas and Tegmark, Max},
+  booktitle={International Conference on Learning Representations},
+  volume={2025},
+  pages={70367--70413},
+  year={2025}
+}
+@article{ref4,
+  title={A scoping review of machine learning applications in power system protection and disturbance management},
+  author={Oelhaf, Julian and Kordowich, Georg and Pashaei, Mehran and Bergler, Christian and Maier, Andreas and J{\"a}ger, Johann and Bayer, Siming},
+  journal={International Journal of Electrical Power \& Energy Systems},
+  volume={172},
+  pages={111257},
+  year={2025},
+  publisher={Elsevier}
+}
+@article{ref5,
+  title={Perception of power quality disturbances using Fourier, Short-Time Fourier, continuous and discrete wavelet transforms},
+  author={Priyadarshini, MS and Bajaj, Mohit and Prokop, Lukas and Berhanu, Milkias},
+  journal={Scientific Reports},
+  volume={14},
+  number={1},
+  pages={3443},
+  year={2024},
+  publisher={Nature Publishing Group UK London}
+}
+@article{ref6,
+  title={Development of overcurrent relay based on wavelet transform for fault detection in transmission line},
+  author={Ananwattanaporn, Santipont and Lertwanitrot, Praikanok and Ngaopitakkul, Atthapol and Pothisarn, Chaichan},
+  journal={Scientific Reports},
+  volume={14},
+  number={1},
+  pages={14933},
+  year={2024},
+  publisher={Nature Publishing Group UK London}
+}
+@article{ref7,
+  title={Incipient fault detection in power distribution system: A time-frequency embedded deep-learning-based approach},
+  author={Li, Qiyue and Luo, Huan and Cheng, Hong and Deng, Yuxing and Sun, Wei and Li, Weitao and Liu, Zhi},
+  journal={IEEE Transactions on Instrumentation and Measurement},
+  volume={72},
+  pages={1--14},
+  year={2023},
+  publisher={IEEE}
+}
+@inproceedings{ref8,
+  title={Transmission Line Fault Detection and Classification Using Machine Learning with Symmetrical Components and FFT Analysis},
+  author={Nidhi and Saini, Vikash Kumar and Kumar, Rajesh and Al-Sumaiti, Ameena S},
+  booktitle={International Conference on Data Science and Applications},
+  pages={333--349},
+  year={2024},
+  organization={Springer}
+}
+@article{ref9,
+  title={Power quality disturbances identification based on deep neural network model of time-frequency feature fusion},
+  author={Chen, Lei and Chen, Shuang and Xu, Jianjun and Zhou, Chao},
+  journal={Electric Power Systems Research},
+  volume={231},
+  pages={110283},
+  year={2024},
+  publisher={Elsevier}
+}
+@article{ref10,
+  title={A power quality disturbances classification method based on multi-modal parallel feature extraction},
+  author={Tong, Zhanbei and Zhong, Jianwei and Li, Jiajun and Wu, Jianjun and Li, Zhenwei},
+  journal={Scientific Reports},
+  volume={13},
+  number={1},
+  pages={17655},
+  year={2023},
+  publisher={Nature Publishing Group UK London}
+}
+@article{ref11,
+  title={Initial condition based real time classification of power quality disturbance using deep convolution neural network with bidirectional long short-term memory},
+  author={Kandasamy, Prabaakaran and Kumar, Chandrasekaran and Lakshmanan, Muthuramalingam and Jaisiva, Selvaraj and Stonier, Albert Alexander and Peter, Geno and Ganji, Vivekananda},
+  journal={IET Generation, Transmission \& Distribution},
+  volume={17},
+  number={23},
+  pages={5135--5154},
+  year={2023},
+  publisher={Wiley Online Library}
+}
+@article{ref12,
+  title={Classification of faults in power system transmission lines using deep learning methods with real, synthetic, and public datasets},
+  author={Turanl{\i}, Ozan and Bente{\c{s}}en Yakut, Yurdag{\"u}l},
+  journal={Applied Sciences},
+  volume={14},
+  number={20},
+  pages={9590},
+  year={2024},
+  publisher={MDPI}
+}
+@article{ref13,
+  title={A deep learning based intelligent approach in detection and classification of transmission line faults},
+  author={Fahim, Shahriar Rahman and Sarker, Subrata K and Muyeen, SM and Das, Sajal K and Kamwa, Innocent},
+  journal={International Journal of Electrical Power \& Energy Systems},
+  volume={133},
+  pages={107102},
+  year={2021},
+  publisher={Elsevier}
+}
+@article{ref14,
+  title={Deep learning through LSTM classification and regression for transmission line fault detection, diagnosis and location in large-scale multi-machine power systems},
+  author={Belagoune, Soufiane and Bali, Noureddine and Bakdi, Azzeddine and Baadji, Bousaadia and Atif, Karim},
+  journal={Measurement},
+  volume={177},
+  pages={109330},
+  year={2021},
+  publisher={Elsevier}
+}
+@article{ref15,
+  title={Fault detection and classification in overhead transmission lines through comprehensive feature extraction using temporal convolution neural network},
+  author={Tunio, Nadeem Ahmed and Hashmani, Ashfaque Ahmed and Khokhar, Suhail and Tunio, Mohsin Ali and Faheem, Muhammad},
+  journal={Engineering Reports},
+  volume={6},
+  number={12},
+  pages={e12950},
+  year={2024},
+  publisher={Wiley Online Library}
+}
+@article{ref16,
+  title={Performance comparison between deep learning models for fault classification in transmission lines using time series data},
+  author={Tunio, Nadeem Ahmed and Tunio, Mohsin Ali and Raza, Muhammad Amir and Faheem, Muhammad and Hashmani, Ashfaque Ahmed and Nadeem, Rumaisa},
+  journal={Energy Science \& Engineering},
+  volume={13},
+  number={5},
+  pages={2330--2351},
+  year={2025},
+  publisher={Wiley Online Library}
+}
+@article{ref17,
+  title={Fault detection and classification in ring power system with DG penetration using hybrid CNN-LSTM},
+  author={Alhanaf, Ahmed Sami and Farsadi, Murtaza and Balik, Hasan H{\"u}seyin},
+  journal={IEEE Access},
+  volume={12},
+  pages={59953--59975},
+  year={2024},
+  publisher={IEEE}
+}
+@article{ref18,
+  title={Fault detection for medium voltage switchgear using a deep learning hybrid 1D-CNN-LSTM model},
+  author={Alsumaidaee, Yaseen Ahmed Mohammed and Paw, Johnny Koh Siaw and Yaw, Chong Tak and Tiong, Sieh Kiong and Chen, Chai Phing and Yusaf, Talal and Benedict, Foo and Kadirgama, Kumaran and Hong, Tan Chung and Abdalla, Ahmed N},
+  journal={IEEE Access},
+  volume={11},
+  pages={97574--97589},
+  year={2023},
+  publisher={IEEE}
+}
+@article{ref19,
+  title={Deep learning techniques for transmission line fault classification--A comparative study},
+  author={Shukla, Priyanka Khirwadkar and Deepa, K},
+  journal={Ain Shams Engineering Journal},
+  volume={15},
+  number={2},
+  pages={102427},
+  year={2024},
+  publisher={Elsevier}
+}
+@article{ref20,
+  title={Precise PMU-based localization and classification of short-circuit faults in power distribution systems},
+  author={Sodin, Denis and Smolnikar, Miha and Rude{\v{z}}, Urban and {\v{C}}ampa, Andrej},
+  journal={IEEE Transactions on Power Delivery},
+  volume={38},
+  number={5},
+  pages={3262--3273},
+  year={2023},
+  publisher={IEEE}
+}
+@article{ref21,
+  title={Transient event classification using pmu data with deep learning techniques and synthetically supported training-set},
+  author={G{\"o}k, G{\"o}rkem and Salor, {\"O}zg{\"u}l and Taplamac{\i}o{\u{g}}lu, M{\"u}sl{\"u}m Cengiz},
+  journal={IET Generation, Transmission \& Distribution},
+  volume={17},
+  number={6},
+  pages={1287--1297},
+  year={2023},
+  publisher={Wiley Online Library}
+}
+@article{ref22,
+  title={Series arc-fault diagnosis using convolutional neural network via generalized S-transform and power spectral density},
+  author={Zhang, Penghe and Qin, Yiwei},
+  journal={IET Generation, Transmission \& Distribution},
+  volume={18},
+  number={19},
+  pages={3029--3041},
+  year={2024},
+  publisher={Wiley Online Library}
+}
+@article{ref23,
+  title={Current trajectory image-based protection algorithm for transmission lines connected to MMC-HVDC stations using CA-CNN},
+  author={Liang, Yingyu and Ren, Yi and Yu, Jinhua and Zha, Wenting},
+  journal={Protection and Control of Modern Power Systems},
+  volume={8},
+  number={1},
+  pages={1--15},
+  year={2023},
+  publisher={PSPC}
+}
+@article{ref24,
+  title={A Real Data-Driven Fault Diagnosing Method for Distribution Networks Based on ResBlock-CBAM-CNN},
+  author={Yao, Yuhai and Ma, Hao and Gong, Cheng and Li, Yifei and Zhao, Qiao and Wei, Ning and Yang, Bin},
+  journal={Electricity},
+  volume={6},
+  number={2},
+  pages={19},
+  year={2025},
+  publisher={MDPI}
+}
+@article{ref25,
+  author = {Evdakov, Aleksey and Filatova, Galina and Yablokov, Andrey and Kovalenko, Aleksandr and Skachkov, Evgeny and Makarov, Ilya},
+year = {2026},
+month = {Jan},
+pages = {},
+title = {A dataset of real-world oscillograms from electrical power grids},
+volume = {13},
+journal = {Scientific Data}
+}
+
+@article{ref26,
+  title={KAN 2.0: Kolmogorov-{A}rnold networks meet science},
+  author={Liu, Ziming and Ma, Pingchuan and Wang, Yixuan and Matusik, Wojciech and Tegmark, Max},
+  journal={arXiv preprint arXiv:2408.10205},
+  year={2024}
+}
+@article{ref27,
+  title={Kolmogorov-{A}rnold networks are radial basis function networks},
+  author={Li, Ziyao},
+  journal={arXiv preprint arXiv:2405.06721},
+  year={2024}
+}
+@article{ref28,
+  title={Wav-kan: Wavelet {K}olmogorov-{A}rnold networks},
+  author={Bozorgasl, Zavareh and Chen, Hao},
+  journal={arXiv preprint arXiv:2405.12832},
+  year={2024}
+}
+@article{ref29,
+  title={Chebyshev polynomial-based {K}olmogorov-{A}rnold networks: An efficient architecture for nonlinear function approximation},
+  author={Sidharth, SS and Keerthana, AR and Gokul, R and Anas, KP},
+  journal={arXiv preprint arXiv:2405.07200},
+  year={2024}
+}
+@article{ref30,
+  title={rkan: Rational {K}olmogorov-{A}rnold networks},
+  author={Aghaei, Alireza Afzal and Hosseinzadeh, Mehdi and Parand, Kourosh},
+  journal={Neural Networks},
+  pages={108888},
+  year={2026},
+  publisher={Elsevier}
+}
+@inproceedings{ref31,
+  title={Kolmogorov-{A}rnold networks (kans) for time series analysis},
+  author={Vaca-Rubio, Cristian J and Blanco, Luis and Pereira, Roberto and Caus, M{\`a}rius},
+  booktitle={2024 IEEE Globecom Workshops (GC Wkshps)},
+  pages={1--6},
+  year={2024},
+  organization={IEEE}
+}
+@article{ref32,
+  title={A temporal {K}olmogorov-{A}rnold transformer for time series forecasting},
+  author={Genet, Remi and Inzirillo, Hugo},
+  journal={arXiv preprint arXiv:2406.02486},
+  year={2024}
+}
+@article{ref33,
+  title={Kolmogorov-{A}rnold network in the fault diagnosis of oil-immersed power transformers},
+  author={Cabral, Thales W and Gomes, Felippe V and de Lima, Eduardo R and Filho, Jos{\'e} CSS and Meloni, Lu{\'\i}s GP},
+  journal={Sensors},
+  volume={24},
+  number={23},
+  pages={7585},
+  year={2024},
+  publisher={MDPI}
+}
+@article{ref34,
+  title={A fundamental concept for high speed relaying},
+  author={Vitins, M},
+  journal={IEEE Transactions on Power Apparatus and Systems},
+  number={1},
+  pages={163--173},
+  year={1981},
+  publisher={IEEE}
+}
+@inproceedings{ref35,
+  title={Superimposed quantities: Their true nature and application in relays},
+  author={Benmouyal, Gabriel and Roberts, Jeff},
+  booktitle={Proceedings of the 26th Annual Western Protective Relay Conference, Spokane, WA},
+  pages={71},
+  year={1999}
+}
+@inproceedings{ref36,
+  title={New time-domain line protection principles and implementation},
+  author={Schweitzer, EO and Kasztenny, B and Mynam, M and Guzman, A and Skendzic, V},
+  booktitle={13th International Conference on Developments in Power System Protection},
+  pages={6},
+  year={2016},
+  organization={Edinburgh, UK}
+}
+@manual{ref37,
+  title        = {{SEL-T400L Time-Domain Line Protection - Instruction Manual}},
+  organization = {Schweitzer Engineering Laboratories},
+  note         = {{S}EL, Inc.}
+}
+@article{ref38,
+  title={Analysing the performance of incremental quantity based directional time-domain protection near HVAC cables and VSC HVDC converters},
+  author={Vermunicht, Joachim and Leterme, Willem and Van Hertem, Dirk},
+  journal={Electric Power Systems Research},
+  volume={223},
+  pages={109599},
+  year={2023},
+  publisher={Elsevier}
+}
+

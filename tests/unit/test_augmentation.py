@@ -233,7 +233,7 @@ class TestDatasetAugmentation:
         # sliding_window_fft использует окно Ханна, которое ослабляет амплитуду примерно в 2 раза.
         # Для входной амплитуды 2.0 ожидаемую величину примерно 1.0.
         # Проверим это, посчитав ожидаемое значение явно.
-        from osc_tools.features.pdr_calculator import sliding_window_fft
+        from osc_tools.features.phasor import sliding_window_fft
         
         t = np.arange(window_size) / 1600.0
         f = 50.0

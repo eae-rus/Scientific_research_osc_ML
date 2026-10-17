@@ -847,3 +847,807 @@ class rPhysicsKAN(BaseModel):
 
         relay_features = self.pool(relay_features).flatten(1)
         return self.processing_net(relay_features)
+
+
+# ============================================================================
+# Версия 2: физические/релейные блоки на глубоких слоях
+# ----------------------------------------------------------------------------
+# Идея: в исходных Physics-моделях физика (умножение/деление) и релейный орган
+# применяются ТОЛЬКО на входе (stem). Здесь исследуется гипотеза о пользе их
+# применения и на последующих (скрытых) слоях. Блоки спроектированы как
+# резидуальные добавки с малым начальным масштабом, чтобы не разрушать
+# основной поток признаков и не ломать обучение.
+# ============================================================================
+
+
+def _finite_tanh(x: torch.Tensor) -> torch.Tensor:
+    """Ограничить выбросы без изменения знака и убрать нечисловые значения."""
+    return torch.tanh(torch.nan_to_num(x, nan=0.0, posinf=20.0, neginf=-20.0))
+
+
+def _wrap_phase(x: torch.Tensor) -> torch.Tensor:
+    """Вернуть углы к главному диапазону [-pi, pi] без потери периодичности."""
+    return torch.atan2(torch.sin(x), torch.cos(x))
+
+
+class PhysicsInteractionBlock(nn.Module):
+    """
+    Резидуальный физический блок для скрытых слоёв (ограниченное число взаимодействий).
+
+    В отличие от stem, где физика применяется ко всем парам каналов, здесь
+    вычисляется лишь `n_interactions` физических взаимодействий. Все каналы
+    линейно проецируются в 2k операндов (a_1..a_k, b_1..b_k) свёрткой 1x1, что
+    позволяет взаимодействовать произвольным (в т.ч. межсигнальным) комбинациям,
+    а не только соседним каналам. Для каждой пары считается произведение
+    (аналог мощности) и отношение (аналог проводимости). Как в Physical
+    KAN-Transformer, делительная ветвь и физические признаки проходят tanh-
+    сжатие: это сохраняет знак и порядок, но не даёт малым знаменателям
+    разнести KAN-сетку за рабочий диапазон. Результат смешивается KAN-свёрткой
+    1x1 обратно в C каналов, дополнительно нормируется/ограничивается и
+    добавляется к потоку с обучаемым масштабом. Сохраняет форму [B, C, T].
+
+    Args:
+        channels: число каналов входа.
+        n_interactions: число физических взаимодействий k (операндных пар).
+        grid_size: размер сетки для KAN-свёртки.
+        spline_order: порядок сплайна KAN.
+        epsilon: защита от деления на ноль (с сохранением знака).
+        init_scale: начальный масштаб резидуальной добавки.
+        base_activation: базовая активация KAN.
+    """
+
+    def __init__(
+        self,
+        channels: int,
+        n_interactions: int = 4,
+        grid_size: int = 5,
+        spline_order: int = 3,
+        epsilon: float = 1e-4,
+        init_scale: float = 0.1,
+        base_activation=torch.nn.SiLU,
+    ):
+        super().__init__()
+        k = max(1, int(n_interactions))
+        self.k = k
+        self.epsilon = float(epsilon)
+        grid = grid_size[0] if isinstance(grid_size, list) else grid_size
+
+        # Линейная проекция всех каналов в 2k операндов (a_1..a_k, b_1..b_k).
+        self.operand_proj = nn.Conv1d(channels, 2 * k, kernel_size=1)
+        # Признаки физики: mult (k) + div (k) = 2k
+        self.bn = nn.BatchNorm1d(2 * k)
+        self.mix = KANConv1d(
+            2 * k,
+            channels,
+            kernel_size=1,
+            grid_size=grid,
+            spline_order=spline_order,
+            base_activation=base_activation,
+        )
+        self.delta_bn = nn.BatchNorm1d(channels)
+        self.scale = nn.Parameter(torch.tensor(float(init_scale)))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x_phys = _finite_tanh(x)
+        op = self.operand_proj(x_phys)
+        op = torch.nan_to_num(op, nan=0.0, posinf=20.0, neginf=-20.0)
+        a = op[:, : self.k, :]
+        b = op[:, self.k:, :]
+
+        mult = _finite_tanh(a * b)
+
+        # Безопасное деление с сохранением знака знаменателя.
+        sign = torch.sign(b)
+        sign = torch.where(sign == 0, torch.ones_like(sign), sign)
+        denom = torch.where(b.abs() < self.epsilon, sign * self.epsilon, b)
+        div = _finite_tanh(a / denom)
+
+        phys = torch.cat([mult, div], dim=1)
+        phys = _finite_tanh(self.bn(phys))
+        delta = self.mix(phys)
+        delta = _finite_tanh(self.delta_bn(delta))
+        return x + self.scale * delta
+
+
+class ComplexPhysicsInteractionBlock(nn.Module):
+    """
+    Комплексный (полярный) физический блок для скрытых слоёв (ограниченный k).
+
+    Латентный поток трактуется как чередующиеся [амплитуда, фаза]. Все каналы
+    проецируются в k комплексных операндных пар (a, b): отдельные проекции для
+    амплитуд (положительны через softplus) и фаз. Считаются комплексные
+    умножение и деление в полярной форме: амплитуды перемножаются/делятся, фазы
+    складываются/вычитаются. Амплитудные признаки проходят tanh-сжатие, а фазы
+    возвращаются в главный диапазон [-pi, pi], чтобы скрытый физический путь не
+    создавал экстремальные значения на validation. Результат смешивается KAN-
+    свёрткой 1x1 обратно в C каналов, нормируется/ограничивается и добавляется
+    к потоку с обучаемым масштабом. Требует чётного числа каналов.
+
+    Args:
+        channels: число каналов входа (должно быть чётным: пары [A, φ]).
+        n_interactions: число комплексных взаимодействий k.
+        grid_size: размер сетки для KAN-свёртки.
+        spline_order: порядок сплайна KAN.
+        epsilon: защита от деления на ноль по амплитуде.
+        init_scale: начальный масштаб резидуальной добавки.
+        base_activation: базовая активация KAN.
+    """
+
+    def __init__(
+        self,
+        channels: int,
+        n_interactions: int = 4,
+        grid_size: int = 5,
+        spline_order: int = 3,
+        epsilon: float = 1e-4,
+        init_scale: float = 0.1,
+        base_activation=torch.nn.SiLU,
+    ):
+        super().__init__()
+        if channels % 2 != 0:
+            raise ValueError(
+                f"ComplexPhysicsInteractionBlock ожидает чётное число каналов, получено {channels}"
+            )
+        k = max(1, int(n_interactions))
+        self.k = k
+        self.epsilon = float(epsilon)
+        grid = grid_size[0] if isinstance(grid_size, list) else grid_size
+
+        # Проекции амплитуд (>0) и фаз операндов (a_1..a_k, b_1..b_k).
+        self.amp_proj = nn.Conv1d(channels, 2 * k, kernel_size=1)
+        self.phase_proj = nn.Conv1d(channels, 2 * k, kernel_size=1)
+        self.softplus = nn.Softplus()
+        # Нормируем только амплитуды mult|div (2k).
+        self.bn_amp = nn.BatchNorm1d(2 * k)
+        # Смешиваем 4k каналов (амплитуды + фазы mult/div) обратно в channels.
+        self.mix = KANConv1d(
+            4 * k,
+            channels,
+            kernel_size=1,
+            grid_size=grid,
+            spline_order=spline_order,
+            base_activation=base_activation,
+        )
+        self.delta_bn = nn.BatchNorm1d(channels)
+        self.scale = nn.Parameter(torch.tensor(float(init_scale)))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x_phys = _finite_tanh(x)
+        amps = _finite_tanh(self.softplus(self.amp_proj(x_phys)))  # [0, 1)
+        phs = _wrap_phase(self.phase_proj(x_phys))
+
+        a_amp, b_amp = amps[:, : self.k, :], amps[:, self.k:, :]
+        a_ph, b_ph = phs[:, : self.k, :], phs[:, self.k:, :]
+
+        # Комплексное умножение: |S| = |a|·|b|, ∠S = ∠a + ∠b
+        mul_amp = _finite_tanh(a_amp * b_amp)
+        mul_ph = _wrap_phase(a_ph + b_ph)
+        # Комплексное деление: |Y| = |a|/|b|, ∠Y = ∠a − ∠b
+        div_amp = _finite_tanh(a_amp / b_amp.clamp_min(self.epsilon))
+        div_ph = _wrap_phase(a_ph - b_ph)
+
+        amp_feats = _finite_tanh(self.bn_amp(torch.cat([mul_amp, div_amp], dim=1)))
+        ph_feats = torch.cat([mul_ph, div_ph], dim=1)
+        phys = torch.cat([amp_feats, ph_feats], dim=1)
+        delta = self.mix(phys)
+        delta = _finite_tanh(self.delta_bn(delta))
+        return x + self.scale * delta
+
+
+class RelayGateBlock(nn.Module):
+    """
+    Релейный орган, применяемый к произвольному скрытому представлению.
+
+    Вычисляет вентиль (gate) из самого потока признаков и мягко модулирует
+    его — аналог направленного/амплитудного реле в РЗА, но работающий не
+    только на входе, а на любом слое сети. Резидуальная форма
+    `out = x * (1 + scale * (gate - 0.5))` при малом init_scale почти не
+    искажает поток в начале обучения.
+
+    Args:
+        channels: число каналов входа.
+        kernel_size: размер ядра KAN-свёртки вентиля.
+        grid_size: размер сетки KAN.
+        spline_order: порядок сплайна KAN.
+        init_scale: начальный масштаб модуляции.
+        base_activation: базовая активация KAN.
+    """
+
+    def __init__(
+        self,
+        channels: int,
+        kernel_size: int = 3,
+        grid_size: int = 5,
+        spline_order: int = 3,
+        init_scale: float = 0.1,
+        base_activation=torch.nn.SiLU,
+    ):
+        super().__init__()
+        grid = grid_size[0] if isinstance(grid_size, list) else grid_size
+        self.gate_conv = KANConv1d(
+            channels,
+            channels,
+            kernel_size=kernel_size,
+            padding=kernel_size // 2,
+            grid_size=grid,
+            spline_order=spline_order,
+            base_activation=base_activation,
+        )
+        self.scale = nn.Parameter(torch.tensor(float(init_scale)))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        gate = torch.sigmoid(self.gate_conv(x))
+        return x * (1.0 + self.scale * (gate - 0.5))
+
+
+class _BlockConvKAN(nn.Module):
+    """
+    ConvKAN-подобный backbone с возможностью вставки физического и/или релейного
+    блока после каждого сверточного слоя согласно стратегии `placement`.
+
+    placement:
+        'all'  — блоки вставляются после каждого conv-слоя;
+        'last' — только после последнего conv-слоя;
+        'none' — блоки не вставляются (эквивалент обычного ConvKAN).
+
+    Число физических взаимодействий ограничено и зависит от позиции:
+        - на ПЕРВОМ слое со вставкой:  round(first_interaction_ratio * out_c);
+        - на последующих:              min(deep_interactions, out_c).
+
+    Опционально применяет head_relay перед глобальным пулингом
+    (финальное реле «на выходе», как в реальной РЗА).
+    """
+
+    def __init__(
+        self,
+        in_channels: int,
+        num_classes: int,
+        channels: list,
+        kernel_size: int,
+        stride: int,
+        grid_size,
+        spline_order: int,
+        dropout: float,
+        pool_every: int,
+        base_activation,
+        physics_block_builder=None,
+        relay_block_builder=None,
+        placement: str = "all",
+        head_relay_builder=None,
+        first_interaction_ratio: float = 0.25,
+        deep_interactions: int = 4,
+    ):
+        super().__init__()
+        self.stages = nn.ModuleList()
+        curr = in_channels
+        n = len(channels)
+        n_inserted = 0
+
+        for i, out_c in enumerate(channels):
+            curr_grid = grid_size[i] if isinstance(grid_size, list) else grid_size
+            s = stride if i == 0 else 1
+
+            conv = KANConv1d(
+                curr,
+                out_c,
+                kernel_size=kernel_size,
+                stride=s,
+                padding=kernel_size // 2,
+                grid_size=curr_grid,
+                spline_order=spline_order,
+                base_activation=base_activation,
+            )
+            bn = nn.BatchNorm1d(out_c)
+
+            insert = (placement == "all") or (placement == "last" and i == n - 1)
+            phys_block = nn.Identity()
+            relay_block = nn.Identity()
+            if insert:
+                if physics_block_builder is not None:
+                    if n_inserted == 0:
+                        n_inter = max(1, round(first_interaction_ratio * out_c))
+                    else:
+                        n_inter = max(1, min(deep_interactions, out_c))
+                    phys_block = physics_block_builder(out_c, curr_grid, n_inter)
+                if relay_block_builder is not None:
+                    relay_block = relay_block_builder(out_c, curr_grid)
+                n_inserted += 1
+
+            pool = SafeMaxPool1d(2) if (pool_every > 0 and (i + 1) % pool_every == 0) else nn.Identity()
+            drop = nn.Dropout(dropout) if dropout > 0 else nn.Identity()
+
+            self.stages.append(
+                nn.ModuleDict(
+                    {
+                        "conv": conv,
+                        "bn": bn,
+                        "physics": phys_block,
+                        "relay": relay_block,
+                        "pool": pool,
+                        "drop": drop,
+                    }
+                )
+            )
+            curr = out_c
+
+        self.head_relay = head_relay_builder(curr) if head_relay_builder is not None else nn.Identity()
+        self.gap = nn.AdaptiveAvgPool1d(1)
+
+        g0 = grid_size[0] if isinstance(grid_size, list) else grid_size
+        self.classifier = nn.Sequential(
+            KANLinear(curr, curr // 2, grid_size=g0, base_activation=base_activation),
+            KANLinear(curr // 2, num_classes, grid_size=g0, base_activation=base_activation),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        for st in self.stages:
+            x = st["conv"](x)
+            x = st["bn"](x)
+            x = st["physics"](x)
+            x = st["relay"](x)
+            x = st["pool"](x)
+            x = st["drop"](x)
+        x = self.head_relay(x)
+        x = self.gap(x).flatten(1)
+        return self.classifier(x)
+
+
+class PhysicsKANv2(BaseModel):
+    """
+    PhysicsKAN с физическими блоками на глубоких слоях (версия 2).
+
+    На входе, как и в PhysicsKAN, вычисляются Power (I*U) и Admittance (I/U)
+    и объединяются с исходными сигналами. Далее backbone дополнительно
+    содержит резидуальные PhysicsInteractionBlock по стратегии
+    `physics_placement` (по умолчанию 'all' — на каждом слое), что позволяет
+    проверить гипотезу о пользе физики не только на stem.
+
+    Совместима по конструктору с PhysicsKAN (включая режим use_mlp для snapshot).
+    """
+
+    def __init__(
+        self,
+        in_channels: int,
+        num_classes: int,
+        channels: list = [8, 16, 32],
+        kernel_size: int = 3,
+        stride: int = 1,
+        grid_size: int = 5,
+        spline_order: int = 3,
+        dropout: float = 0.2,
+        pool_every: int = 1,
+        base_activation=torch.nn.SiLU,
+        use_mlp: bool = False,
+        input_size: int = 64,
+        physics_placement: str = "all",
+        block_init_scale: float = 0.1,
+        first_interaction_ratio: float = 0.25,
+        deep_interactions: int = 4,
+    ):
+        super().__init__()
+
+        if in_channels % 2 != 0:
+            raise ValueError(
+                f"PhysicsKANv2 requires even number of input channels (I, U pairs), got {in_channels}"
+            )
+
+        self.mult = MultiplicationLayer()
+        self.div = DivisionLayer()
+
+        half_channels = in_channels // 2
+        self.bn_mult = nn.BatchNorm1d(half_channels)
+        self.bn_div = nn.BatchNorm1d(half_channels)
+
+        self.use_mlp = use_mlp
+        conv_in_channels = in_channels + half_channels * 2  # = 2 * in_channels
+
+        if self.use_mlp:
+            # Для snapshot/MLP-режима глубокие блоки не применимы (нет conv-слоёв),
+            # поведение совпадает с PhysicsKAN.
+            pts = input_size // in_channels
+            mlp_input_size = conv_in_channels * pts
+            hidden_sizes = [h * 4 for h in channels]
+            self.processing_net = SimpleKAN(
+                input_size=mlp_input_size,
+                hidden_sizes=hidden_sizes,
+                output_size=num_classes,
+                grid_size=grid_size,
+                spline_order=spline_order,
+                dropout=dropout,
+                base_activation=base_activation,
+            )
+        else:
+            def physics_block_builder(ch: int, grid, n_inter: int):
+                return PhysicsInteractionBlock(
+                    ch,
+                    n_interactions=n_inter,
+                    grid_size=grid,
+                    spline_order=spline_order,
+                    init_scale=block_init_scale,
+                    base_activation=base_activation,
+                )
+
+            self.processing_net = _BlockConvKAN(
+                in_channels=conv_in_channels,
+                num_classes=num_classes,
+                channels=channels,
+                kernel_size=kernel_size,
+                stride=stride,
+                grid_size=grid_size,
+                spline_order=spline_order,
+                dropout=dropout,
+                pool_every=pool_every,
+                base_activation=base_activation,
+                physics_block_builder=physics_block_builder,
+                placement=physics_placement,
+                first_interaction_ratio=first_interaction_ratio,
+                deep_interactions=deep_interactions,
+            )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        s = _finite_tanh(self.bn_mult(_finite_tanh(self.mult(x))))
+        z = _finite_tanh(self.bn_div(_finite_tanh(self.div(x))))
+        x_combined = torch.cat([x, s, z], dim=1)
+        return self.processing_net(x_combined)
+
+
+class _ComplexStemMixin:
+    """
+    Общий комплексный (полярный) stem для cPhysicsKANv2 / rPhysicsKANv2.
+
+    Воспроизводит логику cPhysicsKAN: чётные каналы — амплитуды, нечётные — фазы;
+    физический слой считает комплексные умножение/деление, нормирует ТОЛЬКО
+    амплитуды и согласованно применяет ComplexPairDropout. Требует число каналов,
+    кратное 4 (пары [A, φ] и пары I/U).
+    """
+
+    @staticmethod
+    def _split_amp_phase(x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        return x[:, 0::2, :], x[:, 1::2, :]
+
+    @staticmethod
+    def _stack_amp_phase(amp: torch.Tensor, phase: torch.Tensor) -> torch.Tensor:
+        batch, channels, length = amp.shape
+        out = torch.empty(batch, channels * 2, length, device=amp.device, dtype=amp.dtype)
+        out[:, 0::2, :] = amp
+        out[:, 1::2, :] = phase
+        return out
+
+    def _amp_norm_only(self, x: torch.Tensor, bn: nn.BatchNorm1d) -> torch.Tensor:
+        amp, phase = self._split_amp_phase(x)
+        amp = _finite_tanh(bn(_finite_tanh(amp)))
+        phase = _wrap_phase(phase)
+        amp, phase = self.dropout(amp, phase)
+        return self._stack_amp_phase(amp, phase)
+
+    def _build_complex_stem(
+        self,
+        in_channels: int,
+        phase_bias_b: float,
+        epsilon: float,
+        dropout_p: float,
+    ) -> None:
+        self.dropout = ComplexPairDropout(dropout_p)
+        self.mult = ComplexMultiplicationLayer(phase_bias_b=phase_bias_b)
+        self.div = ComplexDivisionLayer(epsilon=epsilon, phase_bias_b=phase_bias_b)
+        self.bn_mult_amp = nn.BatchNorm1d(in_channels // 4)
+        self.bn_div_amp = nn.BatchNorm1d(in_channels // 4)
+
+    def _complex_stem_forward(self, x: torch.Tensor) -> torch.Tensor:
+        if x.dim() != 3:
+            raise ValueError(f"Ожидается вход [B, C, T], получено {tuple(x.shape)}")
+        if x.shape[1] % 4 != 0:
+            raise ValueError(f"Ожидается число каналов кратное 4, получено {x.shape[1]}")
+        s = self._amp_norm_only(self.mult(x), self.bn_mult_amp)
+        z = self._amp_norm_only(self.div(x), self.bn_div_amp)
+        return torch.cat([x, s, z], dim=1)
+
+
+class cPhysicsKANv2(BaseModel, _ComplexStemMixin):
+    """
+    Комплексная PhysicsKAN с физическими блоками на глубоких слоях (версия 2).
+
+    То же, что и PhysicsKANv2, но в полярной (комплексной) плоскости: на входе —
+    комплексный физический stem (как в cPhysicsKAN), а в backbone дополнительно
+    размещаются резидуальные ComplexPhysicsInteractionBlock (ограниченное число
+    взаимодействий) по стратегии `physics_placement`. Предназначена для валидного
+    сравнения «cPhysicsKAN (физика только на stem) vs cPhysicsKANv2 (физика и
+    глубже)». Требует число каналов, кратное 4.
+    """
+
+    def __init__(
+        self,
+        in_channels: int,
+        num_classes: int,
+        channels: list = [8, 16, 32],
+        kernel_size: int = 3,
+        stride: int = 1,
+        grid_size: int = 5,
+        spline_order: int = 3,
+        dropout: float = 0.2,
+        pool_every: int = 1,
+        base_activation=torch.nn.SiLU,
+        use_mlp: bool = False,
+        input_size: int = 64,
+        phase_bias_b: float = 0.0,
+        epsilon: float = 1e-6,
+        physics_placement: str = "all",
+        block_init_scale: float = 0.1,
+        first_interaction_ratio: float = 0.25,
+        deep_interactions: int = 4,
+    ):
+        super().__init__()
+
+        if in_channels % 4 != 0:
+            raise ValueError(
+                f"cPhysicsKANv2 требует число каналов кратное 4 (пары [A, φ] и I/U), получено {in_channels}"
+            )
+
+        self._build_complex_stem(in_channels, phase_bias_b, epsilon, dropout)
+        self.use_mlp = use_mlp
+        proc_in_channels = in_channels + (in_channels // 2) * 2  # = 2 * in_channels
+
+        if self.use_mlp:
+            pts = input_size // in_channels
+            mlp_input_size = proc_in_channels * pts
+            hidden_sizes = [h * 4 for h in channels]
+            self.processing_net = SimpleKAN(
+                input_size=mlp_input_size,
+                hidden_sizes=hidden_sizes,
+                output_size=num_classes,
+                grid_size=grid_size,
+                spline_order=spline_order,
+                dropout=dropout,
+                base_activation=base_activation,
+            )
+        else:
+            def physics_block_builder(ch: int, grid, n_inter: int):
+                return ComplexPhysicsInteractionBlock(
+                    ch,
+                    n_interactions=n_inter,
+                    grid_size=grid,
+                    spline_order=spline_order,
+                    init_scale=block_init_scale,
+                    base_activation=base_activation,
+                )
+
+            self.processing_net = _BlockConvKAN(
+                in_channels=proc_in_channels,
+                num_classes=num_classes,
+                channels=channels,
+                kernel_size=kernel_size,
+                stride=stride,
+                grid_size=grid_size,
+                spline_order=spline_order,
+                dropout=dropout,
+                pool_every=pool_every,
+                base_activation=base_activation,
+                physics_block_builder=physics_block_builder,
+                placement=physics_placement,
+                first_interaction_ratio=first_interaction_ratio,
+                deep_interactions=deep_interactions,
+            )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.processing_net(self._complex_stem_forward(x))
+
+
+class rPhysicsKANv2(BaseModel, _ComplexStemMixin):
+    """
+    Релейная комплексная PhysicsKAN с органами на глубоких слоях (версия 2).
+
+    Построена на том же комплексном stem и глубоких ComplexPhysicsInteractionBlock,
+    что и cPhysicsKANv2, но дополнительно после каждого вставляемого слоя
+    размещается релейный орган RelayGateBlock, а также (опционально) финальное
+    реле «на выходе» (`relay_at_head=True`) — по аналогии с расположением органа
+    в конце тракта реальной РЗА. Это даёт валидную вложенную линейку сравнения:
+    cPhysicsKANv2 (комплексная физика глубоко) → rPhysicsKANv2 (то же + реле),
+    изолируя именно вклад релейного механизма. Требует число каналов, кратное 4.
+    """
+
+    def __init__(
+        self,
+        in_channels: int,
+        num_classes: int,
+        channels: list = [8, 16, 32],
+        kernel_size: int = 3,
+        stride: int = 1,
+        grid_size: int = 5,
+        spline_order: int = 3,
+        dropout: float = 0.2,
+        pool_every: int = 1,
+        base_activation=torch.nn.SiLU,
+        use_mlp: bool = False,
+        input_size: int = 64,
+        phase_bias_b: float = 0.0,
+        epsilon: float = 1e-6,
+        physics_placement: str = "all",
+        relay_at_head: bool = True,
+        block_init_scale: float = 0.1,
+        first_interaction_ratio: float = 0.25,
+        deep_interactions: int = 4,
+    ):
+        super().__init__()
+
+        if in_channels % 4 != 0:
+            raise ValueError(
+                f"rPhysicsKANv2 требует число каналов кратное 4 (пары [A, φ] и I/U), получено {in_channels}"
+            )
+
+        self._build_complex_stem(in_channels, phase_bias_b, epsilon, dropout)
+        self.use_mlp = use_mlp
+        proc_in_channels = in_channels + (in_channels // 2) * 2  # = 2 * in_channels
+
+        if self.use_mlp:
+            pts = input_size // in_channels
+            mlp_input_size = proc_in_channels * pts
+            hidden_sizes = [h * 4 for h in channels]
+            self.processing_net = SimpleKAN(
+                input_size=mlp_input_size,
+                hidden_sizes=hidden_sizes,
+                output_size=num_classes,
+                grid_size=grid_size,
+                spline_order=spline_order,
+                dropout=dropout,
+                base_activation=base_activation,
+            )
+        else:
+            def physics_block_builder(ch: int, grid, n_inter: int):
+                return ComplexPhysicsInteractionBlock(
+                    ch,
+                    n_interactions=n_inter,
+                    grid_size=grid,
+                    spline_order=spline_order,
+                    init_scale=block_init_scale,
+                    base_activation=base_activation,
+                )
+
+            def relay_block_builder(ch: int, grid):
+                return RelayGateBlock(
+                    ch,
+                    kernel_size=kernel_size,
+                    grid_size=grid,
+                    spline_order=spline_order,
+                    init_scale=block_init_scale,
+                    base_activation=base_activation,
+                )
+
+            head_builder = None
+            if relay_at_head:
+                def head_builder(ch: int):
+                    return RelayGateBlock(
+                        ch,
+                        kernel_size=kernel_size,
+                        grid_size=grid_size,
+                        spline_order=spline_order,
+                        init_scale=block_init_scale,
+                        base_activation=base_activation,
+                    )
+
+            self.processing_net = _BlockConvKAN(
+                in_channels=proc_in_channels,
+                num_classes=num_classes,
+                channels=channels,
+                kernel_size=kernel_size,
+                stride=stride,
+                grid_size=grid_size,
+                spline_order=spline_order,
+                dropout=dropout,
+                pool_every=pool_every,
+                base_activation=base_activation,
+                physics_block_builder=physics_block_builder,
+                relay_block_builder=relay_block_builder,
+                placement=physics_placement,
+                head_relay_builder=head_builder,
+                first_interaction_ratio=first_interaction_ratio,
+                deep_interactions=deep_interactions,
+            )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.processing_net(self._complex_stem_forward(x))
+
+
+class rKANv2(BaseModel, _ComplexStemMixin):
+    """
+    Релейная KAN с глубокими релейными блоками, но БЕЗ глубоких физических блоков.
+
+    Промежуточная модель для абляционного исследования. Изолирует вклад
+    глубокого релейного механизма отдельно от глубокой физики:
+      - cPhysicsKANv2 = complex stem + deep physics (без реле)
+      - rKANv2        = complex stem + deep relay   (без глубокой физики) ← ЭТА
+      - rPhysicsKANv2 = complex stem + deep physics + deep relay (полная)
+
+    Архитектура: комплексный stem (умножение/деление на входе) + _BlockConvKAN
+    с RelayGateBlock после каждого сверточного слоя + финальное реле перед
+    классификатором. Физические блоки (ComplexPhysicsInteractionBlock) НЕ
+    вставляются на глубоких слоях — только релейные.
+
+    Требует число каналов, кратное 4 (пары [A, φ] и пары I/U).
+    """
+
+    def __init__(
+        self,
+        in_channels: int,
+        num_classes: int,
+        channels: list = [8, 16, 32],
+        kernel_size: int = 3,
+        stride: int = 1,
+        grid_size: int = 5,
+        spline_order: int = 3,
+        dropout: float = 0.2,
+        pool_every: int = 1,
+        base_activation=torch.nn.SiLU,
+        use_mlp: bool = False,
+        input_size: int = 64,
+        phase_bias_b: float = 0.0,
+        epsilon: float = 1e-6,
+        relay_at_head: bool = True,
+        block_init_scale: float = 0.1,
+    ):
+        super().__init__()
+
+        if in_channels % 4 != 0:
+            raise ValueError(
+                f"rKANv2 требует число каналов кратное 4 (пары [A, φ] и I/U), получено {in_channels}"
+            )
+
+        self._build_complex_stem(in_channels, phase_bias_b, epsilon, dropout)
+        self.use_mlp = use_mlp
+        proc_in_channels = in_channels + (in_channels // 2) * 2  # = 2 * in_channels
+
+        if self.use_mlp:
+            pts = input_size // in_channels
+            mlp_input_size = proc_in_channels * pts
+            hidden_sizes = [h * 4 for h in channels]
+            self.processing_net = SimpleKAN(
+                input_size=mlp_input_size,
+                hidden_sizes=hidden_sizes,
+                output_size=num_classes,
+                grid_size=grid_size,
+                spline_order=spline_order,
+                dropout=dropout,
+                base_activation=base_activation,
+            )
+        else:
+            def relay_block_builder(ch: int, grid):
+                return RelayGateBlock(
+                    ch,
+                    kernel_size=kernel_size,
+                    grid_size=grid,
+                    spline_order=spline_order,
+                    init_scale=block_init_scale,
+                    base_activation=base_activation,
+                )
+
+            head_builder = None
+            if relay_at_head:
+                def head_builder(ch: int):
+                    return RelayGateBlock(
+                        ch,
+                        kernel_size=kernel_size,
+                        grid_size=grid_size,
+                        spline_order=spline_order,
+                        init_scale=block_init_scale,
+                        base_activation=base_activation,
+                    )
+
+            self.processing_net = _BlockConvKAN(
+                in_channels=proc_in_channels,
+                num_classes=num_classes,
+                channels=channels,
+                kernel_size=kernel_size,
+                stride=stride,
+                grid_size=grid_size,
+                spline_order=spline_order,
+                dropout=dropout,
+                pool_every=pool_every,
+                base_activation=base_activation,
+                physics_block_builder=None,  # НЕТ глубокой физики
+                relay_block_builder=relay_block_builder,
+                placement="all",
+                head_relay_builder=head_builder,
+            )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.processing_net(self._complex_stem_forward(x))
+

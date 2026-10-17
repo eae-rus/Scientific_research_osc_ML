@@ -2,6 +2,7 @@
 Smoke test для проверки работы обновлённой системы датасетов.
 Запускает SimpleMLP на 1 эпоху для быстрой проверки.
 """
+import pytest
 import sys
 import os
 from pathlib import Path

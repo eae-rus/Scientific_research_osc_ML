@@ -1,0 +1,1066 @@
+[
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 1,
+    "locator": "/w:document/w:body/w:p[1]",
+    "style": "papertitle",
+    "text": "ПОДГОТОВКА И АНАЛИЗ НАБОРА ОСЦИЛЛОГРАММ ДЛЯ ИССЛЕДОВАНИЯ ОДНОФАЗНЫХ ЗАМЫКАНИЙ НА ЗЕМЛЮ В КАБЕЛЬНЫХ СЕТЯХ"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 2,
+    "locator": "/w:document/w:body/w:p[2]",
+    "style": "Author",
+    "text": "Евдаков А.Е., Филатова Г.А."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 3,
+    "locator": "/w:document/w:body/w:p[3]",
+    "style": "Affiliation",
+    "text": "Ивановский государственный энергетический университет имени В.И. Ленина "
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 4,
+    "locator": "/w:document/w:body/w:p[4]",
+    "style": "Affiliation",
+    "text": "153003 г. Иваново, ул. Рабфаковская 34"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 5,
+    "locator": "/w:document/w:body/w:p[5]",
+    "style": "Affiliation",
+    "text": "E-mail: eae_rus@mail.ru"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 6,
+    "locator": "/w:document/w:body/w:p[6]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 7,
+    "locator": "/w:document/w:body/w:p[7]",
+    "style": "",
+    "text": "Аннотация"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 8,
+    "locator": "/w:document/w:body/w:p[8]",
+    "style": "",
+    "text": "Состояние вопроса: Однофазные замыкания на землю (ОЗЗ) являются преобладающим видом повреждений в кабельных сетях 6÷35 кВ. Современные устройства релейной защиты накапливают огромные архивы осциллограмм, однако эти «сырые» данные содержат большое количество неинформативных записей. Это создает серьезные препятствия для их использования в исследованиях и при разработке новых алгоритмов релейной защиты."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 9,
+    "locator": "/w:document/w:body/w:p[9]",
+    "style": "",
+    "text": "Материалы и методы: Представлена многоэтапная методология формирования целевого набора данных из большого промышленного архива (50 765 записей), полученного преимущественно из кабельных сетей. Методология включает автоматизированный первичный отбор осциллограмм с признаками ОЗЗ с помощью алгоритма на Python и последующую ручную экспертную верификацию для отсеивания ложных срабатываний и уточнения разметки."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 10,
+    "locator": "/w:document/w:body/w:p[10]",
+    "style": "",
+    "text": "Результаты: Сформирован и верифицирован эталонный набор из 830 осциллограмм, достоверно отражающих процессы при ОЗЗ. В ходе анализа выявлен и систематизирован ряд характерных явлений (искажения формы сигнала, развивающиеся повреждения, коммутационные процессы), которые существенно усложняют автоматическую интерпретацию осциллограмм."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 11,
+    "locator": "/w:document/w:body/w:p[11]",
+    "style": "",
+    "text": "Выводы: Созданный верифицированный набор данных является ценной основой для дальнейших исследований и разработки интеллектуальных систем РЗА. Работа подчеркивает необходимость экспертной верификации при работе с реальными данными и демонстрирует ключевые проблемы, которые должны учитываться при разработке интеллектуальных систем анализа аварийных режимов, в том числе, безуставочной релейной защиты и автоматики."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 12,
+    "locator": "/w:document/w:body/w:p[12]",
+    "style": "",
+    "text": "Ключевые слова: однофазное замыкание на землю (ОЗЗ), релейная защита, осциллограммы, COMTRADE, подготовка данных, верификация данных, интеллектуальные системы."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 13,
+    "locator": "/w:document/w:body/w:p[13]",
+    "style": "papertitle",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 14,
+    "locator": "/w:document/w:body/w:p[14]",
+    "style": "papertitle",
+    "text": "PREPARATION AND ANALYSIS OF AN OSCILLOGRAM DATASET FOR RESEARCH OF SINGLE-PHASE EARTH FAULTS IN CABLE NETWORKS"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 15,
+    "locator": "/w:document/w:body/w:p[15]",
+    "style": "papersubtitle",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 16,
+    "locator": "/w:document/w:body/w:p[16]",
+    "style": "Author",
+    "text": "Evdakov A.E., Filatova G.A."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 17,
+    "locator": "/w:document/w:body/w:p[17]",
+    "style": "Affiliation",
+    "text": "Ivanovo State Power University named after V.I. Lenin"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 18,
+    "locator": "/w:document/w:body/w:p[18]",
+    "style": "Affiliation",
+    "text": " 34 Rabfakovskaya Street, Ivanovo, 153003"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 19,
+    "locator": "/w:document/w:body/w:p[19]",
+    "style": "Affiliation",
+    "text": "E-mail: eae_rus@mail.ru"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 20,
+    "locator": "/w:document/w:body/w:p[20]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 21,
+    "locator": "/w:document/w:body/w:p[21]",
+    "style": "",
+    "text": "Abstract"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 22,
+    "locator": "/w:document/w:body/w:p[22]",
+    "style": "",
+    "text": "Background: Single-phase earth faults (SPEFs) are the predominant type of fault in 6–35 kV cable networks. Modern digital relay protection devices accumulate vast archives of oscillograms; however, this \"raw\" data contains a large number of non-informative records. This creates significant obstacles to their use in research and in the development of new relay protection algorithms."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 23,
+    "locator": "/w:document/w:body/w:p[23]",
+    "style": "",
+    "text": "Materials and Methods: A multi-stage methodology is presented for forming a target dataset from a large industrial archive (50,765 records), predominantly obtained from cable networks. The methodology includes automated primary selection of oscillograms with signs of SPEF using a Python algorithm, and subsequent manual expert verification to filter out false positives and refine the labeling."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 24,
+    "locator": "/w:document/w:body/w:p[24]",
+    "style": "",
+    "text": "Results: A verified reference dataset of 830 oscillograms, reliably reflecting the processes during SPEFs, was formed and verified. The analysis identified and systematized a number of characteristic phenomena (signal waveform distortion, developing faults, switching processes) that significantly complicate the automatic interpretation of oscillograms."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 25,
+    "locator": "/w:document/w:body/w:p[25]",
+    "style": "",
+    "text": "Conclusions: The created verified dataset is a valuable basis for further research and the development of intelligent relay protection systems. The work emphasizes the necessity of expert verification when dealing with real data and demonstrates the key problems that must be considered when developing intelligent systems for emergency mode analysis, including setting-free relay protection and automation."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 26,
+    "locator": "/w:document/w:body/w:p[26]",
+    "style": "",
+    "text": "Key words: single-phase earth fault (SPEF), relay protection, oscillograms, COMTRADE, data preparation, data verification, intelligent systems."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 27,
+    "locator": "/w:document/w:body/w:p[27]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 28,
+    "locator": "/w:document/w:body/w:p[28]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 29,
+    "locator": "/w:document/w:body/w:p[29]",
+    "style": "1",
+    "text": "Введение"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 30,
+    "locator": "/w:document/w:body/w:p[30]",
+    "style": "a3",
+    "text": "Однофазные замыкания на землю (ОЗЗ) являются преобладающим видом повреждений в распределительных сетях 6÷35 кВ, в том числе, кабельных [1]. Современные цифровые устройства релейной защиты (РЗА) накапливают огромные архивы осциллограмм, однако эти «сырые» данные содержат большое количество неинформативных записей, записи сразу нескольких событий, что создает серьезные препятствия для их автоматизированного анализа и последующего использования [2]."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 31,
+    "locator": "/w:document/w:body/w:p[31]",
+    "style": "a3",
+    "text": "Эта ситуация является классическим примером проблемы «больших данных». С одной стороны, цифровизация подстанций открыла доступ к беспрецедентным объемам информации о реальных процессах в сети. С другой — ценность этих данных нивелируется их «зашумленностью» и отсутствием качественной разметки. Разработка интеллектуальных систем РЗА, основанных на методах машинного обучения, напрямую зависит от наличия репрезентативных обучающих выборок. Теоретические модели и симуляции не способны охватить всё многообразие реальных явлений, таких как нелинейность измерительных трансформаторов, каскадное развитие аварий или влияние коммутационных процессов. Именно это и обуславливает острую необходимость в формировании качественных и верифицированных наборов реальных данных для разработки и всестороннего тестирования алгоритмов РЗА нового поколения."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 32,
+    "locator": "/w:document/w:body/w:p[32]",
+    "style": "a3",
+    "text": "Целью настоящей работы является разработка и применение методологии для формирования верифицированного набора осциллограмм ОЗЗ из большого промышленного архива, а также качественный анализ и систематизация явлений, усложняющих автоматическую интерпретацию данных."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 33,
+    "locator": "/w:document/w:body/w:p[33]",
+    "style": "1",
+    "text": "Методология подготовки и верификации набора осциллограмм"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 34,
+    "locator": "/w:document/w:body/w:p[34]",
+    "style": "a3",
+    "text": "Основой для любого исследования, связанного с машинным обучением или углубленным статистическим анализом, является качественный и репрезентативный набор данных. В данной работе был проделан многоэтапный процесс по формированию верифицированного набора осциллограмм однофазных замыканий на землю (ОЗЗ) из большого промышленного архива."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 35,
+    "locator": "/w:document/w:body/w:p[35]",
+    "style": "2",
+    "text": "\t\tИсходные данные"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 36,
+    "locator": "/w:document/w:body/w:p[36]",
+    "style": "a3",
+    "text": "Основой для исследования послужил открытый набор данных «A Dataset of Real-World Oscillograms from Electric Power Grids» [3], содержащий 50 765 осциллограмм в формате COMTRADE [4]. Несмотря на предварительную стандартизацию, проведенную авторами набора, для целенаправленного анализа ОЗЗ исходный массив обладал рядом критических недостатков:"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 37,
+    "locator": "/w:document/w:body/w:p[37]",
+    "style": "bulletlist",
+    "text": "\tНизкая релевантность: Значительная часть (более 98%) записей не содержала искомых событий ОЗЗ, а представляла собой запись коммутаций, других видов повреждений или неинформативный шум."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 38,
+    "locator": "/w:document/w:body/w:p[38]",
+    "style": "bulletlist",
+    "text": "\tСтатистическое смещение: Преобладание записей от устройств БАВР привело к смещению выборки в сторону развивающихся повреждений (переход ОЗЗ в многофазное КЗ), что характерно не для всех случаев ОЗЗ."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 39,
+    "locator": "/w:document/w:body/w:p[39]",
+    "style": "bulletlist",
+    "text": "\tНеоднородность классов напряжения: Наличие осциллограмм из сетей разных классов (от 0,4 до 330 кВ) требовало дополнительной фильтрации для исключения сетей с глухозаземленной нейтралью и корректного учета номинальных напряжений."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 40,
+    "locator": "/w:document/w:body/w:p[40]",
+    "style": "a3",
+    "text": "Указанные особенности обусловили необходимость разработки многоэтапной методологии фильтрации для формирования целевой, репрезентативной выборки. Отметим так же, что данные сложности будут характерны при работе с любыми обобщёнными открытыми архивами. При работате с исходными данными, эти проблемы если и решаются, то только частично, но появляется огромный объём дополнительных сложностей, связанный с предобработкой сильно различающихся и не стандартизированных данных."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 41,
+    "locator": "/w:document/w:body/w:p[41]",
+    "style": "2",
+    "text": "\t\tАвтоматизированный первичный отбор"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 42,
+    "locator": "/w:document/w:body/w:p[42]",
+    "style": "a3",
+    "text": "Для выделения из всего массива осциллограмм, потенциально содержащих ОЗЗ, был разработан и применен специализированный программный алгоритм на языке Python [5]. Алгоритм его работы, ключевые этапы включают следующее (Рис. 1):"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 43,
+    "locator": "/w:document/w:body/w:p[43]",
+    "style": "bulletlist",
+    "text": "\tНормализация сигналов. Загрузка коэффициентов нормализации и приведение мгновенных значений токов и напряжений к безразмерным относительным единицам."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 44,
+    "locator": "/w:document/w:body/w:p[44]",
+    "style": "bulletlist",
+    "text": "\tДетектирование зон ОЗЗ. В рамках каждой осциллограммы анализировались первые гармоники сигналов напряжений нулевой последовательности (U0) и фазных напряжений (Uф) для поиска интервалов, где их уровень превышал заданные пороговые значения по амплитуде и времени процесса."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 45,
+    "locator": "/w:document/w:body/w:p[45]",
+    "style": "bulletlist",
+    "text": "\tФильтрация симметричных режимов. Критически важным шагом была реализация фильтра, отбрасывающего зоны, в которых амплитуды трехфазных напряжений были статистически схожи, что характерно для симметричных нагрузок и междуфазных КЗ, но не для ОЗЗ."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 46,
+    "locator": "/w:document/w:body/w:p[46]",
+    "style": "bulletlist",
+    "text": "\tРасчёт перенапряжений. В найденных зонах ОЗЗ вычислялось максимальное относительное фазное напряжение, на основе которого определялась кратность перенапряжения."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 47,
+    "locator": "/w:document/w:body/w:p[47]",
+    "style": "a3",
+    "text": "Применение данного алгоритма позволило сократить исходную выборку более чем в 27 раз, выделив 1866 осциллограмм, которые с высокой вероятностью содержали искомые режимы ОЗЗ. Результаты автоматического отбора и первичной классификации по максимальной кратности перенапряжения представлены в Таблице 1, столбец «До ручной разметки."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 48,
+    "locator": "/w:document/w:body/w:p[48]",
+    "style": "a3",
+    "text": "Результатом этапа стало предварительное распределение осциллограмм-кандидатов по диапазонам перенапряжений (результат автоматического отбора)"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 49,
+    "locator": "/w:document/w:body/w:tbl[1]/w:tr[1]/w:tc/w:p[1]",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 50,
+    "locator": "/w:document/w:body/w:tbl[1]/w:tr[1]/w:tc/w:p[2]",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 51,
+    "locator": "/w:document/w:body/w:tbl[1]/w:tr[2]/w:tc/w:p",
+    "style": "figurecaption",
+    "text": "Алгоритм первичного отбора осциллограмм ОЗЗ"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 52,
+    "locator": "/w:document/w:body/w:p[49]",
+    "style": "tablehead",
+    "text": "Результаты отбора осциллограмм"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 53,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[1]/w:tc[1]/w:p",
+    "style": "tablecolhead",
+    "text": "Диапазон кратности перенапряжения"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 54,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[1]/w:tc[2]/w:p",
+    "style": "tablecolhead",
+    "text": "Количество осциллограмм"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 55,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[2]/w:tc[1]/w:p",
+    "style": "tablecolhead",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 56,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[2]/w:tc[2]/w:p",
+    "style": "tablecolhead",
+    "text": "До ручного разметки"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 57,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[2]/w:tc[3]/w:p",
+    "style": "tablecolhead",
+    "text": "После ручной разметки"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 58,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[3]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "<1,2"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 59,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[3]/w:tc[2]/w:p",
+    "style": "",
+    "text": "484"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 60,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[3]/w:tc[3]/w:p",
+    "style": "",
+    "text": "10"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 61,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[4]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "1,2÷1,71"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 62,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[4]/w:tc[2]/w:p",
+    "style": "",
+    "text": "401"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 63,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[4]/w:tc[3]/w:p",
+    "style": "",
+    "text": "83"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 64,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[5]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "1,71÷1,75"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 65,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[5]/w:tc[2]/w:p",
+    "style": "",
+    "text": "37"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 66,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[5]/w:tc[3]/w:p",
+    "style": "",
+    "text": "17"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 67,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[6]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "1,75÷2"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 68,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[6]/w:tc[2]/w:p",
+    "style": "",
+    "text": "550"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 69,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[6]/w:tc[3]/w:p",
+    "style": "",
+    "text": "403"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 70,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[7]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "2 ÷2,5"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 71,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[7]/w:tc[2]/w:p",
+    "style": "",
+    "text": "318"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 72,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[7]/w:tc[3]/w:p",
+    "style": "",
+    "text": "286"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 73,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[8]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "2,5÷3"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 74,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[8]/w:tc[2]/w:p",
+    "style": "",
+    "text": "45"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 75,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[8]/w:tc[3]/w:p",
+    "style": "",
+    "text": "31"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 76,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[9]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "3÷3,5"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 77,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[9]/w:tc[2]/w:p",
+    "style": "",
+    "text": "0"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 78,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[9]/w:tc[3]/w:p",
+    "style": "",
+    "text": "0"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 79,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[10]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "3,5÷4"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 80,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[10]/w:tc[2]/w:p",
+    "style": "",
+    "text": "8"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 81,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[10]/w:tc[3]/w:p",
+    "style": "",
+    "text": "0"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 82,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[11]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "4÷4,5"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 83,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[11]/w:tc[2]/w:p",
+    "style": "",
+    "text": "18"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 84,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[11]/w:tc[3]/w:p",
+    "style": "",
+    "text": "0"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 85,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[12]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "4,5÷5"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 86,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[12]/w:tc[2]/w:p",
+    "style": "",
+    "text": "4"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 87,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[12]/w:tc[3]/w:p",
+    "style": "",
+    "text": "0"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 88,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[13]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "> 5"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 89,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[13]/w:tc[2]/w:p",
+    "style": "",
+    "text": "0"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 90,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[13]/w:tc[3]/w:p",
+    "style": "",
+    "text": "0"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 91,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[14]/w:tc[1]/w:p",
+    "style": "tablecopy",
+    "text": "Всего"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 92,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[14]/w:tc[2]/w:p",
+    "style": "",
+    "text": "1866"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 93,
+    "locator": "/w:document/w:body/w:tbl[2]/w:tr[14]/w:tc[3]/w:p",
+    "style": "",
+    "text": "830"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 94,
+    "locator": "/w:document/w:body/w:p[50]",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 95,
+    "locator": "/w:document/w:body/w:p[51]",
+    "style": "2",
+    "text": "\t\tРучная верификация и имеющиеся проблемы "
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 96,
+    "locator": "/w:document/w:body/w:p[52]",
+    "style": "a3",
+    "text": "Следующим этапом стала обязательная ручная верификация всех отобранных алгоритмом осциллограмм. Целью данной процедуры была очистка выборки от ложноположительных срабатываний, уточнение границ ОЗЗ и корректировка расчетных значений перенапряжений в сложных случаях. В процессе верификации была выявлена и систематизирована целая группа проблем, ограничивающих эффективность полностью автоматического анализа."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 97,
+    "locator": "/w:document/w:body/w:p[53]",
+    "style": "a3",
+    "text": "По результатам ручной проверки была сформирована верифицированная выборка, содержащая 830 осциллограмм, которые были использованы для дальнейшего статистического анализа. Итоговое распределение представлено в Таблице I, столбец «После ручной разметки»."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 98,
+    "locator": "/w:document/w:body/w:p[54]",
+    "style": "1",
+    "text": "Анализ типовых сложностей при интерпретации осциллограмм ОЗЗ"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 99,
+    "locator": "/w:document/w:body/w:p[55]",
+    "style": "a3",
+    "text": "Проведение количественного анализа требует предварительной подготовки и ручной оценки набора осциллограмм. Экспертный анализ верифицированной выборки осциллограмм позволил выявить и систематизировать ряд характерных явлений, которые существенно усложняют задачу автоматической идентификации и анализа ОЗЗ. Приведенный ниже анализ иллюстрирует ключевые проблемы, возникшие при формировании итогов в таблице 1 (столбец 3, после ручной разметки), и подчеркивает ценность ручной верификации как этапа создания обучающих выборок для интеллектуальных систем РЗА."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 100,
+    "locator": "/w:document/w:body/w:p[56]",
+    "style": "2",
+    "text": "Искажения формы сигнала из-за нелинейности измерительных трансформаторов и ограничения АЦП"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 101,
+    "locator": "/w:document/w:body/w:p[57]",
+    "style": "a3",
+    "text": "Одной из основных проблем при анализе режимов с высокими перенапряжениями является нелинейность характеристик измерительных трансформаторов напряжения (ТН) и промежуточных датчиков напряжений в устройствах РЗА, а также ограниченность входов АЦП. При значительном увеличении напряжения на неповрежденных фазах сердечник ТН может войти в режим насыщения. Обычно производителями заявляется длительное напряжение порядка 1,9÷2 Uном. Также указанные входа АЦП измерительных устройств могут быть не рассчитаны на такие значения, что приводит к переходу АЦП в режим «плато». Типичный пример такого явления показан на Рис. 2."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 102,
+    "locator": "/w:document/w:body/w:p[58]",
+    "style": "a3",
+    "text": "Как видно из осциллограммы, верхушки синусоид напряжений оказываются «срезанными». Такое искажение делает невозможной корректную оценку истинной амплитуды перенапряжения, приводя к ее занижению. Это не только влияет на точность статистического анализа, но и может негативно сказаться на работе алгоритмов РЗА, использующих амплитудные или фазовые критерии."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 103,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[1]/w:tc/w:p",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 104,
+    "locator": "/w:document/w:body/w:tbl[3]/w:tr[2]/w:tc/w:p",
+    "style": "figurecaption",
+    "text": "Искажение формы напряжения на неповрежденных фазах"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 105,
+    "locator": "/w:document/w:body/w:p[59]",
+    "style": "a3",
+    "text": "При этом, стоит не забывать, что в ряде случаев могут случаться неисправности и в самих трансформаторах напряжения, например, связанные с феррорезонансными явлениями. В следствии этого, на одной из фаз происходит искажение реального сигнала. Это можем видеть на Рис. 3, здесь на ТН, находящимся на секции шин (СШ) по фазе С произошло искажение передаваемого сигнала и было зарегистрировано перенапряжение в 3,7 крат. Однако оно не является перенапряжением в первичной сети, так как ТН, находящийся на приходящей кабельной линии (ТН КЛ), показывал стандартное перенапряжение в 2 Uном. Другим фактором, позволяющим идентифицировать данную неисправность является то, что линейное напряжение перестаёт быть симметричным между фазами, и если на КЛ оно было порядка 104 В по всем группам фаз, то на СШ было 103/181/115 В (АВ / ВС/ СА), что чётко говорит о искажениях в измерительной цепи."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 106,
+    "locator": "/w:document/w:body/w:p[60]",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 107,
+    "locator": "/w:document/w:body/w:tbl[4]/w:tr[1]/w:tc/w:p",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 108,
+    "locator": "/w:document/w:body/w:tbl[4]/w:tr[2]/w:tc/w:p",
+    "style": "figurecaption",
+    "text": "Осциллограмма с неисправностью ТН СШ"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 109,
+    "locator": "/w:document/w:body/w:p[61]",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 110,
+    "locator": "/w:document/w:body/w:tbl[5]/w:tr[1]/w:tc/w:p",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 111,
+    "locator": "/w:document/w:body/w:tbl[5]/w:tr[2]/w:tc/w:p",
+    "style": "figurecaption",
+    "text": "Осциллограмма перехода ОЗЗ в многофазное КЗ. 1 – доаварийный режим, 2 – ОЗЗ, 3 – многофазное КЗ, 4 отключение вводного выключателя, 5 – послеаварийный режим (включение СВ)"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 112,
+    "locator": "/w:document/w:body/w:p[62]",
+    "style": "2",
+    "text": "Сложные и развивающиеся повреждения"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 113,
+    "locator": "/w:document/w:body/w:p[63]",
+    "style": "a3",
+    "text": "Важной особенностью анализируемого набора осциллограмм является его статистическое смещение, обусловленное источником записей. Значительная часть осциллограмм была зарегистрирована устройствами быстродействующего автоматического ввода резерва (БАВР). Следовательно, в выборке преобладают случаи, когда исходное однофазное замыкание на землю развилось в двух- или трёхфазное короткое замыкание, что и вызвало срабатывание защиты. Это накладывает отпечаток на динамику процесса: осциллограмма отражает не «чистое» ОЗЗ, а сложный переходный процесс, включающий моменты замыкания на других фазах и последующего отключения (Рис. 3). Данный факт необходимо учитывать при интерпретации выводов на все случаи ОЗЗ, часть из которых может быть устранена до перехода в междуфазное замыкание."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 114,
+    "locator": "/w:document/w:body/w:p[64]",
+    "style": "2",
+    "text": "Проблема выявление зон ОЗЗ"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 115,
+    "locator": "/w:document/w:body/w:p[65]",
+    "style": "a3",
+    "text": "Коммутационные операции, такие как отключение короткого замыкания или переключения в сети, часто порождают броски напряжения, сопоставимые по амплитуде или превышающие перенапряжения от самого ОЗЗ. Это создает серьезную методологическую сложность."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 116,
+    "locator": "/w:document/w:body/w:p[66]",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 117,
+    "locator": "/w:document/w:body/w:tbl[6]/w:tr[1]/w:tc/w:p",
+    "style": "a3",
+    "text": " "
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 118,
+    "locator": "/w:document/w:body/w:tbl[6]/w:tr[2]/w:tc/w:p",
+    "style": "figurecaption",
+    "text": "Коммутационный процесс и его перенапряжение."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 119,
+    "locator": "/w:document/w:body/w:p[67]",
+    "style": "a3",
+    "text": "Максимальный бросок часто наблюдается не во время протекания ОЗЗ, а в момент ликвидации аварии коммутационной аппаратурой (Рис. 5). В рамках данного исследования такие броски не относились к перенапряжениям, вызванным непосредственно ОЗЗ, однако их учёт мог бы существенно изменить статистику в области высоких кратностей (>2,5 Uном). Отметим, что данный вопрос является особо важным, и требует отдельно обсуждения."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 120,
+    "locator": "/w:document/w:body/w:p[68]",
+    "style": "a3",
+    "text": "Так же коммутационные процессы в сети могут генерировать броски напряжений нулевой последовательности, которые алгоритмы первичного отбора интерпретируют как признаки ОЗЗ. Особенно это характерно для секций шин, находящихся в «холостом» режиме, где отсутствует инерционная нагрузка, способная демпфировать высокочастотные колебания (Рис. 6)."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 121,
+    "locator": "/w:document/w:body/w:p[69]",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 122,
+    "locator": "/w:document/w:body/w:tbl[7]/w:tr[1]/w:tc/w:p",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 123,
+    "locator": "/w:document/w:body/w:tbl[7]/w:tr[2]/w:tc/w:p",
+    "style": "figurecaption",
+    "text": "Коммутационный процесс, имитирующий ОЗЗ."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 124,
+    "locator": "/w:document/w:body/w:p[70]",
+    "style": "2",
+    "text": "Кратковременные ОЗЗ"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 125,
+    "locator": "/w:document/w:body/w:p[71]",
+    "style": "a3",
+    "text": "Наряду с авариями, которые легко определить однозначно, в сетях часто возникают кратковременные, слабовыраженные ОЗЗ с малой токовой и напряженческой составляющей. Такие события могут быть вызваны, например, кратковременным пробоем изоляции с последующим самопогасанием дуги. На Рис. 7 показан пример такого затухающего процесса ОЗЗ. Сложность их анализа заключается в том, что их осциллограммы трудноотличимы от индустриальных помех, что требует от алгоритмов защиты высокой чувствительности и, одновременно, помехоустойчивости. То есть выявленное событие может быть не разовым пробоем, а внешней коммутацией."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 126,
+    "locator": "/w:document/w:body/w:p[72]",
+    "style": "a3",
+    "text": "В рассмотренном массиве до ручной разметки существовало 885 осциллограмм, в которых перенапряжения составили менее 1,71 Uном. Из них ручной разметкой было выделено 93события ОЗЗ."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 127,
+    "locator": "/w:document/w:body/w:p[73]",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 128,
+    "locator": "/w:document/w:body/w:tbl[8]/w:tr[1]/w:tc/w:p",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 129,
+    "locator": "/w:document/w:body/w:tbl[8]/w:tr[2]/w:tc/w:p",
+    "style": "figurecaption",
+    "text": "Осциллограмма слабовыраженного (затухающего) ОЗЗ"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 130,
+    "locator": "/w:document/w:body/w:p[74]",
+    "style": "2",
+    "text": "Прочие факторы, усложняющие анализ"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 131,
+    "locator": "/w:document/w:body/w:p[75]",
+    "style": "a3",
+    "text": "Помимо перечисленных, на корректность интерпретации осциллограмм влияет ряд других факторов, например, связанных с конфигурацией и физикой измерительных систем:"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 132,
+    "locator": "/w:document/w:body/w:p[76]",
+    "style": "a3",
+    "text": "Встречались случаи, когда в качестве фазных напряжений в терминалы РЗА были заведены линейные значения, подписанные как фазные, что полностью искажало картину. И в нормальном режиме регистрировалось как ОЗЗ, хотя формально все критерии (например, наличие U0) выполнялись."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 133,
+    "locator": "/w:document/w:body/w:p[77]",
+    "style": "a3",
+    "text": "Традиционные электромагнитные ТН могут сглаживать/занижать быстрые пики перенапряжений. В то же время, современные ёмкостные датчики, обладая более широкой полосой пропускания, могут регистрировать излишние высокочастотные всплески, не связанные с основной гармоникой процесса."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 134,
+    "locator": "/w:document/w:body/w:p[78]",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 135,
+    "locator": "/w:document/w:body/w:p[79]",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 136,
+    "locator": "/w:document/w:body/w:p[80]",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 137,
+    "locator": "/w:document/w:body/w:p[81]",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 138,
+    "locator": "/w:document/w:body/w:p[82]",
+    "style": "a3",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 139,
+    "locator": "/w:document/w:body/w:p[83]",
+    "style": "1",
+    "text": "Выводы"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 140,
+    "locator": "/w:document/w:body/w:p[84]",
+    "style": "a3",
+    "text": "По результатам проведенной работы, посвященной подготовке и анализу набора осциллограмм для изучения ОЗЗ, можно сформулировать следующие основные выводы:"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 141,
+    "locator": "/w:document/w:body/w:p[85]",
+    "style": "a3",
+    "text": "1) Разработана и апробирована многоэтапная методология, позволившая из «сырого» промышленного архива (50 765 записей) сформировать целевой верифицированный набор из 830 осциллограмм, достоверно отражающих процессы при однофазных замыканиях на землю в сетях 6÷35 кВ."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 142,
+    "locator": "/w:document/w:body/w:p[86]",
+    "style": "a3",
+    "text": "2) В ходе экспертной верификации выявлен и систематизирован ряд нетривиальных явлений, критически усложняющих автоматическую интерпретацию осциллограмм. Ключевыми из них являются: искажение формы сигналов из-за нелинейности измерительных трансформаторов, развитие ОЗЗ в многофазные короткие замыкания, а также схожесть формы протекающих процессов при ОЗЗ и коммутациях."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 143,
+    "locator": "/w:document/w:body/w:p[87]",
+    "style": "a3",
+    "text": "3) Проделанная работа убедительно демонстрирует, что на текущем технологическом уровне этап ручной экспертной верификации является абсолютно неотъемлемой частью подготовки данных для исследований в области РЗА. Автоматизированные алгоритмы, даже самые совершенные, на данном этапе могут служить лишь инструментом первичного отбора, значительно сокращая трудозатраты. Однако только эксперт способен корректно интерпретировать сложные и нетривиальные случаи, обогащая итоговый набор данных ценными метаданными. Созданный эталонный набор, в отличие от синтетических моделей, содержит реальные шумы, переходные процессы и всё многообразие явлений, что делает его незаменимой и достоверной основой для обучения, тестирования и сравнительного анализа интеллектуальных алгоритмов релейной защиты и автоматики, в том числе безуставочных."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 144,
+    "locator": "/w:document/w:body/w:p[88]",
+    "style": "5",
+    "text": "Список литературы"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 145,
+    "locator": "/w:document/w:body/w:p[89]",
+    "style": "references",
+    "text": "Защиты от замыканий на землю в электрических сетях 6-10 кв / В.А. Шуин, А.В. Гусенков. - Москва : Энергопрогресс : Энергетик, 2001. - 103 с. : ил., табл.; 20 см. - (Библиотечка электротехника : Прил. к журн. \"Энергетик\", ISSN 0013-7278; Вып. 11(35))."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 146,
+    "locator": "/w:document/w:body/w:p[90]",
+    "style": "references",
+    "text": "Алексеев Л. Л., Вуколов В. Ю., Кривоногов С. В., Пнев Е. Р. Определение вида повреждения распределительных электрических сетей 6-35 кВ сельскохозяйственного назначения на основе анализа осциллограмм аварийных событий // Вестник аграрной науки Дона. – 2018. – № 3 (43). – С. 49-58."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 147,
+    "locator": "/w:document/w:body/w:p[91]",
+    "style": "references",
+    "text": "Евдаков А.Е., Филатова Г.А. A A Dataset of Real-World Oscillograms from Electric Power Grids. V. 5 : [Набор данных]. – Figshare, 2024. – URL: https://doi.org/10.6084/m9.figshare.28465427.v5 (дата обращения: 14.10.2025). – DOI: 10.6084/m9.figshare.28465427.v5."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 148,
+    "locator": "/w:document/w:body/w:p[92]",
+    "style": "references",
+    "text": "ГОСТ Р МЭК 60255-24-2013. Реле измерительные и защитная аппаратура. Часть 24. Единый формат для обмена данными о переходных процессах (COMTRADE) для электроэнергетических систем"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 149,
+    "locator": "/w:document/w:body/w:p[93]",
+    "style": "references",
+    "text": "Свидетельство о государственной регистрации программы для ЭВМ № 2025613841 Рос. Федерация. Программа по сбору и подготовке для публичного использования осциллограмм сигналов, регистрируемых на электроэнергетических объектах / А. Е. Евдаков, А. В. Маколдин, А. Е. Коваленко, Г. А. Филатова, А. А. Яблоков ; заявитель и правообладатель ФГБОУВО «Ивановский государственный энергетический университет имени В.И. Ленина». – № 2025613841; заявл. 11.02.2025 ; зарегистр. 17.02.2025."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 150,
+    "locator": "/w:document/w:body/w:p[94]",
+    "style": "references",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 151,
+    "locator": "/w:document/w:body/w:p[95]",
+    "style": "references",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 152,
+    "locator": "/w:document/w:body/w:p[96]",
+    "style": "",
+    "text": ""
+  }
+]

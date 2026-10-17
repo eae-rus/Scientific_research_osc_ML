@@ -1,0 +1,163 @@
+[
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 1,
+    "locator": "/w:document/w:body/w:p[1]",
+    "style": "1",
+    "text": "Вопрос 3"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 2,
+    "locator": "/w:document/w:body/w:p[2]",
+    "style": "2",
+    "text": "Вопрос"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 3,
+    "locator": "/w:document/w:body/w:p[3]",
+    "style": "",
+    "text": "«3) Хотя набор данных содержит записи с преобладанием шума, подробный анализ характеристик шума и рекомендации по методам фильтрации/шумоподавления отсутствуют. Авторам предлагается добавить анализ характеристик шума и методы последующей обработки данных.»"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 4,
+    "locator": "/w:document/w:body/w:p[4]",
+    "style": "2",
+    "text": "Ответ"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 5,
+    "locator": "/w:document/w:body/w:p[5]",
+    "style": "",
+    "text": "Да, вы правы, данные содержат зашумление как в данных, так и в самих файлах («пустые» осциллограммы). Однако они для этого и подготавливались, так как на различных математических моделях можно сгенерировать большие объёмы данных, и подобные датасеты не являются сложными для нахождения. И в подобные осциллограммы даже можно добавить зашумления. Но это всё будет всё равно моделями. И в итоге в реальных условиях, на реальных измерениях, может быть совсем непредсказуемое поведение разрабатываемых устройств. Так что зашумлённость данных наоборот считает важным и нужным фактором."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 6,
+    "locator": "/w:document/w:body/w:p[6]",
+    "style": "",
+    "text": "Про обработку же данных можем отметить следующие:"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 7,
+    "locator": "/w:document/w:body/w:p[7]",
+    "style": "",
+    "text": "- Первичный отбор (фильтрация) «пустых» осциллограмм (без событий) был проведён и указан в отдельных файлах (вроде бы есть ведь? Создавался отдельный файл специально.). Да, в итоге стало меньше, чем 51к, но и исходные данные могут быть полезны, для исключения неправильной работы."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 8,
+    "locator": "/w:document/w:body/w:p[8]",
+    "style": "",
+    "text": "- Для борьбы с шумом в стандартной релейной защите используется Фурье преобразование и работа по 1 гармоники (в ряде конкретных случаев по некоторым другим)."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 9,
+    "locator": "/w:document/w:body/w:p[9]",
+    "style": "",
+    "text": "- Если обучать нейронные сети на мгновенных значениях, то как раз наличие шума в сигналах и является важной задачей исследований, и для этого будут проводиться отдельные исследования. Так как данные осциллограммы записаны с реальных устройств, а значит именно с такими значениями будут работать разрабатываемые программы."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 10,
+    "locator": "/w:document/w:body/w:p[10]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 11,
+    "locator": "/w:document/w:body/w:p[11]",
+    "style": "2",
+    "text": "Доп. комментарий:"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 12,
+    "locator": "/w:document/w:body/w:p[12]",
+    "style": "",
+    "text": "По сути, главная идея в том, что шум в сигналах как раз важный аспект. А как с ним бороться, это вопрос других исследований по разработке моделей."
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 13,
+    "locator": "/w:document/w:body/w:p[13]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 14,
+    "locator": "/w:document/w:body/w:p[14]",
+    "style": "",
+    "text": "\n"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 15,
+    "locator": "/w:document/w:body/w:p[15]",
+    "style": "1",
+    "text": "Вопрос 5"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 16,
+    "locator": "/w:document/w:body/w:p[16]",
+    "style": "2",
+    "text": "Вопрос"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 17,
+    "locator": "/w:document/w:body/w:p[17]",
+    "style": "",
+    "text": "«5) Рисунки в статье следует пересмотреть. Шрифт на рисунках 12 и 2 не соответствует шрифту на других рисунках. Кроме того, рисунок 2 следует пересмотреть для лучшей наглядности. Авторам рекомендуется использовать более эффективные методы визуализации, такие как:"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 18,
+    "locator": "/w:document/w:body/w:p[18]",
+    "style": "2",
+    "text": "Ответ"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 19,
+    "locator": "/w:document/w:body/w:p[19]",
+    "style": "",
+    "text": "Текст "
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 20,
+    "locator": "/w:document/w:body/w:p[20]",
+    "style": "",
+    "text": ""
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 21,
+    "locator": "/w:document/w:body/w:p[21]",
+    "style": "2",
+    "text": "Доп. комментарий:"
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 22,
+    "locator": "/w:document/w:body/w:p[22]",
+    "style": "",
+    "text": "Текст "
+  },
+  {
+    "story_part": "word/document.xml",
+    "paragraph_index": 23,
+    "locator": "/w:document/w:body/w:p[23]",
+    "style": "",
+    "text": ""
+  }
+]
