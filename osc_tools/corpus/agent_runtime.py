@@ -30,7 +30,7 @@ HEADINGS = ('Краткое описание', 'Контекст и развит
             'Записи и связь с эпизодами', 'Неустановленное и пригодность', 'Иная категория',
             'Служебные сведения — исключить из распространяемого текста')
 READABLE = {'.doc', '.docx', '.pdf', '.txt', '.log'}
-IMAGE_TYPES = {'.png', '.jpg', '.jpeg', '.webp', '.gif'}
+IMAGE_TYPES = {'.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp', '.tif', '.tiff'}
 TOOLS = ('get_manifest', 'read_document', 'search_document', 'render_pdf_page', 'get_image',
          'record_image_observation', 'add_claim', 'audit', 'submit_report')
 
@@ -143,7 +143,17 @@ class CaseRuntime:
             raise ValueError('Кодировку можно задавать только для TXT/LOG')
         cache = self.root / 'extractions' / (file_id + ('__' + encoding if encoding else '') + '.json')
         if cache.exists():
-            return json.loads(cache.read_text(encoding='utf-8'))
+            result = json.loads(cache.read_text(encoding='utf-8'))
+            # Восстанавливаем связи изображений при чтении ранее созданного кэша:
+            # файл извлечения мог сохраниться до контрольной точки состояния.
+            for i, image in enumerate(result.get('images', []), 1):
+                if image.get('extracted_path'):
+                    target = Path(image['extracted_path']).resolve(strict=True)
+                    if not target.is_relative_to(self.root):
+                        raise ValueError('Изображение из кэша выходит за рабочий каталог')
+                    self.state['images'].setdefault(f'{file_id}_I{i}', {'path': str(target), 'source_id': file_id,
+                        'locator': image['locator'], 'sha256': sha256(target), 'status': 'not_delivered'})
+            return result
         media = self.root / 'extractions' / (file_id + '__media')
         if encoding:
             result = {'source_id': file_id, 'source_path': str(path), 'sha256': entry['sha256'], **read_text(path, encoding)}
@@ -275,8 +285,19 @@ class CaseRuntime:
             _, path = self._file(image_id)
             if path.suffix.lower() not in IMAGE_TYPES:
                 raise ValueError('Нужен поддерживаемый растровый файл')
+            original_sha = sha256(path)
+            if path.suffix.lower() in {'.bmp', '.tif', '.tiff'}:
+                from PIL import Image
+                target = self.root / 'extractions' / (image_id + '__image.png')
+                with Image.open(path) as decoded:
+                    if decoded.width * decoded.height > 32_000_000:
+                        raise ValueError('Изображение требует отдельного инструмента областей')
+                    if getattr(decoded, 'n_frames', 1) > 1:
+                        raise ValueError('Многостраничный TIFF требует выбора страницы; первый кадр не подставляется автоматически')
+                    decoded.convert('RGB').save(target)
+                path = target
             image = self.state['images'].setdefault(image_id, {'path': str(path), 'source_id': image_id,
-                'locator': 'image/full', 'sha256': sha256(path), 'status': 'not_delivered'})
+                'locator': 'image/full', 'sha256': sha256(path), 'source_sha256': original_sha, 'status': 'not_delivered'})
         else:
             image = self.state['images'][image_id]
             path = Path(image['path']).resolve(strict=True)

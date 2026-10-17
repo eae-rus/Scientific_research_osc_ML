@@ -120,6 +120,12 @@ class AgentRuntimeTests(unittest.TestCase):
         self.assertEqual(len(list((workspace / 'extractions' / (file_id + '__media')).glob('*'))), 1)
         runtime.call('read_document', {'file_id': file_id})
 
+        # Кэш мог быть создан перед сохранением состояния; связи должны вернуться.
+        runtime.state['images'] = {}
+        result = runtime.call('read_document', {'file_id': file_id})
+        self.assertEqual(len(result['images']), 2)
+
+
     def test_unknown_id_and_shell_tool_are_rejected(self):
         with self.assertRaises(KeyError):
             self.runtime.call('read_document', {'file_id': '../note.txt'})
