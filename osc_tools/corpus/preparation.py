@@ -26,9 +26,9 @@ from .document_reading import SEVEN_ZIP
 
 @dataclass
 class PreparationConfig:
-    """Параметры одного повторяемого прохода; выход всегда вне исходного корня."""
+    """Параметры прохода; output_root=None включает подготовку рабочей копии на месте."""
     source_root: str
-    output_root: str
+    output_root: str | None = None
     seed_inventory: str | None = None
     years: tuple[str, ...] = ()
     extract_archives: bool = True
@@ -39,6 +39,7 @@ class PreparationConfig:
     seven_zip: str | None = None
     write_source_indexes: bool = False
     blob_root: str | None = None
+    verify_unchanged_hashes: bool = False
 
 
 def md5(path):
@@ -71,11 +72,12 @@ class CorpusPreparer:
     def __init__(self, config):
         self.config = config
         self.source = Path(config.source_root).resolve(strict=True)
-        self.output = Path(config.output_root).resolve()
-        if not self.source.is_dir() or self.output.is_relative_to(self.source) or self.source.is_relative_to(self.output):
+        self.in_place = config.output_root is None
+        self.output = self.source / '_phase6' if self.in_place else Path(config.output_root).resolve()
+        if not self.source.is_dir() or (not self.in_place and (self.output.is_relative_to(self.source) or self.source.is_relative_to(self.output))):
             raise ValueError('Выход должен быть отдельно от исходного корня')
         self.blob_root = Path(config.blob_root).resolve() if config.blob_root else self.output / 'blobs'
-        if self.blob_root.is_relative_to(self.source) or self.source.is_relative_to(self.blob_root):
+        if not self.in_place and (self.blob_root.is_relative_to(self.source) or self.source.is_relative_to(self.blob_root)):
             raise ValueError('Хранилище blob должно быть вне исходного корня')
         if any(not re.fullmatch(r'\d{4}', year) for year in config.years):
             raise ValueError('Годы задаются четырьмя цифрами')
@@ -107,6 +109,20 @@ class CorpusPreparer:
             except UnicodeDecodeError:
                 decoded = raw.decode('cp1251', errors='replace')
             entry['text_empty'] = not decoded.strip(' \r\n\t\x00')
+        if self.in_place:
+            target = input_root / logical_path
+            if not target.resolve().is_relative_to(self.source):
+                raise ValueError('Рабочее извлечение выходит за корень копии')
+            if source.resolve() != target.resolve():
+                target.parent.mkdir(parents=True,exist_ok=True)
+                if target.exists() and sha256(target) != digest:
+                    raise FileExistsError('Существующее извлечение отличается по байтам')
+                if not target.exists():
+                    shutil.copy2(source,target)
+            if sha256(target) != digest:
+                raise ValueError('Рабочее извлечение изменилось')
+            return {**entry,'prepared_path':str(target),'preparation_status':'source_reference' if source.resolve() == target.resolve() else 'selected_member_extracted',
+                    'agent_content_read':False}
         blob = self.blob_root / digest[:2] / digest
         if not blob.exists():
             blob.parent.mkdir(parents=True, exist_ok=True)
@@ -230,7 +246,8 @@ class CorpusPreparer:
                         else:
                             item['status'] = 'depth_limit_skipped'
                     else:
-                        logical = f'_archives/{digest[:16]}/{member["name"]}'
+                        prefix = '_phase6_extracted' if self.in_place else '_archives'
+                        logical = f'{prefix}/{digest[:16]}/{member["name"]}'
                         saved = self.store(temporary, input_root, logical, member_origin)
                         entries.append(saved)
                         item.update(status='extracted', sha256=saved['sha256'], prepared_path=saved.get('prepared_path'))
@@ -244,6 +261,9 @@ class CorpusPreparer:
 
     def run(self):
         """Подготовить существующие папки и группы одиночных документов корня года."""
+        if self.in_place:
+            from .in_place import prepare_in_place
+            return prepare_in_place(self)
         seed = json.loads(Path(self.config.seed_inventory).read_text(encoding='utf-8-sig')) if self.config.seed_inventory else {}
         registry = dict(seed.get('case_registry', {}))
         registry_aliases = dict(seed.get('registry_aliases', {}))
@@ -359,7 +379,7 @@ def prepare_agents(prepared_root, instruction, vocabulary, case_ids=None, run_na
     if not re.fullmatch(r'[A-Za-z0-9_-]+', run_name):
         raise ValueError('Некорректное имя запуска')
     # agent_runtime требует выход вне source_root; используем соседний каталог запусков.
-    destination = root.parent / (root.name + '__' + run_name)
+    destination = root / 'agent_runs' / run_name if inventory.get('mode') == 'in_place' else root.parent / (root.name + '__' + run_name)
     contexts = []
     for case in inventory['cases']:
         if case['case_id'] not in selected:
@@ -367,8 +387,10 @@ def prepare_agents(prepared_root, instruction, vocabulary, case_ids=None, run_na
         workspace = destination / case['case_id']
         if workspace.exists() and reuse_existing:
             manifest = json.loads((workspace / 'manifest.json').read_text(encoding='utf-8'))
-            source = (root / case['source_folder']).resolve(strict=True)
+            source = (Path(inventory['source_root']) / case['source_folder']).resolve(strict=True)
             fresh = folder_inventory(source)
+            if 'files_to_include' in case:
+                fresh['files'] = [f for f in fresh['files'] if f['path'] in case['files_to_include']]
             signature = lambda files: sorted((f['path'], f.get('sha256'), f.get('size')) for f in files)
             if (Path(manifest['source_root']).resolve() != source or signature(manifest['files']) != signature(fresh['files']) or
                 manifest['instruction_sha256'] != sha256(Path(instruction)) or manifest['vocabulary_sha256'] != sha256(Path(vocabulary))):

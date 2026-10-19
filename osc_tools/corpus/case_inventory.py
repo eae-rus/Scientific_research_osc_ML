@@ -40,6 +40,9 @@ def classify(name: str) -> dict:
     ext = p.suffix.lower()
     if p.name.startswith('~$'):
         return {'role': 'temporary_office_file'}
+    if ext in {'.dex','.osc'}:
+        return {'role':'recording_candidate','format':'unparsed_vendor_container','read_status':'not_read',
+                'container_contents':'not_inspected'}
     try:
         kind = detect_format(p)
         component = ext == '.dat' or bool(re.fullmatch(r'\.d0\d+', ext))
@@ -115,10 +118,15 @@ def folder_inventory(folder: Path, max_archive_members: int = 2000) -> dict:
             onerror=lambda exc: errors.append(str(exc))):
         current = Path(directory)
         for name in list(dirs):
+            if name == '_phase6':
+                dirs.remove(name)
+                continue
             if (current / name).is_symlink() or not (current/name).resolve().is_relative_to(folder):
                 dirs.remove(name)
                 errors.append(f'Skipped directory link: {(current/name).relative_to(folder)}')
         for name in sorted(files):
+            if name in {'_phase6_provenance.json','_phase6_record_index.json'}:
+                continue
             path = current / name
             item = {'path': path.relative_to(folder).as_posix(), **classify(name)}
             try:

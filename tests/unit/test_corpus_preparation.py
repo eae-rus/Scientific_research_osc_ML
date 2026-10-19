@@ -88,6 +88,15 @@ class PreparationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             CorpusPreparer(PreparationConfig(str(self.source), str(self.source / 'output')))
 
+    def test_dex_is_candidate_container_without_claiming_decoding(self):
+        (self.case/'unknown.dex').write_bytes(b'opaque vendor bytes')
+        output, _ = self.run_prepare()
+        inventory = json.loads((output/'original_inventory.json').read_text(encoding='utf-8'))
+        self.assertEqual(inventory['cases'][0]['recording_presence'],'candidates_found')
+        file = inventory['cases'][0]['files'][0]
+        self.assertEqual(file['format'],'unparsed_vendor_container')
+        self.assertEqual(file['container_contents'],'not_inspected')
+
     def test_nested_archive_respects_depth(self):
         nested = io.BytesIO()
         with zipfile.ZipFile(nested, 'w') as archive:
