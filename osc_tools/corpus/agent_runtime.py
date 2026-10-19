@@ -77,14 +77,19 @@ def prepare(inventory_path, case_id, output, instruction, vocabulary):
     if not source.is_relative_to(corpus):
         raise ValueError('Исходная папка выходит за пределы корпуса')
     output = Path(output).resolve()
-    if output.is_relative_to(corpus) or corpus.is_relative_to(output):
-        raise ValueError('Рабочий каталог должен быть вне исходного корпуса')
+    if output.is_relative_to(source) or source.is_relative_to(output):
+        raise ValueError('Рабочий каталог должен быть отдельно от входной папки комплекта')
     instruction, vocabulary = Path(instruction).resolve(), Path(vocabulary).resolve()
     instruction_text = instruction.read_text(encoding='utf-8-sig')
     vocabulary_text = vocabulary.read_text(encoding='utf-8-sig')
     # Случаи настройки и ссылки на старые отчёты не передаются новому анализатору.
     instruction_text = re.sub(r'(?ms)^## 9\..*?(?=^## 10\.)', '', instruction_text)
     fresh = folder_inventory(source)
+    if 'files_to_include' in cases[0]:
+        allowed = set(cases[0]['files_to_include'])
+        if not allowed.issubset({f['path'] for f in fresh['files']}):
+            raise ValueError('Подготовленные файлы отсутствуют: повторите подготовку')
+        fresh['files'] = [f for f in fresh['files'] if f['path'] in allowed]
     for index, entry in enumerate(fresh['files'], 1):
         entry['file_id'] = f'F{index:04d}'
     output.mkdir(parents=True, exist_ok=False)

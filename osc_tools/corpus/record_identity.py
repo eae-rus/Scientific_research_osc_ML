@@ -59,7 +59,8 @@ def build_record_index(provenance):
         # Непривязанный DAT/D01 не объявляется полноценной записью.
         case_index = {'case_id': case['case_id'], 'records': [r for r in records if r['case_id'] == case['case_id']],
             'unpaired_components': [f for k, f in files.items() if k not in used and f.get('role') == 'recording_component']}
-        write_json(Path(case['input_root']).parent / 'record_index.json', case_index)
+        metadata = Path(case.get('metadata_root',Path(case['input_root']).parent))
+        write_json(metadata / 'record_index.json', case_index)
     return {'schema_version': '0.1', 'source_root': provenance['source_root'], 'records': records,
             'matching_policy': 'all exact matches retained; transformed bytes require registered lineage'}
 

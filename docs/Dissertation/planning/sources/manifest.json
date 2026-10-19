@@ -8,7 +8,10 @@
     "docs/Dissertation/planning/integration/rewrite_proposals/ch03.md": "c7f1351a11dff80ac9287c1f0a8da5010b690846bdaee0205d251b5963990da0",
     "docs/Dissertation/planning/integration/rewrite_proposals/ch05.md": "6c0b24caebe2a7975a0185ac5ad46e7bfe8c17c20860bf7fa6b6ac145e8a464c",
     "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex": "ab33ecb555bbd2c2150e496a1ef4c7c95566b02830e2d827fcc9bbd0edac429c",
-    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex": "dfe04c2d4c7fe1a6097417e2cd7ae5241624503b36d83d9d68d847452f4d0a68"
+    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex": "dfe04c2d4c7fe1a6097417e2cd7ae5241624503b36d83d9d68d847452f4d0a68",
+    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec01_evaluation_methodology.tex": "dafc830db53337d7bd93ba752b25437d9d2e2150e5d8c62f5df6b165da82c4d6",
+    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec03_signal_representations.tex": "09a6facfc928fa99a57edc61b5e4510e6afc3fef450318423bb3f8c6c86efa03",
+    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec04_training_protocol.tex": "a764b04b374a73d2b2f243744719110839c7fdaf76308274212fee5cdbc15a42"
   },
   "sources": [
     {
@@ -5904,17 +5907,21 @@
     "docs/Dissertation/planning/handoffs/D00.md": "b038cbf0c0757d6ecf366ec7f0f15fe7e823f55fa8c2aecc4fa1c77285661cf4",
     "docs/Dissertation/planning/integration/rewrite_proposals/ch03.md": "de6d73ae2a95fecfebf68d33d2ea540bd7c5cf07d1a559a23fe4572724d07ba3",
     "docs/Dissertation/planning/integration/rewrite_proposals/ch05.md": "b4057fea4b1947ea7f3558bb52cf12bcfac967a14ef68319a3f514220c2e5ae2",
-    "docs/Dissertation/planning/questions.md": "8dd26690475ef5c371b0d2b2ad624305f4d7ca76e5f65f1f4c75bb91903e1720",
+    "docs/Dissertation/planning/questions.md": "3c2022ffca309e002a3c501cece1449d5c2c7bd911ac5595d33cfe628d303028",
     "docs/Dissertation/planning/sources/PDR-05/limitations_and_comments.md": "bf40ebd6091f5235bea00db2d9c5599fa51250dccfd872ea36c0c61661626072",
     "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex": "0a24e4c9137e8dee28b6db890175143043e7596da25faec2c76facb6d96266f9",
-    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec01_evaluation_methodology.tex": "984ca92c0acb133d3a2f2ae3fd1d1ad7c7baca245187c5b73abfcba09bdb0e5e",
+    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec03_signal_representations.tex": "582fb9ff17a69b9bd06af376858c83ac20d802371579ec9330bcdbd378440e35",
+    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec04_training_protocol.tex": "82b89715a5bff8665ff0f261914a239316874b240789945b78fc2778c5f67beb",
+    "docs/Dissertation/manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex": "1878f1190749fd6644f3d64f0ee8b9aa07784d2551e71da8d7cde39866c57bf6"
   },
   "verification_summary": {
     "unchanged_source_files": 290,
     "c02_steps": 45,
     "c03_tasks": 52,
     "original_comment_ids_covered": 333,
-    "author_annotations_preserved": 63,
+    "author_annotations_preserved": 71,
     "task_graph": "acyclic",
     "scientific_reading": "not_complete"
   },
@@ -5954,7 +5961,8 @@
       "D03-003",
       "D04-001",
       "D04-002",
-      "D04-003"
+      "D04-003",
+      "D04-004"
     ],
     "review_scoped_parts": [
       "C02-PDR-05-03-002"
@@ -6345,11 +6353,11 @@
   ],
   "current_reading_pdf": {
     "path": "docs/Dissertation/build/reading/latex/dissertation_review.pdf",
-    "pages": 158,
-    "task": "D04-003",
+    "pages": 161,
+    "task": "D04-004",
     "review_pages": [
-      121,
-      140
+      136,
+      139
     ]
   },
   "author_input_revision_20261011": {
@@ -6378,5 +6386,25 @@
       "AA063"
     ],
     "figure_policy": "Seven author PNGs used unchanged; obsolete PDF hashes retained in proof, files removed."
+  },
+  "current_annotated_pdf": {
+    "path": "docs/Dissertation/build/reading/latex/dissertation_comments.pdf",
+    "pages": 169,
+    "task": "D04-004",
+    "scope": "Inline author notes in chapters 4–5; one source/registry; no full historical acceptance audit."
+  },
+  "author_input_revision_20261017": {
+    "proof": "review/checks/D04-004.json",
+    "new_note_ids": [
+      "AA064",
+      "AA065",
+      "AA066",
+      "AA067",
+      "AA068",
+      "AA069",
+      "AA070",
+      "AA071"
+    ],
+    "author_acceptance": "Only AA071 current chapter-5 plan explicitly accepted. Others await user review or remain partial/deferred."
   }
 }
