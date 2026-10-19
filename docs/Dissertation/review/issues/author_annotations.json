@@ -309,7 +309,7 @@
       "status": "DECISION_RECORDED",
       "decision": "Author accepts arithmetic total 1865. Recheck original OOXML table, including first/last data rows and separate total. Keep source reported 1866 in provenance.",
       "last_seen_note_index": 1,
-      "last_seen_file_sha256": "8dd26690475ef5c371b0d2b2ad624305f4d7ca76e5f65f1f4c75bb91903e1720",
+      "last_seen_file_sha256": "3c2022ffca309e002a3c501cece1449d5c2c7bd911ac5595d33cfe628d303028",
       "reviewed_at": "2026-10-06",
       "display": "учтено: 1865; строки перепроверены",
       "author_input_date": "2026-10-06"
@@ -322,7 +322,7 @@
       "status": "DECISION_RECORDED",
       "decision": "Keep unresolved central interval percentage as future numeric check; do not block transfer of verified statistics or assert 80/90 percent without underlying CDF. Completed 2026-10-08: 678/830 = 81.69%; D03-002-statistics.json.",
       "last_seen_note_index": 2,
-      "last_seen_file_sha256": "8dd26690475ef5c371b0d2b2ad624305f4d7ca76e5f65f1f4c75bb91903e1720",
+      "last_seen_file_sha256": "3c2022ffca309e002a3c501cece1449d5c2c7bd911ac5595d33cfe628d303028",
       "reviewed_at": "2026-10-06",
       "display": "выполнено: доля проверена 08.10",
       "author_input_date": "2026-10-06",
@@ -336,7 +336,7 @@
       "status": "DECISION_RECORDED",
       "decision": "Author agrees on sample/measurement limits and on no automatic revision of insulation standards.",
       "last_seen_note_index": 3,
-      "last_seen_file_sha256": "8dd26690475ef5c371b0d2b2ad624305f4d7ca76e5f65f1f4c75bb91903e1720",
+      "last_seen_file_sha256": "3c2022ffca309e002a3c501cece1449d5c2c7bd911ac5595d33cfe628d303028",
       "reviewed_at": "2026-10-06",
       "display": "учтено: ограничения сохраняются",
       "author_input_date": "2026-10-06"
@@ -349,7 +349,7 @@
       "status": "DECISION_RECORDED",
       "decision": "RTDS section is part of present validation. Transfer current material, explain any remaining disagreement with actual case/metric; coordinate later edits of PDR article and dissertation.",
       "last_seen_note_index": 4,
-      "last_seen_file_sha256": "8dd26690475ef5c371b0d2b2ad624305f4d7ca76e5f65f1f4c75bb91903e1720",
+      "last_seen_file_sha256": "3c2022ffca309e002a3c501cece1449d5c2c7bd911ac5595d33cfe628d303028",
       "reviewed_at": "2026-10-06",
       "display": "учтено: переносим имеющееся; вопросы конкретизируем",
       "author_input_date": "2026-10-06"
@@ -362,7 +362,7 @@
       "status": "DECISION_RECORDED",
       "decision": "Keep raw Word comments, paths and author notes. Review while editing a bounded fragment; raise important unresolved questions with exact anchors in planning/questions.md. Do not silently delete source-link reminders.",
       "last_seen_note_index": 6,
-      "last_seen_file_sha256": "8dd26690475ef5c371b0d2b2ad624305f4d7ca76e5f65f1f4c75bb91903e1720",
+      "last_seen_file_sha256": "3c2022ffca309e002a3c501cece1449d5c2c7bd911ac5595d33cfe628d303028",
       "reviewed_at": "2026-10-06",
       "display": "учтено: комментарии и ссылки сохранены",
       "author_input_date": "2026-10-06"
@@ -377,7 +377,7 @@
       "display": "новые ответы прочитаны; адресные вопросы сохранены",
       "reviewed_at": "2026-10-08",
       "last_seen_note_index": 5,
-      "last_seen_file_sha256": "8dd26690475ef5c371b0d2b2ad624305f4d7ca76e5f65f1f4c75bb91903e1720"
+      "last_seen_file_sha256": "3c2022ffca309e002a3c501cece1449d5c2c7bd911ac5595d33cfe628d303028"
     },
     {
       "id": "AA030",
@@ -499,10 +499,14 @@
       "original_text": "(Примечание автора: Есть мысли о том, чтобы картинки тут привести поясняющие схему, \nесли у меня в оригинальных работах есть. Убрать потом это, в случае чего будет не сложно, \nа пока что хочу максимально подробно переписывать статьи. \nКстати, об этом опять же можешь сделать пометку, она будет полезна для будущего текста\nПричём... Можно подумать о том, чтобы нарисовать какую-то другую картинку поясняющую, как я делал в будущих работах, \nя думаю современные ИИ модели могут помочь сдлеать её тут, надо будет только инструкцию хорошую написать для картинки,\nесли тебе сложно. И да, лучше через инструкцию сделать это, а не тебе самой выдумывать, причём я хочу тут иснтрукцию\nпоясняющую проблему для энергетики, где у меня подаются и ТОКИ и НАПРЯЖЕНИЯ и по времени распределены и они путаются.\nДа, давай попробуем через картинки такие новые.\nХмм... В статье есть картинки, но они довольно сложны, и не факт, что отражают физическую проблему)",
       "text_sha256": "c4af5b65c56c32e8f854d8b2fcc20b45dc8afef05d87373ad0e5ec5def3874d7",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "частично; замечание открыто",
       "last_seen_note_index": 6,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "partial",
+      "author_acceptance": "pending",
+      "response_ru": "Семь схем моделей подключены как авторские PNG. Для отдельной энергетической схемы токов, напряжений и общей оси времени записано задание в общем файле заданий на рисунки, но самого рисунка ещё нет.",
+      "section_label": "sec:ch4_simplemlp"
     },
     {
       "id": "AA041",
@@ -510,10 +514,14 @@
       "original_text": "(Примечание автора: И да, ещё раз отмечу, давай побольше текста пока что из оригинальных работ писать сюда.\nДа, не весь и не всё, но важное, люди из энергетики многое базовое могу не понимать.)",
       "text_sha256": "d2cfaba7fe96d0a76175ae8e35057ffd1736f988f926a6fc994b50b5d4a8e7a7",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "частично; замечание открыто",
       "last_seen_note_index": 7,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "partial",
+      "author_acceptance": "pending",
+      "response_ru": "Объяснения MLP, CNN, ResNet и KAN расширены по первой статье. Полное включение текста остальных исследований не завершено; разделы 4.4 и 4.5 помечены как наброски.",
+      "section_label": "sec:ch4_physkan_architectures"
     },
     {
       "id": "AA042",
@@ -521,10 +529,14 @@
       "original_text": "(Примечание автора: Ну да, как-то очень кратко... Мне-то понятно, но я всё это и написал ранее.)",
       "text_sha256": "baeec357c75d3ab10f6d75bcc91c9d8103fc56de49b46f57fd611cc4bedf2463",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "правка внесена; ожидает проверки автора",
       "last_seen_note_index": 10,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "implemented",
+      "author_acceptance": "pending",
+      "response_ru": "В описании ResNet раскрыты обходной путь, согласование размерностей, две свёртки и последовательность ступеней. Это предложенная редакция, её достаточность ещё не подтверждена автором.",
+      "section_label": "sec:ch4_resnet"
     },
     {
       "id": "AA043",
@@ -532,10 +544,14 @@
       "original_text": "(Примечание автора: Из текста не очень понятно, чем это лучше предыдущего?\nЯ закладывал во многом то, чтобы могли возникать сильно нелинейные связи например от тока и т.д. Ну и да, побольше бы описания…)",
       "text_sha256": "55e2d9aec6ce5fad1a1760e8b6d64495e06e1c2d2bbd815f5f6fcb92c3c83c9f",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "правка внесена; ожидает проверки автора",
       "last_seen_note_index": 17,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "implemented",
+      "author_acceptance": "pending",
+      "response_ru": "В подразделе KAN объяснены обучаемая форма связи, нелинейная реакция на ток и отличие от фиксированной активации MLP. Утверждения о преимуществе конкретного опыта сюда не добавлялись.",
+      "section_label": "sec:ch4_kan"
     },
     {
       "id": "AA044",
@@ -543,10 +559,14 @@
       "original_text": "(Примечание автора: введение не совсем в моей редакции. \nПрост его надо смотреть не только на основе первой статьи. \nИ возможно сейчас ты точно не знаешь, как описать – поэтому будет тебе прост отложенная задача, которую надо не забыть выполнить. \nОтсюда можешь удалить этот комментарий, прост перенеси в нужное место. \nМожешь постепенно писать даже, если появляются мысли или сделать себе отложенной задачей, тогда аккуратно напиши это тут)",
       "text_sha256": "716fec6c7b2e616c3b220f4d6ff5053b419e92ab2d883fd2e13556dc4374431d",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: visible chapter map inserted; introduction synthesis deferred until all sections, original note retained inactive.",
-      "display": "план добавлен; введение дорабатывается после наполнения главы",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "отложено; замечание открыто",
       "last_seen_note_index": 1,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "deferred",
+      "author_acceptance": "pending",
+      "response_ru": "В начале главы напечатан план по пяти исследованиям. Само введение ещё не синтезировано по всем работам; его доработка остаётся после наполнения главы.",
+      "section_label": "sec:ch04_intro"
     },
     {
       "id": "AA045",
@@ -554,10 +574,14 @@
       "original_text": "(Примечание автора: И подумай всё же куда вынести «Методологию» с расчётами, метриками и прочим. Так как очень важный момент перед всем, а пока что он упущен полностью. И/или ответь мне где именно это будет. Повторять статьи по структурам не обязательно, а вот по тексту того, что затрагивается, хорошо бы. И быть может, разные моменты стоит объединять из разных статей как раз, ибо они важны, но по началу не затрагивались)",
       "text_sha256": "e7f16d4b396d30487103ae2012d4136764dfd5b6f1f0e3ef3859a0614ac10cdc",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "правка внесена; ожидает проверки автора",
       "last_seen_note_index": 2,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "implemented",
+      "author_acceptance": "pending",
+      "response_ru": "Общие определения Precision, Recall, F1, ROC-AUC и единиц оценки вынесены в раздел перед архитектурами. Специальные условия РНМ остаются в главе 5.",
+      "section_label": "sec:ch4_evaluation_methodology"
     },
     {
       "id": "AA046",
@@ -565,10 +589,14 @@
       "original_text": "(Примечание автора: Проведи сравнение подобных описаний со статьёй, может что-то стоит улучшить, а может и нормально. Прост пока что я вижу излишний математиизм, а точнее не везде его понятность, например строка «где C является числом каналов» - хорошо бы уточнить, что канал, это, например, Ia. А про батчи – возможно и не особо-то нужно здесь, это уже тонкости обучения, ну либо где-то позже вскользь про это уже при самом обучении, ибо тут мы и не размышляем никак об это размерности.)",
       "text_sha256": "6fc005989379a41328e10e537d95d867ecb6de95c65e8efb232efeb4b53235a3",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "правка внесена; ожидает проверки автора",
       "last_seen_note_index": 3,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "implemented",
+      "author_acceptance": "pending",
+      "response_ru": "Каналы пояснены примерами фазных токов и напряжений. Размерность обучающего пакета исключена из описания архитектурного входа.",
+      "section_label": "sec:ch4_input_windows"
     },
     {
       "id": "AA047",
@@ -576,10 +604,14 @@
       "original_text": "(Примечание автора: например 1 период с 32 точками.)",
       "text_sha256": "775b9fe3c30f859446a6b916bfb8905a828cbdc1d53dfc3101aee20e1742e169",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "правка внесена; ожидает проверки автора",
       "last_seen_note_index": 4,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "implemented",
+      "author_acceptance": "pending",
+      "response_ru": "Пример сформулирован как один период из шести сигналов с 32 отсчётами каждого. Он остаётся условным примером размерности.",
+      "section_label": "sec:ch4_input_windows"
     },
     {
       "id": "AA048",
@@ -587,10 +619,14 @@
       "original_text": "(Примечание автора: Наверное можно бы добавить какую-то картинку простенькую. И повторюсь, пиши инструкции к картинкам, чтобы потом их отрисовывать, так как я могу это делать через более хороших твоих коллег.)",
       "text_sha256": "7915774ef0acbf1825248279cb3a357a0d692f219be8f4185b89fcf2558442d0",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: output-decision figure specification added to existing figure_specs; final new figure not generated.",
-      "display": "задание для рисунка добавлено D04-003",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "частично; замечание открыто",
       "last_seen_note_index": 5,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "partial",
+      "author_acceptance": "pending",
+      "response_ru": "В существующий файл заданий добавлено описание рисунка оценок и порогов выходов. Новый рисунок выходов пока не подготовлен и в PDF не включён.",
+      "section_label": "sec:ch4_input_windows"
     },
     {
       "id": "AA049",
@@ -598,10 +634,14 @@
       "original_text": "(Примечание автора: Добавил вот этот файл, используй теперь его «physkan_mlp.png», аналогично сделаю для следующих картинок.)",
       "text_sha256": "0e13c44159c2a3223615eff98d6b2a648b9a3b340ef06e3fcf5c68add339ba96",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "правка внесена; ожидает проверки автора",
       "last_seen_note_index": 8,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "implemented",
+      "author_acceptance": "pending",
+      "response_ru": "Для SimpleMLP подключён physkan_mlp.png. Остальные шесть схем также используют авторские PNG. Прежние PDF-черновики удалены.",
+      "section_label": "sec:ch4_simplemlp"
     },
     {
       "id": "AA050",
@@ -609,10 +649,14 @@
       "original_text": "(Примечание автора: Можно добавить, что по своей сути чем-то близко к Фурье обработки сигналов, что типично для энергетики.\nНо может выделять совсем разные патерны)",
       "text_sha256": "19b6e2c553a0d96158e286622f3293e434780bc40becaee56488e9a4dcc51150",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "правка внесена; ожидает проверки автора",
       "last_seen_note_index": 9,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "implemented",
+      "author_acceptance": "pending",
+      "response_ru": "Добавлена аналогия с фильтрацией и выделением гармоник. Уточнено, что коэффициенты Фурье заданы, а свёрточные коэффициенты обучаются и могут выделять другие формы сигнала.",
+      "section_label": "sec:ch4_simplecnn"
     },
     {
       "id": "AA051",
@@ -620,10 +664,14 @@
       "original_text": "(Примечание автора: Надо бы что-то добавить о том, чем она лучше других, а то зачем мы её вообще внедряли?)",
       "text_sha256": "78efa9a279a29e03042231636f3c5bab9d64ce1ab13f03d7af0482d271947e9c",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "назначение ResNet пояснено; сравнение результатов открыто",
       "last_seen_note_index": 11,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "partial",
+      "author_acceptance": "pending",
+      "response_ru": "Исправлена прежняя ошибочная привязка к KAN. Замечание находится после описания ResNet. В начале подраздела объяснено назначение более глубокой контрольной модели с обходными связями. Её численное преимущество по конкретному опыту ещё требует включения результатов.",
+      "section_label": "sec:ch4_resnet"
     },
     {
       "id": "AA052",
@@ -631,10 +679,14 @@
       "original_text": "(Примечание автора:Посмотрим, как подробно об этом было в статье, кажется, что местами начала закапываться в подробности математики у нас. Хотя… Про сплайновые подходы может быть и полезно. Согласен)",
       "text_sha256": "0071ff4b63b8b5e1fe3782fe5e95488c163bf5ece3597745bc9e3ceed3d4038b",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "есть ответ; ожидает проверки автора",
       "last_seen_note_index": 12,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "not_required",
+      "author_acceptance": "pending",
+      "response_ru": "Описание сплайнов сохранено как пояснение KAN-слоя. Дополнительное математическое расширение по этому замечанию не выполнялось.",
+      "section_label": "sec:ch4_kan"
     },
     {
       "id": "AA053",
@@ -642,10 +694,14 @@
       "original_text": "(Примечание автора: Потом, наверное про модельку КАН – надо бы какую-то картинку? Может из статьи что-то взять поясняющее? Или опиши текстом, что хочешь? Или может в статье есть… Хотя… Хотя там в отрисовке самих моделей. В общем – надо бы что-то поясняющее про КАН подход и зачем такое хорошо, пожалуй, какой-то картинкой к этому тексту.)",
       "text_sha256": "77d7a3a32398191ab2745b9cfe2bdb7f46c68f933fa761e9472b2991926b8ab0",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "правка внесена; ожидает проверки автора",
       "last_seen_note_index": 13,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "implemented",
+      "author_acceptance": "pending",
+      "response_ru": "Поясняющий рисунок KAN-слоя уже имеется и заменён авторским physkan_kan_edge.png. Отдельный повторяющий рисунок не создавался.",
+      "section_label": "sec:ch4_kan"
     },
     {
       "id": "AA054",
@@ -653,10 +709,14 @@
       "original_text": "(Примечание автора: И надо ли тут описывать модели, если оно идёт прям следом?. Да и разделы чуть другие получаются, сперва базовые модели по отдельности, потом идёт какое-то Описание КАН, не понятно к чему, а потом ещё, быть может, вставим Трансформерные модели, кстати, а здесь ли их вообще вставлять? Или когда-то позже, ведь статьи это совсем разные, но это к более глоабльному вопросу, который ставлю по всему разделу 4… А конкретно в этой точке – вопрос в том, что под КАН идёт отдельный номер описания, но не описывает конкретную модель)",
       "text_sha256": "f68619ba6c016b82f2f6b3115ef10b4161d84e453e3ea33936c451386e6ae8db",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "частично; замечание открыто",
       "last_seen_note_index": 14,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "partial",
+      "author_acceptance": "pending",
+      "response_ru": "Подраздел назван «KAN-слои и модели SimpleKAN и ConvKAN». Трансформер включён в общую архитектурную линию. Полная интеграция всех сравнений из статей ещё не завершена.",
+      "section_label": "sec:ch4_kan"
     },
     {
       "id": "AA055",
@@ -664,10 +724,14 @@
       "original_text": "(Примечание автора: Хотя ошибся в комментарии, да, описание SimpleKAN, ConvKAN , есть смысл оставить, ибо это краткая вставка, а дальше про физически модели речь. Извиняюсь, ошибка моя, коммент тот не удалял, может там что-то другое имеет значение)",
       "text_sha256": "0560c4a5e30f6d3f3ad130265c5c3e1d3cf5619f635e256ef24f14073c7e72de",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "есть ответ; ожидает проверки автора",
       "last_seen_note_index": 15,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "not_required",
+      "author_acceptance": "pending",
+      "response_ru": "Пояснения SimpleKAN и ConvKAN сохранены по уточнению автора. Предыдущее замечание не трактуется как требование удалить эти модели.",
+      "section_label": "sec:ch4_kan"
     },
     {
       "id": "AA056",
@@ -675,10 +739,14 @@
       "original_text": "(Примечание автора: ошибся, поясняющая КАН картинка в общем-то есть, и я её улушчил, это \"Рис. 4.4: Принцип KAN-слоя\")",
       "text_sha256": "284a56e4cd5b95d5bf5010e63672a5d79c60156a76e0bbe9693e8580f9e92555",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "есть ответ; ожидает проверки автора",
       "last_seen_note_index": 16,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "not_required",
+      "author_acceptance": "pending",
+      "response_ru": "Используется уже улучшенный автором рисунок принципа KAN. Номер рисунка в текущей сборке изменяется автоматически; исходное примечание с прежним номером сохранено.",
+      "section_label": "sec:ch4_kan"
     },
     {
       "id": "AA057",
@@ -686,10 +754,14 @@
       "original_text": "(Примечание автора: Но в рамках модели это легко решается добавлением «минуса» к требуемому параметру.)",
       "text_sha256": "8b723b050fe1a9c492b553db4df7c07822517d093fa74a42c66669a5c98223be",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "правка внесена; ожидает проверки автора",
       "last_seen_note_index": 18,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "implemented",
+      "author_acceptance": "pending",
+      "response_ru": "В тексте явно сказано, что для сопряжения достаточно поменять знак фазы тока перед умножением. Различие операций связано с толкованием признака.",
+      "section_label": "sec:ch4_complex_ops"
     },
     {
       "id": "AA058",
@@ -697,10 +769,14 @@
       "original_text": "(Примечание автора: Но опять же, модель может получить нужные величины сама подогнав раньше и/или после.)",
       "text_sha256": "0bbcb3e6ace421aa70674a039b565ed475c09e1e88eb2153795099776b4c2ba0",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "правка внесена; ожидает проверки автора",
       "last_seen_note_index": 19,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "implemented",
+      "author_acceptance": "pending",
+      "response_ru": "Указана возможность получить нужную зависимость обучаемыми преобразованиями. Обычное произведение при этом не названо готовой комплексной мощностью.",
+      "section_label": "sec:ch4_complex_ops"
     },
     {
       "id": "AA059",
@@ -708,10 +784,14 @@
       "original_text": "(Примечание автора: Тут больше проблема для модели как границы задавать и/или кривую, я это помню, но сразу не понятно, надо бы как-то иначе описать проблему. И кстати, а дальше она не решается разве? Вроде бы в следующей модели как раз решается эта проблема)",
       "text_sha256": "297b6d1a6bb3a574d2364f3bc362e6c2c6d8d6405e5665a3205213128e8c1ee3",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "частично; замечание открыто",
       "last_seen_note_index": 20,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "partial",
+      "author_acceptance": "pending",
+      "response_ru": "Проблема границ пояснена на углах 179 и -179 градусов. В 4.3.9 описано изменение обработки фазы через сдвиг и направляющий блок. Отдельная проверка периодичности конкретной угловой характеристики здесь не заявлена.",
+      "section_label": "sec:ch4_attention_architecture"
     },
     {
       "id": "AA060",
@@ -719,10 +799,14 @@
       "original_text": "(Примечание автора: И честно, тут не совсем понятно, а все эти разные подходы являются продолжением или отдельными вариантами? Особенно с вот этой РНМ, кстати да, опиши, что по своей сути, это как раз РНМ, который исследуется в нашей работе, что ОЧЕНЬ важно. А суть вопроса в том, используются ли тут физические сигналы? Произведение / мощности и аналогично с делением? Я уже не помню, и вот подзабыл. Про это, не обязательно тут писать, но где-то надо обще упомянуть. А про РНМ, можно бы и тут)",
       "text_sha256": "f6fce783ace9f1988353821d432d030d619b974d07f3fefffab5641b0c65fe7a",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "правка внесена; ожидает проверки автора",
       "last_seen_note_index": 21,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "implemented",
+      "author_acceptance": "pending",
+      "response_ru": "В начале описания rPhysicsKAN назван внутренний направляющий орган по принципу РНМ. Перед ним указано формирование комплексных произведений и отношений; в итоговом переходе варианты отделены от обязательных ступеней одной сети.",
+      "section_label": "sec:ch4_relay_gate"
     },
     {
       "id": "AA061",
@@ -730,10 +814,14 @@
       "original_text": "(Примечание автора: Разве надо тут так закапываться в подробности? Возможно надо как-то аккуратнее описать)",
       "text_sha256": "7ae4db78bbee628f982ffdd23a146acc926ac91135887703c541e400095580c3",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "правка внесена; ожидает проверки автора",
       "last_seen_note_index": 22,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "implemented",
+      "author_acceptance": "pending",
+      "response_ru": "Подробный перечень операций каждой ветви сокращён. Оставлено объяснение одинакового числа амплитудных признаков и коэффициентов маски.",
+      "section_label": "sec:ch4_relay_gate"
     },
     {
       "id": "AA062",
@@ -741,10 +829,14 @@
       "original_text": "(Примечание автора: Да, ещё раз повторю, что тут мы как бы создали отдельный орган РНМ внутри нашей нейросетки. Хотя... ты и так пишешь об этом, извиняюсь. Возможно надо куда-то и в начало этого подраздела перенести тоже краткий комментарий об этом.)",
       "text_sha256": "53d0005e268fbb054f9fac4d2efb8f82bcf5e3080e2ea34ba8235148eb43d5bd",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "правка внесена; ожидает проверки автора",
       "last_seen_note_index": 23,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "implemented",
+      "author_acceptance": "pending",
+      "response_ru": "Краткое пояснение внутреннего РНМ перенесено в начало подраздела rPhysicsKAN. Проверка требуемого выхода органа отнесена к главе 5.",
+      "section_label": "sec:ch4_relay_gate"
     },
     {
       "id": "AA063",
@@ -752,12 +844,136 @@
       "original_text": "(Примечание автора: Возможно тут описать про переход от одной к другой, о чём спрашивал ранее.)",
       "text_sha256": "3a069678a19eb473b5fd12d8da22df54860db1943f2e30c92082d06705f8ed2e",
       "status": "DECISION_RECORDED",
-      "decision": "D04-003: reviewed author correction; preserved verbatim; methodology and chapter maps inserted; PNGs used; explanations adjusted; remaining numerical results separately checked.",
-      "display": "учтено D04-003; исходное примечание сохранено",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "display": "правка внесена; ожидает проверки автора",
+      "last_seen_note_index": 25,
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "implementation_status": "implemented",
+      "author_acceptance": "pending",
+      "response_ru": "В итоговом переходе названы связи PhysicsKAN, cPhysicsKAN, rPhysicsKAN и трансформера. Добавлено различие самостоятельных вариантов и последовательных этапов развития исследования.",
+      "section_label": "sec:ch4_architecture_summary"
+    },
+    {
+      "id": "AA064",
+      "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex",
+      "original_text": "(Примечание автора: Ок, хорошо, а для модели «Physical KAN-Transformer» пока что нет совсем картинок, наверное надо бы какую-то поясняющую что такое трансформерная архитектура. Да и надо бы подробнее про эту модель из статьи той описать, а то уж очень кратко, а ведь там много чего говорится, и ранее ссылаемся, что подробнее разберём в главе 3.9, а там почти ничего и нет. И картинок – хорошо бы добавить точно поясняющих. Ну реально, сейчас глянул, и да, там ведь прям очень много сравнений… Да, там сперва описывается обычная трансформерная модель, а потом наша, но всё же, людям надо бы сперва пояснить ту особенность, причём повторюсь, не обязательно сразу пихать те картинки – можно бы сперва подробно описать, что нужно нарисовать, нарисуем, и с нужным именем сохраним в нужную папку. И да, пока можешь какую-то заглушку вставить, не так важно, я создам потом картинку лучше.)",
+      "text_sha256": "79d00d10cdb0deb1f4caf9c48fe0bc876542cb76caa3bb2fd4763f006367cd89",
+      "status": "DECISION_RECORDED",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
       "last_seen_note_index": 24,
-      "last_seen_file_sha256": "b60dd98581448b21fb57ebf4673c9f0f7666dfbf0e62b62a217ceb8ed5311c25"
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "display": "частично; замечание открыто",
+      "implementation_status": "partial",
+      "author_acceptance": "pending",
+      "response_ru": "Подраздел 4.3.9 переработан по третьей статье. Раздельно изложены внимание, базовый трансформер, PhysicalStem, полярное внимание и физический полносвязный блок. Включены три временные схемы; подробные задания для их замены записаны в прежнем файле figure_specs. Окончательная отрисовка и авторская проверка остаются.",
+      "section_label": "sec:ch4_attention_architecture"
+    },
+    {
+      "id": "AA065",
+      "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex",
+      "original_text": "(Примечание автора: А про трансформерную модель тут чего не сказано ничего? Надо бы, она ведь от части состоит из того, что было рассмотрено ранее. А так, сей раздел огромным описательно делать не надо, согласен, он кратко описывает итоговые варианты моделей. Может прост добавить, что-то из серии, исследования шли постепенно, и поэтому в работе не приводится везде сравнения сразу для всех исследований, как-то аккуратно об этом)",
+      "text_sha256": "0ff3c03f316769bcda160170ff8a58c70774f4eda56b25a3d791397f80ff9442",
+      "status": "DECISION_RECORDED",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "last_seen_note_index": 26,
+      "last_seen_file_sha256": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+      "display": "правка внесена; ожидает проверки автора",
+      "implementation_status": "implemented",
+      "author_acceptance": "pending",
+      "response_ru": "В кратком итоге добавлен Physical KAN-Transformer и сказано, что исследования шли постепенно, с различающимися составами моделей и протоколами. Единого сравнения всех опытов не утверждается.",
+      "section_label": "sec:ch4_architecture_summary"
+    },
+    {
+      "id": "AA066",
+      "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec01_evaluation_methodology.tex",
+      "original_text": "(Примечание автора: Вот не надо писать так обще для будущих пользователей метрик, говори что в используется, рассматривается, а не «вы должны», или не пиши такое вообще, как тут, так и в других местах, устал повторять об этом.)",
+      "text_sha256": "e965530b9f2d47cc3901cc758da9fdbf81dbd1cc59c72f4f5e17da1d85722d98",
+      "status": "DECISION_RECORDED",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "last_seen_note_index": 1,
+      "last_seen_file_sha256": "984ca92c0acb133d3a2f2ae3fd1d1ad7c7baca245187c5b73abfcba09bdb0e5e",
+      "display": "правка внесена; ожидает проверки автора",
+      "implementation_status": "implemented",
+      "author_acceptance": "pending",
+      "response_ru": "Убрано требование читателю указывать правило для нулевого знаменателя. Сохранён только смысл математической неопределённости. Конкретное правило программного расчёта не объявлено проверенным.",
+      "section_label": "sec:ch4_metric_decisions"
+    },
+    {
+      "id": "AA067",
+      "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec01_evaluation_methodology.tex",
+      "original_text": "(Примечание автора: И вот тут «должно сопровождаться», пишется как инструкция для других, а не то, что используется в диссертации… в общем, вот эти моменты требуют правок, дальше не буду даже отмечать это, глянь прост.)",
+      "text_sha256": "0f8cf64a648b15ba8ff368de5a82cce9787b5735542d593c10e65734c84109fc",
+      "status": "DECISION_RECORDED",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "last_seen_note_index": 2,
+      "last_seen_file_sha256": "984ca92c0acb133d3a2f2ae3fd1d1ad7c7baca245187c5b73abfcba09bdb0e5e",
+      "display": "правка внесена; ожидает проверки автора",
+      "implementation_status": "implemented",
+      "author_acceptance": "pending",
+      "response_ru": "Убрано «должно сопровождаться». Назначения обучающей, валидационной и проверочной частей изложены описательно. Аналогично исправлены предписывающие фразы о пороге и вычислительном времени.",
+      "section_label": "sec:ch4_metric_validation"
+    },
+    {
+      "id": "AA068",
+      "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec01_evaluation_methodology.tex",
+      "original_text": "(Примечание автора: На будущее пометка – а разве у меня вообще где-то это указывается в исследованиях? Может вот это стоит пометить как «требуется разделять по аппаратной части, сложности вычислений и т.д., а мы смотрим тут вот это?». Это пока вопрос, может в статьях у нас и норм, прост не уверен.)",
+      "text_sha256": "7e3c4363dc9452dcfb1730192db5dae745fe49c4b858a9b76f83cae6cc8ca4b2",
+      "status": "DECISION_RECORDED",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "last_seen_note_index": 3,
+      "last_seen_file_sha256": "984ca92c0acb133d3a2f2ae3fd1d1ad7c7baca245187c5b73abfcba09bdb0e5e",
+      "display": "частично; замечание открыто",
+      "implementation_status": "partial",
+      "author_acceptance": "pending",
+      "response_ru": "По первой статье P0099–P0109 установлено сравнение числа параметров и времени одного окна на CPU. В тексте именно так ограничен объём измерения. Полный аппаратный протокол и время действия терминала не объявлены восстановленными; численный аудит остаётся отдельным шагом.",
+      "section_label": "sec:ch4_metric_runtime"
+    },
+    {
+      "id": "AA069",
+      "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec03_signal_representations.tex",
+      "original_text": "(Примечание автора: Как-то тоже ну ОЧЕНЬ урезано, если ты пишешь это как начальный кусок, то пожалуйста, делай так, чтобы и в ПДФ было видно, чтобы я не придавал сильного значения и понимал, что ты ещё будешь много делать. А то прям хочется написать, что ничего тут нет, давай править, картинки вставлять и т.д..)",
+      "text_sha256": "e0b07e73e53df8ff86ede0f7ef3d388f69fea354b865c46549d29246198c988a",
+      "status": "DECISION_RECORDED",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "last_seen_note_index": 1,
+      "last_seen_file_sha256": "582fb9ff17a69b9bd06af376858c83ac20d802371579ec9330bcdbd378440e35",
+      "display": "отложено; замечание открыто",
+      "implementation_status": "deferred",
+      "author_acceptance": "pending",
+      "response_ru": "Раздел 4.4 явно помечен как начальный обзор, который пока не требует вычитки. Полное описание расчёта признаков, сравнения и иллюстрации второй статьи ещё в работе.",
+      "section_label": "sec:ch4_signal_representations"
+    },
+    {
+      "id": "AA070",
+      "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec04_training_protocol.tex",
+      "original_text": "(Примечание автора: Как-то совсем ни о чём, прост набросок, почти пустой. Ведь в разных статьях были разные исследования, и надо бы их аккуратно притянуть, а тут прост общее обучение, которое даже к методике ближе как будто. В общем совсем плохо глава и не о чём. Если это была стартовая попытка, то говори и прям в ПДФ итоговом, и/или делай ПДФ с комментариями, чтобы можно было видеть это, мои комментарии можно помечать как закрытые, если выполнены и я в них пометил «Ок», или что-то такое, без этого, даже если ты их решила, они висящие ещё. И всё равно, про случаи, когда глава является лишь наброском, прям в ПДФ должно быть сказано об этом, ибо вот к этой – очень сильные претензии)",
+      "text_sha256": "563f208e0a379e65271fb087484d51c72631033aaa4d74a95229c801d2c42b98",
+      "status": "DECISION_RECORDED",
+      "decision": "D04-004: concrete reply recorded; no automatic closure.",
+      "last_seen_note_index": 1,
+      "last_seen_file_sha256": "82b89715a5bff8665ff0f261914a239316874b240789945b78fc2778c5f67beb",
+      "display": "отложено; замечание открыто",
+      "implementation_status": "deferred",
+      "author_acceptance": "pending",
+      "response_ru": "Раздел 4.5 помечен как предварительный фрагмент протокола первой статьи. Объединение отличающихся опытов остальных работ не выполнено. Авторское замечание остаётся открытым.",
+      "section_label": "sec:ch4_training_protocol"
+    },
+    {
+      "id": "AA071",
+      "file": "docs/Dissertation/manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex",
+      "original_text": "(Примечание автора: Пока пойдёт, там будем смотреть по факту, можешь сразу ставить комментарию «Ок»)",
+      "text_sha256": "62f7677a7c87b52042a9f0047fb67876362a968f0cbe5379975f7ed165f3c97c",
+      "status": "AUTHOR_ACCEPTED",
+      "decision": "Not reviewed yet.",
+      "last_seen_note_index": 1,
+      "last_seen_file_sha256": "1878f1190749fd6644f3d64f0ee8b9aa07784d2551e71da8d7cde39866c57bf6",
+      "display": "Ок: текущий план принят; наполнение главы в работе",
+      "implementation_status": "not_required",
+      "author_acceptance": "accepted_current_plan",
+      "response_ru": "Ок. По прямому разрешению в этом примечании текущий план главы принят. Подтверждение не относится к ещё не написанным предметным разделам РНМ; для них сохранена отметка о работе.",
+      "section_label": "sec:ch05_intro"
     }
   ],
-  "updated": "2026-10-11",
+  "updated": "2026-10-17",
   "policy": "Original text retained; status means reviewed disposition, not automatic completion of related scientific work. Never silently delete notes."
 }

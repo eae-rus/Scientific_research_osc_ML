@@ -71,6 +71,24 @@
   \footnote{\textbf{Замечание [#1]} (\textit{#2}): #3}%
 }
 
+% Рабочие отметки видны и в обычной, и в рецензионной сборке.
+\newcommand{\workinprogress}[1]{%
+  \par\medskip\noindent{\color{red!65!black}\small
+  \textbf{В работе. Вычитка пока не требуется.} #1\par}\medskip
+}
+% Исходные примечания остаются в TEX. Рецензионный режим показывает
+% их вместе с ответом из существующего реестра, без второго оригинала текста.
+\newcommand{\authorreviewnote}[1]{}
+\ifdefined\AuthorReview
+  \input{../build/reading/author_notes.tex}
+  \renewcommand{\authorreviewnote}[1]{%
+    \par\medskip\begingroup\small\raggedright\color{blue!55!black}%
+    \noindent\hrulefill\par\nopagebreak
+    \csname authornote#1\endcsname
+    \par\noindent\hrulefill\par\endgroup\medskip
+  }
+\fi
+
 % Исключение служебных макросов из PDF-закладок (outlines)
 \pdfstringdefDisableCommands{%
   \def\commentnote#1#2#3{}%

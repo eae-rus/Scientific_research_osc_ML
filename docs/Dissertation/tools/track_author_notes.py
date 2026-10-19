@@ -48,13 +48,19 @@ def scan(text):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--apply', action='store_true')
+    ap.add_argument('--review-tex', action='store_true',
+                    help='Render existing registry replies for the annotated PDF.')
     args = ap.parse_args()
     files = [ROOT/'planning/integration/rewrite_proposals/ch03.md',
              ROOT/'planning/integration/rewrite_proposals/ch05.md',
              ROOT/'planning/handoffs/D00.md', ROOT/'planning/questions.md',
              ROOT/'planning/sources/PDR-05/limitations_and_comments.md',
              ROOT/'manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex',
-             ROOT/'manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex']
+             ROOT/'manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex',
+             ROOT/'manuscript/chapters/ch04_statistical_analysis/sec01_evaluation_methodology.tex',
+             ROOT/'manuscript/chapters/ch04_statistical_analysis/sec03_signal_representations.tex',
+             ROOT/'manuscript/chapters/ch04_statistical_analysis/sec04_training_protocol.tex',
+             ROOT/'manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex']
     registry_path = ROOT/'review/issues/author_annotations.json'
     registry = json.loads(registry_path.read_text(encoding='utf-8')) if registry_path.exists() else {'schema_version':1,'notes':[]}
     disposition_path = ROOT/'review/issues/author_note_dispositions.json'
@@ -101,6 +107,34 @@ def main():
                 if record['file'] == rel:
                     record['last_seen_file_sha256'] = digest
         registry_path.write_text(json.dumps(registry,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    if args.review_tex:
+        escapes = {'\\': r'\textbackslash{}', '{': r'\{', '}': r'\}',
+                   '%': r'\%', '&': r'\&', '#': r'\#', '_': r'\_',
+                   '$': r'\$', '^': r'\textasciicircum{}', '~': r'\textasciitilde{}'}
+        def tex(value):
+            return ''.join(escapes.get(c,c) for c in value)
+        states = {'implemented': 'Правка внесена, ожидает проверки автора',
+                  'partial': 'Выполнено частично, замечание открыто',
+                  'deferred': 'Отложено, замечание открыто',
+                  'not_required': 'Ответ записан, ожидает проверки автора'}
+        chunks = ['% Generated from the existing author-note registry. Do not edit.']
+        for record in registry['notes']:
+            state = states.get(record.get('implementation_status'), 'Исполнение отдельно не проверено; замечание открыто')
+            reply = record.get('response_ru', 'Подробная повторная проверка этого примечания в данной партии не выполнялась.')
+            target = record.get('section_label')
+            accepted = record.get('author_acceptance') == 'accepted_current_plan'
+            if accepted:
+                state = 'Ок. Автор принял текущий план'
+            location = (r'\par Место правки: раздел~\ref{'+target+'}.') if target else ''
+            acceptance = ('Подтверждение относится только к текущему плану главы.' if accepted else
+                          'Автоматического закрытия нет. Ожидается ответ автора.')
+            chunks.append(r'\expandafter\def\csname authornote'+record['id']+r'\endcsname{'+
+                          r'\noindent\textbf{'+record['id']+'. '+tex(state)+r'.}\par\nopagebreak[4] '+
+                          tex(record['original_text'])+r'\par\textbf{Ответ агента.} '+tex(reply)+
+                          location+r'\par\textit{'+tex(acceptance)+'}}')
+        output = ROOT/'build/reading/author_notes.tex'
+        output.parent.mkdir(parents=True,exist_ok=True)
+        output.write_text('\n'.join(chunks)+'\n',encoding='utf-8')
 
 if __name__=='__main__':
     main()

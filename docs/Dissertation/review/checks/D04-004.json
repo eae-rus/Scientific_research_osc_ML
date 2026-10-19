@@ -1,0 +1,106 @@
+{
+  "task_id": "D04-004",
+  "status": "DONE",
+  "date": "2026-10-17",
+  "scope": "Detailed 4.3.9, targeted author edits, visible draft status, annotated edition from the same source and existing registry. Full historical note acceptance audit deferred.",
+  "source": "AI-03 90f8c5c8d52f4ff7dafa7ab6860f82a7390c4b265c21775d59c5f4fcdfd373b1 P0056–P0124; AI-01 P0099–P0109; current author notes",
+  "source_before_sha256": {
+    "D04-004-before-chapter.tex": "5583d7436eff16371ad4ca50f0d3c054e2ad324ed52135f4106d8eb6e663acef",
+    "D04-004-before-sec01_evaluation_methodology.tex": "dafc830db53337d7bd93ba752b25437d9d2e2150e5d8c62f5df6b165da82c4d6",
+    "D04-004-before-sec02_physkan_architectures.tex": "2f02a5b7e57760ccda03b141c92b41e2f94ec969b0bfad51476e90d7290b7002",
+    "D04-004-before-sec03_signal_representations.tex": "09a6facfc928fa99a57edc61b5e4510e6afc3fef450318423bb3f8c6c86efa03",
+    "D04-004-before-sec04_training_protocol.tex": "a764b04b374a73d2b2f243744719110839c7fdaf76308274212fee5cdbc15a42"
+  },
+  "author_note_total": 71,
+  "chapter4_inline_notes": 31,
+  "author_acceptance": "pending; implementation is never automatic closure",
+  "found_prior_reply_mismatch": "AA051 belongs to ResNet, not KAN; response corrected, numerical comparison remains partial.",
+  "figure_policy": "Three replaceable LaTeX drafts plus detailed instructions in existing figure_specs; no generated raster diagrams or fabricated weights.",
+  "no_phase6_changes": true,
+  "no_training_or_inference": true,
+  "numeric_source_acceptance_unchanged": true,
+  "chapter5_note_AA071": "Explicit author instruction to mark current plan OK; accepted only for current plan, not future chapter contents.",
+  "verification": {
+    "editions": {
+      "dissertation_review": {
+        "pages": 161,
+        "sha256": "67659cde4dac7cf8ad34f5a2c6c3d90b5b1e377cfbb4ef5971ffc99318e7b797",
+        "stable_toc": true,
+        "undefined_references": false,
+        "new_block_overfull": false
+      },
+      "dissertation_comments": {
+        "pages": 169,
+        "sha256": "c77b51fc8bb59c639449770bd6d49246b2953160dc96b13be97491f94ea68c90",
+        "stable_toc": true,
+        "undefined_references": false,
+        "new_block_overfull": false
+      }
+    },
+    "all_32_inline_notes_rendered_once": true,
+    "all_author_note_texts_preserved": true,
+    "author_pngs_unchanged": true,
+    "accepted_OZZ_pages_112_120_unchanged": true,
+    "clean_text_visual_review_pages": [
+      136,
+      137,
+      138,
+      139,
+      140,
+      141,
+      142
+    ],
+    "annotated_layout_review_pages": [
+      124,
+      125,
+      126,
+      127,
+      128,
+      129,
+      130,
+      131,
+      132,
+      133,
+      134,
+      135,
+      136,
+      137,
+      138,
+      139,
+      140,
+      141,
+      142,
+      143,
+      144,
+      145,
+      146,
+      147,
+      148,
+      149,
+      150,
+      151
+    ],
+    "full_size_reply_reviews": [
+      124,
+      125,
+      132,
+      142,
+      147,
+      148,
+      150
+    ],
+    "final_punctuation_recheck_page": 127,
+    "author_acceptance_limited_to_AA071_plan": true,
+    "resource_remaining_snapshot": {
+      "five_hour": 80,
+      "weekly": 97
+    }
+  },
+  "output_source_sha256": {
+    "manuscript\\chapters\\ch04_statistical_analysis\\chapter.tex": "5583d7436eff16371ad4ca50f0d3c054e2ad324ed52135f4106d8eb6e663acef",
+    "manuscript\\chapters\\ch04_statistical_analysis\\sec01_evaluation_methodology.tex": "984ca92c0acb133d3a2f2ae3fd1d1ad7c7baca245187c5b73abfcba09bdb0e5e",
+    "manuscript\\chapters\\ch04_statistical_analysis\\sec02_physkan_architectures.tex": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
+    "manuscript\\chapters\\ch04_statistical_analysis\\sec03_signal_representations.tex": "582fb9ff17a69b9bd06af376858c83ac20d802371579ec9330bcdbd378440e35",
+    "manuscript\\chapters\\ch04_statistical_analysis\\sec04_training_protocol.tex": "82b89715a5bff8665ff0f261914a239316874b240789945b78fc2778c5f67beb"
+  }
+}
