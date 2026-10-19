@@ -1,6 +1,6 @@
 {
-  "source_root": "Вордовские файлы, примеры",
-  "output_root": "private/phase6_runs/prepared_001",
+  "source_root": "private/phase6/input_copy",
+  "output_root": null,
   "seed_inventory": "docs/phase_discription/phase_6/case_registry.json",
   "years": [],
   "extract_archives": true,
@@ -9,5 +9,6 @@
   "max_archive_members": 5000,
   "max_archive_depth": 1,
   "write_source_indexes": false,
-  "blob_root": "private/phase6_runs/blobs"
+  "blob_root": null,
+  "verify_unchanged_hashes": false
 }
