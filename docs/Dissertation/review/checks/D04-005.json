@@ -1,0 +1,195 @@
+{
+  "task_id": "D04-005",
+  "status": "DONE_SCOPED",
+  "date": "2026-10-19",
+  "scope": "User figures, explicit author reply closures, and static code/figure comparison of PhysicalKANTransformer; no model alteration.",
+  "code_sha256": {
+    "osc_tools\\ml\\models\\transformer.py": "e2890240118010d9aaf48debbf2f27320c7dd5a99e1eca1824e8f573ef923f84",
+    "osc_tools\\ml\\layers\\transformer_blocks.py": "198cda584159d092c4d77096375ae3d6645c4300cabdbcae923d8a7adb39680a"
+  },
+  "figure_sha256": {
+    "ch04_output_decision_candidate.png": "1e877de136c9d34a06e55fb5f6519ffcd6d72c02d96117f1f2056b1b9f2359ed",
+    "image2.png": "a47e441fa204ea4f53821ee7bb92921e1c1fc4931b8c536c068e4661019f9294",
+    "ml_metric_errors.png": "05332d55f3c41a66ad7ad83a390386ac9b882e8d6acc5293f32f60573889ffb9",
+    "ozz_developing_fault.png": "2a03d1ccfaca9bdf90def00284d194754cbd36641fbc74346f884683edd607d3",
+    "ozz_measurement_fault.png": "72c8d83e68246e0f98138f4450a1568ba3873461069b240b8299ec0f9c6a63ff",
+    "ozz_switching_imitation.png": "3ce1a2200f480ba8876cf76ac1f7dd58c1604b8e38290153457ef5a0cb973eae",
+    "ozz_switching_peak.png": "c3736966350da17d5c2a15114c9f41f8554f8a0ff4b2d846eca9a6a6310c99ef",
+    "ozz_voltage_clipping.png": "982b93e4b131ec0f7eb6538cb49b09ef67e29fc212df3f98f2ae052400336a24",
+    "ozz_weak_process.png": "1814169d5f100fbe2ff9b55b7cb143123166c5c02d058cd1eee009106b64e8a4",
+    "physkan_arithmetic_stem.png": "13a9af38537caaee10e254137526520b742c206b59d699854d7b5919e9bf2dfa",
+    "physkan_cnn.png": "a0d78620b9ec1cf73f32f74e51dd0f8853b013e0710c2bae218b24ce944881ec",
+    "physkan_complex_ops.png": "e23f00a0fff200671d21906b7b595d59898c5da1e19097cfe557e97184327b69",
+    "physkan_kan_edge.png": "75860778989bfd267bd9f7bc9c06caa797d873885b0679944eb1da69466fc0e8",
+    "physkan_mlp.png": "c136e8a90caefd61a28b7c6ed476dd92a154d8b07d5ab98dc9ec77173cced9e0",
+    "physkan_relay_gate.png": "e8a34b2e6dea549d5c7b37894047789898c4cf36f9ec4fe571c36fc10692fd59",
+    "physkan_residual.png": "2557e69511985baf9499615198f60af0410e37a3eb3e1c6075b0a170676ebc7b",
+    "transformer_attention.png": "62a60886f01f71d09437acf54f60ebc617d47c7df3d97400cf884837d53122ed",
+    "transformer_baseline.png": "e78e3ab73cd286f3b754122fe863d0d22a420b1432fae85346b8ac1f1278fb28",
+    "transformer_physical.png": "4b2fc521ef1682ad44ee6d87e75e369a0f6c864f99ae32087ec643a699aacd0d"
+  },
+  "limits": [
+    "Static reading and AST-based audit, no Torch execution in available inspected interpreter.",
+    "Current code paths/defaults do not prove code-at-training identity for all historical checkpoints.",
+    "No phase-6 work, training, dataset inference, or architecture modifications."
+  ],
+  "static_audit": {
+    "forward_paths_verified": true,
+    "stem_gate_before_kan": true,
+    "stem_interaction_uses_ungated_original_amplitudes": true,
+    "attention_adds_scores_not_physical_amp_and_angle": true,
+    "attention_contains_no_directional_gate": true,
+    "encoder_residual_adds_same_positions": true,
+    "ffn_interaction_parallel_to_gated_kan": true,
+    "every_physical_ffn_has_interactions": true,
+    "default_pair_counts": {
+      "stem": 16,
+      "each_ffn": 4
+    },
+    "linear_phase_projections_present": true,
+    "positional_encoding_added_to_both_halves": true,
+    "stem_norm_optional_default_off": true,
+    "default_attention_padding_only_not_causal_triangle": true,
+    "scalar_gate_periodicity_example_error": 1.1102230246251565e-16,
+    "functions": {
+      "PhysicalStem": {
+        "path": "osc_tools/ml/layers/transformer_blocks.py",
+        "line": 644,
+        "end_line": 719
+      },
+      "ComplexInteractionBlock": {
+        "path": "osc_tools/ml/layers/transformer_blocks.py",
+        "line": 277,
+        "end_line": 320
+      },
+      "ComplexMultiheadAttention": {
+        "path": "osc_tools/ml/layers/transformer_blocks.py",
+        "line": 400,
+        "end_line": 477
+      },
+      "PhysicalKANFeedForward": {
+        "path": "osc_tools/ml/layers/transformer_blocks.py",
+        "line": 899,
+        "end_line": 941
+      },
+      "TransformerEncoderBlock": {
+        "path": "osc_tools/ml/layers/transformer_blocks.py",
+        "line": 1034,
+        "end_line": 1060
+      },
+      "PhysicalKANTransformer": {
+        "path": "osc_tools/ml/models/transformer.py",
+        "line": 256,
+        "end_line": 396
+      }
+    }
+  },
+  "preservation": {
+    "stable_original_notes": 71,
+    "raw_notes_including_replies": 84,
+    "author_replies": 13,
+    "explicitly_closed": [
+      "AA042",
+      "AA045",
+      "AA046",
+      "AA047",
+      "AA062",
+      "AA063",
+      "AA066",
+      "AA067",
+      "AA068",
+      "AA069",
+      "AA070",
+      "AA071"
+    ],
+    "code_and_all_png_hashes_unchanged": true
+  },
+  "pdf_qa": {
+    "dissertation_review": {
+      "pages": 164,
+      "sha256": "c7e04c05a8474993a6a94e5241e00aa24986f00483d8efb6b69446e682260fb1",
+      "visible_note_ids": [],
+      "stable_toc_aux": {
+        "toc": true,
+        "aux": true
+      },
+      "architecture_section_no_overfull": true
+    },
+    "dissertation_comments": {
+      "pages": 169,
+      "sha256": "b0f1d12bea4d172606342d333cf09414e62aa8e7067723d3cbad6213ff48ad4d",
+      "visible_note_ids": [
+        "AA044.",
+        "AA048.",
+        "AA040.",
+        "AA041.",
+        "AA049.",
+        "AA050.",
+        "AA051.",
+        "AA052.",
+        "AA053.",
+        "AA054.",
+        "AA055.",
+        "AA056.",
+        "AA043.",
+        "AA057.",
+        "AA058.",
+        "AA059.",
+        "AA060.",
+        "AA061.",
+        "AA064.",
+        "AA065."
+      ],
+      "stable_toc_aux": {
+        "toc": true,
+        "aux": true
+      },
+      "architecture_section_no_overfull": true
+    },
+    "accepted_ozz_112_120_text_unchanged": true,
+    "visual_review": {
+      "clean_pages": [
+        126,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143
+      ],
+      "annotated_pages": [
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148
+      ],
+      "all_four_inserted_figures_reviewed": true,
+      "physical_figure_number": "4.13",
+      "physical_figure_clean_page": 140,
+      "physical_figure_annotated_page": 145,
+      "exact_flow_table_number": "4.1",
+      "exact_flow_table_annotated_page": 146
+    }
+  },
+  "remaining": [
+    "Correct physical overview drawing according to existing figure specification; image currently retained with explicit caveat and exact table.",
+    "Author review of AA064 and AA065; no automatic acceptance.",
+    "Full historical note audit and numerical source integration remain separate."
+  ],
+  "resource_remaining_snapshot": {
+    "five_hour": 66,
+    "weekly": 94
+  },
+  "output_source_sha256": {
+    "manuscript/chapters/ch04_statistical_analysis/chapter.tex": "5583d7436eff16371ad4ca50f0d3c054e2ad324ed52135f4106d8eb6e663acef",
+    "manuscript/chapters/ch04_statistical_analysis/sec01_evaluation_methodology.tex": "a88e9dd480489140e2ef5828d0dbe436c2ede8b3bc149e3f6ff36a4e89792f28",
+    "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex": "811fdbfe09ca78c7018f2f2e78318977fd44b26ae4be6af4eeef72038952f194",
+    "manuscript/chapters/ch04_statistical_analysis/sec03_signal_representations.tex": "6d3d62870a2dfac8ed549331b1d5e931e97b19adbf3d843f0833d77735b6ceca",
+    "manuscript/chapters/ch04_statistical_analysis/sec04_training_protocol.tex": "caf05bf01b18abfd3a563526f49fdd393e9d9c9ff401a0cfae2af0cd67556bf6"
+  }
+}

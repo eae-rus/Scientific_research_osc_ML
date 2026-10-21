@@ -82,10 +82,12 @@
 \ifdefined\AuthorReview
   \input{../build/reading/author_notes.tex}
   \renewcommand{\authorreviewnote}[1]{%
+    \ifcsname authorvisible#1\endcsname
     \par\medskip\begingroup\small\raggedright\color{blue!55!black}%
     \noindent\hrulefill\par\nopagebreak
     \csname authornote#1\endcsname
     \par\noindent\hrulefill\par\endgroup\medskip
+    \fi
   }
 \fi
 

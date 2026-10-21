@@ -5907,14 +5907,14 @@
     "docs/Dissertation/planning/handoffs/D00.md": "b038cbf0c0757d6ecf366ec7f0f15fe7e823f55fa8c2aecc4fa1c77285661cf4",
     "docs/Dissertation/planning/integration/rewrite_proposals/ch03.md": "de6d73ae2a95fecfebf68d33d2ea540bd7c5cf07d1a559a23fe4572724d07ba3",
     "docs/Dissertation/planning/integration/rewrite_proposals/ch05.md": "b4057fea4b1947ea7f3558bb52cf12bcfac967a14ef68319a3f514220c2e5ae2",
-    "docs/Dissertation/planning/questions.md": "3c2022ffca309e002a3c501cece1449d5c2c7bd911ac5595d33cfe628d303028",
+    "docs/Dissertation/planning/questions.md": "0e9e8ef41ff62a2b4785b0aed5e2593e45c1e6d5ea081c8c107c873f480342cd",
     "docs/Dissertation/planning/sources/PDR-05/limitations_and_comments.md": "bf40ebd6091f5235bea00db2d9c5599fa51250dccfd872ea36c0c61661626072",
     "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex": "0a24e4c9137e8dee28b6db890175143043e7596da25faec2c76facb6d96266f9",
-    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex": "731c56bb8d3a7066dd8971fb1702082c67f08567c6ecbffbabbeb3e5195ae538",
-    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec01_evaluation_methodology.tex": "984ca92c0acb133d3a2f2ae3fd1d1ad7c7baca245187c5b73abfcba09bdb0e5e",
-    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec03_signal_representations.tex": "582fb9ff17a69b9bd06af376858c83ac20d802371579ec9330bcdbd378440e35",
-    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec04_training_protocol.tex": "82b89715a5bff8665ff0f261914a239316874b240789945b78fc2778c5f67beb",
-    "docs/Dissertation/manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex": "1878f1190749fd6644f3d64f0ee8b9aa07784d2551e71da8d7cde39866c57bf6"
+    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex": "811fdbfe09ca78c7018f2f2e78318977fd44b26ae4be6af4eeef72038952f194",
+    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec01_evaluation_methodology.tex": "a88e9dd480489140e2ef5828d0dbe436c2ede8b3bc149e3f6ff36a4e89792f28",
+    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec03_signal_representations.tex": "6d3d62870a2dfac8ed549331b1d5e931e97b19adbf3d843f0833d77735b6ceca",
+    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec04_training_protocol.tex": "caf05bf01b18abfd3a563526f49fdd393e9d9c9ff401a0cfae2af0cd67556bf6",
+    "docs/Dissertation/manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex": "d4f9e7bc6d319ed35262622a7f43209e746822f7801db4220b5a273f1411db09"
   },
   "verification_summary": {
     "unchanged_source_files": 290,
@@ -6353,11 +6353,11 @@
   ],
   "current_reading_pdf": {
     "path": "docs/Dissertation/build/reading/latex/dissertation_review.pdf",
-    "pages": 161,
-    "task": "D04-004",
+    "pages": 164,
+    "task": "D04-005",
     "review_pages": [
-      136,
-      139
+      137,
+      142
     ]
   },
   "author_input_revision_20261011": {
@@ -6390,8 +6390,8 @@
   "current_annotated_pdf": {
     "path": "docs/Dissertation/build/reading/latex/dissertation_comments.pdf",
     "pages": 169,
-    "task": "D04-004",
-    "scope": "Inline author notes in chapters 4–5; one source/registry; no full historical acceptance audit."
+    "task": "D04-005",
+    "scope": "20 open chapter-4 notes shown; 12 explicitly accepted hidden, history preserved; no full historical audit."
   },
   "author_input_revision_20261017": {
     "proof": "review/checks/D04-004.json",
@@ -6406,5 +6406,26 @@
       "AA071"
     ],
     "author_acceptance": "Only AA071 current chapter-5 plan explicitly accepted. Others await user review or remain partial/deferred."
+  },
+  "author_input_revision_20261019": {
+    "proof": "review/checks/D04-005.json",
+    "stable_original_notes": 71,
+    "new_author_replies": 13,
+    "explicitly_closed_ids": [
+      "AA042",
+      "AA045",
+      "AA046",
+      "AA047",
+      "AA062",
+      "AA063",
+      "AA066",
+      "AA067",
+      "AA068",
+      "AA069",
+      "AA070",
+      "AA071"
+    ],
+    "physical_figure": "4.13, overview candidate requires corrections documented in existing specification; exact flow table 4.1",
+    "code_unchanged": true
   }
 }

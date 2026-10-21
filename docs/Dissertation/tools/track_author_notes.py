@@ -45,6 +45,23 @@ def scan(text):
         result.append((match.start(), end, raw))
     return result
 
+
+def group_author_replies(text):
+    """Keep a reply beside an existing AA note in that note's history.
+
+    The explicit authorreviewnote anchor identifies the parent; repeated
+    reply wording in other blocks never merges unrelated comments.
+    scan() remains lossless and returns every original note and reply.
+    """
+    all_notes = scan(text)
+    reply_starts, replies = set(), {}
+    for block in re.finditer(r'\\iffalse\b.*?\\fi\b\s*\\authorreviewnote\{(AA\d+)\}', text, re.S):
+        contained = [n for n in all_notes if block.start() <= n[0] < n[1] <= block.end()]
+        if len(contained) > 1:
+            replies[contained[0][0]] = [n[2] for n in contained[1:]]
+            reply_starts.update(n[0] for n in contained[1:])
+    return [n for n in all_notes if n[0] not in reply_starts], replies
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--apply', action='store_true')
@@ -69,7 +86,7 @@ def main():
     prepared = []
     for path in files:
         text = path.read_text(encoding='utf-8')
-        notes = scan(text)
+        notes, author_replies = group_author_replies(text)
         edits = []
         for index, (start,end,raw) in enumerate(notes,1):
             rel = path.relative_to(REPO).as_posix()
@@ -84,6 +101,12 @@ def main():
             # A new note inserted earlier must not inherit the old note's decision.
             if disposition and disposition.get('text_sha256') == sha:
                 record.update(disposition)
+            if start in author_replies:
+                history = record.setdefault('author_replies', [])
+                for reply in author_replies[start]:
+                    reply_sha = hashlib.sha256(reply.encode('utf-8')).hexdigest()
+                    if not any(r['sha256'] == reply_sha for r in history):
+                        history.append({'text': reply, 'sha256': reply_sha})
             record['last_seen_note_index'] = index
             record['last_seen_file_sha256'] = hashlib.sha256(text.encode('utf-8')).hexdigest()
             label = record.get('display','прочитано; решение открыто' if record['status']!='OPEN' else 'новое; не рассмотрено')
@@ -119,6 +142,10 @@ def main():
                   'not_required': 'Ответ записан, ожидает проверки автора'}
         chunks = ['% Generated from the existing author-note registry. Do not edit.']
         for record in registry['notes']:
+            if record.get('suppress_in_review') and record.get('author_acceptance') == 'accepted':
+                chunks.append(r'\expandafter\def\csname authornote'+record['id']+r'\endcsname{}')
+                continue
+            chunks.append(r'\expandafter\def\csname authorvisible'+record['id']+r'\endcsname{1}')
             state = states.get(record.get('implementation_status'), 'Исполнение отдельно не проверено; замечание открыто')
             reply = record.get('response_ru', 'Подробная повторная проверка этого примечания в данной партии не выполнялась.')
             target = record.get('section_label')
@@ -130,7 +157,9 @@ def main():
                           'Автоматического закрытия нет. Ожидается ответ автора.')
             chunks.append(r'\expandafter\def\csname authornote'+record['id']+r'\endcsname{'+
                           r'\noindent\textbf{'+record['id']+'. '+tex(state)+r'.}\par\nopagebreak[4] '+
-                          tex(record['original_text'])+r'\par\textbf{Ответ агента.} '+tex(reply)+
+                          tex(record['original_text'])+
+                          ''.join(r'\par\textbf{Дополнение автора.} '+tex(r['text']) for r in record.get('author_replies', []))+
+                          r'\par\textbf{Ответ агента.} '+tex(reply)+
                           location+r'\par\textit{'+tex(acceptance)+'}}')
         output = ROOT/'build/reading/author_notes.tex'
         output.parent.mkdir(parents=True,exist_ok=True)
