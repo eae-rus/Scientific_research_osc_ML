@@ -925,6 +925,12 @@ class PhysicalKANFeedForward(nn.Module):
                 h_amp = h_amp * gate
 
             # Комплексный путь: amp/angle → polar complex → interaction
+            # IMPORTANT TODO(POLAR-SIGN-01, Phase 5): x_amp after LayerNorm can
+            # be negative; torch.polar requires a nonnegative magnitude.
+            # Verify signed inputs, finite forward/backward and checkpoint
+            # compatibility before new physical-FFN runs. Do not silently add
+            # abs/softplus to old models. Task and acceptance criteria:
+            # docs/phase_discription/phase_5/PHASE_5_PLAN.md (POLAR-SIGN-01).
             z_in = torch.polar(x_amp, x_angle)
             z_out = self.interaction(z_in)
 
