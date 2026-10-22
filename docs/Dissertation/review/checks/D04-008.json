@@ -1,0 +1,179 @@
+{
+  "task_id": "D04-008",
+  "date": "2026-10-22",
+  "status": "DONE_SCOPED",
+  "code_sha256": {
+    "osc_tools/ml/layers/transformer_blocks.py": "9f250e8f726e9fac4aff2e410c21eacee5f517981cae1edcc26b5277048457d9",
+    "osc_tools/ml/models/transformer.py": "e2890240118010d9aaf48debbf2f27320c7dd5a99e1eca1824e8f573ef923f84",
+    "osc_tools/features/phasor.py": "93e3ac7ee34ec50febde6cdcde41f0561d8b4ddbeb681f860e8d80f43fdd8f96",
+    "osc_tools/features/polar.py": "ae22f8a73f15fcf0e22188c796808e07859e47184a9787c95caebb1b3420abcd",
+    "osc_tools/ml/fast-kan-master/fastkan/fastkan.py": "86364da256fb2fe1f7f575f798efc914d1bdfbd80595fd7c5b878f6e4e69e7b7"
+  },
+  "png_sha256": {
+    "ch04_output_decision_candidate.png": "1e877de136c9d34a06e55fb5f6519ffcd6d72c02d96117f1f2056b1b9f2359ed",
+    "image2.png": "a47e441fa204ea4f53821ee7bb92921e1c1fc4931b8c536c068e4661019f9294",
+    "ml_metric_errors.png": "05332d55f3c41a66ad7ad83a390386ac9b882e8d6acc5293f32f60573889ffb9",
+    "ozz_developing_fault.png": "2a03d1ccfaca9bdf90def00284d194754cbd36641fbc74346f884683edd607d3",
+    "ozz_measurement_fault.png": "72c8d83e68246e0f98138f4450a1568ba3873461069b240b8299ec0f9c6a63ff",
+    "ozz_switching_imitation.png": "3ce1a2200f480ba8876cf76ac1f7dd58c1604b8e38290153457ef5a0cb973eae",
+    "ozz_switching_peak.png": "c3736966350da17d5c2a15114c9f41f8554f8a0ff4b2d846eca9a6a6310c99ef",
+    "ozz_voltage_clipping.png": "982b93e4b131ec0f7eb6538cb49b09ef67e29fc212df3f98f2ae052400336a24",
+    "ozz_weak_process.png": "1814169d5f100fbe2ff9b55b7cb143123166c5c02d058cd1eee009106b64e8a4",
+    "physkan_arithmetic_stem.png": "13a9af38537caaee10e254137526520b742c206b59d699854d7b5919e9bf2dfa",
+    "physkan_cnn.png": "a0d78620b9ec1cf73f32f74e51dd0f8853b013e0710c2bae218b24ce944881ec",
+    "physkan_complex_ops.png": "e23f00a0fff200671d21906b7b595d59898c5da1e19097cfe557e97184327b69",
+    "physkan_kan_edge.png": "75860778989bfd267bd9f7bc9c06caa797d873885b0679944eb1da69466fc0e8",
+    "physkan_mlp.png": "c136e8a90caefd61a28b7c6ed476dd92a154d8b07d5ab98dc9ec77173cced9e0",
+    "physkan_relay_gate.png": "e8a34b2e6dea549d5c7b37894047789898c4cf36f9ec4fe571c36fc10692fd59",
+    "physkan_residual.png": "2557e69511985baf9499615198f60af0410e37a3eb3e1c6075b0a170676ebc7b",
+    "transformer_attention.png": "62a60886f01f71d09437acf54f60ebc617d47c7df3d97400cf884837d53122ed",
+    "transformer_attention_detail.png": "f6af236c095bfdd3510376dfdb16de0e1957a03b0c412d4bcef91de4da539343",
+    "transformer_baseline.png": "e78e3ab73cd286f3b754122fe863d0d22a420b1432fae85346b8ac1f1278fb28",
+    "transformer_baseline_detail.png": "51238ad338ba27ddf6e6624696fed9a13412758c665dc3e585e8a2c1c0544e90",
+    "transformer_ffn_detail.png": "50b002ed020c1a81972180e9905f829590cfc2c464d877c136369fd0f31d004f",
+    "transformer_gate_geometry.png": "791b2eb588f2758601a7dec058a30d1b0172571e7ffd1c037392f538528949ed",
+    "transformer_interactions_detail.png": "be9aef39d020c0c37fb8a9502b8342b6788bc616ddab9bf2feaccba242f20a88",
+    "transformer_physical.png": "1b0ef1e321193ff46f8a8dc912b865a3ad9f1be297b7d003f3846ecf612002c9",
+    "transformer_stem_detail.png": "34d57068d9511c295ea935a56bba581f006b4cbd44ec404a59bac54f66beb45e"
+  },
+  "source_articles": {
+    "docs\\article\\(ч1) Архитектура ИИ ФизКАН для энергетики v3.4.docx": "98e3fc97c6894b15ab7146de8061598b0060f5b2ad32af980ec87a6ec80deebd",
+    "docs\\article\\(ч2) Анализ признаков и архитектуры ФизКАН v2.5.docx": "fd6e48dcb2d561682d24a38ab1ff9b8e0507083cd8e35630bf4e23ab50d50086",
+    "docs\\article\\(ч3) Архитектура трансформеров v1.3.docx": "90f8c5c8d52f4ff7dafa7ab6860f82a7390c4b265c21775d59c5f4fcdfd373b1"
+  },
+  "preservation": {
+    "original_71_notes_unchanged": true,
+    "original_replies_preserved": true,
+    "code_unchanged": true,
+    "png_unchanged": true,
+    "articles_unchanged": true,
+    "all_notes_in_sources": true,
+    "all_replies_in_sources": true,
+    "ozz_pages_112_120_text_unchanged": true
+  },
+  "author_notes": {
+    "canonical_count": 75,
+    "author_replies": 33,
+    "suppressed_accepted": 32,
+    "new_ids": [
+      "AA072",
+      "AA073",
+      "AA074",
+      "AA075"
+    ],
+    "newly_accepted": [
+      "AA044",
+      "AA040",
+      "AA041",
+      "AA049",
+      "AA050",
+      "AA051",
+      "AA052",
+      "AA053",
+      "AA054",
+      "AA055",
+      "AA056",
+      "AA043",
+      "AA057",
+      "AA058",
+      "AA059",
+      "AA060",
+      "AA061",
+      "AA064",
+      "AA065"
+    ]
+  },
+  "pdf_qa": {
+    "review": {
+      "path": "docs\\Dissertation\\build\\reading\\latex\\dissertation_review.pdf",
+      "pages": 169,
+      "sha256": "758c22d8676a4ab2f741944ca329993e3ec433ce4fdb87faa6b8c29f623e61ad",
+      "visible_ids_and_pages": [],
+      "raster_visual_check": [
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149
+      ],
+      "stable_aux_toc": true
+    },
+    "comments": {
+      "path": "docs\\Dissertation\\build\\reading\\latex\\dissertation_comments.pdf",
+      "pages": 171,
+      "sha256": "14f8f0fb3419f949be457e7f034575d8925aeb14cfeace2a79a6286f1cd34c56",
+      "visible_ids_and_pages": [
+        [
+          131,
+          "AA072."
+        ],
+        [
+          135,
+          "AA073."
+        ],
+        [
+          140,
+          "AA074."
+        ],
+        [
+          145,
+          "AA075."
+        ]
+      ],
+      "raster_visual_check": [
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        131,
+        135,
+        145,
+        147,
+        148,
+        149,
+        150,
+        151
+      ],
+      "stable_aux_toc": true,
+      "visible_ids_expected_exactly_once": true
+    },
+    "final_visual_result": "No cut schematic nodes, axes or labels; tables and four note/response blocks legible; no new section overflow",
+    "undefined_references": 0,
+    "overfull_boxes_count_each_pdf": 9,
+    "overfull_scope": "Existing earlier text, no overfull in changed chapter4 block"
+  },
+  "math_checks": {
+    "positive_sequence_convention": "X0=0, X1=1, X2=0 within 1e-12",
+    "neutral_current_KCL": "sum of four consistently oriented currents equals zero",
+    "scope": "algebra only, no dataset/model execution"
+  },
+  "static_architecture": {
+    "Stem_amp": "cat([kan_amp(A*g(phi+b)), abs(interaction(polar(A,phi+b)))]) -> proj_amp",
+    "Stem_angle": "cat([phi+b, angle(interaction)]) -> proj_angle",
+    "FFN_amp": "g(v)*KAN2(KAN1(u)) + sigmoid(gamma)*project(abs(interaction(polar(u,v))))",
+    "FFN_outer": "H0 + [delta_u,b]; hidden residual does not equal concatenation of raw measured channels",
+    "raw_amplitude_copy_present": false,
+    "issue": "AA075 remains open for separately specified variant; no code change"
+  },
+  "source_mapping": {
+    "new_section": "4.4 methods, local AI-02-RU P0075–P0102 and phasor/polar implementation",
+    "new_numerical_results": false,
+    "C02": "23/45 unchanged",
+    "C03": "19/43 unchanged"
+  },
+  "open_issues": [
+    "AA075 explicit raw bypass/concatenation contract",
+    "POLAR-SIGN-01 negative hidden amplitude before torch.polar",
+    "AI04-ABL-01 historical KAN/MLP configuration equivalence",
+    "4.4 quantitative tables/graphs not yet transferred",
+    "4.5 and chapter5 in progress"
+  ],
+  "scope": "New comments, figure presentation and section4.4 methods; no training, no Phase6 changes, no full historical comment audit"
+}
