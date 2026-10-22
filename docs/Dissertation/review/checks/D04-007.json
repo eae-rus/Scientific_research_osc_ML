@@ -1,0 +1,260 @@
+{
+  "task_id": "D04-007",
+  "date": "2026-10-21",
+  "status": "DONE_SCOPED",
+  "code_sha256": {
+    "osc_tools/ml/models/baseline.py": "334cb35cdd7529eeae172f1969492849f1fe6c1ea39e144232200a56ba94bf4b",
+    "osc_tools/ml/models/cnn.py": "c5302e9c24f91c6e144c468f0859bacbc2d98dc5291ae97b7f3a1fc4dc7fd32c",
+    "osc_tools/ml/models/kan.py": "8eeb37e597f228f7b4b163281752bbb029f24802d58e2a7c5fa7b041faad629c",
+    "osc_tools/ml/models/transformer.py": "e2890240118010d9aaf48debbf2f27320c7dd5a99e1eca1824e8f573ef923f84",
+    "osc_tools/ml/layers/transformer_blocks.py": "198cda584159d092c4d77096375ae3d6645c4300cabdbcae923d8a7adb39680a",
+    "osc_tools/ml/layers/kan_layers.py": "71637fca5504e9b34e075ad57c601e0f394bcc94f401f63f3700f755df0b6ac4",
+    "osc_tools/ml/kan_conv/KANLinear.py": "a7ddb993dc66bf6a30ee5c5f7a0eaa46010e888045aed3a78e7076839ffa5cea",
+    "osc_tools/ml/kan_conv/arithmetic.py": "4b83c3ceed7a3176267f9a1aac926ee06db63746a8326b553dbfae7bbb447f32",
+    "osc_tools/ml/fast-kan-master/fastkan/fastkan.py": "86364da256fb2fe1f7f575f798efc914d1bdfbd80595fd7c5b878f6e4e69e7b7"
+  },
+  "input_png_sha256": {
+    "ch04_output_decision_candidate.png": "1e877de136c9d34a06e55fb5f6519ffcd6d72c02d96117f1f2056b1b9f2359ed",
+    "image2.png": "a47e441fa204ea4f53821ee7bb92921e1c1fc4931b8c536c068e4661019f9294",
+    "ml_metric_errors.png": "05332d55f3c41a66ad7ad83a390386ac9b882e8d6acc5293f32f60573889ffb9",
+    "ozz_developing_fault.png": "2a03d1ccfaca9bdf90def00284d194754cbd36641fbc74346f884683edd607d3",
+    "ozz_measurement_fault.png": "72c8d83e68246e0f98138f4450a1568ba3873461069b240b8299ec0f9c6a63ff",
+    "ozz_switching_imitation.png": "3ce1a2200f480ba8876cf76ac1f7dd58c1604b8e38290153457ef5a0cb973eae",
+    "ozz_switching_peak.png": "c3736966350da17d5c2a15114c9f41f8554f8a0ff4b2d846eca9a6a6310c99ef",
+    "ozz_voltage_clipping.png": "982b93e4b131ec0f7eb6538cb49b09ef67e29fc212df3f98f2ae052400336a24",
+    "ozz_weak_process.png": "1814169d5f100fbe2ff9b55b7cb143123166c5c02d058cd1eee009106b64e8a4",
+    "physkan_arithmetic_stem.png": "13a9af38537caaee10e254137526520b742c206b59d699854d7b5919e9bf2dfa",
+    "physkan_cnn.png": "a0d78620b9ec1cf73f32f74e51dd0f8853b013e0710c2bae218b24ce944881ec",
+    "physkan_complex_ops.png": "e23f00a0fff200671d21906b7b595d59898c5da1e19097cfe557e97184327b69",
+    "physkan_kan_edge.png": "75860778989bfd267bd9f7bc9c06caa797d873885b0679944eb1da69466fc0e8",
+    "physkan_mlp.png": "c136e8a90caefd61a28b7c6ed476dd92a154d8b07d5ab98dc9ec77173cced9e0",
+    "physkan_relay_gate.png": "e8a34b2e6dea549d5c7b37894047789898c4cf36f9ec4fe571c36fc10692fd59",
+    "physkan_residual.png": "2557e69511985baf9499615198f60af0410e37a3eb3e1c6075b0a170676ebc7b",
+    "transformer_attention.png": "62a60886f01f71d09437acf54f60ebc617d47c7df3d97400cf884837d53122ed",
+    "transformer_attention_detail.png": "f6af236c095bfdd3510376dfdb16de0e1957a03b0c412d4bcef91de4da539343",
+    "transformer_baseline.png": "e78e3ab73cd286f3b754122fe863d0d22a420b1432fae85346b8ac1f1278fb28",
+    "transformer_baseline_detail.png": "51238ad338ba27ddf6e6624696fed9a13412758c665dc3e585e8a2c1c0544e90",
+    "transformer_ffn_detail.png": "f273eec0f229788a59821b6159d15f6b3512136e688b65c15567d305972051fa",
+    "transformer_gate_geometry.png": "791b2eb588f2758601a7dec058a30d1b0172571e7ffd1c037392f538528949ed",
+    "transformer_interactions_detail.png": "be9aef39d020c0c37fb8a9502b8342b6788bc616ddab9bf2feaccba242f20a88",
+    "transformer_physical.png": "1b0ef1e321193ff46f8a8dc912b865a3ad9f1be297b7d003f3846ecf612002c9",
+    "transformer_stem_detail.png": "34d57068d9511c295ea935a56bba581f006b4cbd44ec404a59bac54f66beb45e"
+  },
+  "source_articles": {
+    "docs\\article\\(ч1) Архитектура ИИ ФизКАН для энергетики v3.4.docx": "98e3fc97c6894b15ab7146de8061598b0060f5b2ad32af980ec87a6ec80deebd",
+    "docs\\article\\(ч2) Анализ признаков и архитектуры ФизКАН v2.5.docx": "fd6e48dcb2d561682d24a38ab1ff9b8e0507083cd8e35630bf4e23ab50d50086",
+    "docs\\article\\(ч3) Архитектура трансформеров v1.3.docx": "90f8c5c8d52f4ff7dafa7ab6860f82a7390c4b265c21775d59c5f4fcdfd373b1",
+    "docs\\article\\(ч4) Трансформеры для детекции событий v1.1.docx": "ac04852a3db2a5f6c1cbeee8d909a6e63167e43fc37a5eb4e4b322a5cbe98a5c"
+  },
+  "old_vector_sha256": {
+    "transformer_attention_detail.pdf": "5543d2b5b5b5346432b05a3f6064d787086e18c84c501d377568cb01ca40c0db",
+    "transformer_baseline_detail.pdf": "b1a3eaf4b14a23635152360d137320b3fdb98910513e27dd031957be48ff4e61",
+    "transformer_ffn_detail.pdf": "0714d313c8f24f890db16ac2ae5e29f706ebfa7dcafc9b826ef24c8bd5f46cdc",
+    "transformer_gate_geometry.pdf": "d58c533dd9c9faa5390e26bd8d5c188548742858a8b1db59757f484ff0d7e264",
+    "transformer_interactions_detail.pdf": "c56e2e4c1462f68210651ba09396ecc2678e2371081fb0a0e62a75244a924677",
+    "transformer_stem_detail.pdf": "765a10b6eccaa48c305b747fe9323c9e5c0d58cae1679b1898aaefd1a3931156"
+  },
+  "preservation": {
+    "code_files_unchanged": true,
+    "all_input_png_unchanged": true,
+    "stable_notes": 71,
+    "author_replies": 14,
+    "new_note_ids": 0,
+    "raw_author_notes_unchanged": true
+  },
+  "checks": {
+    "six_png_references_active": true,
+    "unused_generated_pdf_removed": [
+      "transformer_attention_detail.pdf",
+      "transformer_baseline_detail.pdf",
+      "transformer_ffn_detail.pdf",
+      "transformer_gate_geometry.pdf",
+      "transformer_interactions_detail.pdf",
+      "transformer_stem_detail.pdf"
+    ],
+    "bspline_vs_fastkan_rbf_distinguished": true,
+    "physical_mlp_changes_stem_ffn_and_default_head": true,
+    "encoder_residual_bypasses_norm": true,
+    "scalar_real_division_shift_corner_confirmed": true,
+    "torch_execution": false,
+    "training_or_dataset_inference": false
+  },
+  "chapter_review": {
+    "4.1": "Author introduction retained with one grammatical correction; roadmap remains visible.",
+    "4.2": "All five subsections reread against AI01 metrics/protocol, unit/threshold/independence/runtime distinctions retained.",
+    "4.3.9": "Six author PNGs inspected; stem, interaction, gate, attention correct for shown defaults; FFN external residual/pre-norm naming requires correction and is caveated in text/caption. Variants PhysicalMLP and spectral/raw baseline added.",
+    "4.3.10": "Across-study synthesis retained; no global ranking or pure KAN ablation inferred.",
+    "4.4": "Beginning matches AI02 P0077-P0098 input/representations/scaling; comparison/formula/plots/results still WIP.",
+    "4.5": "Beginning matches AI01 P0082-P0084 epochs/loss/augmentation/best-final protocol; cross-study protocol/results still WIP.",
+    "4.3.1-4.3.4": "Inputs/logits, configurable SimpleMLP/SimpleCNN and ResNet1D compared with forward and constructors.",
+    "4.3.5": "SimpleKAN/KANConv1d/KANLinear B-splines versus FastKAN Gaussian RBF clarified.",
+    "4.3.6-4.3.8": "Parallel real/complex arithmetic, scaling, fixed pair order, phase normalization and KAN mask versus periodic gate reviewed; no learned preselector falsely attributed to first real PhysicsKAN."
+  },
+  "article_coverage": {
+    "AI01": {
+      "reviewed": "P0045-P0055, P0060-P0084 and outline P0085-P0130",
+      "included": "metrics, classical/KAN/physical architecture principles, initial training description",
+      "pending": "numerical results, engineering error plots, learned functions and physical-layer ablations"
+    },
+    "AI02": {
+      "reviewed": "P0077-P0102, outline sections 3-5",
+      "included": "initial signal/coordinate/scaling overview and shared architectures",
+      "pending": "quantitative history/feature study, full feature construction, OZZ method/results"
+    },
+    "AI03": {
+      "reviewed": "P0056-P0115 architecture/source image4, outline SSL/classification/results",
+      "included": "buffer/zones, attention, stem, periodic gate, physical FFN and limitations",
+      "pending": "full pretraining/reconstruction loss, training protocol and numerical comparisons"
+    },
+    "AI04": {
+      "reviewed": "P0145-P0148/P0177 architecture comparison, outline transfer/missing channels/CT saturation",
+      "included": "physical MLP and raw/spectral baseline roles, no numerical result claims",
+      "pending": "matched historical ablation configs, real archive/negative modes, robustness and CT saturation"
+    },
+    "PDR05": {
+      "reviewed": "existing protocol passport only; original phase5/phase6 not reread or edited",
+      "included": "shared metric definitions and separation of classifier from directional output",
+      "pending": "specialized RNM applicability/labels/validation in chapter5"
+    }
+  },
+  "open_issues": [
+    "New FFN PNG must distinguish residual state before norm and FFN input after norm; detailed prompt updated.",
+    "POLAR-SIGN-01 remains open, no model change.",
+    "AI04-ABL-01: current PhysicalMLP changes physical FFN paths as well as basis; restore historical config/code before causal result claim.",
+    "Real DivisionLayer epsilon sign-shift can give zero denominator at d=-1e-9; runtime/dtype check remains, overstrong text removed."
+  ],
+  "pdf_qa": {
+    "dissertation_review": {
+      "pages": 166,
+      "sha256": "bbd6e92ce79da669068b1c501fa25e11ce211db98cdb3b5e0c29bb28490b1b66",
+      "stable": {
+        "aux": true,
+        "toc": true
+      },
+      "visible_notes": [],
+      "architecture_no_overfull": true,
+      "labels": {
+        "sec:ch4_evaluation_methodology": "\\newlabel{sec:ch4_evaluation_methodology}{{4.2}{122}{Общая методика оценки моделей}{section.4.2}{}}",
+        "sec:ch4_physkan_architectures": "\\newlabel{sec:ch4_physkan_architectures}{{4.3}{124}{Архитектуры нейросетей для анализа осциллограмм}{section.4.3}{}}",
+        "fig:ch4_physical_ffn": "\\newlabel{fig:ch4_physical_ffn}{{4.17}{143}{Физический FFN и сложение двух амплитудных вкладов. Нормализация основного пути перед FFN на схеме опущена}{figure.4.17}{}}",
+        "tab:ch4_physical_code_paths": "\\newlabel{tab:ch4_physical_code_paths}{{4.1}{143}{Различие входного каскада и физического FFN}{table.4.1}{}}",
+        "sec:ch4_signal_representations": "\\newlabel{sec:ch4_signal_representations}{{4.4}{145}{Представления токов и напряжений на входе модели}{section.4.4}{}}"
+      }
+    },
+    "dissertation_comments": {
+      "pages": 171,
+      "sha256": "5d65dcf9b0b734c93160ca77db825c5a17573ff10e3c4ddc920f3022cf9709ca",
+      "stable": {
+        "aux": true,
+        "toc": true
+      },
+      "visible_notes": [
+        "AA044.",
+        "AA040.",
+        "AA041.",
+        "AA049.",
+        "AA050.",
+        "AA051.",
+        "AA052.",
+        "AA053.",
+        "AA054.",
+        "AA055.",
+        "AA056.",
+        "AA043.",
+        "AA057.",
+        "AA058.",
+        "AA059.",
+        "AA060.",
+        "AA061.",
+        "AA064.",
+        "AA065."
+      ],
+      "architecture_no_overfull": true,
+      "labels": {
+        "sec:ch4_evaluation_methodology": "\\newlabel{sec:ch4_evaluation_methodology}{{4.2}{122}{Общая методика оценки моделей}{section.4.2}{}}",
+        "sec:ch4_physkan_architectures": "\\newlabel{sec:ch4_physkan_architectures}{{4.3}{124}{Архитектуры нейросетей для анализа осциллограмм}{section.4.3}{}}",
+        "fig:ch4_physical_ffn": "\\newlabel{fig:ch4_physical_ffn}{{4.17}{147}{Физический FFN и сложение двух амплитудных вкладов. Нормализация основного пути перед FFN на схеме опущена}{figure.4.17}{}}",
+        "tab:ch4_physical_code_paths": "\\newlabel{tab:ch4_physical_code_paths}{{4.1}{147}{Различие входного каскада и физического FFN}{table.4.1}{}}",
+        "sec:ch4_signal_representations": "\\newlabel{sec:ch4_signal_representations}{{4.4}{149}{Представления токов и напряжений на входе модели}{section.4.4}{}}"
+      }
+    },
+    "ozz_112_120_text_unchanged": true,
+    "visual_review": {
+      "clean_pages": [
+        129,
+        130,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145
+      ],
+      "annotated_pages": [
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150
+      ],
+      "all_six_new_pngs_inspected_at_original_resolution": true,
+      "inserted_six_figures_checked_in_both_editions": true,
+      "table_and_wip_markers_checked": true
+    }
+  },
+  "resource_remaining_snapshot": {
+    "five_hour": 82,
+    "weekly": 90
+  },
+  "output_source_sha256": {
+    "manuscript/chapters/ch04_statistical_analysis/chapter.tex": "62110850a83f610dc124885cc7a559c9be44758c9dd19a04a8a21c963374f7b0",
+    "manuscript/chapters/ch04_statistical_analysis/sec01_evaluation_methodology.tex": "a88e9dd480489140e2ef5828d0dbe436c2ede8b3bc149e3f6ff36a4e89792f28",
+    "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex": "d81610573af48955cd17910089033815d6b4d35466bf5c7e2bf85b1eef9cccd6",
+    "manuscript/chapters/ch04_statistical_analysis/sec03_signal_representations.tex": "6d3d62870a2dfac8ed549331b1d5e931e97b19adbf3d843f0833d77735b6ceca",
+    "manuscript/chapters/ch04_statistical_analysis/sec04_training_protocol.tex": "caf05bf01b18abfd3a563526f49fdd393e9d9c9ff401a0cfae2af0cd67556bf6"
+  },
+  "followup_20261022": {
+    "ffn_png_sha256": "50b002ed020c1a81972180e9905f829590cfc2c464d877c136369fd0f31d004f",
+    "figure_review": "External residual H0 bypasses normalization; FFN receives Hn=[un|v0]; two amplitude contributions and independent b match current code.",
+    "phase5_priority": "POLAR-SIGN-01 IMPORTANT before new runs using PhysicalKANFeedForward",
+    "model_runtime_unchanged": true,
+    "phase5_markers": [
+      "docs/phase_discription/phase_5/PHASE_5_PLAN.md",
+      "docs/phase_discription/phase_5/PHASE_5_PDR_PIPELINE_GUIDE.md",
+      "docs/phase_discription/phase_5/PHASE_5_WORK_LOG.md",
+      "osc_tools/ml/layers/transformer_blocks.py"
+    ],
+    "model_AST_equals_HEAD": true,
+    "pdf_qa": {
+      "dissertation_review": {
+        "pages": 166,
+        "ffn_page": 143,
+        "stable": {
+          "aux": true,
+          "toc": true
+        },
+        "sha256": "e550c87bc10c59613034e9d07d6252d8532ab7a94680ff05ce75c7b6830d143b"
+      },
+      "dissertation_comments": {
+        "pages": 171,
+        "ffn_page": 147,
+        "stable": {
+          "aux": true,
+          "toc": true
+        },
+        "sha256": "0522f2a6f80e3cde00c25851617039fe2ff48c04dfacf513cd9b97f9152ac445"
+      }
+    },
+    "code_with_comment_sha256": "9f250e8f726e9fac4aff2e410c21eacee5f517981cae1edcc26b5277048457d9",
+    "visual_review": {
+      "clean_ffn_page": 143,
+      "comments_ffn_page": 147,
+      "checked": true
+    }
+  }
+}

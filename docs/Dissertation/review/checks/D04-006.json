@@ -1,0 +1,185 @@
+{
+  "task_id": "D04-006",
+  "date": "2026-10-21",
+  "status": "DONE_SCOPED",
+  "code_sha256": {
+    "osc_tools\\ml\\models\\transformer.py": "e2890240118010d9aaf48debbf2f27320c7dd5a99e1eca1824e8f573ef923f84",
+    "osc_tools\\ml\\layers\\transformer_blocks.py": "198cda584159d092c4d77096375ae3d6645c4300cabdbcae923d8a7adb39680a",
+    "osc_tools\\ml\\models\\kan.py": "8eeb37e597f228f7b4b163281752bbb029f24802d58e2a7c5fa7b041faad629c",
+    "osc_tools\\ml\\models\\baseline.py": "334cb35cdd7529eeae172f1969492849f1fe6c1ea39e144232200a56ba94bf4b",
+    "osc_tools\\ml\\models\\cnn.py": "c5302e9c24f91c6e144c468f0859bacbc2d98dc5291ae97b7f3a1fc4dc7fd32c",
+    "osc_tools\\ml\\kan_conv\\arithmetic.py": "4b83c3ceed7a3176267f9a1aac926ee06db63746a8326b553dbfae7bbb447f32"
+  },
+  "input_png_sha256": {
+    "ch04_output_decision_candidate.png": "1e877de136c9d34a06e55fb5f6519ffcd6d72c02d96117f1f2056b1b9f2359ed",
+    "image2.png": "a47e441fa204ea4f53821ee7bb92921e1c1fc4931b8c536c068e4661019f9294",
+    "ml_metric_errors.png": "05332d55f3c41a66ad7ad83a390386ac9b882e8d6acc5293f32f60573889ffb9",
+    "ozz_developing_fault.png": "2a03d1ccfaca9bdf90def00284d194754cbd36641fbc74346f884683edd607d3",
+    "ozz_measurement_fault.png": "72c8d83e68246e0f98138f4450a1568ba3873461069b240b8299ec0f9c6a63ff",
+    "ozz_switching_imitation.png": "3ce1a2200f480ba8876cf76ac1f7dd58c1604b8e38290153457ef5a0cb973eae",
+    "ozz_switching_peak.png": "c3736966350da17d5c2a15114c9f41f8554f8a0ff4b2d846eca9a6a6310c99ef",
+    "ozz_voltage_clipping.png": "982b93e4b131ec0f7eb6538cb49b09ef67e29fc212df3f98f2ae052400336a24",
+    "ozz_weak_process.png": "1814169d5f100fbe2ff9b55b7cb143123166c5c02d058cd1eee009106b64e8a4",
+    "physkan_arithmetic_stem.png": "13a9af38537caaee10e254137526520b742c206b59d699854d7b5919e9bf2dfa",
+    "physkan_cnn.png": "a0d78620b9ec1cf73f32f74e51dd0f8853b013e0710c2bae218b24ce944881ec",
+    "physkan_complex_ops.png": "e23f00a0fff200671d21906b7b595d59898c5da1e19097cfe557e97184327b69",
+    "physkan_kan_edge.png": "75860778989bfd267bd9f7bc9c06caa797d873885b0679944eb1da69466fc0e8",
+    "physkan_mlp.png": "c136e8a90caefd61a28b7c6ed476dd92a154d8b07d5ab98dc9ec77173cced9e0",
+    "physkan_relay_gate.png": "e8a34b2e6dea549d5c7b37894047789898c4cf36f9ec4fe571c36fc10692fd59",
+    "physkan_residual.png": "2557e69511985baf9499615198f60af0410e37a3eb3e1c6075b0a170676ebc7b",
+    "transformer_attention.png": "62a60886f01f71d09437acf54f60ebc617d47c7df3d97400cf884837d53122ed",
+    "transformer_baseline.png": "e78e3ab73cd286f3b754122fe863d0d22a420b1432fae85346b8ac1f1278fb28",
+    "transformer_physical.png": "4b2fc521ef1682ad44ee6d87e75e369a0f6c864f99ae32087ec643a699aacd0d",
+    "transformer_physical_v2.png": "1b0ef1e321193ff46f8a8dc912b865a3ad9f1be297b7d003f3846ecf612002c9"
+  },
+  "static_checks": {
+    "stem_three_angle_destinations": true,
+    "products_and_ratios_are_parallel": true,
+    "ffn_complex_added_after_directional_gate": true,
+    "attention_has_two_output_projections": true,
+    "scalar_gate_periodicity_and_boundary": true,
+    "scalar_complex_arithmetic": true,
+    "normalization_signed_example": [
+      -1.3416354199689269,
+      -0.447211806656309,
+      0.447211806656309,
+      1.3416354199689269
+    ],
+    "torch_execution": false,
+    "training_or_dataset_inference": false,
+    "code_locations": {
+      "PhysicalStem.forward": 644,
+      "ComplexInteractionBlock.forward": 277,
+      "ComplexMultiheadAttention.forward": 400,
+      "PhysicalKANFeedForward.forward": 899,
+      "AmpOnlyLayerNorm.forward": 67
+    }
+  },
+  "implementation_issue": {
+    "id": "POLAR-SIGN-01",
+    "status": "static_interface_risk_not_runtime_checkpoint_audit",
+    "description": "AmpOnlyLayerNorm can produce signed amplitude-half features; PhysicalKANFeedForward passes x_amp directly to torch.polar without nonnegative conversion. Default-init LayerNorm example is negative in half its coordinates.",
+    "official_contract": "https://docs.pytorch.org/docs/2.14/generated/torch.polar.html",
+    "scope": "Do not silently modify trained architecture; inspect runtime gradients and define desired signed-feature semantics separately."
+  },
+  "preservation": {
+    "notes": 71,
+    "new_note_ids": 0,
+    "prior_author_replies_preserved": 13,
+    "newly_registered_reply": "AA048: Да, закрыта; already in current TEX snapshot",
+    "total_author_replies": 14,
+    "explicitly_closed_total": 13,
+    "code_unchanged_during_task": true,
+    "canonical_png_equals_author_v2": true,
+    "other_input_png_unchanged": true,
+    "original_TEX_notes_and_replies_unchanged": true
+  },
+  "architecture_image_audit": {
+    "SimpleMLP": "matches configurable Linear/optional BN/ReLU/dropout",
+    "SimpleCNN": "matches configurable Conv/optional BN/ReLU/pooling/dropout, global average/classifier",
+    "ResNet1D": "matches residual branch/projection and post-addition ReLU",
+    "KAN": "conceptual edge functions, not measured splines",
+    "PhysicsKAN": "parallel product and safe ratio, original-channel bypass",
+    "cPhysicsKAN": "zero-bias polar arithmetic and amp-only normalization; no conjugate-power label",
+    "rPhysicsKAN": "coarse figure omits input softplus after amp BN; text/caption clarified and redraw prompt added; KAN mask differs from periodic gate",
+    "BaselineTransformer": "new vector diagram adds omitted input GELU/norm and final norm/zone pooling",
+    "PhysicalKANTransformer": "v2 implicit angle line and collapsed operations; active separate figures show actual graph; signed-polar interface issue remains",
+    "source_article": "image4 phase bypass clearer; stem norm unconditional and FFN interaction/gate placement misleading; not used as sole code truth"
+  },
+  "new_vector_figures": {
+    "transformer_attention_detail.pdf": "5543d2b5b5b5346432b05a3f6064d787086e18c84c501d377568cb01ca40c0db",
+    "transformer_baseline_detail.pdf": "b1a3eaf4b14a23635152360d137320b3fdb98910513e27dd031957be48ff4e61",
+    "transformer_ffn_detail.pdf": "0714d313c8f24f890db16ac2ae5e29f706ebfa7dcafc9b826ef24c8bd5f46cdc",
+    "transformer_gate_geometry.pdf": "d58c533dd9c9faa5390e26bd8d5c188548742858a8b1db59757f484ff0d7e264",
+    "transformer_interactions_detail.pdf": "c56e2e4c1462f68210651ba09396ecc2678e2371081fb0a0e62a75244a924677",
+    "transformer_stem_detail.pdf": "765a10b6eccaa48c305b747fe9323c9e5c0d58cae1679b1898aaefd1a3931156"
+  },
+  "pdf_qa": {
+    "dissertation_review": {
+      "pages": 166,
+      "visible_note_ids": [],
+      "sha256": "6b800e1bf182cf1bbd5f4d5b21fc2f64e7c92b47dc6ddcf79015d808a337db53",
+      "stable": {
+        "aux": true,
+        "toc": true
+      },
+      "architecture_no_overfull": true,
+      "no_undefined_references": true
+    },
+    "dissertation_comments": {
+      "pages": 171,
+      "visible_note_ids": [
+        "AA044.",
+        "AA040.",
+        "AA041.",
+        "AA049.",
+        "AA050.",
+        "AA051.",
+        "AA052.",
+        "AA053.",
+        "AA054.",
+        "AA055.",
+        "AA056.",
+        "AA043.",
+        "AA057.",
+        "AA058.",
+        "AA059.",
+        "AA060.",
+        "AA061.",
+        "AA064.",
+        "AA065."
+      ],
+      "sha256": "81f1e93d06acc00b3268631583f281e20e32cd8cc4e5e955caa3b16d4866e8f3",
+      "stable": {
+        "aux": true,
+        "toc": true
+      },
+      "architecture_no_overfull": true,
+      "no_undefined_references": true
+    },
+    "ozz_112_120_unchanged": true,
+    "visual_review": {
+      "clean_pages": [
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144
+      ],
+      "annotated_pages": [
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149
+      ],
+      "six_vector_figures_rendered_and_inspected": true,
+      "unrendered_subscript_glyphs_corrected": true,
+      "table_left_alignment_and_row_separation_checked": true
+    }
+  },
+  "remaining": [
+    "POLAR-SIGN-01 numerical contract issue needs runtime/gradient/weight compatibility audit; no silent change.",
+    "Author acceptance of AA064/AA065 pending; six native detail diagrams can be externally redesigned from detailed prompts.",
+    "Full historical author-note audit and numerical integration remain separate."
+  ],
+  "source_article": {
+    "path": "docs\\article\\(ч3) Архитектура трансформеров v1.3.docx",
+    "sha256": "90f8c5c8d52f4ff7dafa7ab6860f82a7390c4b265c21775d59c5f4fcdfd373b1",
+    "scope": "architecture paragraphs 55–114 and original image4, read-only"
+  },
+  "output_source_sha256": {
+    "manuscript/chapters/ch04_statistical_analysis/chapter.tex": "5583d7436eff16371ad4ca50f0d3c054e2ad324ed52135f4106d8eb6e663acef",
+    "manuscript/chapters/ch04_statistical_analysis/sec01_evaluation_methodology.tex": "a88e9dd480489140e2ef5828d0dbe436c2ede8b3bc149e3f6ff36a4e89792f28",
+    "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex": "0fa8a84ba8a485998636f7c7c18118e4b8c54b2754dd25bd12d30fac3833ada4",
+    "manuscript/chapters/ch04_statistical_analysis/sec03_signal_representations.tex": "6d3d62870a2dfac8ed549331b1d5e931e97b19adbf3d843f0833d77735b6ceca",
+    "manuscript/chapters/ch04_statistical_analysis/sec04_training_protocol.tex": "caf05bf01b18abfd3a563526f49fdd393e9d9c9ff401a0cfae2af0cd67556bf6"
+  }
+}

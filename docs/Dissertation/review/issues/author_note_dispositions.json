@@ -275,13 +275,15 @@
   },
   "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#5": {
     "text_sha256": "7915774ef0acbf1825248279cb3a357a0d692f219be8f4185b89fcf2558442d0",
-    "status": "DECISION_RECORDED",
-    "display": "рисунок выходов подключён; ожидает проверки автора",
-    "decision": "D04-004: concrete reply recorded; no automatic closure.",
+    "status": "AUTHOR_ACCEPTED",
+    "display": "закрыто автором; сохранено в истории",
+    "decision": "D04-006: explicit author reply Да, закрыта found in current input; original text/reply retained and hidden in review.",
     "implementation_status": "implemented",
-    "author_acceptance": "pending",
+    "author_acceptance": "accepted",
     "response_ru": "Подключён авторский ch04_output_decision_candidate.png. Схема показывает независимые оценки, пороги и несколько совместных меток. Числа названы условными, выход РНМ выделен как отдельная постановка.",
-    "section_label": "sec:ch4_input_windows"
+    "section_label": "sec:ch4_input_windows",
+    "suppress_in_review": true,
+    "closed_scope": "Only output decision illustration concern explicitly accepted in the author reply."
   },
   "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#6": {
     "text_sha256": "c4af5b65c56c32e8f854d8b2fcc20b45dc8afef05d87373ad0e5ec5def3874d7",
@@ -470,11 +472,11 @@
   "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#24": {
     "text_sha256": "79d00d10cdb0deb1f4caf9c48fe0bc876542cb76caa3bb2fd4763f006367cd89",
     "status": "DECISION_RECORDED",
-    "display": "рисунки подключены; найдены расхождения обзорной схемы с кодом",
-    "decision": "D04-004: concrete reply recorded; no automatic closure.",
+    "display": "внесено новое пояснение; ожидает проверки автора",
+    "decision": "D04-007: chapter-wide text/image/code/source review; implementation and pending issues recorded separately; no author acceptance inferred.",
     "implementation_status": "partial",
     "author_acceptance": "pending",
-    "response_ru": "Подключены три авторских рисунка трансформера. Выполнена отдельная сверка forward-операций, а не только описаний классов. В PhysicalStem порядок ветвей отличается от обзорной картинки; физический FFN повторяется внутри encoder, направляющего реле в самом механизме внимания нет. Точные потоки приведены в тексте и таблице; исходная картинка сохранена для исправления по заданию.",
+    "response_ru": "22.10.2026. Авторская FFN v2 проверена и подключена: исходный H0 обходит нормализацию, ветви получают Hn, выход складывается с H0. Прежняя оговорка рисунка снята. POLAR-SIGN-01 остаётся открытым вопросом к вычислениям; по поручению автора добавлен как ВАЖНО в план и руководство запусков Фазы 5, рядом с torch.polar оставлен IMPORTANT TODO. Алгоритм модели не менялся. Авторская приёмка всего замечания не получена.",
     "section_label": "sec:ch4_attention_architecture"
   },
   "manuscript/chapters/ch04_statistical_analysis/sec01_evaluation_methodology.tex#1": {
@@ -528,11 +530,11 @@
   "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#26": {
     "text_sha256": "0ff3c03f316769bcda160170ff8a58c70774f4eda56b25a3d791397f80ff9442",
     "status": "DECISION_RECORDED",
-    "display": "сверка схемы и кода выполнена; ожидает проверки автора",
-    "decision": "D04-004: concrete reply recorded; no automatic closure.",
-    "implementation_status": "partial",
+    "display": "описание и схемы переработаны; ожидает проверки автора",
+    "decision": "D04-007: chapter-wide text/image/code/source review; implementation and pending issues recorded separately; no author acceptance inferred.",
+    "implementation_status": "implemented",
     "author_acceptance": "pending",
-    "response_ru": "По дополнению автора проверены рисунки и фактические forward-операции. Порядок во входном PhysicalStem уточнён, роли сложения и умножения разделены, повторение физического FFN объяснено. Исходная обзорная картинка сохранена с явной оговоркой о расхождениях; точная схема дана в таблице потоков и задании для исправления. Нужна авторская проверка этого уточнения.",
+    "response_ru": "D04-007. Повторно прочитана вся глава 4, устройство основных архитектур сверено с кодом и архитектурными абзацами статей 1–4. В подразделе о KAN уточнены B-сплайны и гауссовый базис FastKAN, в 4.3.9 добавлены различия физического MLP-варианта и двух входов Baseline. Для сравнения Physical KAN/MLP нельзя автоматически утверждать изолированный вклад KAN; исторические конфигурации ещё требуют восстановления. Общая методика 4.2 согласуется с определениями метрик, инженерные графики ошибок/интерпретации и численные результаты статей ещё не включены. 4.4/4.5 явно остаются в работе. Авторская проверка нового текста пока не получена.",
     "section_label": "sec:ch4_architecture_summary"
   },
   "manuscript/chapters/ch04_statistical_analysis/sec03_signal_representations.tex#1": {

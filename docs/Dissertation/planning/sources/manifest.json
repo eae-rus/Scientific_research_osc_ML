@@ -5907,10 +5907,10 @@
     "docs/Dissertation/planning/handoffs/D00.md": "b038cbf0c0757d6ecf366ec7f0f15fe7e823f55fa8c2aecc4fa1c77285661cf4",
     "docs/Dissertation/planning/integration/rewrite_proposals/ch03.md": "de6d73ae2a95fecfebf68d33d2ea540bd7c5cf07d1a559a23fe4572724d07ba3",
     "docs/Dissertation/planning/integration/rewrite_proposals/ch05.md": "b4057fea4b1947ea7f3558bb52cf12bcfac967a14ef68319a3f514220c2e5ae2",
-    "docs/Dissertation/planning/questions.md": "0e9e8ef41ff62a2b4785b0aed5e2593e45c1e6d5ea081c8c107c873f480342cd",
+    "docs/Dissertation/planning/questions.md": "ecf0e42fe6621b32561231edfa59d90cd8d621c11512c8d7d2896c662d511520",
     "docs/Dissertation/planning/sources/PDR-05/limitations_and_comments.md": "bf40ebd6091f5235bea00db2d9c5599fa51250dccfd872ea36c0c61661626072",
     "docs/Dissertation/manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex": "0a24e4c9137e8dee28b6db890175143043e7596da25faec2c76facb6d96266f9",
-    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex": "811fdbfe09ca78c7018f2f2e78318977fd44b26ae4be6af4eeef72038952f194",
+    "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex": "09d84908f58b16f4a71409c08ca00a9995f01776ea59561f13826e7c90bb05f1",
     "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec01_evaluation_methodology.tex": "a88e9dd480489140e2ef5828d0dbe436c2ede8b3bc149e3f6ff36a4e89792f28",
     "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec03_signal_representations.tex": "6d3d62870a2dfac8ed549331b1d5e931e97b19adbf3d843f0833d77735b6ceca",
     "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec04_training_protocol.tex": "caf05bf01b18abfd3a563526f49fdd393e9d9c9ff401a0cfae2af0cd67556bf6",
@@ -6353,11 +6353,11 @@
   ],
   "current_reading_pdf": {
     "path": "docs/Dissertation/build/reading/latex/dissertation_review.pdf",
-    "pages": 164,
-    "task": "D04-005",
+    "pages": 166,
+    "task": "D04-007",
     "review_pages": [
-      137,
-      142
+      122,
+      144
     ]
   },
   "author_input_revision_20261011": {
@@ -6389,9 +6389,9 @@
   },
   "current_annotated_pdf": {
     "path": "docs/Dissertation/build/reading/latex/dissertation_comments.pdf",
-    "pages": 169,
-    "task": "D04-005",
-    "scope": "20 open chapter-4 notes shown; 12 explicitly accepted hidden, history preserved; no full historical audit."
+    "pages": 171,
+    "task": "D04-007",
+    "scope": "19 open notes retained; chapter-wide editorial review, no full article/result acceptance."
   },
   "author_input_revision_20261017": {
     "proof": "review/checks/D04-004.json",
@@ -6427,5 +6427,32 @@
     ],
     "physical_figure": "4.13, overview candidate requires corrections documented in existing specification; exact flow table 4.1",
     "code_unchanged": true
+  },
+  "author_input_revision_20261021": {
+    "proof": "review/checks/D04-006.json",
+    "stable_original_notes": 71,
+    "author_replies": 14,
+    "newly_closed_ids": [
+      "AA048"
+    ],
+    "six_native_detail_figures": true,
+    "implementation_issue": "POLAR-SIGN-01 unresolved; no model code change"
+  },
+  "author_input_revision_20261021_D04_007": {
+    "proof": "review/checks/D04-007.json",
+    "new_author_pngs": 6,
+    "png_unchanged": true,
+    "stable_notes": 71,
+    "author_replies": 14,
+    "newly_closed_ids": [],
+    "pending_diagram": "FFN external residual before pre-norm",
+    "code_unchanged": true
+  },
+  "author_input_revision_20261022": {
+    "task": "D04-007 follow-up",
+    "proof": "review/checks/D04-007.json#followup_20261022",
+    "ffn_figure_corrected": true,
+    "phase5_priority_task": "POLAR-SIGN-01",
+    "model_edit": "comment only; AST unchanged"
   }
 }
