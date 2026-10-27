@@ -12,7 +12,8 @@
       "last_seen_file_sha256": "de6d73ae2a95fecfebf68d33d2ea540bd7c5cf07d1a559a23fe4572724d07ba3",
       "reviewed_at": "2026-10-06",
       "display": "учтено 05.10; исполнение по очереди",
-      "author_input_date": "2026-10-05"
+      "author_input_date": "2026-10-05",
+      "author_replies": []
     },
     {
       "id": "AA002",
@@ -25,7 +26,8 @@
       "last_seen_file_sha256": "de6d73ae2a95fecfebf68d33d2ea540bd7c5cf07d1a559a23fe4572724d07ba3",
       "reviewed_at": "2026-10-06",
       "display": "учтено 05.10; исполнение по очереди",
-      "author_input_date": "2026-10-05"
+      "author_input_date": "2026-10-05",
+      "author_replies": []
     },
     {
       "id": "AA003",
@@ -38,7 +40,8 @@
       "last_seen_file_sha256": "de6d73ae2a95fecfebf68d33d2ea540bd7c5cf07d1a559a23fe4572724d07ba3",
       "reviewed_at": "2026-10-06",
       "display": "учтено 05.10; исполнение по очереди",
-      "author_input_date": "2026-10-05"
+      "author_input_date": "2026-10-05",
+      "author_replies": []
     },
     {
       "id": "AA004",
@@ -51,7 +54,8 @@
       "last_seen_file_sha256": "de6d73ae2a95fecfebf68d33d2ea540bd7c5cf07d1a559a23fe4572724d07ba3",
       "reviewed_at": "2026-10-06",
       "display": "учтено 05.10; исполнение по очереди",
-      "author_input_date": "2026-10-05"
+      "author_input_date": "2026-10-05",
+      "author_replies": []
     },
     {
       "id": "AA005",
@@ -64,7 +68,8 @@
       "last_seen_file_sha256": "de6d73ae2a95fecfebf68d33d2ea540bd7c5cf07d1a559a23fe4572724d07ba3",
       "reviewed_at": "2026-10-06",
       "display": "учтено 05.10; исполнение по очереди",
-      "author_input_date": "2026-10-05"
+      "author_input_date": "2026-10-05",
+      "author_replies": []
     },
     {
       "id": "AA006",
@@ -77,7 +82,8 @@
       "last_seen_file_sha256": "de6d73ae2a95fecfebf68d33d2ea540bd7c5cf07d1a559a23fe4572724d07ba3",
       "reviewed_at": "2026-10-06",
       "display": "учтено 05.10; исполнение по очереди",
-      "author_input_date": "2026-10-05"
+      "author_input_date": "2026-10-05",
+      "author_replies": []
     },
     {
       "id": "AA007",
@@ -90,7 +96,8 @@
       "last_seen_file_sha256": "de6d73ae2a95fecfebf68d33d2ea540bd7c5cf07d1a559a23fe4572724d07ba3",
       "reviewed_at": "2026-10-06",
       "display": "учтено 05.10; исполнение по очереди",
-      "author_input_date": "2026-10-05"
+      "author_input_date": "2026-10-05",
+      "author_replies": []
     },
     {
       "id": "AA008",
@@ -103,7 +110,8 @@
       "last_seen_file_sha256": "de6d73ae2a95fecfebf68d33d2ea540bd7c5cf07d1a559a23fe4572724d07ba3",
       "reviewed_at": "2026-10-06",
       "display": "учтено 05.10; исполнение по очереди",
-      "author_input_date": "2026-10-05"
+      "author_input_date": "2026-10-05",
+      "author_replies": []
     },
     {
       "id": "AA009",
@@ -116,7 +124,8 @@
       "last_seen_file_sha256": "de6d73ae2a95fecfebf68d33d2ea540bd7c5cf07d1a559a23fe4572724d07ba3",
       "reviewed_at": "2026-10-06",
       "display": "учтено 05.10; исполнение по очереди",
-      "author_input_date": "2026-10-05"
+      "author_input_date": "2026-10-05",
+      "author_replies": []
     },
     {
       "id": "AA010",
@@ -129,7 +138,8 @@
       "last_seen_file_sha256": "de6d73ae2a95fecfebf68d33d2ea540bd7c5cf07d1a559a23fe4572724d07ba3",
       "reviewed_at": "2026-10-06",
       "display": "прочитано; актуальность старых замечаний проверяется",
-      "author_input_date": "2026-10-05"
+      "author_input_date": "2026-10-05",
+      "author_replies": []
     },
     {
       "id": "AA011",
@@ -143,7 +153,8 @@
       "reviewed_at": "2026-10-06",
       "display": "учтено 05.10; исполнение по очереди",
       "author_input_date": "2026-10-05",
-      "parser_correction": "Full multiline appendix preserved; marker moved from numbered-list punctuation to standalone closing delimiter."
+      "parser_correction": "Full multiline appendix preserved; marker moved from numbered-list punctuation to standalone closing delimiter.",
+      "author_replies": []
     },
     {
       "id": "AA012",
@@ -156,7 +167,8 @@
       "last_seen_file_sha256": "b4057fea4b1947ea7f3558bb52cf12bcfac967a14ef68319a3f514220c2e5ae2",
       "reviewed_at": "2026-10-06",
       "display": "учтено 05.10; исполнение по очереди",
-      "author_input_date": "2026-10-05"
+      "author_input_date": "2026-10-05",
+      "author_replies": []
     },
     {
       "id": "AA013",
@@ -169,7 +181,8 @@
       "last_seen_file_sha256": "b4057fea4b1947ea7f3558bb52cf12bcfac967a14ef68319a3f514220c2e5ae2",
       "reviewed_at": "2026-10-06",
       "display": "учтено 05.10; исполнение по очереди",
-      "author_input_date": "2026-10-05"
+      "author_input_date": "2026-10-05",
+      "author_replies": []
     },
     {
       "id": "AA014",
@@ -182,7 +195,8 @@
       "last_seen_file_sha256": "b4057fea4b1947ea7f3558bb52cf12bcfac967a14ef68319a3f514220c2e5ae2",
       "reviewed_at": "2026-10-06",
       "display": "учтено 05.10; исполнение по очереди",
-      "author_input_date": "2026-10-05"
+      "author_input_date": "2026-10-05",
+      "author_replies": []
     },
     {
       "id": "AA015",
@@ -195,7 +209,8 @@
       "last_seen_file_sha256": "b4057fea4b1947ea7f3558bb52cf12bcfac967a14ef68319a3f514220c2e5ae2",
       "reviewed_at": "2026-10-06",
       "display": "учтено 05.10; исполнение по очереди",
-      "author_input_date": "2026-10-05"
+      "author_input_date": "2026-10-05",
+      "author_replies": []
     },
     {
       "id": "AA016",
@@ -208,7 +223,8 @@
       "last_seen_file_sha256": "b4057fea4b1947ea7f3558bb52cf12bcfac967a14ef68319a3f514220c2e5ae2",
       "reviewed_at": "2026-10-06",
       "display": "учтено 05.10; исполнение по очереди",
-      "author_input_date": "2026-10-05"
+      "author_input_date": "2026-10-05",
+      "author_replies": []
     },
     {
       "id": "AA017",
@@ -221,7 +237,8 @@
       "last_seen_file_sha256": "b4057fea4b1947ea7f3558bb52cf12bcfac967a14ef68319a3f514220c2e5ae2",
       "reviewed_at": "2026-10-06",
       "display": "учтено 05.10; исполнение по очереди",
-      "author_input_date": "2026-10-05"
+      "author_input_date": "2026-10-05",
+      "author_replies": []
     },
     {
       "id": "AA018",
@@ -234,7 +251,8 @@
       "last_seen_file_sha256": "b038cbf0c0757d6ecf366ec7f0f15fe7e823f55fa8c2aecc4fa1c77285661cf4",
       "reviewed_at": "2026-10-06",
       "display": "учтено: старые примечания помечены",
-      "author_input_date": "2026-10-06"
+      "author_input_date": "2026-10-06",
+      "author_replies": []
     },
     {
       "id": "AA019",
@@ -247,7 +265,8 @@
       "last_seen_file_sha256": "b038cbf0c0757d6ecf366ec7f0f15fe7e823f55fa8c2aecc4fa1c77285661cf4",
       "reviewed_at": "2026-10-06",
       "display": "учтено: форматы без технического углубления",
-      "author_input_date": "2026-10-06"
+      "author_input_date": "2026-10-06",
+      "author_replies": []
     },
     {
       "id": "AA020",
@@ -260,7 +279,8 @@
       "last_seen_file_sha256": "b038cbf0c0757d6ecf366ec7f0f15fe7e823f55fa8c2aecc4fa1c77285661cf4",
       "reviewed_at": "2026-10-06",
       "display": "учтено: новая Фаза 6 — пока перспектива",
-      "author_input_date": "2026-10-06"
+      "author_input_date": "2026-10-06",
+      "author_replies": []
     },
     {
       "id": "AA021",
@@ -273,7 +293,8 @@
       "last_seen_file_sha256": "b038cbf0c0757d6ecf366ec7f0f15fe7e823f55fa8c2aecc4fa1c77285661cf4",
       "reviewed_at": "2026-10-06",
       "display": "учтено: разметка продолжается",
-      "author_input_date": "2026-10-06"
+      "author_input_date": "2026-10-06",
+      "author_replies": []
     },
     {
       "id": "AA022",
@@ -286,7 +307,8 @@
       "last_seen_file_sha256": "b038cbf0c0757d6ecf366ec7f0f15fe7e823f55fa8c2aecc4fa1c77285661cf4",
       "reviewed_at": "2026-10-06",
       "display": "учтено 05.10; исполнение по очереди",
-      "author_input_date": "2026-10-05"
+      "author_input_date": "2026-10-05",
+      "author_replies": []
     },
     {
       "id": "AA023",
@@ -299,7 +321,8 @@
       "last_seen_file_sha256": "b038cbf0c0757d6ecf366ec7f0f15fe7e823f55fa8c2aecc4fa1c77285661cf4",
       "reviewed_at": "2026-10-06",
       "display": "учтено 05.10; исполнение по очереди",
-      "author_input_date": "2026-10-05"
+      "author_input_date": "2026-10-05",
+      "author_replies": []
     },
     {
       "id": "AA024",
@@ -309,10 +332,11 @@
       "status": "DECISION_RECORDED",
       "decision": "Author accepts arithmetic total 1865. Recheck original OOXML table, including first/last data rows and separate total. Keep source reported 1866 in provenance.",
       "last_seen_note_index": 1,
-      "last_seen_file_sha256": "dab430041e90fc6de0cb718c0e210afb5e0496cd084b7373f262f7b47c0c26c3",
+      "last_seen_file_sha256": "1934252f881e79e34697005f69145bdd1c1f0104e29c124453ba3cce7ed189f8",
       "reviewed_at": "2026-10-06",
       "display": "учтено: 1865; строки перепроверены",
-      "author_input_date": "2026-10-06"
+      "author_input_date": "2026-10-06",
+      "author_replies": []
     },
     {
       "id": "AA025",
@@ -322,11 +346,12 @@
       "status": "DECISION_RECORDED",
       "decision": "Keep unresolved central interval percentage as future numeric check; do not block transfer of verified statistics or assert 80/90 percent without underlying CDF. Completed 2026-10-08: 678/830 = 81.69%; D03-002-statistics.json.",
       "last_seen_note_index": 2,
-      "last_seen_file_sha256": "dab430041e90fc6de0cb718c0e210afb5e0496cd084b7373f262f7b47c0c26c3",
+      "last_seen_file_sha256": "1934252f881e79e34697005f69145bdd1c1f0104e29c124453ba3cce7ed189f8",
       "reviewed_at": "2026-10-06",
       "display": "выполнено: доля проверена 08.10",
       "author_input_date": "2026-10-06",
-      "implementation_status": "DONE; scalar interval audit only"
+      "implementation_status": "DONE; scalar interval audit only",
+      "author_replies": []
     },
     {
       "id": "AA026",
@@ -336,10 +361,11 @@
       "status": "DECISION_RECORDED",
       "decision": "Author agrees on sample/measurement limits and on no automatic revision of insulation standards.",
       "last_seen_note_index": 3,
-      "last_seen_file_sha256": "dab430041e90fc6de0cb718c0e210afb5e0496cd084b7373f262f7b47c0c26c3",
+      "last_seen_file_sha256": "1934252f881e79e34697005f69145bdd1c1f0104e29c124453ba3cce7ed189f8",
       "reviewed_at": "2026-10-06",
       "display": "учтено: ограничения сохраняются",
-      "author_input_date": "2026-10-06"
+      "author_input_date": "2026-10-06",
+      "author_replies": []
     },
     {
       "id": "AA027",
@@ -349,10 +375,11 @@
       "status": "DECISION_RECORDED",
       "decision": "RTDS section is part of present validation. Transfer current material, explain any remaining disagreement with actual case/metric; coordinate later edits of PDR article and dissertation.",
       "last_seen_note_index": 4,
-      "last_seen_file_sha256": "dab430041e90fc6de0cb718c0e210afb5e0496cd084b7373f262f7b47c0c26c3",
+      "last_seen_file_sha256": "1934252f881e79e34697005f69145bdd1c1f0104e29c124453ba3cce7ed189f8",
       "reviewed_at": "2026-10-06",
       "display": "учтено: переносим имеющееся; вопросы конкретизируем",
-      "author_input_date": "2026-10-06"
+      "author_input_date": "2026-10-06",
+      "author_replies": []
     },
     {
       "id": "AA028",
@@ -362,10 +389,11 @@
       "status": "DECISION_RECORDED",
       "decision": "Keep raw Word comments, paths and author notes. Review while editing a bounded fragment; raise important unresolved questions with exact anchors in planning/questions.md. Do not silently delete source-link reminders.",
       "last_seen_note_index": 6,
-      "last_seen_file_sha256": "dab430041e90fc6de0cb718c0e210afb5e0496cd084b7373f262f7b47c0c26c3",
+      "last_seen_file_sha256": "1934252f881e79e34697005f69145bdd1c1f0104e29c124453ba3cce7ed189f8",
       "reviewed_at": "2026-10-06",
       "display": "учтено: комментарии и ссылки сохранены",
-      "author_input_date": "2026-10-06"
+      "author_input_date": "2026-10-06",
+      "author_replies": []
     },
     {
       "id": "AA029",
@@ -377,7 +405,8 @@
       "display": "новые ответы прочитаны; адресные вопросы сохранены",
       "reviewed_at": "2026-10-08",
       "last_seen_note_index": 5,
-      "last_seen_file_sha256": "dab430041e90fc6de0cb718c0e210afb5e0496cd084b7373f262f7b47c0c26c3"
+      "last_seen_file_sha256": "1934252f881e79e34697005f69145bdd1c1f0104e29c124453ba3cce7ed189f8",
+      "author_replies": []
     },
     {
       "id": "AA030",
@@ -389,7 +418,8 @@
       "display": "замечание S01 внесено в статью; исправление отдельной партией",
       "reviewed_at": "2026-10-08",
       "last_seen_note_index": 1,
-      "last_seen_file_sha256": "bf40ebd6091f5235bea00db2d9c5599fa51250dccfd872ea36c0c61661626072"
+      "last_seen_file_sha256": "bf40ebd6091f5235bea00db2d9c5599fa51250dccfd872ea36c0c61661626072",
+      "author_replies": []
     },
     {
       "id": "AA031",
@@ -401,7 +431,8 @@
       "display": "продолжаем другие разделы; РНМ оставлен на доработку",
       "reviewed_at": "2026-10-08",
       "last_seen_note_index": 2,
-      "last_seen_file_sha256": "bf40ebd6091f5235bea00db2d9c5599fa51250dccfd872ea36c0c61661626072"
+      "last_seen_file_sha256": "bf40ebd6091f5235bea00db2d9c5599fa51250dccfd872ea36c0c61661626072",
+      "author_replies": []
     },
     {
       "id": "AA032",
@@ -413,7 +444,8 @@
       "display": "S02 внесено в статью и инструкцию Фазы 5",
       "reviewed_at": "2026-10-08",
       "last_seen_note_index": 3,
-      "last_seen_file_sha256": "bf40ebd6091f5235bea00db2d9c5599fa51250dccfd872ea36c0c61661626072"
+      "last_seen_file_sha256": "bf40ebd6091f5235bea00db2d9c5599fa51250dccfd872ea36c0c61661626072",
+      "author_replies": []
     },
     {
       "id": "AA033",
@@ -425,7 +457,8 @@
       "display": "S03 прочитано; сохранено для доработки статьи",
       "reviewed_at": "2026-10-08",
       "last_seen_note_index": 4,
-      "last_seen_file_sha256": "bf40ebd6091f5235bea00db2d9c5599fa51250dccfd872ea36c0c61661626072"
+      "last_seen_file_sha256": "bf40ebd6091f5235bea00db2d9c5599fa51250dccfd872ea36c0c61661626072",
+      "author_replies": []
     },
     {
       "id": "AA034",
@@ -436,7 +469,8 @@
       "decision": "Internal versions moved out of scientific prose; author note retained.",
       "display": "учтено и исправлено 09.10; сохранено в исходнике",
       "last_seen_note_index": 2,
-      "last_seen_file_sha256": "0a24e4c9137e8dee28b6db890175143043e7596da25faec2c76facb6d96266f9"
+      "last_seen_file_sha256": "0a24e4c9137e8dee28b6db890175143043e7596da25faec2c76facb6d96266f9",
+      "author_replies": []
     },
     {
       "id": "AA035",
@@ -447,7 +481,8 @@
       "decision": "Own research stated directly; general rule recorded in AGENTS/START_PROMPT.",
       "display": "учтено и исправлено 09.10; сохранено в исходнике",
       "last_seen_note_index": 3,
-      "last_seen_file_sha256": "0a24e4c9137e8dee28b6db890175143043e7596da25faec2c76facb6d96266f9"
+      "last_seen_file_sha256": "0a24e4c9137e8dee28b6db890175143043e7596da25faec2c76facb6d96266f9",
+      "author_replies": []
     },
     {
       "id": "AA036",
@@ -458,7 +493,8 @@
       "decision": "Current 1855 unique reviewed records used; old candidate counts retained internally; accepted-only table avoids mixing stages.",
       "display": "учтено и исправлено 09.10; сохранено в исходнике",
       "last_seen_note_index": 4,
-      "last_seen_file_sha256": "0a24e4c9137e8dee28b6db890175143043e7596da25faec2c76facb6d96266f9"
+      "last_seen_file_sha256": "0a24e4c9137e8dee28b6db890175143043e7596da25faec2c76facb6d96266f9",
+      "author_replies": []
     },
     {
       "id": "AA037",
@@ -469,7 +505,8 @@
       "decision": "Removed editorial wording about rebuilding figures.",
       "display": "учтено и исправлено 09.10; сохранено в исходнике",
       "last_seen_note_index": 5,
-      "last_seen_file_sha256": "0a24e4c9137e8dee28b6db890175143043e7596da25faec2c76facb6d96266f9"
+      "last_seen_file_sha256": "0a24e4c9137e8dee28b6db890175143043e7596da25faec2c76facb6d96266f9",
+      "author_replies": []
     },
     {
       "id": "AA038",
@@ -480,7 +517,8 @@
       "decision": "Old notebook CDF correct; missing interval calculation identified; shared scalar statistics used in notebook and audit.",
       "display": "учтено и исправлено 09.10; сохранено в исходнике",
       "last_seen_note_index": 6,
-      "last_seen_file_sha256": "0a24e4c9137e8dee28b6db890175143043e7596da25faec2c76facb6d96266f9"
+      "last_seen_file_sha256": "0a24e4c9137e8dee28b6db890175143043e7596da25faec2c76facb6d96266f9",
+      "author_replies": []
     },
     {
       "id": "AA039",
@@ -491,7 +529,8 @@
       "decision": "Defer shortening OZZ and figure size/placement to whole-thesis proofreading as explicitly requested; scientific block unchanged.",
       "display": "учтено 09.10; отложено до общей вычитки",
       "last_seen_note_index": 1,
-      "last_seen_file_sha256": "0a24e4c9137e8dee28b6db890175143043e7596da25faec2c76facb6d96266f9"
+      "last_seen_file_sha256": "0a24e4c9137e8dee28b6db890175143043e7596da25faec2c76facb6d96266f9",
+      "author_replies": []
     },
     {
       "id": "AA040",
@@ -502,7 +541,7 @@
       "decision": "D04-008: explicit new author closure reply, preserved in same AA history; unfinished experiments/chapters remain open.",
       "display": "закрыто автором; сохранено в истории",
       "last_seen_note_index": 6,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "partial",
       "author_acceptance": "accepted",
       "response_ru": "Семь схем моделей подключены как авторские PNG. Для отдельной энергетической схемы токов, напряжений и общей оси времени записано задание в общем файле заданий на рисунки, но самого рисунка ещё нет.",
@@ -524,7 +563,7 @@
       "decision": "D04-008: explicit new author closure reply, preserved in same AA history; unfinished experiments/chapters remain open.",
       "display": "закрыто автором; сохранено в истории",
       "last_seen_note_index": 7,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "partial",
       "author_acceptance": "accepted",
       "response_ru": "Объяснения MLP, CNN, ResNet и KAN расширены по первой статье. Полное включение текста остальных исследований не завершено; разделы 4.4 и 4.5 помечены как наброски.",
@@ -545,8 +584,8 @@
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-005: explicitly closed by the attached author reply on 2026-10-19; original note/reply retained, hidden in review output. Scope does not include unfinished chapters or experiments.",
       "display": "закрыто автором; сохранено в истории",
-      "last_seen_note_index": 10,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 11,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "implemented",
       "author_acceptance": "accepted",
       "response_ru": "В описании ResNet раскрыты обходной путь, согласование размерностей, две свёртки и последовательность ступеней. Это предложенная редакция, её достаточность ещё не подтверждена автором.",
@@ -568,8 +607,8 @@
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-008: explicit new author closure reply, preserved in same AA history; unfinished experiments/chapters remain open.",
       "display": "закрыто автором; сохранено в истории",
-      "last_seen_note_index": 18,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 20,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "implemented",
       "author_acceptance": "accepted",
       "response_ru": "В подразделе KAN объяснены обучаемая форма связи, нелинейная реакция на ток и отличие от фиксированной активации MLP. Утверждения о преимуществе конкретного опыта сюда не добавлялись.",
@@ -591,7 +630,7 @@
       "decision": "D04-008: explicit new author closure reply, preserved in same AA history; unfinished experiments/chapters remain open.",
       "display": "закрыто автором; сохранено в истории",
       "last_seen_note_index": 1,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "deferred",
       "author_acceptance": "accepted",
       "response_ru": "В начале главы напечатан план по пяти исследованиям. Само введение ещё не синтезировано по всем работам; его доработка остаётся после наполнения главы.",
@@ -613,7 +652,7 @@
       "decision": "D04-005: explicitly closed by the attached author reply on 2026-10-19; original note/reply retained, hidden in review output. Scope does not include unfinished chapters or experiments.",
       "display": "закрыто автором; сохранено в истории",
       "last_seen_note_index": 2,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "implemented",
       "author_acceptance": "accepted",
       "response_ru": "Общие определения Precision, Recall, F1, ROC-AUC и единиц оценки вынесены в раздел перед архитектурами. Специальные условия РНМ остаются в главе 5.",
@@ -636,7 +675,7 @@
       "decision": "D04-005: explicitly closed by the attached author reply on 2026-10-19; original note/reply retained, hidden in review output. Scope does not include unfinished chapters or experiments.",
       "display": "закрыто автором; сохранено в истории",
       "last_seen_note_index": 3,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "implemented",
       "author_acceptance": "accepted",
       "response_ru": "Каналы пояснены примерами фазных токов и напряжений. Размерность обучающего пакета исключена из описания архитектурного входа.",
@@ -659,7 +698,7 @@
       "decision": "D04-005: explicitly closed by the attached author reply on 2026-10-19; original note/reply retained, hidden in review output. Scope does not include unfinished chapters or experiments.",
       "display": "закрыто автором; сохранено в истории",
       "last_seen_note_index": 4,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "implemented",
       "author_acceptance": "accepted",
       "response_ru": "Пример сформулирован как один период из шести сигналов с 32 отсчётами каждого. Он остаётся условным примером размерности.",
@@ -682,7 +721,7 @@
       "decision": "D04-006: explicit author reply Да, закрыта found in current input; original text/reply retained and hidden in review.",
       "display": "закрыто автором; сохранено в истории",
       "last_seen_note_index": 5,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "implemented",
       "author_acceptance": "accepted",
       "response_ru": "Подключён авторский ch04_output_decision_candidate.png. Схема показывает независимые оценки, пороги и несколько совместных меток. Числа названы условными, выход РНМ выделен как отдельная постановка.",
@@ -704,8 +743,8 @@
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-008: explicit new author closure reply, preserved in same AA history; unfinished experiments/chapters remain open.",
       "display": "закрыто автором; сохранено в истории",
-      "last_seen_note_index": 8,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 9,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "implemented",
       "author_acceptance": "accepted",
       "response_ru": "Для SimpleMLP подключён physkan_mlp.png. Остальные шесть схем также используют авторские PNG. Прежние PDF-черновики удалены.",
@@ -726,8 +765,8 @@
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-008: explicit new author closure reply, preserved in same AA history; unfinished experiments/chapters remain open.",
       "display": "закрыто автором; сохранено в истории",
-      "last_seen_note_index": 9,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 10,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "implemented",
       "author_acceptance": "accepted",
       "response_ru": "Добавлена аналогия с фильтрацией и выделением гармоник. Уточнено, что коэффициенты Фурье заданы, а свёрточные коэффициенты обучаются и могут выделять другие формы сигнала.",
@@ -748,8 +787,8 @@
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-008: explicit new author closure reply, preserved in same AA history; unfinished experiments/chapters remain open.",
       "display": "закрыто автором; сохранено в истории",
-      "last_seen_note_index": 11,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 12,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "partial",
       "author_acceptance": "accepted",
       "response_ru": "Исправлена прежняя ошибочная привязка к KAN. Замечание находится после описания ResNet. В начале подраздела объяснено назначение более глубокой контрольной модели с обходными связями. Её численное преимущество по конкретному опыту ещё требует включения результатов.",
@@ -770,8 +809,8 @@
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-008: explicit new author closure reply, preserved in same AA history; unfinished experiments/chapters remain open.",
       "display": "закрыто автором; сохранено в истории",
-      "last_seen_note_index": 12,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 14,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "not_required",
       "author_acceptance": "accepted",
       "response_ru": "Описание сплайнов сохранено как пояснение KAN-слоя. Дополнительное математическое расширение по этому замечанию не выполнялось.",
@@ -792,8 +831,8 @@
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-008: explicit new author closure reply, preserved in same AA history; unfinished experiments/chapters remain open.",
       "display": "закрыто автором; сохранено в истории",
-      "last_seen_note_index": 13,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 15,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "implemented",
       "author_acceptance": "accepted",
       "response_ru": "Поясняющий рисунок KAN-слоя уже имеется и заменён авторским physkan_kan_edge.png. Отдельный повторяющий рисунок не создавался.",
@@ -814,8 +853,8 @@
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-008: explicit new author closure reply, preserved in same AA history; unfinished experiments/chapters remain open.",
       "display": "закрыто автором; сохранено в истории",
-      "last_seen_note_index": 14,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 16,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "partial",
       "author_acceptance": "accepted",
       "response_ru": "Подраздел назван «KAN-слои и модели SimpleKAN и ConvKAN». Трансформер включён в общую архитектурную линию. Полная интеграция всех сравнений из статей ещё не завершена.",
@@ -836,8 +875,8 @@
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-008: explicit new author closure reply, preserved in same AA history; unfinished experiments/chapters remain open.",
       "display": "закрыто автором; сохранено в истории",
-      "last_seen_note_index": 15,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 17,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "not_required",
       "author_acceptance": "accepted",
       "response_ru": "Пояснения SimpleKAN и ConvKAN сохранены по уточнению автора. Предыдущее замечание не трактуется как требование удалить эти модели.",
@@ -858,8 +897,8 @@
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-008: explicit new author closure reply, preserved in same AA history; unfinished experiments/chapters remain open.",
       "display": "закрыто автором; сохранено в истории",
-      "last_seen_note_index": 16,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 18,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "not_required",
       "author_acceptance": "accepted",
       "response_ru": "Используется уже улучшенный автором рисунок принципа KAN. Номер рисунка в текущей сборке изменяется автоматически; исходное примечание с прежним номером сохранено.",
@@ -880,8 +919,8 @@
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-008: explicit new author closure reply, preserved in same AA history; unfinished experiments/chapters remain open.",
       "display": "закрыто автором; сохранено в истории",
-      "last_seen_note_index": 19,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 23,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "implemented",
       "author_acceptance": "accepted",
       "response_ru": "В тексте явно сказано, что для сопряжения достаточно поменять знак фазы тока перед умножением. Различие операций связано с толкованием признака.",
@@ -902,8 +941,8 @@
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-008: explicit new author closure reply, preserved in same AA history; unfinished experiments/chapters remain open.",
       "display": "закрыто автором; сохранено в истории",
-      "last_seen_note_index": 21,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 25,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "implemented",
       "author_acceptance": "accepted",
       "response_ru": "Указана возможность получить нужную зависимость обучаемыми преобразованиями. Обычное произведение при этом не названо готовой комплексной мощностью.",
@@ -924,8 +963,8 @@
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-008: explicit new author closure reply, preserved in same AA history; unfinished experiments/chapters remain open.",
       "display": "закрыто автором; сохранено в истории",
-      "last_seen_note_index": 22,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 26,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "partial",
       "author_acceptance": "accepted",
       "response_ru": "Проблема границ пояснена на углах 179 и -179 градусов. В 4.3.9 описано изменение обработки фазы через сдвиг и направляющий блок. Отдельная проверка периодичности конкретной угловой характеристики здесь не заявлена.",
@@ -946,8 +985,8 @@
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-008: explicit new author closure reply, preserved in same AA history; unfinished experiments/chapters remain open.",
       "display": "закрыто автором; сохранено в истории",
-      "last_seen_note_index": 23,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 27,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "implemented",
       "author_acceptance": "accepted",
       "response_ru": "В начале описания rPhysicsKAN назван внутренний направляющий орган по принципу РНМ. Перед ним указано формирование комплексных произведений и отношений; в итоговом переходе варианты отделены от обязательных ступеней одной сети.",
@@ -968,8 +1007,8 @@
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-008: explicit new author closure reply, preserved in same AA history; unfinished experiments/chapters remain open.",
       "display": "закрыто автором; сохранено в истории",
-      "last_seen_note_index": 24,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 29,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "implemented",
       "author_acceptance": "accepted",
       "response_ru": "Подробный перечень операций каждой ветви сокращён. Оставлено объяснение одинакового числа амплитудных признаков и коэффициентов маски.",
@@ -990,8 +1029,8 @@
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-005: explicitly closed by the attached author reply on 2026-10-19; original note/reply retained, hidden in review output. Scope does not include unfinished chapters or experiments.",
       "display": "закрыто автором; сохранено в истории",
-      "last_seen_note_index": 25,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 30,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "implemented",
       "author_acceptance": "accepted",
       "response_ru": "Краткое пояснение внутреннего РНМ перенесено в начало подраздела rPhysicsKAN. Проверка требуемого выхода органа отнесена к главе 5.",
@@ -1013,8 +1052,8 @@
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-005: explicitly closed by the attached author reply on 2026-10-19; original note/reply retained, hidden in review output. Scope does not include unfinished chapters or experiments.",
       "display": "закрыто автором; сохранено в истории",
-      "last_seen_note_index": 29,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 40,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "implemented",
       "author_acceptance": "accepted",
       "response_ru": "В итоговом переходе названы связи PhysicsKAN, cPhysicsKAN, rPhysicsKAN и трансформера. Добавлено различие самостоятельных вариантов и последовательных этапов развития исследования.",
@@ -1035,8 +1074,8 @@
       "text_sha256": "79d00d10cdb0deb1f4caf9c48fe0bc876542cb76caa3bb2fd4763f006367cd89",
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-008: explicit new author closure reply, preserved in same AA history; unfinished experiments/chapters remain open.",
-      "last_seen_note_index": 26,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 31,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "display": "закрыто автором; сохранено в истории",
       "implementation_status": "partial",
       "author_acceptance": "accepted",
@@ -1057,8 +1096,8 @@
       "text_sha256": "0ff3c03f316769bcda160170ff8a58c70774f4eda56b25a3d791397f80ff9442",
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-008: explicit new author closure reply, preserved in same AA history; unfinished experiments/chapters remain open.",
-      "last_seen_note_index": 30,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 41,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "display": "закрыто автором; сохранено в истории",
       "implementation_status": "implemented",
       "author_acceptance": "accepted",
@@ -1153,7 +1192,7 @@
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-005: explicitly closed by the attached author reply on 2026-10-19; original note/reply retained, hidden in review output. Scope does not include unfinished chapters or experiments.",
       "last_seen_note_index": 1,
-      "last_seen_file_sha256": "9a9b89efa8cb83235222835f851a18708d3669b5abff2df56c4148924ad810bb",
+      "last_seen_file_sha256": "1e56c467326c1970ab7406fda13372bed7f96a254694dcea4fcb2e14fe4bbc1f",
       "display": "закрыто автором; сохранено в истории",
       "implementation_status": "deferred",
       "author_acceptance": "accepted",
@@ -1176,7 +1215,7 @@
       "status": "AUTHOR_ACCEPTED",
       "decision": "D04-005: explicitly closed by the attached author reply on 2026-10-19; original note/reply retained, hidden in review output. Scope does not include unfinished chapters or experiments.",
       "last_seen_note_index": 1,
-      "last_seen_file_sha256": "caf05bf01b18abfd3a563526f49fdd393e9d9c9ff401a0cfae2af0cd67556bf6",
+      "last_seen_file_sha256": "78a981373d70bcb5896c2388616225110308757e854957a00249906ba34d433e",
       "display": "закрыто автором; сохранено в истории",
       "implementation_status": "deferred",
       "author_acceptance": "accepted",
@@ -1219,60 +1258,220 @@
       "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex",
       "original_text": "(Примечание автора: Чуть чуть пояснить, почему выбрали её. Не помню точно, может где-то описано, проводил отдельный этап исследований, а кратко вроде бы - сей вариант наиболее быстрый.)",
       "text_sha256": "4144b6c3cc6b8f21c45f714b67b694593893733cac6f721347536aa25eca57c5",
-      "status": "DECISION_RECORDED",
+      "status": "AUTHOR_ACCEPTED",
       "decision": "D04-008: addressed in manuscript; structural change is not inferred as completed.",
-      "last_seen_note_index": 17,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 19,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "implemented",
       "response_ru": "Выбор FastKAN пояснён в подразделе о KAN через уменьшение затрат на вычисление базисных функций при обработке последовательностей. Утверждение «быстрее всех» не внесено без сопоставимого отдельного протокола.",
       "section_label": "sec:ch4_kan",
-      "display": "правка внесена; ожидает проверки автора",
-      "author_acceptance": "pending"
+      "display": "закрыто автором; сохранено в истории",
+      "author_acceptance": "accepted",
+      "author_replies": [
+        {
+          "text": "(Примечание автора: Да, вопрос закрыт)",
+          "sha256": "e21a29bbdc4240fb42f7f93d6778bce35cb7d8678dc97da13c016ed7b8d59d8e"
+        }
+      ],
+      "suppress_in_review": true,
+      "closed_scope": "Текстовое замечание принято автором 22.10.2026; открытые вычислительные/архитектурные задачи остаются отдельно."
     },
     {
       "id": "AA073",
       "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex",
       "original_text": "(Примечание автора: А можно ли комплексные числа писать через точечку над элементами, а не нижнее подчёркивание? А то мне так удобнее. Тут и в других местах.)",
       "text_sha256": "bd1a58d5f4c20b48f733bc0c804b37a733b21c7eeda489c0b4380938e809e4cd",
-      "status": "DECISION_RECORDED",
+      "status": "AUTHOR_ACCEPTED",
       "decision": "D04-008: addressed in manuscript; structural change is not inferred as completed.",
-      "last_seen_note_index": 20,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 24,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "implemented",
       "response_ru": "Комплексные электрические величины в главе 4 переведены с подчёркивания на точку сверху. В ранних разделах уже использовалась точка; подчёркнутые текстовые заголовки не являются комплексными обозначениями и сохранены.",
       "section_label": "sec:ch4_complex_ops",
-      "display": "правка внесена; ожидает проверки автора",
-      "author_acceptance": "pending"
+      "display": "закрыто автором; сохранено в истории",
+      "author_acceptance": "accepted",
+      "author_replies": [
+        {
+          "text": "(Примечание автора: Ок, закрываем)",
+          "sha256": "fff630278df987aa1d0302922b843fca86b84afd8a2fa779b6ba35191342c083"
+        }
+      ],
+      "suppress_in_review": true,
+      "closed_scope": "Текстовое замечание принято автором 22.10.2026; открытые вычислительные/архитектурные задачи остаются отдельно."
     },
     {
       "id": "AA074",
       "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex",
       "original_text": "(Примечание автора: Во первых, надо бы как-то пояснить сразу, что мы не удаляем токи и напряжения, а добавляем ещё и вот такие признаки. А то кажется, что мы ТОЛЬКО произведение и деление дальше используем.\nВо вторых, надо будет здесь оставить другое примечание – о том, чтобы пояснения из картинки, какие важные, если их нет – перенести в текст, а оставить только схему, и совсем важные комментарии. Я про текст начиная от «Всего n комплексных результатов: …» на картинке. Он явно не нужен на картинке и начал появляться с 4.13 картинки вроде как. Если можешь – усеки сама картинки, ток оставь старые, чтоб не потерять их, а если будет норм – то потом оставим только новые. Пожалуй, скину картинку в чат с пояснением даже.)",
       "text_sha256": "7f41d5d25355b9b164adb0f3713219e5314fb1657f4c4df836e0b5adc1d6d4fe",
-      "status": "DECISION_RECORDED",
+      "status": "AUTHOR_ACCEPTED",
       "decision": "D04-008: addressed in manuscript; structural change is not inferred as completed.",
-      "last_seen_note_index": 27,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 34,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "partial",
       "response_ru": "Перед рисунком комплексных взаимодействий пояснены собственная KAN-ветвь измерений и угловой путь. Набор модели не состоит только из произведений/отношений. Входные амплитуды всё же не присоединяются отдельной неизменной копией. Поясняющие нижние полосы пяти рисунков скрыты только в PDF через trim/clip; исходные PNG побайтово сохранены, численные параметры условного углового примера перенесены в текст. Явный перенос необработанных величин рассмотрен в следующем архитектурном замечании.",
       "section_label": "sec:ch4_attention_architecture",
-      "display": "выполнено частично; архитектурный вопрос открыт",
-      "author_acceptance": "pending"
+      "display": "закрыто автором; сохранено в истории",
+      "author_acceptance": "accepted",
+      "author_replies": [
+        {
+          "text": "(Примечание автора: Ок, сейчас закрываем этот момент и убираем замечание.)",
+          "sha256": "62e4cf63d9acf817ad3f8255bcfc99238421d1401cfa106f739fb7fe06ab4275"
+        }
+      ],
+      "suppress_in_review": true,
+      "closed_scope": "Текстовое замечание принято автором 22.10.2026; открытые вычислительные/архитектурные задачи остаются отдельно."
     },
     {
       "id": "AA075",
       "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex",
       "original_text": "(Примечание автора: надо бы как-то добавить, зачем мы вообще разделили эти PhysicalStem и Физический FFN. От части, исходно, это некий косяк и невнимательность, когда оно было применено только на вход, а не в блоки FFN, позже же сделали различие в том, что входной – делает больше таких вот умножений / делений, а в дальнейших, это лишь небольшая функция, которая может быть полезна, ибо математически оно довольно объёмна может быть. Ну и может сейчас ещё есть какие-то существенные отличия, в общем осмысли это – и опиши перед / после данной таблицы, или даже где-то раньше. А то читателю не понятно, с чего вообще это появилось. Про некий косяк в прошлом говорить не надо. Но можно озвучить, что вероятно, такое прям разделение и не требуется. Исходно блоки планировались как нечто одинаковое. Если это сильно не так по итоговым цепям, то надо переосмыслить их, и вероятно менять архитектуру и перезапускать эксперименты и обучения…\nИ да, повторю ещё раз, исходно должны быть и пропускание токов / напряжения чисто, ну или других величин. Без вот этого вот физического умножения деления, если это не прям так – то косяк! Может обыгрывается через сумму, но вроде бы должно через объединение - конкатенация)",
       "text_sha256": "772f5f7e07b51116ba84c4c2988a81dd2366f4d7b78286f65657d5c07fd680e9",
-      "status": "DECISION_RECORDED",
+      "status": "AUTHOR_ACCEPTED",
       "decision": "D04-008: addressed in manuscript; structural change is not inferred as completed.",
-      "last_seen_note_index": 28,
-      "last_seen_file_sha256": "60ec504350476de43290498f1e7e7c3fd14ce194200ba5ec7be6540aff5b5e14",
+      "last_seen_note_index": 39,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
       "implementation_status": "partial",
       "response_ru": "По forward различены два требования. Путь без комплексного произведения/деления есть: KAN-ветвь в Stem и FFN. Но в Stem concat получает [h_amp, inter_amp], без отдельного raw_A; в FFN комплексный вклад прибавляется к KAN-ветви, затем весь FFN к прежнему H0. Это не конкатенация независимых исходных каналов. Назначение входного/повторяемого блока пояснено перед таблицей 4.1, численный бюджет 16/4 отдельно сохранён в тексте. Вопрос явного raw-bypass/конкатенации записан для отдельного варианта и сопоставления до повторных опытов; архитектура и старые веса не менялись.",
       "section_label": "sec:ch4_attention_architecture",
-      "display": "выполнено частично; архитектурный вопрос открыт",
-      "author_acceptance": "pending"
+      "display": "закрыто автором; сохранено в истории",
+      "author_acceptance": "accepted",
+      "author_replies": [
+        {
+          "text": "(Примечание автора: Ок, там пометили вроде бы, пусть пока так, а здесь по тексту примечание закрываем)",
+          "sha256": "341c0693a95a9a0fb637e1d3218e2805eef0c90d811b2493359ec73e43575c4a"
+        }
+      ],
+      "suppress_in_review": true,
+      "closed_scope": "Текстовое замечание принято автором 22.10.2026; открытые вычислительные/архитектурные задачи остаются отдельно."
+    },
+    {
+      "id": "AA076",
+      "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex",
+      "original_text": "(Примечание автора: Урезал картинку, если нужно старое из неё - добавь где-то в текст. Находится в папке \"_Устаревшее для памяти\")",
+      "text_sha256": "3d3900b0e94766fa0a679ef2c373afd087427163ff0f927cb93d8942deb4a5f3",
+      "status": "DECISION_RECORDED",
+      "decision": "D04-009: scoped text/figure change; no automatic author acceptance.",
+      "last_seen_note_index": 38,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
+      "implementation_status": "implemented",
+      "section_label": "sec:ch4_physkan_architectures",
+      "response_ru": "Авторские PNG просмотрены. У пяти подробных схем снята прежняя обрезка graphicx, чтобы уже обрезанные изображения не срезались повторно. Удалённые пояснения проверены по прежним версиям и текущему тексту; бюджеты комплексных результатов, параметры углового примера, обработка пропусков и различие Stem/FFN остаются в тексте. Исходные PNG и папка _Устаревшее для памяти не менялись.",
+      "display": "рассмотрено 22.10; ожидает проверки",
+      "author_acceptance": "pending",
+      "author_replies": []
+    },
+    {
+      "id": "AA077",
+      "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex",
+      "original_text": "(Примечание автора: Ведь такая архитектура называется декодер? я же прав, можно бы пару слов коротко, прям очень коротко. Можно сделать чуть иначе, и все на всё чтобы смотрели, но мы в будущем будем решать релейные защиты, поэтому пока что так, хотя для разметки, быть может, лучше бы чуть иначе. Можно где-то в другом месте эту тематику внимания затронуть, а про релейность - вообще общий момент на самом деле.)",
+      "text_sha256": "c13b487c8a152f1d5762fbff899ed37470530a237fe9db299276e05bfc6b1b53",
+      "status": "DECISION_RECORDED",
+      "decision": "D04-009: scoped text/figure change; no automatic author acceptance.",
+      "last_seen_note_index": 32,
+      "last_seen_file_sha256": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
+      "implementation_status": "implemented",
+      "section_label": "sec:ch4_attention_architecture",
+      "response_ru": "Перед общим рисунком внимания кратко пояснено, что причинное самовнимание характерно в том числе для декодерных моделей, но одна маска не определяет всю архитектуру. Проверенная кодирующая часть сейчас разрешает связи между доступными зонами буфера без автоматической причинной маски. Вариант для потоковой защиты и вариант для ретроспективной разметки не объявлены одинаковыми.",
+      "display": "рассмотрено 22.10; ожидает проверки",
+      "author_acceptance": "pending",
+      "author_replies": []
+    },
+    {
+      "id": "AA078",
+      "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec03_signal_representations.tex",
+      "original_text": "(Примечание автора: ниже про отсутствующий канал, проверь, а так ли у нас в коде, действительно ли мы IN учитываем в формуле всегда, или принимаем сеть изолированной и восстанавливает ток фазы В? А может и вообще его зануляем. Вот чёт не помню, и как бы не зануляли его в последних версиях…)",
+      "text_sha256": "91a5cda586c9368660cfcad9f27e82c00f80e6dde895dac01f79123884e0e6ed",
+      "status": "DECISION_RECORDED",
+      "decision": "D04-009: scoped text/figure change; no automatic author acceptance.",
+      "last_seen_note_index": 2,
+      "last_seen_file_sha256": "1e56c467326c1970ab7406fda13372bed7f96a254694dcea4fcb2e14fe4bbc1f",
+      "implementation_status": "partial",
+      "section_label": "sec:ch4_channel_preparation",
+      "response_ru": "Проверенный локальный загрузчик восстанавливает IB=-IA-IC без IN; IN сохраняется отдельно либо зануляется. В 4.4.1 это описано как вариант с принудительно нулевой суммой фаз, с ограничением для ОЗЗ. Расширенная английская статья описывает другой вариант с учётом остаточного тока при его наличии, и оба случая теперь различены. Автор подтвердил, что расширенная серия выполнена на другом компьютере и её результаты берутся из статьи. Различия online/precomputed остаются отдельным INPUT-CONTRACT-01 перед местными запусками; код и данные не менялись.",
+      "display": "описание исправлено; проверка подготовки данных открыта",
+      "author_acceptance": "pending",
+      "author_replies": []
+    },
+    {
+      "id": "AA079",
+      "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec03_signal_representations.tex",
+      "original_text": "(Примечание автора: ну вроде бы всё верно, но можно бы и упростить чуть описание. Может даже к всему подразделу этому)",
+      "text_sha256": "bda7f4fec7030dbb8b079e3fc86ae971a6b896da23c4b0bfbdc22cd65181c245",
+      "status": "DECISION_RECORDED",
+      "decision": "D04-009: scoped text/figure change; no automatic author acceptance.",
+      "last_seen_note_index": 3,
+      "last_seen_file_sha256": "1e56c467326c1970ab7406fda13372bed7f96a254694dcea4fcb2e14fe4bbc1f",
+      "implementation_status": "implemented",
+      "section_label": "sec:ch4_feature_history",
+      "response_ru": "Подраздел сокращён и конкретизирован. Окно 320 отсчётов отделено от периода Фурье 32 отсчёта, шаг и два спектральных среза показаны на отдельной схеме. Убраны общие рассуждения о форме сигнала. Для raw отдельно указаны два фрагмента по 32 отсчёта.",
+      "display": "рассмотрено 22.10; ожидает проверки",
+      "author_acceptance": "pending",
+      "author_replies": []
+    },
+    {
+      "id": "AA080",
+      "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec03_signal_representations.tex",
+      "original_text": "(Примечание автора: А как это там задаётся, в том разделе? В общем считаю нужным чуть переписать раздел.)",
+      "text_sha256": "a6527d1e47c6d91ec7fd35524701730682f675032051ff62ba63f0a1573423ff",
+      "status": "DECISION_RECORDED",
+      "decision": "D04-009: scoped text/figure change; no automatic author acceptance.",
+      "last_seen_note_index": 4,
+      "last_seen_file_sha256": "1e56c467326c1970ab7406fda13372bed7f96a254694dcea4fcb2e14fe4bbc1f",
+      "implementation_status": "implemented",
+      "section_label": "sec:ch4_feature_history",
+      "response_ru": "Непосредственно в 4.4.2 указаны метка последнего отсчёта и единица оценки — оконное решение в правой границе. Отличие от any_in_window и восстановления границ пояснено на месте; ссылка ведёт на конкретный подраздел 4.2 о единице оценки, а не на общий раздел.",
+      "display": "рассмотрено 22.10; ожидает проверки",
+      "author_acceptance": "pending",
+      "author_replies": []
+    },
+    {
+      "id": "AA081",
+      "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec03_signal_representations.tex",
+      "original_text": "(Примечание автора: Мгновенные значения – не понял, зачем так описывать про форму и т.д. Это прост набор точек.)",
+      "text_sha256": "869b0cbd2f4e636eb9f864a2d7dbbfe5ddc8a9e2be7b55f607a38aeb9fa43d43",
+      "status": "DECISION_RECORDED",
+      "decision": "D04-009: scoped text/figure change; no automatic author acceptance.",
+      "last_seen_note_index": 5,
+      "last_seen_file_sha256": "1e56c467326c1970ab7406fda13372bed7f96a254694dcea4fcb2e14fe4bbc1f",
+      "implementation_status": "implemented",
+      "section_label": "sec:ch4_spectral_coordinates",
+      "response_ru": "Определение в начале 4.4.2 и строка таблицы 4.2 сведены к последовательности отсчётов выбранных каналов. Убрана прежняя формулировка о передаче формы переходного процесса.",
+      "display": "рассмотрено 22.10; ожидает проверки",
+      "author_acceptance": "pending",
+      "author_replies": []
+    },
+    {
+      "id": "AA082",
+      "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec03_signal_representations.tex",
+      "original_text": "(Примечание автора: Да и можно бы добавить что-то из серии, что последовательности 1,2,0 - уже являются классикой в РЗА и используются постоянно в защитах по удобству физики понимания и т.д. Ну чёто красивое, да, понятно, что пока это лишь набросок раздела.)",
+      "text_sha256": "2545724acdcafa16dd06e5243d7bc6f50d2569bac44f390eec406c0d9931a31b",
+      "status": "DECISION_RECORDED",
+      "decision": "D04-009: scoped text/figure change; no automatic author acceptance.",
+      "last_seen_note_index": 6,
+      "last_seen_file_sha256": "1e56c467326c1970ab7406fda13372bed7f96a254694dcea4fcb2e14fe4bbc1f",
+      "implementation_status": "implemented",
+      "section_label": "sec:ch4_sequence_features",
+      "response_ru": "В начале 4.4.4 добавлен короткий абзац о привычной роли прямой, обратной и нулевой последовательностей в РЗА и причине их рассмотрения как входа сети. Преимущество конкретного формата проверяется далее в 4.4.6, а не выводится из известности метода.",
+      "display": "рассмотрено 22.10; ожидает проверки",
+      "author_acceptance": "pending",
+      "author_replies": []
+    },
+    {
+      "id": "AA083",
+      "file": "docs/Dissertation/manuscript/chapters/ch04_statistical_analysis/sec03_signal_representations.tex",
+      "original_text": "(Примечание автора: Про Кларка – надо бы чутка пояснить, а то я, например, вообще ничего не знал про этом, и мол нафига используем?)",
+      "text_sha256": "bf0350d814ab268ccff75ef99351de032e8fa6a0c2415592e0aa7aad18b2c0a5",
+      "status": "DECISION_RECORDED",
+      "decision": "D04-009: scoped text/figure change; no automatic author acceptance.",
+      "last_seen_note_index": 7,
+      "last_seen_file_sha256": "1e56c467326c1970ab7406fda13372bed7f96a254694dcea4fcb2e14fe4bbc1f",
+      "implementation_status": "implemented",
+      "section_label": "sec:ch4_sequence_features",
+      "response_ru": "Кларк раскрыт через две неподвижные ортогональные оси и общую составляющую, приведены три выражения и отдельная схема. Указаны работа с мгновенными значениями без окна Фурье, обратимость при сохранении x0 и отсутствие новых измерений. Координаты Кларка отделены от симметричных составляющих и признаков мощности.",
+      "display": "рассмотрено 22.10; ожидает проверки",
+      "author_acceptance": "pending",
+      "author_replies": []
     }
   ],
   "updated": "2026-10-22",

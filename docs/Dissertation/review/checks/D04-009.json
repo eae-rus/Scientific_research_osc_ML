@@ -1,0 +1,1068 @@
+{
+  "task_id": "D04-009",
+  "date": "2026-10-22",
+  "status": "DONE",
+  "protected_sha256": {
+    "osc_tools/ml/dataset.py": "f31fd4436680528587623ada3cb200fe0c081b55be9159dd4073a69a64910af8",
+    "osc_tools/ml/precomputed_dataset.py": "a3a64087ff2cf52def2e9b632c7395d18ac12ed832b87c070cb89c15f3770b60",
+    "osc_tools/data_management/dataset_manager.py": "ca0736fa58248c3b0add0dd14ef8f9b892588b6e61a0422d5c5429c5e5bf20dd",
+    "osc_tools/features/phasor.py": "93e3ac7ee34ec50febde6cdcde41f0561d8b4ddbeb681f860e8d80f43fdd8f96",
+    "osc_tools/features/polar.py": "ae22f8a73f15fcf0e22188c796808e07859e47184a9787c95caebb1b3420abcd",
+    "osc_tools/ml/layers/transformer_blocks.py": "9f250e8f726e9fac4aff2e410c21eacee5f517981cae1edcc26b5277048457d9",
+    "scripts/phase2_experiments/run_phase2_5_all.py": "de40ca17c7a5573f5a0a21dd414c39e08ac1538f92b4a87752f53149339956ad",
+    "scripts/phase2_experiments/run_phase2_6.py": "d806502576f94c40507e70c766468a0069befbbb4cd4b02e3945d06e54fbd004",
+    "docs\\article\\(ч1) Архитектура ИИ ФизКАН для энергетики v3.4.docx": "98e3fc97c6894b15ab7146de8061598b0060f5b2ad32af980ec87a6ec80deebd",
+    "docs\\article\\(ч2) Анализ признаков и архитектуры ФизКАН v2.5.docx": "fd6e48dcb2d561682d24a38ab1ff9b8e0507083cd8e35630bf4e23ab50d50086",
+    "docs\\article\\(ч3) Архитектура трансформеров v1.3.docx": "90f8c5c8d52f4ff7dafa7ab6860f82a7390c4b265c21775d59c5f4fcdfd373b1",
+    "docs\\article\\(ч4) Трансформеры для детекции событий v1.1.docx": "ac04852a3db2a5f6c1cbeee8d909a6e63167e43fc37a5eb4e4b322a5cbe98a5c",
+    "docs/article/Engineering_Optimal_Feature_Spaces_OJIES/Engineering_Optimal_Feature_Spaces_OJIES v1.2.tex": "eafaae8a56418286516957232b862ec35226c81011a8b98ebbb4711c131d7630",
+    "reports/Exp_2_5_and_start_Exp_2_6/_Память/Общие опыты 2.5 и 2.6.1/summary_report.csv": "74b6829280237f211d2cb2c2ecde03539eb29e05053f6b519ad6f753de6eca59"
+  },
+  "png_sha256": {
+    "docs\\Dissertation\\manuscript\\figures\\ch04_output_decision_candidate.png": "1e877de136c9d34a06e55fb5f6519ffcd6d72c02d96117f1f2056b1b9f2359ed",
+    "docs\\Dissertation\\manuscript\\figures\\image2.png": "a47e441fa204ea4f53821ee7bb92921e1c1fc4931b8c536c068e4661019f9294",
+    "docs\\Dissertation\\manuscript\\figures\\ml_metric_errors.png": "05332d55f3c41a66ad7ad83a390386ac9b882e8d6acc5293f32f60573889ffb9",
+    "docs\\Dissertation\\manuscript\\figures\\ozz_developing_fault.png": "2a03d1ccfaca9bdf90def00284d194754cbd36641fbc74346f884683edd607d3",
+    "docs\\Dissertation\\manuscript\\figures\\ozz_measurement_fault.png": "72c8d83e68246e0f98138f4450a1568ba3873461069b240b8299ec0f9c6a63ff",
+    "docs\\Dissertation\\manuscript\\figures\\ozz_switching_imitation.png": "3ce1a2200f480ba8876cf76ac1f7dd58c1604b8e38290153457ef5a0cb973eae",
+    "docs\\Dissertation\\manuscript\\figures\\ozz_switching_peak.png": "c3736966350da17d5c2a15114c9f41f8554f8a0ff4b2d846eca9a6a6310c99ef",
+    "docs\\Dissertation\\manuscript\\figures\\ozz_voltage_clipping.png": "982b93e4b131ec0f7eb6538cb49b09ef67e29fc212df3f98f2ae052400336a24",
+    "docs\\Dissertation\\manuscript\\figures\\ozz_weak_process.png": "1814169d5f100fbe2ff9b55b7cb143123166c5c02d058cd1eee009106b64e8a4",
+    "docs\\Dissertation\\manuscript\\figures\\physkan_arithmetic_stem.png": "bb583f1cc279ae46d131a86599760b4fcdb93e9e41f96e1910cb9c33fbf5689a",
+    "docs\\Dissertation\\manuscript\\figures\\physkan_cnn.png": "a0d78620b9ec1cf73f32f74e51dd0f8853b013e0710c2bae218b24ce944881ec",
+    "docs\\Dissertation\\manuscript\\figures\\physkan_complex_ops.png": "9fd6d078138704d685a8089b604db1a23d390e9317ece3d2963d1109baa865ea",
+    "docs\\Dissertation\\manuscript\\figures\\physkan_kan_edge.png": "ea9506173ddcb0ffc2be0a2e96abb74f3606e57f37c40d4184afbc6ff54bb946",
+    "docs\\Dissertation\\manuscript\\figures\\physkan_mlp.png": "59c5e17e9d4f046c91f3bc00208901a07d89e332e6cf7bd25eee47c9c75b7012",
+    "docs\\Dissertation\\manuscript\\figures\\physkan_relay_gate.png": "8d5318b6de3a823173ebb0b1b6ee847f2dc233ed6fbf5a54f6d5230d3b4d0a09",
+    "docs\\Dissertation\\manuscript\\figures\\physkan_residual.png": "2557e69511985baf9499615198f60af0410e37a3eb3e1c6075b0a170676ebc7b",
+    "docs\\Dissertation\\manuscript\\figures\\transformer_attention.png": "62a60886f01f71d09437acf54f60ebc617d47c7df3d97400cf884837d53122ed",
+    "docs\\Dissertation\\manuscript\\figures\\transformer_attention_detail.png": "fb44613a1b2d3e7b03dbfa9050f80323fc6870b1df7c53e71e201ae2a9e86bb1",
+    "docs\\Dissertation\\manuscript\\figures\\transformer_baseline.png": "ad5928a2f9c4c1d96402e964071f957af2ff0ffd64fa7f6340eb82f0dc20ca48",
+    "docs\\Dissertation\\manuscript\\figures\\transformer_baseline_detail.png": "51238ad338ba27ddf6e6624696fed9a13412758c665dc3e585e8a2c1c0544e90",
+    "docs\\Dissertation\\manuscript\\figures\\transformer_ffn_detail.png": "63aa3377e94a47abd61ce74e619938849d8e6ebdd6563ce4e7212d08c535ab74",
+    "docs\\Dissertation\\manuscript\\figures\\transformer_gate_geometry.png": "fb311484893f18ebef2f4e3104edc67fd477cef97d544743c93e7374641982f7",
+    "docs\\Dissertation\\manuscript\\figures\\transformer_interactions_detail.png": "3b683e33f2f98c72c21e217d7a97306789628cd53f6cc73e2235c336fac42075",
+    "docs\\Dissertation\\manuscript\\figures\\transformer_stem_detail.png": "68219f22dbd49d866b07e37fc584be92bd24c142885302d2e04c2e6a5502f9bf"
+  },
+  "coordinate_comparison": {
+    "selection": "Exp_2.5.5.1_*_stride_base_weights_aug, Light, all 24 rows",
+    "metric_column": "Full Best F1 only; no max across Best/Final/Test",
+    "report": "reports\\Exp_2_5_and_start_Exp_2_6\\_Память\\Общие опыты 2.5 и 2.6.1\\summary_report.csv",
+    "config_sha256": {
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_phase_polar_strided_ConvKAN_light_phase_polar_stride_base_weights_aug\\config.json": "f7c2c14e10bd94f5ea1bbb5845d3df976c0ce3c11712fa31c490230e81e4816b",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_phase_polar_strided_PhysicsKAN_light_phase_polar_stride_base_weights_aug\\config.json": "e74450b69b5861a873cca55e84aa9040e999780414e130c402072fb7e8a1f632",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_phase_polar_strided_ResNet1D_light_phase_polar_stride_base_weights_aug\\config.json": "0933274ee98d3733f9b915307a1fda93213d9a423029e219e4a1c1562036f332",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_phase_polar_strided_SimpleCNN_light_phase_polar_stride_base_weights_aug\\config.json": "825832fdb6f7e0b225d81dea193c11b43536d2d06fa756edd4e4943157efaac5",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_phase_polar_strided_SimpleKAN_light_phase_polar_stride_base_weights_aug\\config.json": "fa3c3e35b6c6ed5709bf46c73efad5d91e9d9cf26e7075c3abead12e43ea7be4",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_phase_polar_strided_SimpleMLP_light_phase_polar_stride_base_weights_aug\\config.json": "1eb8c244cfb8ab62a4f74e2a57d9f734c745d8cd0364451f108910485c580972",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_phase_rect_strided_ConvKAN_light_phase_complex_stride_base_weights_aug\\config.json": "bb82060053f3972a9ce70e0440932ddb9ea7d4bc110468e23983017585bd8b2b",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_phase_rect_strided_PhysicsKAN_light_phase_complex_stride_base_weights_aug\\config.json": "bcc2dd520055803cfdf83314e751ccae80d5c5cfe97a6cb12832c559338e7bb9",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_phase_rect_strided_ResNet1D_light_phase_complex_stride_base_weights_aug\\config.json": "ddd0ee68bdd4286595d1130f556127a086f6d663c33607de59aa161e0d98e643",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_phase_rect_strided_SimpleCNN_light_phase_complex_stride_base_weights_aug\\config.json": "d5a9bffeb5e9d1b48d0613bce220a8448abd2a2e0a708760627522f6aea553ef",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_phase_rect_strided_SimpleKAN_light_phase_complex_stride_base_weights_aug\\config.json": "3ce9c641611182fb8f0d21b3e9f78e9d6d1e9a86209c137da69ae88ae7af803f",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_phase_rect_strided_SimpleMLP_light_phase_complex_stride_base_weights_aug\\config.json": "0ec348631dd5307d32e360dad9d046ed23eb1bedcc6d20ca7e0c48c0bb4f0d07",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_polar_strided_ConvKAN_light_symmetric_polar_stride_base_weights_aug\\config.json": "deb8ddb11c474a5e82113d9779dfba225814230ce746dbde02e7021f71d4387f",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_polar_strided_PhysicsKAN_light_symmetric_polar_stride_base_weights_aug\\config.json": "d406fa96a80bffd213dddb1f9fd6c88eeb51b6190ad04187566fdbcdaedf8b88",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_polar_strided_ResNet1D_light_symmetric_polar_stride_base_weights_aug\\config.json": "10aecbe84969b7206b7fd45816e87a797378124724ab67cf92ed853110471032",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_polar_strided_SimpleCNN_light_symmetric_polar_stride_base_weights_aug\\config.json": "beeb39fcae72ece051310f610b4c6bbcf27ea403012fd523c074d9d1326d3429",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_polar_strided_SimpleKAN_light_symmetric_polar_stride_base_weights_aug\\config.json": "a033182283f3be4ed4787a7af7ca6ab1d5bea69ed071e0e82c80eab7fe1a2d71",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_polar_strided_SimpleMLP_light_symmetric_polar_stride_base_weights_aug\\config.json": "3b2272149ef5ebec00b830ba5128f6bc556116ed6803b2b529d39f3ebdc1e79f",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_rect_strided_ConvKAN_light_symmetric_stride_base_weights_aug\\config.json": "25fd63032b933b5a682203915e18f05f0b6bfcd91db2765223e169d1c8249f0b",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_rect_strided_PhysicsKAN_light_symmetric_stride_base_weights_aug\\config.json": "8318a464185b3e598b68d09000b98801802134bbe970f3e11395b15886750d51",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_rect_strided_ResNet1D_light_symmetric_stride_base_weights_aug\\config.json": "506f4a71b4149d3e10ee26baebdee32bdfe311091be2f7d3862b5edc958e3786",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_rect_strided_SimpleCNN_light_symmetric_stride_base_weights_aug\\config.json": "d2ee25157169f633a65b83d1530aa41205f3e2d57e7a3120793bb01034f3cd87",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_rect_strided_SimpleKAN_light_symmetric_stride_base_weights_aug\\config.json": "168e04ec0947d97022592f4c2c0de262c81b0161b09b942697ae3a75f73566d4",
+      "experiments\\phase2_5\\Exp_2.5.3_5\\Exp_2.5.5\\Exp_2.5.5.1_rect_strided_SimpleMLP_light_symmetric_stride_base_weights_aug\\config.json": "d84757ae5fa2192fed568af7d7435a4d046df76499c4ee63df5d10db99b75254"
+    },
+    "means": {
+      "phase_complex": 0.32953932715744266,
+      "phase_polar": 0.428112378022803,
+      "symmetric": 0.3854876017184378,
+      "symmetric_polar": 0.4450214077883297
+    },
+    "models": [
+      "MLP",
+      "CNN",
+      "ResNet",
+      "SimpleKAN",
+      "ConvKAN",
+      "PhysicsKAN"
+    ],
+    "values": {
+      "MLP": {
+        "phase_complex": 0.3073241196096116,
+        "phase_polar": 0.3736948282672851,
+        "symmetric": 0.382283653713773,
+        "symmetric_polar": 0.4919421887219122
+      },
+      "CNN": {
+        "phase_complex": 0.3774845524045362,
+        "phase_polar": 0.3737956188817017,
+        "symmetric": 0.4147646357878729,
+        "symmetric_polar": 0.4381071681632012
+      },
+      "ResNet": {
+        "phase_complex": 0.384804645406637,
+        "phase_polar": 0.4155196216624494,
+        "symmetric": 0.4286514755717998,
+        "symmetric_polar": 0.4179671136489062
+      },
+      "SimpleKAN": {
+        "phase_complex": 0.2621028603981433,
+        "phase_polar": 0.469531092228893,
+        "symmetric": 0.2492996019195932,
+        "symmetric_polar": 0.4680703039269263
+      },
+      "ConvKAN": {
+        "phase_complex": 0.3373914328875751,
+        "phase_polar": 0.4569316359231588,
+        "symmetric": 0.4348539166649385,
+        "symmetric_polar": 0.4156894491325924
+      },
+      "PhysicsKAN": {
+        "phase_complex": 0.3081283522381528,
+        "phase_polar": 0.4792014711733299,
+        "symmetric": 0.4030723266526494,
+        "symmetric_polar": 0.4383522231364399
+      }
+    },
+    "seeds": 1,
+    "independent_final_test": false,
+    "scope": "one-harmonic light configurations only; not the unverified 9450-run English grid"
+  },
+  "preservation": {
+    "sec02_physkan_architectures.tex_author_texts_preserved": true,
+    "sec03_signal_representations.tex_author_texts_preserved": true,
+    "75_registry_originals_unchanged": true,
+    "prior_replies_preserved": true,
+    "protected_sources_and_model_code_unchanged": true,
+    "original_pngs_unchanged": true,
+    "accepted_OZZ_112_120_unchanged": true,
+    "accepted_OZZ_text_repagination_unchanged": true
+  },
+  "author_notes": {
+    "canonical": 83,
+    "replies": 37,
+    "accepted_suppressed": 36,
+    "new_ids": [
+      "AA076",
+      "AA077",
+      "AA078",
+      "AA079",
+      "AA080",
+      "AA081",
+      "AA082",
+      "AA083"
+    ],
+    "newly_accepted": [
+      "AA072",
+      "AA073",
+      "AA074",
+      "AA075"
+    ]
+  },
+  "algebra_and_extracted_helper_checks": {
+    "Torch_imported": false,
+    "model_inference_or_training": false,
+    "helper": "AST-extracted unchanged _get_best_current_channels, fake in-memory arrays",
+    "IN_present_missing_IB": "IA=2, IC=-0.7, IN=0.3 -> IB=-1.3; IN retained",
+    "IN_absent_missing_IB": "same IB=-1.3; IN zero-filled",
+    "all_zero_IB": "treated as unavailable and reconstructed",
+    "phase_sum": "zero within 2e-7 tolerance for float32; observed residual 5.96e-8",
+    "clarke_inverse": "20 random triples reconstruct",
+    "positive_sequence": "[X0,X1,X2]=[0,1,0]"
+  },
+  "reference_checks": [
+    {
+      "url": "https://www.mathworks.com/help/mcb/ref/clarketransform.html",
+      "use": "amplitude-invariant alpha-beta-zero formula"
+    },
+    {
+      "url": "https://selinc.com/api/download/2470/?lang=en",
+      "use": "symmetrical components and relay applications"
+    }
+  ],
+  "open_issues": [
+    "INPUT-CONTRACT-01 online/precomputed differences and harmonic contracts",
+    "POLAR-SIGN-01 unchanged",
+    "AA075 architecture issue retained despite text closure",
+    "English 9450-run grid not merged with historical 24-run series",
+    "remaining window/harmonic/compression results in progress"
+  ],
+  "usage_start": {
+    "window_minutes": 300,
+    "used_percent_reported": 0
+  },
+  "pdf_qa": {
+    "review": {
+      "pages": 188,
+      "path": "docs\\Dissertation\\build\\reading\\latex\\dissertation_review.pdf",
+      "sha256": "4bdf36b55ecec819c63c2ef53c570a9a271385a1e0d7f7ec524be43c3c965da3",
+      "stable_aux_toc": true,
+      "undefined_references": 0,
+      "overfull_count": 9,
+      "visible_ids_and_pages": [],
+      "locations": {
+        "sec:ch4_signal_representations": {
+          "number": "4.4",
+          "page": "146"
+        },
+        "sec:ch4_feature_choice": {
+          "number": "4.4.9",
+          "page": "154"
+        },
+        "sec:ch4_training_protocol": {
+          "number": "4.5",
+          "page": "154"
+        },
+        "sec:ch4_physical_validation": {
+          "number": "4.6",
+          "page": "157"
+        },
+        "sec:ch4_event_examples": {
+          "number": "4.7",
+          "page": "160"
+        },
+        "sec:ch4_ozz_validation": {
+          "number": "4.8",
+          "page": "164"
+        },
+        "sec:ch4_input_sensitivity": {
+          "number": "4.9",
+          "page": "166"
+        }
+      },
+      "visual_review": "PASS. Source plots and clean145-166 inspected; final clean166-168 and annotated127,140,146-151,155-156,159,166,168-170 inspected. No clipping/overlap. All references stable;9 pre-existing earlier overfull warnings.",
+      "final_raster_pages": [
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168
+      ]
+    },
+    "comments": {
+      "pages": 190,
+      "path": "docs\\Dissertation\\build\\reading\\latex\\dissertation_comments.pdf",
+      "sha256": "25435902dcb2de95ae707545bc989ba3c3c41d0f0cccff6594509b3f84e47830",
+      "stable_aux_toc": true,
+      "undefined_references": 0,
+      "overfull_count": 9,
+      "visible_ids_and_pages": [
+        [
+          127,
+          "AA076."
+        ],
+        [
+          140,
+          "AA077."
+        ],
+        [
+          147,
+          "AA078."
+        ],
+        [
+          148,
+          "AA079."
+        ],
+        [
+          149,
+          "AA080."
+        ],
+        [
+          150,
+          "AA081."
+        ],
+        [
+          150,
+          "AA082."
+        ],
+        [
+          151,
+          "AA083."
+        ]
+      ],
+      "locations": {
+        "sec:ch4_signal_representations": {
+          "number": "4.4",
+          "page": "146"
+        },
+        "sec:ch4_feature_choice": {
+          "number": "4.4.9",
+          "page": "155"
+        },
+        "sec:ch4_training_protocol": {
+          "number": "4.5",
+          "page": "156"
+        },
+        "sec:ch4_physical_validation": {
+          "number": "4.6",
+          "page": "159"
+        },
+        "sec:ch4_event_examples": {
+          "number": "4.7",
+          "page": "162"
+        },
+        "sec:ch4_ozz_validation": {
+          "number": "4.8",
+          "page": "166"
+        },
+        "sec:ch4_input_sensitivity": {
+          "number": "4.9",
+          "page": "168"
+        }
+      },
+      "visual_review": "PASS. Source plots and clean145-166 inspected; final clean166-168 and annotated127,140,146-151,155-156,159,166,168-170 inspected. No clipping/overlap. All references stable;9 pre-existing earlier overfull warnings.",
+      "final_raster_pages": [
+        127,
+        140,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        155,
+        156,
+        159,
+        166,
+        168,
+        169,
+        170
+      ]
+    }
+  },
+  "note_grouping_regression": "Unanchored repeated history followed by another anchored note: only the actual reply groups with the second note; original raw text retained.",
+  "usage_end_snapshot": {
+    "five_hour_used_percent": 73,
+    "five_hour_remaining_percent": 27,
+    "weekly_used_percent": 11,
+    "shared_account_limit": true
+  },
+  "source_authorization_followup": {
+    "author_statement": "Take results from English article; experiments ran on another computer and are not available locally; omit unnecessary IT detail.",
+    "source": "Engineering Optimal Feature Spaces v1.2",
+    "local_raw_run_requirement": "waived by explicit author clarification; source version remains recorded",
+    "figure_translation": "new vector drawings from exact table cells; original raster plots unchanged",
+    "historical_24_run_table": "retained in evidence as a local preliminary check, replaced in manuscript by expanded article comparison"
+  },
+  "expanded_article_tables": {
+    "tab2": {
+      "symmetric-polar": [
+        [
+          0.68,
+          0.08
+        ],
+        [
+          0.67,
+          0.08
+        ],
+        [
+          0.59,
+          0.09
+        ],
+        [
+          0.59,
+          0.09
+        ],
+        [
+          0.6,
+          0.06
+        ],
+        [
+          0.55,
+          0.06
+        ],
+        [
+          0.58,
+          0.07
+        ]
+      ],
+      "phase-polar": [
+        [
+          0.65,
+          0.08
+        ],
+        [
+          0.64,
+          0.08
+        ],
+        [
+          0.57,
+          0.1
+        ],
+        [
+          0.57,
+          0.09
+        ],
+        [
+          0.59,
+          0.08
+        ],
+        [
+          0.55,
+          0.05
+        ],
+        [
+          0.59,
+          0.05
+        ]
+      ],
+      "symmetric": [
+        [
+          0.61,
+          0.09
+        ],
+        [
+          0.6,
+          0.08
+        ],
+        [
+          0.58,
+          0.07
+        ],
+        [
+          0.56,
+          0.07
+        ],
+        [
+          0.54,
+          0.07
+        ],
+        [
+          0.52,
+          0.06
+        ],
+        [
+          0.52,
+          0.06
+        ]
+      ],
+      "alpha-beta (Clarke)": [
+        [
+          0.57,
+          0.08
+        ],
+        [
+          0.56,
+          0.07
+        ],
+        [
+          0.54,
+          0.07
+        ],
+        [
+          0.53,
+          0.08
+        ],
+        [
+          0.5,
+          0.07
+        ],
+        [
+          0.5,
+          0.04
+        ],
+        [
+          0.45,
+          0.05
+        ]
+      ],
+      "raw (instant.)": [
+        [
+          0.56,
+          0.08
+        ],
+        [
+          0.55,
+          0.07
+        ],
+        [
+          0.53,
+          0.07
+        ],
+        [
+          0.54,
+          0.07
+        ],
+        [
+          0.5,
+          0.07
+        ],
+        [
+          0.49,
+          0.05
+        ],
+        [
+          0.47,
+          0.06
+        ]
+      ],
+      "power": [
+        [
+          0.57,
+          0.07
+        ],
+        [
+          0.57,
+          0.07
+        ],
+        [
+          0.37,
+          0.12
+        ],
+        [
+          0.38,
+          0.1
+        ],
+        [
+          0.39,
+          0.09
+        ],
+        [
+          0.48,
+          0.07
+        ],
+        [
+          0.38,
+          0.08
+        ]
+      ]
+    },
+    "tab4": {
+      "GRU": [
+        [
+          0.618
+        ],
+        [
+          0.608
+        ],
+        [
+          0.587
+        ],
+        [
+          0.031
+        ]
+      ],
+      "LSTM": [
+        [
+          0.601
+        ],
+        [
+          0.598
+        ],
+        [
+          0.589
+        ],
+        [
+          0.012
+        ]
+      ],
+      "CNN": [
+        [
+          0.529
+        ],
+        [
+          0.526
+        ],
+        [
+          0.531
+        ],
+        [
+          0.002
+        ]
+      ],
+      "ResNet1D": [
+        [
+          0.534
+        ],
+        [
+          0.523
+        ],
+        [
+          0.522
+        ],
+        [
+          0.012
+        ]
+      ],
+      "MLP": [
+        [
+          0.517
+        ],
+        [
+          0.519
+        ],
+        [
+          0.52
+        ],
+        [
+          0.004
+        ]
+      ],
+      "ConvKAN": [
+        [
+          0.526
+        ],
+        [
+          0.509
+        ],
+        [
+          0.508
+        ],
+        [
+          0.018
+        ]
+      ],
+      "SimpleKAN": [
+        [
+          0.513
+        ],
+        [
+          0.504
+        ],
+        [
+          0.476
+        ],
+        [
+          0.037
+        ]
+      ]
+    },
+    "tab6": {
+      "GRU": [
+        [
+          36.8
+        ],
+        [
+          0.57
+        ],
+        [
+          64.0
+        ]
+      ],
+      "LSTM": [
+        [
+          53.0
+        ],
+        [
+          3.22
+        ],
+        [
+          16.0
+        ]
+      ],
+      "SimpleKAN": [
+        [
+          108.2
+        ],
+        [
+          0.65
+        ],
+        [
+          166.0
+        ]
+      ],
+      "ConvKAN": [
+        [
+          5.85
+        ],
+        [
+          0.58
+        ],
+        [
+          10.0
+        ]
+      ],
+      "ResNet1D": [
+        [
+          4.84
+        ],
+        [
+          1.79
+        ],
+        [
+          3.0
+        ]
+      ],
+      "SimpleCNN": [
+        [
+          2.03
+        ],
+        [
+          0.23
+        ],
+        [
+          9.0
+        ]
+      ],
+      "SimpleMLP": [
+        [
+          3.31
+        ],
+        [
+          0.14
+        ],
+        [
+          23.0
+        ]
+      ]
+    }
+  },
+  "source_pngs_sha256": {
+    "docs\\article\\Engineering_Optimal_Feature_Spaces_OJIES\\картинки\\evdak10.png": "2fa5a5f6d49497e6966cc7dd7cc94de4ffb3f4bc629a92c00b3c60d4e7e5ffc5",
+    "docs\\article\\Engineering_Optimal_Feature_Spaces_OJIES\\картинки\\evdak2.png": "4c0db0f0c64d9afb511832b3469f4e9cd6c102efb5a380715182f75d805368f9",
+    "docs\\article\\Engineering_Optimal_Feature_Spaces_OJIES\\картинки\\evdak3.png": "18d9f98b0f0d5f55c7be9bb06dc1b122a65de43e17aac622ddb323761aa467e1",
+    "docs\\article\\Engineering_Optimal_Feature_Spaces_OJIES\\картинки\\evdak4.png": "f57f30aa33e2ec34c075199ba46a51bb3d58f7b49577e5e727dadf3f0a9fe052",
+    "docs\\article\\Engineering_Optimal_Feature_Spaces_OJIES\\картинки\\evdak5.png": "72edb84cef993198b69402606d8c82ef4202c9945d1e5b22465994322d9454c2",
+    "docs\\article\\Engineering_Optimal_Feature_Spaces_OJIES\\картинки\\evdak6.png": "c0017bd301c4c84bd5578f981e8b0c4faca42b1300116a078f0e823abd287de0",
+    "docs\\article\\Engineering_Optimal_Feature_Spaces_OJIES\\картинки\\evdak7.png": "f6125b705dbb181135296c52fb87b6d6de3523525c9db1b783ec0c6b7a1a1dca",
+    "docs\\article\\Engineering_Optimal_Feature_Spaces_OJIES\\картинки\\evdak8.png": "cc2abd717bdc982ba3eb1e610bc065a39a8cabadd5bc51e267ec47590e9b1c80",
+    "docs\\article\\Engineering_Optimal_Feature_Spaces_OJIES\\картинки\\evdak9.png": "f5a9ade6d08109a01ed68700c893db875116675160b69e2c00b25e8c14f68121"
+  },
+  "additional_protected_sha256": {
+    "reports/phase2_6/exp_2_6_5/Exp_2.6.1_PhysicsKAN_medium_phase_polar_stride_base_weights_aug_pruning_report.json": "18922716bb08f275b8853e8808cad1a638fad06fe471a88e5ffe4c12fc8d4b6d",
+    "reports/Exp_2_5_and_start_Exp_2_6/figures_article1/fig11_kan_splines/fig11_kan_splines_article.svg": "00461a304f5aec612171c9f3967393ae2a58a515327f7f4db26bee9618a0dbe4",
+    "reports/Exp_2_5_and_start_Exp_2_6/figures_article1/fig11_kan_splines/fig11_kan_splines_manifest.csv": "29a084a31b27dbe1f3c5b13672f977b4ffa9be0f5b6c486bd1310aa584fc95eb",
+    "reports/Exp_2_5_and_start_Exp_2_6/figures_article1/fig12_kan_heatmap/fig12_kan_heatmap_manifest.csv": "bcd9f1b468a7957c474a971bf25e2252487048ebf15113d94bb6678d2f9ef28c",
+    "scripts/phase2_experiments/run_phase2_6_kan_pruning.py": "d9e81de312777a8a7334ef17198f9ddf7546b3bacba6615ddda560ebb4c80b12",
+    "osc_tools/ml/kan_pruning.py": "ffe314581968c46876d9ff420ba632da40498cab5e4e808377d61ae5f2bed19b",
+    "osc_tools/ml/losses.py": "2e6f7c95daeb3119bce5f06c89530259f1f2f38993e0818ffe40e0df5508cb1e",
+    "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\comparison_summary.csv": "deae0ce8aa5b6e85bbf758afbf34aa5400f7f841901933e03c29a2bed303c85e",
+    "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\comparison_summary.json": "3841d94f11f5a34672e5db8f7a52b6db46b3adc7ceda236a3da00f35f39ec7b0",
+    "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\real_ozz_statistics\\physical_kan_latest_checkpoint\\real_ozz_statistics.json": "629baa3867a9361d90caf0c63946eac2159b8f0d59ea9573237e2c7ae1030cbd",
+    "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\sim_ozz_eval\\physical_kan_latest_checkpoint\\sim_ozz_evaluation.json": "76669a350ff1c4fdcff7808c0d10e95c33adaa9da40908c437708a60d3c80c53",
+    "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\real_ozz_statistics\\spectral_baseline_latest_checkpoint\\real_ozz_statistics.json": "da8f6f908e423f43fa1d1a97659f0ac039e0778b80edca40a4d08a06ece1ea86",
+    "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\sim_ozz_eval\\spectral_baseline_latest_checkpoint\\sim_ozz_evaluation.json": "075d69bd2a8dbd785f5c9b85c41f8bcabdc519ae6c028fd0936c0971831d21be",
+    "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\real_ozz_statistics\\physical_mlp_latest_checkpoint\\real_ozz_statistics.json": "03e07e13ebc53d542041cd19ce574d2df836a5fe53eccac864cba96240f1ea26",
+    "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\sim_ozz_eval\\physical_mlp_latest_checkpoint\\sim_ozz_evaluation.json": "cf038415872be5ce8f647f6b2758b27fb8a0a610598ab9e1c38cca9e4a4aebcf",
+    "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\real_ozz_statistics\\raw_instantaneous_latest_checkpoint\\real_ozz_statistics.json": "febd7183e2bff21d744baf66965d2f4076c8a0d0fa5b4f0a07cee7489ff13a93",
+    "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\sim_ozz_eval\\raw_instantaneous_latest_checkpoint\\sim_ozz_evaluation.json": "7a2c6d3c3efdd006ff4789e77d14c5ff67015a3f4cf8ae342d22f1e883e512a5",
+    "reports\\Exp_2_5_and_start_Exp_2_6\\figures_article1\\fig10_marking\\fig10a_marking_0d50f79a162f_article.png": "9cdd8585dc1a4d967473d05ca1bcb159554fffb526266e4341830d285d087ace",
+    "reports\\Exp_2_5_and_start_Exp_2_6\\figures_article1\\fig10_marking\\fig10b_marking_7a8bd50023cd_article.png": "6ac09184bfed2d53c13cb6136b1b2e0a49349abafab3c02c83932a8a404d843c",
+    "reports\\phase4\\kan_20260616_072711\\interpretability\\channel_dropout_probing.json": "6e55a23548aa5354b723b392f5dd6c15465184628f6e8c641783959535bb0e7f",
+    "scripts\\phase4_experiments\\interpretability\\channel_dropout_probing.py": "fda9dd7f22686fe51a9991b971e45716c6b274b2fc55dde226d672dcbb7148dd"
+  },
+  "physical_model_analysis": {
+    "experiment": "Exp_2.6.1_PhysicsKAN_medium_phase_polar_stride_base_weights_aug",
+    "ablation": {
+      "baseline": {
+        "acc": 0.6888605105746217,
+        "f1": 0.6024159076862475,
+        "balanced_acc": 0.0,
+        "per_class_f1": [
+          0.6975540467177821,
+          0.3665264668232779,
+          0.8935983537716926,
+          0.45198476343223737
+        ]
+      },
+      "no_mult": {
+        "acc": 0.5097715850376644,
+        "f1": 0.3969407163312476,
+        "balanced_acc": 0.0,
+        "per_class_f1": [
+          0.16103848946986202,
+          0.2641611187562763,
+          0.8342222432739674,
+          0.3283410138248848
+        ]
+      },
+      "no_div": {
+        "acc": 0.6726861771929756,
+        "f1": 0.5933752273367301,
+        "balanced_acc": 0.0,
+        "per_class_f1": [
+          0.6732207826937557,
+          0.37019567485670996,
+          0.8745003761006475,
+          0.45558407569580756
+        ]
+      },
+      "no_arith": {
+        "acc": 0.5221383495050552,
+        "f1": 0.39603890945640563,
+        "balanced_acc": 0.0,
+        "per_class_f1": [
+          0.11784746418892761,
+          0.28063577165834774,
+          0.8298973321431179,
+          0.35577506983522933
+        ]
+      },
+      "only_arith": {
+        "acc": 0.4702778506821894,
+        "f1": 0.3356510420200048,
+        "balanced_acc": 0.0,
+        "per_class_f1": [
+          0.47977011772979133,
+          0.00250928435210278,
+          0.5591912026664344,
+          0.3011335633316905
+        ]
+      }
+    },
+    "pruning": [
+      {
+        "threshold": 0.0001,
+        "keep_ratio": 0.987762721238938,
+        "active_edges": 14287,
+        "total_edges": 14464,
+        "acc": 0.6895146916535112,
+        "f1": 0.6030045217615357
+      },
+      {
+        "threshold": 0.001,
+        "keep_ratio": 0.9368777654867256,
+        "active_edges": 13551,
+        "total_edges": 14464,
+        "acc": 0.6934123573630626,
+        "f1": 0.6059186980506516
+      },
+      {
+        "threshold": 0.005,
+        "keep_ratio": 0.7691509955752213,
+        "active_edges": 11125,
+        "total_edges": 14464,
+        "acc": 0.6843830915735993,
+        "f1": 0.5817172081340831
+      },
+      {
+        "threshold": 0.01,
+        "keep_ratio": 0.5983130530973452,
+        "active_edges": 8654,
+        "total_edges": 14464,
+        "acc": 0.6105820644701329,
+        "f1": 0.5498269002786851
+      },
+      {
+        "threshold": 0.05,
+        "keep_ratio": 0.11137997787610619,
+        "active_edges": 1611,
+        "total_edges": 14464,
+        "acc": 0.09072747286323699,
+        "f1": 0.13672941544840966
+      },
+      {
+        "threshold": 0.1,
+        "keep_ratio": 0.03284015486725664,
+        "active_edges": 475,
+        "total_edges": 14464,
+        "acc": 0.0004113114567868349,
+        "f1": 0.24929191051052002
+      },
+      {
+        "threshold": 0.2,
+        "keep_ratio": 0.00566924778761062,
+        "active_edges": 82,
+        "total_edges": 14464,
+        "acc": 0.003290491654294679,
+        "f1": 0.04501547354382933
+      }
+    ],
+    "relative_drop_no_mult": 0.3410852680570584,
+    "method": "Fixed trained model, runtime zero scaling after bn_mult/bn_div; original channels scaled independently; no retraining in this test",
+    "source_article_correction": "Do not repeat statement that ablated models were trained anew; do not call real-coordinate products literal complex power",
+    "pruning_caveat": "mask zeroes weights without structural graph compression; CPU speed-up not measured",
+    "curves": "reuse SVG path geometry of source panels 1,2,5,9; no weights loaded; automatic shape names omitted",
+    "current_source_heatmap_weak_share": 0.09700520833333333,
+    "source_claim_60_80_percent_inactive": "not transferred as a proved result"
+  },
+  "ozz_validation": {
+    "summary_rows": [
+      {
+        "model_key": "physical_kan",
+        "run_dir": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase4\\sim_ozz_finetune_PhysicalKANTransformer_20260614_095924",
+        "checkpoint_type": "latest_checkpoint",
+        "checkpoint_path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase4\\sim_ozz_finetune_PhysicalKANTransformer_20260614_095924\\latest_checkpoint.pt",
+        "sim_macro_f1": "0.9789473383814946",
+        "sim_macro_auc": "0.0",
+        "sim_exact_match": "0.971918044077135",
+        "sim_latency_ms": "23.622626001015306",
+        "sim_report_dir": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\sim_ozz_eval\\physical_kan_latest_checkpoint",
+        "real_confirmed_count": "829",
+        "real_confirmed_detection_rate_pct": "94.8130277442702",
+        "real_false_count": "1004",
+        "real_false_detection_rate_pct": "63.645418326693225",
+        "real_threshold_mode": "per_class",
+        "real_threshold_label": "sim_optimal",
+        "real_report_dir": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\real_ozz_statistics\\physical_kan_latest_checkpoint"
+      },
+      {
+        "model_key": "spectral_baseline",
+        "run_dir": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase4\\sim_ozz_finetune_spectral_baseline_BaselineTransformer_20260612_025508",
+        "checkpoint_type": "latest_checkpoint",
+        "checkpoint_path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase4\\sim_ozz_finetune_spectral_baseline_BaselineTransformer_20260612_025508\\latest_checkpoint.pt",
+        "sim_macro_f1": "0.9922729812845897",
+        "sim_macro_auc": "0.0",
+        "sim_exact_match": "0.9864066804407714",
+        "sim_latency_ms": "5.3372210008092225",
+        "sim_report_dir": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\sim_ozz_eval\\spectral_baseline_latest_checkpoint",
+        "real_confirmed_count": "829",
+        "real_confirmed_detection_rate_pct": "92.64173703256937",
+        "real_false_count": "1004",
+        "real_false_detection_rate_pct": "55.677290836653384",
+        "real_threshold_mode": "per_class",
+        "real_threshold_label": "sim_optimal",
+        "real_report_dir": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\real_ozz_statistics\\spectral_baseline_latest_checkpoint"
+      },
+      {
+        "model_key": "physical_mlp",
+        "run_dir": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase4\\sim_ozz_finetune_physical_mlp_PhysicalMLPTransformer_20260612_204349",
+        "checkpoint_type": "latest_checkpoint",
+        "checkpoint_path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase4\\sim_ozz_finetune_physical_mlp_PhysicalMLPTransformer_20260612_204349\\latest_checkpoint.pt",
+        "sim_macro_f1": "0.9894368991674591",
+        "sim_macro_auc": "0.0",
+        "sim_exact_match": "0.9832558539944903",
+        "sim_latency_ms": "12.55020699929446",
+        "sim_report_dir": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\sim_ozz_eval\\physical_mlp_latest_checkpoint",
+        "real_confirmed_count": "829",
+        "real_confirmed_detection_rate_pct": "93.36550060313631",
+        "real_false_count": "1004",
+        "real_false_detection_rate_pct": "67.43027888446214",
+        "real_threshold_mode": "per_class",
+        "real_threshold_label": "sim_optimal",
+        "real_report_dir": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\real_ozz_statistics\\physical_mlp_latest_checkpoint"
+      },
+      {
+        "model_key": "raw_instantaneous",
+        "run_dir": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase4\\sim_ozz_finetune_raw_instantaneous_BaselineTransformer_20260613_140322",
+        "checkpoint_type": "latest_checkpoint",
+        "checkpoint_path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase4\\sim_ozz_finetune_raw_instantaneous_BaselineTransformer_20260613_140322\\latest_checkpoint.pt",
+        "sim_macro_f1": "0.991445075173891",
+        "sim_macro_auc": "0.0",
+        "sim_exact_match": "0.9857438016528925",
+        "sim_latency_ms": "5.676737001631409",
+        "sim_report_dir": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\sim_ozz_eval\\raw_instantaneous_latest_checkpoint",
+        "real_confirmed_count": "829",
+        "real_confirmed_detection_rate_pct": "95.29553679131485",
+        "real_false_count": "1004",
+        "real_false_detection_rate_pct": "63.147410358565736",
+        "real_threshold_mode": "per_class",
+        "real_threshold_label": "sim_optimal",
+        "real_report_dir": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\real_ozz_statistics\\raw_instantaneous_latest_checkpoint"
+      }
+    ],
+    "real_threshold_metadata": "Detailed real reports all fixed=0.5; summary labels sim_optimal inconsistent; no optimized-threshold claim transferred",
+    "source_series": "200-epoch latest checkpoints in article4 Table1, not earlier individual experiment",
+    "unit": "RTDS window metrics; real filewise any positive, enriched hard negatives not operational prevalence",
+    "causal_ablation": "No isolated KAN effect claimed",
+    "qa": "All four detailed reports match summary F1 and real file counts/rates"
+  },
+  "real_event_examples": {
+    "split": "TRAIN as manifest source path",
+    "use": "qualitative illustration not held-out test",
+    "copies_byte_identical": true
+  },
+  "final_preservation_checks": {
+    "all_protected_hashes_equal": true,
+    "original_notes": 75,
+    "current_notes": 83,
+    "current_replies": 37,
+    "suppressed": 36,
+    "raw_author_occurrences_equal": true
+  },
+  "input_sensitivity": {
+    "source": "reports\\phase4\\kan_20260616_072711\\interpretability\\channel_dropout_probing.json",
+    "baseline": {
+      "macro_f1": 0.957651803546504,
+      "per_class_f1": {
+        "Stable_SPGF": 0.9929300374780686,
+        "Petersen_AIGF": 0.9359364803132478,
+        "PetersSlepyan_AIGF": 0.9504579377740097,
+        "Belyakov_AIGF": 0.9512827586206897
+      }
+    },
+    "metadata": {
+      "max_files": 960,
+      "max_windows": null,
+      "eval_stride": 1,
+      "window_step_periods": 1.0,
+      "batch_size": 256,
+      "threshold": 0.5,
+      "num_windows": 14972
+    },
+    "groups": {
+      "all_angles": 0.08640194291896137,
+      "all_magnitudes": 0.01910633436599533,
+      "all_neutral": 0.9539885412328355,
+      "all_sub_periods": 0.8939954525457474,
+      "harmonic_h1": 0.13325151389380835,
+      "harmonic_h2": 0.688670120951149,
+      "harmonic_h3": 0.7001719502885881,
+      "harmonic_h4": 0.9369646429549942,
+      "harmonic_h5": 0.7521179986812669,
+      "harmonic_h6": 0.9539092433751515,
+      "harmonic_h7": 0.9463681114917784,
+      "harmonic_h8": 0.9500753079105011,
+      "harmonic_h9": 0.9433349811509311,
+      "harmonic_lh10": 0.9561012859466054,
+      "harmonic_lh2": 0.9323484737432669,
+      "harmonic_lh4": 0.9553988240237055,
+      "harmonic_lh6": 0.9569429695544852,
+      "higher_harmonics_h2_h9": 0.19920621608703754,
+      "only_h1__drop_rest": 0.21195040836479445,
+      "only_symmetric__drop_phase_polar": 0.005577353927855949,
+      "phase_currents": 0.9537452689116671,
+      "phase_voltages": 0.015963692027441006,
+      "signal_IA": 0.9568364286614461,
+      "signal_IB": 0.9562044177066474,
+      "signal_IC": 0.955796735303227,
+      "signal_IN": 0.9559623280205538,
+      "signal_UA": 0.38688991401002615,
+      "signal_UB": 0.45953078464923913,
+      "signal_UC": 0.38903306496046897,
+      "signal_UN": 0.9554091440652946,
+      "symmetric_components": 0.09605143313474959
+    },
+    "limitations": "Zeroing fixed trained network, not retraining or complete measurement failure; not optimum harmonic count; not same evaluation stride as comparison table.",
+    "derived_features_caveat": "Phase/harmonic masks leave separately computed 12 symmetric coordinates unchanged; not removal throughout measurement pipeline"
+  },
+  "final_source_sha256": {
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\chapter.tex": "c79103800f521d266dff713a822838caa12c8c419ae0bccf239f79e0aaf35b9b",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec01_evaluation_methodology.tex": "a88e9dd480489140e2ef5828d0dbe436c2ede8b3bc149e3f6ff36a4e89792f28",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec02_physkan_architectures.tex": "7bc19544e212df6bf1a9c42210c51c9652308d8a60d8f84bcf107e228722cd5e",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec03_signal_representations.tex": "1e56c467326c1970ab7406fda13372bed7f96a254694dcea4fcb2e14fe4bbc1f",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec04_training_protocol.tex": "78a981373d70bcb5896c2388616225110308757e854957a00249906ba34d433e",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec05_physical_validation.tex": "163506b10de00fda91113f4e58afb2b1ae7af9ac84afa0e6354898cfe077c877",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec06_event_examples.tex": "e57a9344815216877bde28b097e1079268d85402b625fbbc75547aad3429df20",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec07_ozz_validation.tex": "9fe3c6033a430c2a4f7c910f74f3b228667671c580a1380ab5c9a04de4aa9175",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec08_input_sensitivity.tex": "a5423043c962242c486ab20597794e0d173279d6e7c3099059c1837a490be022"
+  },
+  "source_freeze_note": "Tracker rewrote newly added files LF to CRLF only; normalized-byte hashes matched pre-refresh. Final hashes updated after refresh; no scientific source change.",
+  "final_checks": {
+    "git_diff_check": "PASS",
+    "all_source_hashes_preserved": true,
+    "registry_counts": [
+      83,
+      37,
+      36
+    ],
+    "phase6_untouched": true,
+    "training_or_dataset_inference_run": false,
+    "new_vector_figures": 8,
+    "byte_identical_article_figures": 2,
+    "active_chapter4_new_end": "4.9",
+    "full_D04_or_C02_C03_closed": false
+  },
+  "resource_stop_policy": "Finish tested coherent batch and leave roughly one quarter of shared five-hour allowance for Phase6 colleague, as requested; exact final snapshot recorded below."
+}

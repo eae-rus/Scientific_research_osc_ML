@@ -6454,5 +6454,26 @@
     "ffn_figure_corrected": true,
     "phase5_priority_task": "POLAR-SIGN-01",
     "model_edit": "comment only; AST unchanged"
+  },
+  "author_input_revision_20261022_D04_009": {
+    "proof": "review/checks/D04-009.json",
+    "source_methods": "AI-02-RU/EN article-authorized remote results; AI-01 saved ablation/pruning and source plots; AI-03/04 training methods",
+    "new_figures": [
+      "ch04_clarke_geometry.pdf",
+      "ch04_feature_comparison_en_ru.pdf",
+      "ch04_input_time_selection.pdf",
+      "ch04_kan_pruning.pdf",
+      "ch04_learned_kan_functions.pdf",
+      "ch04_physical_feature_ablation.pdf",
+      "ch04_sampling_comparison_en_ru.pdf",
+      "ch04_two_stage_training.pdf"
+    ],
+    "protected_pngs_unchanged": true,
+    "empirical_scope": "English tables2/4/6 are primary source by explicit author clarification; local24 retained in proof only. Physical ablation/pruning uses saved report, no retraining.",
+    "new_input_issue": "INPUT-CONTRACT-01; no dataset/model modification",
+    "standard_baselines": "GRU/LSTM retained briefly as established baselines, not author contributions",
+    "real_examples": "Two byte-identical source images; TRAIN illustrations explicitly labelled, not held-out test",
+    "ozz_validation": "AI-04 Table1 updated200-epoch series; summary4 rows match detailed RTDS/real reports; reported thresholds fixed0.5 despite summary sim_optimal label; see proof. No optimal/universal architecture claim.",
+    "input_sensitivity": "AI-04 P0259-P0273 and kan_20260616_072711/interpretability/channel_dropout_probing.json;14972windows,step1period,fixed0.5.12derived symmetric coordinates remain under phase/harmonic masks. No retraining or actual fault-tolerance/optimal harmonics claim."
   }
 }
