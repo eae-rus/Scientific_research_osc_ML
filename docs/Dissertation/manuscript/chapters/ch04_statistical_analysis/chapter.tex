@@ -5,6 +5,14 @@
 \label{ch:statistical_analysis}
 \label{ch:oscillogram_analysis}
 
+\conceptsource{В служебных пояснениях принята короткая нумерация работ.
+Статья 1 посвящена архитектурной модернизации физических нейросетей,
+статья 2 формированию признакового пространства, включая английский
+вариант Engineering Optimal Feature Spaces, статья 3 архитектуре
+Physical KAN-Transformer, статья 4 прикладной детекции событий,
+статья 5 интеллектуальному РНМ. Это пометки об источниках идей,
+они автоматически скрываются в версии без примечаний.}
+
 \section{Постановка исследования}
 \label{sec:ch04_intro}
 
@@ -37,6 +45,7 @@
 Эти направления рассматриваются в единой связи с подготовкой
 данных и задачами совершенствования БАВР.
 
+\ifdefined\AuthorReview
 \subsection*{Рабочий план наполнения главы}
 \textit{В начале главы приводится общая методика оценки, используемая
 при распознавании событий и проверке РНМ. Затем объединяется
@@ -61,6 +70,7 @@
 статьи остаётся в следующей главе. Рабочие пометки удаляются после
 завершения наполнения. Введение будет уточнено по всему этому
 материалу, а не только по первой статье.}
+\fi
 
 \input{chapters/ch04_statistical_analysis/sec01_evaluation_methodology}
 
@@ -73,10 +83,14 @@
 \input{chapters/ch04_statistical_analysis/sec05_physical_validation}
 
 \input{chapters/ch04_statistical_analysis/sec06_event_examples}
+\clearpage
 
 \input{chapters/ch04_statistical_analysis/sec07_ozz_validation}
 
 \input{chapters/ch04_statistical_analysis/sec08_input_sensitivity}
+\clearpage
+
+\input{chapters/ch04_statistical_analysis/sec09_ct_saturation}
 
 % Исторический план DISS-005 сохранён дословно, без вывода в PDF.
 \iffalse

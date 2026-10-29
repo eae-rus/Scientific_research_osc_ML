@@ -1,0 +1,318 @@
+{
+  "task_id": "D04-012-A",
+  "parent": "D04-012",
+  "date": "2026-10-27",
+  "status": "DONE within batch A; D04-012 remains open",
+  "scope": [
+    "R4-09",
+    "R4-10",
+    "R4-11"
+  ],
+  "sources": [
+    {
+      "model": "physical_kan_latest_checkpoint",
+      "report": "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\sim_ozz_eval\\physical_kan_latest_checkpoint\\sim_ozz_evaluation.json",
+      "report_sha256": "76669a350ff1c4fdcff7808c0d10e95c33adaa9da40908c437708a60d3c80c53",
+      "run": "experiments\\phase4\\sim_ozz_finetune_PhysicalKANTransformer_20260614_095924",
+      "epochs_eval": 100,
+      "epochs_config": 100,
+      "epochs_summary": 100,
+      "last_logged_epoch": 99,
+      "window_f1": 0.9789473383814946,
+      "window_exact_match": 0.971918044077135,
+      "threshold": 0.5,
+      "zone_f1": 0.9466102157785943,
+      "zone_exact_match": 0.9853769704621977,
+      "files": 960,
+      "windows": 116160,
+      "num_params_evaluation": 263286,
+      "training_summary": {
+        "total_epochs": 100,
+        "num_params": 263216
+      },
+      "run_file_sha256": {
+        "config.json": "8032f07fcb97c93f75000ca867560f0c286e90ed671572f4336203548760de8a",
+        "summary.json": "0b481b32e8460da4b2c206c73f1df2b68c67e15ec0ba05d0fd898fc565fd2481",
+        "training_log.jsonl": "33a42612a9efe8cd87b802bade0cdbc7468f0e7c4f294001cb92aab3e5997870"
+      }
+    },
+    {
+      "model": "physical_mlp_latest_checkpoint",
+      "report": "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\sim_ozz_eval\\physical_mlp_latest_checkpoint\\sim_ozz_evaluation.json",
+      "report_sha256": "cf038415872be5ce8f647f6b2758b27fb8a0a610598ab9e1c38cca9e4a4aebcf",
+      "run": "experiments\\phase4\\sim_ozz_finetune_physical_mlp_PhysicalMLPTransformer_20260612_204349",
+      "epochs_eval": 100,
+      "epochs_config": 100,
+      "epochs_summary": 100,
+      "last_logged_epoch": 99,
+      "window_f1": 0.9894368991674591,
+      "window_exact_match": 0.9832558539944903,
+      "threshold": 0.5,
+      "zone_f1": 0.9647082736466873,
+      "zone_exact_match": 0.9894403313437404,
+      "files": 960,
+      "windows": 116160,
+      "num_params_evaluation": 183007,
+      "training_summary": {
+        "total_epochs": 100,
+        "num_params": 183002
+      },
+      "run_file_sha256": {
+        "config.json": "1f7fe6abc73bd2c458078f58a1246e1a427e3000dd38f7ec9ab5d36ceaaaa14b",
+        "summary.json": "55692aeec2cdb3b60c910b1a85491f0b8de23e82dd7bc13d2c228acde460eb1d",
+        "training_log.jsonl": "95eea61ed7c89374ce322a335c255a2f0ecc9bacab93323e763684b605e8f0aa"
+      }
+    },
+    {
+      "model": "raw_instantaneous_latest_checkpoint",
+      "report": "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\sim_ozz_eval\\raw_instantaneous_latest_checkpoint\\sim_ozz_evaluation.json",
+      "report_sha256": "7a2c6d3c3efdd006ff4789e77d14c5ff67015a3f4cf8ae342d22f1e883e512a5",
+      "run": "experiments\\phase4\\sim_ozz_finetune_raw_instantaneous_BaselineTransformer_20260613_140322",
+      "epochs_eval": 100,
+      "epochs_config": 100,
+      "epochs_summary": 100,
+      "last_logged_epoch": 99,
+      "window_f1": 0.991445075173891,
+      "window_exact_match": 0.9857438016528925,
+      "threshold": 0.5,
+      "zone_f1": 0.9494115877939414,
+      "zone_exact_match": 0.9866167594505663,
+      "files": 960,
+      "windows": 116160,
+      "num_params_evaluation": 255748,
+      "training_summary": {
+        "total_epochs": 100,
+        "num_params": 255748
+      },
+      "run_file_sha256": {
+        "config.json": "dc58e5ab97468110d9748e880370f767fd292dac3d5d24f5f19d5e66dd48e794",
+        "summary.json": "e35fe87f0f9c3fb9885ebf83e66605f92e339ed76bed9d315c094a7c27fc6cbb",
+        "training_log.jsonl": "6c85aac88763c04d0d798f6b98e47592101ba7c1e4190c85e1e8ba4efae75e4c"
+      }
+    },
+    {
+      "model": "spectral_baseline_latest_checkpoint",
+      "report": "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\sim_ozz_eval\\spectral_baseline_latest_checkpoint\\sim_ozz_evaluation.json",
+      "report_sha256": "075d69bd2a8dbd785f5c9b85c41f8bcabdc519ae6c028fd0936c0971831d21be",
+      "run": "experiments\\phase4\\sim_ozz_finetune_spectral_baseline_BaselineTransformer_20260612_025508",
+      "epochs_eval": 100,
+      "epochs_config": 100,
+      "epochs_summary": 100,
+      "last_logged_epoch": 99,
+      "window_f1": 0.9922729812845897,
+      "window_exact_match": 0.9864066804407714,
+      "threshold": 0.5,
+      "zone_f1": 0.9531693921847381,
+      "zone_exact_match": 0.9876158603076217,
+      "files": 960,
+      "windows": 116160,
+      "num_params_evaluation": 255748,
+      "training_summary": {
+        "total_epochs": 100,
+        "num_params": 255748
+      },
+      "run_file_sha256": {
+        "config.json": "d2fe815ec7aa3768c091624c82b8c89db840999315246d31b01bed0189055436",
+        "summary.json": "f382eac361f6073c5b24993f109684406e71a303ace4e0fc5fb73d87c1fa3751",
+        "training_log.jsonl": "34b294f96a360f00617ab5879d9b50cdbe3ac13e6c8c9952712a8bb4f5f8583b"
+      }
+    }
+  ],
+  "input_sha256": {
+    "docs\\Dissertation\\manuscript\\main.tex": "52f7a36335723a846e00e299d112ccf8f3d5e78bffcdd14a94a63e74f9e97a63",
+    "docs\\Dissertation\\manuscript\\preamble.tex": "f16ccb148e6a1f093395e3f878c5af5eb7c7554e63ce34049f756622da2ebe1a",
+    "docs\\Dissertation\\manuscript\\test_skeleton.tex": "aca4ec7483e1b4e3ee6b908dda0f0710c7fbf92000eadebd67a9b862e74e0bfd",
+    "docs\\Dissertation\\manuscript\\backmatter\\appendix01.tex": "a8c1ee2f2e154601571de090460d26fd5b2eaa3df11378638da1fc0502bc1a0b",
+    "docs\\Dissertation\\manuscript\\backmatter\\bibliography.tex": "bf3d42abf99e45b3e134b3bbdc588329b3cee45ad6aa8d53cc3aca47cb67793f",
+    "docs\\Dissertation\\manuscript\\backmatter\\bibliography_part1.tex": "ed81420bf92be06339318bfc600af2c5dbdbaffb2e368fec52e957626f0fb33c",
+    "docs\\Dissertation\\manuscript\\backmatter\\bibliography_part2.tex": "12602c5bf2ba3007ac69a8c7722c7d24eaa7a5b6907a9b7985d0a0a6a45f2976",
+    "docs\\Dissertation\\manuscript\\backmatter\\notes_informal.tex": "c8cd036c979b763f8d77cf2f76ca5edbae7ceca61ef6ff164f2e3f1871c29847",
+    "docs\\Dissertation\\manuscript\\backmatter\\notes_informal_part1.tex": "8f6e547e499c4ad321a976c46665644d2af641e028a73dda52d8aba104714fb7",
+    "docs\\Dissertation\\manuscript\\backmatter\\notes_informal_part2.tex": "765474806e1071bbcea276c2bbd86f3c388719e04b1d78456f61e6137fa78514",
+    "docs\\Dissertation\\manuscript\\backmatter\\supplementary_elements.tex": "92e6956c74ab8867d17b44a46152781532634534cb947c04cc4b0272c0d3cd9a",
+    "docs\\Dissertation\\manuscript\\frontmatter\\introduction.tex": "658c5f8f92792235e3a2d6249ea1931a722f511a8bc304746348e20c29b124d7",
+    "docs\\Dissertation\\manuscript\\frontmatter\\title.tex": "123abebc884ed825f15e06d12ec22aba50587f411f3fce313ea6e2bc3bdd8be8",
+    "docs\\Dissertation\\manuscript\\frontmatter\\toc_source.tex": "060cae328a354a16bb2930a4d32e6055af8b437977f03d73ae6f8be78cda7250",
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\chapter.tex": "eb4fe123410136f2b8340660379d5d1b53f457ca0b455a4456805f516c9a22be",
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec01_intro.tex": "035ee21a74830f4ad3262fcbe6a06265fd58a804b45aaaaf573b9aa32002f6d4",
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec02_statistics_and_basic_problems.tex": "166bcb7fe14e4e636d224ebeceabce382de96221934496e838dbd76f848b7ab5",
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec03_base_organs_problems.tex": "e0eb85fade471042cac52aaa9c3e7c8e550a4acca20a92853e438cc17a2d71fc",
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec04_adaptive_functions.tex": "c01e121e26e144040d209d88a8f3b99101a0eeda5065ab7e292419c1f97e76ce",
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec05_manufacturers_analysis_part1.tex": "21e2ef1ae497939d9ecbd1b9b88f13991f86c2f7cfabf75a001752d18bb87a8e",
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec06_manufacturers_analysis_part2.tex": "407a5956012602b5a256f4fc4e0c5d09448d339421d52dd0b44620863f8fe4d6",
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec07_complex_cases_time.tex": "b7c698af18fddd842b999b5043702f189aee6a9743f6a311250c66b7231e29d6",
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec08_adaptive_dropout.tex": "e62d67b98e491a548b6f56a46e3d6f81fa74566abc7bf0d136c5ebe7f4a9e417",
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec09_external_two_phase_blocking.tex": "12c91393d5451e8439a1c1ef2afc836fe72e4bbefee50928de4622b579554c15",
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec10_rogowski_and_zero_sequence.tex": "554dc6d20193db6e27fb5224a1daa4411db6eff43bccb8e8f6c28bff518b79c2",
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec11_ferroresonance_ozz.tex": "66b157e7adc903ad36e1951f571c87d831135bd53fb12d09ef94ebb79a8d21c2",
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec12_conclusions.tex": "fb7079fcdd709a7b4faf2ce5d26a2af1adc7e06ae487459cabcfb7d4eec4fd77",
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\tab01_bavr_operation.tex": "a1f4809519d0dcbdf0d173a31243d49eab7cff5d34e4224a7ac131d0c6f42302",
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\chapter.tex": "27a572ea1d4fcedd9166f902e29e907b9613a55f4fc61d24794753deaf41e942",
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec01_intro_and_rogowski_theory.tex": "1ce11bd29f194cf9e4cca471dfefc23d112af71ecb9cd525cc5a017503f078e3",
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec02_transient_and_harmonics.tex": "f9027ec6a15df9cdf5eb2a0cde69e649a6e21c3a8797a0dd1080ed6317779477",
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec03_fourier_theory.tex": "bc78385107dc9292d4d224af5142fa199089d3cf7176c1660e4e2a0ca252af60",
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec04_rnm_tt_kr_comparison.tex": "7b6c4993c2f636260277d7734238b30df893ebd7d40fbb5492a5bc22ad61d138",
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec05_industrial_application_kr.tex": "0946928ded53a2507baf177b56bf50c23908c860208d1a85b957e8a9b163d6be",
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec06_vnr_algorithms.tex": "32b6518890900b69efb18abbb796864d834055102b3cbbbdfe1ad731f4a3d743",
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec07_conclusions.tex": "f2bd7ccd2258d131c5b5d2d91cacd2bfeae531c00d08c56195c839c638aada54",
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\tab04_window_functions.tex": "0e19c45372706d8a452ab7f30aec79433d479a37aa98db9661f3de95176fb70d",
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\chapter.tex": "05d3c7b3d73f2e1f9c1761b6eed79e5d5d94c91ab96930d909aa25352e267bc5",
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec01_intro_and_methodology.tex": "72a247357912658811d328e9de8802673f741ec8103a372e549b0c7ac437c97b",
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec02_data_collection_and_db.tex": "8d27b569833f7b45c3d929ca4e7c458cc4200befc7b90278b195e9f535cbca8d",
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec03_comtrade_intro.tex": "6d6c98ae6999e5fef271f40ae3566ba28a81244687b975aacfb9ce005ced6e13",
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec04_dat_files_and_depersonalization.tex": "0549f8aeacf68db1df80e37b7c522ce39624f821ebf48549e35b7f43774e7762",
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec05_signal_naming_unification.tex": "258526f269f5a6aa4167d76e4e9449e913b05d48f0c78c10b6a8051127b754e7",
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec06_normalization_methodology.tex": "88b482cfbb0a74e81af9c4e1efddaf02e3e838bed4344c0c04cdbe639059a5a3",
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec07_basis_algorithms_and_csv.tex": "e2b205e2a84baff87f212ec5d564243f287150d40e76f33fc17f3272e251a271",
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec08_annotation_methodology.tex": "e88901e708222c1746413b64582d56a5321ff8e52b990ea324fa28df97d550b7",
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec09_empty_oscillograms_filtering.tex": "dc46bb1a42ba85fb8de4991f7066fc3dacab00ec3991300e4b53ac7a4e428cf6",
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec10_earth_fault_subset.tex": "d55279ef21129fa4e4640c911fa1004d266137d3d5898d75806f4ebb8e0df16e",
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec11_conclusions.tex": "aeac7dee697410686deb6d25c7fc1263c246731bc524557083ae29cbc55083be",
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\tab01_analog_signals_parameters.tex": "94f049aab2af3a77225ce7a00bb5565ccccaf05545a5fd7028864a922ffec5f2",
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\tab02_oscillograms_frequencies.tex": "1453eb3a0ea52941ab6afaf10e3ae70b02b8002180b6af539d1f17e9acaeb725",
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\tab03_zero_sequence_basis.tex": "83c5f016aa6c25cbad2e562ebe1e7c92613250c3baa286de47b6e3c5d60f2a6d",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\chapter.tex": "58bf918937f9d9a3e859fe560a8540a5d6ddb31409731fc74e9506398b50eb8d",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec01_evaluation_methodology.tex": "ae1cf2f80556970181012a0fc7b1749184344864c57fb055345dd2b51f233be6",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec02_physkan_architectures.tex": "e6f153f60df0ce82affff558617f70ee537634ab782cffdf9b7c4a4cf6787749",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec03_signal_representations.tex": "4b34907933dfcb0290c1cd6c65bb7a699cd31abc63381358b3a597d8731fb3fd",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec04_training_protocol.tex": "e45c859aba8b08916b885b0b4683812ead52e35fa7c7151ee434325982ea1e3c",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec05_physical_validation.tex": "990dc96a710b87dedb43bd40bf4b64bd28058360f85954b7e2f816c6b75bb97f",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec06_event_examples.tex": "e6ee750006a8074bfff0fe32aad846d9dc6633a482c5629dcdbd4fd8bc16a2ed",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec07_ozz_validation.tex": "570047233718b649b950e7f7ab118ea9a878afdb6e483e982ee158492f0c3839",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec08_input_sensitivity.tex": "8e4062af5b8f00b0ccc7ebb7fc2f93f962ee74137f249fbffdd54b816cad1120",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec09_ct_saturation.tex": "e080878b466c00b635cdda9d0bb4a915657b7d4edc322a544b37fa13be29542f",
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\chapter.tex": "76c4d2dc9306dff46e4a58b21a983e212aff062974814f605f30baacc238db44",
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec01_direction_and_validity.tex": "2d9fdc84cf477901c7dbb5a09df9f7a259ac1e30ef197df9edf7383d089f4a5e",
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec02_analytical_organs.tex": "14139be30217478e3cbd9eadb7abbfbf46685be9957b580e032b8196f4d62e26",
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec03_population_audit.tex": "c81c737c3d4822d249c065b13cb8f255e9d47a0dcca99a252e117edd3d6dd7dd",
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec04_expert_reference.tex": "f39e5bc26cc39b702d35116ea268cb643b5fbe6349e97aa624b62a380154aba2",
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec05_engineering_verification.tex": "f790f6c8fbdd110b22dadcc397f371816a0efded3a3800f7fc4b17ba82b5fce0",
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec06_first_results.tex": "b7f7f3909416ef08ec3744d6c6fe1caadb17c9299119c5a60e6ed198e1229e3f",
+    "docs\\Dissertation\\review\\issues\\author_annotations.json": "9a2cdf562c1f3ddc38f95f255774e5b53933c8511a5f440009d720f571e1c52a",
+    "docs\\Dissertation\\review\\issues\\author_note_dispositions.json": "5e6a0f2ba72c30f67a15a369f147948e9d66ba5df8c4aa2f56e35277c03cfe0a"
+  },
+  "aggregation": {
+    "source": "scripts\\phase4_experiments\\sim_ozz\\evaluate_sim_ozz.py",
+    "sha256": "37e8e0b5504a21a3a0131696a030b7e836081d575ce4e01534ce88a003ed16de",
+    "window": "maximum over zones separately for each class, both predictions and targets",
+    "zone": "flatten windows and output zones; overlapping physical intervals may be counted repeatedly",
+    "threshold": 0.5,
+    "model_execution": false
+  },
+  "rPhysicsKAN_manifest": {
+    "path": "reports\\Exp_2_5_and_start_Exp_2_6\\figures_article1\\fig10_marking\\fig10_marking_manifest.csv",
+    "sha256": "b14a1f9da23358cd7b22b379111f1a48356a9569599a5f7944b272223472f51e",
+    "contains_rPhysicsKAN": true
+  },
+  "preservation": {
+    "changed_input_files": [
+      "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec06_event_examples.tex",
+      "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec07_ozz_validation.tex",
+      "docs\\Dissertation\\review\\issues\\author_annotations.json"
+    ],
+    "only_two_scientific_sections_changed": true,
+    "author_note_raw_text_preserved": true,
+    "reviewer_original_blocks_preserved": true,
+    "other_manuscript_tex_unchanged": true,
+    "author_dispositions_unchanged": true
+  },
+  "release": {
+    "dissertation_review": {
+      "path": "docs\\Dissertation\\build\\reading\\latex\\dissertation_review.pdf",
+      "pages": 229,
+      "sha256": "689fca26731a8cad708a7430fa0f5c781015479df9f27f51b30c6a97491f8753",
+      "references": {
+        "sec:ch4_real_event_examples": {
+          "number": "4.7.1",
+          "page": 165
+        },
+        "sec:ch4_ozz_test_protocol": {
+          "number": "4.8.1",
+          "page": 174
+        },
+        "sec:ch4_ozz_comparison": {
+          "number": "4.8.3",
+          "page": 179
+        },
+        "tab:ch4_ozz_comparison": {
+          "number": "4.4",
+          "page": 179
+        },
+        "tab:ch4_ozz_units": {
+          "number": "4.5",
+          "page": 179
+        }
+      },
+      "aux_toc_stable": {
+        "aux": true,
+        "toc": true
+      },
+      "overfull_hbox_count": 9
+    },
+    "dissertation_comments": {
+      "path": "docs\\Dissertation\\build\\reading\\latex\\dissertation_comments.pdf",
+      "pages": 246,
+      "sha256": "4a25c666bc97218f033615208fcda40918b4aee929668592ce245a338f12d012",
+      "references": {
+        "sec:ch4_real_event_examples": {
+          "number": "4.7.1",
+          "page": 173
+        },
+        "sec:ch4_ozz_test_protocol": {
+          "number": "4.8.1",
+          "page": 184
+        },
+        "sec:ch4_ozz_comparison": {
+          "number": "4.8.3",
+          "page": 191
+        },
+        "tab:ch4_ozz_comparison": {
+          "number": "4.4",
+          "page": 191
+        },
+        "tab:ch4_ozz_units": {
+          "number": "4.5",
+          "page": 192
+        }
+      },
+      "aux_toc_stable": {
+        "aux": true,
+        "toc": true
+      },
+      "overfull_hbox_count": 9
+    }
+  },
+  "review_status": {
+    "R4-09": "implemented; independent/author verification pending",
+    "R4-10": "epochs corrected; historical parameter-count difference remains open",
+    "R4-11": "implemented with four-model zone comparison; verification pending"
+  },
+  "changed_assertions": [
+    "rPhysicsKAN uses phase-dependent amplitude gating, not a residual architecture",
+    "100 epochs of target-task training replace the erroneous 200-epoch attribution",
+    "Window metrics aggregate predictions and targets by maximum over output zones",
+    "Zone scores use flattened window-zone pairs, including repeated physical intervals from overlapping windows",
+    "Highest window Macro-F1 is spectral baseline; highest zone Macro-F1 is Physical MLP"
+  ],
+  "supersedes_incorrect_claims": [
+    "D04-009.json ozz_validation.source_series 200-epoch attribution",
+    "D04-009/010 narrative references to 200-epoch series"
+  ],
+  "visual_qa": {
+    "clean_pages": [
+      165,
+      174,
+      179,
+      180
+    ],
+    "review_pages": [
+      173,
+      174,
+      184,
+      185,
+      191,
+      192
+    ],
+    "result": "Tables and review replies inspected; no new overflow, original earlier-chapter warnings remain."
+  }
+}

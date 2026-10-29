@@ -1,0 +1,461 @@
+{
+  "status": "DONE: independent review and planning audit; author acceptance pending",
+  "date": "2026-10-27",
+  "scientific_text_preserved": {
+    "chapter.tex": true,
+    "sec02_physkan_architectures.tex": true,
+    "sec03_signal_representations.tex": true,
+    "sec04_training_protocol.tex": true,
+    "sec05_physical_validation.tex": true,
+    "sec06_event_examples.tex": true,
+    "sec07_ozz_validation.tex": true,
+    "sec08_input_sensitivity.tex": true,
+    "sec09_ct_saturation.tex": true
+  },
+  "review_note_count": 17,
+  "pdf_status": {
+    "pages": 244,
+    "build_passes": 4,
+    "stable_aux_toc": true,
+    "all_17_notes_present": true,
+    "unresolved_question_marks": false,
+    "visual_review": "All 17 note pages plus continuations 150/159; prior chapter overview; small source labels remain R4-16",
+    "sha256": "0b7c5d25e4494bf26ceb28359bf21c550d223a995d9bcafe348ce7a6c327ca43"
+  },
+  "usage_last_seen": {
+    "used_percent": 47,
+    "remaining_percent": 53,
+    "window_minutes": 300
+  },
+  "next": [
+    "D04-012",
+    "D06-002",
+    "D07-001"
+  ],
+  "author_steering": "AI-02-EN is authoritative author-owned research; retain local implementation differences only in internal notes, include useful local results without false rivalry.",
+  "ozz_independent_report_check": [
+    {
+      "model": "physical_kan_latest_checkpoint",
+      "window_f1": 0.9789473383814946,
+      "zone_f1": 0.9466102157785943,
+      "epochs_in_eval": 100,
+      "epochs_in_config": 100,
+      "epochs_in_summary": 100,
+      "last_epoch": 99,
+      "parameter_counts": [
+        263216,
+        263286
+      ],
+      "real_thresholding": {
+        "mode": "per_class",
+        "default_threshold": 0.5,
+        "source": "fixed",
+        "per_class_thresholds": {
+          "Stable_SPGF": 0.5,
+          "Petersen_AIGF": 0.5,
+          "PetersSlepyan_AIGF": 0.5,
+          "Belyakov_AIGF": 0.5
+        }
+      }
+    },
+    {
+      "model": "physical_mlp_latest_checkpoint",
+      "window_f1": 0.9894368991674591,
+      "zone_f1": 0.9647082736466873,
+      "epochs_in_eval": 100,
+      "epochs_in_config": 100,
+      "epochs_in_summary": 100,
+      "last_epoch": 99,
+      "parameter_counts": [
+        183002,
+        183007
+      ],
+      "real_thresholding": {
+        "mode": "per_class",
+        "default_threshold": 0.5,
+        "source": "fixed",
+        "per_class_thresholds": {
+          "Stable_SPGF": 0.5,
+          "Petersen_AIGF": 0.5,
+          "PetersSlepyan_AIGF": 0.5,
+          "Belyakov_AIGF": 0.5
+        }
+      }
+    },
+    {
+      "model": "raw_instantaneous_latest_checkpoint",
+      "window_f1": 0.991445075173891,
+      "zone_f1": 0.9494115877939414,
+      "epochs_in_eval": 100,
+      "epochs_in_config": 100,
+      "epochs_in_summary": 100,
+      "last_epoch": 99,
+      "parameter_counts": [
+        255748,
+        255748
+      ],
+      "real_thresholding": {
+        "mode": "per_class",
+        "default_threshold": 0.5,
+        "source": "fixed",
+        "per_class_thresholds": {
+          "Stable_SPGF": 0.5,
+          "Petersen_AIGF": 0.5,
+          "PetersSlepyan_AIGF": 0.5,
+          "Belyakov_AIGF": 0.5
+        }
+      }
+    },
+    {
+      "model": "spectral_baseline_latest_checkpoint",
+      "window_f1": 0.9922729812845897,
+      "zone_f1": 0.9531693921847381,
+      "epochs_in_eval": 100,
+      "epochs_in_config": 100,
+      "epochs_in_summary": 100,
+      "last_epoch": 99,
+      "parameter_counts": [
+        255748,
+        255748
+      ],
+      "real_thresholding": {
+        "mode": "per_class",
+        "default_threshold": 0.5,
+        "source": "fixed",
+        "per_class_thresholds": {
+          "Stable_SPGF": 0.5,
+          "Petersen_AIGF": 0.5,
+          "PetersSlepyan_AIGF": 0.5,
+          "Belyakov_AIGF": 0.5
+        }
+      }
+    }
+  ],
+  "ct_metrics_checked": {
+    "evaluated_files": 22908,
+    "threshold": 0.5,
+    "zone_phase_A": {
+      "tp": 80006,
+      "fp": 39899,
+      "fn": 35108,
+      "tn": 16247115,
+      "precision": 0.6672449022142529,
+      "recall": 0.6950153760619907,
+      "f1": 0.6808470804488147,
+      "accuracy": 0.9954269958142017
+    },
+    "event_phase_A": {
+      "tp": 5802,
+      "fp": 38,
+      "fn": 1328,
+      "tn": 15740,
+      "precision": 0.9934931506849315,
+      "recall": 0.8137447405329593,
+      "f1": 0.8946800308404009,
+      "accuracy": 0.9403701763576043
+    },
+    "event_by_tau": {
+      "tau_0.015": {
+        "tp": 2865,
+        "fp": 27,
+        "fn": 484,
+        "tn": 6276,
+        "precision": 0.9906639004149378,
+        "recall": 0.8554792475365781,
+        "f1": 0.9181220958179779,
+        "accuracy": 0.9470576046415251
+      },
+      "tau_0.4": {
+        "tp": 2937,
+        "fp": 11,
+        "fn": 844,
+        "tn": 9464,
+        "precision": 0.996268656716418,
+        "recall": 0.7767786299920656,
+        "f1": 0.8729380294248773,
+        "accuracy": 0.9355009052504526
+      }
+    },
+    "detection_delay_ms": {
+      "count": 5802,
+      "median": 1.24000000000124,
+      "p95": 20.460000000020464
+    },
+    "phase_note": "Основная holdout-оценка относится к исходной фазе A. Головы B/C обучены циклической перестановкой и не включены в эту основную цифру."
+  },
+  "input_sensitivity_check": {
+    "baseline": 0.957651803546504,
+    "rows": [
+      {
+        "group": "phase_voltages",
+        "source": 0.015963692027441006,
+        "manuscript": 0.016,
+        "matches_4dp": true
+      },
+      {
+        "group": "phase_currents",
+        "source": 0.9537452689116671,
+        "manuscript": 0.9537,
+        "matches_4dp": true
+      },
+      {
+        "group": "all_magnitudes",
+        "source": 0.01910633436599533,
+        "manuscript": 0.0191,
+        "matches_4dp": true
+      },
+      {
+        "group": "all_angles",
+        "source": 0.08640194291896137,
+        "manuscript": 0.0864,
+        "matches_4dp": true
+      },
+      {
+        "group": "harmonic_h1",
+        "source": 0.13325151389380835,
+        "manuscript": 0.1333,
+        "matches_4dp": true
+      },
+      {
+        "group": "higher_harmonics_h2_h9",
+        "source": 0.19920621608703754,
+        "manuscript": 0.1992,
+        "matches_4dp": true
+      },
+      {
+        "group": "all_sub_periods",
+        "source": 0.8939954525457474,
+        "manuscript": 0.894,
+        "matches_4dp": true
+      },
+      {
+        "group": "only_symmetric__drop_phase_polar",
+        "source": 0.005577353927855949,
+        "manuscript": 0.0056,
+        "matches_4dp": true
+      }
+    ],
+    "metadata": {
+      "max_files": 960,
+      "max_windows": null,
+      "eval_stride": 1,
+      "window_step_periods": 1.0,
+      "batch_size": 256,
+      "threshold": 0.5,
+      "num_windows": 14972
+    }
+  },
+  "review_notes": [
+    {
+      "id": "R4-01",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\chapter.tex",
+      "line": 19,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R4-01], важно.} Введение пока не задаёт проверяемые вопросы всей главы. После авторского согласования предлагаю связать их в одну линию: какие данные достаточно передать модели; что добавляет физическая структура; как локализуется событие; что сохраняется на реальных записях. Для БАВР здесь получены средства анализа и проверки измерений, а непосредственный выход органа исследуется в главе 5. Достаточно короткой постановки и итогов, без расширения общего обзора ИИ.\\par\\endgroup\\smallskip\n\\fi"
+    },
+    {
+      "id": "R4-02",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec02_physkan_architectures.tex",
+      "line": 6,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R4-02], редактура.} Архитектурный раздел занимает около четверти главы и местами повторяет назначение слоёв и ограничения. Сохранить объяснения электротехнического смысла, авторские схемы и различия вариантов; сократить повторы про размер конфигурации, условность примеров и необходимость проверки. Детали производных и повторные описания движения данных можно уплотнить. Полезен краткий итог «какую проблему решает каждый новый блок», без добавления ещё одного обзора.\\par\\endgroup\\smallskip\n\\fi"
+    },
+    {
+      "id": "R4-03",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec02_physkan_architectures.tex",
+      "line": 1372,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R4-03], существенно.} Открытый POLAR-SIGN-01 имеет значение для достоверности физической интерпретации FFN. В текущей реализации нормализованная часть u может быть отрицательной перед torch.polar; комментарий IMPORTANT TODO остаётся в transformer\\_blocks.py. Это не исправлено пояснением скрытых координат. Требуется адресная проверка применимости к сохранённым экспериментальным состояниям; пока нельзя считать этот путь проверенной арифметикой физических модулей во всей глубине. Самостоятельно заменять операцию и пересчитывать старые результаты не предлагается.\\par\\endgroup\\smallskip\n\\fi"
+    },
+    {
+      "id": "R4-04",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec03_signal_representations.tex",
+      "line": 30,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R4-04], существенно.} По уточнению автора 27.10 английская AI-02-EN является основным источником актуального протокола и результатов его исследования; расчёты выполнены под его руководством на другом устройстве. В основном тексте принять её описание подготовки и нормировки. Полезные дополнительные местные опыты включать в общую исследовательскую линию с условиями сравнения, без противопоставления происхождения. Служебно: английское описание учитывает IN при восстановлении тока и указывает Z-нормировку по обучающей части; нынешний местный код не заменяет описание удалённого опыта. Доступ к удалённым расчётам и повторное обучение не требуются.\\par\\endgroup\\smallskip\n\\fi"
+    },
+    {
+      "id": "R4-05",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec03_signal_representations.tex",
+      "line": 484,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R4-05], уточнить.} Источник позволяет указать точнее: пять частей перекрёстной проверки по файлам, 792/198 записей на обучение/проверку и пять инициализаций на конфигурацию. Отдельной фиксированной тестовой выборки нет. Существенно также установить, по какой части выбирали эпоху и порог; исходная статья этого здесь не раскрывает. Не называть соседние окна независимыми наблюдениями и не подменять этот пробел общим описанием правильной валидации.\\par\\endgroup\\smallskip\n\\fi"
+    },
+    {
+      "id": "R4-06",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec03_signal_representations.tex",
+      "line": 556,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R4-06], уточнить.} Указать, по каким представлениям усреднены числа 0,548/0,541/0,533 и рисунок сравнения сжатия. Table 4 английской статьи не обозначена как отдельный опыт только на спектральных входах; общая сетка включает также мгновенные значения, мощность и Кларка, для которых сжатие устроено иначе. До уточнения не приписывать сводное среднее исключительно двум спектральным векторам. Числа перенесены верно; вопрос касается области вывода.\\par\\endgroup\\smallskip\n\\fi"
+    },
+    {
+      "id": "R4-07",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec04_training_protocol.tex",
+      "line": 83,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R4-07], уточнить.} Отделить описание двухэтапного метода от фактически выполненного обучения конкретных серий. Для результатов ОЗЗ и ТТ нужна краткая привязка: использовано ли предобучение, какое начальное состояние, исключались ли последующие проверочные записи из неразмеченного предобучения. Сейчас по изложению можно решить, что все приведённые модели прошли один и тот же двухэтапный путь. Утечка здесь не установлена: требуется проверить происхождение, а не предполагать нарушение.\\par\\endgroup\\smallskip\n\\fi"
+    },
+    {
+      "id": "R4-08",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec05_physical_validation.tex",
+      "line": 6,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R4-08], важно.} После подробного описания восьми ранних архитектур читателю не хватает сопоставимого результата их сравнения. Отключение ветвей у одной PhysicsKAN показывает использование этих ветвей, но не превосходство семейства над базовыми сетями. Радар и инженерные столбцы AI-01 расходятся сильнее округления; их нельзя объединять. Перед итогами главы либо восстановить одну согласованную серию, либо явно ограничить вклад этого блока разработкой и исследованием устройства, без рейтинга архитектур.\\par\\endgroup\\smallskip\n\\fi"
+    },
+    {
+      "id": "R4-09",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec06_event_examples.tex",
+      "line": 35,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R4-09], исправить.} Название «остаточная модель rPhysicsKAN» здесь вводит в заблуждение: в архитектурном разделе это модель с фазовым управлением амплитудными признаками, а остаточная архитектура отдельно описана как ResNet1D. Предлагаю «моделью rPhysicsKAN с фазовым управлением». Показанные TRAIN-примеры и более поздние трансформерные иллюстрации не составляют контролируемой пары «до/после» и не доказывают улучшение границ сами по себе.\\par\\endgroup\\smallskip\n\\fi"
+    },
+    {
+      "id": "R4-11",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec07_ozz_validation.tex",
+      "line": 59,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R4-11], существенно.} Явно назвать правило оконной оценки: для каждого класса берётся максимум по зонам, то есть «событие было хотя бы где-нибудь в окне». Это не качество позонной локализации. В сохранённом отчёте Physical KAN оконный Macro-F1=0,978947, а позонный=0,946610. Позонные показатели уже есть для всех четырёх моделей, новое обучение не требуется. Их стоит кратко показать рядом, если вывод главы относится к точному выделению интервалов.\\par\\endgroup\\smallskip\n\\fi"
+    },
+    {
+      "id": "R4-10",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec07_ozz_validation.tex",
+      "line": 166,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R4-10], исправить до приёмки.} Подтверждённое расхождение: в сохранённых sim\\_ozz\\_evaluation.json, соответствующих четырём строкам этой таблицы, config.epochs равен 100. В каталогах запусков summary.json также содержит total\\_epochs=100, а журналы заканчиваются epoch=99. Числа таблицы совпадают именно с этими отчётами. Заявление о 200 эпохах из статьи нельзя оставлять без отдельного подтверждения другой серии. У физических моделей также расходится число параметров в сводке обучения и отчёте оценки: требуется зафиксировать историческую версию, не загружая автоматически нынешний код как прежнюю модель.\\par\\endgroup\\smallskip\n\\fi"
+    },
+    {
+      "id": "R4-12",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec07_ozz_validation.tex",
+      "line": 324,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R4-12], уточнить.} Добавить условия измерения CPU для этой серии и явно отделить их от Intel Core Ultra 7 165U из исследования признаков. Для инженерного вывода существенны также частота выдачи решений и возможность обработки без накопления очереди. Шаг спектральных признаков 2,5 мс сам по себе не означает запуск всей сети каждые 2,5 мс. По 23,62 мс одного вызова нельзя ни подтвердить работу в таком темпе, ни вычислить полное время действия БАВР.\\par\\endgroup\\smallskip\n\\fi"
+    },
+    {
+      "id": "R4-16",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec08_input_sensitivity.tex",
+      "line": 181,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R4-16], редактура рисунков.} При просмотре PDF наиболее трудно читаются мелкие легенды RTDS-примеров, групп зануления и временной градиентной карты. Это вопрос доступности результата, а не совпадения шрифта. Для окончательной версии перевести сокращения и сделать читаемыми именно поля, на которые опирается вывод; часть однотипных полноформатных примеров можно перенести в приложение после согласования. Исходные файлы сохранять, формы кривых не дорисовывать.\\par\\endgroup\\smallskip\n\\fi"
+    },
+    {
+      "id": "R4-13",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec09_ct_saturation.tex",
+      "line": 43,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R4-13], существенно.} Не определён знаменатель этих 10 процентов: мгновенный идеальный ток, его амплитуда, номинальный ток или иной масштаб. Это меняет смысл метки, особенно около перехода тока через нуль. Местный загрузчик читает готовые flag\\_sat\\_phsA/B/C, а не воспроизводит критерий. Уточнить определение в исходной модели или прямо назвать это предоставленной модельной разметкой с пока не восстановленным критерием; не изобретать формулу.\\par\\endgroup\\smallskip\n\\fi"
+    },
+    {
+      "id": "R4-14",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec09_ct_saturation.tex",
+      "line": 124,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R4-14], уточнить.} Ограничение фазой A указано правильно, но читателю нужно объяснить его причину: основной независимый показатель не охватывает три выхода одинаково. Есть отдельный phase\\_transfer.json с проверкой перестановок фаз; если он включается, обозначить его как отдельную проверку, а не расширять основную таблицу без проверки выборки. Сами числа Precision/Recall/F1 и файловая матрица здесь совпадают с сохранённым metrics.json.\\par\\endgroup\\smallskip\n\\fi"
+    },
+    {
+      "id": "R4-15",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec09_ct_saturation.tex",
+      "line": 199,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R4-15], уточнить.} Оговорка о ретроспективности корректна и должна остаться рядом с числом. Дополнительно уточнить обработку уже положительного выхода до начала целевой метки и критерий первого последующего обнаружения. Медиана по найденным записям не учитывает 1328 пропусков и не характеризует устойчивость выхода. Для окончательного текста полезно назвать величину «временное совпадение ретроспективной разметки», сохранив её отдельно от быстродействия защиты.\\par\\endgroup\\smallskip\n\\fi"
+    },
+    {
+      "id": "R4-17",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec09_ct_saturation.tex",
+      "line": 299,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R4-17], важно.} Глава заканчивается локальным итогом опыта ТТ, но общего вывода по главе пока нет. Предлагаю после согласования кратко сформулировать: вклад автора в обработку и физические блоки; подтверждённый результат выбора входов; результаты и ограничения детекции на реальных данных; что передаётся в методику главы 5. Не повторять описание всех сетей. Отдельно сохранить честный результат: в текущей серии физических моделей нет единственного победителя по чувствительности и ложным обнаружениям.\\par\\endgroup\\smallskip\n\\fi"
+    }
+  ],
+  "unchanged_outside_chapter4_tex": {
+    "docs\\Dissertation\\manuscript\\main.tex": true,
+    "docs\\Dissertation\\manuscript\\preamble.tex": true,
+    "docs\\Dissertation\\manuscript\\test_skeleton.tex": true,
+    "docs\\Dissertation\\manuscript\\backmatter\\appendix01.tex": true,
+    "docs\\Dissertation\\manuscript\\backmatter\\bibliography.tex": true,
+    "docs\\Dissertation\\manuscript\\backmatter\\bibliography_part1.tex": true,
+    "docs\\Dissertation\\manuscript\\backmatter\\bibliography_part2.tex": true,
+    "docs\\Dissertation\\manuscript\\backmatter\\notes_informal.tex": true,
+    "docs\\Dissertation\\manuscript\\backmatter\\notes_informal_part1.tex": true,
+    "docs\\Dissertation\\manuscript\\backmatter\\notes_informal_part2.tex": true,
+    "docs\\Dissertation\\manuscript\\backmatter\\supplementary_elements.tex": true,
+    "docs\\Dissertation\\manuscript\\frontmatter\\introduction.tex": true,
+    "docs\\Dissertation\\manuscript\\frontmatter\\title.tex": true,
+    "docs\\Dissertation\\manuscript\\frontmatter\\toc_source.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\chapter.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec01_intro.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec02_statistics_and_basic_problems.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec03_base_organs_problems.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec04_adaptive_functions.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec05_manufacturers_analysis_part1.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec06_manufacturers_analysis_part2.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec07_complex_cases_time.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec08_adaptive_dropout.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec09_external_two_phase_blocking.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec10_rogowski_and_zero_sequence.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec11_ferroresonance_ozz.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec12_conclusions.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\tab01_bavr_operation.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\chapter.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec01_intro_and_rogowski_theory.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec02_transient_and_harmonics.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec03_fourier_theory.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec04_rnm_tt_kr_comparison.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec05_industrial_application_kr.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec06_vnr_algorithms.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec07_conclusions.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\tab04_window_functions.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\chapter.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec01_intro_and_methodology.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec02_data_collection_and_db.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec03_comtrade_intro.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec04_dat_files_and_depersonalization.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec05_signal_naming_unification.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec06_normalization_methodology.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec07_basis_algorithms_and_csv.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec08_annotation_methodology.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec09_empty_oscillograms_filtering.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec10_earth_fault_subset.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec11_conclusions.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\tab01_analog_signals_parameters.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\tab02_oscillograms_frequencies.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\tab03_zero_sequence_basis.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\chapter.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec01_direction_and_validity.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec02_analytical_organs.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec03_population_audit.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec04_expert_reference.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec05_engineering_verification.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec06_first_results.tex": true,
+    "docs\\Dissertation\\review\\issues\\author_annotations.json": true,
+    "docs\\Dissertation\\review\\issues\\author_note_dispositions.json": true
+  },
+  "source_checks_sha256": {
+    "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\sim_ozz_eval\\physical_kan_latest_checkpoint\\sim_ozz_evaluation.json": "76669a350ff1c4fdcff7808c0d10e95c33adaa9da40908c437708a60d3c80c53",
+    "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase4\\sim_ozz_finetune_PhysicalKANTransformer_20260614_095924\\summary.json": "0b481b32e8460da4b2c206c73f1df2b68c67e15ec0ba05d0fd898fc565fd2481",
+    "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase4\\sim_ozz_finetune_PhysicalKANTransformer_20260614_095924\\config.json": "8032f07fcb97c93f75000ca867560f0c286e90ed671572f4336203548760de8a",
+    "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase4\\sim_ozz_finetune_PhysicalKANTransformer_20260614_095924\\training_log.jsonl": "33a42612a9efe8cd87b802bade0cdbc7468f0e7c4f294001cb92aab3e5997870",
+    "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\real_ozz_statistics\\physical_kan_latest_checkpoint\\real_ozz_statistics.json": "629baa3867a9361d90caf0c63946eac2159b8f0d59ea9573237e2c7ae1030cbd",
+    "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\sim_ozz_eval\\physical_mlp_latest_checkpoint\\sim_ozz_evaluation.json": "cf038415872be5ce8f647f6b2758b27fb8a0a610598ab9e1c38cca9e4a4aebcf",
+    "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase4\\sim_ozz_finetune_physical_mlp_PhysicalMLPTransformer_20260612_204349\\summary.json": "55692aeec2cdb3b60c910b1a85491f0b8de23e82dd7bc13d2c228acde460eb1d",
+    "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase4\\sim_ozz_finetune_physical_mlp_PhysicalMLPTransformer_20260612_204349\\config.json": "1f7fe6abc73bd2c458078f58a1246e1a427e3000dd38f7ec9ab5d36ceaaaa14b",
+    "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase4\\sim_ozz_finetune_physical_mlp_PhysicalMLPTransformer_20260612_204349\\training_log.jsonl": "95eea61ed7c89374ce322a335c255a2f0ecc9bacab93323e763684b605e8f0aa",
+    "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\real_ozz_statistics\\physical_mlp_latest_checkpoint\\real_ozz_statistics.json": "03e07e13ebc53d542041cd19ce574d2df836a5fe53eccac864cba96240f1ea26",
+    "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\sim_ozz_eval\\raw_instantaneous_latest_checkpoint\\sim_ozz_evaluation.json": "7a2c6d3c3efdd006ff4789e77d14c5ff67015a3f4cf8ae342d22f1e883e512a5",
+    "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase4\\sim_ozz_finetune_raw_instantaneous_BaselineTransformer_20260613_140322\\summary.json": "e35fe87f0f9c3fb9885ebf83e66605f92e339ed76bed9d315c094a7c27fc6cbb",
+    "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase4\\sim_ozz_finetune_raw_instantaneous_BaselineTransformer_20260613_140322\\config.json": "dc58e5ab97468110d9748e880370f767fd292dac3d5d24f5f19d5e66dd48e794",
+    "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase4\\sim_ozz_finetune_raw_instantaneous_BaselineTransformer_20260613_140322\\training_log.jsonl": "6c85aac88763c04d0d798f6b98e47592101ba7c1e4190c85e1e8ba4efae75e4c",
+    "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\real_ozz_statistics\\raw_instantaneous_latest_checkpoint\\real_ozz_statistics.json": "febd7183e2bff21d744baf66965d2f4076c8a0d0fa5b4f0a07cee7489ff13a93",
+    "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\sim_ozz_eval\\spectral_baseline_latest_checkpoint\\sim_ozz_evaluation.json": "075d69bd2a8dbd785f5c9b85c41f8bcabdc519ae6c028fd0936c0971831d21be",
+    "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase4\\sim_ozz_finetune_spectral_baseline_BaselineTransformer_20260612_025508\\summary.json": "f382eac361f6073c5b24993f109684406e71a303ace4e0fc5fb73d87c1fa3751",
+    "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase4\\sim_ozz_finetune_spectral_baseline_BaselineTransformer_20260612_025508\\config.json": "d2fe815ec7aa3768c091624c82b8c89db840999315246d31b01bed0189055436",
+    "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase4\\sim_ozz_finetune_spectral_baseline_BaselineTransformer_20260612_025508\\training_log.jsonl": "34b294f96a360f00617ab5879d9b50cdbe3ac13e6c8c9952712a8bb4f5f8583b",
+    "reports\\phase4\\model_comparison\\compare_4models_latest_20260610_204942\\real_ozz_statistics\\spectral_baseline_latest_checkpoint\\real_ozz_statistics.json": "da8f6f908e423f43fa1d1a97659f0ac039e0778b80edca40a4d08a06ece1ea86",
+    "experiments\\phase4\\ct_saturation_v2\\spectral_run_20260703_145033\\article_report\\simulated\\metrics.json": "0ffa607825ba43e786b00017ad76bedff5d87eaf4a609266c8aa0eba65e29b1c",
+    "reports\\phase4\\kan_20260616_072711\\interpretability\\channel_dropout_probing.json": "6e55a23548aa5354b723b392f5dd6c15465184628f6e8c641783959535bb0e7f"
+  },
+  "planning_audit": {
+    "c02_done": 23,
+    "c02_total": 45,
+    "c03_done": 19,
+    "c03_total": 43,
+    "findings": [
+      "Parent D02-D06 statuses stale TODO despite completed child batches",
+      "C02/C03 parent counts stale",
+      "C00 start prompt obsolete",
+      "B06 checkpoint contradicts REVIEW audit",
+      "Chapter5 historical brief-only scope superseded",
+      "WORK_LOG missing D04-008 through D06-001"
+    ],
+    "changes": [
+      "Operational queue separated from history",
+      "Parent states corrected without premature completion",
+      "Start prompt and agent routing updated",
+      "D06-002 and D07-001 detailed",
+      "D04-012 scoped response to review",
+      "Thesis map updated by reported coverage; chapter5 scientific review not performed"
+    ]
+  }
+}

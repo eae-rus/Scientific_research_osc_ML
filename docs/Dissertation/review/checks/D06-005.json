@@ -1,0 +1,261 @@
+{
+  "task": "D06-005",
+  "date": "2026-10-29",
+  "scope": "Independent chapter 5 review only",
+  "status": "IN_PROGRESS",
+  "source_hashes": {
+    "data\\phase5\\pdr_engineering_review\\expert\\full\\summary.json": "9921949d8ffcbe1b1c527fbf18ebcc5aebc95b72325861ed6fdbe4917572f22e",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\summary.json": "787ff8648f48046d0ab6fa5912128f542a893d4dce4c8fe19ce5ac8d351a24c4",
+    "experiments\\phase5\\pdr_weak_snapshot_2_stride5\\config.json": "89d1c47dee520a5e51183caa002e81bcb4e1e13ced841a04410111976ef9498b",
+    "experiments\\phase5\\pdr_weak_snapshot_5_stride5\\config.json": "cbbcb8710ac316a15cc2acd854df819444416d59176272b35e8f06f86f4e97e0",
+    "experiments\\phase5\\pdr_weak_sequence_1_8_stride5\\config.json": "62c06e0ff4c6719f13ac1cc1aa9908ff747dc28d3f3509c3a86b7564072ffb6f",
+    "experiments\\phase5\\pdr_weak_snapshot_5_stride5_h123_deep24\\config.json": "e70e96a0e9ff2f2dc0d4f0dfea60782895b1018b1d34317fbedbd5f7aa671488",
+    "experiments\\phase5\\pdr_expert_snapshot_2_stride5\\config.json": "f7a481f1c49bbd4fd0d9b0800862f8f3dd27377ed20724c1d4240677d7abe58b",
+    "experiments\\phase5\\pdr_expert_snapshot_5_stride5\\config.json": "57a09f82d9ad4175b1bb4393defbdb03cbdc41cf2872a0bdae182bcc29363f6e",
+    "experiments\\phase5\\pdr_expert_sequence_1_8_stride5\\config.json": "bea2c7f7df9a7a09a678584ed800587212cde4a7e5be19515b184037cc15253e",
+    "data\\phase5\\research_strict_splits.json": "66e9065de37963a5b00f36440fe87d65eb71a99d076b9ce8f354a81900fc3f45",
+    "data\\phase5\\pdr_expert_labels_v1\\records.csv": "b1f568cfa99f4d42acc3d0f351acd126256e21d9e79f48d5fde3623c45cd926a",
+    "data\\phase5\\pdr_analysis_v6\\review_current_profiles.csv": "4b1ec6d1ad0484e54312e5714c03beb81205196fc7495aae4efa0a04f4b11e33",
+    "docs\\article\\PHASE_5_PDR_STATISTICAL_ARTICLE_DRAFT.md": "1239c6cb9f67e96c653d2fcee447b92c9874f749d689878682f3281c36590fe4"
+  },
+  "dense_error_time": [
+    {
+      "model": "phase_pdr_basic",
+      "open_ee_and_french_ms_per_s": [
+        466.44,
+        390.42
+      ]
+    },
+    {
+      "model": "adaptive_pdr_mir",
+      "open_ee_and_french_ms_per_s": [
+        101.51,
+        68.02
+      ]
+    },
+    {
+      "model": "nn_snapshot_2",
+      "open_ee_and_french_ms_per_s": [
+        95.81,
+        16.13
+      ]
+    },
+    {
+      "model": "nn_snapshot_5",
+      "open_ee_and_french_ms_per_s": [
+        122.69,
+        16.18
+      ]
+    },
+    {
+      "model": "nn_sequence_1_8",
+      "open_ee_and_french_ms_per_s": [
+        161.78,
+        10.32
+      ]
+    },
+    {
+      "model": "nn_snapshot_5_h123_deep24",
+      "open_ee_and_french_ms_per_s": [
+        71.47,
+        21.81
+      ]
+    }
+  ],
+  "rtds_engineering": [
+    {
+      "model": "phase_pdr_basic",
+      "error_ms_per_s_falseforward_pct_falsereverse_pct": [
+        32.28,
+        4.99,
+        0.84
+      ]
+    },
+    {
+      "model": "adaptive_pdr_mir",
+      "error_ms_per_s_falseforward_pct_falsereverse_pct": [
+        42.54,
+        14.57,
+        0.76
+      ]
+    },
+    {
+      "model": "nn_expert_snapshot_2_last",
+      "error_ms_per_s_falseforward_pct_falsereverse_pct": [
+        36.21,
+        11.99,
+        0.75
+      ]
+    },
+    {
+      "model": "nn_expert_snapshot_5_last",
+      "error_ms_per_s_falseforward_pct_falsereverse_pct": [
+        37.45,
+        12.71,
+        0.89
+      ]
+    },
+    {
+      "model": "nn_expert_sequence_1_8_last",
+      "error_ms_per_s_falseforward_pct_falsereverse_pct": [
+        37.11,
+        13.12,
+        0.72
+      ]
+    },
+    {
+      "model": "nn_expert_snapshot_5_h123_deep24_last",
+      "error_ms_per_s_falseforward_pct_falsereverse_pct": [
+        38.37,
+        10.07,
+        1.34
+      ]
+    }
+  ],
+  "rtds_event_check": [
+    {
+      "model": "nn_expert_snapshot_5_h123_deep24_last",
+      "forward_reverse": [
+        {
+          "eligible": 33,
+          "responded": 23
+        },
+        {
+          "eligible": 123,
+          "responded": 122
+        }
+      ]
+    },
+    {
+      "model": "nn_expert_snapshot_5_last",
+      "forward_reverse": [
+        {
+          "eligible": 33,
+          "responded": 11
+        },
+        {
+          "eligible": 123,
+          "responded": 118
+        }
+      ]
+    },
+    {
+      "model": "adaptive_pdr_mir",
+      "forward_reverse": [
+        {
+          "eligible": 33,
+          "responded": 13
+        },
+        {
+          "eligible": 123,
+          "responded": 118
+        }
+      ]
+    },
+    {
+      "model": "phase_pdr_basic",
+      "forward_reverse": [
+        {
+          "eligible": 33,
+          "responded": 30
+        },
+        {
+          "eligible": 123,
+          "responded": 120
+        }
+      ]
+    }
+  ],
+  "rtds_missed_invalid": {
+    "models": 25,
+    "support_ms": 1599.1,
+    "all_miss": true,
+    "reference_status": "author_recheck_pending"
+  },
+  "initialization_metadata": {
+    "pdr_weak_snapshot_2_stride5": {
+      "initialization": "resume:D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase5\\pdr_weak_snapshot_2_stride5\\latest_checkpoint.pt",
+      "use_ssl_initialization": true,
+      "feature_version": "B",
+      "model_preset": "small",
+      "seed": 42
+    },
+    "pdr_weak_snapshot_5_stride5": {
+      "initialization": "resume:D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase5\\pdr_weak_snapshot_5_stride5\\latest_checkpoint.pt",
+      "use_ssl_initialization": true,
+      "feature_version": "B",
+      "model_preset": "small",
+      "seed": 42
+    },
+    "pdr_weak_sequence_1_8_stride5": {
+      "initialization": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\experiments\\phase5\\pretrain_b_small\\latest_checkpoint.pt",
+      "use_ssl_initialization": true,
+      "feature_version": "B",
+      "model_preset": "small",
+      "seed": 42
+    },
+    "pdr_weak_snapshot_5_stride5_h123_deep24": {
+      "initialization": "random",
+      "use_ssl_initialization": false,
+      "feature_version": "B_H123",
+      "model_preset": "h123_deep24",
+      "seed": 42
+    }
+  },
+  "sampling_config": {
+    "snapshot_2": {
+      "expert_fraction": 0.75,
+      "open_ee_fraction_within_expert": 0.75,
+      "augmentation_probability": 0.5
+    },
+    "snapshot_5": {
+      "expert_fraction": 0.75,
+      "open_ee_fraction_within_expert": 0.75,
+      "augmentation_probability": 0.5
+    },
+    "sequence_1_8": {
+      "expert_fraction": 0.75,
+      "open_ee_fraction_within_expert": 0.75,
+      "augmentation_probability": 0.5
+    }
+  },
+  "weak_split_id_check": [
+    {
+      "source": "open_ee",
+      "part": "validation",
+      "records": 32,
+      "id_overlap_with_weak_train": 0
+    },
+    {
+      "source": "open_ee",
+      "part": "holdout",
+      "records": 24,
+      "id_overlap_with_weak_train": 0
+    },
+    {
+      "source": "french_rte",
+      "part": "validation",
+      "records": 22,
+      "id_overlap_with_weak_train": 0
+    },
+    {
+      "source": "french_rte",
+      "part": "holdout",
+      "records": 30,
+      "id_overlap_with_weak_train": 0
+    }
+  ],
+  "weak_split_id_check_limit": "IDs only; does not remove two known signal duplicates or audit all SSL training inputs.",
+  "low_current_group": {
+    "records": "5455",
+    "fraction_of_source": "0.14848790048180308",
+    "mean_disagreement_fraction": "0.5225076731457743"
+  },
+  "limits": [
+    "No training, inference or weight loading",
+    "No model/code/source article edits",
+    "Review of current chapter5 only; chapter4 excluded",
+    "Selected primary numerical checks, not certification of original experiments",
+    "RTDS labels still under author review; historical input-fill rule unresolved"
+  ]
+}

@@ -1,0 +1,206 @@
+{
+  "task_id": "D06-001",
+  "date": "2026-10-27",
+  "status": "DONE",
+  "source_article_sha256": "1239c6cb9f67e96c653d2fcee447b92c9874f749d689878682f3281c36590fe4",
+  "scope": "General methodology for modernizing any RZA, RNM as worked example; formula and neural implementations; unfinished source acknowledged. No Phase6 changes or training.",
+  "preservation": {
+    "source_article_unchanged": true,
+    "previous_48_protected_files_unchanged": true,
+    "chapter5_raw_notes_unchanged": true,
+    "registry_notes": 100,
+    "registry_replies": 44,
+    "phase6_or_models_modified": false,
+    "new_training_or_inference": false
+  },
+  "figures": [
+    {
+      "source": "docs\\article\\figures\\fig2_research_methodology.png",
+      "destination": "docs\\Dissertation\\manuscript\\figures\\ch05_research_methodology_article.png",
+      "sha256": "ce57e60251d369bcb38b9d5ab8820ac2e8b89d397f896ebc151f6bcd3a530282",
+      "byte_identical": true
+    },
+    {
+      "source": "docs\\article\\figures\\fig3_pdr_characteristics.png",
+      "destination": "docs\\Dissertation\\manuscript\\figures\\ch05_pdr_characteristics_article.png",
+      "sha256": "3cbab4874ecd60c3ac01cd6f0c32dc03c6fa16ade751655857a4429e4f7f2d7e",
+      "byte_identical": true
+    },
+    {
+      "source": "docs\\article\\figures\\fig8_causal_transition_mask.png",
+      "destination": "docs\\Dissertation\\manuscript\\figures\\ch05_causal_mask_article.png",
+      "sha256": "7bb767f93591507c59a657e5bca2bcd7722b739e94a35333a8ced6768ed6a376",
+      "byte_identical": true
+    },
+    {
+      "source": "docs\\article\\figures\\fig7_current_range_disagreements.png",
+      "destination": "docs\\Dissertation\\manuscript\\figures\\ch05_current_profiles_article.png",
+      "sha256": "62082ea81411a6496ccd841106137eac5b5336492ff5638cd996d5413fee803e",
+      "byte_identical": true
+    }
+  ],
+  "pdf_release": {
+    "dissertation_review": {
+      "pages": 229,
+      "sha256": "3b8885620515e7dcb271727d3214bc3de0e03c9df389224727a94009660f4b47",
+      "sections": {
+        "sec:ch05_intro": {
+          "number": "5.1",
+          "page": 196
+        },
+        "sec:ch5_direction_validity": {
+          "number": "5.2",
+          "page": 198
+        },
+        "sec:ch5_analytical_organs": {
+          "number": "5.3",
+          "page": 200
+        },
+        "sec:ch5_population_audit": {
+          "number": "5.4",
+          "page": 204
+        },
+        "sec:ch5_expert_reference": {
+          "number": "5.5",
+          "page": 206
+        },
+        "sec:ch5_engineering_verification": {
+          "number": "5.6",
+          "page": 207
+        },
+        "sec:ch5_first_results": {
+          "number": "5.7",
+          "page": 210
+        },
+        "sec:ch5_results_pending": {
+          "number": "5.8",
+          "page": 211
+        }
+      },
+      "aux_toc_stable": {
+        "aux": true,
+        "toc": true
+      },
+      "overfull_hbox_count": 9
+    },
+    "dissertation_comments": {
+      "pages": 242,
+      "sha256": "305c5d038718f5f2e12b0ba5eb378b51df1b0e499adf0b3be3cffc93b6d34881",
+      "sections": {
+        "sec:ch05_intro": {
+          "number": "5.1",
+          "page": 206
+        },
+        "sec:ch5_direction_validity": {
+          "number": "5.2",
+          "page": 208
+        },
+        "sec:ch5_analytical_organs": {
+          "number": "5.3",
+          "page": 210
+        },
+        "sec:ch5_population_audit": {
+          "number": "5.4",
+          "page": 215
+        },
+        "sec:ch5_expert_reference": {
+          "number": "5.5",
+          "page": 217
+        },
+        "sec:ch5_engineering_verification": {
+          "number": "5.6",
+          "page": 219
+        },
+        "sec:ch5_first_results": {
+          "number": "5.7",
+          "page": 222
+        },
+        "sec:ch5_results_pending": {
+          "number": "5.8",
+          "page": 224
+        }
+      },
+      "aux_toc_stable": {
+        "aux": true,
+        "toc": true
+      },
+      "overfull_hbox_count": 9
+    }
+  },
+  "source_coverage": {
+    "included": "§1–6 methodology; §8 expert selection, repeat and mask; §6.8/§11 engineering protocol; §7.2–7.3 and table10 first analytical results",
+    "not_yet_included": "Full population matrices/clusters, dense expert/RTDS results, neural training comparisons, future object adaptation details",
+    "important_limits": [
+      "Source unfinished and expert labels evolving",
+      "Two validation copies in training",
+      "Original figure11 not accepted as neural validation",
+      "Any RZA refers to transferable methodology, not experimental validation of all protections"
+    ]
+  },
+  "table10_transcription": {
+    "rows": [
+      [
+        "10176",
+        "89,59",
+        "0,794"
+      ],
+      [
+        "10008",
+        "44,79",
+        "0,037"
+      ],
+      [
+        "9998",
+        "58,17",
+        "0,231"
+      ],
+      [
+        "10008",
+        "46,10",
+        "0,159"
+      ],
+      [
+        "9998",
+        "55,57",
+        "0,279"
+      ],
+      [
+        "10013",
+        "52,77",
+        "0,153"
+      ],
+      [
+        "10089",
+        "58,73",
+        "0,325"
+      ],
+      [
+        "9998",
+        "65,62",
+        "0,484"
+      ],
+      [
+        "10157",
+        "58,68",
+        "0,241"
+      ]
+    ],
+    "matches_source_values": true,
+    "markdown_source_rows_directly_verified": true
+  },
+  "visual_qa": "All new chapter5 pages inspected in clean and annotated PDF; original small overview lettering needs later enlargement, assigned beside image.",
+  "manuscript_sha256": {
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\chapter.tex": "76c4d2dc9306dff46e4a58b21a983e212aff062974814f605f30baacc238db44",
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec01_direction_and_validity.tex": "2d9fdc84cf477901c7dbb5a09df9f7a259ac1e30ef197df9edf7383d089f4a5e",
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec02_analytical_organs.tex": "14139be30217478e3cbd9eadb7abbfbf46685be9957b580e032b8196f4d62e26",
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec03_population_audit.tex": "c81c737c3d4822d249c065b13cb8f255e9d47a0dcca99a252e117edd3d6dd7dd",
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec04_expert_reference.tex": "f39e5bc26cc39b702d35116ea268cb643b5fbe6349e97aa624b62a380154aba2",
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec05_engineering_verification.tex": "f790f6c8fbdd110b22dadcc397f371816a0efded3a3800f7fc4b17ba82b5fce0",
+    "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec06_first_results.tex": "b7f7f3909416ef08ec3744d6c6fe1caadb17c9299119c5a60e6ed198e1229e3f"
+  },
+  "chapter4_pdf_text_preserved": true,
+  "usage_snapshot": {
+    "five_hour_used_percent": 94,
+    "remaining_percent": 6
+  }
+}

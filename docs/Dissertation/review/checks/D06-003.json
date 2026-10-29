@@ -1,0 +1,217 @@
+{
+  "task": "D06-003",
+  "status": "DONE within section 5.8; author review and remaining Chapter 5 work pending",
+  "source_sha256": "1239c6cb9f67e96c653d2fcee447b92c9874f749d689878682f3281c36590fe4",
+  "source_changed_since_D06_001": false,
+  "source_sections": [
+    "9.1",
+    "9.2",
+    "9.3",
+    "9.4",
+    "9.5",
+    "table12"
+  ],
+  "models_executed": false,
+  "phase6_changed": false,
+  "limits": [
+    "validation selection; not independent test",
+    "two train-validation duplicates retained as limitation",
+    "deep configuration not controlled comparison",
+    "figure11 not transferred"
+  ],
+  "original_figure": {
+    "source": "docs\\article\\figures\\fig10_expert_evaluation_comparison.png",
+    "target": "docs\\Dissertation\\manuscript\\figures\\ch05_expert_adaptation_comparison_article.png",
+    "sha256": "a5cc604a81bd8dcf57c375b3590d03d328b50a77b9fd6485790caa66c1904cc9",
+    "copied_byte_for_byte": true
+  },
+  "static_code_concordance": {
+    "training_selection": "run_phase5_pdr_training.py:1120 sum positive direction/applicability F1",
+    "margin_loss": "run_phase5_pdr_training.py:1098 weight .5 weak / 0 expert",
+    "metrics": "osc_tools/pdr/pdr_trainer.py separate positive and macro F1"
+  },
+  "release": {
+    "dissertation_review": {
+      "pages": 233,
+      "sha256": "b088168fd55557d3dce78abce7158efcf91527182abe0d2b63c82b39d444c725",
+      "labels": {
+        "sec:ch4_input_windows": {
+          "number": "4.3.1",
+          "page": 127
+        },
+        "sec:ch4_training_protocol": {
+          "number": "4.5",
+          "page": 158
+        },
+        "sec:ch4_supervised_training": {
+          "number": "4.5.1",
+          "page": 158
+        },
+        "sec:ch4_self_supervised_training": {
+          "number": "4.5.2",
+          "page": 159
+        },
+        "sec:ch4_training_comparability": {
+          "number": "4.5.5",
+          "page": 161
+        },
+        "sec:ch4_input_sensitivity": {
+          "number": "4.9",
+          "page": 183
+        },
+        "sec:ch4_input_sensitivity_protocol": {
+          "number": "4.9.1",
+          "page": 183
+        },
+        "sec:ch4_input_sensitivity_results": {
+          "number": "4.9.2",
+          "page": 184
+        },
+        "sec:ch4_input_sensitivity_meaning": {
+          "number": "4.9.4",
+          "page": 188
+        },
+        "sec:ch4_ct_saturation": {
+          "number": "4.10",
+          "page": 191
+        },
+        "sec:ch4_ct_targets": {
+          "number": "4.10.1",
+          "page": 191
+        },
+        "sec:ch4_ct_inputs": {
+          "number": "4.10.2",
+          "page": 191
+        },
+        "sec:ch4_ct_results": {
+          "number": "4.10.3",
+          "page": 192
+        },
+        "sec:ch4_ct_real_examples": {
+          "number": "4.10.4",
+          "page": 193
+        },
+        "sec:ch4_ct_continuous_error": {
+          "number": "4.10.5",
+          "page": 193
+        },
+        "sec:ch5_expert_adaptation": {
+          "number": "5.8",
+          "page": 211
+        },
+        "tab:ch5_expert_adaptation": {
+          "number": "5.3",
+          "page": 213
+        },
+        "sec:ch5_results_pending": {
+          "number": "5.9",
+          "page": 215
+        }
+      },
+      "overfull_hbox_count": 9
+    },
+    "dissertation_comments": {
+      "pages": 250,
+      "sha256": "aa2b87be3687c315a50303cc63069ed047833c59673769e5c513bf3caf1c04b9",
+      "labels": {
+        "sec:ch4_input_windows": {
+          "number": "4.3.1",
+          "page": 129
+        },
+        "sec:ch4_training_protocol": {
+          "number": "4.5",
+          "page": 165
+        },
+        "sec:ch4_supervised_training": {
+          "number": "4.5.1",
+          "page": 165
+        },
+        "sec:ch4_self_supervised_training": {
+          "number": "4.5.2",
+          "page": 166
+        },
+        "sec:ch4_training_comparability": {
+          "number": "4.5.5",
+          "page": 169
+        },
+        "sec:ch4_input_sensitivity": {
+          "number": "4.9",
+          "page": 196
+        },
+        "sec:ch4_input_sensitivity_protocol": {
+          "number": "4.9.1",
+          "page": 197
+        },
+        "sec:ch4_input_sensitivity_results": {
+          "number": "4.9.2",
+          "page": 197
+        },
+        "sec:ch4_input_sensitivity_meaning": {
+          "number": "4.9.4",
+          "page": 202
+        },
+        "sec:ch4_ct_saturation": {
+          "number": "4.10",
+          "page": 204
+        },
+        "sec:ch4_ct_targets": {
+          "number": "4.10.1",
+          "page": 204
+        },
+        "sec:ch4_ct_inputs": {
+          "number": "4.10.2",
+          "page": 205
+        },
+        "sec:ch4_ct_results": {
+          "number": "4.10.3",
+          "page": 205
+        },
+        "sec:ch4_ct_real_examples": {
+          "number": "4.10.4",
+          "page": 207
+        },
+        "sec:ch4_ct_continuous_error": {
+          "number": "4.10.5",
+          "page": 209
+        },
+        "sec:ch5_expert_adaptation": {
+          "number": "5.8",
+          "page": 229
+        },
+        "tab:ch5_expert_adaptation": {
+          "number": "5.3",
+          "page": 230
+        },
+        "sec:ch5_results_pending": {
+          "number": "5.9",
+          "page": 231
+        }
+      },
+      "overfull_hbox_count": 9
+    }
+  },
+  "preservation": {
+    "original_r4_blocks": 17,
+    "raw_author_notes_preserved": 100,
+    "author_replies_and_acceptances_unchanged": true
+  },
+  "source_coverage": {
+    "included": [
+      "compact input context and 156 features",
+      "weak teacher and expert training",
+      "initialization and validation epoch selection",
+      "table12 three compact variants",
+      "figure10 copied original",
+      "selected source-specific errors and last-vs-selected epoch"
+    ],
+    "remaining": [
+      "table11 weak-monitor results",
+      "figure9 training dynamics",
+      "paired uncertainty intervals",
+      "deep-model comparisons",
+      "dense engineering evaluation and RTDS",
+      "mass population groups after PDR-S01 resolution"
+    ]
+  },
+  "visual_qa": "All new clean and annotated pages including original figure inspected; final typography note retained."
+}

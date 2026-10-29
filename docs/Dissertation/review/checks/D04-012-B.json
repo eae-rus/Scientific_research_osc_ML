@@ -1,0 +1,223 @@
+{
+  "task_id": "D04-012-B",
+  "status": "DONE within addressed batch B; parent REVIEW with open source/model questions and author proposals",
+  "changed_files": [
+    "sec03_signal_representations.tex",
+    "sec04_training_protocol.tex",
+    "sec02_physkan_architectures.tex",
+    "sec07_ozz_validation.tex",
+    "sec09_ct_saturation.tex",
+    "chapter.tex",
+    "sec05_physical_validation.tex",
+    "sec08_input_sensitivity.tex"
+  ],
+  "review_scope": "All remaining R4 notes addressed by edits, explicit source limitations or concrete proposals; not all scientific questions closed.",
+  "source_sha256": {
+    "docs\\article\\Engineering_Optimal_Feature_Spaces_OJIES\\Engineering_Optimal_Feature_Spaces_OJIES v1.2.tex": "eafaae8a56418286516957232b862ec35226c81011a8b98ebbb4711c131d7630",
+    "scripts\\phase4_experiments\\ct_saturation\\analyze_ct_saturation.py": "b0078ebe305e8c345de3c01ce8e8a88ebdd1b7e0dd74c274e7a332f9bcbfa276",
+    "scripts\\phase4_experiments\\evaluate_phase4.py": "a0f5b6a26c521ed684d6b438099e5fb47bcbf07376440df1880251a8acb5d3d9"
+  },
+  "release": {
+    "dissertation_review": {
+      "pages": 233,
+      "sha256": "b088168fd55557d3dce78abce7158efcf91527182abe0d2b63c82b39d444c725",
+      "labels": {
+        "sec:ch4_input_windows": {
+          "number": "4.3.1",
+          "page": 127
+        },
+        "sec:ch4_training_protocol": {
+          "number": "4.5",
+          "page": 158
+        },
+        "sec:ch4_supervised_training": {
+          "number": "4.5.1",
+          "page": 158
+        },
+        "sec:ch4_self_supervised_training": {
+          "number": "4.5.2",
+          "page": 159
+        },
+        "sec:ch4_training_comparability": {
+          "number": "4.5.5",
+          "page": 161
+        },
+        "sec:ch4_input_sensitivity": {
+          "number": "4.9",
+          "page": 183
+        },
+        "sec:ch4_input_sensitivity_protocol": {
+          "number": "4.9.1",
+          "page": 183
+        },
+        "sec:ch4_input_sensitivity_results": {
+          "number": "4.9.2",
+          "page": 184
+        },
+        "sec:ch4_input_sensitivity_meaning": {
+          "number": "4.9.4",
+          "page": 188
+        },
+        "sec:ch4_ct_saturation": {
+          "number": "4.10",
+          "page": 191
+        },
+        "sec:ch4_ct_targets": {
+          "number": "4.10.1",
+          "page": 191
+        },
+        "sec:ch4_ct_inputs": {
+          "number": "4.10.2",
+          "page": 191
+        },
+        "sec:ch4_ct_results": {
+          "number": "4.10.3",
+          "page": 192
+        },
+        "sec:ch4_ct_real_examples": {
+          "number": "4.10.4",
+          "page": 193
+        },
+        "sec:ch4_ct_continuous_error": {
+          "number": "4.10.5",
+          "page": 193
+        },
+        "sec:ch5_expert_adaptation": {
+          "number": "5.8",
+          "page": 211
+        },
+        "tab:ch5_expert_adaptation": {
+          "number": "5.3",
+          "page": 213
+        },
+        "sec:ch5_results_pending": {
+          "number": "5.9",
+          "page": 215
+        }
+      },
+      "overfull_hbox_count": 9
+    },
+    "dissertation_comments": {
+      "pages": 250,
+      "sha256": "aa2b87be3687c315a50303cc63069ed047833c59673769e5c513bf3caf1c04b9",
+      "labels": {
+        "sec:ch4_input_windows": {
+          "number": "4.3.1",
+          "page": 129
+        },
+        "sec:ch4_training_protocol": {
+          "number": "4.5",
+          "page": 165
+        },
+        "sec:ch4_supervised_training": {
+          "number": "4.5.1",
+          "page": 165
+        },
+        "sec:ch4_self_supervised_training": {
+          "number": "4.5.2",
+          "page": 166
+        },
+        "sec:ch4_training_comparability": {
+          "number": "4.5.5",
+          "page": 169
+        },
+        "sec:ch4_input_sensitivity": {
+          "number": "4.9",
+          "page": 196
+        },
+        "sec:ch4_input_sensitivity_protocol": {
+          "number": "4.9.1",
+          "page": 197
+        },
+        "sec:ch4_input_sensitivity_results": {
+          "number": "4.9.2",
+          "page": 197
+        },
+        "sec:ch4_input_sensitivity_meaning": {
+          "number": "4.9.4",
+          "page": 202
+        },
+        "sec:ch4_ct_saturation": {
+          "number": "4.10",
+          "page": 204
+        },
+        "sec:ch4_ct_targets": {
+          "number": "4.10.1",
+          "page": 204
+        },
+        "sec:ch4_ct_inputs": {
+          "number": "4.10.2",
+          "page": 205
+        },
+        "sec:ch4_ct_results": {
+          "number": "4.10.3",
+          "page": 205
+        },
+        "sec:ch4_ct_real_examples": {
+          "number": "4.10.4",
+          "page": 207
+        },
+        "sec:ch4_ct_continuous_error": {
+          "number": "4.10.5",
+          "page": 209
+        },
+        "sec:ch5_expert_adaptation": {
+          "number": "5.8",
+          "page": 229
+        },
+        "tab:ch5_expert_adaptation": {
+          "number": "5.3",
+          "page": 230
+        },
+        "sec:ch5_results_pending": {
+          "number": "5.9",
+          "page": 231
+        }
+      },
+      "overfull_hbox_count": 9
+    }
+  },
+  "preservation": {
+    "original_r4_blocks": 17,
+    "raw_author_notes_preserved": 100,
+    "author_replies_and_acceptances_unchanged": true
+  },
+  "review_status": {
+    "R4-04": "implemented; verification pending",
+    "R4-05": "implemented; verification pending",
+    "R4-06": "implemented; verification pending",
+    "R4-09": "implemented; verification pending",
+    "R4-11": "implemented; verification pending",
+    "R4-14": "implemented; verification pending",
+    "R4-15": "implemented; verification pending",
+    "R4-03": "explicit limitation; source or numerical-contract question remains open",
+    "R4-07": "explicit limitation; source or numerical-contract question remains open",
+    "R4-10": "explicit limitation; source or numerical-contract question remains open",
+    "R4-12": "explicit limitation; source or numerical-contract question remains open",
+    "R4-13": "explicit limitation; source or numerical-contract question remains open",
+    "R4-01": "concrete wording/structure proposed in existing handoff; author agreement pending",
+    "R4-02": "concrete wording/structure proposed in existing handoff; author agreement pending",
+    "R4-08": "concrete wording/structure proposed in existing handoff; author agreement pending",
+    "R4-17": "concrete wording/structure proposed in existing handoff; author agreement pending",
+    "R4-16": "specific redraw brief in existing figure spec; original assets retained"
+  },
+  "visual_qa": {
+    "clean_pages": [
+      147,
+      148,
+      149,
+      156,
+      157,
+      161,
+      162,
+      164,
+      174,
+      183,
+      191,
+      192,
+      193
+    ],
+    "review_pages": "contact sheet and selected full-size pages in ignored D04-012-B scratch",
+    "result": "Addressed text, tables, replies and added Chapter 5 section inspected. Earlier image readability tracked in R4-16; new original figure has explicit typography note. No new overfull boxes."
+  }
+}

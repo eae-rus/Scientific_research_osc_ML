@@ -55,9 +55,21 @@ def group_author_replies(text):
     """
     all_notes = scan(text)
     reply_starts, replies = set(), {}
-    for block in re.finditer(r'\\iffalse\b.*?\\fi\b\s*\\authorreviewnote\{(AA\d+)\}', text, re.S):
+    # Never cross the end of an unanchored history block while looking for
+    # another block's anchor: repeated author notes may have only one display.
+    history_block = r'\\iffalse\b(?:(?!\\iffalse\b|\\fi\b).)*\\fi\b'
+    blocks = list(re.finditer(history_block, text, re.S))
+    anchored_texts = set()
+    for block in blocks:
+        if re.match(r'\s*\\authorreviewnote\{AA\d+\}', text[block.end():]):
+            contained = [n for n in all_notes if block.start() <= n[0] < n[1] <= block.end()]
+            if contained:
+                anchored_texts.add(contained[0][2])
+    for block in blocks:
         contained = [n for n in all_notes if block.start() <= n[0] < n[1] <= block.end()]
-        if len(contained) > 1:
+        # A repeated hidden copy can have no display anchor. Its replies
+        # still belong to the exact original note already anchored here.
+        if len(contained) > 1 and contained[0][2] in anchored_texts:
             replies[contained[0][0]] = [n[2] for n in contained[1:]]
             reply_starts.update(n[0] for n in contained[1:])
     return [n for n in all_notes if n[0] not in reply_starts], replies
@@ -77,7 +89,13 @@ def main():
              ROOT/'manuscript/chapters/ch04_statistical_analysis/sec01_evaluation_methodology.tex',
              ROOT/'manuscript/chapters/ch04_statistical_analysis/sec03_signal_representations.tex',
              ROOT/'manuscript/chapters/ch04_statistical_analysis/sec04_training_protocol.tex',
-             ROOT/'manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex']
+             ROOT/'manuscript/chapters/ch04_statistical_analysis/sec05_physical_validation.tex',
+             ROOT/'manuscript/chapters/ch04_statistical_analysis/sec06_event_examples.tex',
+             ROOT/'manuscript/chapters/ch04_statistical_analysis/sec07_ozz_validation.tex',
+             ROOT/'manuscript/chapters/ch04_statistical_analysis/sec08_input_sensitivity.tex',
+             ROOT/'manuscript/chapters/ch04_statistical_analysis/sec09_ct_saturation.tex',
+             ROOT/'manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex',
+             *sorted((ROOT/'manuscript/chapters/ch05_ml_adaptive_algorithms').glob('sec*.tex'))]
     registry_path = ROOT/'review/issues/author_annotations.json'
     registry = json.loads(registry_path.read_text(encoding='utf-8')) if registry_path.exists() else {'schema_version':1,'notes':[]}
     disposition_path = ROOT/'review/issues/author_note_dispositions.json'

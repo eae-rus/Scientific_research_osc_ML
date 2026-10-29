@@ -79,6 +79,19 @@
 % Исходные примечания остаются в TEX. Рецензионный режим показывает
 % их вместе с ответом из существующего реестра, без второго оригинала текста.
 \newcommand{\authorreviewnote}[1]{}
+% Идейная трассировка и задания рисункам показываются только при вычитке.
+\newcommand{\conceptsource}[1]{%
+  \ifdefined\AuthorReview
+  \par\smallskip\begingroup\small\raggedright\color{blue!55!black}%
+  \noindent\textit{Основа изложения.} #1\par\endgroup\smallskip
+  \fi
+}
+\newcommand{\figurereview}[1]{%
+  \ifdefined\AuthorReview
+  \par\smallskip\begingroup\small\raggedright\color{red!60!black}%
+  \noindent\textit{К рисунку перед окончательным выпуском.} #1\par\endgroup\smallskip
+  \fi
+}
 \ifdefined\AuthorReview
   \input{../build/reading/author_notes.tex}
   \renewcommand{\authorreviewnote}[1]{%

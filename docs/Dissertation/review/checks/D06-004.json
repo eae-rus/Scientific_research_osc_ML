@@ -1,0 +1,1044 @@
+{
+  "task": "D06-004",
+  "date": "2026-10-28",
+  "status": "REVIEW: completed party, source/layout/visual checks passed; author acceptance pending",
+  "source_sha256": {
+    "docs\\article\\PHASE_5_PDR_STATISTICAL_ARTICLE_DRAFT.md": "1239c6cb9f67e96c653d2fcee447b92c9874f749d689878682f3281c36590fe4",
+    "docs\\Dissertation\\sources\\PDR-05\\082cc13b07292a5a054fb4ca389286e817cab2ed9b2c8ac838d8aa0693fe805f\\pdr_signal_utils.py": "082cc13b07292a5a054fb4ca389286e817cab2ed9b2c8ac838d8aa0693fe805f",
+    "data/phase5/pdr_rtds_review_h123/Oscilogramma1.1.json": "8aa9b145312d37a18f8757deaff7ff77274b6b8ac926ffc4322160b50951efc6",
+    "docs/Dissertation/review/checks/C02-PDR-05-results.json": "1c953c5a66e27368b230d855dd55d609b629b7cc363f5aeab605367bdcc24cc5",
+    "data/phase5/pdr_engineering_review/expert/full/progress.json": "0da733893e6303d210bd36c4c75329f34dd2d3bdf49b43a14a0d064f27d1f855",
+    "data/phase5/pdr_engineering_review/expert/full/summary.json": "9921949d8ffcbe1b1c527fbf18ebcc5aebc95b72325861ed6fdbe4917572f22e",
+    "data/phase5/pdr_engineering_review/rtds/full/progress.json": "7ea43d7db622dfc987b801e17ceba93a38906819c7da8ae6e486cb405e94eb6f",
+    "data/phase5/pdr_engineering_review/rtds/full/summary.json": "787ff8648f48046d0ab6fa5912128f542a893d4dce4c8fe19ce5ac8d351a24c4",
+    "experiments/phase5/pdr_weak_snapshot_2_stride5/training_history.json": "64eb1c0e0fd8a4edca8c80c66e7d20c10ae82025b4bf45204e919a9c14094cef",
+    "experiments/phase5/pdr_weak_snapshot_5_stride5/training_history.json": "6de0f524b33e34d13a08aba526ec43d9c12fc77005fdbdf870d027a735867d21",
+    "experiments/phase5/pdr_weak_sequence_1_8_stride5/training_history.json": "c460aa0631dae5ba1cf55798b352a3c6c589811530037041e50ee8854090afb9",
+    "experiments/phase5/pdr_expert_evaluation_v3/analytical_validation_v6.json": "97e890d6ed62f97f30b56c48702961504fadb5c2f2779ba080c7490f2a8350a7",
+    "data/phase5/pdr_manual_blind_audit/analysis/repeatability/repeatability_record_comparison.csv": "f23b847f842de1630372c4c2e678a0f3d985a205e37fff47daa5d32557d59bf5",
+    "data/phase5/pdr_manual_blind_audit/analysis/repeatability/repeatability_summary.csv": "89d0069007ad2e1b156a321aaee5f84febb960b382cd59c0b0458baa4b9d4e72",
+    "data/phase5/pdr_model_evaluation/weak_snapshot_5_h123_deep24_latest_expert_validation.json": "185384b69ab4576c998cfc459593055a5b618f14327a3f00c1250449600c04d9",
+    "data/phase5/pdr_model_evaluation/weak_snapshot_5_h123_deep24_best_expert_validation.json": "31988cb0bba6cb3bfd895f6327037dedf94e65d6de753243b534aaaf3fd3289a",
+    "data/phase5/pdr_model_evaluation/expert_snapshot_5_h123_deep24_latest_expert_validation.json": "104dbe129b46c8053afafcd5dc9cc76b524e974ec14851ecf7eea15b04199cb9",
+    "data/phase5/pdr_model_evaluation/expert_snapshot_5_h123_deep24_best_expert_validation.json": "e64f1e5cee2b221c2f230e1786f66084675960d92e0cc51bfc7291e8c1bf2283",
+    "data/phase5/pdr_model_evaluation/weak_snapshot_5_h123_deep24_latest_full_weak_validation.json": "cae897567eba27af916d5407fc4964dfb07cc82a85194d751016118dcf4486b3",
+    "data/phase5/pdr_model_evaluation/weak_snapshot_5_h123_deep24_best_full_weak_validation.json": "abe128a804dea1d139b992e4fe20c2858b75838645411eaf1c02eff4e9fa62de",
+    "data/phase5/pdr_model_evaluation/expert_snapshot_5_h123_deep24_latest_full_weak_validation.json": "f3f33ce0dbed64b44ac483a6c50ab285bcf9d24b49817819510d8851cf554b2b",
+    "data/phase5/pdr_model_evaluation/expert_snapshot_5_h123_deep24_best_full_weak_validation.json": "824681ad08c3413206bbd34c66ac3524fd173fdedd21796576b13663b3f6ebf2",
+    "data/phase5/pdr_rtds_evaluation_h123.json": "e2ef46e21c60bb9ae64ed99fa042a28843cafcb2265e7900a5c7c95dc0de1efe",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma1.1.json": "56ea4e7ab5ad1f826339cded24aee15b81d923c381bdee8cdfb9439b68e61252",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.1.json": "674e141b12ddf9284a2ffb3e213b6fc904f70bce2235a90de18bc6c0a1f396a6",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.10.json": "90eca0d4178294f181c4d4ddc7be9b55f0405f938d1392144d71a08f772e1b19",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.11.json": "c993dbf8f05477c942464605df0c1268a4b43f6ebcb60c3e3a7d33120cbec817",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.12.json": "e26d8afc154aeae6499609520854bdbad79ec8df962d727a6cb4da1f5df71447",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.13.json": "a6309d77c9fb2fee9b8d88caad3b5b78ed1469e291087ccfdb8110d91f384d80",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.14.json": "5d5435c01ce0154ccb076978e4f698b06d4b8fbc1aa36d7bbd6b149987f9a070",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.15.json": "8b895c31ac53ad82021a0e56a0164e499a686127915962cd209d582888955296",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.16.json": "e0ee3686d7198d2832d795a509c203baca805d2bf7234776a109d2ed5e97c3fe",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.17.json": "4e82998a85aa39c6c72f1cc65ecc97243c16a0f09c6fa2ecd3e29f74e4d8998a",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.18.json": "bbd8137bfc17e960e9131126b308b59b60a987d8bf0c0753a92aeb3cddb36d07",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.19.json": "560c65af879fd63ed2c2ba27f269108447d70f119c7c4742c5a51b13dd07e9f2",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.2.json": "3440fdbf286733d8e8900e294f40e563875754731e1163ddaf1c872eb30a2d35",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.20.json": "0e19bc1aee199ae5d94a3664242adb818115b180cad25a1386f12b669a038f3c",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.21.json": "9263f2a02342fb9f3151e0c56cb1b88e773a33b7ecf865ac0f0cf61505a9840c",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.22.json": "631c22c52464617e1d88c12b6cabbeb345b6c3a0ea3afe9d5b004d06f57e2d42",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.23.json": "2a7ba89ae362a2842b2b948f491bd65852bb899da4b59bb8775066686588b56a",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.24.json": "4bdcc2c42f49abf9d00e222324a651b03095b85a6d192e9c02e765e07634ea31",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.25.json": "1ec687b4df5195d1b72614a98897258e555b6581143171320bb0786f48c56107",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.26.json": "aeef370f827e879d5d6d15de83811dfbf1c2bcc6733f0bfdb73915f9bed43df1",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.27.json": "be5b5ac27970243020664a90ba8466fbd58a1e787edfd7ad6a2afc0f0fcfb8b2",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.28.json": "17b2e35fc2230bdd124be39159898d7ec0bc87bfe5d73fad3730eea82b292907",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.29.json": "185e6e4e42ce536233fb5ef4d05228716a5d2f57f2a30b398a8cc952c2ce7983",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.3.json": "fa26116c2959d1d5f9d39b73efec439ff3e9b661c0c0a24a0a0599c2851917cb",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.30.json": "e32517ce9e0a3ff2a8ff1548c6c2d46a3bc826e050a5a01dc7a198a6ad9f5956",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.31.json": "0257bbb8040d735fe25743488a60cab1db8eee4bc65f69167db28b78445255d0",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.32.json": "d306181264b3c41d7945f52ed9be08b4f14a0450ce8cffc81a20d285146cb212",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.33.json": "6ed8e05a99d36e15ec70a9460777ed142fd421eece715c908eaf1fc9549a24af",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.34.json": "e4c11b749a43181279ca968b51765f56adb331d1671910219c965f9d51443d71",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.35.json": "692715190b55eeb1c0f59fe03e83d16acc0a559ee740baeb39cd548a7b7c645e",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.4.json": "2f87d4139021875ec4a7e9f1662745cbfbfe36cb9d2ad5d3ed24417e6772c41d",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.5.json": "3347b7e8ee1882fe46ab14fff456ac92c940648acb81ff39011dd11ee9cb8404",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.6.json": "bd401a1d2b7b4fd04217b5f8a2b1610f8b9746ed84bb9d4d554c93c00f59095a",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.7.json": "21ff186334f55dede98472c7cb2dfd7f1104c4cd3ba599d0e2078bb7a0c0ba24",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.8.json": "e3d293320e399f20c793466c62da913a8e2de09a3addfeb45ecf587fae7a0709",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma2.9.json": "2d7b3241044208048f96f1d6bc50e3bb5449b022fbc566c037002dc354897de5",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.1.json": "bc1f9494f1264e7254415907edba40825ec1dd9d5ea9a097cadbb04b0e182f5c",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.10.json": "ab5331ccc5eedf2eed0c0fefdce046e24f920bd2edacf557a8ffb78f09eadbad",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.11.json": "60ef36b74c2ea019a3c80e121aa5342e8e4c69a2895ad7eede2ad35596d10e88",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.12.json": "7be6b2b6952de74d51bea77b6fe63b90a4cb6c8aea482b0e0be7a424d7843b38",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.13.json": "bb505a5caaf72139fb1432ce2bc0cc8728c5dcbd4a50147cbd534a04945fd1da",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.14.json": "59a52723bb1ad2b4a70217792668a1b60ce012895c90d4198d06c95fbaf8a81f",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.15.json": "231d0da2a2c9577aeb20b3afaccb28f8c46033e61b3424f161d9a62a2eab0591",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.16.json": "bc0f1d775a782933a0c831ab477fb2797a44b80d755cea21f6039dd2ff526937",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.17.json": "aafbd57ddab46f98a42867863b8aa0ce15f9db533791f64dc1fc30fd67808860",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.18.json": "77493d4ed3baa90729f860e6002128782954251e450b1cea91ab1ea9668e38d1",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.19.json": "4e26d6ca073f4a47006e8fc50db067b3160304ac6b559fb5d2f2eebbb391a82d",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.2.json": "2fc7226bf23a801145f04449cd0475a487c58e3d1e7474f6150e3e64f60eb213",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.20.json": "d51e14fc91f93a9b0259b6a20f1fc329abcc965aab1c07ac3d06022cd5338d22",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.21.json": "f4e4cb331c6eff1b6b581b53ddcb923ca5f53d2fa7bfaf46e31850a387c9978c",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.22.json": "0eab0d7de337c91c53b2c359a5195d494cbef49f6451d11fc29550ae9390c055",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.23.json": "89e017fb3836e51bddd10bbb25b0fded964fe6ec62c4a7a7f1080aca9741bd63",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.24.json": "0e408e16fb872082b20d501533fa9903f35071de5d77dc991370264108f90c9e",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.25.json": "918e57fd5d9738970ba93fbf0e6f190332fa8279f667c079098601dcf97c4c74",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.26.json": "99fe2ce9a171d29414ddf7f2506f1eb84349978bad632359343d1bffa5121ca7",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.27.json": "6ad30ff8e53801051b11a7c032a81c39ddba86007c698651068dddffc197230b",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.28.json": "5969eb6cb4c7a67604e0ebd3e3b40fa676fb04b5e808dee5448da2c4a9c0812d",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.29.json": "3bccbd82544eb94ed8c0eaf2905032c507fb8870d7546db0912e60f38329075f",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.3.json": "445c49666b26bd83304e6580e4390b424a29a96fdf5806ac1d0af5f90b79adee",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.30.json": "2a57c3b0327d28737aa7f4396ba42f93081a382158b2ab8fbf87d4c46d4e90be",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.31.json": "a45af1226179dea0803bf1bcb932572bc12107c2ccb3dd455f505f1c678a2928",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.32.json": "8abba73045237c9e8da12029be841425b582b2cfa866991930a1c65152dc4a74",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.33.json": "2f9a3f52ff27858f3476ea06e057b67268d152ab6a7c027e9920936e238176e6",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.34.json": "d240a1e778f95c22d533687bfd959e2d9353dd5907c95fbd992554acefdeb8bf",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.35.json": "0ea56bcb97633c88161a001c566200ec5a71e0dc3558deb0b3d443007cbf84ba",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.4.json": "ad7a827ec7ebdd103d7fcf4cbd650c93ebe4eb07a74681ac583020fa1408b5d7",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.5.json": "b27bd76379a152c14c8c8883ca5be3f32b93da4e146a7f1b8029d81c3be256c9",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.6.json": "54a87e1cccbb66e097495f49968f4358422e474e35e6745fcf8090ebe585871d",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.7.json": "f61150c5e09060d000531dbad91ea8d9ceb8a9363c715ff58e85ebcc04af76e8",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.8.json": "ffd3261319976c84fa5551f954dd972e5382b5f0bb44b1bffd2c6c846eb8b519",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma3.9.json": "82a7a9d96e7efe375a53e0f5cd193b218daddd0ccccdb47752858c495053fb21",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.1.json": "94a69a41658f6dd0caf8cff3dcad327249f68171d1aacd506efd63cfa38a0ef2",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.10.json": "a73f935cb95f2f7cdf98c9e9ce385929c739256569fb308c0a291fd648818035",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.11.json": "ad5bc94e3a14f846979baf7d3ba1e60dac7de73f0c94161f734f4fe021bc1b03",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.12.json": "bf262ee28e07d47ff4f07b26fb4ac8513bd195ec7eb7f843076b2181b40eddc6",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.13.json": "c332f2933010c571ded2c2b0fb2857cba7e9833566624c79c271f8dc9f9e5f4b",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.14.json": "f290f0383778657d67f90fa7210378fe0714da014bc6dc9c56f0c5af3b08a490",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.15.json": "55a885a23f1a84d45a45b3eb4d973c2abc524458f2b91aa5f09778957b587482",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.16.json": "3b8f0be002fb93fe32efe0f26ee609779c1d398de1cf93884466919892f55a74",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.17.json": "8c68aa196ed19dbc5268fd0750ef65b6c2fc8b4f6a1ef63d1a26aa356081b33b",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.18.json": "4a5d830ffef592813867a016945c66c99e40bcabb1858742a7ae8a6b11c2c206",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.19.json": "bb87d07f542f854df2e647311ea1965aba21ce856a49e06eb70ebfa3dda1eef4",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.2.json": "bc82315f9af15499881df5696845476a7248516a4d5ded960e1d12819dda8d56",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.20.json": "2b540c27d485d786e261a556029020534863add6cfa2f2dc8ea1d0f84650db00",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.21.json": "e4154d269baf68f81d4f51283b4a7b3533b60a0a31513dce7d51d292c7a7e143",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.22.json": "cdf91ba4e15d673c62e8c061b572b2d8b62330d65fc5f6eb83245746134743a7",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.23.json": "c852f566ad83e7ca6478affdf025959bfd851b6206388f4f0664a9e1924f3e78",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.24.json": "06e661c382dd31f64e826c824dbffe83724291ff1c64e953e290246996df0224",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.25.json": "eff614868bec64e969296e97596202dc903c691b15f04b538e862f4bb1fb230b",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.26.json": "e762d2353a447a250111eab914804789d3022466ced9c853934cab562a0a2e4c",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.27.json": "8fdd943699ac044df75eeae1cbfc9ece8bb3f9d36cf089a449973b31bfff0f72",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.28.json": "8931c6c0db4014d5fa6fb64c3bb1a5f511d2e31d51f95d0add4045bafc3deca6",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.29.json": "8a54720dbccd8446c5653b291b4a0847f5b10ce7d43de2ba07b308a342f1daf1",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.3.json": "d0f03206833fd67728d6de85fea536b559ff9f09814d7db7f10d54e7a524ac21",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.4.json": "10eb890d2ed4d86414d6b559b50c347bdc9789d582ac9f3f2f3bbc04557cfd69",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.5.json": "0f890fe5ffaaf714e987b9a16ff1239fb7a98faca0de549d58eb276b7d5ee80c",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.6.json": "5a6ba8515f0b540f7b6b3f38f544158fd85d405cd5866968abbf400de41ecee4",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.7.json": "155391948b091dd17255a69e0b1e36cbd5ee5a2d7d9fadafed702297f83e1b2e",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.8.json": "34dcecbf8e6a07a0da92ad0d8e4d52fdd1462960b7088ea9d0e9516a493457e7",
+    "data\\phase5\\pdr_engineering_review\\rtds\\full\\records\\rtds__Oscilogramma4.9.json": "b00d9f76e0e47df205ec2ba78740d7b65e386fbfb61c37582d1bde18d03466ba",
+    "data/phase5/pdr_analysis_v6/pairwise_pointwise_agreement.csv": "b55676acbaf4d8fd2f6fb0328a06f40ed27f5d19b691e6e532407f0c78f369cc",
+    "data/phase5/pdr_analysis_v6/algorithm_state_patterns.csv": "2c0fafd0475a11b0e39a1176a9b53731ae3cf992e1965e120dd7274189db9c38",
+    "data/phase5/pdr_analysis_v6/research_pca_explained_variance.csv": "cea288c5fa96285854b08dd44268009aea51658fb09bd2fdd76a44dd69707859",
+    "data/phase5/pdr_analysis_v6/research_pca_loadings.csv": "7a4006132fe26dc1b29adc5363754c552b9bf73f22a0589c374ee7c7f2944b74",
+    "data/phase5/pdr_analysis_v6/research_cluster_selection.csv": "12d2608c1c23988ee97b2f8d914f61771726525742630844250d3ba14a9100fc",
+    "data/phase5/pdr_analysis_v6/research_stable_cluster_profiles.csv": "c438f033a76d4cba19ce74786249a794e9ef5a14087e95b68a9c7fc88e3fcb7f",
+    "data/phase5/pdr_analysis_v6/research_source_classifier.csv": "da7ea563c9e88e908f060facd6ecb55771036ccc633d1908669e358aefe33a67",
+    "docs\\article\\figures\\fig9_training_dynamics.png": "7de97c1177d2d218678e71aab745e9168ce3c457969e338233891fe7678e84dc",
+    "docs\\article\\figures\\fig10a_h123_evaluation.png": "f759f370590de146bba73ee2b486393cd05c3cea27baf8e9a47d9ab432692caf",
+    "docs\\article\\figures\\fig12_engineering_error_time.png": "9838d332e354d2c1454d4c0cae4ce965a0ea8f26db206a2d422e7c06b11e242b",
+    "docs\\article\\figures\\fig13_engineering_event_response.png": "2d1977b8468fb4fac01eed05158c105d0ded5db621e29e65158a0b336ab2c259",
+    "docs\\article\\figures\\fig4_pairwise_agreement_heatmap.png": "aba07fbbbe1e76a7e65c8eb6bd2602fdc4009d4872b3823522ef714ff5c84859",
+    "docs\\article\\figures\\fig6a_pca_projection.png": "4bde9bdc75a197b5dfb40e384267fdd525fe959b6cd054ca6748e4f9c17fb1cd",
+    "docs\\article\\figures\\fig6b_pca_variance.png": "625e993a25fa33ee199a8249ea330c875ad21deae08181ed00c13fa88a4f7b0e"
+  },
+  "checks": [
+    {
+      "power_threshold_correction": {
+        "physical_rms_pu": 0.05,
+        "internal_peak": 0.0009622504486493764,
+        "old_article_value_not_used": 0.0025,
+        "historical_scalar_function_sha_matches_output_metadata": true,
+        "full_comtrade_chain_not_claimed_audited": true
+      },
+      "early_start": "record metadata confirms early; complete historical fill-rule implementation remains open"
+    },
+    {
+      "weak_monitoring": [
+        {
+          "mode": "snapshot_2",
+          "source_values": [
+            48,
+            98.55058099629213,
+            0.9711764230282124,
+            98.4733183750961,
+            94.72368967035908
+          ]
+        },
+        {
+          "mode": "snapshot_5",
+          "source_values": [
+            151,
+            98.63260567026606,
+            0.9727182590763593,
+            99.3439504441145,
+            96.22692380028322
+          ]
+        },
+        {
+          "mode": "sequence_1_8",
+          "source_values": [
+            111,
+            94.85408765851679,
+            0.9009583852757597,
+            99.35872419005153,
+            94.19303661030514
+          ]
+        }
+      ]
+    },
+    {
+      "prior_analytical_expert_table": [
+        {
+          "model": "adaptive_pdr_mir",
+          "source_values": [
+            10176.0,
+            89.58572542301766,
+            0.7937466553868997
+          ],
+          "confusion_metrics_recomputed": true
+        },
+        {
+          "model": "phase_pdr_basic",
+          "source_values": [
+            10008.0,
+            44.79020739454786,
+            0.036984111563026716
+          ],
+          "confusion_metrics_recomputed": true
+        },
+        {
+          "model": "pos_seq_pdr_basic",
+          "source_values": [
+            9998.0,
+            58.17008883988404,
+            0.23088567670198976
+          ],
+          "confusion_metrics_recomputed": true
+        },
+        {
+          "model": "phase_power_pdr_basic",
+          "source_values": [
+            10008.0,
+            46.0980333577942,
+            0.15917362218826814
+          ],
+          "confusion_metrics_recomputed": true
+        },
+        {
+          "model": "pos_seq_power_pdr_basic",
+          "source_values": [
+            9998.0,
+            55.573957411041654,
+            0.27933821929097047
+          ],
+          "confusion_metrics_recomputed": true
+        },
+        {
+          "model": "pdr_sivokobylenko_2pt",
+          "source_values": [
+            10013.0,
+            52.77252925007541,
+            0.15338674296830593
+          ],
+          "confusion_metrics_recomputed": true
+        },
+        {
+          "model": "pdr_sivokobylenko_5pt",
+          "source_values": [
+            10089.0,
+            58.72970675788969,
+            0.32475422275366517
+          ],
+          "confusion_metrics_recomputed": true
+        },
+        {
+          "model": "pdr_bmrz_q_assisted",
+          "source_values": [
+            9998.0,
+            65.61797121434407,
+            0.4836545812519964
+          ],
+          "confusion_metrics_recomputed": true
+        },
+        {
+          "model": "pdr_bavr072_crosspol",
+          "source_values": [
+            10157.0,
+            58.68043357959568,
+            0.2406882972956235
+          ],
+          "confusion_metrics_recomputed": true
+        }
+      ]
+    },
+    {
+      "blind_repeatability": [
+        {
+          "source": "all",
+          "records": 200,
+          "values": {
+            "steady_state_agreement": {
+              "display": 92.95,
+              "finite_records": 200
+            },
+            "steady_state_cohen_kappa": {
+              "display": 0.8862,
+              "finite_records": 200
+            },
+            "valid_agreement": {
+              "display": 96.38,
+              "finite_records": 200
+            },
+            "valid_cohen_kappa": {
+              "display": 0.9368,
+              "finite_records": 200
+            },
+            "direction_agreement_when_both_valid": {
+              "display": 95.65,
+              "finite_records": 172
+            },
+            "direction_cohen_kappa_when_both_valid": {
+              "display": 0.9161,
+              "finite_records": 172
+            }
+          }
+        },
+        {
+          "source": "open_ee",
+          "records": 132,
+          "values": {
+            "steady_state_agreement": {
+              "display": 93.21,
+              "finite_records": 132
+            },
+            "steady_state_cohen_kappa": {
+              "display": 0.887,
+              "finite_records": 132
+            },
+            "valid_agreement": {
+              "display": 96.62,
+              "finite_records": 132
+            },
+            "valid_cohen_kappa": {
+              "display": 0.9408,
+              "finite_records": 132
+            },
+            "direction_agreement_when_both_valid": {
+              "display": 95.47,
+              "finite_records": 107
+            },
+            "direction_cohen_kappa_when_both_valid": {
+              "display": 0.9028,
+              "finite_records": 107
+            }
+          }
+        },
+        {
+          "source": "french_rte",
+          "records": 68,
+          "values": {
+            "steady_state_agreement": {
+              "display": 92.46,
+              "finite_records": 68
+            },
+            "steady_state_cohen_kappa": {
+              "display": 0.8846,
+              "finite_records": 68
+            },
+            "valid_agreement": {
+              "display": 95.92,
+              "finite_records": 68
+            },
+            "valid_cohen_kappa": {
+              "display": 0.929,
+              "finite_records": 68
+            },
+            "direction_agreement_when_both_valid": {
+              "display": 95.94,
+              "finite_records": 65
+            },
+            "direction_cohen_kappa_when_both_valid": {
+              "display": 0.938,
+              "finite_records": 65
+            }
+          }
+        }
+      ],
+      "counts_confirmed": [
+        200,
+        180,
+        30,
+        4
+      ],
+      "interpretation": "means of per-record coefficients, outside both transition masks; 172 finite direction kappas"
+    },
+    {
+      "h123_expert": [
+        {
+          "stage": "weak",
+          "weights": "latest",
+          "source_values": [
+            89.45929703331633,
+            97.31752858239598,
+            90.15352038115405,
+            83.25357181325707,
+            98.66419904137848
+          ]
+        },
+        {
+          "stage": "weak",
+          "weights": "best",
+          "source_values": [
+            94.0965019636055,
+            97.25514649314998,
+            93.78355895031385,
+            90.87759067357514,
+            98.7125556403854
+          ]
+        },
+        {
+          "stage": "expert",
+          "weights": "latest",
+          "source_values": [
+            95.98563840035013,
+            96.37935755413693,
+            94.68350601225139,
+            95.56127531792542,
+            96.56046092165371
+          ]
+        },
+        {
+          "stage": "expert",
+          "weights": "best",
+          "source_values": [
+            97.33194404688703,
+            97.20474978759273,
+            96.2262724041443,
+            95.8370739817124,
+            99.39500125701811
+          ]
+        }
+      ],
+      "identical_grid_within_four_h123_evaluations": true
+    },
+    {
+      "dense_table": [
+        {
+          "model": "phase_pdr_basic",
+          "source_values": [
+            466.43763897087297,
+            390.421768707483,
+            25,
+            13,
+            21,
+            12
+          ]
+        },
+        {
+          "model": "adaptive_pdr_mir",
+          "source_values": [
+            101.5053993727467,
+            68.01587301587301,
+            10,
+            7,
+            6,
+            3
+          ]
+        },
+        {
+          "model": "nn_snapshot_2",
+          "source_values": [
+            95.80767954735018,
+            16.12925170068027,
+            11,
+            4,
+            4,
+            0
+          ]
+        },
+        {
+          "model": "nn_snapshot_5",
+          "source_values": [
+            122.68687940741907,
+            16.183673469387752,
+            12,
+            4,
+            5,
+            1
+          ]
+        },
+        {
+          "model": "nn_sequence_1_8",
+          "source_values": [
+            161.77765538169257,
+            10.324263038548752,
+            23,
+            7,
+            17,
+            0
+          ]
+        },
+        {
+          "model": "nn_snapshot_5_h123_deep24",
+          "source_values": [
+            71.47397257730829,
+            21.8140589569161,
+            7,
+            4,
+            5,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "rtds_inventory": {
+        "records": 100,
+        "sections": 200,
+        "samples": 12800000,
+        "invalid_samples": 31982,
+        "invalid_records": 3,
+        "all_25_models_miss_invalid": true,
+        "peaks_over_2_nominal_amplitudes": 8
+      }
+    },
+    {
+      "rtds_tables_13_14_15": "all transferred cells match saved summaries; stability sums verified from 100 saved record reports"
+    },
+    {
+      "minor_source_rounding_corrections": [
+        {
+          "cell": "phase angle false forward",
+          "article_percent": 5.0,
+          "summary_percent": 4.994739954876007,
+          "dissertation_percent": 4.99
+        },
+        {
+          "cell": "H123 false reverse",
+          "article_percent": 1.35,
+          "summary_percent": 1.34479,
+          "dissertation_percent": 1.34
+        }
+      ],
+      "article_unchanged": true
+    },
+    {
+      "rtds_events": [
+        {
+          "model": "nn_expert_snapshot_5_h123_deep24_last",
+          "responses": [
+            {
+              "eligible": 33,
+              "responded": 23
+            },
+            {
+              "eligible": 123,
+              "responded": 122
+            }
+          ]
+        },
+        {
+          "model": "nn_expert_snapshot_5_last",
+          "responses": [
+            {
+              "eligible": 33,
+              "responded": 11
+            },
+            {
+              "eligible": 123,
+              "responded": 118
+            }
+          ]
+        },
+        {
+          "model": "adaptive_pdr_mir",
+          "responses": [
+            {
+              "eligible": 33,
+              "responded": 13
+            },
+            {
+              "eligible": 123,
+              "responded": 118
+            }
+          ]
+        },
+        {
+          "model": "phase_pdr_basic",
+          "responses": [
+            {
+              "eligible": 33,
+              "responded": 30
+            },
+            {
+              "eligible": 123,
+              "responded": 120
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "population": "pairwise rows, consensus shares and PCA variance match primary CSV; classifier treated as diagnostic, not physical causation"
+    }
+  ],
+  "figures": {
+    "ch05_training_dynamics_article.png": {
+      "source": "docs\\article\\figures\\fig9_training_dynamics.png",
+      "sha256": "7de97c1177d2d218678e71aab745e9168ce3c457969e338233891fe7678e84dc",
+      "copied_byte_for_byte": true
+    },
+    "ch05_h123_evaluation_article.png": {
+      "source": "docs\\article\\figures\\fig10a_h123_evaluation.png",
+      "sha256": "f759f370590de146bba73ee2b486393cd05c3cea27baf8e9a47d9ab432692caf",
+      "copied_byte_for_byte": true
+    },
+    "ch05_engineering_error_time_article.png": {
+      "source": "docs\\article\\figures\\fig12_engineering_error_time.png",
+      "sha256": "9838d332e354d2c1454d4c0cae4ce965a0ea8f26db206a2d422e7c06b11e242b",
+      "copied_byte_for_byte": true
+    },
+    "ch05_rtds_event_response_article.png": {
+      "source": "docs\\article\\figures\\fig13_engineering_event_response.png",
+      "sha256": "2d1977b8468fb4fac01eed05158c105d0ded5db621e29e65158a0b336ab2c259",
+      "copied_byte_for_byte": true
+    },
+    "ch05_pairwise_agreement_article.png": {
+      "source": "docs\\article\\figures\\fig4_pairwise_agreement_heatmap.png",
+      "sha256": "aba07fbbbe1e76a7e65c8eb6bd2602fdc4009d4872b3823522ef714ff5c84859",
+      "copied_byte_for_byte": true
+    },
+    "ch05_pca_projection_article.png": {
+      "source": "docs\\article\\figures\\fig6a_pca_projection.png",
+      "sha256": "4bde9bdc75a197b5dfb40e384267fdd525fe959b6cd054ca6748e4f9c17fb1cd",
+      "copied_byte_for_byte": true
+    },
+    "ch05_pca_variance_article.png": {
+      "source": "docs\\article\\figures\\fig6b_pca_variance.png",
+      "sha256": "625e993a25fa33ee199a8249ea330c875ad21deae08181ed00c13fa88a4f7b0e",
+      "copied_byte_for_byte": true
+    }
+  },
+  "mathematical_schematics": {
+    "type": "mathematical schematic, not measured/model output",
+    "basis": "disclosed angular/power equations and voltage-memory principle",
+    "axes": "positive real right; positive imaginary up; polarizing voltage rotated to real axis",
+    "phase_max_current_angle_deg": 45,
+    "positive_sequence_max_current_angle_deg": -45,
+    "sector_half_width_deg": 90,
+    "power_threshold_location": "symbolic, not experimental calibration",
+    "memory_vectors": "symbolic sum, not complete closed characteristic",
+    "formula_checks": "direct complex expressions passed",
+    "assets": {
+      "ch05_angular_characteristics.pdf": "4ae6241204948dafaab74504a57437ef01e7af5ef8d536a49cec5021f6406dcd",
+      "ch05_power_and_memory.pdf": "131a0c1579d31389e1eb0cfa92184aeccbdac55102cd34a9f7d8a8dfa2416f30"
+    }
+  },
+  "state_patterns_plot": {
+    "type": "descriptive data plot, not a schematic",
+    "source": "data\\phase5\\pdr_analysis_v6\\algorithm_state_patterns.csv",
+    "source_sha256": "2c0fafd0475a11b0e39a1176a9b53731ae3cf992e1965e120dd7274189db9c38",
+    "fraction_field": "point_fraction",
+    "denominator": "points where all nine algorithms have applicable output",
+    "records_with_common_applicability": {
+      "open_ee": 34379,
+      "french_rte": 11789
+    },
+    "patterns": [
+      "111111111",
+      "000000000",
+      "100000000",
+      "101011111",
+      "000001000",
+      "000000010",
+      "other"
+    ],
+    "values_percent": {
+      "open_ee": [
+        40.33351586048909,
+        36.090599118434106,
+        11.00156062537426,
+        4.558554508265238,
+        0.6656876971814851,
+        0.13645227188894676,
+        7.213629918366877
+      ],
+      "french_rte": [
+        43.45961209307995,
+        34.197406845950006,
+        0.06756044001742961,
+        1.1935574786176346,
+        2.456538071526605,
+        3.8338708568166813,
+        14.791454213991699
+      ]
+    },
+    "bit_order": [
+      "adaptive_pdr_mir",
+      "phase_pdr_basic",
+      "pos_seq_pdr_basic",
+      "phase_power_pdr_basic",
+      "pos_seq_power_pdr_basic",
+      "pdr_sivokobylenko_2pt",
+      "pdr_sivokobylenko_5pt",
+      "pdr_bmrz_q_assisted",
+      "pdr_bavr072_crosspol"
+    ],
+    "time_weighting": false,
+    "asset": "docs\\Dissertation\\manuscript\\figures\\ch05_state_patterns.pdf",
+    "asset_sha256": "d9296f91da74375c1c6dbb202b99aa530988a0a19791e484d6db0a893dca9848"
+  },
+  "limits": [
+    "No inference/training/weight loading",
+    "H123 changes architecture, inputs and eligible grid simultaneously",
+    "Two train-validation duplicates and checkpoint selection remain",
+    "RTDS reference under author recheck; completed snapshot only",
+    "RTDS architecture reuse for H123 limits independence",
+    "PDR-S01 table9 and unaccepted figure11 not transferred",
+    "Figure5 time-share label corrected in new vector plot of point_fraction",
+    "PCA plot is integral-record features, not neural spectral input",
+    "Historical early-start fill rule still requires archived implementation"
+  ],
+  "retired_figure_copy": {
+    "removed_obsolete_copy": "docs\\Dissertation\\manuscript\\figures\\ch05_pdr_characteristics_article.png",
+    "preserved_original": "docs\\article\\figures\\fig3_pdr_characteristics.png",
+    "sha256": "3cbab4874ecd60c3ac01cd6f0c32dc03c6fa16ade751655857a4429e4f7f2d7e",
+    "no_active_tex_references": true
+  },
+  "preservation": {
+    "author_notes": 100,
+    "raw_text_replies_acceptance_and_status_unchanged": true,
+    "original_reviewer_r4": 17,
+    "chapter4_extracted_scientific_text_unchanged": true
+  },
+  "release": {
+    "dissertation_review": {
+      "path": "docs\\Dissertation\\build\\reading\\latex\\dissertation_review.pdf",
+      "sha256": "97096c5bde5032ae671c01b852337c1d407a6a694bc606cc321ff97ae8d6d593",
+      "pages": 254,
+      "labels": {
+        "sec:ch5_population_agreement": {
+          "number": "5.7.2",
+          "page": 213
+        },
+        "sec:ch5_population_structure": {
+          "number": "5.7.3",
+          "page": 215
+        },
+        "sec:ch5_expert_adaptation": {
+          "number": "5.8",
+          "page": 218
+        },
+        "sec:ch5_weak_monitoring": {
+          "number": "5.8.4",
+          "page": 219
+        },
+        "sec:ch5_h123_model": {
+          "number": "5.8.6",
+          "page": 222
+        },
+        "sec:ch5_training_dynamics": {
+          "number": "5.8.7",
+          "page": 222
+        },
+        "sec:ch5_dense_validation": {
+          "number": "5.9",
+          "page": 226
+        },
+        "sec:ch5_rtds_validation": {
+          "number": "5.10",
+          "page": 229
+        },
+        "sec:ch5_adaptation_limits": {
+          "number": "5.11",
+          "page": 235
+        },
+        "sec:ch5_results_pending": {
+          "number": "5.11.3",
+          "page": 236
+        },
+        "sec:ch05_conclusions": {
+          "number": "5.12",
+          "page": 236
+        },
+        "fig:ch5_pdr_characteristics": {
+          "number": "5.3",
+          "page": 201
+        },
+        "fig:ch5_power_and_memory": {
+          "number": "5.4",
+          "page": 204
+        },
+        "fig:ch5_state_patterns": {
+          "number": "5.8",
+          "page": 214
+        },
+        "tab:ch5_expert_repeatability": {
+          "number": "5.2",
+          "page": 208
+        },
+        "tab:ch5_pairwise_disagreement": {
+          "number": "5.3",
+          "page": 213
+        },
+        "tab:ch5_weak_monitoring": {
+          "number": "5.5",
+          "page": 219
+        },
+        "tab:ch5_h123_expert": {
+          "number": "5.7",
+          "page": 222
+        },
+        "tab:ch5_dense_error_time": {
+          "number": "5.8",
+          "page": 226
+        },
+        "tab:ch5_rtds_analytical": {
+          "number": "5.9",
+          "page": 230
+        },
+        "tab:ch5_rtds_neural": {
+          "number": "5.10",
+          "page": 231
+        },
+        "tab:ch5_rtds_engineering": {
+          "number": "5.11",
+          "page": 232
+        }
+      },
+      "references_stable": true,
+      "missing_glyphs": 0,
+      "overfull_hbox": 9,
+      "new_chapter5_overfull": 0
+    },
+    "dissertation_comments": {
+      "path": "docs\\Dissertation\\build\\reading\\latex\\dissertation_comments.pdf",
+      "sha256": "d4ca97a9b9b1a7bd95056ca8889a580081703956e61030d151a212cb69747a1a",
+      "pages": 274,
+      "labels": {
+        "sec:ch5_population_agreement": {
+          "number": "5.7.2",
+          "page": 230
+        },
+        "sec:ch5_population_structure": {
+          "number": "5.7.3",
+          "page": 231
+        },
+        "sec:ch5_expert_adaptation": {
+          "number": "5.8",
+          "page": 235
+        },
+        "sec:ch5_weak_monitoring": {
+          "number": "5.8.4",
+          "page": 236
+        },
+        "sec:ch5_h123_model": {
+          "number": "5.8.6",
+          "page": 239
+        },
+        "sec:ch5_training_dynamics": {
+          "number": "5.8.7",
+          "page": 240
+        },
+        "sec:ch5_dense_validation": {
+          "number": "5.9",
+          "page": 243
+        },
+        "sec:ch5_rtds_validation": {
+          "number": "5.10",
+          "page": 247
+        },
+        "sec:ch5_adaptation_limits": {
+          "number": "5.11",
+          "page": 254
+        },
+        "sec:ch5_results_pending": {
+          "number": "5.11.3",
+          "page": 255
+        },
+        "sec:ch05_conclusions": {
+          "number": "5.12",
+          "page": 255
+        },
+        "fig:ch5_pdr_characteristics": {
+          "number": "5.3",
+          "page": 217
+        },
+        "fig:ch5_power_and_memory": {
+          "number": "5.4",
+          "page": 220
+        },
+        "fig:ch5_state_patterns": {
+          "number": "5.8",
+          "page": 232
+        },
+        "tab:ch5_expert_repeatability": {
+          "number": "5.2",
+          "page": 225
+        },
+        "tab:ch5_pairwise_disagreement": {
+          "number": "5.3",
+          "page": 230
+        },
+        "tab:ch5_weak_monitoring": {
+          "number": "5.5",
+          "page": 236
+        },
+        "tab:ch5_h123_expert": {
+          "number": "5.7",
+          "page": 239
+        },
+        "tab:ch5_dense_error_time": {
+          "number": "5.8",
+          "page": 244
+        },
+        "tab:ch5_rtds_analytical": {
+          "number": "5.9",
+          "page": 249
+        },
+        "tab:ch5_rtds_neural": {
+          "number": "5.10",
+          "page": 249
+        },
+        "tab:ch5_rtds_engineering": {
+          "number": "5.11",
+          "page": 251
+        }
+      },
+      "references_stable": true,
+      "missing_glyphs": 0,
+      "overfull_hbox": 9,
+      "new_chapter5_overfull": 0
+    }
+  },
+  "visual_qa": {
+    "method": "Poppler render; all chapter pages inspected in contact sheets, selected pages at full render size",
+    "clean_pages": [
+      196,
+      197,
+      198,
+      199,
+      200,
+      201,
+      202,
+      203,
+      204,
+      205,
+      206,
+      207,
+      208,
+      209,
+      210,
+      211,
+      212,
+      213,
+      214,
+      215,
+      216,
+      217,
+      218,
+      219,
+      220,
+      221,
+      222,
+      223,
+      224,
+      225,
+      226,
+      227,
+      228,
+      229,
+      230,
+      231,
+      232,
+      233,
+      234,
+      235,
+      236
+    ],
+    "comments_pages": [
+      211,
+      212,
+      213,
+      214,
+      215,
+      216,
+      217,
+      218,
+      219,
+      220,
+      221,
+      222,
+      223,
+      224,
+      225,
+      226,
+      227,
+      228,
+      229,
+      230,
+      231,
+      232,
+      233,
+      234,
+      235,
+      236,
+      237,
+      238,
+      239,
+      240,
+      241,
+      242,
+      243,
+      244,
+      245,
+      246,
+      247,
+      248,
+      249,
+      250,
+      251,
+      252,
+      253,
+      254,
+      255,
+      256
+    ],
+    "clean_full_size": [
+      201,
+      204,
+      208,
+      214,
+      222,
+      230
+    ],
+    "comments_full_size": [
+      236,
+      239,
+      243,
+      249,
+      255
+    ],
+    "new_clipping_or_overflow": false
+  },
+  "remaining": [
+    "Author physical-case gallery and source figure 11",
+    "PDR-S01 source table 9",
+    "RTDS reference revision, invalid experiments 2.9/2.14/2.15 and voltage peak 2.25 section 1",
+    "Author adaptive-organ sources",
+    "Exact historic early-start input filling requires preserved implementation"
+  ],
+  "corrections": {
+    "power_threshold": "saved physical RMS parameter 0.05 and archived scalar conversion 0.0009622504486493764; old text 0.0025 removed",
+    "rtds_rounding": [
+      "phase false forward 4.99%",
+      "H123 false reverse 1.34%"
+    ],
+    "cyrillic_math_missing_glyphs": 0,
+    "preexisting_warnings": "9 overfull hbox and one oversized chapter 1 float, unchanged"
+  },
+  "temporary_drawing_scripts_removed": {
+    "draw_characteristics.py": "480bc3b41802d458e0820b39e7e6030cd30265da3f57187a35ff980abe5d0d0a",
+    "draw_state_patterns.py": "4fcf62a3fc9c08a9251436440d6168404b3a65a58416c9b2bf36432af4b51560"
+  }
+}
