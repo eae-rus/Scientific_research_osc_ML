@@ -551,28 +551,64 @@ def main() -> int:
 
 
 def run_manual() -> None:
-    # ================================================================
-    # ЕДИНСТВЕННАЯ НАСТРОЙКА СЛОЖНОСТИ МОДЕЛИ:
-    # "small"  - Лёгкая   (d_model=64,  4 слоя, ~300 тыс. параметров)
-    # "medium" - Средняя  (d_model=128, 6 слоёв, ~1.2 млн параметров)
-    # "heavy"  - Тяжёлая  (d_model=256, 8 слоёв, ~4.8 млн параметров)
-    # ================================================================
-    MODEL_PRESET = "small"
+    # 1. Сначала выберите семейство. Настройки ниже действуют только в своей ветке.
+    MODEL_FAMILY = "hierarchical"  # "hierarchical" или "legacy"
 
-    # Параметры запуска
-    SMOKE = False                  # Сначала поставь True для быстрого 2-эпохового теста
-    RESUME = False                 # True если нужно продолжить с latest_checkpoint.pt
-    RESET_OPTIMIZER = False        # True если при resume нужно сбросить оптимизатор
-    EPOCHS = 200                   # Всего эпох
-    SCHEDULER_TYPE = "cosine_restarts" # Косинусный шедулер с циклическим ускорением
-    RESTART_EPOCHS = 50            # Период рестарта скорости обучения (каждые 50 эпох)
-    SAMPLES_PER_EPOCH = 20_000     # Число случайно выбираемых окон на эпоху
-    VALIDATION_SAMPLES = 2_000     # Число окон на валидацию
-    BATCH_SIZE = 32  # Число окон на шаг оптимизации; уменьшить при нехватке видеопамяти.
-    FEATURE_VERSION = "B"  # Схема спектральных признаков; обязана совпадать при продолжении весов.
-    TEMPORAL_MODE = "snapshot_5"  # Временные срезы входа: snapshot_2/snapshot_5/sequence_1_8.
-    LOSS_TYPE = "complex_huber"  # Функция ошибки восстановления комплексных величин.
-    HUBER_BETA = 0.1  # Граница квадратичной части Huber в нормированных единицах.
+    if MODEL_FAMILY == "hierarchical":
+        # 2А. НОВАЯ глубокая модель (~14.7 млн параметров).
+        # Фиксированный вход B/ReIm: 8 токенов/период, блок 10 периодов.
+        # snapshot_5, MODEL_PRESET и BATCH_SIZE здесь НЕ используются.
+        SMOKE = False             # Отдельный короткий опыт; RESUME=False для первого запуска.
+        RESUME = True             # Продолжить текущий SSL; False для нового каталога.
+        EPOCHS = 200              # Общее число эпох, включая уже завершённые.
+        SAMPLES_PER_EPOCH = 20_000
+        VALIDATION_SAMPLES = 64
+        TARGET_TOKENS = 640        # Накопление градиентов; микробатч всегда 1 окно.
+        MAX_SECONDS = 30.0
+        LEARNING_RATE = 2e-4
+        # При RESUME численные параметры выше должны совпадать с checkpoint.
+        # Scheduler зафиксирован в рецепте: warmup 200, рестарты каждые 4000 шагов.
+        NUM_WORKERS = 2
+        SAVE_EVERY_STEPS = 10
+        CONSOLE_INTERVAL_SECONDS = 2.0
+        HIERARCHICAL_OUTPUT = PROJECT_ROOT / "experiments/phase5/phasor_hierarchical_v1"
+        from scripts.phase5_experiments.run_phase5_hierarchical import build_parser, run as run_hierarchical
+        args=build_parser().parse_args([])
+        args.output=HIERARCHICAL_OUTPUT
+        args.resume=RESUME
+        args.epochs=EPOCHS
+        args.samples_per_epoch=SAMPLES_PER_EPOCH
+        args.validation_samples=VALIDATION_SAMPLES
+        args.target_tokens=TARGET_TOKENS
+        args.max_seconds=MAX_SECONDS
+        args.workers=NUM_WORKERS
+        args.lr=LEARNING_RATE
+        args.save_every=SAVE_EVERY_STEPS
+        args.console_interval=CONSOLE_INTERVAL_SECONDS
+        if SMOKE:
+            args.output=PROJECT_ROOT / "experiments/phase5/hierarchical_manual_smoke"
+            args.samples_per_epoch=6; args.validation_samples=3; args.epochs=1
+            args.target_tokens=240
+        run_hierarchical(args)
+        return
+    if MODEL_FAMILY != "legacy":
+        raise ValueError(f"Неизвестный MODEL_FAMILY: {MODEL_FAMILY}")
+
+    # 2Б. СТАРЫЕ модели. Этот блок выполняется только при MODEL_FAMILY="legacy".
+    MODEL_PRESET = "small"         # small / medium / heavy
+    SMOKE = False                  # Короткий тест на 2 эпохи.
+    RESUME = True
+    RESET_OPTIMIZER = False
+    EPOCHS = 200
+    SCHEDULER_TYPE = "cosine_restarts"
+    RESTART_EPOCHS = 50
+    SAMPLES_PER_EPOCH = 20_000
+    VALIDATION_SAMPLES = 2_000
+    BATCH_SIZE = 32
+    FEATURE_VERSION = "B"
+    TEMPORAL_MODE = "snapshot_5"    # snapshot_2 / snapshot_5 / sequence_1_8
+    LOSS_TYPE = "complex_huber"
+    HUBER_BETA = 0.1
 
     OUTPUT_DIR = (
         PROJECT_ROOT

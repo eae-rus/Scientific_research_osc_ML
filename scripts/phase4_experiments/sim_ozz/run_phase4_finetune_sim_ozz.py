@@ -1014,14 +1014,51 @@ def main() -> None:
     )
 
 
-if __name__ == '__main__':
-    # =================================================================
-    # РУЧНОЙ ЗАПУСК ИЗ IDE (VS Code, PyCharm и т.д.)
-    # =================================================================
-    # Если хотите использовать аргументы командной строки, раскомментируйте:
-    # main()
-    # sys.exit(0)
+def run_manual() -> None:
+    # Сначала выбираем семейство: настройки разных веток не смешиваются.
+    MODEL_FAMILY = "hierarchical"  # "hierarchical" (Phase 5) или "legacy" (Phase 4)
 
+    if MODEL_FAMILY == "hierarchical":
+        # НОВАЯ модель: первый запуск переносит веса SSL и создаёт голову ОЗЗ.
+        # Далее RESUME=True продолжает именно ОЗЗ, а не перечитывает SSL.
+        SSL_CHECKPOINT = PROJECT_ROOT / "experiments/phase5/phasor_hierarchical_v1/best_model.pt"
+        OUTPUT_DIR = PROJECT_ROOT / "experiments/phase5/hierarchical_ozz_v1"
+        RESUME = False
+        SMOKE = False             # True: отдельный короткий запуск перед основным.
+        EPOCHS = 100
+        SAMPLES_PER_EPOCH = 2_000  # Поровну четыре типа RTDS + реальные без ОЗЗ.
+        VALIDATION_SAMPLES = 200   # Фиксированные окна, поровну те же пять групп.
+        TARGET_TOKENS = 640        # Микробатч 1; накопление по числу токенов.
+        MAX_SECONDS = 30.0
+        BACKBONE_LR = 1e-5         # Осторожное дообучение предобученной части.
+        HEAD_LR = 1e-4             # Новая классификационная голова.
+        USE_REAL_NO_OZZ = True
+        NUM_WORKERS = 2
+        SAVE_EVERY_STEPS = 10
+        CONSOLE_INTERVAL_SECONDS = 2.0
+        SEED = 42
+        RTDS_DIR = PROJECT_ROOT / "data/Simulated_OZZ_v1"
+        REAL_CSV = PROJECT_ROOT / "data/ml_datasets/labeled_2025_12_03.csv"
+        NORM_CSV = PROJECT_ROOT / "data/norm_coef_all_v1.4.csv"
+
+        from scripts.phase5_experiments.run_phase5_hierarchical_ozz import run
+        config = dict(ssl_checkpoint=str(SSL_CHECKPOINT), output=str(OUTPUT_DIR), resume=RESUME,
+                      epochs=EPOCHS, samples_per_epoch=SAMPLES_PER_EPOCH,
+                      validation_samples=VALIDATION_SAMPLES, target_tokens=TARGET_TOKENS,
+                      max_seconds=MAX_SECONDS, backbone_lr=BACKBONE_LR, head_lr=HEAD_LR,
+                      use_real_no_ozz=USE_REAL_NO_OZZ, workers=NUM_WORKERS,
+                      save_every=SAVE_EVERY_STEPS, console_interval=CONSOLE_INTERVAL_SECONDS,
+                      seed=SEED, rtds_dir=str(RTDS_DIR), real_csv=str(REAL_CSV), norm_csv=str(NORM_CSV))
+        if SMOKE:
+            config.update(output=str(PROJECT_ROOT / "experiments/phase5/hierarchical_ozz_smoke"),
+                          epochs=1, samples_per_epoch=10, validation_samples=10,
+                          target_tokens=80, max_seconds=1.0)
+        run(config)
+        return
+    if MODEL_FAMILY != "legacy":
+        raise ValueError(f"Неизвестный MODEL_FAMILY: {MODEL_FAMILY}")
+
+    # СТАРЫЕ модели: все параметры ниже действуют только для legacy.
     # 1. Выбор архитектуры
     # Доступно: 'PhysicalKANTransformer', 'PhysicalMLPTransformer', 'BaselineTransformer'
     MODEL_TYPE = 'PhysicalKANTransformer'
@@ -1089,3 +1126,10 @@ if __name__ == '__main__':
         resume_path=RESUME_PATH,
         reset_optimizer=RESET_OPTIMIZER,
     )
+
+
+if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        main()
+    else:
+        run_manual()
