@@ -1,0 +1,2218 @@
+{
+  "task": "D04-013",
+  "date": "2026-10-29",
+  "status": "REVIEW: agreed batch implemented, preservation/build/visual checks passed; new text awaits author review",
+  "temporary_sheet": {
+    "deleted_after_transfer": true,
+    "raw_answers": 8,
+    "normalized_utf8_text_sha256": "d96d35f47a13c40c41422b1d51db8aaed013e2b55964741cf9e6b8eead7b1154",
+    "durable_target": "planning/handoffs/D04.md"
+  },
+  "raw_author_notes_preserved": 155,
+  "r4_original_texts_preserved": 17,
+  "unchanged_math_and_table_environments": 22,
+  "chapter5_unchanged": [
+    {
+      "path": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\chapter.tex",
+      "sha256": "a656b4cc98381553cc9d05e8e1e255027a79028e9ad2d0a792f6cd3d71c39f31"
+    },
+    {
+      "path": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec01_direction_and_validity.tex",
+      "sha256": "753421cca173eb843e58db9e4b7c7b79ac07e519bfede8d6377d783511a1cf9a"
+    },
+    {
+      "path": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec02_analytical_organs.tex",
+      "sha256": "d94959dd7250645e9a09132a75b2c3779934db464ab385b242c17d0c31cf7279"
+    },
+    {
+      "path": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec03_population_audit.tex",
+      "sha256": "9174dfead8d946a4a157c3be4de56dc32fa7d2ebb998ac02ef3c8bd5b090135d"
+    },
+    {
+      "path": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec04_expert_reference.tex",
+      "sha256": "47be1ff16956feb9687d5d3df6193eec964d40ddba053c11a64fb54dc5af5e71"
+    },
+    {
+      "path": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec05_engineering_verification.tex",
+      "sha256": "f790f6c8fbdd110b22dadcc397f371816a0efded3a3800f7fc4b17ba82b5fce0"
+    },
+    {
+      "path": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec06_first_results.tex",
+      "sha256": "978e29e2e2e38ff0b408f28026ff41a2e29b6d14113e811092456378c4fbad08"
+    },
+    {
+      "path": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec07_expert_adaptation.tex",
+      "sha256": "ce84f90bcba89799dd1405c78456a0dc7bd28a98012847545865e917ec50afd8"
+    },
+    {
+      "path": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec08_dense_validation.tex",
+      "sha256": "df43b43e5963f8613a1867b76b5f851a9acb8b3829eb9adaa730145cc4036540"
+    },
+    {
+      "path": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec09_rtds_validation.tex",
+      "sha256": "2043705b32a6dc63ebd6d1d913ff020d892303e529e1f5c0fdf17fe5b9a77c5f"
+    },
+    {
+      "path": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec10_adaptation_and_conclusions.tex",
+      "sha256": "5c35f33ac21cdadeec6e39a3d6803cb9112f5c956c29b6a85661e0b1ac839dbb"
+    }
+  ],
+  "author_registry_records": 119,
+  "note_actions": {
+    "created": [
+      "AA101",
+      "AA102",
+      "AA103",
+      "AA104",
+      "AA105",
+      "AA106",
+      "AA107",
+      "AA108",
+      "AA109",
+      "AA110",
+      "AA111",
+      "AA112",
+      "AA113",
+      "AA114",
+      "AA115",
+      "AA116",
+      "AA117",
+      "AA118",
+      "AA119"
+    ],
+    "explicit_author_closures": [
+      "AA078",
+      "AA079",
+      "AA085",
+      "AA086",
+      "AA088",
+      "AA089",
+      "AA091",
+      "AA092",
+      "AA093",
+      "AA094",
+      "AA097",
+      "AA098",
+      "AA099",
+      "AA100",
+      "AA102",
+      "AA106",
+      "AA108",
+      "AA109",
+      "AA112",
+      "AA116"
+    ],
+    "actions": [
+      {
+        "id": "AA066",
+        "file": "sec01_evaluation_methodology.tex",
+        "sha256": "e965530b9f2d47cc3901cc758da9fdbf81dbd1cc59c72f4f5e17da1d85722d98",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA067",
+        "file": "sec01_evaluation_methodology.tex",
+        "sha256": "0f8cf64a648b15ba8ff368de5a82cce9787b5735542d593c10e65734c84109fc",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA068",
+        "file": "sec01_evaluation_methodology.tex",
+        "sha256": "7e3c4363dc9452dcfb1730192db5dae745fe49c4b858a9b76f83cae6cc8ca4b2",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "partial"
+      },
+      {
+        "id": "AA044",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "716fec6c7b2e616c3b220f4d6ff5053b419e92ab2d883fd2e13556dc4374431d",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "deferred"
+      },
+      {
+        "id": "AA045",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "e7f16d4b396d30487103ae2012d4136764dfd5b6f1f0e3ef3859a0614ac10cdc",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA046",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "6fc005989379a41328e10e537d95d867ecb6de95c65e8efb232efeb4b53235a3",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA047",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "775b9fe3c30f859446a6b916bfb8905a828cbdc1d53dfc3101aee20e1742e169",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA048",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "7915774ef0acbf1825248279cb3a357a0d692f219be8f4185b89fcf2558442d0",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA040",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "c4af5b65c56c32e8f854d8b2fcc20b45dc8afef05d87373ad0e5ec5def3874d7",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "partial"
+      },
+      {
+        "id": "AA041",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "d2cfaba7fe96d0a76175ae8e35057ffd1736f988f926a6fc994b50b5d4a8e7a7",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "partial"
+      },
+      {
+        "id": "AA076",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "3d3900b0e94766fa0a679ef2c373afd087427163ff0f927cb93d8942deb4a5f3",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA049",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "0e13c44159c2a3223615eff98d6b2a648b9a3b340ef06e3fcf5c68add339ba96",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA050",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "19b6e2c553a0d96158e286622f3293e434780bc40becaee56488e9a4dcc51150",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA042",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "baeec357c75d3ab10f6d75bcc91c9d8103fc56de49b46f57fd611cc4bedf2463",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA051",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "78efa9a279a29e03042231636f3c5bab9d64ce1ab13f03d7af0482d271947e9c",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "partial"
+      },
+      {
+        "id": "AA076",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "3d3900b0e94766fa0a679ef2c373afd087427163ff0f927cb93d8942deb4a5f3",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA052",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "0071ff4b63b8b5e1fe3782fe5e95488c163bf5ece3597745bc9e3ceed3d4038b",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "not_required"
+      },
+      {
+        "id": "AA053",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "77d7a3a32398191ab2745b9cfe2bdb7f46c68f933fa761e9472b2991926b8ab0",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA054",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "f68619ba6c016b82f2f6b3115ef10b4161d84e453e3ea33936c451386e6ae8db",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "partial"
+      },
+      {
+        "id": "AA055",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "0560c4a5e30f6d3f3ad130265c5c3e1d3cf5619f635e256ef24f14073c7e72de",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "not_required"
+      },
+      {
+        "id": "AA056",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "284a56e4cd5b95d5bf5010e63672a5d79c60156a76e0bbe9693e8580f9e92555",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "not_required"
+      },
+      {
+        "id": "AA072",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "4144b6c3cc6b8f21c45f714b67b694593893733cac6f721347536aa25eca57c5",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA043",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "55e2d9aec6ce5fad1a1760e8b6d64495e06e1c2d2bbd815f5f6fcb92c3c83c9f",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA076",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "3d3900b0e94766fa0a679ef2c373afd087427163ff0f927cb93d8942deb4a5f3",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA076",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "3d3900b0e94766fa0a679ef2c373afd087427163ff0f927cb93d8942deb4a5f3",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA057",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "8b723b050fe1a9c492b553db4df7c07822517d093fa74a42c66669a5c98223be",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA073",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "bd1a58d5f4c20b48f733bc0c804b37a733b21c7eeda489c0b4380938e809e4cd",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA058",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "0bbcb3e6ace421aa70674a039b565ed475c09e1e88eb2153795099776b4c2ba0",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA059",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "297b6d1a6bb3a574d2364f3bc362e6c2c6d8d6405e5665a3205213128e8c1ee3",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "partial"
+      },
+      {
+        "id": "AA060",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "f6fce783ace9f1988353821d432d030d619b974d07f3fefffab5641b0c65fe7a",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA076",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "3d3900b0e94766fa0a679ef2c373afd087427163ff0f927cb93d8942deb4a5f3",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA061",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "7ae4db78bbee628f982ffdd23a146acc926ac91135887703c541e400095580c3",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA062",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "53d0005e268fbb054f9fac4d2efb8f82bcf5e3080e2ea34ba8235148eb43d5bd",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA064",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "79d00d10cdb0deb1f4caf9c48fe0bc876542cb76caa3bb2fd4763f006367cd89",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "partial"
+      },
+      {
+        "id": "AA101",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "44f5bf6c1f4719b5f6f7d4c272e64fa2470db729c9a1f1439f6fbdab88e16ea2",
+        "new": true,
+        "status": "DECISION_RECORDED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA077",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "c13b487c8a152f1d5762fbff899ed37470530a237fe9db299276e05bfc6b1b53",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA076",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "3d3900b0e94766fa0a679ef2c373afd087427163ff0f927cb93d8942deb4a5f3",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA074",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "7f41d5d25355b9b164adb0f3713219e5314fb1657f4c4df836e0b5adc1d6d4fe",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "partial"
+      },
+      {
+        "id": "AA076",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "3d3900b0e94766fa0a679ef2c373afd087427163ff0f927cb93d8942deb4a5f3",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA076",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "3d3900b0e94766fa0a679ef2c373afd087427163ff0f927cb93d8942deb4a5f3",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA076",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "3d3900b0e94766fa0a679ef2c373afd087427163ff0f927cb93d8942deb4a5f3",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA102",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "3ad0bf74070f2601944ae839f5eb6c099ebfa89994928ef64bfede0fe0c071ca",
+        "new": true,
+        "status": "RESOLVED_BY_AUTHOR",
+        "implementation": "not_required"
+      },
+      {
+        "id": "AA076",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "3d3900b0e94766fa0a679ef2c373afd087427163ff0f927cb93d8942deb4a5f3",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA075",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "772f5f7e07b51116ba84c4c2988a81dd2366f4d7b78286f65657d5c07fd680e9",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "partial"
+      },
+      {
+        "id": "AA063",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "3a069678a19eb473b5fd12d8da22df54860db1943f2e30c92082d06705f8ed2e",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA065",
+        "file": "sec02_physkan_architectures.tex",
+        "sha256": "0ff3c03f316769bcda160170ff8a58c70774f4eda56b25a3d791397f80ff9442",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA069",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "e0b07e73e53df8ff86ede0f7ef3d388f69fea354b865c46549d29246198c988a",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "deferred"
+      },
+      {
+        "id": "AA078",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "91a5cda586c9368660cfcad9f27e82c00f80e6dde895dac01f79123884e0e6ed",
+        "new": false,
+        "status": "RESOLVED_BY_AUTHOR",
+        "implementation": "partial"
+      },
+      {
+        "id": "AA084",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "6dae5b6618a974c885a9643203abc09afa4acef472a71ffd83f91146c1772aa4",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA085",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "37cadcd9d895965dd7cd6f0a0c82403c065554827f2b9a40b01844fd21a3532b",
+        "new": false,
+        "status": "RESOLVED_BY_AUTHOR",
+        "implementation": "partial"
+      },
+      {
+        "id": "AA086",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "212b663e986bf6c2c2471c180ad68236cb98386d0558ab06e6caf9ffe5372e59",
+        "new": false,
+        "status": "RESOLVED_BY_AUTHOR",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA079",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "bda7f4fec7030dbb8b079e3fc86ae971a6b896da23c4b0bfbdc22cd65181c245",
+        "new": false,
+        "status": "RESOLVED_BY_AUTHOR",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA103",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "6def618d51eb2686d5d07cc9a020e7dd7c23fc1b5a113e9ad179707b519f9ef9",
+        "new": true,
+        "status": "DECISION_RECORDED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA080",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "a6527d1e47c6d91ec7fd35524701730682f675032051ff62ba63f0a1573423ff",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA087",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "564031ea8ccc72e32dac16e3bee1e63074afa0a8d36504d6e738b0489a41d572",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA088",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "5cac69e104a322a6bb72323105c79bd31a8adc9ff26ce02393dbba87e6378171",
+        "new": false,
+        "status": "RESOLVED_BY_AUTHOR",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA104",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "7ddc61de6e6aae22b0292feef571ee059cd51b24730d34458954ec3bc9407309",
+        "new": true,
+        "status": "DECISION_RECORDED",
+        "implementation": "partial"
+      },
+      {
+        "id": "AA081",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "869b0cbd2f4e636eb9f864a2d7dbbfe5ddc8a9e2be7b55f607a38aeb9fa43d43",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA082",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "2545724acdcafa16dd06e5243d7bc6f50d2569bac44f390eec406c0d9931a31b",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA083",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "bf0350d814ab268ccff75ef99351de032e8fa6a0c2415592e0aa7aad18b2c0a5",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA089",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "bd093e8b160ff93c827947777442718b486f2bf456d016b66411b0f885360363",
+        "new": false,
+        "status": "RESOLVED_BY_AUTHOR",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA105",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "cf303b809044c51911400db3a99d9837ae222934aca029126adf8ddf347950b6",
+        "new": true,
+        "status": "DECISION_RECORDED",
+        "implementation": "deferred"
+      },
+      {
+        "id": "AA090",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "e2d01e251ae10a5a7b5ec5a065c427ddad97a3f925d6dd484293794bed40ddcc",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA091",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "724e448b9aa3ec03ef5f552991407c869536c683d257b3c47ec4430536d75c2c",
+        "new": false,
+        "status": "RESOLVED_BY_AUTHOR",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA106",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "1ff5703a43e8b43634363b8522ac44d7ae64f7c02019eafef455da3565a6925b",
+        "new": true,
+        "status": "RESOLVED_BY_AUTHOR",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA107",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "48c768e7bec280e65d73aa28110deb1959b2aa9ea33095825b966f357db8d0d3",
+        "new": true,
+        "status": "DECISION_RECORDED",
+        "implementation": "deferred"
+      },
+      {
+        "id": "AA092",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "8f489c80e335ff15bfb4eec4b7dc6f2bdfe825db9a5a8ef063355156ef801739",
+        "new": false,
+        "status": "RESOLVED_BY_AUTHOR",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA108",
+        "file": "sec03_signal_representations.tex",
+        "sha256": "266c0183a1ed4d496c726459450e064831fc4571f93ca442d98628cd0ca1a82b",
+        "new": true,
+        "status": "RESOLVED_BY_AUTHOR",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA070",
+        "file": "sec04_training_protocol.tex",
+        "sha256": "563f208e0a379e65271fb087484d51c72631033aaa4d74a95229c801d2c42b98",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "deferred"
+      },
+      {
+        "id": "AA093",
+        "file": "sec04_training_protocol.tex",
+        "sha256": "4c4a3606767e13ba55a16a69c8006b93912838377b5e394e0f863d563636b108",
+        "new": false,
+        "status": "RESOLVED_BY_AUTHOR",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA094",
+        "file": "sec04_training_protocol.tex",
+        "sha256": "178c7bf32774fd75bda2e5c6fb7450bb19928b04268d968a95c0c05e78c3bfc4",
+        "new": false,
+        "status": "RESOLVED_BY_AUTHOR",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA109",
+        "file": "sec04_training_protocol.tex",
+        "sha256": "bdc7f2f57908062b66098948325fc1c2e88e1ea44532f32ec780b4177f637ca4",
+        "new": true,
+        "status": "RESOLVED_BY_AUTHOR",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA110",
+        "file": "sec04_training_protocol.tex",
+        "sha256": "1b6cbfd0ce70a43fe44d78b4f0a656a7049f9d2ea42db61aba6bd45554a62392",
+        "new": true,
+        "status": "DECISION_RECORDED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA095",
+        "file": "sec05_physical_validation.tex",
+        "sha256": "9426a612befa8edf7ae2668ebf710f2f4f8f2c26975a28469c989cda862ce246",
+        "new": false,
+        "status": "AUTHOR_ACCEPTED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA096",
+        "file": "sec05_physical_validation.tex",
+        "sha256": "9053c80957b13d4d96168c5a86e315e0ce09c5c213eb66fd6bef8ecd13d4f362",
+        "new": false,
+        "status": "DECISION_RECORDED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA097",
+        "file": "sec06_event_examples.tex",
+        "sha256": "ed3f0e381a9337a9ea4504ff017425ae0a052bfc9315d27540415c285a4de28b",
+        "new": false,
+        "status": "RESOLVED_BY_AUTHOR",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA111",
+        "file": "sec06_event_examples.tex",
+        "sha256": "9a66d6820ce27cb39793d37da2e9a41d2b2e7583726c3f2969abc70462770503",
+        "new": true,
+        "status": "DECISION_RECORDED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA112",
+        "file": "sec06_event_examples.tex",
+        "sha256": "436b4da9ab9f25a62bfe9f91f468fbb19eeb6e032dd3c811a95432a3e7b4a517",
+        "new": true,
+        "status": "RESOLVED_BY_AUTHOR",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA098",
+        "file": "sec06_event_examples.tex",
+        "sha256": "466e133d4e1a881ac0dd4ff7797cee82788c7732a72c29d7332e7de79cf1854a",
+        "new": false,
+        "status": "RESOLVED_BY_AUTHOR",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA113",
+        "file": "sec06_event_examples.tex",
+        "sha256": "ff6e8f438a548a1d3a2bdc3952f8d56affa4c46094051819fd80ec7ff27991c7",
+        "new": true,
+        "status": "DECISION_RECORDED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA099",
+        "file": "sec07_ozz_validation.tex",
+        "sha256": "69601007f851e656dd6189e5623bb7cc91e9c2473a1d3d643a180c12978e6b66",
+        "new": false,
+        "status": "RESOLVED_BY_AUTHOR",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA114",
+        "file": "sec07_ozz_validation.tex",
+        "sha256": "512fdb63031fdb9ea9d6ca226ff5c0a047b0e2ba37f915b9324a9a6c5809d94c",
+        "new": true,
+        "status": "DECISION_RECORDED",
+        "implementation": "deferred"
+      },
+      {
+        "id": "AA115",
+        "file": "sec07_ozz_validation.tex",
+        "sha256": "ae4bc1f0475db908a1b96e98cd5561dac8bd78ba104e067258b372c3f0d9bcff",
+        "new": true,
+        "status": "DECISION_RECORDED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA116",
+        "file": "sec07_ozz_validation.tex",
+        "sha256": "ebd2f731346dbb4b87962859064ac541ec9b60f5b9f6ae955dbbdad64515db19",
+        "new": true,
+        "status": "RESOLVED_BY_AUTHOR",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA117",
+        "file": "sec07_ozz_validation.tex",
+        "sha256": "a950423162ffa048e7066d1be5e8263f88f44672419a72e99651f381ebbb08d6",
+        "new": true,
+        "status": "DECISION_RECORDED",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA100",
+        "file": "sec08_input_sensitivity.tex",
+        "sha256": "69601007f851e656dd6189e5623bb7cc91e9c2473a1d3d643a180c12978e6b66",
+        "new": false,
+        "status": "RESOLVED_BY_AUTHOR",
+        "implementation": "implemented"
+      },
+      {
+        "id": "AA118",
+        "file": "sec08_input_sensitivity.tex",
+        "sha256": "e794ba20dc02d2b3fbd0575979ab8a54f740b8fcd6858d74e388cd822d7ecba6",
+        "new": true,
+        "status": "DECISION_RECORDED",
+        "implementation": "deferred"
+      },
+      {
+        "id": "AA119",
+        "file": "sec09_ct_saturation.tex",
+        "sha256": "5c4add8d43ed07e392c72963414a09c9afc55b34316a9c4ea15b9db9072a7230",
+        "new": true,
+        "status": "DECISION_RECORDED",
+        "implementation": "deferred"
+      },
+      {
+        "id": "AA119",
+        "file": "sec09_ct_saturation.tex",
+        "sha256": "5c4add8d43ed07e392c72963414a09c9afc55b34316a9c4ea15b9db9072a7230",
+        "new": false,
+        "status": "DECISION_RECORDED",
+        "implementation": "deferred"
+      }
+    ]
+  },
+  "source_sha256": {
+    "docs\\article\\Engineering_Optimal_Feature_Spaces_OJIES\\Engineering_Optimal_Feature_Spaces_OJIES v1.2.tex": "eafaae8a56418286516957232b862ec35226c81011a8b98ebbb4711c131d7630",
+    "osc_tools\\ml\\models\\transformer.py": "e2890240118010d9aaf48debbf2f27320c7dd5a99e1eca1824e8f573ef923f84",
+    "scripts\\phase4_experiments\\sim_ozz\\run_phase4_finetune_sim_ozz.py": "8f1112c4675a4f43cc9c84bc968129b0634df68ecdb0866763672879fa8f2eae",
+    "docs\\article\\Engineering_Optimal_Feature_Spaces_OJIES\\картинки\\evdak1.pdf": "1c91cc4a51362207039dfb2e11ccc3266ee0f5ed9fd2a3c81c27a7a148b25a7b"
+  },
+  "pipeline": {
+    "preserved_source": "docs\\article\\Engineering_Optimal_Feature_Spaces_OJIES\\картинки\\evdak1.pdf",
+    "preserved_source_sha256": "1c91cc4a51362207039dfb2e11ccc3266ee0f5ed9fd2a3c81c27a7a148b25a7b",
+    "replaced_copy_sha256": "1c91cc4a51362207039dfb2e11ccc3266ee0f5ed9fd2a3c81c27a7a148b25a7b",
+    "asset": "docs\\Dissertation\\manuscript\\figures\\ch04_feature_pipeline_article.pdf",
+    "asset_sha256": "2b0f26e22be74e0a7779060f4885e0439ffbac32a7c5029f81dd21493ebf2172",
+    "changes": "Russian explanatory sequence; no experiment counts or synthetic measured data; standard comparison models retained"
+  },
+  "release": {
+    "dissertation_review": {
+      "pages": 256,
+      "path": "docs\\Dissertation\\build\\reading\\latex\\dissertation_review.pdf",
+      "sha256": "6ece96467a082a9ee17a410cbcbfb89a9abd78bcacc6256867e1bb31c760acb0",
+      "chapter4_start": 123,
+      "conclusions": 197,
+      "labels": {
+        "sec:ch04_intro": {
+          "number": "4.1",
+          "page": 123
+        },
+        "sec:ch4_evaluation_methodology": {
+          "number": "4.2",
+          "page": 124
+        },
+        "sec:ch4_metric_decisions": {
+          "number": "4.2.1",
+          "page": 124
+        },
+        "fig:ch4_metric_errors": {
+          "number": "4.1",
+          "page": 125
+        },
+        "sec:ch4_metric_validation": {
+          "number": "4.2.3",
+          "page": 125
+        },
+        "fig:ch4_metric_roc": {
+          "number": "4.2",
+          "page": 126
+        },
+        "sec:ch4_metric_runtime": {
+          "number": "4.2.4",
+          "page": 126
+        },
+        "sec:ch4_physkan_architectures": {
+          "number": "4.3",
+          "page": 127
+        },
+        "sec:ch4_input_windows": {
+          "number": "4.3.1",
+          "page": 127
+        },
+        "fig:ch4_output_decision": {
+          "number": "4.3",
+          "page": 128
+        },
+        "sec:ch4_simplemlp": {
+          "number": "4.3.2",
+          "page": 128
+        },
+        "fig:ch4_mlp_flow": {
+          "number": "4.4",
+          "page": 129
+        },
+        "sec:ch4_simplecnn": {
+          "number": "4.3.3",
+          "page": 129
+        },
+        "fig:ch4_cnn_flow": {
+          "number": "4.5",
+          "page": 130
+        },
+        "sec:ch4_resnet": {
+          "number": "4.3.4",
+          "page": 131
+        },
+        "fig:ch4_residual_flow": {
+          "number": "4.6",
+          "page": 131
+        },
+        "sec:ch4_kan": {
+          "number": "4.3.5",
+          "page": 132
+        },
+        "fig:ch4_kan_flow": {
+          "number": "4.7",
+          "page": 132
+        },
+        "sec:ch4_real_ops": {
+          "number": "4.3.6",
+          "page": 134
+        },
+        "fig:ch4_physics_stem": {
+          "number": "4.8",
+          "page": 135
+        },
+        "sec:ch4_complex_ops": {
+          "number": "4.3.7",
+          "page": 136
+        },
+        "fig:ch4_complex_flow": {
+          "number": "4.9",
+          "page": 136
+        },
+        "sec:ch4_relay_gate": {
+          "number": "4.3.8",
+          "page": 137
+        },
+        "fig:ch4_relay_flow": {
+          "number": "4.10",
+          "page": 138
+        },
+        "sec:ch4_attention_architecture": {
+          "number": "4.3.9",
+          "page": 139
+        },
+        "fig:ch4_transformer_attention": {
+          "number": "4.11",
+          "page": 140
+        },
+        "fig:ch4_transformer_baseline": {
+          "number": "4.12",
+          "page": 141
+        },
+        "fig:ch4_transformer_interactions": {
+          "number": "4.13",
+          "page": 142
+        },
+        "fig:ch4_directional_geometry": {
+          "number": "4.14",
+          "page": 143
+        },
+        "fig:ch4_transformer_physical": {
+          "number": "4.15",
+          "page": 144
+        },
+        "fig:ch4_polar_attention": {
+          "number": "4.16",
+          "page": 144
+        },
+        "fig:ch4_physical_ffn": {
+          "number": "4.17",
+          "page": 145
+        },
+        "sec:ch4_architecture_summary": {
+          "number": "4.3.10",
+          "page": 146
+        },
+        "sec:ch4_signal_representations": {
+          "number": "4.4",
+          "page": 147
+        },
+        "sec:ch4_channel_preparation": {
+          "number": "4.4.1",
+          "page": 147
+        },
+        "sec:ch4_feature_history": {
+          "number": "4.4.2",
+          "page": 148
+        },
+        "fig:ch4_input_time_selection": {
+          "number": "4.18",
+          "page": 149
+        },
+        "fig:ch4_feature_pipeline_article": {
+          "number": "4.19",
+          "page": 150
+        },
+        "sec:ch4_spectral_coordinates": {
+          "number": "4.4.3",
+          "page": 150
+        },
+        "sec:ch4_sequence_features": {
+          "number": "4.4.4",
+          "page": 151
+        },
+        "sec:ch4_feature_scaling": {
+          "number": "4.4.5",
+          "page": 152
+        },
+        "fig:ch4_feature_spaces_article": {
+          "number": "4.20",
+          "page": 153
+        },
+        "sec:ch4_feature_comparison": {
+          "number": "4.4.6",
+          "page": 154
+        },
+        "fig:ch4_expanded_feature_comparison": {
+          "number": "4.21",
+          "page": 155
+        },
+        "sec:ch4_feature_compression": {
+          "number": "4.4.7",
+          "page": 156
+        },
+        "fig:ch4_expanded_sampling_comparison": {
+          "number": "4.22",
+          "page": 156
+        },
+        "sec:ch4_feature_computation": {
+          "number": "4.4.8",
+          "page": 157
+        },
+        "fig:ch4_quality_latency_article": {
+          "number": "4.23",
+          "page": 158
+        },
+        "sec:ch4_feature_choice": {
+          "number": "4.4.9",
+          "page": 158
+        },
+        "sec:ch4_training_protocol": {
+          "number": "4.5",
+          "page": 159
+        },
+        "sec:ch4_supervised_training": {
+          "number": "4.5.1",
+          "page": 159
+        },
+        "sec:ch4_self_supervised_training": {
+          "number": "4.5.2",
+          "page": 160
+        },
+        "fig:ch4_two_stage_training": {
+          "number": "4.24",
+          "page": 160
+        },
+        "sec:ch4_task_adaptation": {
+          "number": "4.5.3",
+          "page": 161
+        },
+        "sec:ch4_future_zones": {
+          "number": "4.5.4",
+          "page": 161
+        },
+        "sec:ch4_training_comparability": {
+          "number": "4.5.5",
+          "page": 162
+        },
+        "sec:ch4_physical_validation": {
+          "number": "4.6",
+          "page": 162
+        },
+        "sec:ch4_learned_functions": {
+          "number": "4.6.1",
+          "page": 163
+        },
+        "fig:ch4_learned_kan_functions": {
+          "number": "4.25",
+          "page": 163
+        },
+        "sec:ch4_physical_ablation": {
+          "number": "4.6.2",
+          "page": 164
+        },
+        "fig:ch4_physical_feature_ablation": {
+          "number": "4.26",
+          "page": 164
+        },
+        "sec:ch4_kan_pruning": {
+          "number": "4.6.3",
+          "page": 165
+        },
+        "fig:ch4_kan_pruning": {
+          "number": "4.27",
+          "page": 165
+        },
+        "sec:ch4_physical_checks_meaning": {
+          "number": "4.6.4",
+          "page": 166
+        },
+        "sec:ch4_event_examples": {
+          "number": "4.7",
+          "page": 166
+        },
+        "sec:ch4_real_event_examples": {
+          "number": "4.7.1",
+          "page": 166
+        },
+        "fig:ch4_motor_event": {
+          "number": "4.28",
+          "page": 167
+        },
+        "sec:ch4_event_localization": {
+          "number": "4.7.2",
+          "page": 168
+        },
+        "sec:ch4_zonal_examples": {
+          "number": "4.7.3",
+          "page": 168
+        },
+        "fig:ch4_developing_event": {
+          "number": "4.29",
+          "page": 169
+        },
+        "sec:ch4_event_errors_bavr": {
+          "number": "4.7.4",
+          "page": 170
+        },
+        "fig:ch4_transformer_developing": {
+          "number": "4.30",
+          "page": 171
+        },
+        "fig:ch4_transformer_motor": {
+          "number": "4.31",
+          "page": 172
+        },
+        "fig:ch4_transformer_ozz": {
+          "number": "4.32",
+          "page": 173
+        },
+        "fig:ch4_transformer_ozz_transition": {
+          "number": "4.33",
+          "page": 174
+        },
+        "sec:ch4_ozz_validation": {
+          "number": "4.8",
+          "page": 175
+        },
+        "sec:ch4_ozz_test_protocol": {
+          "number": "4.8.1",
+          "page": 175
+        },
+        "sec:ch4_rtds_examples": {
+          "number": "4.8.2",
+          "page": 176
+        },
+        "fig:ch4_rtds_examples_a": {
+          "number": "4.34",
+          "page": 176
+        },
+        "fig:ch4_rtds_petersen": {
+          "number": "4.35",
+          "page": 177
+        },
+        "fig:ch4_rtds_peters_slepyan": {
+          "number": "4.36",
+          "page": 178
+        },
+        "fig:ch4_rtds_examples_b": {
+          "number": "4.37",
+          "page": 179
+        },
+        "sec:ch4_ozz_comparison": {
+          "number": "4.8.3",
+          "page": 180
+        },
+        "sec:ch4_ozz_errors": {
+          "number": "4.8.4",
+          "page": 181
+        },
+        "sec:ch4_ozz_real_examples": {
+          "number": "4.8.5",
+          "page": 181
+        },
+        "fig:ch4_real_ozz_fading": {
+          "number": "4.38",
+          "page": 182
+        },
+        "fig:ch4_real_ozz_long_response": {
+          "number": "4.39",
+          "page": 183
+        },
+        "sec:ch4_ozz_runtime": {
+          "number": "4.8.6",
+          "page": 184
+        },
+        "sec:ch4_input_sensitivity": {
+          "number": "4.9",
+          "page": 184
+        },
+        "sec:ch4_input_sensitivity_protocol": {
+          "number": "4.9.1",
+          "page": 184
+        },
+        "sec:ch4_input_sensitivity_results": {
+          "number": "4.9.2",
+          "page": 185
+        },
+        "fig:ch4_channel_dropout": {
+          "number": "4.40",
+          "page": 187
+        },
+        "fig:ch4_channel_dropout_classes": {
+          "number": "4.41",
+          "page": 188
+        },
+        "sec:ch4_gradient_sensitivity": {
+          "number": "4.9.3",
+          "page": 189
+        },
+        "fig:ch4_gradient_signals": {
+          "number": "4.42",
+          "page": 189
+        },
+        "sec:ch4_input_sensitivity_meaning": {
+          "number": "4.9.4",
+          "page": 189
+        },
+        "fig:ch4_gradient_time": {
+          "number": "4.43",
+          "page": 190
+        },
+        "sec:ch4_ct_saturation": {
+          "number": "4.10",
+          "page": 192
+        },
+        "sec:ch4_ct_targets": {
+          "number": "4.10.1",
+          "page": 192
+        },
+        "sec:ch4_ct_inputs": {
+          "number": "4.10.2",
+          "page": 192
+        },
+        "sec:ch4_ct_results": {
+          "number": "4.10.3",
+          "page": 193
+        },
+        "fig:ch4_ct_confusion": {
+          "number": "4.44",
+          "page": 193
+        },
+        "sec:ch4_ct_real_examples": {
+          "number": "4.10.4",
+          "page": 194
+        },
+        "sec:ch4_ct_continuous_error": {
+          "number": "4.10.5",
+          "page": 194
+        },
+        "fig:ch4_ct_simulation": {
+          "number": "4.45",
+          "page": 195
+        },
+        "fig:ch4_ct_real_switching": {
+          "number": "4.46",
+          "page": 195
+        },
+        "fig:ch4_ct_real_candidate": {
+          "number": "4.47",
+          "page": 196
+        },
+        "sec:ch04_conclusions": {
+          "number": "4.11",
+          "page": 197
+        }
+      },
+      "overfull_hbox": 9,
+      "missing_glyphs": 0,
+      "stable_references": true
+    },
+    "dissertation_comments": {
+      "pages": 275,
+      "path": "docs\\Dissertation\\build\\reading\\latex\\dissertation_comments.pdf",
+      "sha256": "b98e2038f6c032f97a0f687b71a42f208b2952e4c256ee32838c81964e131855",
+      "chapter4_start": 124,
+      "conclusions": 208,
+      "labels": {
+        "sec:ch04_intro": {
+          "number": "4.1",
+          "page": 124
+        },
+        "sec:ch4_evaluation_methodology": {
+          "number": "4.2",
+          "page": 125
+        },
+        "sec:ch4_metric_decisions": {
+          "number": "4.2.1",
+          "page": 126
+        },
+        "fig:ch4_metric_errors": {
+          "number": "4.1",
+          "page": 126
+        },
+        "sec:ch4_metric_validation": {
+          "number": "4.2.3",
+          "page": 127
+        },
+        "fig:ch4_metric_roc": {
+          "number": "4.2",
+          "page": 128
+        },
+        "sec:ch4_metric_runtime": {
+          "number": "4.2.4",
+          "page": 128
+        },
+        "sec:ch4_physkan_architectures": {
+          "number": "4.3",
+          "page": 129
+        },
+        "sec:ch4_input_windows": {
+          "number": "4.3.1",
+          "page": 129
+        },
+        "fig:ch4_output_decision": {
+          "number": "4.3",
+          "page": 130
+        },
+        "sec:ch4_simplemlp": {
+          "number": "4.3.2",
+          "page": 131
+        },
+        "fig:ch4_mlp_flow": {
+          "number": "4.4",
+          "page": 131
+        },
+        "sec:ch4_simplecnn": {
+          "number": "4.3.3",
+          "page": 132
+        },
+        "fig:ch4_cnn_flow": {
+          "number": "4.5",
+          "page": 132
+        },
+        "sec:ch4_resnet": {
+          "number": "4.3.4",
+          "page": 133
+        },
+        "fig:ch4_residual_flow": {
+          "number": "4.6",
+          "page": 134
+        },
+        "sec:ch4_kan": {
+          "number": "4.3.5",
+          "page": 134
+        },
+        "fig:ch4_kan_flow": {
+          "number": "4.7",
+          "page": 135
+        },
+        "sec:ch4_real_ops": {
+          "number": "4.3.6",
+          "page": 136
+        },
+        "fig:ch4_physics_stem": {
+          "number": "4.8",
+          "page": 137
+        },
+        "sec:ch4_complex_ops": {
+          "number": "4.3.7",
+          "page": 138
+        },
+        "fig:ch4_complex_flow": {
+          "number": "4.9",
+          "page": 139
+        },
+        "sec:ch4_relay_gate": {
+          "number": "4.3.8",
+          "page": 140
+        },
+        "fig:ch4_relay_flow": {
+          "number": "4.10",
+          "page": 141
+        },
+        "sec:ch4_attention_architecture": {
+          "number": "4.3.9",
+          "page": 141
+        },
+        "fig:ch4_transformer_attention": {
+          "number": "4.11",
+          "page": 143
+        },
+        "fig:ch4_transformer_baseline": {
+          "number": "4.12",
+          "page": 144
+        },
+        "fig:ch4_transformer_interactions": {
+          "number": "4.13",
+          "page": 145
+        },
+        "fig:ch4_directional_geometry": {
+          "number": "4.14",
+          "page": 146
+        },
+        "fig:ch4_transformer_physical": {
+          "number": "4.15",
+          "page": 146
+        },
+        "fig:ch4_polar_attention": {
+          "number": "4.16",
+          "page": 147
+        },
+        "fig:ch4_physical_ffn": {
+          "number": "4.17",
+          "page": 148
+        },
+        "sec:ch4_architecture_summary": {
+          "number": "4.3.10",
+          "page": 149
+        },
+        "sec:ch4_signal_representations": {
+          "number": "4.4",
+          "page": 150
+        },
+        "sec:ch4_channel_preparation": {
+          "number": "4.4.1",
+          "page": 150
+        },
+        "sec:ch4_feature_history": {
+          "number": "4.4.2",
+          "page": 151
+        },
+        "fig:ch4_input_time_selection": {
+          "number": "4.18",
+          "page": 153
+        },
+        "fig:ch4_feature_pipeline_article": {
+          "number": "4.19",
+          "page": 154
+        },
+        "sec:ch4_spectral_coordinates": {
+          "number": "4.4.3",
+          "page": 154
+        },
+        "sec:ch4_sequence_features": {
+          "number": "4.4.4",
+          "page": 155
+        },
+        "sec:ch4_feature_scaling": {
+          "number": "4.4.5",
+          "page": 156
+        },
+        "fig:ch4_feature_spaces_article": {
+          "number": "4.20",
+          "page": 157
+        },
+        "sec:ch4_feature_comparison": {
+          "number": "4.4.6",
+          "page": 158
+        },
+        "fig:ch4_expanded_feature_comparison": {
+          "number": "4.21",
+          "page": 159
+        },
+        "sec:ch4_feature_compression": {
+          "number": "4.4.7",
+          "page": 160
+        },
+        "fig:ch4_expanded_sampling_comparison": {
+          "number": "4.22",
+          "page": 161
+        },
+        "sec:ch4_feature_computation": {
+          "number": "4.4.8",
+          "page": 161
+        },
+        "sec:ch4_feature_choice": {
+          "number": "4.4.9",
+          "page": 162
+        },
+        "fig:ch4_quality_latency_article": {
+          "number": "4.23",
+          "page": 163
+        },
+        "sec:ch4_training_protocol": {
+          "number": "4.5",
+          "page": 164
+        },
+        "sec:ch4_supervised_training": {
+          "number": "4.5.1",
+          "page": 164
+        },
+        "sec:ch4_self_supervised_training": {
+          "number": "4.5.2",
+          "page": 164
+        },
+        "fig:ch4_two_stage_training": {
+          "number": "4.24",
+          "page": 165
+        },
+        "sec:ch4_task_adaptation": {
+          "number": "4.5.3",
+          "page": 166
+        },
+        "sec:ch4_future_zones": {
+          "number": "4.5.4",
+          "page": 166
+        },
+        "sec:ch4_training_comparability": {
+          "number": "4.5.5",
+          "page": 167
+        },
+        "sec:ch4_physical_validation": {
+          "number": "4.6",
+          "page": 168
+        },
+        "sec:ch4_learned_functions": {
+          "number": "4.6.1",
+          "page": 168
+        },
+        "fig:ch4_learned_kan_functions": {
+          "number": "4.25",
+          "page": 169
+        },
+        "sec:ch4_physical_ablation": {
+          "number": "4.6.2",
+          "page": 169
+        },
+        "fig:ch4_physical_feature_ablation": {
+          "number": "4.26",
+          "page": 170
+        },
+        "sec:ch4_kan_pruning": {
+          "number": "4.6.3",
+          "page": 171
+        },
+        "fig:ch4_kan_pruning": {
+          "number": "4.27",
+          "page": 171
+        },
+        "sec:ch4_physical_checks_meaning": {
+          "number": "4.6.4",
+          "page": 172
+        },
+        "sec:ch4_event_examples": {
+          "number": "4.7",
+          "page": 172
+        },
+        "sec:ch4_real_event_examples": {
+          "number": "4.7.1",
+          "page": 172
+        },
+        "fig:ch4_motor_event": {
+          "number": "4.28",
+          "page": 174
+        },
+        "fig:ch4_developing_event": {
+          "number": "4.29",
+          "page": 175
+        },
+        "sec:ch4_event_localization": {
+          "number": "4.7.2",
+          "page": 176
+        },
+        "sec:ch4_zonal_examples": {
+          "number": "4.7.3",
+          "page": 176
+        },
+        "fig:ch4_transformer_developing": {
+          "number": "4.30",
+          "page": 177
+        },
+        "sec:ch4_event_errors_bavr": {
+          "number": "4.7.4",
+          "page": 178
+        },
+        "fig:ch4_transformer_motor": {
+          "number": "4.31",
+          "page": 179
+        },
+        "fig:ch4_transformer_ozz": {
+          "number": "4.32",
+          "page": 180
+        },
+        "fig:ch4_transformer_ozz_transition": {
+          "number": "4.33",
+          "page": 181
+        },
+        "sec:ch4_ozz_validation": {
+          "number": "4.8",
+          "page": 183
+        },
+        "sec:ch4_ozz_test_protocol": {
+          "number": "4.8.1",
+          "page": 183
+        },
+        "sec:ch4_rtds_examples": {
+          "number": "4.8.2",
+          "page": 184
+        },
+        "fig:ch4_rtds_examples_a": {
+          "number": "4.34",
+          "page": 185
+        },
+        "fig:ch4_rtds_petersen": {
+          "number": "4.35",
+          "page": 186
+        },
+        "fig:ch4_rtds_peters_slepyan": {
+          "number": "4.36",
+          "page": 187
+        },
+        "fig:ch4_rtds_examples_b": {
+          "number": "4.37",
+          "page": 188
+        },
+        "sec:ch4_ozz_comparison": {
+          "number": "4.8.3",
+          "page": 189
+        },
+        "sec:ch4_ozz_errors": {
+          "number": "4.8.4",
+          "page": 190
+        },
+        "sec:ch4_ozz_real_examples": {
+          "number": "4.8.5",
+          "page": 190
+        },
+        "fig:ch4_real_ozz_fading": {
+          "number": "4.38",
+          "page": 191
+        },
+        "fig:ch4_real_ozz_long_response": {
+          "number": "4.39",
+          "page": 192
+        },
+        "sec:ch4_ozz_runtime": {
+          "number": "4.8.6",
+          "page": 193
+        },
+        "sec:ch4_input_sensitivity": {
+          "number": "4.9",
+          "page": 193
+        },
+        "sec:ch4_input_sensitivity_protocol": {
+          "number": "4.9.1",
+          "page": 194
+        },
+        "sec:ch4_input_sensitivity_results": {
+          "number": "4.9.2",
+          "page": 194
+        },
+        "fig:ch4_channel_dropout": {
+          "number": "4.40",
+          "page": 196
+        },
+        "fig:ch4_channel_dropout_classes": {
+          "number": "4.41",
+          "page": 197
+        },
+        "sec:ch4_gradient_sensitivity": {
+          "number": "4.9.3",
+          "page": 198
+        },
+        "fig:ch4_gradient_signals": {
+          "number": "4.42",
+          "page": 199
+        },
+        "fig:ch4_gradient_time": {
+          "number": "4.43",
+          "page": 199
+        },
+        "sec:ch4_input_sensitivity_meaning": {
+          "number": "4.9.4",
+          "page": 200
+        },
+        "sec:ch4_ct_saturation": {
+          "number": "4.10",
+          "page": 201
+        },
+        "sec:ch4_ct_targets": {
+          "number": "4.10.1",
+          "page": 201
+        },
+        "sec:ch4_ct_inputs": {
+          "number": "4.10.2",
+          "page": 201
+        },
+        "sec:ch4_ct_results": {
+          "number": "4.10.3",
+          "page": 202
+        },
+        "fig:ch4_ct_confusion": {
+          "number": "4.44",
+          "page": 203
+        },
+        "sec:ch4_ct_real_examples": {
+          "number": "4.10.4",
+          "page": 204
+        },
+        "sec:ch4_ct_continuous_error": {
+          "number": "4.10.5",
+          "page": 205
+        },
+        "fig:ch4_ct_simulation": {
+          "number": "4.45",
+          "page": 206
+        },
+        "fig:ch4_ct_real_switching": {
+          "number": "4.46",
+          "page": 206
+        },
+        "fig:ch4_ct_real_candidate": {
+          "number": "4.47",
+          "page": 207
+        },
+        "sec:ch04_conclusions": {
+          "number": "4.11",
+          "page": 208
+        }
+      },
+      "overfull_hbox": 9,
+      "missing_glyphs": 0,
+      "stable_references": true
+    }
+  },
+  "remaining": [
+    "Author figure review and translations; R4-16",
+    "R4-11/14/15 independent reviewer follow-up",
+    "R4-13 exact criterion from data provider",
+    "R4-10 parameter-count version history, no retraining required",
+    "Future-zone quantitative evaluation not included; optional further work"
+  ],
+  "publication": {
+    "comments_standard_path_restored": true,
+    "temporary_alternate_pdf_removed": true
+  },
+  "global_scope": {
+    "chapter4_coherence": "implemented, author review pending",
+    "whole_thesis_chapter_roles": "overview recorded in thesis_spine",
+    "other_chapter_rewrites": "not performed; D07-001/F03",
+    "chapter4_wording": "six explanatory paragraphs revised; substantive conditions retained",
+    "hardware": "explicit series attribution checked, unknown device remains unknown",
+    "figures": "Russian pipeline and review markers implemented; other drawings author pending",
+    "final_page_composition": "not performed; F05"
+  },
+  "visual_qa": {
+    "clean": {
+      "all_pages": [
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197
+      ],
+      "selected_pages": [
+        123,
+        124,
+        125,
+        127,
+        128,
+        129,
+        139,
+        140,
+        141,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        160,
+        161,
+        162,
+        163,
+        164,
+        175,
+        176,
+        177,
+        192,
+        193,
+        194,
+        197
+      ],
+      "files": {
+        "123": "clean-page-01.png",
+        "124": "clean-page-02.png",
+        "125": "clean-page-03.png",
+        "126": "clean-page-04.png",
+        "127": "clean-page-05.png",
+        "128": "clean-page-06.png",
+        "129": "clean-page-07.png",
+        "130": "clean-page-08.png",
+        "131": "clean-page-09.png",
+        "132": "clean-page-10.png",
+        "133": "clean-page-11.png",
+        "134": "clean-page-12.png",
+        "135": "clean-page-13.png",
+        "136": "clean-page-14.png",
+        "137": "clean-page-15.png",
+        "138": "clean-page-16.png",
+        "139": "clean-page-17.png",
+        "140": "clean-page-18.png",
+        "141": "clean-page-19.png",
+        "142": "clean-page-20.png",
+        "143": "clean-page-21.png",
+        "144": "clean-page-22.png",
+        "145": "clean-page-23.png",
+        "146": "clean-page-24.png",
+        "147": "clean-page-25.png",
+        "148": "clean-page-26.png",
+        "149": "clean-page-27.png",
+        "150": "clean-page-28.png",
+        "151": "clean-page-29.png",
+        "152": "clean-page-30.png",
+        "153": "clean-page-31.png",
+        "154": "clean-page-32.png",
+        "155": "clean-page-33.png",
+        "156": "clean-page-34.png",
+        "157": "clean-page-35.png",
+        "158": "clean-page-36.png",
+        "159": "clean-page-37.png",
+        "160": "clean-page-38.png",
+        "161": "clean-page-39.png",
+        "162": "clean-page-40.png",
+        "163": "clean-page-41.png",
+        "164": "clean-page-42.png",
+        "165": "clean-page-43.png",
+        "166": "clean-page-44.png",
+        "167": "clean-page-45.png",
+        "168": "clean-page-46.png",
+        "169": "clean-page-47.png",
+        "170": "clean-page-48.png",
+        "171": "clean-page-49.png",
+        "172": "clean-page-50.png",
+        "173": "clean-page-51.png",
+        "174": "clean-page-52.png",
+        "175": "clean-page-53.png",
+        "176": "clean-page-54.png",
+        "177": "clean-page-55.png",
+        "178": "clean-page-56.png",
+        "179": "clean-page-57.png",
+        "180": "clean-page-58.png",
+        "181": "clean-page-59.png",
+        "182": "clean-page-60.png",
+        "183": "clean-page-61.png",
+        "184": "clean-page-62.png",
+        "185": "clean-page-63.png",
+        "186": "clean-page-64.png",
+        "187": "clean-page-65.png",
+        "188": "clean-page-66.png",
+        "189": "clean-page-67.png",
+        "190": "clean-page-68.png",
+        "191": "clean-page-69.png",
+        "192": "clean-page-70.png",
+        "193": "clean-page-71.png",
+        "194": "clean-page-72.png",
+        "195": "clean-page-73.png",
+        "196": "clean-page-74.png",
+        "197": "clean-page-75.png"
+      },
+      "labels": {
+        "sec:ch04_intro": 123,
+        "sec:ch4_physkan_architectures": 127,
+        "sec:ch4_attention_architecture": 139,
+        "sec:ch4_architecture_summary": 146,
+        "sec:ch4_feature_history": 148,
+        "fig:ch4_input_time_selection": 149,
+        "fig:ch4_feature_pipeline_article": 150,
+        "sec:ch4_self_supervised_training": 160,
+        "sec:ch4_future_zones": 161,
+        "sec:ch4_physical_validation": 162,
+        "sec:ch4_ozz_validation": 175,
+        "sec:ch4_ct_targets": 192,
+        "sec:ch04_conclusions": 197
+      },
+      "full_size_inspected": [
+        123,
+        124,
+        139,
+        148,
+        150,
+        162,
+        197
+      ]
+    },
+    "comments": {
+      "all_pages": [
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        157,
+        158,
+        159,
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        171,
+        172,
+        173,
+        174,
+        175,
+        176,
+        177,
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        184,
+        185,
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        206,
+        207,
+        208
+      ],
+      "selected_pages": [
+        124,
+        125,
+        126,
+        129,
+        130,
+        131,
+        141,
+        142,
+        143,
+        149,
+        150,
+        151,
+        152,
+        153,
+        154,
+        155,
+        156,
+        164,
+        165,
+        166,
+        167,
+        168,
+        169,
+        170,
+        183,
+        184,
+        185,
+        201,
+        202,
+        203,
+        208
+      ],
+      "files": {
+        "124": "comments-page-01.png",
+        "125": "comments-page-02.png",
+        "126": "comments-page-03.png",
+        "127": "comments-page-04.png",
+        "128": "comments-page-05.png",
+        "129": "comments-page-06.png",
+        "130": "comments-page-07.png",
+        "131": "comments-page-08.png",
+        "132": "comments-page-09.png",
+        "133": "comments-page-10.png",
+        "134": "comments-page-11.png",
+        "135": "comments-page-12.png",
+        "136": "comments-page-13.png",
+        "137": "comments-page-14.png",
+        "138": "comments-page-15.png",
+        "139": "comments-page-16.png",
+        "140": "comments-page-17.png",
+        "141": "comments-page-18.png",
+        "142": "comments-page-19.png",
+        "143": "comments-page-20.png",
+        "144": "comments-page-21.png",
+        "145": "comments-page-22.png",
+        "146": "comments-page-23.png",
+        "147": "comments-page-24.png",
+        "148": "comments-page-25.png",
+        "149": "comments-page-26.png",
+        "150": "comments-page-27.png",
+        "151": "comments-page-28.png",
+        "152": "comments-page-29.png",
+        "153": "comments-page-30.png",
+        "154": "comments-page-31.png",
+        "155": "comments-page-32.png",
+        "156": "comments-page-33.png",
+        "157": "comments-page-34.png",
+        "158": "comments-page-35.png",
+        "159": "comments-page-36.png",
+        "160": "comments-page-37.png",
+        "161": "comments-page-38.png",
+        "162": "comments-page-39.png",
+        "163": "comments-page-40.png",
+        "164": "comments-page-41.png",
+        "165": "comments-page-42.png",
+        "166": "comments-page-43.png",
+        "167": "comments-page-44.png",
+        "168": "comments-page-45.png",
+        "169": "comments-page-46.png",
+        "170": "comments-page-47.png",
+        "171": "comments-page-48.png",
+        "172": "comments-page-49.png",
+        "173": "comments-page-50.png",
+        "174": "comments-page-51.png",
+        "175": "comments-page-52.png",
+        "176": "comments-page-53.png",
+        "177": "comments-page-54.png",
+        "178": "comments-page-55.png",
+        "179": "comments-page-56.png",
+        "180": "comments-page-57.png",
+        "181": "comments-page-58.png",
+        "182": "comments-page-59.png",
+        "183": "comments-page-60.png",
+        "184": "comments-page-61.png",
+        "185": "comments-page-62.png",
+        "186": "comments-page-63.png",
+        "187": "comments-page-64.png",
+        "188": "comments-page-65.png",
+        "189": "comments-page-66.png",
+        "190": "comments-page-67.png",
+        "191": "comments-page-68.png",
+        "192": "comments-page-69.png",
+        "193": "comments-page-70.png",
+        "194": "comments-page-71.png",
+        "195": "comments-page-72.png",
+        "196": "comments-page-73.png",
+        "197": "comments-page-74.png",
+        "198": "comments-page-75.png",
+        "199": "comments-page-76.png",
+        "200": "comments-page-77.png",
+        "201": "comments-page-78.png",
+        "202": "comments-page-79.png",
+        "203": "comments-page-80.png",
+        "204": "comments-page-81.png",
+        "205": "comments-page-82.png",
+        "206": "comments-page-83.png",
+        "207": "comments-page-84.png",
+        "208": "comments-page-85.png"
+      },
+      "labels": {
+        "sec:ch04_intro": 124,
+        "sec:ch4_physkan_architectures": 129,
+        "sec:ch4_attention_architecture": 141,
+        "sec:ch4_architecture_summary": 149,
+        "sec:ch4_feature_history": 151,
+        "fig:ch4_input_time_selection": 153,
+        "fig:ch4_feature_pipeline_article": 154,
+        "sec:ch4_self_supervised_training": 164,
+        "sec:ch4_future_zones": 166,
+        "sec:ch4_physical_validation": 168,
+        "sec:ch4_ozz_validation": 183,
+        "sec:ch4_ct_targets": 201,
+        "sec:ch04_conclusions": 208
+      },
+      "full_size_inspected": [
+        142,
+        152,
+        154,
+        167,
+        201,
+        208
+      ]
+    },
+    "result": "Contact sheets of chapter 4 and full-sized changed pages inspected; existing small source legends remain assigned to author under R4-16, no new clipping found"
+  },
+  "temporary_drawing_script_removed": {
+    "path": "build/reading/D04-013/draw_pipeline.py",
+    "sha256": "c48602a9299846644a1feb8cb96b4ff1f53a8ab92deb93601497e34af2f38763"
+  },
+  "whitespace_exception": "One trailing space belongs to an unchanged verbatim author answer copied into handoffs/D04.md; not silently stripped",
+  "current_r4_outcomes": {
+    "R4-01/02/08/17": "agreed direction implemented, new wording awaits author review",
+    "R4-03": "editorial discussion closed by author, numerical history retained locally",
+    "R4-04/05/06/07/09/12": "agreed clarifications recorded and preserved",
+    "R4-10": "100 epochs confirmed; historical parameter-count discrepancy retained as service note",
+    "R4-11/14/15": "independent reviewer follow-up pending",
+    "R4-13": "provided flags used; hypothesised denominator remains unconfirmed",
+    "R4-16": "author figure revision pending"
+  },
+  "chapter5_reviewer_codes_preserved_in_pdf": [
+    "R5-01",
+    "R5-02",
+    "R5-03",
+    "R5-04",
+    "R5-05",
+    "R5-06",
+    "R5-07",
+    "R5-08",
+    "R5-09",
+    "R5-10",
+    "R5-11",
+    "R5-12",
+    "R5-13"
+  ]
+}

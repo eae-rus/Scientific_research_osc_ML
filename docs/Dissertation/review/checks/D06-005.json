@@ -2,7 +2,7 @@
   "task": "D06-005",
   "date": "2026-10-29",
   "scope": "Independent chapter 5 review only",
-  "status": "IN_PROGRESS",
+  "status": "DONE: independent review completed; author review and fixes remain",
   "source_hashes": {
     "data\\phase5\\pdr_engineering_review\\expert\\full\\summary.json": "9921949d8ffcbe1b1c527fbf18ebcc5aebc95b72325861ed6fdbe4917572f22e",
     "data\\phase5\\pdr_engineering_review\\rtds\\full\\summary.json": "787ff8648f48046d0ab6fa5912128f542a893d4dce4c8fe19ce5ac8d351a24c4",
@@ -16,7 +16,9 @@
     "data\\phase5\\research_strict_splits.json": "66e9065de37963a5b00f36440fe87d65eb71a99d076b9ce8f354a81900fc3f45",
     "data\\phase5\\pdr_expert_labels_v1\\records.csv": "b1f568cfa99f4d42acc3d0f351acd126256e21d9e79f48d5fde3623c45cd926a",
     "data\\phase5\\pdr_analysis_v6\\review_current_profiles.csv": "4b1ec6d1ad0484e54312e5714c03beb81205196fc7495aae4efa0a04f4b11e33",
-    "docs\\article\\PHASE_5_PDR_STATISTICAL_ARTICLE_DRAFT.md": "1239c6cb9f67e96c653d2fcee447b92c9874f749d689878682f3281c36590fe4"
+    "docs\\article\\PHASE_5_PDR_STATISTICAL_ARTICLE_DRAFT.md": "1239c6cb9f67e96c653d2fcee447b92c9874f749d689878682f3281c36590fe4",
+    "docs/Dissertation/sources/PDR-05/af5f673194ab1ee41231c73c7f8b05ec47879f415f1bfd44ab487b10d181ae5c/study.py": "af5f673194ab1ee41231c73c7f8b05ec47879f415f1bfd44ab487b10d181ae5c",
+    "scripts/phase5_experiments/run_phase5_pdr_training.py": "06151ff420406af1c53918dd063c9117ed23977ff2caa3f1beaeb2141981af94"
   },
   "dense_error_time": [
     {
@@ -257,5 +259,202 @@
     "Review of current chapter5 only; chapter4 excluded",
     "Selected primary numerical checks, not certification of original experiments",
     "RTDS labels still under author review; historical input-fill rule unresolved"
-  ]
+  ],
+  "outside_chapter5_hash_observations": {
+    "docs\\Dissertation\\manuscript\\main.tex": true,
+    "docs\\Dissertation\\manuscript\\preamble.tex": true,
+    "docs\\Dissertation\\manuscript\\test_skeleton.tex": true,
+    "docs\\Dissertation\\manuscript\\backmatter\\appendix01.tex": true,
+    "docs\\Dissertation\\manuscript\\backmatter\\bibliography.tex": true,
+    "docs\\Dissertation\\manuscript\\backmatter\\bibliography_part1.tex": true,
+    "docs\\Dissertation\\manuscript\\backmatter\\bibliography_part2.tex": true,
+    "docs\\Dissertation\\manuscript\\backmatter\\notes_informal.tex": true,
+    "docs\\Dissertation\\manuscript\\backmatter\\notes_informal_part1.tex": true,
+    "docs\\Dissertation\\manuscript\\backmatter\\notes_informal_part2.tex": true,
+    "docs\\Dissertation\\manuscript\\backmatter\\supplementary_elements.tex": true,
+    "docs\\Dissertation\\manuscript\\frontmatter\\introduction.tex": true,
+    "docs\\Dissertation\\manuscript\\frontmatter\\title.tex": true,
+    "docs\\Dissertation\\manuscript\\frontmatter\\toc_source.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\chapter.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec01_intro.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec02_statistics_and_basic_problems.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec03_base_organs_problems.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec04_adaptive_functions.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec05_manufacturers_analysis_part1.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec06_manufacturers_analysis_part2.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec07_complex_cases_time.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec08_adaptive_dropout.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec09_external_two_phase_blocking.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec10_rogowski_and_zero_sequence.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec11_ferroresonance_ozz.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec12_conclusions.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\tab01_bavr_operation.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\chapter.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec01_intro_and_rogowski_theory.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec02_transient_and_harmonics.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec03_fourier_theory.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec04_rnm_tt_kr_comparison.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec05_industrial_application_kr.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec06_vnr_algorithms.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec07_conclusions.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\tab04_window_functions.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\chapter.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec01_intro_and_methodology.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec02_data_collection_and_db.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec03_comtrade_intro.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec04_dat_files_and_depersonalization.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec05_signal_naming_unification.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec06_normalization_methodology.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec07_basis_algorithms_and_csv.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec08_annotation_methodology.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec09_empty_oscillograms_filtering.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec10_earth_fault_subset.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec11_conclusions.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\tab01_analog_signals_parameters.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\tab02_oscillograms_frequencies.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\tab03_zero_sequence_basis.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\chapter.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec01_evaluation_methodology.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec02_physkan_architectures.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec03_signal_representations.tex": false,
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec04_training_protocol.tex": false,
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec05_physical_validation.tex": true,
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec06_event_examples.tex": false,
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec07_ozz_validation.tex": false,
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec08_input_sensitivity.tex": false,
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec09_ct_saturation.tex": false,
+    "docs\\Dissertation\\review\\issues\\author_annotations.json": true,
+    "docs\\Dissertation\\review\\issues\\author_note_dispositions.json": true
+  },
+  "parallel_changes": [
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec03_signal_representations.tex",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec04_training_protocol.tex",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec06_event_examples.tex",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec07_ozz_validation.tex",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec08_input_sensitivity.tex",
+    "docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec09_ct_saturation.tex"
+  ],
+  "parallel_changes_note": "Six chapter4 files changed outside this review while author was reviewing that chapter. Not edited or restored by D06-005. Hash observation is not a claim of full-workspace immutability.",
+  "chapter5_scientific_text_preserved": {
+    "chapter.tex": true,
+    "sec01_direction_and_validity.tex": true,
+    "sec02_analytical_organs.tex": true,
+    "sec03_population_audit.tex": true,
+    "sec04_expert_reference.tex": true,
+    "sec05_engineering_verification.tex": true,
+    "sec06_first_results.tex": true,
+    "sec07_expert_adaptation.tex": true,
+    "sec08_dense_validation.tex": true,
+    "sec09_rtds_validation.tex": true,
+    "sec10_adaptation_and_conclusions.tex": true
+  },
+  "notes": [
+    {
+      "id": "R5-01",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\chapter.tex",
+      "line": 53,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R5-01], концепция.} Общая методика хорошо связывает массив данных с инженерной проверкой. Для диссертации стоит коротко назвать собственный результат главы: что именно разработано и проверено, а что пока предложено. Сейчас общая последовательность местами звучит как рекомендация исследователю. В выводах различить выполненную экспертную адаптацию РНМ и ещё не завершённый цикл изменения аналитического органа. Не требуется доказывать преимущество сети над всеми органами или заново описывать архитектуры главы 4.\\par\\endgroup\\smallskip\n\\fi\n"
+    },
+    {
+      "id": "R5-02",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec01_direction_and_validity.tex",
+      "line": 65,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R5-02], физическая постановка.} Нужно определить смысл выхода неприменимости для внешней логики БАВР: сохраняется блокировка, используется другой орган либо решение передаётся отдельной логике. Сейчас описаны прямое и нулевое состояния, но действие при VALID=0 остаётся открытым. Самостоятельно выбирать его нельзя. Достаточно согласованного автором объяснения или явной границы, что здесь проверяется измерительный орган, а правило обработки его отказа ещё не задано. Это влияет и на инженерную трактовку «лишнего отказа».\\par\\endgroup\\smallskip\n\\fi\n"
+    },
+    {
+      "id": "R5-03",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec02_analytical_organs.tex",
+      "line": 436,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R5-03], ясность условий сравнения.} После исправления основной мощностной уставки остаётся неоднозначным масштаб порога 0,001 у БМРЗ-варианта выше. Кратко указать физическую величину и базис этого порога. Для девяти органов полезна компактная сводка фактически использованных уставок и памяти, с отсылкой к подробным формулам. Сравнение относится к этим настройкам; из него не следует, что каждый принцип испытан при оптимальных уставках. Новую настройку или пересчёт сейчас не выполнять.\\par\\endgroup\\smallskip\n\\fi\n"
+    },
+    {
+      "id": "R5-04",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec06_first_results.tex",
+      "line": 74,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R5-04], определение показателя.} Для числа 52,25 процента в предыдущем подразделе явно определить событие разногласия. В сохранённом study.py сравнимы точки, где применимы хотя бы два органа; расхождение означает наличие среди них обоих направлений. При отсутствии таких точек файл получает нулевую долю. Это отличается от общей применимости всех девяти органов в распределении комбинаций ниже и от среднего по 36 парам. Текстовое пояснение генератора о «общих валидных точках» недостаточно точно. Число совпадает со сводкой; уточнить знаменатель и влияние нулевых файлов, не исправляя результат наугад.\\par\\endgroup\\smallskip\n\\fi\n"
+    },
+    {
+      "id": "R5-05",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec07_expert_adaptation.tex",
+      "line": 46,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R5-05], связь с разработанной моделью.} В начале 5.8 назвать конкретную использованную физическую трансформерную модель и дать точную ссылку на её описание в главе 4, не повторяя его. Одних размеров 64/4/4/256 недостаточно, чтобы понять роль авторских физических и KAN-блоков. В статье отдельно оговорено циклическое представление углов; кратко сохранить этот существенный вариант входа. В двухголовой постановке также явно указать порог применимости 0,5 и правило получения направления. Историческую реализацию не заменять нынешним кодом.\\par\\endgroup\\smallskip\n\\fi\n"
+    },
+    {
+      "id": "R5-06",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec07_expert_adaptation.tex",
+      "line": 99,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R5-06], уточнить историю обучения.} Описание двух целевых этапов не раскрывает предшествующую инициализацию компактных сетей. В сохранённом config.json последовательного weak-запуска указан pretrain\\_b\\_small/latest\\_checkpoint.pt, то есть веса после самообучения; у H123-D24 указаны use\\_ssl\\_initialization=false и initialization=random. Для двух и пяти срезов текущая запись содержит resume и сама по себе не устанавливает начало именно этой серии. Нужно восстановить цепочку из метаданных и кратко описать её. Это дополнительное различие конфигураций, не основание аннулировать таблицы. Двухэтапную адаптацию допустимо сохранить как название целевых этапов после инициализации.\\par\\endgroup\\smallskip\n\\fi\n"
+    },
+    {
+      "id": "R5-07",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec07_expert_adaptation.tex",
+      "line": 127,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R5-07], полнота протокола.} Кратко раскрыть, как смешивались экспертные примеры и повтор обычных режимов, а также какие применялись изменения входных сигналов. В сохранённых конфигурациях компактных экспертных запусков заданы доля эксперта 0,75, доля Open\\_EE внутри экспертной части 0,75 и вероятность аугментации 0,5. Это параметры отбора, не гарантированное точное соотношение предъявлений при обязательном покрытии файлов. Они помогают понять влияние источников и повторить опыт; большой перечень программных настроек в основной текст не нужен.\\par\\endgroup\\smallskip\n\\fi\n"
+    },
+    {
+      "id": "R5-08",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec08_dense_validation.tex",
+      "line": 64,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R5-08], незавершённый вопрос исследования.} Оговорка о раннем пуске уже сохранена корректно. Для итогового вывода желательно отделить ошибки заполнения неполной предыстории от поведения при полном контексте: общая плотная оценка сейчас проверяет оба режима вместе. Если соответствующего сохранённого разреза нет, оставить это ограничением и будущей адресной проверкой, без нового инференса в рамках вычитки. Не заменять общую оценку только удобной поздней частью записи.\\par\\endgroup\\smallskip\n\\fi\n"
+    },
+    {
+      "id": "R5-09",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec09_rtds_validation.tex",
+      "line": 71,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R5-09], согласовать целевое состояние.} Выше сказано, что отсутствующий ток не даёт надёжно наблюдаемого направления. В 5.2 подпороговый ток при достаточной поляризации, однако, является применимым нулевым выходом, то есть отсутствием блокировки. Физическая неопределённость знака потока и целевое состояние органа здесь должны различаться столь же явно. Уточнить, какое правило использовано для разгруженного ввода и после отключения выключателя. Это вопрос к единству эталона, а не предложение автоматически изменить метки RTDS.\\par\\endgroup\\smallskip\n\\fi\n"
+    },
+    {
+      "id": "R5-10",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec09_rtds_validation.tex",
+      "line": 135,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R5-10], инженерная наглядность.} Для электроэнергетика нужна компактная схема двух секций с местами измерения токов и шинных напряжений и краткая группировка 100 опытов. Сейчас электрическая модель и различие внешнего/внутреннего повреждения описаны только словами. Использовать существующую схему и программу, сохранив источник и авторство; не придумывать параметры сети или новые опыты. Полную таблицу вариантов можно вынести в приложение. Это особенно поможет объяснить единственный опыт с разгруженной секцией.\\par\\endgroup\\smallskip\n\\fi\n"
+    },
+    {
+      "id": "R5-11",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec09_rtds_validation.tex",
+      "line": 414,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R5-11], границы быстродействия.} Временные показатели описывают положение ответа на записанной осциллограмме. Для перехода к работающему РНМ ещё нужны период обновления, время формирования признаков и расчёта сети на выбранном устройстве, а также задержка выдачи результата. Наличие ответа на каждом отсчёте плотной сетки не доказывает возможность такого темпа вычислений. Особенно это относится к H123-D24. Достаточно зафиксировать отсутствующий этап проверки; не переносить сюда времена CPU другой серии из главы 4. Удержание 5 мс в анализе также не является измеренным временем реализации выходной логики.\\par\\endgroup\\smallskip\n\\fi\n"
+    },
+    {
+      "id": "R5-12",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec10_adaptation_and_conclusions.tex",
+      "line": 103,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R5-12], содержательное завершение.} Существующие PDR-Q01/Q02 и непринятый рисунок 11 остаются открытыми вопросами самой работы; повторный список вопросов автору не нужен. После их разбора полезнее добавить несколько предметных примеров, чем ещё одну сводную метрику: осциллограмма, причина расхождения, требуемое состояние и следствие для изменения органа. Пока глава убедительно выявляет ограничения и показывает экспертную адаптацию, но не подтверждает завершённое внедрение либо устранение всех выявленных недостатков. Такой промежуточный результат допустим и должен быть назван прямо.\\par\\endgroup\\smallskip\n\\fi\n"
+    },
+    {
+      "id": "R5-13",
+      "file": "docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec10_adaptation_and_conclusions.tex",
+      "line": 112,
+      "tex": "\\ifdefined\\AuthorReview\n\\par\\smallskip\\begingroup\\small\\raggedright\\color{red!60!black}\n\\noindent\\textbf{Примечание рецензента [R5-13], редакционная подготовка.} Перед окончательной редакцией оставить подробные методы, но сократить повторные общие объяснения методики в 5.1, 5.6.5, 5.11.1 и выводах. Служебные пометки «Статья 5» скрываются в обычной версии; они не заменяют видимых ссылок на публикации, источники открытых аналитических принципов, архив French/RTE и программу испытаний. Для заимствованных методов поставить предметные ссылки либо точные отсылки к уже имеющемуся обзору. Мелкие подписи общей схемы, матриц и трёхпанельной оценки увеличить по уже существующим заданиям; отдельные сложные задачи на каждую подпись не нужны.\\par\\endgroup\\smallskip\n\\fi\n"
+    }
+  ],
+  "disagreement_definition": {
+    "source": "preserved study.py:270-278",
+    "minimum_valid_votes": 2,
+    "no_comparable_points_value": 0,
+    "different_from_all_nine_valid_patterns": true
+  },
+  "shared_pdf_hash_comparison_D06_004": {
+    "dissertation_review": true,
+    "dissertation_comments": true
+  },
+  "shared_pdf_write_policy": "No shared PDF writes by this review; separate output only.",
+  "pdf": {
+    "path": "docs\\Dissertation\\build\\reading\\chapter5_review_comments.pdf",
+    "pages": 49,
+    "printed_pages": [
+      211,
+      259
+    ],
+    "sha256": "7af909f9153786528a83dca3627c5642f479f917983b0aa69d8fbbf3502a341f",
+    "all_13_note_ids": true,
+    "unresolved_refs": false,
+    "extracted_page_text_matches_full_build": true,
+    "build": {
+      "passes": 3,
+      "stable_aux_toc": true
+    },
+    "visual_qa": "Original full chapter overview; every new note page; continuations 239/251; final 259. No clipping/overlap of reviewer comments. Small original figure labels remain editorial issue.",
+    "standalone_scope": "Only chapter5; cross-chapter destinations are outside this PDF."
+  }
 }

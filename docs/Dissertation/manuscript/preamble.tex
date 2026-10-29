@@ -104,6 +104,14 @@
   }
 \fi
 
+% Зелёная пометка применяется только после явного одобрения рисунка автором.
+\newcommand{\figureapproved}[1]{%
+  \ifdefined\AuthorReview
+  \par\smallskip\begingroup\small\raggedright\color{green!40!black}%
+  \noindent\textit{Рисунок проверен автором.} #1\par\endgroup\smallskip
+  \fi
+}
+
 % Исключение служебных макросов из PDF-закладок (outlines)
 \pdfstringdefDisableCommands{%
   \def\commentnote#1#2#3{}%
