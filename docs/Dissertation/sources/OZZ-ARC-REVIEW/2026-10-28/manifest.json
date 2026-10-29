@@ -1,0 +1,26 @@
+[
+  {
+    "source": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\Энергоэновации\\deep-research-report.md",
+    "copy": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\sources\\OZZ-ARC-REVIEW\\2026-10-28\\deep-research-report.md",
+    "sha256": "ec64d83b3247e59350a6f9c56e8e710c2fd475f6cb28df0d76b81417617d84d1"
+  },
+  {
+    "source": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\Энергоэновации\\Критический обзор моделей ДПОЗЗ 6–35 кВ.pdf",
+    "copy": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\sources\\OZZ-ARC-REVIEW\\2026-10-28\\Критический обзор моделей ДПОЗЗ 6–35 кВ.pdf",
+    "sha256": "c5fdec15538fda13150392f3465a843f55c53c8a3c03b8073b8c12da33cc2751"
+  },
+  {
+    "source": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\Энергоэновации\\Анализ_диссертации_Алёшина_ДПЗЗ.md",
+    "copy": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\sources\\OZZ-ARC-REVIEW\\2026-10-28\\Анализ диссертации Алёшина о дуговых ОЗЗ.md",
+    "sha256": "2eaffa08b50a02ae150a35eec00c2897ef7375e2211af03298458bea29d62273",
+    "date": "2026-10-29",
+    "description": "Рабочий анализ диссертации Алёшина с привязкой к страницам"
+  },
+  {
+    "source": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\Энергоэновации\\deep-research-report.md",
+    "copy": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\sources\\OZZ-ARC-REVIEW\\2026-10-28\\Критический обзор моделей дуговых ОЗЗ 6–35 кВ.md",
+    "sha256": "ec64d83b3247e59350a6f9c56e8e710c2fd475f6cb28df0d76b81417617d84d1",
+    "date": "2026-10-29",
+    "description": "Побайтовая копия research-обзора под описательным именем"
+  }
+]
