@@ -85,15 +85,7 @@ def main():
              ROOT/'planning/handoffs/D00.md', ROOT/'planning/questions.md',
              ROOT/'planning/sources/PDR-05/limitations_and_comments.md',
              ROOT/'manuscript/chapters/ch03_dataset_preparation/sec10_earth_fault_subset.tex',
-             ROOT/'manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex',
-             ROOT/'manuscript/chapters/ch04_statistical_analysis/sec01_evaluation_methodology.tex',
-             ROOT/'manuscript/chapters/ch04_statistical_analysis/sec03_signal_representations.tex',
-             ROOT/'manuscript/chapters/ch04_statistical_analysis/sec04_training_protocol.tex',
-             ROOT/'manuscript/chapters/ch04_statistical_analysis/sec05_physical_validation.tex',
-             ROOT/'manuscript/chapters/ch04_statistical_analysis/sec06_event_examples.tex',
-             ROOT/'manuscript/chapters/ch04_statistical_analysis/sec07_ozz_validation.tex',
-             ROOT/'manuscript/chapters/ch04_statistical_analysis/sec08_input_sensitivity.tex',
-             ROOT/'manuscript/chapters/ch04_statistical_analysis/sec09_ct_saturation.tex',
+             *sorted((ROOT/'manuscript/chapters/ch04_statistical_analysis').glob('*.tex')),
              ROOT/'manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex',
              *sorted((ROOT/'manuscript/chapters/ch05_ml_adaptive_algorithms').glob('sec*.tex'))]
     registry_path = ROOT/'review/issues/author_annotations.json'

@@ -1,0 +1,3274 @@
+{
+  "task": "D04-014",
+  "date": "2026-10-30",
+  "status": "REVIEW: author comments processed, source/preservation/build/visual checks passed; independent reviewer pending",
+  "raw_author_notes_preserved": 194,
+  "r4_original_texts_preserved": 17,
+  "unchanged_math_and_table_environments": 22,
+  "chapter5_unchanged": [
+    {
+      "file": "chapter.tex",
+      "sha256": "a656b4cc98381553cc9d05e8e1e255027a79028e9ad2d0a792f6cd3d71c39f31"
+    },
+    {
+      "file": "sec01_direction_and_validity.tex",
+      "sha256": "753421cca173eb843e58db9e4b7c7b79ac07e519bfede8d6377d783511a1cf9a"
+    },
+    {
+      "file": "sec02_analytical_organs.tex",
+      "sha256": "d94959dd7250645e9a09132a75b2c3779934db464ab385b242c17d0c31cf7279"
+    },
+    {
+      "file": "sec03_population_audit.tex",
+      "sha256": "9174dfead8d946a4a157c3be4de56dc32fa7d2ebb998ac02ef3c8bd5b090135d"
+    },
+    {
+      "file": "sec04_expert_reference.tex",
+      "sha256": "47be1ff16956feb9687d5d3df6193eec964d40ddba053c11a64fb54dc5af5e71"
+    },
+    {
+      "file": "sec05_engineering_verification.tex",
+      "sha256": "f790f6c8fbdd110b22dadcc397f371816a0efded3a3800f7fc4b17ba82b5fce0"
+    },
+    {
+      "file": "sec06_first_results.tex",
+      "sha256": "978e29e2e2e38ff0b408f28026ff41a2e29b6d14113e811092456378c4fbad08"
+    },
+    {
+      "file": "sec07_expert_adaptation.tex",
+      "sha256": "ce84f90bcba89799dd1405c78456a0dc7bd28a98012847545865e917ec50afd8"
+    },
+    {
+      "file": "sec08_dense_validation.tex",
+      "sha256": "df43b43e5963f8613a1867b76b5f851a9acb8b3829eb9adaa730145cc4036540"
+    },
+    {
+      "file": "sec09_rtds_validation.tex",
+      "sha256": "2043705b32a6dc63ebd6d1d913ff020d892303e529e1f5c0fdf17fe5b9a77c5f"
+    },
+    {
+      "file": "sec10_adaptation_and_conclusions.tex",
+      "sha256": "5c35f33ac21cdadeec6e39a3d6803cb9112f5c956c29b6a85661e0b1ac839dbb"
+    }
+  ],
+  "author_records": 134,
+  "approved_figures": [
+    {
+      "file": "sec01_evaluation_methodology.tex",
+      "asset": "ml_metric_errors.png",
+      "label": "fig:ch4_metric_errors",
+      "sha256": "05332d55f3c41a66ad7ad83a390386ac9b882e8d6acc5293f32f60573889ffb9"
+    },
+    {
+      "file": "sec01_evaluation_methodology.tex",
+      "asset": "ml_metric_roc.jpeg",
+      "label": "fig:ch4_metric_roc",
+      "sha256": "13346c58fe87c43d86f9496dca054b45b92f7536c120b83e3a493d36a1ce2c19"
+    },
+    {
+      "file": "sec02_physkan_architectures.tex",
+      "asset": "ch04_output_decision_candidate.png",
+      "label": "fig:ch4_output_decision",
+      "sha256": "1e877de136c9d34a06e55fb5f6519ffcd6d72c02d96117f1f2056b1b9f2359ed"
+    },
+    {
+      "file": "sec02_physkan_architectures.tex",
+      "asset": "physkan_mlp.png",
+      "label": "fig:ch4_mlp_flow",
+      "sha256": "59c5e17e9d4f046c91f3bc00208901a07d89e332e6cf7bd25eee47c9c75b7012"
+    },
+    {
+      "file": "sec02_physkan_architectures.tex",
+      "asset": "physkan_cnn.png",
+      "label": "fig:ch4_cnn_flow",
+      "sha256": "a0d78620b9ec1cf73f32f74e51dd0f8853b013e0710c2bae218b24ce944881ec"
+    },
+    {
+      "file": "sec02_physkan_architectures.tex",
+      "asset": "physkan_residual.png",
+      "label": "fig:ch4_residual_flow",
+      "sha256": "2557e69511985baf9499615198f60af0410e37a3eb3e1c6075b0a170676ebc7b"
+    },
+    {
+      "file": "sec02_physkan_architectures.tex",
+      "asset": "physkan_kan_edge.png",
+      "label": "fig:ch4_kan_flow",
+      "sha256": "ea9506173ddcb0ffc2be0a2e96abb74f3606e57f37c40d4184afbc6ff54bb946"
+    },
+    {
+      "file": "sec02_physkan_architectures.tex",
+      "asset": "physkan_arithmetic_stem.png",
+      "label": "fig:ch4_physics_stem",
+      "sha256": "bb583f1cc279ae46d131a86599760b4fcdb93e9e41f96e1910cb9c33fbf5689a"
+    },
+    {
+      "file": "sec02_physkan_architectures.tex",
+      "asset": "physkan_complex_ops.png",
+      "label": "fig:ch4_complex_flow",
+      "sha256": "9fd6d078138704d685a8089b604db1a23d390e9317ece3d2963d1109baa865ea"
+    },
+    {
+      "file": "sec02_physkan_architectures.tex",
+      "asset": "physkan_relay_gate.png",
+      "label": "fig:ch4_relay_flow",
+      "sha256": "8d5318b6de3a823173ebb0b1b6ee847f2dc233ed6fbf5a54f6d5230d3b4d0a09"
+    },
+    {
+      "file": "sec02_physkan_architectures.tex",
+      "asset": "transformer_attention.png",
+      "label": "fig:ch4_transformer_attention",
+      "sha256": "62a60886f01f71d09437acf54f60ebc617d47c7df3d97400cf884837d53122ed"
+    },
+    {
+      "file": "sec02_physkan_architectures.tex",
+      "asset": "transformer_baseline_detail.png",
+      "label": "fig:ch4_transformer_baseline",
+      "sha256": "51238ad338ba27ddf6e6624696fed9a13412758c665dc3e585e8a2c1c0544e90"
+    },
+    {
+      "file": "sec02_physkan_architectures.tex",
+      "asset": "transformer_interactions_detail.png",
+      "label": "fig:ch4_transformer_interactions",
+      "sha256": "3b683e33f2f98c72c21e217d7a97306789628cd53f6cc73e2235c336fac42075"
+    },
+    {
+      "file": "sec02_physkan_architectures.tex",
+      "asset": "transformer_gate_geometry.png",
+      "label": "fig:ch4_directional_geometry",
+      "sha256": "fb311484893f18ebef2f4e3104edc67fd477cef97d544743c93e7374641982f7"
+    },
+    {
+      "file": "sec02_physkan_architectures.tex",
+      "asset": "transformer_stem_detail.png",
+      "label": "fig:ch4_transformer_physical",
+      "sha256": "68219f22dbd49d866b07e37fc584be92bd24c142885302d2e04c2e6a5502f9bf"
+    },
+    {
+      "file": "sec02_physkan_architectures.tex",
+      "asset": "transformer_attention_detail.png",
+      "label": "fig:ch4_polar_attention",
+      "sha256": "fb44613a1b2d3e7b03dbfa9050f80323fc6870b1df7c53e71e201ae2a9e86bb1"
+    },
+    {
+      "file": "sec02_physkan_architectures.tex",
+      "asset": "transformer_ffn_detail.png",
+      "label": "fig:ch4_physical_ffn",
+      "sha256": "63aa3377e94a47abd61ce74e619938849d8e6ebdd6563ce4e7212d08c535ab74"
+    },
+    {
+      "file": "sec03_signal_representations.tex",
+      "asset": "ch04_feature_pipeline_article.pdf",
+      "label": "fig:ch4_feature_pipeline_article",
+      "sha256": "2b0f26e22be74e0a7779060f4885e0439ffbac32a7c5029f81dd21493ebf2172"
+    }
+  ],
+  "real_ozz_source_checks": {
+    "physical_kan_latest_checkpoint": {
+      "path": "reports/phase4/model_comparison/compare_4models_latest_20260610_204942/real_ozz_statistics/physical_kan_latest_checkpoint/real_ozz_statistics.json",
+      "sha256": "629baa3867a9361d90caf0c63946eac2159b8f0d59ea9573237e2c7ae1030cbd",
+      "confirmed": 829,
+      "detected": 786,
+      "detection_rate_pct": 94.8130277442702,
+      "negative": 1004,
+      "false_positive": 639,
+      "false_positive_pct": 63.645418326693225
+    },
+    "physical_mlp_latest_checkpoint": {
+      "path": "reports/phase4/model_comparison/compare_4models_latest_20260610_204942/real_ozz_statistics/physical_mlp_latest_checkpoint/real_ozz_statistics.json",
+      "sha256": "03e07e13ebc53d542041cd19ce574d2df836a5fe53eccac864cba96240f1ea26",
+      "confirmed": 829,
+      "detected": 774,
+      "detection_rate_pct": 93.36550060313631,
+      "negative": 1004,
+      "false_positive": 677,
+      "false_positive_pct": 67.43027888446214
+    },
+    "raw_instantaneous_latest_checkpoint": {
+      "path": "reports/phase4/model_comparison/compare_4models_latest_20260610_204942/real_ozz_statistics/raw_instantaneous_latest_checkpoint/real_ozz_statistics.json",
+      "sha256": "febd7183e2bff21d744baf66965d2f4076c8a0d0fa5b4f0a07cee7489ff13a93",
+      "confirmed": 829,
+      "detected": 790,
+      "detection_rate_pct": 95.29553679131485,
+      "negative": 1004,
+      "false_positive": 634,
+      "false_positive_pct": 63.147410358565736
+    },
+    "spectral_baseline_latest_checkpoint": {
+      "path": "reports/phase4/model_comparison/compare_4models_latest_20260610_204942/real_ozz_statistics/spectral_baseline_latest_checkpoint/real_ozz_statistics.json",
+      "sha256": "da8f6f908e423f43fa1d1a97659f0ac039e0778b80edca40a4d08a06ece1ea86",
+      "confirmed": 829,
+      "detected": 768,
+      "detection_rate_pct": 92.64173703256937,
+      "negative": 1004,
+      "false_positive": 559,
+      "false_positive_pct": 55.677290836653384
+    }
+  },
+  "sim_ozz_source_checks": {
+    "physical_kan_latest_checkpoint": {
+      "path": "reports/phase4/model_comparison/compare_4models_latest_20260610_204942/sim_ozz_eval/physical_kan_latest_checkpoint/sim_ozz_evaluation.json",
+      "sha256": "76669a350ff1c4fdcff7808c0d10e95c33adaa9da40908c437708a60d3c80c53",
+      "window_macro_f1": 0.9789473383814946,
+      "zone_macro_f1": 0.9466102157785943
+    },
+    "physical_mlp_latest_checkpoint": {
+      "path": "reports/phase4/model_comparison/compare_4models_latest_20260610_204942/sim_ozz_eval/physical_mlp_latest_checkpoint/sim_ozz_evaluation.json",
+      "sha256": "cf038415872be5ce8f647f6b2758b27fb8a0a610598ab9e1c38cca9e4a4aebcf",
+      "window_macro_f1": 0.9894368991674591,
+      "zone_macro_f1": 0.9647082736466873
+    },
+    "raw_instantaneous_latest_checkpoint": {
+      "path": "reports/phase4/model_comparison/compare_4models_latest_20260610_204942/sim_ozz_eval/raw_instantaneous_latest_checkpoint/sim_ozz_evaluation.json",
+      "sha256": "7a2c6d3c3efdd006ff4789e77d14c5ff67015a3f4cf8ae342d22f1e883e512a5",
+      "window_macro_f1": 0.991445075173891,
+      "zone_macro_f1": 0.9494115877939414
+    },
+    "spectral_baseline_latest_checkpoint": {
+      "path": "reports/phase4/model_comparison/compare_4models_latest_20260610_204942/sim_ozz_eval/spectral_baseline_latest_checkpoint/sim_ozz_evaluation.json",
+      "sha256": "075d69bd2a8dbd785f5c9b85c41f8bcabdc519ae6c028fd0936c0971831d21be",
+      "window_macro_f1": 0.9922729812845897,
+      "zone_macro_f1": 0.9531693921847381
+    }
+  },
+  "release": {
+    "dissertation_review": {
+      "pages": 256,
+      "sha256": "46cd9a4f8c8c4667c38fae51ade49664dffd918f49b5ce8db42573ae3b428975",
+      "chapter4_start": 123,
+      "chapter4_end": 197,
+      "conclusions": 197,
+      "overfull_hbox": 9,
+      "labels": {
+        "ch:introduction": {
+          "number": "",
+          "page": 8
+        },
+        "ch:bavr_problems": {
+          "number": "1",
+          "page": 13
+        },
+        "sec:ch1_intro": {
+          "number": "1.1",
+          "page": 13
+        },
+        "fig:bavr_schemes": {
+          "number": "1.1",
+          "page": 14
+        },
+        "sec:ch1_statistics": {
+          "number": "1.2",
+          "page": 15
+        },
+        "sec:ch1_pdr_problems": {
+          "number": "1.3",
+          "page": 16
+        },
+        "sec:ch1_base_organs_problems": {
+          "number": "1.3.1",
+          "page": 16
+        },
+        "fig:ch1_img5": {
+          "number": "1.2",
+          "page": 17
+        },
+        "fig:ch1_img6": {
+          "number": "1.3",
+          "page": 17
+        },
+        "fig:ch1_img8": {
+          "number": "1.4",
+          "page": 18
+        },
+        "fig:ch1_img9": {
+          "number": "1.5",
+          "page": 19
+        },
+        "fig:ch1_img10_11": {
+          "number": "1.6",
+          "page": 19
+        },
+        "fig:ch1_img12": {
+          "number": "1.3.1",
+          "page": 20
+        },
+        "fig:ch1_img13": {
+          "number": "1.3.1",
+          "page": 20
+        },
+        "sec:ch1_adaptive_functions": {
+          "number": "1.3.2",
+          "page": 21
+        },
+        "fig:ch1_img14": {
+          "number": "1.7",
+          "page": 21
+        },
+        "fig:ch1_img15": {
+          "number": "1.8",
+          "page": 22
+        },
+        "sec:ch1_manufacturers_analysis": {
+          "number": "1.4",
+          "page": 22
+        },
+        "fig:ch1_img16": {
+          "number": "1.9",
+          "page": 23
+        },
+        "fig:ch1_img17": {
+          "number": "1.10",
+          "page": 24
+        },
+        "fig:ch1_img18": {
+          "number": "1.11",
+          "page": 25
+        },
+        "fig:ch1_img20": {
+          "number": "1.4.3",
+          "page": 26
+        },
+        "sec:ch1_complex_cases": {
+          "number": "1.5",
+          "page": 28
+        },
+        "fig:ch1_img21": {
+          "number": "1.12",
+          "page": 29
+        },
+        "fig:ch1_img22": {
+          "number": "1.5.1",
+          "page": 29
+        },
+        "tab:bavr_operation_title": {
+          "number": "1.5.1",
+          "page": 30
+        },
+        "sec:ch1_adaptive_dropout": {
+          "number": "1.5.2",
+          "page": 31
+        },
+        "fig:ch1_img23": {
+          "number": "1.13",
+          "page": 31
+        },
+        "fig:ch1_img24": {
+          "number": "1.14",
+          "page": 32
+        },
+        "fig:ch1_img25": {
+          "number": "1.15",
+          "page": 32
+        },
+        "fig:ch1_img26": {
+          "number": "1.16",
+          "page": 33
+        },
+        "sec:ch1_external_two_phase_blocking": {
+          "number": "1.5.3",
+          "page": 33
+        },
+        "fig:ch1_img27_29": {
+          "number": "1.17",
+          "page": 35
+        },
+        "fig:ch1_img30": {
+          "number": "1.18",
+          "page": 36
+        },
+        "fig:ch1_img31": {
+          "number": "1.19",
+          "page": 36
+        },
+        "fig:ch1_img32_33": {
+          "number": "1.20",
+          "page": 37
+        },
+        "fig:ch1_img34_35": {
+          "number": "1.21",
+          "page": 37
+        },
+        "fig:ch1_img36": {
+          "number": "1.22",
+          "page": 38
+        },
+        "fig:ch1_img37": {
+          "number": "1.23",
+          "page": 39
+        },
+        "fig:ch1_img38": {
+          "number": "1.24",
+          "page": 39
+        },
+        "fig:ch1_img39": {
+          "number": "1.5.3",
+          "page": 40
+        },
+        "fig:ch1_img40": {
+          "number": "1.5.3",
+          "page": 41
+        },
+        "sec:ch1_rogowski_and_capacitive": {
+          "number": "1.5.4",
+          "page": 41
+        },
+        "fig:ch1_img41_43": {
+          "number": "1.25",
+          "page": 42
+        },
+        "fig:ch1_img44": {
+          "number": "1.26",
+          "page": 43
+        },
+        "fig:ch1_img45": {
+          "number": "1.27",
+          "page": 43
+        },
+        "sec:ch1_zero_sequence_rnm": {
+          "number": "1.5.5",
+          "page": 44
+        },
+        "fig:ch1_img46": {
+          "number": "1.28",
+          "page": 44
+        },
+        "fig:ch1_img47": {
+          "number": "1.29",
+          "page": 45
+        },
+        "sec:ch1_ferroresonance_ozz": {
+          "number": "1.5.6",
+          "page": 45
+        },
+        "fig:ch1_img48": {
+          "number": "1.30",
+          "page": 46
+        },
+        "fig:ch1_img49": {
+          "number": "1.31",
+          "page": 46
+        },
+        "fig:ch1_img50": {
+          "number": "1.32",
+          "page": 47
+        },
+        "fig:ch1_img51": {
+          "number": "1.33",
+          "page": 47
+        },
+        "fig:ch1_img52": {
+          "number": "1.34",
+          "page": 48
+        },
+        "fig:ch1_img53": {
+          "number": "1.35",
+          "page": 48
+        },
+        "sec:ch1_conclusions": {
+          "number": "1.6",
+          "page": 48
+        },
+        "ch:bavr_modernization": {
+          "number": "2",
+          "page": 51
+        },
+        "sec:ch2_intro": {
+          "number": "2.1",
+          "page": 51
+        },
+        "sec:ch2_rnm_rogowski": {
+          "number": "2.2",
+          "page": 52
+        },
+        "subsec:ch2_theoretical_study": {
+          "number": "2.2.1",
+          "page": 52
+        },
+        "fig:ch2_signal_scheme": {
+          "number": "2.1",
+          "page": 53
+        },
+        "eq:kz_current": {
+          "number": "2.1",
+          "page": 53
+        },
+        "eq:rogowski_derivative": {
+          "number": "2.2",
+          "page": 53
+        },
+        "eq:k_cr": {
+          "number": "2.3",
+          "page": 53
+        },
+        "fig:ch2_primary_current": {
+          "number": "2.2",
+          "page": 54
+        },
+        "fig:ch2_tt_kr_signals": {
+          "number": "2.3",
+          "page": 54
+        },
+        "fig:ch2_transient_max_aperiodic": {
+          "number": "2.4",
+          "page": 55
+        },
+        "eq:i_averaged": {
+          "number": "2.4",
+          "page": 55
+        },
+        "fig:ch2_transient_time_limits": {
+          "number": "2.5",
+          "page": 56
+        },
+        "sec:ch02_transient_and_harmonics": {
+          "number": "2.2.2",
+          "page": 56
+        },
+        "fig:ch02_hodograph": {
+          "number": "2.6",
+          "page": 57
+        },
+        "sec:ch02_higher_harmonics": {
+          "number": "2.2.3",
+          "page": 58
+        },
+        "fig:ch02_transient_time_factors": {
+          "number": "2.7",
+          "page": 59
+        },
+        "eq:ch02_harmonics_signals": {
+          "number": "2.5",
+          "page": 60
+        },
+        "fig:ch02_harmonics_currents": {
+          "number": "2.8",
+          "page": 60
+        },
+        "sec:ch02_instantaneous_values": {
+          "number": "2.2.4",
+          "page": 61
+        },
+        "fig:ch02_initial_transient": {
+          "number": "2.9",
+          "page": 61
+        },
+        "sec:ch02_fourier_theory": {
+          "number": "2.2.5",
+          "page": 62
+        },
+        "eq:ch02_max_amplitude_deviation": {
+          "number": "2.6",
+          "page": 62
+        },
+        "tab:ch02_window_functions": {
+          "number": "2.2.5",
+          "page": 63
+        },
+        "sec:ch02_rnm_tt_kr_comparison": {
+          "number": "2.3",
+          "page": 64
+        },
+        "fig:ch02_simulink_substation_model": {
+          "number": "2.10",
+          "page": 64
+        },
+        "eq:ch02_pdr_tt": {
+          "number": "2.7",
+          "page": 65
+        },
+        "eq:ch02_pdr_kr": {
+          "number": "2.8",
+          "page": 65
+        },
+        "eq:ch02_hybrid_signal": {
+          "number": "2.9",
+          "page": 65
+        },
+        "fig:ch02_hodographs_external_fault": {
+          "number": "2.11",
+          "page": 67
+        },
+        "fig:ch02_hodographs_internal_fault": {
+          "number": "2.12",
+          "page": 68
+        },
+        "sec:ch02_kr_industrial_application": {
+          "number": "2.3.1",
+          "page": 69
+        },
+        "fig:ch02_bavr_kr_tt_oscillograms": {
+          "number": "2.13",
+          "page": 70
+        },
+        "fig:ch02_bavr_kr_ukrm_vnr": {
+          "number": "2.14",
+          "page": 70
+        },
+        "sec:ch02_conclusions_rogowski": {
+          "number": "2.3.2",
+          "page": 71
+        },
+        "sec:ch02_vnr_algorithms": {
+          "number": "2.4",
+          "page": 72
+        },
+        "fig:ch02_logic_avr_vnr": {
+          "number": "2.15",
+          "page": 73
+        },
+        "sec:ch02_vnr_existing_requirements": {
+          "number": "2.4.1",
+          "page": 73
+        },
+        "sec:ch02_vnr_series_parallel": {
+          "number": "2.4.2",
+          "page": 74
+        },
+        "sec:ch02_vnr_blocking_ground_fault": {
+          "number": "2.4.3",
+          "page": 74
+        },
+        "sec:ch02_vnr_blocking_angle_exceedance": {
+          "number": "2.4.4",
+          "page": 74
+        },
+        "fig:ch02_bavr_angle_exceedance_repair": {
+          "number": "2.16",
+          "page": 75
+        },
+        "sec:ch02_vnr_blocking_frequency": {
+          "number": "2.4.5",
+          "page": 75
+        },
+        "fig:ch02_vnr_no_angle_order_control": {
+          "number": "2.17",
+          "page": 76
+        },
+        "sec:ch02_vnr_reduce_simultaneous": {
+          "number": "2.4.6",
+          "page": 76
+        },
+        "sec:ch02_vnr_conclusions": {
+          "number": "2.4.7",
+          "page": 77
+        },
+        "sec:ch02_conclusions": {
+          "number": "2.5",
+          "page": 78
+        },
+        "ch:dataset_preparation": {
+          "number": "3",
+          "page": 80
+        },
+        "sec:ch3_intro": {
+          "number": "3.1",
+          "page": 80
+        },
+        "subsec:dataset_published_scope": {
+          "number": "3.1.1",
+          "page": 83
+        },
+        "sec:dataset_methodology": {
+          "number": "3.2",
+          "page": 84
+        },
+        "subsec:dataset_stages": {
+          "number": "3.2.1",
+          "page": 84
+        },
+        "subsec:dataset_challenges": {
+          "number": "3.2.2",
+          "page": 85
+        },
+        "sec:ch3_data_collection": {
+          "number": "3.3",
+          "page": 87
+        },
+        "sec:ch3_data_sources": {
+          "number": "3.3.1",
+          "page": 87
+        },
+        "fig:ch3_empty_oscillogram": {
+          "number": "3.1",
+          "page": 87
+        },
+        "sec:ch3_auto_search": {
+          "number": "3.3.2",
+          "page": 88
+        },
+        "fig:ch3_bavr_operation_example": {
+          "number": "3.2",
+          "page": 89
+        },
+        "sec:ch3_single_db": {
+          "number": "3.3.3",
+          "page": 90
+        },
+        "fig:ch3_data_collection_scheme": {
+          "number": "3.3",
+          "page": 90
+        },
+        "sec:ch3_terminal_search": {
+          "number": "3.3.4",
+          "page": 90
+        },
+        "fig:ch3_public_dataset_structure": {
+          "number": "3.4",
+          "page": 91
+        },
+        "sec:ch3_preprocessing_depersonalization": {
+          "number": "3.4",
+          "page": 92
+        },
+        "sec:ch3_comtrade_aspects": {
+          "number": "3.4.1",
+          "page": 92
+        },
+        "sec:ch3_comtrade_cfg": {
+          "number": "3.4.1",
+          "page": 92
+        },
+        "tab:ch03_analog_signals_parameters": {
+          "number": "3.4.1",
+          "page": 93
+        },
+        "sec:ch3_dat_file": {
+          "number": "3.4.1",
+          "page": 93
+        },
+        "sec:ch3_depersonalization_necessity": {
+          "number": "3.4.2",
+          "page": 94
+        },
+        "sec:ch3_depersonalization_process": {
+          "number": "3.4.3",
+          "page": 94
+        },
+        "sec:ch3_parameters_unification": {
+          "number": "3.4.4",
+          "page": 95
+        },
+        "sec:ch3_frequency_grouping": {
+          "number": "3.4.4",
+          "page": 95
+        },
+        "tab:ch03_oscillograms_frequency_parameters": {
+          "number": "3.4.4",
+          "page": 96
+        },
+        "sec:ch3_signal_names_unification": {
+          "number": "3.4.4",
+          "page": 96
+        },
+        "fig:ch03_substation_measurement_points": {
+          "number": "3.5",
+          "page": 97
+        },
+        "fig:ch03_analog_signal_naming_example": {
+          "number": "3.6",
+          "page": 98
+        },
+        "fig:ch03_analog_signals_structure": {
+          "number": "3.7",
+          "page": 99
+        },
+        "fig:ch03_discrete_signals_structure_layout": {
+          "number": "3.8",
+          "page": 100
+        },
+        "fig:ch03_discrete_signals_structure_diagram": {
+          "number": "3.9",
+          "page": 101
+        },
+        "sec:ch3_removing_irrelevant_signals": {
+          "number": "3.4.4",
+          "page": 103
+        },
+        "sec:ch3_normalization_and_formats": {
+          "number": "3.5",
+          "page": 103
+        },
+        "sec:ch3_basis_values_methodology": {
+          "number": "3.5.1",
+          "page": 103
+        },
+        "sec:ch3_signal_groups": {
+          "number": "3.5.1",
+          "page": 104
+        },
+        "sec:ch3_primary_secondary_values": {
+          "number": "3.5.1",
+          "page": 104
+        },
+        "sec:ch3_basis_determination_algorithm": {
+          "number": "3.5.1",
+          "page": 104
+        },
+        "tab:ch03_voltage_basis_algorithm": {
+          "number": "3.5.1",
+          "page": 105
+        },
+        "tab:ch03_phase_current_basis": {
+          "number": "3.5.1",
+          "page": 105
+        },
+        "tab:ch03_zero_seq_current_basis": {
+          "number": "3.5.1",
+          "page": 105
+        },
+        "sec:ch3_normalization_coefficients_table": {
+          "number": "3.5.1",
+          "page": 106
+        },
+        "sec:ch3_csv_transformation": {
+          "number": "3.5.2",
+          "page": 107
+        },
+        "sec:ch3_oscillogram_annotation": {
+          "number": "3.6",
+          "page": 108
+        },
+        "sec:ch3_annotation_necessity": {
+          "number": "3.6.1",
+          "page": 109
+        },
+        "fig:ch03_classification_hierarchy": {
+          "number": "3.10",
+          "page": 110
+        },
+        "fig:ch03_ml_signal_decoding": {
+          "number": "3.11",
+          "page": 110
+        },
+        "sec:ch3_manual_annotation_prep": {
+          "number": "3.6.2",
+          "page": 110
+        },
+        "tab:ch3_published_annotation_counts": {
+          "number": "3.1",
+          "page": 111
+        },
+        "sec:ch3_annotation_automation": {
+          "number": "3.6.3",
+          "page": 111
+        },
+        "sec:ch3_empty_oscillograms_filter": {
+          "number": "3.6.4",
+          "page": 112
+        },
+        "tab:ch03_empty_filter_settings": {
+          "number": "3.6.4",
+          "page": 113
+        },
+        "sec:ch3_earth_fault_subset": {
+          "number": "3.7",
+          "page": 114
+        },
+        "sec:ch3_earth_fault_examples": {
+          "number": "3.7.2",
+          "page": 114
+        },
+        "tab:ch3_earth_fault_selection": {
+          "number": "3.2",
+          "page": 115
+        },
+        "fig:ch3_ozz_developing": {
+          "number": "3.12",
+          "page": 116
+        },
+        "fig:ch3_ozz_clipping": {
+          "number": "3.13",
+          "page": 116
+        },
+        "fig:ch3_ozz_measurement_fault": {
+          "number": "3.14",
+          "page": 117
+        },
+        "fig:ch3_ozz_switching_peak": {
+          "number": "3.15",
+          "page": 117
+        },
+        "fig:ch3_ozz_switching_imitation": {
+          "number": "3.16",
+          "page": 118
+        },
+        "fig:ch3_ozz_weak_process": {
+          "number": "3.17",
+          "page": 118
+        },
+        "sec:ch3_earth_fault_statistics": {
+          "number": "3.7.3",
+          "page": 119
+        },
+        "tab:ch3_earth_fault_statistics": {
+          "number": "3.3",
+          "page": 119
+        },
+        "fig:ch3_earth_fault_histogram": {
+          "number": "3.18",
+          "page": 120
+        },
+        "fig:ch3_earth_fault_cdf": {
+          "number": "3.19",
+          "page": 120
+        },
+        "sec:ch03_conclusions": {
+          "number": "3.8",
+          "page": 121
+        },
+        "ch:statistical_analysis": {
+          "number": "4",
+          "page": 123
+        },
+        "ch:oscillogram_analysis": {
+          "number": "4",
+          "page": 123
+        },
+        "sec:ch04_intro": {
+          "number": "4.1",
+          "page": 123
+        },
+        "sec:ch4_evaluation_methodology": {
+          "number": "4.2",
+          "page": 124
+        },
+        "sec:ch4_metric_decisions": {
+          "number": "4.2.1",
+          "page": 124
+        },
+        "eq:ch4_classification_metrics": {
+          "number": "4.1",
+          "page": 124
+        },
+        "fig:ch4_metric_errors": {
+          "number": "4.1",
+          "page": 125
+        },
+        "eq:ch4_roc_rates": {
+          "number": "4.2",
+          "page": 125
+        },
+        "sec:ch4_metric_validation": {
+          "number": "4.2.3",
+          "page": 125
+        },
+        "fig:ch4_metric_roc": {
+          "number": "4.2",
+          "page": 126
+        },
+        "sec:ch4_metric_runtime": {
+          "number": "4.2.4",
+          "page": 126
+        },
+        "sec:ch4_physkan_architectures": {
+          "number": "4.3",
+          "page": 127
+        },
+        "sec:ch4_input_windows": {
+          "number": "4.3.1",
+          "page": 127
+        },
+        "fig:ch4_output_decision": {
+          "number": "4.3",
+          "page": 128
+        },
+        "sec:ch4_simplemlp": {
+          "number": "4.3.2",
+          "page": 128
+        },
+        "fig:ch4_mlp_flow": {
+          "number": "4.4",
+          "page": 129
+        },
+        "eq:ch4_mlp_layer": {
+          "number": "4.3",
+          "page": 129
+        },
+        "sec:ch4_simplecnn": {
+          "number": "4.3.3",
+          "page": 129
+        },
+        "eq:ch4_conv_layer": {
+          "number": "4.4",
+          "page": 130
+        },
+        "fig:ch4_cnn_flow": {
+          "number": "4.5",
+          "page": 130
+        },
+        "sec:ch4_resnet": {
+          "number": "4.3.4",
+          "page": 131
+        },
+        "eq:ch4_residual_block": {
+          "number": "4.5",
+          "page": 131
+        },
+        "fig:ch4_residual_flow": {
+          "number": "4.6",
+          "page": 131
+        },
+        "sec:ch4_kan": {
+          "number": "4.3.5",
+          "page": 132
+        },
+        "eq:ch4_kan_layer": {
+          "number": "4.6",
+          "page": 132
+        },
+        "fig:ch4_kan_flow": {
+          "number": "4.7",
+          "page": 132
+        },
+        "eq:ch4_kan_spline": {
+          "number": "4.7",
+          "page": 132
+        },
+        "sec:ch4_real_ops": {
+          "number": "4.3.6",
+          "page": 134
+        },
+        "fig:ch4_physics_stem": {
+          "number": "4.8",
+          "page": 135
+        },
+        "sec:ch4_complex_ops": {
+          "number": "4.3.7",
+          "page": 136
+        },
+        "eq:ch4_complex_operations": {
+          "number": "4.8",
+          "page": 136
+        },
+        "fig:ch4_complex_flow": {
+          "number": "4.9",
+          "page": 136
+        },
+        "sec:ch4_relay_gate": {
+          "number": "4.3.8",
+          "page": 137
+        },
+        "fig:ch4_relay_flow": {
+          "number": "4.10",
+          "page": 138
+        },
+        "eq:ch4_relay_gate": {
+          "number": "4.9",
+          "page": 138
+        },
+        "sec:ch4_attention_architecture": {
+          "number": "4.3.9",
+          "page": 139
+        },
+        "eq:ch4_attention_weights": {
+          "number": "4.10",
+          "page": 140
+        },
+        "fig:ch4_transformer_attention": {
+          "number": "4.11",
+          "page": 140
+        },
+        "fig:ch4_transformer_baseline": {
+          "number": "4.12",
+          "page": 141
+        },
+        "fig:ch4_transformer_interactions": {
+          "number": "4.13",
+          "page": 142
+        },
+        "eq:ch4_directional_coefficient": {
+          "number": "4.11",
+          "page": 142
+        },
+        "fig:ch4_directional_geometry": {
+          "number": "4.14",
+          "page": 143
+        },
+        "fig:ch4_transformer_physical": {
+          "number": "4.15",
+          "page": 144
+        },
+        "fig:ch4_polar_attention": {
+          "number": "4.16",
+          "page": 144
+        },
+        "fig:ch4_physical_ffn": {
+          "number": "4.17",
+          "page": 145
+        },
+        "tab:ch4_physical_code_paths": {
+          "number": "4.1",
+          "page": 145
+        },
+        "sec:ch4_architecture_summary": {
+          "number": "4.3.10",
+          "page": 146
+        },
+        "sec:ch4_signal_representations": {
+          "number": "4.4",
+          "page": 147
+        },
+        "sec:ch4_channel_preparation": {
+          "number": "4.4.1",
+          "page": 147
+        },
+        "eq:ch4_current_reconstruction": {
+          "number": "4.12",
+          "page": 147
+        },
+        "sec:ch4_feature_history": {
+          "number": "4.4.2",
+          "page": 148
+        },
+        "fig:ch4_input_time_selection": {
+          "number": "4.18",
+          "page": 149
+        },
+        "fig:ch4_feature_pipeline_article": {
+          "number": "4.19",
+          "page": 150
+        },
+        "sec:ch4_spectral_coordinates": {
+          "number": "4.4.3",
+          "page": 150
+        },
+        "eq:ch4_feature_coordinates": {
+          "number": "4.13",
+          "page": 150
+        },
+        "tab:ch4_input_representations": {
+          "number": "4.2",
+          "page": 151
+        },
+        "sec:ch4_sequence_features": {
+          "number": "4.4.4",
+          "page": 151
+        },
+        "eq:ch4_sequence_features": {
+          "number": "4.14",
+          "page": 151
+        },
+        "eq:ch4_clarke_features": {
+          "number": "4.15",
+          "page": 152
+        },
+        "sec:ch4_feature_scaling": {
+          "number": "4.4.5",
+          "page": 152
+        },
+        "fig:ch4_feature_spaces_article": {
+          "number": "4.20",
+          "page": 153
+        },
+        "sec:ch4_feature_comparison": {
+          "number": "4.4.6",
+          "page": 154
+        },
+        "fig:ch4_expanded_feature_comparison": {
+          "number": "4.21",
+          "page": 155
+        },
+        "sec:ch4_feature_compression": {
+          "number": "4.4.7",
+          "page": 156
+        },
+        "fig:ch4_expanded_sampling_comparison": {
+          "number": "4.22",
+          "page": 156
+        },
+        "sec:ch4_feature_computation": {
+          "number": "4.4.8",
+          "page": 157
+        },
+        "tab:ch4_input_latency": {
+          "number": "4.3",
+          "page": 157
+        },
+        "fig:ch4_quality_latency_article": {
+          "number": "4.23",
+          "page": 158
+        },
+        "sec:ch4_feature_choice": {
+          "number": "4.4.9",
+          "page": 158
+        },
+        "sec:ch4_training_protocol": {
+          "number": "4.5",
+          "page": 159
+        },
+        "sec:ch4_supervised_training": {
+          "number": "4.5.1",
+          "page": 159
+        },
+        "sec:ch4_self_supervised_training": {
+          "number": "4.5.2",
+          "page": 160
+        },
+        "fig:ch4_two_stage_training": {
+          "number": "4.24",
+          "page": 160
+        },
+        "sec:ch4_task_adaptation": {
+          "number": "4.5.3",
+          "page": 161
+        },
+        "sec:ch4_future_zones": {
+          "number": "4.5.4",
+          "page": 161
+        },
+        "sec:ch4_training_comparability": {
+          "number": "4.5.5",
+          "page": 162
+        },
+        "sec:ch4_physical_validation": {
+          "number": "4.6",
+          "page": 162
+        },
+        "sec:ch4_learned_functions": {
+          "number": "4.6.1",
+          "page": 163
+        },
+        "fig:ch4_learned_kan_functions": {
+          "number": "4.25",
+          "page": 163
+        },
+        "sec:ch4_physical_ablation": {
+          "number": "4.6.2",
+          "page": 164
+        },
+        "fig:ch4_physical_feature_ablation": {
+          "number": "4.26",
+          "page": 164
+        },
+        "sec:ch4_kan_pruning": {
+          "number": "4.6.3",
+          "page": 165
+        },
+        "fig:ch4_kan_pruning": {
+          "number": "4.27",
+          "page": 165
+        },
+        "sec:ch4_physical_checks_meaning": {
+          "number": "4.6.4",
+          "page": 166
+        },
+        "sec:ch4_event_examples": {
+          "number": "4.7",
+          "page": 166
+        },
+        "sec:ch4_real_event_examples": {
+          "number": "4.7.1",
+          "page": 166
+        },
+        "fig:ch4_motor_event": {
+          "number": "4.28",
+          "page": 167
+        },
+        "fig:ch4_developing_event": {
+          "number": "4.29",
+          "page": 168
+        },
+        "sec:ch4_event_localization": {
+          "number": "4.7.2",
+          "page": 169
+        },
+        "sec:ch4_zonal_examples": {
+          "number": "4.7.3",
+          "page": 169
+        },
+        "fig:ch4_transformer_developing": {
+          "number": "4.30",
+          "page": 170
+        },
+        "sec:ch4_event_errors_bavr": {
+          "number": "4.7.4",
+          "page": 171
+        },
+        "fig:ch4_transformer_motor": {
+          "number": "4.31",
+          "page": 172
+        },
+        "fig:ch4_transformer_ozz": {
+          "number": "4.32",
+          "page": 173
+        },
+        "fig:ch4_transformer_ozz_transition": {
+          "number": "4.33",
+          "page": 174
+        },
+        "sec:ch4_ozz_validation": {
+          "number": "4.8",
+          "page": 175
+        },
+        "sec:ch4_ozz_test_protocol": {
+          "number": "4.8.1",
+          "page": 175
+        },
+        "sec:ch4_rtds_examples": {
+          "number": "4.8.2",
+          "page": 176
+        },
+        "fig:ch4_rtds_examples_a": {
+          "number": "4.34",
+          "page": 176
+        },
+        "fig:ch4_rtds_petersen": {
+          "number": "4.35",
+          "page": 177
+        },
+        "fig:ch4_rtds_peters_slepyan": {
+          "number": "4.36",
+          "page": 178
+        },
+        "fig:ch4_rtds_examples_b": {
+          "number": "4.37",
+          "page": 179
+        },
+        "sec:ch4_ozz_comparison": {
+          "number": "4.8.3",
+          "page": 180
+        },
+        "tab:ch4_ozz_comparison": {
+          "number": "4.4",
+          "page": 180
+        },
+        "tab:ch4_ozz_units": {
+          "number": "4.5",
+          "page": 180
+        },
+        "sec:ch4_ozz_errors": {
+          "number": "4.8.4",
+          "page": 181
+        },
+        "sec:ch4_ozz_real_examples": {
+          "number": "4.8.5",
+          "page": 181
+        },
+        "fig:ch4_real_ozz_fading": {
+          "number": "4.38",
+          "page": 182
+        },
+        "fig:ch4_real_ozz_long_response": {
+          "number": "4.39",
+          "page": 183
+        },
+        "sec:ch4_ozz_runtime": {
+          "number": "4.8.6",
+          "page": 184
+        },
+        "sec:ch4_input_sensitivity": {
+          "number": "4.9",
+          "page": 184
+        },
+        "sec:ch4_input_sensitivity_protocol": {
+          "number": "4.9.1",
+          "page": 184
+        },
+        "sec:ch4_input_sensitivity_results": {
+          "number": "4.9.2",
+          "page": 185
+        },
+        "tab:ch4_input_sensitivity": {
+          "number": "4.6",
+          "page": 185
+        },
+        "fig:ch4_channel_dropout": {
+          "number": "4.40",
+          "page": 187
+        },
+        "fig:ch4_channel_dropout_classes": {
+          "number": "4.41",
+          "page": 188
+        },
+        "sec:ch4_gradient_sensitivity": {
+          "number": "4.9.3",
+          "page": 189
+        },
+        "fig:ch4_gradient_signals": {
+          "number": "4.42",
+          "page": 189
+        },
+        "sec:ch4_input_sensitivity_meaning": {
+          "number": "4.9.4",
+          "page": 189
+        },
+        "fig:ch4_gradient_time": {
+          "number": "4.43",
+          "page": 190
+        },
+        "sec:ch4_ct_saturation": {
+          "number": "4.10",
+          "page": 192
+        },
+        "sec:ch4_ct_targets": {
+          "number": "4.10.1",
+          "page": 192
+        },
+        "sec:ch4_ct_inputs": {
+          "number": "4.10.2",
+          "page": 192
+        },
+        "sec:ch4_ct_results": {
+          "number": "4.10.3",
+          "page": 193
+        },
+        "tab:ch4_ct_metrics": {
+          "number": "4.7",
+          "page": 193
+        },
+        "fig:ch4_ct_confusion": {
+          "number": "4.44",
+          "page": 193
+        },
+        "sec:ch4_ct_real_examples": {
+          "number": "4.10.4",
+          "page": 194
+        },
+        "sec:ch4_ct_continuous_error": {
+          "number": "4.10.5",
+          "page": 194
+        },
+        "fig:ch4_ct_simulation": {
+          "number": "4.45",
+          "page": 195
+        },
+        "fig:ch4_ct_real_switching": {
+          "number": "4.46",
+          "page": 195
+        },
+        "fig:ch4_ct_real_candidate": {
+          "number": "4.47",
+          "page": 196
+        },
+        "sec:ch04_conclusions": {
+          "number": "4.11",
+          "page": 197
+        },
+        "ch:ml_adaptive_algorithms": {
+          "number": "5",
+          "page": 198
+        },
+        "sec:ch05_intro": {
+          "number": "5.1",
+          "page": 198
+        },
+        "fig:ch5_research_methodology": {
+          "number": "5.1",
+          "page": 199
+        },
+        "sec:ch5_direction_validity": {
+          "number": "5.2",
+          "page": 200
+        },
+        "sec:ch5_direction_target": {
+          "number": "5.2.1",
+          "page": 200
+        },
+        "sec:ch5_applicability_target": {
+          "number": "5.2.2",
+          "page": 201
+        },
+        "sec:ch5_twohead_target": {
+          "number": "5.2.3",
+          "page": 201
+        },
+        "fig:ch5_twohead_logic": {
+          "number": "5.2",
+          "page": 201
+        },
+        "sec:ch5_analytical_organs": {
+          "number": "5.3",
+          "page": 202
+        },
+        "sec:ch5_vector_basis": {
+          "number": "5.3.1",
+          "page": 202
+        },
+        "sec:ch5_angular_organs": {
+          "number": "5.3.2",
+          "page": 202
+        },
+        "eq:ch5_phase_angle": {
+          "number": "5.1",
+          "page": 202
+        },
+        "fig:ch5_pdr_characteristics": {
+          "number": "5.3",
+          "page": 203
+        },
+        "eq:ch5_pos_angle": {
+          "number": "5.2",
+          "page": 204
+        },
+        "sec:ch5_power_organs": {
+          "number": "5.3.3",
+          "page": 204
+        },
+        "eq:ch5_phase_power": {
+          "number": "5.3",
+          "page": 204
+        },
+        "eq:ch5_pos_power": {
+          "number": "5.4",
+          "page": 204
+        },
+        "sec:ch5_adaptive_organ": {
+          "number": "5.3.4",
+          "page": 204
+        },
+        "eq:ch5_memory_voltage": {
+          "number": "5.5",
+          "page": 204
+        },
+        "eq:ch5_adaptive_threshold": {
+          "number": "5.6",
+          "page": 204
+        },
+        "sec:ch5_two_sample": {
+          "number": "5.3.5",
+          "page": 205
+        },
+        "eq:ch5_two_sample": {
+          "number": "5.7",
+          "page": 205
+        },
+        "sec:ch5_five_sample": {
+          "number": "5.3.6",
+          "page": 205
+        },
+        "eq:ch5_five_sample_derivative": {
+          "number": "5.8",
+          "page": 205
+        },
+        "eq:ch5_five_sample_vector": {
+          "number": "5.9",
+          "page": 205
+        },
+        "sec:ch5_unbalance_branch": {
+          "number": "5.3.7",
+          "page": 205
+        },
+        "eq:ch5_unbalance_power": {
+          "number": "5.10",
+          "page": 205
+        },
+        "fig:ch5_power_and_memory": {
+          "number": "5.4",
+          "page": 206
+        },
+        "eq:ch5_unbalance_current": {
+          "number": "5.11",
+          "page": 207
+        },
+        "sec:ch5_bavr072_proxy": {
+          "number": "5.3.8",
+          "page": 207
+        },
+        "eq:ch5_bavr072_proxy": {
+          "number": "5.12",
+          "page": 207
+        },
+        "sec:ch5_population_audit": {
+          "number": "5.4",
+          "page": 207
+        },
+        "tab:ch5_population": {
+          "number": "5.1",
+          "page": 207
+        },
+        "sec:ch5_expert_reference": {
+          "number": "5.5",
+          "page": 209
+        },
+        "tab:ch5_expert_repeatability": {
+          "number": "5.2",
+          "page": 210
+        },
+        "fig:ch5_causal_mask": {
+          "number": "5.5",
+          "page": 211
+        },
+        "sec:ch5_engineering_verification": {
+          "number": "5.6",
+          "page": 211
+        },
+        "sec:ch5_first_results": {
+          "number": "5.7",
+          "page": 214
+        },
+        "fig:ch5_current_profiles": {
+          "number": "5.6",
+          "page": 214
+        },
+        "sec:ch5_population_agreement": {
+          "number": "5.7.2",
+          "page": 215
+        },
+        "tab:ch5_pairwise_disagreement": {
+          "number": "5.3",
+          "page": 215
+        },
+        "fig:ch5_pairwise_agreement": {
+          "number": "5.7",
+          "page": 216
+        },
+        "fig:ch5_state_patterns": {
+          "number": "5.8",
+          "page": 216
+        },
+        "sec:ch5_population_structure": {
+          "number": "5.7.3",
+          "page": 217
+        },
+        "fig:ch5_population_pca": {
+          "number": "5.9",
+          "page": 218
+        },
+        "tab:ch5_analytical_expert": {
+          "number": "5.4",
+          "page": 219
+        },
+        "sec:ch5_expert_adaptation": {
+          "number": "5.8",
+          "page": 220
+        },
+        "sec:ch5_weak_monitoring": {
+          "number": "5.8.4",
+          "page": 221
+        },
+        "tab:ch5_weak_monitoring": {
+          "number": "5.5",
+          "page": 221
+        },
+        "tab:ch5_expert_adaptation": {
+          "number": "5.6",
+          "page": 222
+        },
+        "fig:ch5_expert_adaptation_comparison": {
+          "number": "5.10",
+          "page": 223
+        },
+        "sec:ch5_h123_model": {
+          "number": "5.8.6",
+          "page": 224
+        },
+        "tab:ch5_h123_expert": {
+          "number": "5.7",
+          "page": 224
+        },
+        "sec:ch5_training_dynamics": {
+          "number": "5.8.7",
+          "page": 224
+        },
+        "fig:ch5_training_dynamics_snapshots": {
+          "number": "5.11",
+          "page": 226
+        },
+        "fig:ch5_training_dynamics_sequence": {
+          "number": "5.12",
+          "page": 227
+        },
+        "fig:ch5_h123_references": {
+          "number": "5.13",
+          "page": 227
+        },
+        "sec:ch5_dense_validation": {
+          "number": "5.9",
+          "page": 228
+        },
+        "tab:ch5_dense_error_time": {
+          "number": "5.8",
+          "page": 228
+        },
+        "fig:ch5_engineering_error_time": {
+          "number": "5.14",
+          "page": 230
+        },
+        "sec:ch5_rtds_validation": {
+          "number": "5.10",
+          "page": 231
+        },
+        "tab:ch5_rtds_analytical": {
+          "number": "5.9",
+          "page": 232
+        },
+        "tab:ch5_rtds_neural": {
+          "number": "5.10",
+          "page": 233
+        },
+        "tab:ch5_rtds_engineering": {
+          "number": "5.11",
+          "page": 234
+        },
+        "fig:ch5_rtds_event_response": {
+          "number": "5.15",
+          "page": 236
+        },
+        "sec:ch5_adaptation_limits": {
+          "number": "5.11",
+          "page": 237
+        },
+        "sec:ch5_results_pending": {
+          "number": "5.11.3",
+          "page": 238
+        },
+        "sec:ch05_conclusions": {
+          "number": "5.12",
+          "page": 238
+        },
+        "ch:bibliography": {
+          "number": "5.12",
+          "page": 239
+        },
+        "ch:appendix01": {
+          "number": "5.12",
+          "page": 249
+        },
+        "ch:notes_informal": {
+          "number": "5.12",
+          "page": 250
+        }
+      },
+      "path": "docs/Dissertation/build/reading/latex/dissertation_review.pdf"
+    },
+    "dissertation_comments": {
+      "pages": 275,
+      "sha256": "a5995fb40f2d68f28781b1f81fd700c23ab81ce3b27f2e3f1320cbe4e9ab5e2a",
+      "chapter4_start": 124,
+      "chapter4_end": 208,
+      "conclusions": 207,
+      "overfull_hbox": 9,
+      "labels": {
+        "ch:introduction": {
+          "number": "",
+          "page": 8
+        },
+        "ch:bavr_problems": {
+          "number": "1",
+          "page": 13
+        },
+        "sec:ch1_intro": {
+          "number": "1.1",
+          "page": 13
+        },
+        "fig:bavr_schemes": {
+          "number": "1.1",
+          "page": 14
+        },
+        "sec:ch1_statistics": {
+          "number": "1.2",
+          "page": 15
+        },
+        "sec:ch1_pdr_problems": {
+          "number": "1.3",
+          "page": 16
+        },
+        "sec:ch1_base_organs_problems": {
+          "number": "1.3.1",
+          "page": 16
+        },
+        "fig:ch1_img5": {
+          "number": "1.2",
+          "page": 17
+        },
+        "fig:ch1_img6": {
+          "number": "1.3",
+          "page": 17
+        },
+        "fig:ch1_img8": {
+          "number": "1.4",
+          "page": 18
+        },
+        "fig:ch1_img9": {
+          "number": "1.5",
+          "page": 19
+        },
+        "fig:ch1_img10_11": {
+          "number": "1.6",
+          "page": 19
+        },
+        "fig:ch1_img12": {
+          "number": "1.3.1",
+          "page": 20
+        },
+        "fig:ch1_img13": {
+          "number": "1.3.1",
+          "page": 20
+        },
+        "sec:ch1_adaptive_functions": {
+          "number": "1.3.2",
+          "page": 21
+        },
+        "fig:ch1_img14": {
+          "number": "1.7",
+          "page": 21
+        },
+        "fig:ch1_img15": {
+          "number": "1.8",
+          "page": 22
+        },
+        "sec:ch1_manufacturers_analysis": {
+          "number": "1.4",
+          "page": 22
+        },
+        "fig:ch1_img16": {
+          "number": "1.9",
+          "page": 23
+        },
+        "fig:ch1_img17": {
+          "number": "1.10",
+          "page": 24
+        },
+        "fig:ch1_img18": {
+          "number": "1.11",
+          "page": 25
+        },
+        "fig:ch1_img20": {
+          "number": "1.4.3",
+          "page": 26
+        },
+        "sec:ch1_complex_cases": {
+          "number": "1.5",
+          "page": 28
+        },
+        "fig:ch1_img21": {
+          "number": "1.12",
+          "page": 29
+        },
+        "fig:ch1_img22": {
+          "number": "1.5.1",
+          "page": 29
+        },
+        "tab:bavr_operation_title": {
+          "number": "1.5.1",
+          "page": 30
+        },
+        "sec:ch1_adaptive_dropout": {
+          "number": "1.5.2",
+          "page": 31
+        },
+        "fig:ch1_img23": {
+          "number": "1.13",
+          "page": 31
+        },
+        "fig:ch1_img24": {
+          "number": "1.14",
+          "page": 32
+        },
+        "fig:ch1_img25": {
+          "number": "1.15",
+          "page": 32
+        },
+        "fig:ch1_img26": {
+          "number": "1.16",
+          "page": 33
+        },
+        "sec:ch1_external_two_phase_blocking": {
+          "number": "1.5.3",
+          "page": 33
+        },
+        "fig:ch1_img27_29": {
+          "number": "1.17",
+          "page": 35
+        },
+        "fig:ch1_img30": {
+          "number": "1.18",
+          "page": 36
+        },
+        "fig:ch1_img31": {
+          "number": "1.19",
+          "page": 36
+        },
+        "fig:ch1_img32_33": {
+          "number": "1.20",
+          "page": 37
+        },
+        "fig:ch1_img34_35": {
+          "number": "1.21",
+          "page": 37
+        },
+        "fig:ch1_img36": {
+          "number": "1.22",
+          "page": 38
+        },
+        "fig:ch1_img37": {
+          "number": "1.23",
+          "page": 39
+        },
+        "fig:ch1_img38": {
+          "number": "1.24",
+          "page": 39
+        },
+        "fig:ch1_img39": {
+          "number": "1.5.3",
+          "page": 40
+        },
+        "fig:ch1_img40": {
+          "number": "1.5.3",
+          "page": 41
+        },
+        "sec:ch1_rogowski_and_capacitive": {
+          "number": "1.5.4",
+          "page": 41
+        },
+        "fig:ch1_img41_43": {
+          "number": "1.25",
+          "page": 42
+        },
+        "fig:ch1_img44": {
+          "number": "1.26",
+          "page": 43
+        },
+        "fig:ch1_img45": {
+          "number": "1.27",
+          "page": 43
+        },
+        "sec:ch1_zero_sequence_rnm": {
+          "number": "1.5.5",
+          "page": 44
+        },
+        "fig:ch1_img46": {
+          "number": "1.28",
+          "page": 44
+        },
+        "fig:ch1_img47": {
+          "number": "1.29",
+          "page": 45
+        },
+        "sec:ch1_ferroresonance_ozz": {
+          "number": "1.5.6",
+          "page": 45
+        },
+        "fig:ch1_img48": {
+          "number": "1.30",
+          "page": 46
+        },
+        "fig:ch1_img49": {
+          "number": "1.31",
+          "page": 46
+        },
+        "fig:ch1_img50": {
+          "number": "1.32",
+          "page": 47
+        },
+        "fig:ch1_img51": {
+          "number": "1.33",
+          "page": 47
+        },
+        "fig:ch1_img52": {
+          "number": "1.34",
+          "page": 48
+        },
+        "fig:ch1_img53": {
+          "number": "1.35",
+          "page": 48
+        },
+        "sec:ch1_conclusions": {
+          "number": "1.6",
+          "page": 48
+        },
+        "ch:bavr_modernization": {
+          "number": "2",
+          "page": 51
+        },
+        "sec:ch2_intro": {
+          "number": "2.1",
+          "page": 51
+        },
+        "sec:ch2_rnm_rogowski": {
+          "number": "2.2",
+          "page": 52
+        },
+        "subsec:ch2_theoretical_study": {
+          "number": "2.2.1",
+          "page": 52
+        },
+        "fig:ch2_signal_scheme": {
+          "number": "2.1",
+          "page": 53
+        },
+        "eq:kz_current": {
+          "number": "2.1",
+          "page": 53
+        },
+        "eq:rogowski_derivative": {
+          "number": "2.2",
+          "page": 53
+        },
+        "eq:k_cr": {
+          "number": "2.3",
+          "page": 53
+        },
+        "fig:ch2_primary_current": {
+          "number": "2.2",
+          "page": 54
+        },
+        "fig:ch2_tt_kr_signals": {
+          "number": "2.3",
+          "page": 54
+        },
+        "fig:ch2_transient_max_aperiodic": {
+          "number": "2.4",
+          "page": 55
+        },
+        "eq:i_averaged": {
+          "number": "2.4",
+          "page": 55
+        },
+        "fig:ch2_transient_time_limits": {
+          "number": "2.5",
+          "page": 56
+        },
+        "sec:ch02_transient_and_harmonics": {
+          "number": "2.2.2",
+          "page": 56
+        },
+        "fig:ch02_hodograph": {
+          "number": "2.6",
+          "page": 57
+        },
+        "sec:ch02_higher_harmonics": {
+          "number": "2.2.3",
+          "page": 58
+        },
+        "fig:ch02_transient_time_factors": {
+          "number": "2.7",
+          "page": 59
+        },
+        "eq:ch02_harmonics_signals": {
+          "number": "2.5",
+          "page": 60
+        },
+        "fig:ch02_harmonics_currents": {
+          "number": "2.8",
+          "page": 60
+        },
+        "sec:ch02_instantaneous_values": {
+          "number": "2.2.4",
+          "page": 61
+        },
+        "fig:ch02_initial_transient": {
+          "number": "2.9",
+          "page": 61
+        },
+        "sec:ch02_fourier_theory": {
+          "number": "2.2.5",
+          "page": 62
+        },
+        "eq:ch02_max_amplitude_deviation": {
+          "number": "2.6",
+          "page": 62
+        },
+        "tab:ch02_window_functions": {
+          "number": "2.2.5",
+          "page": 63
+        },
+        "sec:ch02_rnm_tt_kr_comparison": {
+          "number": "2.3",
+          "page": 64
+        },
+        "fig:ch02_simulink_substation_model": {
+          "number": "2.10",
+          "page": 64
+        },
+        "eq:ch02_pdr_tt": {
+          "number": "2.7",
+          "page": 65
+        },
+        "eq:ch02_pdr_kr": {
+          "number": "2.8",
+          "page": 65
+        },
+        "eq:ch02_hybrid_signal": {
+          "number": "2.9",
+          "page": 65
+        },
+        "fig:ch02_hodographs_external_fault": {
+          "number": "2.11",
+          "page": 67
+        },
+        "fig:ch02_hodographs_internal_fault": {
+          "number": "2.12",
+          "page": 68
+        },
+        "sec:ch02_kr_industrial_application": {
+          "number": "2.3.1",
+          "page": 69
+        },
+        "fig:ch02_bavr_kr_tt_oscillograms": {
+          "number": "2.13",
+          "page": 70
+        },
+        "fig:ch02_bavr_kr_ukrm_vnr": {
+          "number": "2.14",
+          "page": 70
+        },
+        "sec:ch02_conclusions_rogowski": {
+          "number": "2.3.2",
+          "page": 71
+        },
+        "sec:ch02_vnr_algorithms": {
+          "number": "2.4",
+          "page": 72
+        },
+        "fig:ch02_logic_avr_vnr": {
+          "number": "2.15",
+          "page": 73
+        },
+        "sec:ch02_vnr_existing_requirements": {
+          "number": "2.4.1",
+          "page": 73
+        },
+        "sec:ch02_vnr_series_parallel": {
+          "number": "2.4.2",
+          "page": 74
+        },
+        "sec:ch02_vnr_blocking_ground_fault": {
+          "number": "2.4.3",
+          "page": 74
+        },
+        "sec:ch02_vnr_blocking_angle_exceedance": {
+          "number": "2.4.4",
+          "page": 74
+        },
+        "fig:ch02_bavr_angle_exceedance_repair": {
+          "number": "2.16",
+          "page": 75
+        },
+        "sec:ch02_vnr_blocking_frequency": {
+          "number": "2.4.5",
+          "page": 75
+        },
+        "fig:ch02_vnr_no_angle_order_control": {
+          "number": "2.17",
+          "page": 76
+        },
+        "sec:ch02_vnr_reduce_simultaneous": {
+          "number": "2.4.6",
+          "page": 76
+        },
+        "sec:ch02_vnr_conclusions": {
+          "number": "2.4.7",
+          "page": 77
+        },
+        "sec:ch02_conclusions": {
+          "number": "2.5",
+          "page": 78
+        },
+        "ch:dataset_preparation": {
+          "number": "3",
+          "page": 80
+        },
+        "sec:ch3_intro": {
+          "number": "3.1",
+          "page": 80
+        },
+        "subsec:dataset_published_scope": {
+          "number": "3.1.1",
+          "page": 83
+        },
+        "sec:dataset_methodology": {
+          "number": "3.2",
+          "page": 84
+        },
+        "subsec:dataset_stages": {
+          "number": "3.2.1",
+          "page": 84
+        },
+        "subsec:dataset_challenges": {
+          "number": "3.2.2",
+          "page": 85
+        },
+        "sec:ch3_data_collection": {
+          "number": "3.3",
+          "page": 87
+        },
+        "sec:ch3_data_sources": {
+          "number": "3.3.1",
+          "page": 87
+        },
+        "fig:ch3_empty_oscillogram": {
+          "number": "3.1",
+          "page": 88
+        },
+        "sec:ch3_auto_search": {
+          "number": "3.3.2",
+          "page": 88
+        },
+        "fig:ch3_bavr_operation_example": {
+          "number": "3.2",
+          "page": 89
+        },
+        "sec:ch3_single_db": {
+          "number": "3.3.3",
+          "page": 90
+        },
+        "fig:ch3_data_collection_scheme": {
+          "number": "3.3",
+          "page": 90
+        },
+        "fig:ch3_public_dataset_structure": {
+          "number": "3.4",
+          "page": 91
+        },
+        "sec:ch3_terminal_search": {
+          "number": "3.3.4",
+          "page": 92
+        },
+        "sec:ch3_preprocessing_depersonalization": {
+          "number": "3.4",
+          "page": 92
+        },
+        "sec:ch3_comtrade_aspects": {
+          "number": "3.4.1",
+          "page": 92
+        },
+        "sec:ch3_comtrade_cfg": {
+          "number": "3.4.1",
+          "page": 93
+        },
+        "tab:ch03_analog_signals_parameters": {
+          "number": "3.4.1",
+          "page": 93
+        },
+        "sec:ch3_dat_file": {
+          "number": "3.4.1",
+          "page": 94
+        },
+        "sec:ch3_depersonalization_necessity": {
+          "number": "3.4.2",
+          "page": 94
+        },
+        "sec:ch3_depersonalization_process": {
+          "number": "3.4.3",
+          "page": 95
+        },
+        "sec:ch3_parameters_unification": {
+          "number": "3.4.4",
+          "page": 95
+        },
+        "sec:ch3_frequency_grouping": {
+          "number": "3.4.4",
+          "page": 96
+        },
+        "tab:ch03_oscillograms_frequency_parameters": {
+          "number": "3.4.4",
+          "page": 96
+        },
+        "sec:ch3_signal_names_unification": {
+          "number": "3.4.4",
+          "page": 97
+        },
+        "fig:ch03_substation_measurement_points": {
+          "number": "3.5",
+          "page": 98
+        },
+        "fig:ch03_analog_signal_naming_example": {
+          "number": "3.6",
+          "page": 99
+        },
+        "fig:ch03_analog_signals_structure": {
+          "number": "3.7",
+          "page": 100
+        },
+        "fig:ch03_discrete_signals_structure_layout": {
+          "number": "3.8",
+          "page": 100
+        },
+        "fig:ch03_discrete_signals_structure_diagram": {
+          "number": "3.9",
+          "page": 101
+        },
+        "sec:ch3_removing_irrelevant_signals": {
+          "number": "3.4.4",
+          "page": 103
+        },
+        "sec:ch3_normalization_and_formats": {
+          "number": "3.5",
+          "page": 103
+        },
+        "sec:ch3_basis_values_methodology": {
+          "number": "3.5.1",
+          "page": 104
+        },
+        "sec:ch3_signal_groups": {
+          "number": "3.5.1",
+          "page": 104
+        },
+        "sec:ch3_primary_secondary_values": {
+          "number": "3.5.1",
+          "page": 104
+        },
+        "sec:ch3_basis_determination_algorithm": {
+          "number": "3.5.1",
+          "page": 105
+        },
+        "tab:ch03_voltage_basis_algorithm": {
+          "number": "3.5.1",
+          "page": 105
+        },
+        "tab:ch03_phase_current_basis": {
+          "number": "3.5.1",
+          "page": 105
+        },
+        "tab:ch03_zero_seq_current_basis": {
+          "number": "3.5.1",
+          "page": 106
+        },
+        "sec:ch3_normalization_coefficients_table": {
+          "number": "3.5.1",
+          "page": 107
+        },
+        "sec:ch3_csv_transformation": {
+          "number": "3.5.2",
+          "page": 107
+        },
+        "sec:ch3_oscillogram_annotation": {
+          "number": "3.6",
+          "page": 108
+        },
+        "sec:ch3_annotation_necessity": {
+          "number": "3.6.1",
+          "page": 109
+        },
+        "fig:ch03_classification_hierarchy": {
+          "number": "3.10",
+          "page": 110
+        },
+        "fig:ch03_ml_signal_decoding": {
+          "number": "3.11",
+          "page": 110
+        },
+        "sec:ch3_manual_annotation_prep": {
+          "number": "3.6.2",
+          "page": 111
+        },
+        "tab:ch3_published_annotation_counts": {
+          "number": "3.1",
+          "page": 111
+        },
+        "sec:ch3_annotation_automation": {
+          "number": "3.6.3",
+          "page": 112
+        },
+        "sec:ch3_empty_oscillograms_filter": {
+          "number": "3.6.4",
+          "page": 112
+        },
+        "tab:ch03_empty_filter_settings": {
+          "number": "3.6.4",
+          "page": 113
+        },
+        "sec:ch3_earth_fault_subset": {
+          "number": "3.7",
+          "page": 115
+        },
+        "tab:ch3_earth_fault_selection": {
+          "number": "3.2",
+          "page": 116
+        },
+        "sec:ch3_earth_fault_examples": {
+          "number": "3.7.2",
+          "page": 116
+        },
+        "fig:ch3_ozz_developing": {
+          "number": "3.12",
+          "page": 117
+        },
+        "fig:ch3_ozz_clipping": {
+          "number": "3.13",
+          "page": 117
+        },
+        "fig:ch3_ozz_measurement_fault": {
+          "number": "3.14",
+          "page": 118
+        },
+        "sec:ch3_earth_fault_statistics": {
+          "number": "3.7.3",
+          "page": 118
+        },
+        "fig:ch3_ozz_switching_peak": {
+          "number": "3.15",
+          "page": 119
+        },
+        "fig:ch3_ozz_switching_imitation": {
+          "number": "3.16",
+          "page": 119
+        },
+        "fig:ch3_ozz_weak_process": {
+          "number": "3.17",
+          "page": 120
+        },
+        "tab:ch3_earth_fault_statistics": {
+          "number": "3.3",
+          "page": 120
+        },
+        "fig:ch3_earth_fault_histogram": {
+          "number": "3.18",
+          "page": 121
+        },
+        "fig:ch3_earth_fault_cdf": {
+          "number": "3.19",
+          "page": 122
+        },
+        "sec:ch03_conclusions": {
+          "number": "3.8",
+          "page": 122
+        },
+        "ch:statistical_analysis": {
+          "number": "4",
+          "page": 124
+        },
+        "ch:oscillogram_analysis": {
+          "number": "4",
+          "page": 124
+        },
+        "sec:ch04_intro": {
+          "number": "4.1",
+          "page": 124
+        },
+        "sec:ch4_evaluation_methodology": {
+          "number": "4.2",
+          "page": 125
+        },
+        "sec:ch4_metric_decisions": {
+          "number": "4.2.1",
+          "page": 125
+        },
+        "fig:ch4_metric_errors": {
+          "number": "4.1",
+          "page": 126
+        },
+        "eq:ch4_classification_metrics": {
+          "number": "4.1",
+          "page": 126
+        },
+        "eq:ch4_roc_rates": {
+          "number": "4.2",
+          "page": 126
+        },
+        "fig:ch4_metric_roc": {
+          "number": "4.2",
+          "page": 127
+        },
+        "sec:ch4_metric_validation": {
+          "number": "4.2.3",
+          "page": 128
+        },
+        "sec:ch4_metric_runtime": {
+          "number": "4.2.4",
+          "page": 128
+        },
+        "sec:ch4_physkan_architectures": {
+          "number": "4.3",
+          "page": 128
+        },
+        "sec:ch4_input_windows": {
+          "number": "4.3.1",
+          "page": 129
+        },
+        "fig:ch4_output_decision": {
+          "number": "4.3",
+          "page": 130
+        },
+        "sec:ch4_simplemlp": {
+          "number": "4.3.2",
+          "page": 131
+        },
+        "fig:ch4_mlp_flow": {
+          "number": "4.4",
+          "page": 131
+        },
+        "eq:ch4_mlp_layer": {
+          "number": "4.3",
+          "page": 131
+        },
+        "sec:ch4_simplecnn": {
+          "number": "4.3.3",
+          "page": 132
+        },
+        "eq:ch4_conv_layer": {
+          "number": "4.4",
+          "page": 132
+        },
+        "fig:ch4_cnn_flow": {
+          "number": "4.5",
+          "page": 133
+        },
+        "sec:ch4_resnet": {
+          "number": "4.3.4",
+          "page": 133
+        },
+        "eq:ch4_residual_block": {
+          "number": "4.5",
+          "page": 133
+        },
+        "fig:ch4_residual_flow": {
+          "number": "4.6",
+          "page": 134
+        },
+        "sec:ch4_kan": {
+          "number": "4.3.5",
+          "page": 134
+        },
+        "eq:ch4_kan_layer": {
+          "number": "4.6",
+          "page": 134
+        },
+        "fig:ch4_kan_flow": {
+          "number": "4.7",
+          "page": 135
+        },
+        "eq:ch4_kan_spline": {
+          "number": "4.7",
+          "page": 135
+        },
+        "sec:ch4_real_ops": {
+          "number": "4.3.6",
+          "page": 137
+        },
+        "fig:ch4_physics_stem": {
+          "number": "4.8",
+          "page": 137
+        },
+        "sec:ch4_complex_ops": {
+          "number": "4.3.7",
+          "page": 138
+        },
+        "eq:ch4_complex_operations": {
+          "number": "4.8",
+          "page": 139
+        },
+        "fig:ch4_complex_flow": {
+          "number": "4.9",
+          "page": 139
+        },
+        "sec:ch4_relay_gate": {
+          "number": "4.3.8",
+          "page": 140
+        },
+        "fig:ch4_relay_flow": {
+          "number": "4.10",
+          "page": 141
+        },
+        "eq:ch4_relay_gate": {
+          "number": "4.9",
+          "page": 141
+        },
+        "sec:ch4_attention_architecture": {
+          "number": "4.3.9",
+          "page": 142
+        },
+        "eq:ch4_attention_weights": {
+          "number": "4.10",
+          "page": 143
+        },
+        "fig:ch4_transformer_attention": {
+          "number": "4.11",
+          "page": 143
+        },
+        "fig:ch4_transformer_baseline": {
+          "number": "4.12",
+          "page": 144
+        },
+        "fig:ch4_transformer_interactions": {
+          "number": "4.13",
+          "page": 145
+        },
+        "eq:ch4_directional_coefficient": {
+          "number": "4.11",
+          "page": 145
+        },
+        "fig:ch4_directional_geometry": {
+          "number": "4.14",
+          "page": 146
+        },
+        "fig:ch4_transformer_physical": {
+          "number": "4.15",
+          "page": 147
+        },
+        "fig:ch4_polar_attention": {
+          "number": "4.16",
+          "page": 147
+        },
+        "fig:ch4_physical_ffn": {
+          "number": "4.17",
+          "page": 148
+        },
+        "tab:ch4_physical_code_paths": {
+          "number": "4.1",
+          "page": 149
+        },
+        "sec:ch4_architecture_summary": {
+          "number": "4.3.10",
+          "page": 150
+        },
+        "sec:ch4_signal_representations": {
+          "number": "4.4",
+          "page": 150
+        },
+        "sec:ch4_channel_preparation": {
+          "number": "4.4.1",
+          "page": 151
+        },
+        "eq:ch4_current_reconstruction": {
+          "number": "4.12",
+          "page": 151
+        },
+        "sec:ch4_feature_history": {
+          "number": "4.4.2",
+          "page": 151
+        },
+        "sec:ch4_spectral_coordinates": {
+          "number": "4.4.3",
+          "page": 152
+        },
+        "fig:ch4_input_time_selection": {
+          "number": "4.18",
+          "page": 153
+        },
+        "fig:ch4_feature_pipeline_article": {
+          "number": "4.19",
+          "page": 154
+        },
+        "eq:ch4_feature_coordinates": {
+          "number": "4.13",
+          "page": 154
+        },
+        "sec:ch4_sequence_features": {
+          "number": "4.4.4",
+          "page": 154
+        },
+        "tab:ch4_input_representations": {
+          "number": "4.2",
+          "page": 155
+        },
+        "eq:ch4_sequence_features": {
+          "number": "4.14",
+          "page": 155
+        },
+        "eq:ch4_clarke_features": {
+          "number": "4.15",
+          "page": 155
+        },
+        "sec:ch4_feature_scaling": {
+          "number": "4.4.5",
+          "page": 156
+        },
+        "sec:ch4_feature_comparison": {
+          "number": "4.4.6",
+          "page": 156
+        },
+        "fig:ch4_feature_spaces_article": {
+          "number": "4.20",
+          "page": 157
+        },
+        "fig:ch4_expanded_feature_comparison": {
+          "number": "4.21",
+          "page": 159
+        },
+        "sec:ch4_feature_compression": {
+          "number": "4.4.7",
+          "page": 160
+        },
+        "fig:ch4_expanded_sampling_comparison": {
+          "number": "4.22",
+          "page": 160
+        },
+        "sec:ch4_feature_computation": {
+          "number": "4.4.8",
+          "page": 161
+        },
+        "tab:ch4_input_latency": {
+          "number": "4.3",
+          "page": 161
+        },
+        "fig:ch4_quality_latency_article": {
+          "number": "4.23",
+          "page": 162
+        },
+        "sec:ch4_feature_choice": {
+          "number": "4.4.9",
+          "page": 163
+        },
+        "sec:ch4_training_protocol": {
+          "number": "4.5",
+          "page": 163
+        },
+        "sec:ch4_supervised_training": {
+          "number": "4.5.1",
+          "page": 163
+        },
+        "sec:ch4_self_supervised_training": {
+          "number": "4.5.2",
+          "page": 164
+        },
+        "fig:ch4_two_stage_training": {
+          "number": "4.24",
+          "page": 165
+        },
+        "sec:ch4_task_adaptation": {
+          "number": "4.5.3",
+          "page": 165
+        },
+        "sec:ch4_future_zones": {
+          "number": "4.5.4",
+          "page": 166
+        },
+        "sec:ch4_training_comparability": {
+          "number": "4.5.5",
+          "page": 166
+        },
+        "sec:ch4_physical_validation": {
+          "number": "4.6",
+          "page": 167
+        },
+        "sec:ch4_learned_functions": {
+          "number": "4.6.1",
+          "page": 167
+        },
+        "fig:ch4_learned_kan_functions": {
+          "number": "4.25",
+          "page": 168
+        },
+        "sec:ch4_physical_ablation": {
+          "number": "4.6.2",
+          "page": 169
+        },
+        "fig:ch4_physical_feature_ablation": {
+          "number": "4.26",
+          "page": 169
+        },
+        "sec:ch4_kan_pruning": {
+          "number": "4.6.3",
+          "page": 170
+        },
+        "fig:ch4_kan_pruning": {
+          "number": "4.27",
+          "page": 170
+        },
+        "sec:ch4_physical_checks_meaning": {
+          "number": "4.6.4",
+          "page": 171
+        },
+        "sec:ch4_event_examples": {
+          "number": "4.7",
+          "page": 171
+        },
+        "sec:ch4_real_event_examples": {
+          "number": "4.7.1",
+          "page": 172
+        },
+        "sec:ch4_event_localization": {
+          "number": "4.7.2",
+          "page": 172
+        },
+        "fig:ch4_motor_event": {
+          "number": "4.28",
+          "page": 173
+        },
+        "fig:ch4_developing_event": {
+          "number": "4.29",
+          "page": 174
+        },
+        "sec:ch4_zonal_examples": {
+          "number": "4.7.3",
+          "page": 175
+        },
+        "fig:ch4_transformer_developing": {
+          "number": "4.30",
+          "page": 176
+        },
+        "sec:ch4_event_errors_bavr": {
+          "number": "4.7.4",
+          "page": 177
+        },
+        "fig:ch4_transformer_motor": {
+          "number": "4.31",
+          "page": 178
+        },
+        "fig:ch4_transformer_ozz": {
+          "number": "4.32",
+          "page": 179
+        },
+        "fig:ch4_transformer_ozz_transition": {
+          "number": "4.33",
+          "page": 180
+        },
+        "sec:ch4_ozz_validation": {
+          "number": "4.8",
+          "page": 181
+        },
+        "sec:ch4_ozz_test_protocol": {
+          "number": "4.8.1",
+          "page": 181
+        },
+        "sec:ch4_rtds_examples": {
+          "number": "4.8.2",
+          "page": 182
+        },
+        "fig:ch4_rtds_examples_a": {
+          "number": "4.34",
+          "page": 183
+        },
+        "fig:ch4_rtds_petersen": {
+          "number": "4.35",
+          "page": 185
+        },
+        "fig:ch4_rtds_peters_slepyan": {
+          "number": "4.36",
+          "page": 186
+        },
+        "fig:ch4_rtds_examples_b": {
+          "number": "4.37",
+          "page": 187
+        },
+        "sec:ch4_ozz_comparison": {
+          "number": "4.8.3",
+          "page": 188
+        },
+        "tab:ch4_ozz_comparison": {
+          "number": "4.4",
+          "page": 188
+        },
+        "tab:ch4_ozz_units": {
+          "number": "4.5",
+          "page": 188
+        },
+        "sec:ch4_ozz_errors": {
+          "number": "4.8.4",
+          "page": 189
+        },
+        "sec:ch4_ozz_real_examples": {
+          "number": "4.8.5",
+          "page": 189
+        },
+        "fig:ch4_real_ozz_fading": {
+          "number": "4.38",
+          "page": 190
+        },
+        "fig:ch4_real_ozz_long_response": {
+          "number": "4.39",
+          "page": 191
+        },
+        "sec:ch4_ozz_runtime": {
+          "number": "4.8.6",
+          "page": 192
+        },
+        "sec:ch4_input_sensitivity": {
+          "number": "4.9",
+          "page": 192
+        },
+        "sec:ch4_input_sensitivity_protocol": {
+          "number": "4.9.1",
+          "page": 193
+        },
+        "sec:ch4_input_sensitivity_results": {
+          "number": "4.9.2",
+          "page": 193
+        },
+        "tab:ch4_input_sensitivity": {
+          "number": "4.6",
+          "page": 193
+        },
+        "fig:ch4_channel_dropout": {
+          "number": "4.40",
+          "page": 195
+        },
+        "fig:ch4_channel_dropout_classes": {
+          "number": "4.41",
+          "page": 196
+        },
+        "sec:ch4_gradient_sensitivity": {
+          "number": "4.9.3",
+          "page": 197
+        },
+        "fig:ch4_gradient_signals": {
+          "number": "4.42",
+          "page": 198
+        },
+        "fig:ch4_gradient_time": {
+          "number": "4.43",
+          "page": 198
+        },
+        "sec:ch4_input_sensitivity_meaning": {
+          "number": "4.9.4",
+          "page": 199
+        },
+        "sec:ch4_ct_saturation": {
+          "number": "4.10",
+          "page": 200
+        },
+        "sec:ch4_ct_targets": {
+          "number": "4.10.1",
+          "page": 200
+        },
+        "sec:ch4_ct_inputs": {
+          "number": "4.10.2",
+          "page": 200
+        },
+        "sec:ch4_ct_results": {
+          "number": "4.10.3",
+          "page": 201
+        },
+        "tab:ch4_ct_metrics": {
+          "number": "4.7",
+          "page": 202
+        },
+        "fig:ch4_ct_confusion": {
+          "number": "4.44",
+          "page": 202
+        },
+        "sec:ch4_ct_real_examples": {
+          "number": "4.10.4",
+          "page": 203
+        },
+        "sec:ch4_ct_continuous_error": {
+          "number": "4.10.5",
+          "page": 204
+        },
+        "fig:ch4_ct_simulation": {
+          "number": "4.45",
+          "page": 205
+        },
+        "fig:ch4_ct_real_switching": {
+          "number": "4.46",
+          "page": 205
+        },
+        "fig:ch4_ct_real_candidate": {
+          "number": "4.47",
+          "page": 206
+        },
+        "sec:ch04_conclusions": {
+          "number": "4.11",
+          "page": 207
+        },
+        "ch:ml_adaptive_algorithms": {
+          "number": "5",
+          "page": 209
+        },
+        "sec:ch05_intro": {
+          "number": "5.1",
+          "page": 209
+        },
+        "fig:ch5_research_methodology": {
+          "number": "5.1",
+          "page": 211
+        },
+        "sec:ch5_direction_validity": {
+          "number": "5.2",
+          "page": 211
+        },
+        "sec:ch5_direction_target": {
+          "number": "5.2.1",
+          "page": 212
+        },
+        "sec:ch5_applicability_target": {
+          "number": "5.2.2",
+          "page": 212
+        },
+        "sec:ch5_twohead_target": {
+          "number": "5.2.3",
+          "page": 213
+        },
+        "fig:ch5_twohead_logic": {
+          "number": "5.2",
+          "page": 213
+        },
+        "sec:ch5_analytical_organs": {
+          "number": "5.3",
+          "page": 214
+        },
+        "sec:ch5_vector_basis": {
+          "number": "5.3.1",
+          "page": 214
+        },
+        "sec:ch5_angular_organs": {
+          "number": "5.3.2",
+          "page": 214
+        },
+        "fig:ch5_pdr_characteristics": {
+          "number": "5.3",
+          "page": 215
+        },
+        "eq:ch5_phase_angle": {
+          "number": "5.1",
+          "page": 216
+        },
+        "eq:ch5_pos_angle": {
+          "number": "5.2",
+          "page": 216
+        },
+        "sec:ch5_power_organs": {
+          "number": "5.3.3",
+          "page": 216
+        },
+        "eq:ch5_phase_power": {
+          "number": "5.3",
+          "page": 216
+        },
+        "eq:ch5_pos_power": {
+          "number": "5.4",
+          "page": 217
+        },
+        "sec:ch5_adaptive_organ": {
+          "number": "5.3.4",
+          "page": 217
+        },
+        "eq:ch5_memory_voltage": {
+          "number": "5.5",
+          "page": 217
+        },
+        "eq:ch5_adaptive_threshold": {
+          "number": "5.6",
+          "page": 217
+        },
+        "sec:ch5_two_sample": {
+          "number": "5.3.5",
+          "page": 217
+        },
+        "fig:ch5_power_and_memory": {
+          "number": "5.4",
+          "page": 218
+        },
+        "eq:ch5_two_sample": {
+          "number": "5.7",
+          "page": 219
+        },
+        "sec:ch5_five_sample": {
+          "number": "5.3.6",
+          "page": 219
+        },
+        "eq:ch5_five_sample_derivative": {
+          "number": "5.8",
+          "page": 219
+        },
+        "eq:ch5_five_sample_vector": {
+          "number": "5.9",
+          "page": 219
+        },
+        "sec:ch5_unbalance_branch": {
+          "number": "5.3.7",
+          "page": 219
+        },
+        "eq:ch5_unbalance_power": {
+          "number": "5.10",
+          "page": 219
+        },
+        "eq:ch5_unbalance_current": {
+          "number": "5.11",
+          "page": 219
+        },
+        "sec:ch5_bavr072_proxy": {
+          "number": "5.3.8",
+          "page": 220
+        },
+        "eq:ch5_bavr072_proxy": {
+          "number": "5.12",
+          "page": 220
+        },
+        "sec:ch5_population_audit": {
+          "number": "5.4",
+          "page": 220
+        },
+        "tab:ch5_population": {
+          "number": "5.1",
+          "page": 221
+        },
+        "sec:ch5_expert_reference": {
+          "number": "5.5",
+          "page": 222
+        },
+        "tab:ch5_expert_repeatability": {
+          "number": "5.2",
+          "page": 224
+        },
+        "sec:ch5_engineering_verification": {
+          "number": "5.6",
+          "page": 224
+        },
+        "fig:ch5_causal_mask": {
+          "number": "5.5",
+          "page": 225
+        },
+        "sec:ch5_first_results": {
+          "number": "5.7",
+          "page": 228
+        },
+        "fig:ch5_current_profiles": {
+          "number": "5.6",
+          "page": 228
+        },
+        "sec:ch5_population_agreement": {
+          "number": "5.7.2",
+          "page": 229
+        },
+        "tab:ch5_pairwise_disagreement": {
+          "number": "5.3",
+          "page": 229
+        },
+        "sec:ch5_population_structure": {
+          "number": "5.7.3",
+          "page": 230
+        },
+        "fig:ch5_pairwise_agreement": {
+          "number": "5.7",
+          "page": 231
+        },
+        "fig:ch5_state_patterns": {
+          "number": "5.8",
+          "page": 231
+        },
+        "fig:ch5_population_pca": {
+          "number": "5.9",
+          "page": 232
+        },
+        "tab:ch5_analytical_expert": {
+          "number": "5.4",
+          "page": 234
+        },
+        "sec:ch5_expert_adaptation": {
+          "number": "5.8",
+          "page": 235
+        },
+        "sec:ch5_weak_monitoring": {
+          "number": "5.8.4",
+          "page": 237
+        },
+        "tab:ch5_weak_monitoring": {
+          "number": "5.5",
+          "page": 237
+        },
+        "tab:ch5_expert_adaptation": {
+          "number": "5.6",
+          "page": 238
+        },
+        "sec:ch5_h123_model": {
+          "number": "5.8.6",
+          "page": 238
+        },
+        "fig:ch5_expert_adaptation_comparison": {
+          "number": "5.10",
+          "page": 239
+        },
+        "tab:ch5_h123_expert": {
+          "number": "5.7",
+          "page": 240
+        },
+        "sec:ch5_training_dynamics": {
+          "number": "5.8.7",
+          "page": 240
+        },
+        "fig:ch5_training_dynamics_snapshots": {
+          "number": "5.11",
+          "page": 241
+        },
+        "fig:ch5_training_dynamics_sequence": {
+          "number": "5.12",
+          "page": 242
+        },
+        "fig:ch5_h123_references": {
+          "number": "5.13",
+          "page": 243
+        },
+        "sec:ch5_dense_validation": {
+          "number": "5.9",
+          "page": 244
+        },
+        "tab:ch5_dense_error_time": {
+          "number": "5.8",
+          "page": 245
+        },
+        "fig:ch5_engineering_error_time": {
+          "number": "5.14",
+          "page": 247
+        },
+        "sec:ch5_rtds_validation": {
+          "number": "5.10",
+          "page": 248
+        },
+        "tab:ch5_rtds_analytical": {
+          "number": "5.9",
+          "page": 250
+        },
+        "tab:ch5_rtds_neural": {
+          "number": "5.10",
+          "page": 251
+        },
+        "tab:ch5_rtds_engineering": {
+          "number": "5.11",
+          "page": 252
+        },
+        "fig:ch5_rtds_event_response": {
+          "number": "5.15",
+          "page": 254
+        },
+        "sec:ch5_adaptation_limits": {
+          "number": "5.11",
+          "page": 255
+        },
+        "sec:ch5_results_pending": {
+          "number": "5.11.3",
+          "page": 256
+        },
+        "sec:ch05_conclusions": {
+          "number": "5.12",
+          "page": 256
+        },
+        "ch:bibliography": {
+          "number": "5.12",
+          "page": 258
+        },
+        "ch:appendix01": {
+          "number": "5.12",
+          "page": 268
+        },
+        "ch:notes_informal": {
+          "number": "5.12",
+          "page": 269
+        }
+      },
+      "path": "docs/Dissertation/build/reading/latex/dissertation_comments_2026-10-30.pdf"
+    },
+    "ch04_reviewer": {
+      "pages": 85,
+      "sha256": "b3502ba9d5015766fd998a5f4ca9514f207b6cbbe998c645700364eb8eaec85e",
+      "printed_pages": [
+        124,
+        208
+      ],
+      "path": "docs/Dissertation/build/reading/latex/ch04_reviewer.pdf"
+    }
+  },
+  "remaining": [
+    "Independent reviewer follow-up, including R4-11/14/15",
+    "R4-13 exact threshold basis from data provider",
+    "R4-16 remaining unapproved graphics and final layout",
+    "D07-001 OZZ/BAVR motivation in introduction or chapter 1"
+  ],
+  "visual_qa": {
+    "clean_pages_rendered": 75,
+    "comments_pages_rendered": 85,
+    "inspected_modified_pages": [
+      127,
+      148,
+      207,
+      208
+    ],
+    "clean_conclusions": 197,
+    "result": "Modified text, green figure status, review replies, conclusions and page boundaries inspected. No new clipping or overlap. Nine pre-existing overfull warnings remain unchanged."
+  },
+  "manuscript_sha256": {
+    "chapter.tex": "2939545d39f14f01fd04322b2da8c1ee2b2f825f4697eb4757ad678d10eca750",
+    "sec01_evaluation_methodology.tex": "fdcfc7d3a92577cdde92c4021cdb4362064c3f0ffd03ca021d3d1d46102b9974",
+    "sec02_physkan_architectures.tex": "fe2cfe4c1b2c864f1cd0314888c94c76162798540459cf28a18ac714db85418d",
+    "sec03_signal_representations.tex": "cf84a3a6be9d5a8c26e7f48ff2bc003a2d205112acc31b13fee7105409c6a8c2",
+    "sec04_training_protocol.tex": "8ad0b58fbae6a05066ef152071c0ee323f65ec50d22674942105f03791f7b26f",
+    "sec05_physical_validation.tex": "7a3e46a78855f292b9aa388c3ee189eeafefbb6d1b0194ab8e355f5a6a84e587",
+    "sec06_event_examples.tex": "e410ad753fdbd9308e60f08b925de381ad7c4559f9d737715828d29f83064a7f",
+    "sec07_ozz_validation.tex": "186f1bd02de10e994e511f15e3e4b858fd8e2b6924a2bda0db6d44e8689ebf25",
+    "sec08_input_sensitivity.tex": "b42b6ecdb90fc58024434df1d4a8c4f75914333f285b54567938d08d237d3f86",
+    "sec09_ct_saturation.tex": "da161651f43e6a94388ddb827aa8afd53c301e7f981d7d3cacafce1661b1db43",
+    "sec10_conclusions.tex": "a58d3af60d9ed6714e53050376a2cdb8a91896249b4d9ea30a350deb5c934c0a"
+  },
+  "author_registry_sha256": "dca1ad871c59b3aed96daf5c9655d454663b1686398b90bcdd446acca3852fb3"
+}
