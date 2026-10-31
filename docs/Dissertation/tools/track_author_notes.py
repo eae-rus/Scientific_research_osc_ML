@@ -152,7 +152,8 @@ def main():
                   'not_required': 'Ответ записан, ожидает проверки автора'}
         chunks = ['% Generated from the existing author-note registry. Do not edit.']
         for record in registry['notes']:
-            if record.get('suppress_in_review') and record.get('author_acceptance') == 'accepted':
+            if record.get('suppress_in_review') and (record.get('author_acceptance') == 'accepted'
+                    or record.get('reviewer_acceptance') == 'accepted'):
                 chunks.append(r'\expandafter\def\csname authornote'+record['id']+r'\endcsname{}')
                 continue
             chunks.append(r'\expandafter\def\csname authorvisible'+record['id']+r'\endcsname{1}')
