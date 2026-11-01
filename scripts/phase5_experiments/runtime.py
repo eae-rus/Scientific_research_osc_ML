@@ -115,6 +115,8 @@ def fit_execution_to_memory(max_windows=8, max_padded_tokens=4000,
 def _backward_packs(model, windows, device, amp, policy, loss_fn):
     import math
     values, pack_count, padded_tokens = [], 0, 0
+    if policy.get('sort_by_length', False):
+        windows = sorted(windows, key=lambda w: w['z'].shape[1])
     for group in window_packs(windows, policy['max_windows'], policy['max_padded_tokens']):
         cpu_batch = pack_windows(group)
         batch = {k: v.to(device, non_blocking=True) if isinstance(v, torch.Tensor) else v

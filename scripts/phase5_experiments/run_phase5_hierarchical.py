@@ -40,13 +40,19 @@ def regularization_contract(rate):
                     Path(regularization_impl.__file__).read_bytes()).hexdigest())
 
 
-def assert_resume_contract(saved,current):
+def assert_resume_contract(saved,current,*,allow_batch_change=False):
     """Allow the verified console-only migration, never arbitrary hash bypass.
 
     New UI/manual settings no longer invalidate the numerical training recipe.
     Model/data bytes and all numerical settings still have to match exactly.
     """
     if saved==current: return False
+    if allow_batch_change and saved.get('target_tokens') != current.get('target_tokens'):
+        if not isinstance(current.get('target_tokens'), int) or current['target_tokens'] <= 0:
+            raise ValueError('target_tokens must be a positive integer')
+        migrated = dict(saved, target_tokens=current['target_tokens'])
+        assert_resume_contract(migrated, current)
+        return True
     # Verified bit-identical batched Fourier implementation, not a generic hash bypass.
     if (saved.get('model_data_sha256') == '8858f68cfeacd482ea92fc1dc8ddfa79930141bbca29c461426b997e57789776'
             and current.get('model_data_sha256') == '9ba94e2e2c68fc6d9593eb69161bf6b543135a65b2a6824336326e6b5a017e8a'):
@@ -215,15 +221,22 @@ def run(args):
     epoch,cursor,step,best = 0,0,0,float("inf")
     saved_execution = None
     regularization_history = []
+    batch_history = []
     if args.resume:
         state = torch.load(latest,map_location="cpu",weights_only=False) # own trusted checkpoint only
-        migrated=assert_resume_contract(state["contract"],contract)
+        migrated=assert_resume_contract(state["contract"],contract,
+                                        allow_batch_change=getattr(args,'allow_batch_change',False))
         model.load_state_dict(state["model"]); opt.load_state_dict(state["optimizer"])
         scheduler.load_state_dict(state["scheduler"]); scaler.load_state_dict(state["scaler"])
         epoch,cursor,step,best = state["epoch"],state["cursor"],state["step"],state["best"]
         restore_rng(state["rng"])
         saved_execution = state.get("execution")
         regularization_history = state.get('regularization_history', [])
+        batch_history = state.get('batch_history', [])
+        if state['contract']['target_tokens'] != args.target_tokens:
+            batch_history.append(dict(epoch=epoch,cursor=cursor,step=step,
+                                      previous_target_tokens=state['contract']['target_tokens'],
+                                      target_tokens=args.target_tokens))
         if 'regularization' not in state['contract']:
             regularization_history.append(dict(epoch=epoch, cursor=cursor, step=step,
                                                previous_drop_path_rate=0., regularization=regularization))
@@ -239,6 +252,8 @@ def run(args):
         # may lower limits further, but never silently undo a saved fallback.
         for key in policy:
             policy[key] = min(policy[key], saved_execution["effective"][key])
+    if getattr(args,'pack_by_length',False):
+        policy['sort_by_length'] = True
     execution = {"version":"packed_v1","requested":requested,"effective":policy,
                  "workers":args.workers,"torch":torch.__version__,"cpu_threads":torch.get_num_threads()}
     def record_execution():
@@ -266,7 +281,7 @@ def run(args):
         atomic_save({"contract":contract,"model":model.state_dict(),"optimizer":opt.state_dict(),
                      "scheduler":scheduler.state_dict(),"scaler":scaler.state_dict(),"rng":rng_state(),
                      "epoch":epoch,"cursor":cursor,"step":step,"best":best,"execution":execution,
-                     "regularization_history":regularization_history},path)
+                     "regularization_history":regularization_history,"batch_history":batch_history},path)
         if path == latest: last_saved[:] = [epoch,cursor,step]
         record_execution()
     def log(row):
@@ -386,16 +401,20 @@ def build_parser():
     parser.add_argument("--samples-per-epoch",type=int,default=20000)
     parser.add_argument("--validation-samples",type=int,default=64)
     parser.add_argument("--target-tokens",type=int,default=640)
+    parser.add_argument("--allow-batch-change",action="store_true",
+                        help="Explicitly allow changing target_tokens on resume; keep AdamW/scheduler state")
     parser.add_argument("--max-seconds",type=float,default=30)
     parser.add_argument("--workers",type=int,default=2)
     parser.add_argument("--drop-path-rate",type=float,default=0.1,
                         help="Maximum whole residual block skip probability during training")
     parser.add_argument("--max-windows-per-forward",type=int,default=8)
+    parser.add_argument("--pack-by-length",action="store_true",
+                        help="Group windows by length within each effective batch, retaining its membership")
     parser.add_argument("--max-padded-tokens",type=int,default=4000)
     parser.add_argument("--gpu-reserve-mib",type=int,default=1024)
     parser.add_argument("--no-checkpoint-max-tokens",type=int,default=4000,
                         help="Keep activations up to this length; 0 restores original recomputation")
-    parser.add_argument("--save-every",type=int,default=10)
+    parser.add_argument("--save-every",type=int,default=500)
     parser.add_argument("--max-steps",type=int,default=0)
     parser.add_argument("--seed",type=int,default=42)
     parser.add_argument("--lr",type=float,default=2e-4)

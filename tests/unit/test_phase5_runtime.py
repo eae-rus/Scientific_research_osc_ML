@@ -163,6 +163,15 @@ def test_ssl_stochastic_depth_migration_keeps_other_contract_checks():
     with pytest.raises(ValueError): engine.assert_resume_contract(new, dict(old, regularization=engine.regularization_contract(.2)))
 
 
+def test_batch_size_transition_requires_explicit_flag_and_preserves_other_checks():
+    from scripts.phase5_experiments.run_phase5_hierarchical import assert_resume_contract
+    old = dict(target_tokens=640, lr=.0002)
+    new = dict(old, target_tokens=1280)
+    with pytest.raises(ValueError): assert_resume_contract(old, new)
+    assert assert_resume_contract(old, new, allow_batch_change=True)
+    with pytest.raises(ValueError): assert_resume_contract(old, dict(new, lr=.001), allow_batch_change=True)
+
+
 def test_ssl_stochastic_depth_exact_resume(tmp_path, monkeypatch):
     from scripts.phase5_experiments import run_phase5_hierarchical as engine
     cfg=replace(HierarchicalConfig(),channel_width=8,width=16,channel_layers=2,

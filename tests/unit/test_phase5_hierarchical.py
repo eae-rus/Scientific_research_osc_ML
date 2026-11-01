@@ -170,7 +170,9 @@ def test_manual_entry_dispatches_current_run_without_training(monkeypatch):
     entry.run_manual()
     assert len(captured)==1
     args=captured[0]
-    assert args.resume and args.target_tokens==640 and args.validation_samples==64
+    assert args.resume and args.target_tokens==2560 and args.validation_samples==64
+    assert args.allow_batch_change and args.pack_by_length and args.max_windows_per_forward==32
+    assert args.save_every==500
     assert args.output.name=="phasor_hierarchical_v1"
 
 
