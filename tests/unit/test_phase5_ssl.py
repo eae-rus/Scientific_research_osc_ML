@@ -59,3 +59,25 @@ def test_masked_dataset_retries_fully_missing_feature_sample() -> None:
     assert sample["metadata"]["sampled_dataset_index"] == 1
     assert sample["metadata"]["ssl_resample_attempt"] == 1
     assert sample["reconstruction_mask"].any()
+
+@pytest.mark.parametrize('version', ['A', 'B'])
+@pytest.mark.parametrize('seed', [1, 42, 987])
+def test_vectorized_mask_preserves_reference_candidate_order(version, seed):
+    """Optimization must preserve masks, including partially missing groups."""
+    schema = SpectralFeatureBuilder(SpectralFeatureConfig(version)).schema
+    rng = np.random.default_rng(81)
+    features = rng.normal(size=(80, len(schema.names))).astype(np.float32)
+    missing = rng.random(features.shape) < .4
+    groups = tuple(dict.fromkeys(schema.groups))
+    indices = {g: np.asarray([i for i, value in enumerate(schema.groups) if value == g]) for g in groups}
+    candidates = [(t, g) for t in range(len(features)) for g in groups if np.any(~missing[t, indices[g]])]
+    count = max(1, int(np.floor(len(candidates)*.25+.5)))
+    chosen = np.random.default_rng(seed).choice(len(candidates), size=count, replace=False)
+    expected = np.zeros_like(missing)
+    for i in chosen:
+        t, g = candidates[i]
+        expected[t, indices[g]] = ~missing[t, indices[g]]
+    actual_input, actual = apply_group_mask(features, missing, schema, SpectralMaskingConfig(), seed)
+    np.testing.assert_array_equal(actual, expected)
+    wanted = features.copy(); wanted[expected] = 0
+    np.testing.assert_array_equal(actual_input, wanted)

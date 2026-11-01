@@ -17,14 +17,27 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from osc_tools.ml.models.phasor_hierarchical import HierarchicalConfig, PhasorHierarchicalKAN, vector_loss
+from osc_tools.ml.phase5_ozz_regularization import OZZRegularizedBackbone
+from osc_tools.ml import phase5_ozz_regularization as regularization_impl
 from osc_tools.ml.phase5_hierarchical_data import DATA_CONTRACT, HierarchicalDataset, collate_windows
 from scripts.phase5_experiments.run_phase5_pretrain import _load_splits
 from scripts.phase5_experiments.progress import TrainingProgress, export_hierarchical_curves
+from scripts.phase5_experiments.runtime import (activation_policy, scale_gradients, effective_batches,
+    fit_execution_to_memory, backward_with_oom_retry, TrainingMemoryError, timed_batches)
 
 
 def model_data_hash():
     return hashlib.sha256(b"".join((ROOT/path).read_bytes() for path in (
-        "osc_tools/ml/models/phasor_hierarchical.py","osc_tools/ml/phase5_hierarchical_data.py"))).hexdigest()
+        "osc_tools/ml/models/phasor_hierarchical.py","osc_tools/ml/phase5_hierarchical_data.py",
+        "osc_tools/ml/phase5_fourier.py"))).hexdigest()
+
+
+def regularization_contract(rate):
+    if not 0 <= rate < 1:
+        raise ValueError('drop_path_rate must be in [0, 1)')
+    return dict(kind='stage_linear_whole_block_v1', drop_path_rate=rate,
+                implementation_sha256=hashlib.sha256(
+                    Path(regularization_impl.__file__).read_bytes()).hexdigest())
 
 
 def assert_resume_contract(saved,current):
@@ -34,6 +47,23 @@ def assert_resume_contract(saved,current):
     Model/data bytes and all numerical settings still have to match exactly.
     """
     if saved==current: return False
+    # Verified bit-identical batched Fourier implementation, not a generic hash bypass.
+    if (saved.get('model_data_sha256') == '8858f68cfeacd482ea92fc1dc8ddfa79930141bbca29c461426b997e57789776'
+            and current.get('model_data_sha256') == '9ba94e2e2c68fc6d9593eb69161bf6b543135a65b2a6824336326e6b5a017e8a'):
+        migrated = dict(saved, model_data_sha256=current['model_data_sha256'])
+        assert_resume_contract(migrated, current)
+        return True
+    # Explicit supported transition: old SSL -> stochastic depth, without
+    # relaxing any architecture/data/optimizer constraints. Subsequent resumes
+    # must keep the recorded rate and implementation unchanged.
+    if 'regularization' not in saved and 'regularization' in current:
+        reg = current['regularization']
+        if reg != regularization_contract(reg['drop_path_rate']):
+            raise ValueError('Unknown stochastic-depth implementation')
+        previous_recipe = dict(current)
+        previous_recipe.pop('regularization')
+        assert_resume_contract(saved, previous_recipe)
+        return True
     legacy_hash="0341f4e14045b0d6c4089a89755635864799413eff5f443b41f9a7d15e43cf39"
     verified_data="8858f68cfeacd482ea92fc1dc8ddfa79930141bbca29c461426b997e57789776"
     migrated=dict(saved)
@@ -153,7 +183,9 @@ def run(args):
     device = torch.device("cuda" if args.device=="auto" and torch.cuda.is_available() else "cpu" if args.device=="auto" else args.device)
     amp = device.type=="cuda" and torch.cuda.is_bf16_supported() and not args.fp32
     cfg = HierarchicalConfig()
-    model = PhasorHierarchicalKAN(cfg).to(device)
+    drop_path_rate = getattr(args, 'drop_path_rate', 0.1)
+    regularization = regularization_contract(drop_path_rate)
+    model = OZZRegularizedBackbone(cfg, drop_path_rate).to(device)
     if args.profile:
         profile(args,model,device,amp); return
     output = args.output.resolve()
@@ -170,7 +202,8 @@ def run(args):
                 "registry_sha256":hashlib.sha256(registry.read_bytes()).hexdigest(),"seed":args.seed,
                 "samples_per_epoch":args.samples_per_epoch,"validation_samples":args.validation_samples,
                 "target_tokens":args.target_tokens,"max_seconds":args.max_seconds,"lr":args.lr,
-                "amp_bf16":amp,"loss":"radial_vector_huber_0.1_local_0.25","protocol":"research_strict"}
+                "amp_bf16":amp,"loss":"radial_vector_huber_0.1_local_0.25","protocol":"research_strict",
+                "regularization":regularization}
     train = HierarchicalDataset(registry,manifest,samples=args.samples_per_epoch,seed=args.seed,max_seconds=args.max_seconds)
     val = HierarchicalDataset(registry,manifest,split="validation",samples=args.validation_samples,seed=args.seed+100000,
                               max_seconds=args.max_seconds,augment=False)
@@ -180,6 +213,8 @@ def run(args):
     scheduler = torch.optim.lr_scheduler.LambdaLR(opt,multiplier)
     scaler = torch.amp.GradScaler("cuda",enabled=False) # BF16 needs no dynamic scaling; state retained.
     epoch,cursor,step,best = 0,0,0,float("inf")
+    saved_execution = None
+    regularization_history = []
     if args.resume:
         state = torch.load(latest,map_location="cpu",weights_only=False) # own trusted checkpoint only
         migrated=assert_resume_contract(state["contract"],contract)
@@ -187,29 +222,58 @@ def run(args):
         scheduler.load_state_dict(state["scheduler"]); scaler.load_state_dict(state["scaler"])
         epoch,cursor,step,best = state["epoch"],state["cursor"],state["step"],state["best"]
         restore_rng(state["rng"])
-        if migrated: print("Совместимый переход на новый вывод: веса, optimizer, scheduler и RNG сохранены.",flush=True)
+        saved_execution = state.get("execution")
+        regularization_history = state.get('regularization_history', [])
+        if 'regularization' not in state['contract']:
+            regularization_history.append(dict(epoch=epoch, cursor=cursor, step=step,
+                                               previous_drop_path_rate=0., regularization=regularization))
+        if migrated: print("Совместимый переход рецепта: веса, optimizer, scheduler и RNG восстановлены; новый режим записан в checkpoint.",flush=True)
     (output/"config.json").write_text(json.dumps(contract,indent=2),encoding="utf-8")
+    requested = dict(max_windows=getattr(args,"max_windows_per_forward",8),
+                     max_padded_tokens=getattr(args,"max_padded_tokens",4000),
+                     no_checkpoint_max_tokens=getattr(args,"no_checkpoint_max_tokens",4000),
+                     reserve_mib=getattr(args,"gpu_reserve_mib",1024))
+    policy = fit_execution_to_memory(**requested,device=device)
+    if saved_execution and saved_execution.get("requested") == requested:
+        # Retain an OOM fallback across save/resume. A smaller available budget
+        # may lower limits further, but never silently undo a saved fallback.
+        for key in policy:
+            policy[key] = min(policy[key], saved_execution["effective"][key])
+    execution = {"version":"packed_v1","requested":requested,"effective":policy,
+                 "workers":args.workers,"torch":torch.__version__,"cpu_threads":torch.get_num_threads()}
+    def record_execution():
+        (output/"execution.json").write_text(json.dumps(execution,indent=2),encoding="utf-8")
+    record_execution()
     stop = [False]
     progress=TrainingProgress(output,interval=getattr(args,"console_interval",2.))
     progress.message(f"PhasorHierarchicalKAN | {device} | {'BF16' if amp else 'FP32'} | "
                      f"эпоха {epoch+1}/{args.epochs}, окно {cursor:,}/{len(train):,}, шаг {step:,}\n"
                      f"Результаты: {output}\n"
-                     f"Микробатч 1; накопление {args.target_tokens} токенов; workers={args.workers}. "
+                     f"До {policy['max_windows']} окон за проход; накопление {args.target_tokens} токенов; workers={args.workers}. "
                      "Ctrl+C: сохранить и остановиться. Подробности — training_log.jsonl.")
+    progress.message(f"Предел упаковки: {policy['max_padded_tokens']} токенов с padding; "
+                     f"без пересчёта: {policy['no_checkpoint_max_tokens']}; запас VRAM: {requested['reserve_mib']} МиБ.")
+    progress.message(f"Stochastic depth: до {drop_path_rate:.0%} внутри каждой стадии; validation — вся глубина.")
+    if args.resume and (not saved_execution or saved_execution.get("effective") != policy):
+        progress.message("Режим исполнения изменён: границы шагов сохранены, но упаковка может изменить dropout/округления.")
     def request_stop(signum,frame):
         stop[0]=True
         progress.message("Остановка запрошена: завершаю накопление и сохраняю latest.")
     signal.signal(signal.SIGINT,request_stop)
     signal.signal(signal.SIGTERM,request_stop)
+    last_saved = [epoch,cursor,step]
     def save(path=latest):
         atomic_save({"contract":contract,"model":model.state_dict(),"optimizer":opt.state_dict(),
                      "scheduler":scheduler.state_dict(),"scaler":scaler.state_dict(),"rng":rng_state(),
-                     "epoch":epoch,"cursor":cursor,"step":step,"best":best},path)
+                     "epoch":epoch,"cursor":cursor,"step":step,"best":best,"execution":execution,
+                     "regularization_history":regularization_history},path)
+        if path == latest: last_saved[:] = [epoch,cursor,step]
+        record_execution()
     def log(row):
         with (output/"training_log.jsonl").open("a",encoding="utf-8") as stream:
             stream.write(json.dumps(row,ensure_ascii=False)+"\n")
         if row['kind']=='train':
-            progress.update(row['cursor'],{k:row[k] for k in ('loss','lr','grad_norm','step')})
+            progress.update(row['cursor'],{k:row[k] for k in ('loss','lr','grad_norm','step','gpu_peak_allocated_mib','gpu_reserved_mib','gpu_free_mib') if k in row})
         else:
             metrics=row['metrics']
             progress.message(f"Эпоха {row['epoch']+1}: val={metrics['all']:.6f} | "
@@ -221,48 +285,82 @@ def run(args):
     if epoch>=args.epochs:
         progress.message("Заданный предел эпох уже достигнут. Для продолжения увеличьте EPOCHS.")
         return
+    # A valid rollback checkpoint exists even if the first AdamW update runs out of memory.
+    if not latest.exists(): save()
     while epoch<args.epochs:
         progress.begin(f"Эпоха {epoch+1}/{args.epochs}",len(train),cursor)
         train.set_epoch(epoch)
-        opt.zero_grad(set_to_none=True)
-        count_acc,tokens_acc,loss_acc = 0,0,0.
         started = time.perf_counter()
-        coverage = []
-        for batch in loader(train,cursor,args.workers,args.seed+epoch):
-            batch = to_device(batch,device)
-            with torch.autocast(device.type,dtype=torch.bfloat16,enabled=amp):
-                total,count = losses(model,batch)
-            if not torch.isfinite(total) or count.item()==0:
-                raise RuntimeError(f"Invalid training loss at epoch={epoch}, cursor={cursor}; previous latest preserved")
-            # Fixed numerical divisor, corrected by exact valid-target count
-            # after accumulation. No mean-of-microbatch-means weighting.
-            (total/4096).backward()
-            count_acc += count.item(); tokens_acc += batch["valid"].sum().item(); loss_acc += total.item()
-            coverage.append(batch["metadata"][0]); cursor += 1
-            stop[0] = stop[0] or (output/"STOP").exists()
-            # A stop request must not shorten the effective batch. Finish the
-            # same accumulation boundary the uninterrupted run would use.
-            if tokens_acc>=args.target_tokens or cursor==len(train):
-                for p in model.parameters():
-                    if p.grad is not None: p.grad.mul_(4096/max(1,count_acc))
+        batches = effective_batches(loader(train,cursor,args.workers,args.seed+epoch),args.target_tokens)
+        for windows, data_wait_seconds in timed_batches(batches):
+            count_acc = sum(int(np.count_nonzero(w["selected"].numpy())) for w in windows)
+            tokens_acc = sum(int(np.count_nonzero(w["valid"].numpy())) for w in windows)
+            if count_acc == 0: raise RuntimeError(f"No targets at epoch={epoch}, cursor={cursor}")
+            before_batch_rng = rng_state()
+            failed = False
+            try:
+                result = backward_with_oom_retry(model,windows,device,amp,policy,losses,
+                                                 rng_state,restore_rng,progress.message)
+                scale_gradients(model,4096/count_acc)
                 grad = torch.nn.utils.clip_grad_norm_(model.parameters(),1,error_if_nonfinite=True)
-                opt.step(); scheduler.step(); step += 1
+            except (TrainingMemoryError, torch.OutOfMemoryError):
+                failed = True
+            if failed:
                 opt.zero_grad(set_to_none=True)
-                log({"kind":"train","epoch":epoch,"cursor":cursor,"step":step,"loss":loss_acc/count_acc,
-                     "tokens":tokens_acc,"targets":count_acc,"grad_norm":float(grad),"lr":opt.param_groups[0]["lr"],
-                     "seconds":time.perf_counter()-started,"windows":coverage})
-                count_acc,tokens_acc,loss_acc = 0,0,0.; coverage=[]; started=time.perf_counter()
-                if step%args.save_every==0: save()
-                if stop[0] or (args.max_steps and step>=args.max_steps):
-                    save()
-                    progress.update(cursor,{"step":step},force=True,status="paused")
-                    progress.message(f"Сохранено: {latest}\nОстановлено: эпоха {epoch+1}, окно {cursor}, шаг {step}.")
-                    return
+                if device.type == "cuda": torch.cuda.empty_cache()
+                restore_rng(before_batch_rng)
+                save()  # Current weights are valid; cursor still points before this batch.
+                progress.update(cursor,{"step":step},force=True,status="paused")
+                progress.message(f"Не хватает VRAM даже после уменьшения нагрузки. Сохранена позиция перед шагом: {latest}")
+                return
+            # AdamW can modify parameters before an OOM. Never overwrite latest
+            # with such a partially updated state; roll back to the on-disk snapshot.
+            optimizer_failed = False
+            try:
+                opt.step()
+            except torch.OutOfMemoryError:
+                optimizer_failed = True
+            if optimizer_failed:
+                opt.zero_grad(set_to_none=True)
+                if device.type == "cuda": torch.cuda.empty_cache()
+                progress.begin(f"Эпоха {last_saved[0]+1}/{args.epochs}",len(train),last_saved[1])
+                progress.update(last_saved[1],{"step":last_saved[2]},force=True,status="paused")
+                progress.message(f"OOM внутри AdamW. Частичный шаг не сохранён; продолжать с checkpoint step={last_saved[2]}: {latest}")
+                return
+            scheduler.step(); step += 1; cursor += len(windows)
+            opt.zero_grad(set_to_none=True)
+            row = {"kind":"train","epoch":epoch,"cursor":cursor,"step":step,"loss":result['loss_sum']/count_acc,
+                   "tokens":tokens_acc,"targets":count_acc,"grad_norm":float(grad),"lr":opt.param_groups[0]["lr"],
+                   "seconds":time.perf_counter()-started,"windows":[w['metadata'][0] for w in windows],
+                   "packs":result['packs'],"padded_tokens":result['padded_tokens'],"oom_retries":result['oom_retries'],
+                   "data_wait_seconds":data_wait_seconds}
+            if device.type == "cuda":
+                row.update(gpu_peak_allocated_mib=torch.cuda.max_memory_allocated()/2**20,
+                           gpu_reserved_mib=torch.cuda.memory_reserved()/2**20,
+                           gpu_free_mib=torch.cuda.mem_get_info()[0]/2**20)
+            log(row); started=time.perf_counter()
+            if step%args.save_every==0: save()
+            if stop[0] or (output/"STOP").exists() or (args.max_steps and step>=args.max_steps):
+                save()
+                progress.update(cursor,{"step":step},force=True,status="paused")
+                progress.message(f"Сохранено: {latest}\nОстановлено: эпоха {epoch+1}, окно {cursor}, шаг {step}.")
+                return
         # Validation is fixed across epochs; preserve training RNG around it.
         progress.update(cursor,{"step":step},force=True)
         saved_rng = rng_state()
-        metrics = evaluate(model,val,device,amp,progress)
+        validation_failed = False
+        try:
+            metrics = evaluate(model,val,device,amp,progress)
+        except torch.OutOfMemoryError:
+            validation_failed = True
         restore_rng(saved_rng)
+        if validation_failed:
+            if device.type == "cuda": torch.cuda.empty_cache()
+            save()
+            progress.begin(f"Эпоха {epoch+1}/{args.epochs}",len(train),cursor)
+            progress.update(cursor,{"step":step},force=True,status="paused")
+            progress.message("Не хватает VRAM на validation. Обученные веса сохранены; продолжение повторит validation.")
+            return
         log({"kind":"validation","epoch":epoch,"step":step,"metrics":metrics})
         improved = metrics["all"]<best
         best = min(best,metrics["all"])
@@ -290,6 +388,13 @@ def build_parser():
     parser.add_argument("--target-tokens",type=int,default=640)
     parser.add_argument("--max-seconds",type=float,default=30)
     parser.add_argument("--workers",type=int,default=2)
+    parser.add_argument("--drop-path-rate",type=float,default=0.1,
+                        help="Maximum whole residual block skip probability during training")
+    parser.add_argument("--max-windows-per-forward",type=int,default=8)
+    parser.add_argument("--max-padded-tokens",type=int,default=4000)
+    parser.add_argument("--gpu-reserve-mib",type=int,default=1024)
+    parser.add_argument("--no-checkpoint-max-tokens",type=int,default=4000,
+                        help="Keep activations up to this length; 0 restores original recomputation")
     parser.add_argument("--save-every",type=int,default=10)
     parser.add_argument("--max-steps",type=int,default=0)
     parser.add_argument("--seed",type=int,default=42)

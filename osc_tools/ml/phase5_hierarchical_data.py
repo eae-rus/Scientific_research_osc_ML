@@ -59,7 +59,7 @@ def token_positions(start, count, samples_per_period):
     return start+np.floor(np.arange(1,count+1)*samples_per_period/8+.5).astype(np.int64)-1
 
 
-def build_local_features(segment,spp,blocks,voltage_basis,provenance):
+def build_local_features_reference(segment,spp,blocks,voltage_basis,provenance):
     positions=token_positions(0,80*blocks,spp)
     builder=ExactFrequencyBuilder(spp)
     feature_parts,missing_parts=[],[]
@@ -71,6 +71,11 @@ def build_local_features(segment,spp,blocks,voltage_basis,provenance):
                    voltage_basis=voltage_basis,channel_provenance=provenance,phasor_backend="prefix")
         feature_parts.append(feature); missing_parts.append(miss)
     return np.concatenate(feature_parts),np.concatenate(missing_parts),meta,positions
+
+
+def build_local_features(segment,spp,blocks,voltage_basis,provenance):
+    from osc_tools.ml.phase5_fourier import build_batched_features
+    return build_batched_features(segment,spp,blocks,voltage_basis,provenance)
 
 
 class HierarchicalDataset:

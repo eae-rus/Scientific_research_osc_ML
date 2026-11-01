@@ -46,23 +46,22 @@ def apply_group_mask(
         group: np.asarray([i for i, value in enumerate(schema.groups) if value == group])
         for group in groups
     }
-    candidates = [
-        (time_index, group)
-        for time_index in range(features.shape[0])
-        for group in groups
-        if np.any(~missing_mask[time_index, indices_by_group[group]])
-    ]
-    if not candidates:
+    # Keep the original time-major/group-major candidate order exactly.
+    # A NumPy reduction per group replaces a Python reduction per (time, group).
+    available = np.stack([(~missing_mask[:, indices_by_group[group]]).any(axis=1)
+                          for group in groups], axis=1)
+    candidates = np.flatnonzero(available.reshape(-1))
+    if not len(candidates):
         raise ValueError("Нет доступных признаков для masked modeling")
 
     count = max(1, int(np.floor(len(candidates) * config.ratio + 0.5)))
     rng = np.random.default_rng(seed)
     chosen = rng.choice(len(candidates), size=min(count, len(candidates)), replace=False)
-    reconstruction_mask = np.zeros_like(missing_mask)
-    for candidate_index in np.atleast_1d(chosen):
-        time_index, group = candidates[int(candidate_index)]
-        indices = indices_by_group[group]
-        reconstruction_mask[time_index, indices] = ~missing_mask[time_index, indices]
+    selected_groups = np.zeros_like(available)
+    selected_groups.reshape(-1)[candidates[chosen]] = True
+    group_number = {group: i for i, group in enumerate(groups)}
+    channel_groups = np.asarray([group_number[group] for group in schema.groups])
+    reconstruction_mask = selected_groups[:, channel_groups] & ~missing_mask
 
     model_input = features.copy()
     model_input[reconstruction_mask] = config.mask_value

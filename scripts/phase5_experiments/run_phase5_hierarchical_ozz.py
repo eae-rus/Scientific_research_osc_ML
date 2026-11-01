@@ -11,6 +11,7 @@ from torch import nn
 from torch.utils.data import DataLoader
 from osc_tools.ml.models.phasor_hierarchical import HierarchicalConfig, PhasorHierarchicalKAN
 from osc_tools.ml.phase5_hierarchical_ozz import OZZDataset, prepare_records
+from osc_tools.ml.phase5_ozz_regularization import OZZRegularizedBackbone, smooth_binary_targets
 from scripts.phase5_experiments.run_phase5_hierarchical import atomic_save, rng_state, restore_rng, worker_init
 from scripts.phase5_experiments.progress import TrainingProgress
 
@@ -58,6 +59,7 @@ def evaluate(model, dataset, device, workers, amp, progress):
     model.eval()
     counts = torch.zeros(4, 4, device=device)
     total, count = 0., 0
+    real_fp, real_count = 0, 0
     progress.begin('OZZ validation', len(dataset))
     with torch.no_grad():
         for i, batch in enumerate(loader(dataset, workers)):
@@ -69,10 +71,15 @@ def evaluate(model, dataset, device, workers, amp, progress):
             total += nn.functional.binary_cross_entropy_with_logits(logits, target, reduction='sum').item()
             count += target.numel()
             pred, truth = logits >= 0, target > .5
+            if batch['source_group'].item() == 4:
+                real_fp += pred.any(-1).sum().item()
+                real_count += len(pred)
             counts += torch.stack(((pred & truth).sum(0), (pred & ~truth).sum(0),
                                    (~pred & truth).sum(0), (~pred & ~truth).sum(0)))
             progress.update(i+1, {'loss': total/max(count, 1)})
-    return {'loss': total/max(count, 1), **metrics_from_counts(*counts.cpu())}
+    progress.update(len(dataset), force=True)
+    return {'loss': total/max(count, 1), **metrics_from_counts(*counts.cpu()),
+            'real_no_ozz_false_positive_rate': real_fp/real_count if real_count else None}
 
 
 def export_curves(output):
@@ -93,6 +100,9 @@ def export_curves(output):
 
 def run(config):
     config = dict(config)
+    config.setdefault('label_error_probability', 0.)
+    config.setdefault('drop_path_rate', 0.)
+    smooth_binary_targets(torch.tensor(0.), config['label_error_probability'])
     output = Path(config['output']).resolve()
     latest = output/'latest_checkpoint.pt'
     resume = config['resume']
@@ -107,7 +117,7 @@ def run(config):
     amp = device.type == 'cuda' and torch.cuda.is_bf16_supported()
     state = torch.load(latest if resume else config['ssl_checkpoint'], map_location='cpu', weights_only=False)
     architecture = state['contract']['architecture']
-    backbone = PhasorHierarchicalKAN(HierarchicalConfig(**architecture))
+    backbone = OZZRegularizedBackbone(HierarchicalConfig(**architecture), config['drop_path_rate'])
     if not resume:
         if state['contract'].get('data_contract') != 'phase5_hierarchical_b_reim_v1':
             raise ValueError('Нужен checkpoint иерархического SSL Phase 5.')
@@ -120,11 +130,9 @@ def run(config):
                     split_sha256=hashlib.sha256(json.dumps(manifest, sort_keys=True).encode()).hexdigest(),
                     ssl_split_sha256=hashlib.sha256(manifest_path.read_bytes()).hexdigest())
     code_paths = [Path(__file__), ROOT/'osc_tools/ml/phase5_hierarchical_ozz.py',
-                  ROOT/'osc_tools/ml/phase5_hierarchical_data.py', ROOT/'osc_tools/ml/models/phasor_hierarchical.py']
+                  ROOT/'osc_tools/ml/phase5_hierarchical_data.py', ROOT/'osc_tools/ml/models/phasor_hierarchical.py',
+                  ROOT/'osc_tools/ml/phase5_ozz_regularization.py', ROOT/'osc_tools/ml/phase5_fourier.py']
     contract['implementation_sha256'] = hashlib.sha256(b''.join(p.read_bytes() for p in code_paths)).hexdigest()
-    for key in ('real_csv', 'norm_csv'):
-        if config['use_real_no_ozz']:
-            contract[key+'_sha256'] = hashlib.sha256(Path(config[key]).read_bytes()).hexdigest()
     if resume and contract != state['contract']:
         raise ValueError('Параметры/данные дообучения не совпадают с checkpoint.')
     output.mkdir(parents=True, exist_ok=True)
@@ -156,6 +164,9 @@ def run(config):
     progress.message(f'OZZ Phase 5 | {device} | SSL step {provenance["step"]} | {output}\n'
                      '4 типа ОЗЗ; все четыре выхода 0 = не ОЗЗ. Ctrl+C или STOP: сохранить и остановиться.')
     try:
+        if epoch >= config['epochs']:
+            progress.message('Все заданные эпохи уже завершены. Увеличьте EPOCHS для продолжения.')
+            return
         while epoch < config['epochs']:
             train.epoch = epoch
             model.train(); opt.zero_grad(set_to_none=True)
@@ -166,7 +177,8 @@ def run(config):
                 mask = batch['valid'] & batch['supervised']
                 with torch.autocast(device.type, dtype=torch.bfloat16, enabled=amp):
                     logits = model(batch)
-                    loss = nn.functional.binary_cross_entropy_with_logits(logits[mask].float(), batch['target'][mask], reduction='sum')
+                    target = smooth_binary_targets(batch['target'][mask], config['label_error_probability'])
+                    loss = nn.functional.binary_cross_entropy_with_logits(logits[mask].float(), target, reduction='sum')
                 if not torch.isfinite(loss):
                     raise FloatingPointError('Non-finite OZZ loss')
                 (loss/4096).backward()
@@ -184,9 +196,10 @@ def run(config):
                 if step % config['save_every'] == 0: save()
                 if stop[0] or (output/'STOP').exists():
                     save(); progress.update(cursor, force=True, status='paused'); return
+            progress.update(cursor, force=True)
             result = evaluate(model, val, device, config['workers'], amp, progress)
             log(dict(kind='validation', epoch=epoch, step=step, **result))
-            progress.message(f'Epoch {epoch+1}: val BCE={result["loss"]:.6f}, macro F1={result["macro_f1"]:.4f}; F1={result["f1_per_class"]}')
+            progress.message(f'Epoch {epoch+1}: val BCE={result["loss"]:.6f}, macro F1={result["macro_f1"]:.4f}; F1={result["f1_per_class"]}; real no-OZZ FPR={result["real_no_ozz_false_positive_rate"]}')
             epoch += 1; cursor = 0
             improved = result['loss'] < best
             best = min(best, result['loss'])

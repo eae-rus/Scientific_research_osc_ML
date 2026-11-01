@@ -187,3 +187,32 @@ def test_progress_nonterminal_throttles_and_keeps_machine_status(tmp_path):
     assert '{"kind"' not in stream.getvalue()
     status=json.loads((tmp_path/'progress.json').read_text(encoding='utf-8'))
     assert status['completed']==3 and status['status']=='paused'
+
+@pytest.mark.parametrize('tokens', [7, 12])
+def test_execution_policy_preserves_dropout_gradients_and_rng(tokens):
+    from scripts.phase5_experiments.runtime import activation_policy, scale_gradients
+    cfg = replace(HierarchicalConfig(), channel_width=8, width=16, channel_layers=1,
+                  local_layers=1, global_layers=1, fusion_layers=1, dropout=.05, block_tokens=4)
+    model = PhasorHierarchicalKAN(cfg).train()
+    batch = inputs(tokens)
+    rng = torch.get_rng_state()
+    reference = model(*batch)['prediction']
+    reference.square().mean().backward()
+    for p in model.parameters():
+        if p.grad is not None: p.grad.mul_(.123)
+    grads = {name: p.grad.clone() for name, p in model.named_parameters() if p.grad is not None}
+    after_rng = torch.get_rng_state()
+    model.zero_grad(set_to_none=True); torch.set_rng_state(rng)
+    with activation_policy(model, tokens, 8):
+        assert model.cfg.checkpoint_blocks == (tokens > 8)
+        actual = model(*batch)['prediction']
+        actual.square().mean().backward()
+    scale_gradients(model, .123)
+    assert model.cfg is cfg
+    torch.testing.assert_close(reference, actual, rtol=0, atol=0)
+    assert torch.equal(after_rng, torch.get_rng_state())
+    for name, p in model.named_parameters():
+        if name in grads: torch.testing.assert_close(grads[name], p.grad, rtol=0, atol=0)
+    with pytest.raises(RuntimeError):
+        with activation_policy(model, 1, 8): raise RuntimeError('fixture')
+    assert model.cfg is cfg

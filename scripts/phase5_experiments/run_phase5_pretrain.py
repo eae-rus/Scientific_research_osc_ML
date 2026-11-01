@@ -563,12 +563,18 @@ def run_manual() -> None:
         EPOCHS = 200              # Общее число эпох, включая уже завершённые.
         SAMPLES_PER_EPOCH = 20_000
         VALIDATION_SAMPLES = 64
-        TARGET_TOKENS = 640        # Накопление градиентов; микробатч всегда 1 окно.
+        TARGET_TOKENS = 640        # Эффективный батч; упаковка окон настраивается отдельно ниже.
         MAX_SECONDS = 30.0
         LEARNING_RATE = 2e-4
+        DROP_PATH_RATE = 0.10      # До 10% пропуска блоков; старые SSL веса/AdamW продолжаются.
+        # После первого сохранения с этим режимом вероятность при RESUME не менять.
         # При RESUME численные параметры выше должны совпадать с checkpoint.
         # Scheduler зафиксирован в рецепте: warmup 200, рестарты каждые 4000 шагов.
         NUM_WORKERS = 2
+        NO_CHECKPOINT_MAX_TOKENS = 4000  # Автоматически снижается при недостатке VRAM.
+        MAX_WINDOWS_PER_FORWARD = 8    # 1 — по одному окну; эффективный батч не меняется.
+        MAX_PADDED_TOKENS = 4000        # Лимит упаковки с учётом padding.
+        GPU_RESERVE_MIB = 1024          # Оставлять запас для других программ.
         SAVE_EVERY_STEPS = 10
         CONSOLE_INTERVAL_SECONDS = 2.0
         HIERARCHICAL_OUTPUT = PROJECT_ROOT / "experiments/phase5/phasor_hierarchical_v1"
@@ -582,7 +588,12 @@ def run_manual() -> None:
         args.target_tokens=TARGET_TOKENS
         args.max_seconds=MAX_SECONDS
         args.workers=NUM_WORKERS
+        args.no_checkpoint_max_tokens=NO_CHECKPOINT_MAX_TOKENS
+        args.max_windows_per_forward=MAX_WINDOWS_PER_FORWARD
+        args.max_padded_tokens=MAX_PADDED_TOKENS
+        args.gpu_reserve_mib=GPU_RESERVE_MIB
         args.lr=LEARNING_RATE
+        args.drop_path_rate=DROP_PATH_RATE
         args.save_every=SAVE_EVERY_STEPS
         args.console_interval=CONSOLE_INTERVAL_SECONDS
         if SMOKE:

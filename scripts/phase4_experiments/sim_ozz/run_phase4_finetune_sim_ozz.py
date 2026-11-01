@@ -1033,13 +1033,17 @@ def run_manual() -> None:
         BACKBONE_LR = 1e-5         # Осторожное дообучение предобученной части.
         HEAD_LR = 1e-4             # Новая классификационная голова.
         USE_REAL_NO_OZZ = True
+        # Реальные: весь НЕРАЗМЕЧЕННЫЙ Open_EE, кроме имён с ID экспертного набора.
+        # Остальные записи считаются без ОЗЗ независимо от ML_2_*.
+        EXPERT_REPORT = PROJECT_ROOT / "data/real_OZZ/overvoltage_report_T1_with_com_v1.7.csv"
+        LABEL_ERROR_PROBABILITY = 0.05  # Независимые выходы BCE: 1 -> .95, 0 -> .05.
+        DROP_PATH_RATE = 0.10          # Пропуск residual-блоков; максимум в конце каждой стадии.
         NUM_WORKERS = 2
         SAVE_EVERY_STEPS = 10
         CONSOLE_INTERVAL_SECONDS = 2.0
         SEED = 42
         RTDS_DIR = PROJECT_ROOT / "data/Simulated_OZZ_v1"
-        REAL_CSV = PROJECT_ROOT / "data/ml_datasets/labeled_2025_12_03.csv"
-        NORM_CSV = PROJECT_ROOT / "data/norm_coef_all_v1.4.csv"
+        DATASET_REGISTRY = PROJECT_ROOT / "data/phase5/datasets_registry.json"
 
         from scripts.phase5_experiments.run_phase5_hierarchical_ozz import run
         config = dict(ssl_checkpoint=str(SSL_CHECKPOINT), output=str(OUTPUT_DIR), resume=RESUME,
@@ -1048,7 +1052,9 @@ def run_manual() -> None:
                       max_seconds=MAX_SECONDS, backbone_lr=BACKBONE_LR, head_lr=HEAD_LR,
                       use_real_no_ozz=USE_REAL_NO_OZZ, workers=NUM_WORKERS,
                       save_every=SAVE_EVERY_STEPS, console_interval=CONSOLE_INTERVAL_SECONDS,
-                      seed=SEED, rtds_dir=str(RTDS_DIR), real_csv=str(REAL_CSV), norm_csv=str(NORM_CSV))
+                      seed=SEED, rtds_dir=str(RTDS_DIR), registry=str(DATASET_REGISTRY),
+                      expert_report=str(EXPERT_REPORT), label_error_probability=LABEL_ERROR_PROBABILITY,
+                      drop_path_rate=DROP_PATH_RATE)
         if SMOKE:
             config.update(output=str(PROJECT_ROOT / "experiments/phase5/hierarchical_ozz_smoke"),
                           epochs=1, samples_per_epoch=10, validation_samples=10,

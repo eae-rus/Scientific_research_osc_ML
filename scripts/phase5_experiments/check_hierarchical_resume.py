@@ -33,7 +33,9 @@ def main():
     result={"max_parameter_error":delta,"max_loss_error":loss_error,"windows_equal":windows_equal,
             "progress_and_best_equal":state_equal,"validation_continuous":ar[-1],"validation_resumed":br[-1],
             "model_data_sha256":a["contract"]["model_data_sha256"],
-            "microbatches_per_step":[len(r["windows"]) for r in ar if r["kind"]=="train"],
+            "windows_per_step":[len(r["windows"]) for r in ar if r["kind"]=="train"],
+            "forward_packs_per_step":[r.get("packs",len(r["windows"])) for r in ar if r["kind"]=="train"],
+            "execution_continuous":a.get("execution"),"execution_resumed":b.get("execution"),
             "artifacts":str(root),"device":"cuda" if torch.cuda.is_available() else "cpu"}
     destination=ROOT/"reports/phase5/hierarchical_v1_resume_check.json"
     destination.write_text(json.dumps(result,indent=2),encoding="utf-8")

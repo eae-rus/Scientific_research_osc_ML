@@ -81,7 +81,7 @@ def test_ozz_resume_matches_uninterrupted_training(tmp_path, monkeypatch):
     config = dict(ssl_checkpoint=str(checkpoint), output=str(tmp_path/'continuous'), resume=False,
                   epochs=1, samples_per_epoch=5, validation_samples=2, target_tokens=160, max_seconds=.2,
                   backbone_lr=1e-5, head_lr=1e-4, use_real_no_ozz=False, workers=0, save_every=1,
-                  console_interval=2., seed=42)
+                  console_interval=2., seed=42, label_error_probability=.05, drop_path_rate=.3)
     engine.run(config)
     config['output'] = str(tmp_path/'resumed')
     save_original = engine.atomic_save
@@ -102,3 +102,87 @@ def test_ozz_resume_matches_uninterrupted_training(tmp_path, monkeypatch):
     assert (full['epoch'], full['cursor'], full['step'], full['best']) == (resumed['epoch'], resumed['cursor'], resumed['step'], resumed['best'])
     for key in full['model']:
         torch.testing.assert_close(full['model'][key], resumed['model'][key], rtol=0, atol=0)
+
+
+def test_expert_containment_excludes_all_buses_events_and_both_verifications(tmp_path):
+    from osc_tools.ml.phase5_hierarchical_ozz import select_real_background
+    report = tmp_path/'report.csv'
+    report.write_text('filename;Проверка\nabc123.cfg;+\ndef456;-\n', encoding='utf-8-sig')
+    names = ['prefix_ABC123_Bus 1', 'abc123_Bus 2 _event N3', 'def456_Bus 1', 'other_Bus 2']
+    selected, audit = select_real_background(names, report)
+    assert selected == ['other_Bus 2']
+    assert len(audit['excluded_files']) == 3 and audit['report_identifiers'] == 2
+
+
+def test_binary_smoothing_keeps_independent_outputs():
+    from osc_tools.ml.phase5_ozz_regularization import smooth_binary_targets
+    target = torch.tensor([[0., 0., 0., 0.], [1., 1., 0., 0.]])
+    result = smooth_binary_targets(target, .05)
+    torch.testing.assert_close(result, torch.tensor([[.05]*4, [.95, .95, .05, .05]]))
+    torch.testing.assert_close(smooth_binary_targets(target, 0), target)
+
+
+def test_unlabeled_population_uses_all_records_and_preserves_ssl_groups(tmp_path, monkeypatch):
+    from osc_tools.ml import phase5_hierarchical_ozz as data
+    registry = tmp_path/'registry.json'
+    registry.write_text('{}')
+    report = tmp_path/'report.csv'
+    report.write_text('filename;Проверка\nexpert;+\nfalse_alarm;-\n')
+    names = ['train_Bus 1', 'train_Bus 2', 'val_Bus 1', 'held_Bus 1',
+             'prefix_expert_Bus 1', 'false_alarm_Bus 1', 'short_Bus 1']
+    class Source:
+        manifest_path = registry
+        def __len__(self): return len(names)
+        def get_metadata(self, i):
+            return dict(file_name=names[i], f_network=60., f_adc=1200.,
+                        n_samples=100 if i == 6 else 1200, normalized=True)
+    monkeypatch.setattr(data, 'create_source', lambda *a: Source())
+    splits = {'sources': {'open_ee': {'splits': {'train': [0, 4, 5, 6], 'validation': [1, 2], 'holdout': [3]}}}}
+    records, audit = data.prepare_unlabeled_background(tmp_path, dict(registry=registry, expert_report=report), splits)
+    assert [r['index'] for r in records['train']] == [0, 1]
+    assert [r['index'] for r in records['validation']] == [2]
+    assert audit['holdout_indices'] == [3] and audit['unusable_indices'] == [6]
+    assert all(r['spp'] == 20 and r['f_network'] == 60 for r in records['train'])
+
+
+def test_background_traversal_visits_every_record_across_epochs(monkeypatch):
+    from osc_tools.ml import phase5_hierarchical_ozz as data
+    records = [dict(kind='real', name=str(i), raw=np.full((320, 8), i, np.float32), group=4) for i in range(7)]
+    seen = []
+    def build(raw, *a, **kw):
+        seen.append(int(raw[0, 0]))
+        return {}
+    monkeypatch.setattr(data, 'supervised_window', build)
+    dataset = data.OZZDataset(records, 3, 42, .2, True)
+    # Disable amplitude augmentation while retaining the epoch-dependent schedule.
+    class RNG:
+        def choice(self, choices): return choices[0]
+        def integers(self, *a): return 0
+        def random(self): return 1.
+    monkeypatch.setattr(np.random, 'default_rng', lambda *a: RNG())
+    for serial in range(7):
+        dataset.epoch = serial//3
+        dataset[serial%3]
+    assert sorted(seen) == list(range(7))
+
+
+def test_stochastic_depth_preserves_ssl_weights_eval_and_skips_whole_block(monkeypatch):
+    from osc_tools.ml.phase5_ozz_regularization import OZZRegularizedBackbone
+    cfg = replace(HierarchicalConfig(), channel_width=8, width=16, channel_layers=1,
+                  local_layers=1, global_layers=1, fusion_layers=1, dropout=0, block_tokens=4)
+    original = PhasorHierarchicalKAN(cfg).eval()
+    model = OZZRegularizedBackbone(cfg, .5).eval()
+    model.load_state_dict(original.state_dict(), strict=True)
+    assert model.state_dict().keys() == original.state_dict().keys()
+    args = (torch.randn(1, 7, 13, 6, 2)*.1, torch.ones(1, 7, 13, 6, dtype=torch.long),
+            torch.arange(7)[None].float()/8, torch.ones(1, 7, dtype=torch.bool))
+    torch.testing.assert_close(model(*args)['prediction'], original(*args)['prediction'], rtol=0, atol=0)
+    x = torch.randn(2, 4, 8, requires_grad=True)
+    valid = torch.tensor([[True]*4, [True, True, False, False]])
+    model.train()
+    monkeypatch.setattr(torch, 'rand', lambda *a, **kw: torch.tensor(0.))
+    monkeypatch.setattr(model.channel_blocks[0], 'forward', lambda *a: (_ for _ in ()).throw(AssertionError('executed skipped block')))
+    y = model.run_block(model.channel_blocks[0], x, valid)
+    torch.testing.assert_close(y, x*valid[..., None])
+    y.sum().backward()
+    torch.testing.assert_close(x.grad, valid[..., None].expand_as(x).float())

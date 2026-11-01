@@ -106,6 +106,8 @@ class TrainingProgress:
         if self.ema is not None: text+=f" | loss~ {self.ema:.6f}"
         if "lr" in metrics: text+=f" | lr {metrics['lr']:.2e}"
         if "grad_norm" in metrics: text+=f" | grad {metrics['grad_norm']:.3g}"
+        if "gpu_peak_allocated_mib" in metrics:
+            text+=f" | VRAM пик/резерв {metrics['gpu_peak_allocated_mib']/1024:.2f}/{metrics['gpu_reserved_mib']/1024:.2f} ГиБ"
         if "step" in metrics: text+=f" | step {metrics['step']:,}"
         text+=f" | {rate:.1f} окон/с | ETA {eta/60:.1f} мин" if eta is not None else " | ETA —"
         if self.tty:

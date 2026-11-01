@@ -1,15 +1,40 @@
 """Supervised OZZ adapter for the unchanged Phase 5 SSL input contract."""
 from collections import OrderedDict
 from pathlib import Path
+import csv
+import hashlib
+import math
 import re
 import numpy as np
 import polars as pl
 import torch
 from osc_tools.ml.phase5_hierarchical_data import build_local_features, BUCKETS
 from osc_tools.ml.simulated_ozz_dataset import load_raw_csv, parse_filename
-from osc_tools.data_management.no_ozz_filter import get_no_ozz_files
 from osc_tools.data_management.sim_ozz_split import stratified_sim_ozz_split
 from osc_tools.ml.dataset_registry import create_source
+
+
+def select_real_background(file_names, report_path):
+    """User policy: exclude any name containing a report ID, independent of ML labels.
+
+    Both verified '+' and '-' entries belong to the reserved expert dataset.
+    Matching the entire name also excludes all buses/event crops of a recording.
+    """
+    report_path = Path(report_path)
+    with report_path.open(encoding='utf-8-sig', newline='') as stream:
+        reader = csv.DictReader(stream, delimiter=';')
+        if 'filename' not in (reader.fieldnames or []):
+            raise ValueError('Expert report must contain filename')
+        known = {Path(row['filename'].strip()).stem.casefold() for row in reader if row['filename'].strip()}
+    if not known:
+        raise ValueError('Empty expert exclusion list')
+    excluded = {name: sorted(key for key in known if key in name.casefold()) for name in sorted(set(file_names))}
+    excluded = {name: matches for name, matches in excluded.items() if matches}
+    selected = sorted(set(file_names) - excluded.keys())
+    return selected, dict(policy='report_identifier_containment_all_other_records_negative',
+                         report=str(report_path.resolve()), report_sha256=hashlib.sha256(report_path.read_bytes()).hexdigest(),
+                         report_identifiers=len(known), input_files=len(set(file_names)),
+                         selected_files=len(selected), excluded_files=excluded)
 
 
 def supervised_window(raw, labels, spp, blocks, basis="phase", provenance=None):
@@ -83,43 +108,12 @@ def prepare_records(root, config, ssl_manifest):
             stat = (directory/name).stat()
             records[split].append(dict(kind='rtds', path=str(directory/name), group=parse_filename(name)['x']-1,
                                       bytes=stat.st_size, mtime_ns=stat.st_mtime_ns))
+    manifest = {}
     if config['use_real_no_ozz']:
-        frame = pl.read_csv(config['real_csv'], infer_schema_length=5000)
-        names = set(get_no_ozz_files(frame)[0])
-        nominal = {r['name']: r for r in pl.read_csv(config['norm_csv'], infer_schema_length=None).to_dicts()}
-        source = create_source(root/'data/phase5/datasets_registry.json', 'open_ee')
-        ssl_groups = {}
-        for split, indices in ssl_manifest['sources']['open_ee']['splits'].items():
-            for i in indices:
-                key = source.get_metadata(i)['file_name'].split('_Bus ')[0]
-                ssl_groups.setdefault(key, set()).add(split)
-        # Group all buses of one recording. Preserve assignments already used by SSL.
-        groups = sorted({n.split('_Bus ')[0] for n in names})
-        rng = np.random.default_rng(config['seed'])
-        rng.shuffle(groups)
-        assignment = {g: ('validation' if i < max(1, len(groups)//5) else 'train') for i, g in enumerate(groups)}
-        assignment.update({g: ('holdout' if 'holdout' in splits else 'train' if 'train' in splits else 'validation')
-                           for g, splits in ssl_groups.items()})
-        skipped = []
-        for part in frame.filter(pl.col('file_name').is_in(list(names))).partition_by('file_name', maintain_order=True):
-            name = part['file_name'][0]
-            split = assignment[name.split('_Bus ')[0]]
-            if split not in records:
-                continue
-            part = part.sort('sample')
-            adapted = normalized_real(part, nominal, return_basis=True)
-            if adapted is None:
-                skipped.append(name)
-                continue
-            raw, basis = adapted
-            # Do not concatenate disconnected labeled ranges into an artificial waveform.
-            samples = part['sample'].to_numpy()
-            bounds = np.r_[0, np.flatnonzero(np.diff(samples) != 1)+1, len(part)]
-            for a, b in zip(bounds[:-1], bounds[1:]):
-                if b-a >= 320:  # This legacy CSV has the established 32 samples/period.
-                    records[split].append(dict(kind='real', name=name, start=int(samples[a]), raw=raw[a:b].copy(), basis=basis, group=4))
-        print(f'Real no-OZZ: skipped {len(skipped)} files without usable nominal coefficients/channels.', flush=True)
-    manifest = {'excluded_real_files': skipped if config['use_real_no_ozz'] else []}
+        background, audit = prepare_unlabeled_background(root, config, ssl_manifest)
+        for split in records:
+            records[split].extend(background[split])
+        manifest['real_background'] = audit
     for split, items in records.items():
         manifest[split] = [{k: v for k, v in r.items() if k != 'raw'} for r in items]
         counts = [sum(r['group'] == g for r in items) for g in range(5 if config['use_real_no_ozz'] else 4)]
@@ -129,21 +123,85 @@ def prepare_records(root, config, ssl_manifest):
     return records, manifest
 
 
+def prepare_unlabeled_background(root, config, ssl_manifest):
+    registry = Path(config.get('registry', root/'data/phase5/datasets_registry.json')).resolve()
+    source = create_source(registry, 'open_ee')
+    metadata = [source.get_metadata(i) for i in range(len(source))]
+    names, audit = select_real_background([m['file_name'] for m in metadata],
+                  config.get('expert_report', root/'data/real_OZZ/overvoltage_report_T1_with_com_v1.7.csv'))
+    eligible = set(names)
+    # Preserve SSL separation and keep all buses/crops of a recording together.
+    membership = {}
+    for split, indices in ssl_manifest['sources']['open_ee']['splits'].items():
+        for index in indices:
+            key = metadata[index]['file_name'].casefold().split('_bus ')[0]
+            membership.setdefault(key, set()).add(split)
+    records = {'train': [], 'validation': []}
+    skipped = []
+    held_out = []
+    for index, meta in enumerate(metadata):
+        name = meta['file_name']
+        if name not in eligible:
+            continue
+        splits = membership.get(name.casefold().split('_bus ')[0], set())
+        # Never move SSL-training records into validation; reserve any mixed holdout group.
+        split = 'holdout' if 'holdout' in splits else 'train' if 'train' in splits else 'validation' if 'validation' in splits else None
+        if split is None:
+            raise ValueError(f'Eligible Open_EE record absent from SSL splits: {name}')
+        if split == 'holdout':
+            held_out.append(index)
+            continue
+        fnet = float(meta['f_network'])
+        spp = float(meta['f_adc']) / fnet
+        if spp < 8 or int(meta['n_samples']) < int(np.floor(10*spp+.5)):
+            skipped.append(index)
+            continue
+        if not meta.get('normalized'):
+            raise ValueError(f'Unnormalized Open_EE record: {name}')
+        records[split].append(dict(kind='open_ee', registry=str(registry), index=index,
+                                   name=name, group=4, spp=spp, f_network=fnet,
+                                   basis=meta.get('voltage_basis', 'phase')))
+    audit.update(source_records=len(source), registry_sha256=hashlib.sha256(registry.read_bytes()).hexdigest(),
+                 source_manifest_sha256=hashlib.sha256(source.manifest_path.read_bytes()).hexdigest(),
+                 holdout_indices=held_out, unusable_indices=skipped,
+                 counts={key: len(value) for key, value in records.items()})
+    print(f'Open_EE background: {len(source)} records; {len(audit["excluded_files"])} excluded names; '
+          f'{audit["counts"]}; holdout={len(held_out)}, unusable={len(skipped)}', flush=True)
+    return records, audit
+
+
 class OZZDataset:
     def __init__(self, records, samples, seed, max_seconds, train):
         self.groups = [[r for r in records if r['group'] == g] for g in sorted({r['group'] for r in records})]
         self.samples, self.seed, self.max_seconds, self.train = samples, seed, max_seconds, train
         self.epoch = 0
         self.cache = OrderedDict()
+        self.sources = {}
 
     def __len__(self):
         return self.samples
 
     def __getitem__(self, index):
         rng = np.random.default_rng(np.random.SeedSequence([self.seed, self.epoch if self.train else 0, index]))
-        group = self.groups[index % len(self.groups)]
-        record = group[int(rng.integers(len(group)))]
-        if record['kind'] == 'real':
+        # Balanced groups, but visit every source record before repeating it.
+        serial = (self.epoch*self.samples if self.train else 0) + index
+        group = self.groups[serial % len(self.groups)]
+        stride = 7919
+        while math.gcd(stride, len(group)) != 1:
+            stride += 2
+        record = group[((serial//len(self.groups))*stride+self.seed) % len(group)]
+        provenance = None
+        fnet = 50.
+        if record['kind'] == 'open_ee':
+            registry = record['registry']
+            if registry not in self.sources:
+                self.sources[registry] = create_source(Path(registry), 'open_ee')
+            source = self.sources[registry]
+            raw = source.load_signal(record['index']).T
+            provenance = source.get_provenance(record['index']).copy()
+            spp, fnet = record['spp'], record['f_network']
+            labels = np.zeros((len(raw), 4), np.float32)
+        elif record['kind'] == 'real':
             raw, spp = record['raw'], 32.
             labels = np.zeros((len(raw), 4), np.float32)
         else:
@@ -155,7 +213,7 @@ class OZZDataset:
             while len(self.cache) > 2:
                 self.cache.popitem(last=False)
             raw, labels, spp = data['raw'], data['targets'], 1/(50*data['dt'])
-        available = min(int(len(raw)/(10*spp)), int(self.max_seconds*5))
+        available = min(int(len(raw)/(10*spp)), int(self.max_seconds*fnet/10))
         choices = [b for b in BUCKETS if b <= available]
         if not choices:
             raise ValueError(f'Record shorter than 10 periods: {record.get("path", record.get("name"))}')
@@ -172,4 +230,8 @@ class OZZDataset:
                 shift = int(rng.integers(1, 3))
                 for cols in ([0, 1, 2], [4, 5, 6]):
                     segment[:, cols] = np.roll(segment[:, cols], shift, axis=1)
-        return supervised_window(segment, labels[start:start+length], spp, blocks, basis=record.get('basis', 'phase'))
+                    if provenance is not None:
+                        provenance[cols] = np.roll(provenance[cols], shift)
+        batch = supervised_window(segment, labels[start:start+length], spp, blocks, basis=record.get('basis', 'phase'), provenance=provenance)
+        batch['source_group'] = torch.tensor(record['group'])
+        return batch
