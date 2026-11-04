@@ -1023,13 +1023,14 @@ def run_manual() -> None:
         # Далее RESUME=True продолжает именно ОЗЗ, а не перечитывает SSL.
         SSL_CHECKPOINT = PROJECT_ROOT / "experiments/phase5/phasor_hierarchical_v1/latest_checkpoint.pt"
         OUTPUT_DIR = PROJECT_ROOT / "experiments/phase5/hierarchical_ozz_v1"
-        RESUME = False
+        RESUME = True
         # True продолжает latest_checkpoint.pt из OUTPUT_DIR, включая старый OZZ.
         ALLOW_BALANCE_UPGRADE = True  # Только проверенный переход старого рецепта; веса/AdamW сохраняются.
         BALANCED_EVENTS = True   # RTDS-окна с событием + равный вклад окон + веса редких меток.
         BALANCE_SAMPLES = 400     # Обучающие окна для оценки частот; веса сохраняются в checkpoint.
         POSITIVE_WEIGHT_CAP = 100.0
         FOCAL_GAMMA = 1.0         # Меньше вклад уверенно верных ответов; 0 = только взвешенная BCE.
+        BACKGROUND_REPEATS = 2    # Два реальных фоновых окна на четыре RTDS: доля фона 1/3.
         SMOKE = False             # True: отдельный короткий запуск перед основным.
         EPOCHS = 100
         SAMPLES_PER_EPOCH = 2_000  # Поровну четыре типа RTDS + реальные без ОЗЗ.
@@ -1062,7 +1063,8 @@ def run_manual() -> None:
                       expert_report=str(EXPERT_REPORT), label_error_probability=LABEL_ERROR_PROBABILITY,
                       drop_path_rate=DROP_PATH_RATE, balanced_events=BALANCED_EVENTS,
                       balance_samples=BALANCE_SAMPLES, positive_weight_cap=POSITIVE_WEIGHT_CAP,
-                      allow_balance_upgrade=ALLOW_BALANCE_UPGRADE, focal_gamma=FOCAL_GAMMA)
+                      allow_balance_upgrade=ALLOW_BALANCE_UPGRADE, focal_gamma=FOCAL_GAMMA,
+                      background_repeats=BACKGROUND_REPEATS)
         if SMOKE:
             config.update(output=str(PROJECT_ROOT / "experiments/phase5/hierarchical_ozz_smoke"),
                           epochs=1, samples_per_epoch=10, validation_samples=10,

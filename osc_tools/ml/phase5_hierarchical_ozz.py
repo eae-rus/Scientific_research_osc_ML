@@ -171,8 +171,9 @@ def prepare_unlabeled_background(root, config, ssl_manifest):
 
 
 class OZZDataset:
-    def __init__(self, records, samples, seed, max_seconds, train, event_windows=False):
+    def __init__(self, records, samples, seed, max_seconds, train, event_windows=False, background_repeats=1):
         self.groups = [[r for r in records if r['group'] == g] for g in sorted({r['group'] for r in records})]
+        self.schedule = [i for i, group in enumerate(self.groups) for _ in range(background_repeats if group[0]['group'] == 4 and train else 1)]
         self.samples, self.seed, self.max_seconds, self.train = samples, seed, max_seconds, train
         self.epoch = 0
         self.event_windows = event_windows
@@ -186,11 +187,15 @@ class OZZDataset:
         rng = np.random.default_rng(np.random.SeedSequence([self.seed, self.epoch if self.train else 0, index]))
         # Balanced groups, but visit every source record before repeating it.
         serial = (self.epoch*self.samples if self.train else 0) + index
-        group = self.groups[serial % len(self.groups)]
+        slot = serial % len(self.schedule)
+        group_id = self.schedule[slot]
+        group = self.groups[group_id]
+        visit = (serial//len(self.schedule))*self.schedule.count(group_id) + self.schedule[:slot].count(group_id)
         stride = 7919
         while math.gcd(stride, len(group)) != 1:
             stride += 2
-        record = group[((serial//len(self.groups))*stride+self.seed) % len(group)]
+        record = group[(visit*stride+self.seed) % len(group)]
+        note = ''
         provenance = None
         fnet = 50.
         if record['kind'] == 'open_ee':
@@ -209,7 +214,14 @@ class OZZDataset:
             path = record['path']
             data = self.cache.pop(path, None)
             if data is None:
-                data = load_raw_csv(path)
+                import time
+                for attempt in range(3):
+                    try:
+                        data = load_raw_csv(path)
+                        break
+                    except OSError:
+                        if attempt == 2: raise
+                        time.sleep(.2*(attempt+1))
             self.cache[path] = data
             while len(self.cache) > 2:
                 self.cache.popitem(last=False)
@@ -224,8 +236,24 @@ class OZZDataset:
         length = int(np.floor(blocks*10*spp+.5))
         start = int(rng.integers(len(raw)-length+1))
         if self.train and self.event_windows and record['kind'] == 'rtds':
-            from osc_tools.ml.phase5_ozz_balance import event_start
-            start = event_start(labels, length, spp, record['group'], rng)
+            from osc_tools.ml.phase5_ozz_balance import event_start, NoUsableEvent
+            event_group = record['group']
+            if not labels[:, event_group].any():
+                present = np.flatnonzero(labels.any(0))
+                if len(present):
+                    event_group = int(rng.choice(present))
+                    note = 'source_type_without_labels_using_present_type'
+                elif data['ozz'].any():
+                    raise ValueError(f'OZZ flag positive but all type labels absent: {path}')
+                else:
+                    event_group = None
+                    note = 'simulation_without_event_used_as_negative'
+            if event_group is not None:
+                try:
+                    start = event_start(labels, length, spp, event_group, rng)
+                except NoUsableEvent:
+                    # Retain true interval labels; never invent or erase an event.
+                    note = 'event_unavailable_in_usable_intervals_random_window'
         segment = raw[start:start+length].copy()
         if self.train:
             if rng.random() < .5:
@@ -240,7 +268,9 @@ class OZZDataset:
                         provenance[cols] = np.roll(provenance[cols], shift)
         batch = supervised_window(segment, labels[start:start+length], spp, blocks, basis=record.get('basis', 'phase'), provenance=provenance)
         if self.train and self.event_windows and record['kind'] == 'rtds':
-            if not batch['target'][batch['supervised'], record['group']].any():
-                raise ValueError(f'RTDS event has no usable supervised interval: {record["path"]}')
+            if labels.any() and not batch['target'][batch['supervised']].any():
+                note = 'event_unavailable_in_usable_intervals_random_window'
+        batch['data_note'] = note
+        batch['record_name'] = record.get('path', record.get('name', str(record.get('index'))))
         batch['source_group'] = torch.tensor(record['group'])
         return batch

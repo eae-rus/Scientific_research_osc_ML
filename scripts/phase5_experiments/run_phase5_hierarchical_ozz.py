@@ -20,6 +20,10 @@ from osc_tools.ml.phase5_ozz_balance import estimate_balance, balanced_window_lo
 ROOT = Path(__file__).resolve().parents[2]
 
 
+class DataLoadingFailure(RuntimeError):
+    pass
+
+
 class OZZClassifier(nn.Module):
     """Read the final global-context features without changing the SSL source/hash."""
     def __init__(self, backbone):
@@ -42,11 +46,25 @@ class OZZClassifier(nn.Module):
 
 def loader(dataset, workers, cursor=0):
     return DataLoader(dataset, batch_size=1, sampler=range(cursor, len(dataset)), num_workers=workers,
-                      worker_init_fn=worker_init, generator=torch.Generator().manual_seed(771))
+                      timeout=120 if workers else 0, worker_init_fn=worker_init, generator=torch.Generator().manual_seed(771))
 
+
+def guarded_batches(dataset, workers, initial):
+    try:
+        iterator = iter(loader(dataset, workers, initial))
+    except Exception as exc:
+        raise DataLoadingFailure(str(exc)) from exc
+    while True:
+        try:
+            batch = next(iterator)
+        except StopIteration:
+            return
+        except Exception as exc:
+            raise DataLoadingFailure(str(exc)) from exc
+        yield batch
 
 def to_device(batch, device):
-    return {k: v.to(device) for k, v in batch.items()}
+    return {k: v.to(device) if torch.is_tensor(v) else v for k, v in batch.items()}
 
 
 def metrics_from_counts(tp, fp, fn, tn):
@@ -62,10 +80,11 @@ def evaluate(model, dataset, device, workers, amp, progress):
     counts = torch.zeros(4, 4, device=device)
     total, count = 0., 0
     real_fp, real_count = 0, 0
+    real_window_fp, real_windows = 0, 0
     all_logits, all_targets = [], []
     progress.begin('OZZ validation', len(dataset))
     with torch.no_grad():
-        for i, batch in enumerate(loader(dataset, workers)):
+        for i, batch in enumerate(guarded_batches(dataset, workers, 0)):
             batch = to_device(batch, device)
             mask = batch['supervised'] & batch['valid']
             with torch.autocast(device.type, dtype=torch.bfloat16, enabled=amp):
@@ -78,13 +97,18 @@ def evaluate(model, dataset, device, workers, amp, progress):
             if batch['source_group'].item() == 4:
                 real_fp += pred.any(-1).sum().item()
                 real_count += len(pred)
+                if len(pred):
+                    real_window_fp += int(pred.any())
+                    real_windows += 1
             counts += torch.stack(((pred & truth).sum(0), (pred & ~truth).sum(0),
                                    (~pred & truth).sum(0), (~pred & ~truth).sum(0)))
             progress.update(i+1, {'loss': total/max(count, 1)})
     progress.update(len(dataset), force=True)
     return {'loss': total/max(count, 1), **metrics_from_counts(*counts.cpu()),
             **average_precision_metrics(np.concatenate(all_logits), np.concatenate(all_targets)),
-            'real_no_ozz_false_positive_rate': real_fp/real_count if real_count else None}
+            'real_no_ozz_false_positive_rate': real_fp/real_count if real_count else None,
+            'real_no_ozz_window_false_positive_rate': real_window_fp/real_windows if real_windows else None,
+            'real_no_ozz_windows': real_windows, 'real_no_ozz_intervals': real_count}
 
 
 def export_curves(output):
@@ -109,8 +133,13 @@ def export_curves(output):
 def validate_resume_contract(saved, contract, allow_upgrade=False):
     if contract != saved:
         old = dict(saved)
-        known_old = old.get('implementation_sha256') == 'ab4098ec60d58712f4b33100df327c6acd7baed4510f06fa5a9641921d9b6d3a'
-        old.update({k: contract[k] for k in ('balanced_events', 'balance_samples', 'positive_weight_cap', 'focal_gamma', 'implementation_sha256')})
+        known_old = old.get('implementation_sha256') in ('ab4098ec60d58712f4b33100df327c6acd7baed4510f06fa5a9641921d9b6d3a',
+            '5175d524c3260da09135ca73d32b103bad684ed758f98ad3c15ea9c64bdce235')
+        if saved.get('implementation_sha256') == 'ab4098ec60d58712f4b33100df327c6acd7baed4510f06fa5a9641921d9b6d3a':
+            old.update({k: contract[k] for k in ('balanced_events', 'balance_samples', 'positive_weight_cap', 'focal_gamma')})
+        old['implementation_sha256'] = contract['implementation_sha256']
+        if 'background_repeats' in contract:
+            old['background_repeats'] = contract['background_repeats']
         if not (allow_upgrade and contract['balanced_events'] and known_old and old == contract):
             raise ValueError('Параметры/данные не совпадают; переход со старого OZZ требует allow_balance_upgrade=True.')
         return True
@@ -125,6 +154,9 @@ def run(config):
     config.setdefault('balance_samples', 400)
     config.setdefault('positive_weight_cap', 100.)
     config.setdefault('focal_gamma', 0.)
+    config.setdefault('background_repeats', 1)
+    if config['background_repeats'] not in (1, 2, 3):
+        raise ValueError('background_repeats must be 1, 2 or 3')
     if config['focal_gamma'] < 0 or config['positive_weight_cap'] < 1 or config['balance_samples'] < 1:
         raise ValueError('Invalid OZZ balance/focal settings')
     allow_upgrade = config.pop('allow_balance_upgrade', False)
@@ -168,7 +200,7 @@ def run(config):
     (output/'split.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
     (output/'config.json').write_text(json.dumps(contract, ensure_ascii=False, indent=2), encoding='utf-8')
     provenance = state.get('ssl_origin') if resume else {'path': str(config['ssl_checkpoint']), 'step': state['step'], 'epoch': state['epoch']}
-    train = OZZDataset(records['train'], config['samples_per_epoch'], config['seed'], config['max_seconds'], True, event_windows=config['balanced_events'])
+    train = OZZDataset(records['train'], config['samples_per_epoch'], config['seed'], config['max_seconds'], True, event_windows=config['balanced_events'], background_repeats=config['background_repeats'])
     val = OZZDataset(records['validation'], config['validation_samples'], config['seed']+100000, config['max_seconds'], False)
     opt = torch.optim.AdamW([{'params': [p for p in backbone.parameters() if p.requires_grad], 'lr': config['backbone_lr']},
                             {'params': model.classifier.parameters(), 'lr': config['head_lr']}], weight_decay=1e-4)
@@ -178,17 +210,19 @@ def run(config):
         epoch, cursor, step, best = (state[k] for k in ('epoch', 'cursor', 'step', 'best'))
         restore_rng(state['rng'])
     best_f1 = state.get('best_f1', -1.) if resume else -1.
-    balance = state.get('balance') if resume and not upgraded else None
+    balance = state.get('balance') if resume else None
     if config['balanced_events'] and balance is None:
         print('Оценка весов по обучающим окнам (без validation)...', flush=True)
-        balance = estimate_balance(train, config['balance_samples'], config['positive_weight_cap'])
+        reference = OZZDataset(records['train'], config['samples_per_epoch'], config['seed'], config['max_seconds'], True, event_windows=config['balanced_events'])
+        balance = estimate_balance(reference, config['balance_samples'], config['positive_weight_cap'])
     if balance is not None:
         print(f'Class balance: {balance}', flush=True)
         (output/'class_balance.json').write_text(json.dumps(balance, indent=2), encoding='utf-8')
     history = state.get('balance_history', []) if resume else []
     if upgraded:
         history.append(dict(epoch=epoch, cursor=cursor, step=step, previous_contract=state['contract']))
-        best_f1 = -1.
+        if not state.get('balance'):
+            best_f1 = -1.
     del state
     progress = TrainingProgress(output, interval=config['console_interval'])
     stop = [False]
@@ -205,16 +239,27 @@ def run(config):
             stream.write(json.dumps(row)+'\n')
     progress.message(f'OZZ Phase 5 | {device} | SSL step {provenance["step"]} | {output}\n'
                      '4 типа ОЗЗ; все четыре выхода 0 = не ОЗЗ. Ctrl+C или STOP: сохранить и остановиться.')
+    safe_cursor, safe_rng = cursor, rng_state()
+    optimizer_in_progress = False
+    reported = set()
     try:
         if epoch >= config['epochs']:
             progress.message('Все заданные эпохи уже завершены. Увеличьте EPOCHS для продолжения.')
             return
+        if not latest.exists() or upgraded:
+            save()  # Recoverable state even if the very first AdamW update fails.
         while epoch < config['epochs']:
             train.epoch = epoch
             model.train(); opt.zero_grad(set_to_none=True)
             tokens, targets, loss_sum = 0, 0, 0.
             progress.begin(f'OZZ epoch {epoch+1}/{config["epochs"]}', len(train), initial=cursor)
-            for batch in loader(train, config['workers'], cursor):
+            for batch in guarded_batches(train, config['workers'], cursor):
+                note = batch.get('data_note', [''])[0]
+                name = batch.get('record_name', [''])[0]
+                if note and (name, note) not in reported:
+                    reported.add((name, note))
+                    log(dict(kind='data_notice', epoch=epoch, cursor=cursor, record=name, reason=note))
+                    progress.message(f'Данные: {note}: {name}')
                 batch = to_device(batch, device)
                 mask = batch['valid'] & batch['supervised']
                 with torch.autocast(device.type, dtype=torch.bfloat16, enabled=amp):
@@ -235,13 +280,19 @@ def run(config):
                 if targets == 0:
                     opt.zero_grad(set_to_none=True)
                     tokens, loss_sum = 0, 0.
+                    safe_cursor, safe_rng = cursor, rng_state()
                     if stop[0] or (output/'STOP').exists():
                         save(); progress.update(cursor, force=True, status='paused'); return
                     continue
                 for p in model.parameters():
                     if p.grad is not None: p.grad.mul_(4096/max(targets, 1))
                 grad = torch.nn.utils.clip_grad_norm_(model.parameters(), 1., error_if_nonfinite=True).item()
-                opt.step(); opt.zero_grad(set_to_none=True); step += 1
+                optimizer_in_progress = True
+                opt.step()
+                optimizer_in_progress = False
+                step += 1
+                safe_cursor, safe_rng = cursor, rng_state()
+                opt.zero_grad(set_to_none=True)
                 row = dict(kind='train', epoch=epoch, cursor=cursor, step=step, loss=loss_sum/max(targets, 1), grad_norm=grad)
                 log(row); progress.update(cursor, {'loss': row['loss'], 'step': step, 'grad_norm': grad, 'lr': config['backbone_lr']})
                 tokens, targets, loss_sum = 0, 0, 0.
@@ -251,8 +302,9 @@ def run(config):
             progress.update(cursor, force=True)
             result = evaluate(model, val, device, config['workers'], amp, progress)
             log(dict(kind='validation', epoch=epoch, step=step, **result))
-            progress.message(f'Epoch {epoch+1}: val BCE={result["loss"]:.6f}, macro F1={result["macro_f1"]:.4f}; F1={result["f1_per_class"]}; AP={result["average_precision_per_class"]}; real no-OZZ FPR={result["real_no_ozz_false_positive_rate"]}')
+            progress.message(f'Epoch {epoch+1}: val BCE={result["loss"]:.6f}, macro F1={result["macro_f1"]:.4f}; F1={result["f1_per_class"]}; AP={result["average_precision_per_class"]}; real no-OZZ FPR={result["real_no_ozz_false_positive_rate"]}; window FPR={result["real_no_ozz_window_false_positive_rate"]}')
             epoch += 1; cursor = 0
+            safe_cursor, safe_rng = cursor, rng_state()
             improved = result['loss'] < best
             best = min(best, result['loss'])
             improved_f1 = result['macro_f1'] > best_f1
@@ -265,5 +317,24 @@ def run(config):
             restore_rng(preserved_rng)
             if stop[0] or (output/'STOP').exists(): return
         progress.update(len(val), force=True, status='completed')
+    except Exception as exc:
+        if optimizer_in_progress:
+            # AdamW may already have changed some tensors. Never overwrite a
+            # good checkpoint with an incomplete optimizer update.
+            progress.message('Ошибка внутри AdamW: сохранённый checkpoint оставлен без изменений.')
+            log(dict(kind='optimizer_error', epoch=epoch, cursor=cursor, step=step, error=str(exc)))
+            progress.update(cursor, force=True, status='paused_optimizer_error')
+            return
+        # Parameters/AdamW still belong to the last complete optimizer step.
+        # Discard partial accumulated gradients and replay its windows on resume.
+        opt.zero_grad(set_to_none=True)
+        cursor = safe_cursor
+        restore_rng(safe_rng)
+        save()
+        kind = 'data_error' if isinstance(exc, DataLoadingFailure) else 'training_error'
+        log(dict(kind=kind, epoch=epoch, cursor=cursor, step=step, error=repr(exc)))
+        progress.message(f'{kind}: {exc}\nСохранён шаг {step}, cursor={cursor}. Подробности: training_log.jsonl')
+        progress.update(cursor, force=True, status='paused_'+kind)
+        return
     finally:
         for s, handler in previous.items(): signal.signal(s, handler)

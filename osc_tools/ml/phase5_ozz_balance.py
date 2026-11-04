@@ -4,6 +4,10 @@ import torch
 from torch.nn import functional as F
 
 
+class NoUsableEvent(ValueError):
+    """Expected data condition; labels cannot anchor a usable interval."""
+
+
 def event_start(labels, length, spp, group, rng):
     """Anchor the source arc type in a usable (post Fourier warm-up) interval."""
     blocks = int(round(length/(10*spp)))
@@ -16,7 +20,7 @@ def event_start(labels, length, spp, group, rng):
     anchors = np.flatnonzero(labels[:, group] > .5)
     anchors = anchors[anchors >= first]
     if not len(anchors):
-        raise ValueError(f'RTDS group {group}: no usable positive labels')
+        raise NoUsableEvent(f'RTDS group {group}: no usable positive labels')
     for anchor in rng.permutation(anchors):
         low = max(0, int(anchor)-length+1)
         high = min(len(labels)-length, int(anchor)-first)
@@ -30,7 +34,7 @@ def event_start(labels, length, spp, group, rng):
         offsets = np.flatnonzero(usable[int(anchor)-high:int(anchor)-low+1])
         if len(offsets):
             return high-int(rng.choice(offsets))
-    raise ValueError('Event falls entirely inside Fourier warm-up intervals')
+    raise NoUsableEvent('Event falls entirely inside Fourier warm-up intervals')
 
 
 def estimate_balance(dataset, samples=400, cap=100.):

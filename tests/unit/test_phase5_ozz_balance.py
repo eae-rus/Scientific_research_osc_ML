@@ -74,3 +74,27 @@ def test_upgrade_only_accepts_known_code_and_explicit_recipe_change():
         validate_resume_contract(old, dict(new, backbone_lr=1e-3), True)
     with pytest.raises(ValueError):
         validate_resume_contract(dict(old, implementation_sha256='unknown'), new, True)
+
+
+def test_event_free_simulation_retains_negative_labels(monkeypatch):
+    from osc_tools.ml import phase5_hierarchical_ozz as data
+    monkeypatch.setattr(data, 'load_raw_csv', lambda path: dict(raw=np.ones((640, 8), np.float32),
+        targets=np.zeros((640, 4), np.float32), ozz=np.zeros(640), dt=1/1600))
+    d = data.OZZDataset([dict(kind='rtds', path='no_event.csv', group=0)], 1, 42, 30., True, True)
+    b = d[0]
+    assert b['target'].sum() == 0 and b['supervised'].any()
+    assert b['data_note'] == 'simulation_without_event_used_as_negative'
+
+
+def test_background_schedule_has_one_third_background_without_repeating_records(monkeypatch):
+    from osc_tools.ml import phase5_hierarchical_ozz as data
+    records = [dict(kind='real', name=f'{g}_{i}', raw=np.ones((320, 8), np.float32), group=g)
+               for g in range(5) for i in range(20)]
+    monkeypatch.setattr(data, 'supervised_window', lambda *a, **kw: {})
+    d = data.OZZDataset(records, 12, 42, .2, True, background_repeats=2)
+    seen = []
+    for epoch in range(3):
+        d.epoch = epoch
+        seen.extend(d[i] for i in range(12))
+    bg = [b['record_name'] for b in seen if b['source_group'] == 4]
+    assert len(bg) == 12 and len(set(bg)) == 12

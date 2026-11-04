@@ -64,12 +64,13 @@ def test_manual_ozz_entry_selects_phase5_without_training(monkeypatch):
     seen = []
     monkeypatch.setattr(engine, 'run', lambda cfg: seen.append(cfg))
     entry.run_manual()
-    assert len(seen) == 1 and not seen[0]['resume']
+    assert len(seen) == 1 and seen[0]['resume']
+    assert seen[0]['background_repeats'] == 2
     assert 'phase5' in seen[0]['output'] and seen[0]['ssl_checkpoint'].endswith('latest_checkpoint.pt')
     assert seen[0]['balanced_events'] and seen[0]['allow_balance_upgrade']
 
-@pytest.mark.parametrize('balanced,upgrade', [(False, False), (True, False), (True, True)])
-def test_ozz_resume_matches_uninterrupted_training(tmp_path, monkeypatch, balanced, upgrade):
+@pytest.mark.parametrize('balanced,upgrade,loader_failure', [(False, False, False), (True, False, False), (True, True, False), (True, False, True), (True, False, 'optimizer')])
+def test_ozz_resume_matches_uninterrupted_training(tmp_path, monkeypatch, balanced, upgrade, loader_failure):
     from dataclasses import asdict
     from scripts.phase5_experiments import run_phase5_hierarchical_ozz as engine
     cfg = replace(HierarchicalConfig(), channel_width=8, width=16, channel_layers=1,
@@ -94,9 +95,30 @@ def test_ozz_resume_matches_uninterrupted_training(tmp_path, monkeypatch, balanc
         save_original(state, path)
         if state['step'] == 1:
             (path.parent/'STOP').touch()
-    monkeypatch.setattr(engine, 'atomic_save', interrupt_after_first_step)
+    original_loader = engine.loader
+    original_step = torch.optim.AdamW.step
+    if loader_failure == 'optimizer':
+        def failing_step(self, *args, **kwargs):
+            original_step(self, *args, **kwargs)
+            raise RuntimeError('synthetic failure after optimizer mutated tensors')
+        monkeypatch.setattr(torch.optim.AdamW, 'step', failing_step)
+    elif loader_failure:
+        def failing_loader(dataset, workers, cursor=0):
+            for i, batch in enumerate(original_loader(dataset, workers, cursor)):
+                if dataset.train and i == 1:
+                    raise OSError('synthetic disk failure during accumulation')
+                yield batch
+        monkeypatch.setattr(engine, 'loader', failing_loader)
+    else:
+        monkeypatch.setattr(engine, 'atomic_save', interrupt_after_first_step)
     engine.run(config)
-    (tmp_path/'resumed/STOP').unlink()
+    if loader_failure:
+        failed = torch.load(tmp_path/'resumed/latest_checkpoint.pt', weights_only=False)
+        assert failed['cursor'] == 0 and failed['step'] == 0
+        monkeypatch.setattr(engine, 'loader', original_loader)
+        monkeypatch.setattr(torch.optim.AdamW, 'step', original_step)
+    else:
+        (tmp_path/'resumed/STOP').unlink()
     monkeypatch.setattr(engine, 'atomic_save', save_original)
     config['resume'] = True
     if upgrade:
