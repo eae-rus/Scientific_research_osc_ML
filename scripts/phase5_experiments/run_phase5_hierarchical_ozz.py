@@ -15,6 +15,8 @@ from osc_tools.ml.phase5_ozz_regularization import OZZRegularizedBackbone, smoot
 from scripts.phase5_experiments.run_phase5_hierarchical import atomic_save, rng_state, restore_rng, worker_init
 from scripts.phase5_experiments.progress import TrainingProgress
 
+from osc_tools.ml.phase5_ozz_balance import estimate_balance, balanced_window_loss, average_precision_metrics
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -60,6 +62,7 @@ def evaluate(model, dataset, device, workers, amp, progress):
     counts = torch.zeros(4, 4, device=device)
     total, count = 0., 0
     real_fp, real_count = 0, 0
+    all_logits, all_targets = [], []
     progress.begin('OZZ validation', len(dataset))
     with torch.no_grad():
         for i, batch in enumerate(loader(dataset, workers)):
@@ -70,6 +73,7 @@ def evaluate(model, dataset, device, workers, amp, progress):
             logits, target = logits[mask].float(), batch['target'][mask]
             total += nn.functional.binary_cross_entropy_with_logits(logits, target, reduction='sum').item()
             count += target.numel()
+            all_logits.append(logits.cpu().numpy()); all_targets.append(target.cpu().numpy())
             pred, truth = logits >= 0, target > .5
             if batch['source_group'].item() == 4:
                 real_fp += pred.any(-1).sum().item()
@@ -79,6 +83,7 @@ def evaluate(model, dataset, device, workers, amp, progress):
             progress.update(i+1, {'loss': total/max(count, 1)})
     progress.update(len(dataset), force=True)
     return {'loss': total/max(count, 1), **metrics_from_counts(*counts.cpu()),
+            **average_precision_metrics(np.concatenate(all_logits), np.concatenate(all_targets)),
             'real_no_ozz_false_positive_rate': real_fp/real_count if real_count else None}
 
 
@@ -87,21 +92,42 @@ def export_curves(output):
     from matplotlib.backends.backend_agg import FigureCanvasAgg
     rows = [json.loads(s) for s in (output/'training_log.jsonl').read_text(encoding='utf-8').splitlines()]
     rows = [r for r in rows if r['kind'] == 'validation']
-    fig = Figure(figsize=(10, 4)); FigureCanvasAgg(fig)
-    ax, bx = fig.subplots(1, 2)
+    fig = Figure(figsize=(15, 4)); FigureCanvasAgg(fig)
+    ax, bx, cx = fig.subplots(1, 3)
     x = [r['epoch']+1 for r in rows]
     ax.plot(x, [r['loss'] for r in rows]); ax.set(xlabel='Epoch', ylabel='Validation BCE')
     for i, name in enumerate(('Stable', 'Petersen', 'PetersSlepian', 'Beliakov')):
         bx.plot(x, [r['f1_per_class'][i] for r in rows], label=name)
     bx.legend(); bx.set(xlabel='Epoch', ylabel='Validation F1', ylim=(0, 1))
-    for a in (ax, bx): a.grid(alpha=.25)
+    for i, name in enumerate(('Stable', 'Petersen', 'PetersSlepian', 'Beliakov')):
+        cx.plot(x, [(r.get('average_precision_per_class') or [None]*4)[i] for r in rows], label=name)
+    cx.legend(); cx.set(xlabel='Epoch', ylabel='Average precision (PR)', ylim=(0, 1))
+    for a in (ax, bx, cx): a.grid(alpha=.25)
     fig.tight_layout(); fig.savefig(output/'training_curves.png', dpi=140)
+
+
+def validate_resume_contract(saved, contract, allow_upgrade=False):
+    if contract != saved:
+        old = dict(saved)
+        known_old = old.get('implementation_sha256') == 'ab4098ec60d58712f4b33100df327c6acd7baed4510f06fa5a9641921d9b6d3a'
+        old.update({k: contract[k] for k in ('balanced_events', 'balance_samples', 'positive_weight_cap', 'focal_gamma', 'implementation_sha256')})
+        if not (allow_upgrade and contract['balanced_events'] and known_old and old == contract):
+            raise ValueError('Параметры/данные не совпадают; переход со старого OZZ требует allow_balance_upgrade=True.')
+        return True
+    return False
 
 
 def run(config):
     config = dict(config)
     config.setdefault('label_error_probability', 0.)
     config.setdefault('drop_path_rate', 0.)
+    config.setdefault('balanced_events', False)
+    config.setdefault('balance_samples', 400)
+    config.setdefault('positive_weight_cap', 100.)
+    config.setdefault('focal_gamma', 0.)
+    if config['focal_gamma'] < 0 or config['positive_weight_cap'] < 1 or config['balance_samples'] < 1:
+        raise ValueError('Invalid OZZ balance/focal settings')
+    allow_upgrade = config.pop('allow_balance_upgrade', False)
     smooth_binary_targets(torch.tensor(0.), config['label_error_probability'])
     output = Path(config['output']).resolve()
     latest = output/'latest_checkpoint.pt'
@@ -131,15 +157,18 @@ def run(config):
                     ssl_split_sha256=hashlib.sha256(manifest_path.read_bytes()).hexdigest())
     code_paths = [Path(__file__), ROOT/'osc_tools/ml/phase5_hierarchical_ozz.py',
                   ROOT/'osc_tools/ml/phase5_hierarchical_data.py', ROOT/'osc_tools/ml/models/phasor_hierarchical.py',
-                  ROOT/'osc_tools/ml/phase5_ozz_regularization.py', ROOT/'osc_tools/ml/phase5_fourier.py']
+                  ROOT/'osc_tools/ml/phase5_ozz_regularization.py', ROOT/'osc_tools/ml/phase5_fourier.py', ROOT/'osc_tools/ml/phase5_ozz_balance.py']
     contract['implementation_sha256'] = hashlib.sha256(b''.join(p.read_bytes() for p in code_paths)).hexdigest()
-    if resume and contract != state['contract']:
-        raise ValueError('Параметры/данные дообучения не совпадают с checkpoint.')
+    upgraded = validate_resume_contract(state['contract'], contract, allow_upgrade) if resume else False
     output.mkdir(parents=True, exist_ok=True)
+    if upgraded:
+        backup = output/f'before_balance_step_{state["step"]}.pt'
+        if not backup.exists():
+            atomic_save(state, backup)
     (output/'split.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
     (output/'config.json').write_text(json.dumps(contract, ensure_ascii=False, indent=2), encoding='utf-8')
     provenance = state.get('ssl_origin') if resume else {'path': str(config['ssl_checkpoint']), 'step': state['step'], 'epoch': state['epoch']}
-    train = OZZDataset(records['train'], config['samples_per_epoch'], config['seed'], config['max_seconds'], True)
+    train = OZZDataset(records['train'], config['samples_per_epoch'], config['seed'], config['max_seconds'], True, event_windows=config['balanced_events'])
     val = OZZDataset(records['validation'], config['validation_samples'], config['seed']+100000, config['max_seconds'], False)
     opt = torch.optim.AdamW([{'params': [p for p in backbone.parameters() if p.requires_grad], 'lr': config['backbone_lr']},
                             {'params': model.classifier.parameters(), 'lr': config['head_lr']}], weight_decay=1e-4)
@@ -148,6 +177,18 @@ def run(config):
         model.load_state_dict(state['model']); opt.load_state_dict(state['optimizer'])
         epoch, cursor, step, best = (state[k] for k in ('epoch', 'cursor', 'step', 'best'))
         restore_rng(state['rng'])
+    best_f1 = state.get('best_f1', -1.) if resume else -1.
+    balance = state.get('balance') if resume and not upgraded else None
+    if config['balanced_events'] and balance is None:
+        print('Оценка весов по обучающим окнам (без validation)...', flush=True)
+        balance = estimate_balance(train, config['balance_samples'], config['positive_weight_cap'])
+    if balance is not None:
+        print(f'Class balance: {balance}', flush=True)
+        (output/'class_balance.json').write_text(json.dumps(balance, indent=2), encoding='utf-8')
+    history = state.get('balance_history', []) if resume else []
+    if upgraded:
+        history.append(dict(epoch=epoch, cursor=cursor, step=step, previous_contract=state['contract']))
+        best_f1 = -1.
     del state
     progress = TrainingProgress(output, interval=config['console_interval'])
     stop = [False]
@@ -157,7 +198,8 @@ def run(config):
     previous = {s: signal.signal(s, request_stop) for s in (signal.SIGINT, signal.SIGTERM)}
     def save(path=latest):
         atomic_save(dict(contract=contract, model=model.state_dict(), optimizer=opt.state_dict(), rng=rng_state(),
-                         epoch=epoch, cursor=cursor, step=step, best=best, ssl_origin=provenance), path)
+                         epoch=epoch, cursor=cursor, step=step, best=best, best_f1=best_f1, balance=balance,
+                         balance_history=history, ssl_origin=provenance), path)
     def log(row):
         with (output/'training_log.jsonl').open('a', encoding='utf-8') as stream:
             stream.write(json.dumps(row)+'\n')
@@ -178,13 +220,23 @@ def run(config):
                 with torch.autocast(device.type, dtype=torch.bfloat16, enabled=amp):
                     logits = model(batch)
                     target = smooth_binary_targets(batch['target'][mask], config['label_error_probability'])
-                    loss = nn.functional.binary_cross_entropy_with_logits(logits[mask].float(), target, reduction='sum')
+                    if balance is not None:
+                        loss = balanced_window_loss(logits[mask].float(), batch['target'][mask],
+                                                    config['label_error_probability'], balance, config['focal_gamma'])
+                    else:
+                        loss = nn.functional.binary_cross_entropy_with_logits(logits[mask].float(), target, reduction='sum')
                 if not torch.isfinite(loss):
                     raise FloatingPointError('Non-finite OZZ loss')
                 (loss/4096).backward()
-                tokens += batch['valid'].sum().item(); targets += mask.sum().item()*4
+                tokens += batch['valid'].sum().item(); targets += int(mask.any()) if balance is not None else mask.sum().item()*4
                 loss_sum += loss.item(); cursor += 1
                 if tokens < config['target_tokens'] and cursor < len(train):
+                    continue
+                if targets == 0:
+                    opt.zero_grad(set_to_none=True)
+                    tokens, loss_sum = 0, 0.
+                    if stop[0] or (output/'STOP').exists():
+                        save(); progress.update(cursor, force=True, status='paused'); return
                     continue
                 for p in model.parameters():
                     if p.grad is not None: p.grad.mul_(4096/max(targets, 1))
@@ -199,11 +251,14 @@ def run(config):
             progress.update(cursor, force=True)
             result = evaluate(model, val, device, config['workers'], amp, progress)
             log(dict(kind='validation', epoch=epoch, step=step, **result))
-            progress.message(f'Epoch {epoch+1}: val BCE={result["loss"]:.6f}, macro F1={result["macro_f1"]:.4f}; F1={result["f1_per_class"]}; real no-OZZ FPR={result["real_no_ozz_false_positive_rate"]}')
+            progress.message(f'Epoch {epoch+1}: val BCE={result["loss"]:.6f}, macro F1={result["macro_f1"]:.4f}; F1={result["f1_per_class"]}; AP={result["average_precision_per_class"]}; real no-OZZ FPR={result["real_no_ozz_false_positive_rate"]}')
             epoch += 1; cursor = 0
             improved = result['loss'] < best
             best = min(best, result['loss'])
+            improved_f1 = result['macro_f1'] > best_f1
+            best_f1 = max(best_f1, result['macro_f1'])
             save()
+            if improved_f1: save(output/'best_f1_model.pt')
             if improved: save(output/'best_model.pt')
             preserved_rng = rng_state()
             export_curves(output)

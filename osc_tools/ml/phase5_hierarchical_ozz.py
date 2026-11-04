@@ -171,10 +171,11 @@ def prepare_unlabeled_background(root, config, ssl_manifest):
 
 
 class OZZDataset:
-    def __init__(self, records, samples, seed, max_seconds, train):
+    def __init__(self, records, samples, seed, max_seconds, train, event_windows=False):
         self.groups = [[r for r in records if r['group'] == g] for g in sorted({r['group'] for r in records})]
         self.samples, self.seed, self.max_seconds, self.train = samples, seed, max_seconds, train
         self.epoch = 0
+        self.event_windows = event_windows
         self.cache = OrderedDict()
         self.sources = {}
 
@@ -218,8 +219,13 @@ class OZZDataset:
         if not choices:
             raise ValueError(f'Record shorter than 10 periods: {record.get("path", record.get("name"))}')
         blocks = int(rng.choice(choices))
+        if self.train and self.event_windows and record['kind'] == 'rtds' and rng.random() < .25:
+            blocks = available  # Largest whole ten-period window, up to max_seconds.
         length = int(np.floor(blocks*10*spp+.5))
         start = int(rng.integers(len(raw)-length+1))
+        if self.train and self.event_windows and record['kind'] == 'rtds':
+            from osc_tools.ml.phase5_ozz_balance import event_start
+            start = event_start(labels, length, spp, record['group'], rng)
         segment = raw[start:start+length].copy()
         if self.train:
             if rng.random() < .5:
@@ -233,5 +239,8 @@ class OZZDataset:
                     if provenance is not None:
                         provenance[cols] = np.roll(provenance[cols], shift)
         batch = supervised_window(segment, labels[start:start+length], spp, blocks, basis=record.get('basis', 'phase'), provenance=provenance)
+        if self.train and self.event_windows and record['kind'] == 'rtds':
+            if not batch['target'][batch['supervised'], record['group']].any():
+                raise ValueError(f'RTDS event has no usable supervised interval: {record["path"]}')
         batch['source_group'] = torch.tensor(record['group'])
         return batch

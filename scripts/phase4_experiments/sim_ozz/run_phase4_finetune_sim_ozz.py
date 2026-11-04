@@ -1021,9 +1021,15 @@ def run_manual() -> None:
     if MODEL_FAMILY == "hierarchical":
         # НОВАЯ модель: первый запуск переносит веса SSL и создаёт голову ОЗЗ.
         # Далее RESUME=True продолжает именно ОЗЗ, а не перечитывает SSL.
-        SSL_CHECKPOINT = PROJECT_ROOT / "experiments/phase5/phasor_hierarchical_v1/best_model.pt"
+        SSL_CHECKPOINT = PROJECT_ROOT / "experiments/phase5/phasor_hierarchical_v1/latest_checkpoint.pt"
         OUTPUT_DIR = PROJECT_ROOT / "experiments/phase5/hierarchical_ozz_v1"
         RESUME = False
+        # True продолжает latest_checkpoint.pt из OUTPUT_DIR, включая старый OZZ.
+        ALLOW_BALANCE_UPGRADE = True  # Только проверенный переход старого рецепта; веса/AdamW сохраняются.
+        BALANCED_EVENTS = True   # RTDS-окна с событием + равный вклад окон + веса редких меток.
+        BALANCE_SAMPLES = 400     # Обучающие окна для оценки частот; веса сохраняются в checkpoint.
+        POSITIVE_WEIGHT_CAP = 100.0
+        FOCAL_GAMMA = 1.0         # Меньше вклад уверенно верных ответов; 0 = только взвешенная BCE.
         SMOKE = False             # True: отдельный короткий запуск перед основным.
         EPOCHS = 100
         SAMPLES_PER_EPOCH = 2_000  # Поровну четыре типа RTDS + реальные без ОЗЗ.
@@ -1039,7 +1045,7 @@ def run_manual() -> None:
         LABEL_ERROR_PROBABILITY = 0.05  # Независимые выходы BCE: 1 -> .95, 0 -> .05.
         DROP_PATH_RATE = 0.10          # Пропуск residual-блоков; максимум в конце каждой стадии.
         NUM_WORKERS = 2
-        SAVE_EVERY_STEPS = 10
+        SAVE_EVERY_STEPS = 500
         CONSOLE_INTERVAL_SECONDS = 2.0
         SEED = 42
         RTDS_DIR = PROJECT_ROOT / "data/Simulated_OZZ_v1"
@@ -1054,7 +1060,9 @@ def run_manual() -> None:
                       save_every=SAVE_EVERY_STEPS, console_interval=CONSOLE_INTERVAL_SECONDS,
                       seed=SEED, rtds_dir=str(RTDS_DIR), registry=str(DATASET_REGISTRY),
                       expert_report=str(EXPERT_REPORT), label_error_probability=LABEL_ERROR_PROBABILITY,
-                      drop_path_rate=DROP_PATH_RATE)
+                      drop_path_rate=DROP_PATH_RATE, balanced_events=BALANCED_EVENTS,
+                      balance_samples=BALANCE_SAMPLES, positive_weight_cap=POSITIVE_WEIGHT_CAP,
+                      allow_balance_upgrade=ALLOW_BALANCE_UPGRADE, focal_gamma=FOCAL_GAMMA)
         if SMOKE:
             config.update(output=str(PROJECT_ROOT / "experiments/phase5/hierarchical_ozz_smoke"),
                           epochs=1, samples_per_epoch=10, validation_samples=10,
