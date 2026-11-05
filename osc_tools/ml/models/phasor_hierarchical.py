@@ -139,14 +139,17 @@ class PhasorHierarchicalKAN(nn.Module):
 
     def encode_channels(self, z, state):
         """No U/I or sequence mixing here; no cross-harmonic products anywhere."""
-        visible = (state==1)|(state==2)
-        safe = torch.where(visible.unsqueeze(-1),z,torch.zeros_like(z))
-        amp = torch.sqrt(safe.square().sum(-1)+1e-16)
-        onehot = F.one_hot(state.long(),4).float()
-        x = torch.cat((safe,torch.log1p(amp).unsqueeze(-1),onehot),-1)
-        x = self.pair(x)  # [..., H,6,16]; two per-component KAN layers
-        x = x.transpose(-3,-2).flatten(-2)  # harmonic mixing only now
-        return self.harmonic_mix(x)+self.channel_id, safe, visible
+        # Preserve small feature differences under AMP; parameter names stay unchanged.
+        with torch.autocast(z.device.type, enabled=False):
+            z = z.float()
+            visible = (state==1)|(state==2)
+            safe = torch.where(visible.unsqueeze(-1),z,torch.zeros_like(z))
+            amp = torch.sqrt(safe.square().sum(-1)+1e-16)
+            onehot = F.one_hot(state.long(),4).float()
+            x = torch.cat((safe,torch.log1p(amp).unsqueeze(-1),onehot),-1)
+            x = self.pair(x)  # [..., H,6,16]; two per-component KAN layers
+            x = x.transpose(-3,-2).flatten(-2)  # harmonic mixing only now
+            return self.harmonic_mix(x)+self.channel_id, safe, visible
 
     def forward(self, z, state, times, valid, local_only=False):
         """Re/Im input B,T,H,6,2; states missing=0/measured=1/derived=2/hidden=3.
@@ -177,7 +180,9 @@ class PhasorHierarchicalKAN(nn.Module):
         for block in self.channel_blocks:
             x = self.run_block(block,x,cmask)
         x = x.reshape(b,n,6,k,-1).permute(0,1,3,2,4).flatten(-2).reshape(b*n,k,-1)
-        x = self.mixer(x)+self.raw_bypass(safe.reshape(b*n,k,-1))
+        with torch.autocast(x.device.type, enabled=False):
+            mixed = self.mixer(x.float())
+        x = mixed+self.raw_bypass(safe.reshape(b*n,k,-1))
         for block in self.local_blocks:
             x = self.run_block(block,x,mask,phi)
         local = x

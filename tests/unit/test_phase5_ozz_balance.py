@@ -1,6 +1,30 @@
 import numpy as np
 import pytest
 import torch
+from osc_tools.ml.phase5_ozz_balance import transition_weights
+
+
+def test_transition_weight_preserves_single_bin_event_and_distant_negatives():
+    target = torch.zeros(1, 9, 4)
+    target[0, 4, 2] = 1
+    before = target.clone()
+    valid = torch.ones(1, 9, dtype=torch.bool)
+    weight = transition_weights(target, valid, .5)
+    assert weight[0, :, 2].tolist() == [1, 1, 1, .5, .5, .5, 1, 1, 1]
+    assert (weight[..., 0] == 1).all()
+    torch.testing.assert_close(target, before)
+    valid[0, 4] = False
+    assert (transition_weights(target, valid, .5) == 1).all()
+
+
+def test_transition_loss_keeps_positive_gradient_for_narrow_event():
+    target = torch.zeros(1, 5, 4); target[0, 2, 0] = 1
+    z = torch.zeros(5, 4, requires_grad=True)
+    w = transition_weights(target, torch.ones(1, 5, dtype=torch.bool), .5)[0]
+    loss = balanced_window_loss(z, target[0], .05,
+                               dict(positive_weight=[4.]*4, normalizer=[1.]*4), 1., w)
+    loss.backward()
+    assert z.grad[2, 0] < 0 and z.grad[0, 0] > 0
 from osc_tools.ml.phase5_ozz_balance import event_start, average_precision_metrics, balanced_window_loss, estimate_balance
 from osc_tools.ml.phase5_hierarchical_ozz import supervised_window
 

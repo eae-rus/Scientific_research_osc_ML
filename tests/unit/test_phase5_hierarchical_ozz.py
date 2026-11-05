@@ -87,7 +87,9 @@ def test_ozz_resume_matches_uninterrupted_training(tmp_path, monkeypatch, balanc
                   epochs=1, samples_per_epoch=5, validation_samples=2, target_tokens=160, max_seconds=.2,
                   backbone_lr=1e-5, head_lr=1e-4, use_real_no_ozz=False, workers=0, save_every=1,
                   console_interval=2., seed=42, label_error_probability=.05, drop_path_rate=.3,
-                  balanced_events=balanced, focal_gamma=1. if balanced else 0.)
+                  balanced_events=balanced, focal_gamma=1. if balanced else 0., boundary_weight=.5 if balanced else 1.,
+                  no_checkpoint_max_tokens=800 if balanced else 0,
+                  lr_schedule='flat_cosine', lr_decay_start=.3, lr_decay_end=1., lr_min_ratio=.1)
     engine.run(config)
     config['output'] = str(tmp_path/'resumed')
     save_original = engine.atomic_save
@@ -141,6 +143,7 @@ def test_ozz_resume_matches_uninterrupted_training(tmp_path, monkeypatch, balanc
     assert (full['epoch'], full['cursor'], full['step'], full['best']) == (resumed['epoch'], resumed['cursor'], resumed['step'], resumed['best'])
     for key in full['model']:
         torch.testing.assert_close(full['model'][key], resumed['model'][key], rtol=0, atol=0)
+    assert [g['lr'] for g in full['optimizer']['param_groups']] == [g['lr'] for g in resumed['optimizer']['param_groups']]
 
 
 def test_expert_containment_excludes_all_buses_events_and_both_verifications(tmp_path):

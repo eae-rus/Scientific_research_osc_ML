@@ -55,7 +55,23 @@ def estimate_balance(dataset, samples=400, cap=100.):
                 positive_weight=weight.tolist(), normalizer=(1-p+p*weight).tolist())
 
 
-def balanced_window_loss(logits, hard_target, smoothing, balance, focal_gamma=0.):
+def transition_weights(target, valid, boundary_weight=.5):
+    """Keep every label, downweight the two bins adjacent to an observed transition.
+
+    Last dimension is class; penultimate dimension is time. Invalid intervals
+    cannot create a boundary. One-bin events retain a nonzero positive loss.
+    """
+    if not 0 < boundary_weight <= 1:
+        raise ValueError('boundary_weight must be in (0, 1]')
+    edge = (target[..., 1:, :] != target[..., :-1, :])
+    edge = edge & (valid[..., 1:] & valid[..., :-1]).unsqueeze(-1)
+    boundary = torch.zeros_like(target, dtype=torch.bool)
+    boundary[..., 1:, :] |= edge
+    boundary[..., :-1, :] |= edge
+    return torch.where(boundary, boundary_weight, 1.)
+
+
+def balanced_window_loss(logits, hard_target, smoothing, balance, focal_gamma=0., interval_weight=None):
     """Weight actual events, not the artificial positive mass from smoothing."""
     if not logits.numel():
         return logits.sum() * 0.
@@ -67,6 +83,8 @@ def balanced_window_loss(logits, hard_target, smoothing, balance, focal_gamma=0.
     if focal_gamma:
         pt = torch.where(hard_target > .5, logits.sigmoid(), (-logits).sigmoid())
         loss = loss * (1-pt).pow(focal_gamma)
+    if interval_weight is not None:
+        loss = loss * interval_weight
     return (loss * element_weight).mean()
 
 

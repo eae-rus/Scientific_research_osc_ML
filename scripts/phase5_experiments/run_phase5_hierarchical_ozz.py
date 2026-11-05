@@ -3,6 +3,7 @@ from dataclasses import asdict
 from pathlib import Path
 import hashlib
 import json
+import math
 import random
 import signal
 import numpy as np
@@ -14,8 +15,9 @@ from osc_tools.ml.phase5_hierarchical_ozz import OZZDataset, prepare_records
 from osc_tools.ml.phase5_ozz_regularization import OZZRegularizedBackbone, smooth_binary_targets
 from scripts.phase5_experiments.run_phase5_hierarchical import atomic_save, rng_state, restore_rng, worker_init
 from scripts.phase5_experiments.progress import TrainingProgress
+from scripts.phase5_experiments.runtime import activation_policy, scale_gradients, fit_execution_to_memory
 
-from osc_tools.ml.phase5_ozz_balance import estimate_balance, balanced_window_loss, average_precision_metrics
+from osc_tools.ml.phase5_ozz_balance import estimate_balance, balanced_window_loss, average_precision_metrics, transition_weights
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -46,7 +48,7 @@ class OZZClassifier(nn.Module):
 
 def loader(dataset, workers, cursor=0):
     return DataLoader(dataset, batch_size=1, sampler=range(cursor, len(dataset)), num_workers=workers,
-                      timeout=120 if workers else 0, worker_init_fn=worker_init, generator=torch.Generator().manual_seed(771))
+                      pin_memory=torch.cuda.is_available(), timeout=120 if workers else 0, worker_init_fn=worker_init, generator=torch.Generator().manual_seed(771))
 
 
 def guarded_batches(dataset, workers, initial):
@@ -64,7 +66,7 @@ def guarded_batches(dataset, workers, initial):
         yield batch
 
 def to_device(batch, device):
-    return {k: v.to(device) if torch.is_tensor(v) else v for k, v in batch.items()}
+    return {k: v.to(device, non_blocking=True) if torch.is_tensor(v) else v for k, v in batch.items()}
 
 
 def metrics_from_counts(tp, fp, fn, tn):
@@ -134,10 +136,18 @@ def validate_resume_contract(saved, contract, allow_upgrade=False):
     if contract != saved:
         old = dict(saved)
         known_old = old.get('implementation_sha256') in ('ab4098ec60d58712f4b33100df327c6acd7baed4510f06fa5a9641921d9b6d3a',
-            '5175d524c3260da09135ca73d32b103bad684ed758f98ad3c15ea9c64bdce235')
+            '5175d524c3260da09135ca73d32b103bad684ed758f98ad3c15ea9c64bdce235',
+            'd49eba6522a0f609bb464f086486f13df21f9d976c23ce76fd17fd25a12ef64d',
+            '60de3a4bbe9e4320e5cc60b79a5fea7f4c3c83460ee0c81fd9931c35a4974b62',
+            '0960cc18c653fef74e82e4a322a31c4a629fb703feaee541021a61d36e14e9e2')
         if saved.get('implementation_sha256') == 'ab4098ec60d58712f4b33100df327c6acd7baed4510f06fa5a9641921d9b6d3a':
             old.update({k: contract[k] for k in ('balanced_events', 'balance_samples', 'positive_weight_cap', 'focal_gamma')})
+        for key in ('lr_schedule', 'lr_decay_start', 'lr_decay_end', 'lr_min_ratio'):
+            if key not in saved and key in contract:
+                old[key] = contract[key]
         old['implementation_sha256'] = contract['implementation_sha256']
+        if 'boundary_weight' in contract:
+            old['boundary_weight'] = contract['boundary_weight']
         if 'background_repeats' in contract:
             old['background_repeats'] = contract['background_repeats']
         if not (allow_upgrade and contract['balanced_events'] and known_old and old == contract):
@@ -146,19 +156,43 @@ def validate_resume_contract(saved, contract, allow_upgrade=False):
     return False
 
 
+def learning_rate_factor(config, epoch_progress):
+    """Stateless schedule: epoch/cursor and the checkpoint contract define LR."""
+    if config['lr_schedule'] == 'constant':
+        return 1.
+    start, end = config['lr_decay_start'], config['lr_decay_end']
+    t = min(1., max(0., (epoch_progress-start)/(end-start)))
+    floor = config['lr_min_ratio']
+    return floor + (1-floor)*.5*(1+math.cos(math.pi*t))
+
+
 def run(config):
     config = dict(config)
+    config.setdefault('lr_schedule', 'constant')
+    config.setdefault('lr_decay_start', 150.)
+    config.setdefault('lr_decay_end', 300.)
+    config.setdefault('lr_min_ratio', .1)
+    if config['lr_schedule'] not in ('constant', 'flat_cosine'):
+        raise ValueError('Unknown learning-rate schedule')
+    if not (0 <= config['lr_decay_start'] < config['lr_decay_end'] and 0 < config['lr_min_ratio'] <= 1):
+        raise ValueError('Invalid cosine schedule bounds')
     config.setdefault('label_error_probability', 0.)
     config.setdefault('drop_path_rate', 0.)
     config.setdefault('balanced_events', False)
     config.setdefault('balance_samples', 400)
     config.setdefault('positive_weight_cap', 100.)
     config.setdefault('focal_gamma', 0.)
+    config.setdefault('boundary_weight', 1.)
+    if not 0 < config['boundary_weight'] <= 1:
+        raise ValueError('boundary_weight must be in (0, 1]')
     config.setdefault('background_repeats', 1)
     if config['background_repeats'] not in (1, 2, 3):
         raise ValueError('background_repeats must be 1, 2 or 3')
     if config['focal_gamma'] < 0 or config['positive_weight_cap'] < 1 or config['balance_samples'] < 1:
         raise ValueError('Invalid OZZ balance/focal settings')
+    no_checkpoint_max_tokens = config.pop('no_checkpoint_max_tokens', 0)
+    if no_checkpoint_max_tokens < 0:
+        raise ValueError('no_checkpoint_max_tokens must be nonnegative')
     allow_upgrade = config.pop('allow_balance_upgrade', False)
     smooth_binary_targets(torch.tensor(0.), config['label_error_probability'])
     output = Path(config['output']).resolve()
@@ -224,6 +258,8 @@ def run(config):
         if not state.get('balance'):
             best_f1 = -1.
     del state
+    execution = fit_execution_to_memory(1, max(80,no_checkpoint_max_tokens), no_checkpoint_max_tokens, device=device)
+    (output/'execution.json').write_text(json.dumps(execution, indent=2), encoding='utf-8')
     progress = TrainingProgress(output, interval=config['console_interval'])
     stop = [False]
     def request_stop(signum, frame):
@@ -260,21 +296,24 @@ def run(config):
                     reported.add((name, note))
                     log(dict(kind='data_notice', epoch=epoch, cursor=cursor, record=name, reason=note))
                     progress.message(f'Данные: {note}: {name}')
+                cpu_mask = batch['valid'] & batch['supervised']
+                window_tokens = int(batch['valid'].sum())
+                window_targets = int(cpu_mask.any()) if balance is not None else int(cpu_mask.sum())*4
                 batch = to_device(batch, device)
                 mask = batch['valid'] & batch['supervised']
-                with torch.autocast(device.type, dtype=torch.bfloat16, enabled=amp):
-                    logits = model(batch)
-                    target = smooth_binary_targets(batch['target'][mask], config['label_error_probability'])
-                    if balance is not None:
-                        loss = balanced_window_loss(logits[mask].float(), batch['target'][mask],
-                                                    config['label_error_probability'], balance, config['focal_gamma'])
-                    else:
-                        loss = nn.functional.binary_cross_entropy_with_logits(logits[mask].float(), target, reduction='sum')
-                if not torch.isfinite(loss):
-                    raise FloatingPointError('Non-finite OZZ loss')
-                (loss/4096).backward()
-                tokens += batch['valid'].sum().item(); targets += int(mask.any()) if balance is not None else mask.sum().item()*4
-                loss_sum += loss.item(); cursor += 1
+                with activation_policy(backbone, batch['z'].shape[1], execution['no_checkpoint_max_tokens']):
+                    with torch.autocast(device.type, dtype=torch.bfloat16, enabled=amp):
+                        logits = model(batch)
+                        target = smooth_binary_targets(batch['target'][mask], config['label_error_probability'])
+                        if balance is not None:
+                            loss = balanced_window_loss(logits[mask].float(), batch['target'][mask],
+                                                        config['label_error_probability'], balance, config['focal_gamma'],
+                                                        transition_weights(batch['target'], mask, config['boundary_weight'])[mask])
+                        else:
+                            loss = nn.functional.binary_cross_entropy_with_logits(logits[mask].float(), target, reduction='sum')
+                    (loss/4096).backward()
+                tokens += window_tokens; targets += window_targets
+                loss_sum += loss.detach(); cursor += 1
                 if tokens < config['target_tokens'] and cursor < len(train):
                     continue
                 if targets == 0:
@@ -284,17 +323,23 @@ def run(config):
                     if stop[0] or (output/'STOP').exists():
                         save(); progress.update(cursor, force=True, status='paused'); return
                     continue
-                for p in model.parameters():
-                    if p.grad is not None: p.grad.mul_(4096/max(targets, 1))
+                loss_sum = float(loss_sum)
+                if not math.isfinite(loss_sum):
+                    raise FloatingPointError('Non-finite OZZ loss')
+                scale_gradients(model, 4096/max(targets, 1))
                 grad = torch.nn.utils.clip_grad_norm_(model.parameters(), 1., error_if_nonfinite=True).item()
+                factor = learning_rate_factor(config, epoch + cursor/len(train))
+                for group, base in zip(opt.param_groups, (config['backbone_lr'], config['head_lr'])):
+                    group['lr'] = base*factor
                 optimizer_in_progress = True
                 opt.step()
                 optimizer_in_progress = False
                 step += 1
                 safe_cursor, safe_rng = cursor, rng_state()
                 opt.zero_grad(set_to_none=True)
-                row = dict(kind='train', epoch=epoch, cursor=cursor, step=step, loss=loss_sum/max(targets, 1), grad_norm=grad)
-                log(row); progress.update(cursor, {'loss': row['loss'], 'step': step, 'grad_norm': grad, 'lr': config['backbone_lr']})
+                row = dict(kind='train', epoch=epoch, cursor=cursor, step=step, loss=loss_sum/max(targets, 1), grad_norm=grad,
+                           backbone_lr=opt.param_groups[0]['lr'], head_lr=opt.param_groups[1]['lr'])
+                log(row); progress.update(cursor, {'loss': row['loss'], 'step': step, 'grad_norm': grad, 'lr': opt.param_groups[0]['lr']})
                 tokens, targets, loss_sum = 0, 0, 0.
                 if step % config['save_every'] == 0: save()
                 if stop[0] or (output/'STOP').exists():
