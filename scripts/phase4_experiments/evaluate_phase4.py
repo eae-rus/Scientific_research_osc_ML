@@ -558,6 +558,9 @@ def load_model_from_checkpoint(
         (model, config)
     """
     ckpt = torch.load(ckpt_path, map_location='cpu', weights_only=False)
+    if ckpt.get('contract', {}).get('recipe') == 'hierarchical_ozz_v1':
+        from osc_tools.ml.phase5_ozz_inference import load_hierarchical
+        return load_hierarchical(ckpt, ckpt_path, device)
     config = ckpt['config']
 
     model_type = config.get('model_type', 'PhysicalKANTransformer')

@@ -1033,10 +1033,18 @@ def run_manual() -> None:
         BOUNDARY_WEIGHT = 0.5    # Вес двух интервалов по сторонам перехода; метки сохраняются.
         BACKGROUND_REPEATS = 2    # Два реальных фоновых окна на четыре RTDS: доля фона 1/3.
         SMOKE = False             # True: отдельный короткий запуск перед основным.
-        EPOCHS = 300              # Общий предел, включая уже пройденные эпохи.
-        LR_SCHEDULE = "flat_cosine"
-        LR_DECAY_START = 150.0    # После 150 завершённых эпох начинается плавный спад.
-        LR_DECAY_END = 300.0      # Конец спада; не изменять при обычном resume.
+        EPOCHS = 400              # Общий предел, включая уже пройденные эпохи.
+        CURRENT_DROPOUT_ALL = 0.20    # Все токи: половина NaN, половина нули.
+        CURRENT_DROPOUT_PHASE = 0.25  # Одна фаза тока; чаще IB. Напряжения сохраняются.
+        CURRENT_ZERO_PROBABILITY = 0.50
+        VALIDATION_CURRENT_SAMPLES = 40  # Дополнительные фиксированные проверки без токов / с нулями.
+        LR_SCHEDULE = "adaptation_cosine"
+        LR_RESTART_EPOCH = 300.0      # Один раз, не менять при дальнейших resume.
+        LR_RESTART_WARMUP = 2.0       # Мягкий подъём 1e-6 -> 1e-5 (основа).
+        LR_RESTART_INITIAL = 0.1
+        LR_RESTART_PEAK = 1.0         # Исходные высокие LR 1e-5 / 1e-4.
+        LR_DECAY_START = 302.0    # После разгона начинается косинусное снижение.
+        LR_DECAY_END = 400.0      # Конец спада; не изменять при обычном resume.
         LR_MIN_RATIO = 0.1        # Финальные LR: 1e-6 для основы и 1e-5 для головы.
         SAMPLES_PER_EPOCH = 2_000  # Четыре группы RTDS + усиленный реальный фон.
         VALIDATION_SAMPLES = 200   # Фиксированные окна, поровну те же пять групп.
@@ -1073,7 +1081,11 @@ def run_manual() -> None:
                       background_repeats=BACKGROUND_REPEATS, boundary_weight=BOUNDARY_WEIGHT,
                       lr_schedule=LR_SCHEDULE, lr_decay_start=LR_DECAY_START,
                       lr_decay_end=LR_DECAY_END, lr_min_ratio=LR_MIN_RATIO,
-                      no_checkpoint_max_tokens=NO_CHECKPOINT_MAX_TOKENS)
+                      no_checkpoint_max_tokens=NO_CHECKPOINT_MAX_TOKENS,
+                      current_dropout_all=CURRENT_DROPOUT_ALL, current_dropout_phase=CURRENT_DROPOUT_PHASE,
+                      current_zero_probability=CURRENT_ZERO_PROBABILITY, validation_current_samples=VALIDATION_CURRENT_SAMPLES,
+                      lr_restart_epoch=LR_RESTART_EPOCH, lr_restart_warmup=LR_RESTART_WARMUP,
+                      lr_restart_initial=LR_RESTART_INITIAL, lr_restart_peak=LR_RESTART_PEAK)
         if SMOKE:
             config.update(output=str(PROJECT_ROOT / "experiments/phase5/hierarchical_ozz_smoke"),
                           epochs=1, samples_per_epoch=10, validation_samples=10,

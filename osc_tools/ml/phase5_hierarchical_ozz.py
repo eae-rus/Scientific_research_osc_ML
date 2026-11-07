@@ -171,12 +171,18 @@ def prepare_unlabeled_background(root, config, ssl_manifest):
 
 
 class OZZDataset:
-    def __init__(self, records, samples, seed, max_seconds, train, event_windows=False, background_repeats=1):
+    def __init__(self, records, samples, seed, max_seconds, train, event_windows=False, background_repeats=1,
+                 current_dropout_all=0., current_dropout_phase=0., current_zero_probability=.5,
+                 current_evaluation=None):
         self.groups = [[r for r in records if r['group'] == g] for g in sorted({r['group'] for r in records})]
         self.schedule = [i for i, group in enumerate(self.groups) for _ in range(background_repeats if group[0]['group'] == 4 and train else 1)]
         self.samples, self.seed, self.max_seconds, self.train = samples, seed, max_seconds, train
         self.epoch = 0
         self.event_windows = event_windows
+        self.current_dropout = (current_dropout_all, current_dropout_phase, current_zero_probability)
+        if current_evaluation not in (None, "missing", "zero") or (train and current_evaluation):
+            raise ValueError("Invalid current evaluation mode")
+        self.current_evaluation = current_evaluation
         self.cache = OrderedDict()
         self.sources = {}
 
@@ -266,7 +272,16 @@ class OZZDataset:
                     segment[:, cols] = np.roll(segment[:, cols], shift, axis=1)
                     if provenance is not None:
                         provenance[cols] = np.roll(provenance[cols], shift)
+        input_variant = 'full'
+        if self.train:
+            from osc_tools.ml.phase5_ozz_input_augmentation import augment_current_channels
+            segment, provenance, input_variant = augment_current_channels(segment, provenance, rng, *self.current_dropout)
+        elif self.current_evaluation:
+            from osc_tools.ml.phase5_ozz_input_augmentation import augment_current_channels
+            segment, provenance, input_variant = augment_current_channels(
+                segment, provenance, rng, 1., 0., float(self.current_evaluation == 'zero'))
         batch = supervised_window(segment, labels[start:start+length], spp, blocks, basis=record.get('basis', 'phase'), provenance=provenance)
+        batch['input_variant'] = input_variant
         if self.train and self.event_windows and record['kind'] == 'rtds':
             if labels.any() and not batch['target'][batch['supervised']].any():
                 note = 'event_unavailable_in_usable_intervals_random_window'

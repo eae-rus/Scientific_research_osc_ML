@@ -89,6 +89,8 @@ def test_ozz_resume_matches_uninterrupted_training(tmp_path, monkeypatch, balanc
                   console_interval=2., seed=42, label_error_probability=.05, drop_path_rate=.3,
                   balanced_events=balanced, focal_gamma=1. if balanced else 0., boundary_weight=.5 if balanced else 1.,
                   no_checkpoint_max_tokens=800 if balanced else 0,
+                  current_dropout_all=.2 if balanced else 0., current_dropout_phase=.25 if balanced else 0.,
+                  validation_current_samples=2 if balanced else 0,
                   lr_schedule='flat_cosine', lr_decay_start=.3, lr_decay_end=1., lr_min_ratio=.1)
     engine.run(config)
     config['output'] = str(tmp_path/'resumed')

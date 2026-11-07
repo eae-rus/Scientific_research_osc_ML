@@ -139,11 +139,23 @@ def validate_resume_contract(saved, contract, allow_upgrade=False):
             '5175d524c3260da09135ca73d32b103bad684ed758f98ad3c15ea9c64bdce235',
             'd49eba6522a0f609bb464f086486f13df21f9d976c23ce76fd17fd25a12ef64d',
             '60de3a4bbe9e4320e5cc60b79a5fea7f4c3c83460ee0c81fd9931c35a4974b62',
-            '0960cc18c653fef74e82e4a322a31c4a629fb703feaee541021a61d36e14e9e2')
+            '0960cc18c653fef74e82e4a322a31c4a629fb703feaee541021a61d36e14e9e2',
+            '709b69182cb4bb5bf47dbe36cc7e09bdc4f07ca10fff1b876f2b85ebbeaa02c4')
         if saved.get('implementation_sha256') == 'ab4098ec60d58712f4b33100df327c6acd7baed4510f06fa5a9641921d9b6d3a':
             old.update({k: contract[k] for k in ('balanced_events', 'balance_samples', 'positive_weight_cap', 'focal_gamma')})
         for key in ('lr_schedule', 'lr_decay_start', 'lr_decay_end', 'lr_min_ratio'):
             if key not in saved and key in contract:
+                old[key] = contract[key]
+        for key in ('current_dropout_all', 'current_dropout_phase', 'current_zero_probability', 'validation_current_samples'):
+            if key not in saved and key in contract:
+                old[key] = contract[key]
+        # Explicit one-time 300 -> 400 adaptation, preserving AdamW and every tensor.
+        if (saved.get('implementation_sha256') == '709b69182cb4bb5bf47dbe36cc7e09bdc4f07ca10fff1b876f2b85ebbeaa02c4'
+                and saved.get('lr_schedule') == 'flat_cosine'
+                and contract.get('lr_schedule') == 'adaptation_cosine'
+                and contract.get('current_dropout_all', 0) > 0):
+            for key in ('lr_schedule', 'lr_decay_start', 'lr_decay_end', 'lr_min_ratio',
+                        'lr_restart_epoch', 'lr_restart_warmup', 'lr_restart_initial', 'lr_restart_peak'):
                 old[key] = contract[key]
         old['implementation_sha256'] = contract['implementation_sha256']
         if 'boundary_weight' in contract:
@@ -160,10 +172,18 @@ def learning_rate_factor(config, epoch_progress):
     """Stateless schedule: epoch/cursor and the checkpoint contract define LR."""
     if config['lr_schedule'] == 'constant':
         return 1.
+    peak = 1.
+    if config['lr_schedule'] == 'adaptation_cosine':
+        elapsed = epoch_progress-config['lr_restart_epoch']
+        warmup = config['lr_restart_warmup']
+        peak = config['lr_restart_peak']
+        if elapsed < warmup:
+            fraction = min(1., max(0., elapsed/warmup))
+            return config['lr_restart_initial'] + (peak-config['lr_restart_initial'])*fraction
     start, end = config['lr_decay_start'], config['lr_decay_end']
     t = min(1., max(0., (epoch_progress-start)/(end-start)))
     floor = config['lr_min_ratio']
-    return floor + (1-floor)*.5*(1+math.cos(math.pi*t))
+    return floor + (peak-floor)*.5*(1+math.cos(math.pi*t))
 
 
 def run(config):
@@ -172,10 +192,25 @@ def run(config):
     config.setdefault('lr_decay_start', 150.)
     config.setdefault('lr_decay_end', 300.)
     config.setdefault('lr_min_ratio', .1)
-    if config['lr_schedule'] not in ('constant', 'flat_cosine'):
+    if config['lr_schedule'] not in ('constant', 'flat_cosine', 'adaptation_cosine'):
         raise ValueError('Unknown learning-rate schedule')
     if not (0 <= config['lr_decay_start'] < config['lr_decay_end'] and 0 < config['lr_min_ratio'] <= 1):
         raise ValueError('Invalid cosine schedule bounds')
+    if config['lr_schedule'] == 'adaptation_cosine':
+        if not (config['lr_restart_epoch'] >= 0 and config['lr_restart_warmup'] > 0
+                and 0 < config['lr_restart_initial'] <= config['lr_restart_peak'] <= 1
+                and config['lr_min_ratio'] <= config['lr_restart_peak']
+                and config['lr_restart_epoch']+config['lr_restart_warmup'] <= config['lr_decay_start']):
+            raise ValueError('Invalid adaptation cosine schedule')
+    config.setdefault('validation_current_samples', 0)
+    if config['validation_current_samples'] < 0:
+        raise ValueError('validation_current_samples must be nonnegative')
+    config.setdefault('current_dropout_all', 0.)
+    config.setdefault('current_dropout_phase', 0.)
+    config.setdefault('current_zero_probability', .5)
+    from osc_tools.ml.phase5_ozz_input_augmentation import augment_current_channels
+    augment_current_channels(np.ones((1, 8)), None, np.random.default_rng(0),
+        config['current_dropout_all'], config['current_dropout_phase'], config['current_zero_probability'])
     config.setdefault('label_error_probability', 0.)
     config.setdefault('drop_path_rate', 0.)
     config.setdefault('balanced_events', False)
@@ -208,6 +243,8 @@ def run(config):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     amp = device.type == 'cuda' and torch.cuda.is_bf16_supported()
     state = torch.load(latest if resume else config['ssl_checkpoint'], map_location='cpu', weights_only=False)
+    if config['lr_schedule'] == 'adaptation_cosine' and (not resume or state['epoch'] < config['lr_restart_epoch']):
+        raise ValueError('Сначала завершите исходные 300 эпох; адаптация продолжает готовый OZZ checkpoint.')
     architecture = state['contract']['architecture']
     backbone = OZZRegularizedBackbone(HierarchicalConfig(**architecture), config['drop_path_rate'])
     if not resume:
@@ -223,18 +260,21 @@ def run(config):
                     ssl_split_sha256=hashlib.sha256(manifest_path.read_bytes()).hexdigest())
     code_paths = [Path(__file__), ROOT/'osc_tools/ml/phase5_hierarchical_ozz.py',
                   ROOT/'osc_tools/ml/phase5_hierarchical_data.py', ROOT/'osc_tools/ml/models/phasor_hierarchical.py',
-                  ROOT/'osc_tools/ml/phase5_ozz_regularization.py', ROOT/'osc_tools/ml/phase5_fourier.py', ROOT/'osc_tools/ml/phase5_ozz_balance.py']
+                  ROOT/'osc_tools/ml/phase5_ozz_regularization.py', ROOT/'osc_tools/ml/phase5_fourier.py', ROOT/'osc_tools/ml/phase5_ozz_balance.py', ROOT/'osc_tools/ml/phase5_ozz_input_augmentation.py']
     contract['implementation_sha256'] = hashlib.sha256(b''.join(p.read_bytes() for p in code_paths)).hexdigest()
     upgraded = validate_resume_contract(state['contract'], contract, allow_upgrade) if resume else False
     output.mkdir(parents=True, exist_ok=True)
     if upgraded:
-        backup = output/f'before_balance_step_{state["step"]}.pt'
+        backup = (output/'before_current_adaptation_epoch300.pt' if config['lr_schedule'] == 'adaptation_cosine'
+                  else output/f'before_balance_step_{state["step"]}.pt')
         if not backup.exists():
             atomic_save(state, backup)
     (output/'split.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
     (output/'config.json').write_text(json.dumps(contract, ensure_ascii=False, indent=2), encoding='utf-8')
     provenance = state.get('ssl_origin') if resume else {'path': str(config['ssl_checkpoint']), 'step': state['step'], 'epoch': state['epoch']}
-    train = OZZDataset(records['train'], config['samples_per_epoch'], config['seed'], config['max_seconds'], True, event_windows=config['balanced_events'], background_repeats=config['background_repeats'])
+    train = OZZDataset(records['train'], config['samples_per_epoch'], config['seed'], config['max_seconds'], True, event_windows=config['balanced_events'], background_repeats=config['background_repeats'],
+                       current_dropout_all=config['current_dropout_all'], current_dropout_phase=config['current_dropout_phase'],
+                       current_zero_probability=config['current_zero_probability'])
     val = OZZDataset(records['validation'], config['validation_samples'], config['seed']+100000, config['max_seconds'], False)
     opt = torch.optim.AdamW([{'params': [p for p in backbone.parameters() if p.requires_grad], 'lr': config['backbone_lr']},
                             {'params': model.classifier.parameters(), 'lr': config['head_lr']}], weight_decay=1e-4)
@@ -348,6 +388,13 @@ def run(config):
             result = evaluate(model, val, device, config['workers'], amp, progress)
             log(dict(kind='validation', epoch=epoch, step=step, **result))
             progress.message(f'Epoch {epoch+1}: val BCE={result["loss"]:.6f}, macro F1={result["macro_f1"]:.4f}; F1={result["f1_per_class"]}; AP={result["average_precision_per_class"]}; real no-OZZ FPR={result["real_no_ozz_false_positive_rate"]}; window FPR={result["real_no_ozz_window_false_positive_rate"]}')
+            if config['validation_current_samples']:
+                for variant in ('missing', 'zero'):
+                    probe = OZZDataset(records['validation'], config['validation_current_samples'],
+                        config['seed']+100000, config['max_seconds'], False, current_evaluation=variant)
+                    robustness = evaluate(model, probe, device, config['workers'], amp, progress)
+                    log(dict(kind='validation_current_'+variant, epoch=epoch, step=step, **robustness))
+                    progress.message(f'Without currents ({variant}): F1={robustness["f1_per_class"]}; AP={robustness["average_precision_per_class"]}')
             epoch += 1; cursor = 0
             safe_cursor, safe_rng = cursor, rng_state()
             improved = result['loss'] < best

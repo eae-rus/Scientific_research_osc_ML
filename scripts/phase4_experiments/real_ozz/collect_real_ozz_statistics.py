@@ -69,16 +69,17 @@ def expand_zones(
     Returns:
         expanded: (N,) bool
     """
-    if binary_mask.sum() == 0:
-        return binary_mask.astype(bool)
-
-    expanded = binary_mask.astype(bool).copy()
-    indices = np.where(binary_mask)[0]
-    for idx in indices:
-        lo = max(0, idx - expansion_zones)
-        hi = min(len(expanded), idx + expansion_zones + 1)
-        expanded[lo:hi] = True
-    return expanded
+    binary_mask = np.asarray(binary_mask, dtype=bool)
+    if expansion_zones < 0:
+        raise ValueError('expansion_zones must be nonnegative')
+    if expansion_zones == 0 or not binary_mask.any():
+        return binary_mask.copy()
+    # Linear-time dilation instead of a Python loop over every positive sample.
+    prefix = np.r_[0, np.cumsum(binary_mask, dtype=np.int64)]
+    indices = np.arange(len(binary_mask))
+    left = np.maximum(0, indices-expansion_zones)
+    right = np.minimum(len(binary_mask), indices+expansion_zones+1)
+    return prefix[right]-prefix[left] > 0
 
 
 def find_events(
@@ -112,7 +113,8 @@ def compute_file_statistics(
     probs: np.ndarray,           # (N, 4) sample-level probabilities
     fs: float,
     threshold: float | dict[str, float] = 0.5,
-    expansion_zones: int = 16,   # ~1 период при stride_fraction=8
+    expansion_zones: int = 16,   # legacy: raw samples; Phase 5: 1/8-period tokens
+    token_period_seconds: float | None = None,
 ) -> Dict:
     """Сбор статистики по одному файлу.
 
@@ -154,11 +156,13 @@ def compute_file_statistics(
     result['detected'] = detected
     result['any_ozz'] = any(detected.values())
 
+    radius = (round(expansion_zones * token_period_seconds * fs)
+              if token_period_seconds is not None else expansion_zones)
     # ── Zone-level с expansion ──
     events_info = {}
     for c in range(n_classes):
-        binary = probs_valid[:, c] > float(threshold_values[c])
-        expanded = expand_zones(binary, expansion_zones)
+        binary = valid_mask & (probs[:, c] > float(threshold_values[c]))
+        expanded = expand_zones(binary, radius) & valid_mask
         events = find_events(expanded)
 
         total_event_samples = sum(e - s + 1 for s, e in events)
@@ -175,10 +179,10 @@ def compute_file_statistics(
 
     # ── Temporal patterns ──
     for c in range(n_classes):
-        binary = probs_valid[:, c] > float(threshold_values[c])
+        binary = valid_mask & (probs[:, c] > float(threshold_values[c]))
         if binary.any():
             first_idx = int(np.argmax(binary))
-            relative_onset = first_idx / len(probs_valid)
+            relative_onset = first_idx / n_samples
             result.setdefault('temporal', {})[CLASS_NAMES[c]] = {
                 'onset_relative': float(relative_onset),
                 'onset_ms': float(first_idx / fs * 1000),
@@ -323,6 +327,9 @@ def collect_statistics(
     else:
         print(f"Порог: fixed = {threshold_config['default_threshold']:.3f}")
 
+    if output_dir is None and config.get('model_family') == 'hierarchical':
+        output_dir = str(PROJECT_ROOT / 'reports/phase5/real_ozz_statistics')
+
     # Отчёт
     report = load_real_ozz_report()
     confirmed_df, false_df = split_by_verification(report)
@@ -347,7 +354,8 @@ def collect_statistics(
     per_file_stats: List[Dict] = []
     t0 = time.time()
 
-    for file_idx, fname in enumerate(unique_files):
+    from tqdm import tqdm
+    for file_idx, fname in enumerate(tqdm(unique_files, desc='Real OZZ statistics', unit='file')):
         cfg_path = COMTRADE_DIR / f'{fname}.cfg'
         if not cfg_path.exists():
             continue
@@ -357,6 +365,7 @@ def collect_statistics(
         for bus in file_buses:
             raw_display, raw_model, fs, time_arr, sig_info = load_comtrade_raw(
                 cfg_path, bus=bus, norm_osc=norm_osc,
+                hierarchical=config.get("model_family") == "hierarchical",
             )
             if raw_display is None:
                 continue
@@ -365,16 +374,18 @@ def collect_statistics(
             raw_for_model = raw_model
             if mask_neutral:
                 raw_for_model = raw_model.copy()
-                raw_for_model[:, 3] = 0.0  # IN
-                raw_for_model[:, 7] = 0.0  # UN
+                raw_for_model[:, 3] = np.nan if config.get("model_family") == "hierarchical" else 0.0  # IN
+                raw_for_model[:, 7] = np.nan if config.get("model_family") == "hierarchical" else 0.0  # UN
 
             probs, cov = mark_real_oscillogram(
-                model, raw_for_model, config, device, fs=fs,
+                model, raw_for_model, config, device, fs=fs, f_network=sig_info.get("_f_network", 50.),
             )
 
             file_stat = compute_file_statistics(
                 probs, fs, threshold=threshold_config['threshold_spec'],
                 expansion_zones=expansion_zones,
+                token_period_seconds=(1/(8*sig_info.get("_f_network", 50.))
+                    if config.get("model_family") == "hierarchical" else None),
             )
             file_stat['filename'] = fname
             file_stat['bus'] = bus
@@ -405,6 +416,11 @@ def collect_statistics(
     out_path.mkdir(parents=True, exist_ok=True)
 
     # JSON (полный)
+    (out_path/'inference_manifest.json').write_text(json.dumps({
+        'checkpoint': str(ckpt_path), 'step': config.get('checkpoint_step'),
+        'inference_sha256': config.get('inference_sha256'), 'mask_neutral': mask_neutral,
+        'expansion_zones': expansion_zones, 'thresholds': threshold_config,
+    }, ensure_ascii=False, indent=2), encoding='utf-8')
     json_path = out_path / 'real_ozz_statistics.json'
     # Убираем _max_prob_values для компактности основного JSON
     agg_clean = _remove_internal_keys(agg)
@@ -764,14 +780,17 @@ if __name__ == '__main__':
         # =====================================================
         # РУЧНОЙ РЕЖИМ — отредактируйте константы ниже
         # =====================================================
-        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt'
+        MODEL_FAMILY = 'hierarchical'  # 'hierarchical' (Phase 5) или 'legacy'
+        CHECKPOINT = ('experiments/phase5/hierarchical_ozz_v1/latest_checkpoint.pt'
+                      if MODEL_FAMILY == 'hierarchical' else
+                      'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt')
         # Пример: CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_.../best_model.pt'
 
         MAX_FILES = None        # None = все файлы
         THRESHOLD = 0.5
         THRESHOLDS_JSON = None # ссылка на JSON с per-class порогами (например, sim_ozz_evaluation.json или optimal_thresholds.json)
-        EXPANSION_ZONES = 16    # ~1 период при stride_fraction=8
-        MASK_NEUTRAL = True     # True = обнулять IN/UN перед inference
+        EXPANSION_ZONES = 0     # Честная статистика без расширения; 8 = один период для Phase 5
+        MASK_NEUTRAL = False    # True = обнулять IN/UN перед inference
 
         if CHECKPOINT is None:
             # Автопоиск последнего sim_ozz эксперимента

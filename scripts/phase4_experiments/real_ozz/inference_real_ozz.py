@@ -88,6 +88,7 @@ def load_comtrade_raw(
     cfg_path: Path,
     bus: str,
     norm_osc: NormOsc | None = None,
+    hierarchical: bool = False,
 ) -> tuple[np.ndarray | None, np.ndarray | None, float, np.ndarray | None, dict]:
     """Загружает COMTRADE и извлекает 8 каналов для указанной секции (bus).
 
@@ -180,6 +181,35 @@ def load_comtrade_raw(
                 if col_name is not None and col_name in raw_df_norm.columns:
                     raw_8ch_model[:, i] = raw_df_norm[col_name].to_numpy().astype(np.float32)
 
+    signal_info['_f_network'] = float(frequency)
+    if hierarchical:
+        # Never interpret missing/unscaled channels as physical measurements.
+        rates = {float(rate) for rate, _ in rec.cfg.sample_rates if rate > 0}
+        if len(rates) != 1 or (len(time_arr) > 1 and
+                not np.allclose(np.diff(time_arr), 1/fs, rtol=.02, atol=1e-7)):
+            print(f"SKIP {file_name}: variable/irregular sampling needs explicit resampling")
+            return None, None, fs, time_arr, signal_info
+        rows = (norm_osc.norm_coef.filter(pl.col('name') == file_name)
+                if norm_osc is not None and norm_osc.norm_coef is not None else None)
+        if rows is None or rows.is_empty() or 'YES' not in str(rows['norm'][0]):
+            print(f"SKIP {file_name}: no approved normalization")
+            return None, None, fs, time_arr, signal_info
+        row = rows.row(0, named=True)
+        raw_8ch_model = np.full_like(raw_8ch_display, np.nan)
+        import re
+        for i, channel in enumerate(order):
+            column = resolved.get(channel)
+            if column is None:
+                continue
+            channel_bus = re.search(r'(?:Bus|BusBar|CableLine)-(\d+)', column).group(1)
+            field, factor = (('Ip', 20) if i < 3 else ('Iz', 5) if i == 3
+                             else ('Ub' if 'BusBar' in column else 'Uc', 3))
+            base = row.get(channel_bus+field+'_base')
+            if base is not None and np.isfinite(float(base)) and float(base) > 0:
+                raw_8ch_model[:, i] = raw_8ch_display[:, i]/(factor*float(base))
+        if not np.isfinite(raw_8ch_model).any():
+            print(f"SKIP {file_name}: no usable normalized channels")
+            return None, None, fs, time_arr, signal_info
     return raw_8ch_display, raw_8ch_model, fs, time_arr, signal_info
 
 
@@ -214,6 +244,9 @@ def mark_real_oscillogram(
     Returns:
         (probs, coverage): пообразцовые вероятности и покрытие
     """
+    if config.get('model_family') == 'hierarchical':
+        from osc_tools.ml.phase5_ozz_inference import mark_record
+        return mark_record(model, raw_data, config, device, fs, f_network)
     model.eval()
     N = raw_data.shape[0]
 
@@ -508,7 +541,7 @@ def plot_real_ozz_marking(
     ax_cov = fig.add_subplot(gs[2 + num_classes, 0], sharex=ax_i)
     ax_cov.fill_between(time_ms, 0, coverage, color='steelblue', alpha=0.3)
     ax_cov.plot(time_ms, coverage, color='steelblue', linewidth=0.6)
-    ax_cov.set_ylabel('Coverage', fontsize=8)
+    ax_cov.set_ylabel('Valid input' if np.max(coverage, initial=0) <= 1 else 'Coverage', fontsize=8)
     ax_cov.set_xlabel('Время, мс')
     ax_cov.grid(True, alpha=0.3, linestyle=':')
 
@@ -584,7 +617,7 @@ def run_inference_on_real_ozz(
 
     # Папка вывода
     if output_dir is None:
-        out_base = PROJECT_ROOT / 'reports' / 'phase4' / 'real_ozz_inference'
+        out_base = PROJECT_ROOT / 'reports' / ('phase5' if config.get('model_family') == 'hierarchical' else 'phase4') / 'real_ozz_inference'
     else:
         out_base = Path(output_dir)
 
@@ -644,6 +677,9 @@ def run_inference_on_real_ozz(
         print("Режим: FAST (stride=window, без перекрытия зон)")
 
     stats = {
+        'checkpoint': str(ckpt_path),
+        'checkpoint_step': config.get('checkpoint_step'),
+        'inference_sha256': config.get('inference_sha256'),
         'total_files': len(unique_files),
         'processed': 0,
         'skipped': 0,
@@ -712,6 +748,7 @@ def run_inference_on_real_ozz(
         for bus in file_buses:
             raw_display, raw_model, fs, time_arr, sig_info = load_comtrade_raw(
                 cfg_path, bus=bus, norm_osc=norm_osc,
+                hierarchical=config.get("model_family") == "hierarchical",
             )
 
             if raw_display is None:
@@ -726,7 +763,7 @@ def run_inference_on_real_ozz(
                 stats['bus_fallback'] += 1
 
             bus_suffix = f'_bus{bus}' if len(file_buses) > 1 else ''
-            ib_note = ' [IB=0]' if sig_info.get('_IB_masked') else ''
+            ib_note = (' [IB missing]' if config.get('model_family') == 'hierarchical' else ' [IB=0]') if sig_info.get('_IB_masked') else ''
             fb_note = f' [fb:{sig_info.get("_bus_fallback", "")}]' if sig_info.get('_bus_fallback') else ''
             print(f"  [{file_idx+1}/{len(unique_files)}] {fname}{bus_suffix}{ib_note}{fb_note} "
                   f"(N={raw_display.shape[0]}, Fs={fs:.0f}, {label})")
@@ -737,10 +774,10 @@ def run_inference_on_real_ozz(
                 # Маскируем IN (idx=3) и UN (idx=7) — в реальных осциллограммах
                 # эти каналы часто не записываются или содержат мусор
                 raw_for_model = raw_model.copy()
-                raw_for_model[:, 3] = 0.0   # IN
-                raw_for_model[:, 7] = 0.0   # UN
+                raw_for_model[:, 3] = np.nan if config.get("model_family") == "hierarchical" else 0.0   # IN
+                raw_for_model[:, 7] = np.nan if config.get("model_family") == "hierarchical" else 0.0   # UN
             probs, cov = mark_real_oscillogram(
-                model, raw_for_model, config, device, fs=fs, fast_mode=fast_mode,
+                model, raw_for_model, config, device, fs=fs, f_network=sig_info.get("_f_network", 50.), fast_mode=fast_mode,
             )
 
             # Диагностика: если все NaN — файл слишком короткий
@@ -822,7 +859,7 @@ def run_inference_on_real_ozz(
     print(f"    - нет на диске: {stats['skip_not_on_disk']}")
     print(f"    - нет каналов (критичные): {stats['skip_no_channels']}")
     print(f"    - слишком коротко: {stats['skip_too_short']}")
-    print(f"  IB маскирован нулём (обучен): {stats['ib_masked']}")
+    print(f"  Записей без канала IB: {stats['ib_masked']}")
     print(f"  Bus fallback (→bus=1): {stats['bus_fallback']}")
     print(f"  ОЗЗ обнаружено: {stats['detected_ozz']}")
     print(f"  ОЗЗ не обнаружено: {stats['no_ozz_detected']}")
@@ -919,7 +956,10 @@ if __name__ == '__main__':
         # РУЧНОЙ РЕЖИМ — отредактируйте константы ниже
         # =====================================================
         # Укажите путь после обучения
-        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt'
+        MODEL_FAMILY = 'hierarchical'  # 'hierarchical' (Phase 5) или 'legacy'
+        CHECKPOINT = ('experiments/phase5/hierarchical_ozz_v1/latest_checkpoint.pt'
+                      if MODEL_FAMILY == 'hierarchical' else
+                      'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt')
         # Пример: CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_.../best_model.pt'
 
         # 'all' | 'confirmed' | 'false_detection' | 'unknown'

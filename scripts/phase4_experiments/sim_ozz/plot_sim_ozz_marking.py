@@ -69,6 +69,9 @@ def mark_sim_ozz_oscillogram(
         probs: (T, num_classes) — пообразцовые вероятности (NaN где нет покрытия)
         coverage: (T,) — число окон, покрыших каждый отсчёт
     """
+    if config.get('model_family') == 'hierarchical':
+        from osc_tools.ml.phase5_ozz_inference import mark_record
+        return mark_record(model, raw_data, config, device, fs, f_network)
     model.eval()
     N = raw_data.shape[0]
 
@@ -189,7 +192,7 @@ def plot_sim_ozz_marking(
 
         # Предсказание
         valid = ~np.isnan(p)
-        ax.plot(time_ms[valid], p[valid], color=color, linewidth=1.2, alpha=0.8)
+        ax.plot(time_ms, p, color=color, linewidth=1.2, alpha=0.8)
 
         # Зона выше порога
         high = (p >= threshold) & valid
@@ -207,7 +210,7 @@ def plot_sim_ozz_marking(
     ax_cov = fig.add_subplot(gs[-1, 0], sharex=ax_i)
     ax_cov.fill_between(time_ms, 0, coverage, color='steelblue', alpha=0.3)
     ax_cov.plot(time_ms, coverage, color='steelblue', linewidth=0.6)
-    ax_cov.set_ylabel('Coverage', fontsize=8)
+    ax_cov.set_ylabel('Valid input' if np.max(coverage, initial=0) <= 1 else 'Coverage', fontsize=8)
     ax_cov.set_xlabel('Время, мс')
     ax_cov.grid(True, alpha=0.3, linestyle=':')
 
@@ -284,6 +287,11 @@ def generate_sim_ozz_markings(
     ckpt_path = Path(checkpoint_path)
     model, config = load_model_from_checkpoint(ckpt_path, device)
     print(f"Модель: {config.get('model_type')}")
+
+    if config.get('model_family') == 'hierarchical':
+        from osc_tools.ml.phase5_ozz_evaluation import evaluate_records
+        return evaluate_records(model, config, device, ckpt_path, per_class=per_class,
+                                background=0, output=output_dir or ckpt_path.parent/'marking_plots', plots=True)
 
     # Папка вывода
     if output_dir is None:
@@ -390,7 +398,10 @@ if __name__ == '__main__':
         # =====================================================================
         # РУЧНОЙ ЗАПУСК
         # =====================================================================
-        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt'
+        MODEL_FAMILY = 'hierarchical'  # 'hierarchical' (Phase 5) или 'legacy'
+        CHECKPOINT = ('experiments/phase5/hierarchical_ozz_v1/latest_checkpoint.pt'
+                      if MODEL_FAMILY == 'hierarchical' else
+                      'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt')
 
         if CHECKPOINT is None:
             print("Укажите CHECKPOINT.")
@@ -398,6 +409,6 @@ if __name__ == '__main__':
             _ckpt = str(PROJECT_ROOT / CHECKPOINT) if not Path(CHECKPOINT).is_absolute() else CHECKPOINT
             generate_sim_ozz_markings(
                 checkpoint_path=_ckpt,
-                per_class=250,
+                per_class=25,  # 100 картинок; выборка входит в массовую оценку.
                 threshold=0.5,
             )

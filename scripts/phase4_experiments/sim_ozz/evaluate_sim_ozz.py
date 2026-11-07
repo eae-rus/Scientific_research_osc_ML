@@ -358,6 +358,7 @@ def evaluate_sim_ozz(
     save_plots: bool = True,
     include_roc: bool = False,
     output_dir: str | None = None,
+    background_files: int = 1200,
 ) -> dict:
     """Полная оценка SimOZZ-модели: file-by-file inference + метрики."""
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -369,6 +370,11 @@ def evaluate_sim_ozz(
     exp_dir = ckpt_path.parent
 
     model, config = load_model_from_checkpoint(ckpt_path, device)
+    if config.get('model_family') == 'hierarchical':
+        from osc_tools.ml.phase5_ozz_evaluation import evaluate_records
+        limit = per_class_files or (max(1, max_files//4) if max_files else 240)
+        return evaluate_records(model, config, device, ckpt_path, per_class=limit,
+                                background=background_files, output=output_dir, workers=max(1, num_workers))
     num_params = sum(p.numel() for p in model.parameters())
     print(f"Модель: {config.get('model_type')}, параметров: {num_params:,}", flush=True)
 
@@ -543,7 +549,10 @@ if __name__ == '__main__':
     if len(_sys.argv) > 1:
         main()
     else:
-        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt'
+        MODEL_FAMILY = 'hierarchical'  # 'hierarchical' (Phase 5) или 'legacy'
+        CHECKPOINT = ('experiments/phase5/hierarchical_ozz_v1/latest_checkpoint.pt'
+                      if MODEL_FAMILY == 'hierarchical' else
+                      'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt')
         if CHECKPOINT is None:
             exp_root = PROJECT_ROOT / 'experiments' / 'phase4'
             sim_dirs = sorted(
@@ -565,12 +574,14 @@ if __name__ == '__main__':
                      if not Path(CHECKPOINT).is_absolute() else CHECKPOINT)
             evaluate_sim_ozz(
                 checkpoint_path=_ckpt,
-                # Актуальная уставка для статьи: 240 файлов на каждый из 4 типов дуги = 960 файлов.
+                # Ограниченная оценка: 240 файлов каждого типа дуги = 960 файлов.
                 # Ранее использовалась быстрая выборка 200 (50/класс) для smoke/черновой оценки.
                 per_class_files=240,
-                batch_size=128,
-                num_workers=4,
+                background_files=1200,  # Phase 5: стратифицированный расширенный фон.
+                batch_size=128,  # Только legacy; Phase 5 обрабатывает целую запись.
+                num_workers=4,  # Phase 5: параллельная CPU-подготовка с ограниченной очередью.
                 save_plots=True,
                 include_roc=True,
-                output_dir='reports/phase4/sim_ozz_eval/manual_run',
+                output_dir=('reports/phase5/hierarchical_ozz_evaluation' if MODEL_FAMILY == 'hierarchical'
+                            else 'reports/phase4/sim_ozz_eval/manual_run'),
             )
