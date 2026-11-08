@@ -29,16 +29,17 @@ def load_hierarchical(state, checkpoint, device):
         digest.update(key.encode()); digest.update(value.cpu().contiguous().numpy().tobytes())
     for relative in ('osc_tools/ml/phase5_ozz_inference.py', 'osc_tools/ml/phase5_fourier.py',
                      'osc_tools/ml/phase5_hierarchical_ozz.py', 'osc_tools/ml/models/phasor_hierarchical.py',
-                     'osc_tools/ml/phase5_hierarchical_data.py',
+                     'osc_tools/ml/phase5_hierarchical_data.py', 'osc_tools/ml/phase5_ozz_features.py',
                      'scripts/phase5_experiments/run_phase5_hierarchical_ozz.py'):
         digest.update((ROOT / relative).read_bytes())
+    digest.update(json.dumps(dict(architecture=config['architecture'], feature_mode=config.get('feature_mode', 'local_blocks')), sort_keys=True).encode())
     config.update(model_family='hierarchical', model_type='PhasorHierarchicalKAN',
                   data_dir=config['rtds_dir'], num_classes=4, inference_sha256=digest.hexdigest(),
                   checkpoint=str(Path(checkpoint).resolve()), checkpoint_step=state['step'])
     return model, config
 
 
-def prepare_chunks(raw, spp, max_blocks, basis="phase", provenance=None):
+def prepare_chunks(raw, spp, max_blocks, basis="phase", provenance=None, feature_mode="local_blocks"):
     """Pad only the final block with missing values; never invent measured zeros."""
     total_blocks = int(np.ceil(len(raw) / (10*spp)))
     for first in range(0, total_blocks, max_blocks):
@@ -50,7 +51,8 @@ def prepare_chunks(raw, spp, max_blocks, basis="phase", provenance=None):
             continue
         padded = np.full((length, 8), np.nan, np.float32)
         padded[:len(part)] = part
-        batch = supervised_window(padded, np.zeros((length, 4), np.float32), spp, blocks, basis=basis, provenance=provenance)
+        batch = supervised_window(padded, np.zeros((length, 4), np.float32), spp, blocks, basis=basis, provenance=provenance,
+            feature_mode=feature_mode, history=raw[max(0, offset-int(np.floor(10*spp+.5))):offset])
         ends = token_positions(0, 80*blocks, spp)+1
         starts = np.r_[0, ends[:-1]]
         batch['valid'] &= torch.from_numpy(ends <= len(part))
@@ -68,7 +70,7 @@ def prepare_record(raw, config, device, fs, f_network=50., basis="phase", proven
     blocks = max(1, int(max_seconds*f_network/10))
     amp = device.type == 'cuda' and bool(config.get('amp_bf16', False))
     signature = dict(model=config['inference_sha256'], fs=float(fs), fnet=float(f_network),
-                     blocks=blocks, amp=amp, device=device.type, torch_version=torch.__version__, basis=basis,
+                     blocks=blocks, feature_mode=config.get('feature_mode', 'local_blocks'), amp=amp, device=device.type, torch_version=torch.__version__, basis=basis,
                      provenance=None if provenance is None else np.asarray(provenance).tolist())
     digest = hashlib.sha256(json.dumps(signature, sort_keys=True).encode())
     digest.update(raw.tobytes())
@@ -76,7 +78,7 @@ def prepare_record(raw, config, device, fs, f_network=50., basis="phase", proven
     if cache.exists():
         with np.load(cache, allow_pickle=False) as saved:
             return cache, {k: saved[k] for k in saved.files}, None
-    return cache, None, list(prepare_chunks(raw, spp, blocks, basis, provenance))
+    return cache, None, list(prepare_chunks(raw, spp, blocks, basis, provenance, config.get('feature_mode', 'local_blocks')))
 
 
 @torch.inference_mode()

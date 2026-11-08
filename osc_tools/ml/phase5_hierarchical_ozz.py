@@ -1,4 +1,4 @@
-"""Supervised OZZ adapter for the unchanged Phase 5 SSL input contract."""
+"""Supervised OZZ adapter: SSL-compatible tensor layout and continuous record history."""
 from collections import OrderedDict
 from pathlib import Path
 import csv
@@ -37,10 +37,17 @@ def select_real_background(file_names, report_path):
                          selected_files=len(selected), excluded_files=excluded)
 
 
-def supervised_window(raw, labels, spp, blocks, basis="phase", provenance=None):
+def supervised_window(raw, labels, spp, blocks, basis="phase", provenance=None,
+                      feature_mode="local_blocks", history=None):
     if provenance is None:
         provenance = np.isfinite(raw).any(0).astype(np.uint8)
-    features, missing, meta, positions = build_local_features(raw, spp, blocks, basis, provenance)
+    if feature_mode == 'continuous_record':
+        from osc_tools.ml.phase5_ozz_features import continuous_features
+        features, missing, meta, positions = continuous_features(raw, spp, blocks, basis, provenance, history)
+    elif feature_mode == 'local_blocks':
+        features, missing, meta, positions = build_local_features(raw, spp, blocks, basis, provenance)
+    else:
+        raise ValueError('Unknown OZZ Fourier history mode')
     polar = np.nan_to_num(features, nan=0, posinf=0, neginf=0).reshape(-1, 13, 6, 2)
     z = np.stack((polar[..., 0]*np.cos(polar[..., 1]), polar[..., 0]*np.sin(polar[..., 1])), -1)
     state = np.broadcast_to(np.array(meta['feature_provenance']).reshape(13, 6, 2)[..., 0], z.shape[:-1]).copy()
@@ -48,7 +55,7 @@ def supervised_window(raw, labels, spp, blocks, basis="phase", provenance=None):
     z[state == 0] = 0
     # Label each 1/8-period interval ending at this token, without a future shift.
     starts = np.r_[0, positions[:-1]+1]
-    target = np.stack([labels[a:b+1].max(0) for a, b in zip(starts, positions)]).astype(np.float32)
+    target = np.maximum.reduceat(labels[:positions[-1]+1], starts, axis=0).astype(np.float32)
     return dict(z=torch.from_numpy(z), state=torch.tensor(state, dtype=torch.long),
                 times=torch.tensor((positions+1)/spp, dtype=torch.float32),
                 valid=torch.ones(len(z), dtype=torch.bool), target=torch.from_numpy(target),
@@ -173,12 +180,16 @@ def prepare_unlabeled_background(root, config, ssl_manifest):
 class OZZDataset:
     def __init__(self, records, samples, seed, max_seconds, train, event_windows=False, background_repeats=1,
                  current_dropout_all=0., current_dropout_phase=0., current_zero_probability=.5,
-                 current_evaluation=None):
+                 current_evaluation=None, feature_mode="local_blocks", label_tail_periods=0,
+                 voltage_dropout_phase=0., background_dropout_multiplier=1.):
         self.groups = [[r for r in records if r['group'] == g] for g in sorted({r['group'] for r in records})]
         self.schedule = [i for i, group in enumerate(self.groups) for _ in range(background_repeats if group[0]['group'] == 4 and train else 1)]
         self.samples, self.seed, self.max_seconds, self.train = samples, seed, max_seconds, train
         self.epoch = 0
         self.event_windows = event_windows
+        self.feature_mode, self.label_tail_periods = feature_mode, label_tail_periods
+        self.voltage_dropout_phase = voltage_dropout_phase
+        self.background_dropout_multiplier = background_dropout_multiplier
         self.current_dropout = (current_dropout_all, current_dropout_phase, current_zero_probability)
         if current_evaluation not in (None, "missing", "zero") or (train and current_evaluation):
             raise ValueError("Invalid current evaluation mode")
@@ -228,10 +239,13 @@ class OZZDataset:
                     except OSError:
                         if attempt == 2: raise
                         time.sleep(.2*(attempt+1))
+            if self.label_tail_periods and 'expanded_targets' not in data:
+                from osc_tools.ml.phase5_ozz_features import cached_expanded_labels
+                data['expanded_targets'] = cached_expanded_labels(data['targets'], 1/(50*data['dt']))
             self.cache[path] = data
             while len(self.cache) > 2:
                 self.cache.popitem(last=False)
-            raw, labels, spp = data['raw'], data['targets'], 1/(50*data['dt'])
+            raw, labels, spp = data['raw'], data.get('expanded_targets', data['targets']), 1/(50*data['dt'])
         available = min(int(len(raw)/(10*spp)), int(self.max_seconds*fnet/10))
         choices = [b for b in BUCKETS if b <= available]
         if not choices:
@@ -256,11 +270,14 @@ class OZZDataset:
                     note = 'simulation_without_event_used_as_negative'
             if event_group is not None:
                 try:
-                    start = event_start(labels, length, spp, event_group, rng)
+                    start = event_start(labels, length, spp, event_group, rng, continuous=self.feature_mode == 'continuous_record')
                 except NoUsableEvent:
                     # Retain true interval labels; never invent or erase an event.
                     note = 'event_unavailable_in_usable_intervals_random_window'
-        segment = raw[start:start+length].copy()
+        history_start = (max(0, start-int(np.floor(10*spp+.5)))
+                         if self.feature_mode == 'continuous_record' else start)
+        history_count = start-history_start
+        segment = raw[history_start:start+length].copy()
         if self.train:
             if rng.random() < .5:
                 segment *= -1
@@ -275,12 +292,23 @@ class OZZDataset:
         input_variant = 'full'
         if self.train:
             from osc_tools.ml.phase5_ozz_input_augmentation import augment_current_channels
-            segment, provenance, input_variant = augment_current_channels(segment, provenance, rng, *self.current_dropout)
+            multiplier = self.background_dropout_multiplier if record['group'] == 4 else 1.
+            all_p, phase_p, zero_p = self.current_dropout
+            segment, provenance, input_variant = augment_current_channels(
+                segment, provenance, rng, all_p*multiplier, phase_p*multiplier, zero_p)
+            if rng.random() < self.voltage_dropout_phase*multiplier:
+                # Simulate a failed voltage input without erasing all U1/U2/U0.
+                # A NaN raw phase would erase all three symmetric voltages.
+                column = int(rng.integers(4, 7))
+                segment[:, column] = np.where(np.isfinite(segment[:, column]), 0., np.nan)
+                input_variant += '+voltage_zero'
         elif self.current_evaluation:
             from osc_tools.ml.phase5_ozz_input_augmentation import augment_current_channels
             segment, provenance, input_variant = augment_current_channels(
                 segment, provenance, rng, 1., 0., float(self.current_evaluation == 'zero'))
-        batch = supervised_window(segment, labels[start:start+length], spp, blocks, basis=record.get('basis', 'phase'), provenance=provenance)
+        batch = supervised_window(segment[history_count:], labels[start:start+length], spp, blocks,
+            basis=record.get('basis', 'phase'), provenance=provenance,
+            feature_mode=self.feature_mode, history=segment[:history_count])
         batch['input_variant'] = input_variant
         if self.train and self.event_windows and record['kind'] == 'rtds':
             if labels.any() and not batch['target'][batch['supervised']].any():

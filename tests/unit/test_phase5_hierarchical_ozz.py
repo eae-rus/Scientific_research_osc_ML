@@ -64,13 +64,13 @@ def test_manual_ozz_entry_selects_phase5_without_training(monkeypatch):
     seen = []
     monkeypatch.setattr(engine, 'run', lambda cfg: seen.append(cfg))
     entry.run_manual()
-    assert len(seen) == 1 and seen[0]['resume']
+    assert len(seen) == 1 and not seen[0]['resume']
     assert seen[0]['background_repeats'] == 2
     assert 'phase5' in seen[0]['output'] and seen[0]['ssl_checkpoint'].endswith('latest_checkpoint.pt')
-    assert seen[0]['balanced_events'] and seen[0]['allow_balance_upgrade']
+    assert seen[0]['balanced_events'] and seen[0]['lr_warmup_epochs'] == 10
 
-@pytest.mark.parametrize('balanced,upgrade,loader_failure', [(False, False, False), (True, False, False), (True, True, False), (True, False, True), (True, False, 'optimizer')])
-def test_ozz_resume_matches_uninterrupted_training(tmp_path, monkeypatch, balanced, upgrade, loader_failure):
+@pytest.mark.parametrize('balanced,loader_failure', [(False, False), (True, False), (True, True), (True, 'optimizer')])
+def test_ozz_resume_matches_uninterrupted_training(tmp_path, monkeypatch, balanced, loader_failure):
     from dataclasses import asdict
     from scripts.phase5_experiments import run_phase5_hierarchical_ozz as engine
     cfg = replace(HierarchicalConfig(), channel_width=8, width=16, channel_layers=1,
@@ -91,7 +91,7 @@ def test_ozz_resume_matches_uninterrupted_training(tmp_path, monkeypatch, balanc
                   no_checkpoint_max_tokens=800 if balanced else 0,
                   current_dropout_all=.2 if balanced else 0., current_dropout_phase=.25 if balanced else 0.,
                   validation_current_samples=2 if balanced else 0,
-                  lr_schedule='flat_cosine', lr_decay_start=.3, lr_decay_end=1., lr_min_ratio=.1)
+                  lr_warmup_epochs=.1, lr_total_epochs=1., lr_min_ratio=.1)
     engine.run(config)
     config['output'] = str(tmp_path/'resumed')
     save_original = engine.atomic_save
@@ -125,23 +125,11 @@ def test_ozz_resume_matches_uninterrupted_training(tmp_path, monkeypatch, balanc
         (tmp_path/'resumed/STOP').unlink()
     monkeypatch.setattr(engine, 'atomic_save', save_original)
     config['resume'] = True
-    if upgrade:
-        old_path = tmp_path/'resumed/latest_checkpoint.pt'
-        old = torch.load(old_path, weights_only=False)
-        for key in ('balanced_events', 'balance_samples', 'positive_weight_cap', 'focal_gamma'):
-            old['contract'].pop(key)
-        old['contract']['implementation_sha256'] = 'ab4098ec60d58712f4b33100df327c6acd7baed4510f06fa5a9641921d9b6d3a'
-        old.pop('balance')
-        torch.save(old, old_path)
-        config['allow_balance_upgrade'] = True
     # Continued OZZ does not depend on an available SSL checkpoint.
     checkpoint.unlink()
     engine.run(config)
     full = torch.load(tmp_path/'continuous/latest_checkpoint.pt', weights_only=False)
     resumed = torch.load(tmp_path/'resumed/latest_checkpoint.pt', weights_only=False)
-    if upgrade:
-        assert (tmp_path/'resumed/before_balance_step_1.pt').exists()
-        assert len(resumed['balance_history']) == 1
     assert (full['epoch'], full['cursor'], full['step'], full['best']) == (resumed['epoch'], resumed['cursor'], resumed['step'], resumed['best'])
     for key in full['model']:
         torch.testing.assert_close(full['model'][key], resumed['model'][key], rtol=0, atol=0)

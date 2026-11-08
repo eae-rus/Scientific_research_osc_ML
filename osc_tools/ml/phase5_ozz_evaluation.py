@@ -175,9 +175,13 @@ def evaluate_records(model, config, device, checkpoint, per_class=240, backgroun
             raw[:, provenance == 0] = np.nan
             fnet = record['f_network']; fs = record['spp']*fnet
             labels = np.zeros((len(raw), 4), np.float32)
+        original_labels = labels
+        if config.get('label_tail_periods', 0):
+            from osc_tools.ml.phase5_ozz_features import cached_expanded_labels
+            labels = cached_expanded_labels(labels, fs/fnet)
         prepared = prepare_record(raw, config, device, fs, fnet,
                                   record.get('basis', 'phase'), provenance)
-        return raw, labels, fs, fnet, prepared
+        return raw, labels, fs, fnet, prepared, original_labels
 
     def prefetch():
         # Bounded queue: CPU Fourier/IO overlaps GPU, without buffering the whole dataset.
@@ -194,20 +198,24 @@ def evaluate_records(model, config, device, checkpoint, per_class=240, backgroun
                 yield current, future.result()
 
     results = []
-    for record, (raw, labels, fs, fnet, prepared) in tqdm(prefetch(), total=len(selected), desc='OZZ full records', unit='record'):
+    for record, (raw, labels, fs, fnet, prepared, original_labels) in tqdm(prefetch(), total=len(selected), desc='OZZ full records', unit='record'):
         pred = predict_record(model, raw, config, device, fs, fnet, prepared=prepared)
         targets = np.zeros_like(pred['probabilities'])
-        for i, (a, b) in enumerate(zip(pred['starts'], pred['ends'])):
-            if a < len(labels):
-                targets[i] = labels[a:min(b, len(labels))].max(0)
-        results.append(dict(p=pred['probabilities'], y=targets, v=pred['valid'], group=record['group'], weight=record.get('population_weight', 1.)))
+        original_targets = np.zeros_like(targets)
+        count = int(np.searchsorted(pred['starts'], len(labels)))
+        if count:
+            starts = pred['starts'][:count]
+            targets[:count] = np.maximum.reduceat(labels, starts, axis=0)
+            original_targets[:count] = np.maximum.reduceat(original_labels, starts, axis=0)
+        results.append(dict(p=pred['probabilities'], y=targets, y_original=original_targets, v=pred['valid'], group=record['group'], weight=record.get('population_weight', 1.)))
         if plots and record['kind'] == 'rtds':
             from scripts.phase4_experiments.sim_ozz.plot_sim_ozz_marking import plot_sim_ozz_marking
             raw_display = load_raw_csv(record['path'], normalize=False)['raw']
             p, coverage = mark_record(model, raw, config, device, fs, fnet)
             plot_sim_ozz_marking(output/(Path(record['path']).stem+'.png'), raw_display,
-                p, coverage, labels, fs, title=Path(record['path']).stem, threshold=.5)
+                p, coverage, original_labels, fs, title=Path(record['path']).stem, threshold=.5)
     report = threshold_report(results)
+    report['original_labels'] = threshold_report([dict(r, y=r['y_original']) for r in results])
     simulated = [r for r in results if r['group'] < 4]
     if simulated:
         report['simulated_only'] = threshold_report(simulated)
@@ -215,7 +223,8 @@ def evaluate_records(model, config, device, checkpoint, per_class=240, backgroun
                   inference_sha256=config['inference_sha256'], records=selected,
                   model_contract=config, selection_seed=42,
                   evaluation_contract=dict(input='full recording; chunks <=30 seconds',
-                      output='1/8 network period', labels='any positive raw sample in interval',
+                      output='1/8 network period', labels=('one-period forward union, then any positive sample in interval'
+                          if config.get('label_tail_periods', 0) else 'any positive raw sample in interval'),
                       missing='excluded from metrics, never counted as negatives',
                       classes=['Stable', 'Petersen', 'PetersSlepyan', 'Belyakov'],
                       real_expert_labels='file-level OZZ presence; no verified subtype/timing truth'),
@@ -228,8 +237,8 @@ def evaluate_records(model, config, device, checkpoint, per_class=240, backgroun
     (output/'evaluation.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
     plot_threshold_summary(report, output/'threshold_summary.png')
     np.savez_compressed(output/'predictions.npz', **{f'{key}{i}': r[key]
-        for i, r in enumerate(results) for key in ('p', 'y', 'v', 'group', 'weight')})
-    print(json.dumps({k: v for k, v in report.items() if k not in ('records', 'hard_background_records', 'simulated_only')}, ensure_ascii=False, indent=2))
+        for i, r in enumerate(results) for key in ('p', 'y', 'y_original', 'v', 'group', 'weight')})
+    print(json.dumps({k: v for k, v in report.items() if k not in ('records', 'hard_background_records', 'simulated_only', 'original_labels')}, ensure_ascii=False, indent=2))
     return report
 
 

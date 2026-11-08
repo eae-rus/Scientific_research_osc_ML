@@ -132,82 +132,47 @@ def export_curves(output):
     fig.tight_layout(); fig.savefig(output/'training_curves.png', dpi=140)
 
 
-def validate_resume_contract(saved, contract, allow_upgrade=False):
-    if contract != saved:
-        old = dict(saved)
-        known_old = old.get('implementation_sha256') in ('ab4098ec60d58712f4b33100df327c6acd7baed4510f06fa5a9641921d9b6d3a',
-            '5175d524c3260da09135ca73d32b103bad684ed758f98ad3c15ea9c64bdce235',
-            'd49eba6522a0f609bb464f086486f13df21f9d976c23ce76fd17fd25a12ef64d',
-            '60de3a4bbe9e4320e5cc60b79a5fea7f4c3c83460ee0c81fd9931c35a4974b62',
-            '0960cc18c653fef74e82e4a322a31c4a629fb703feaee541021a61d36e14e9e2',
-            '709b69182cb4bb5bf47dbe36cc7e09bdc4f07ca10fff1b876f2b85ebbeaa02c4')
-        if saved.get('implementation_sha256') == 'ab4098ec60d58712f4b33100df327c6acd7baed4510f06fa5a9641921d9b6d3a':
-            old.update({k: contract[k] for k in ('balanced_events', 'balance_samples', 'positive_weight_cap', 'focal_gamma')})
-        for key in ('lr_schedule', 'lr_decay_start', 'lr_decay_end', 'lr_min_ratio'):
-            if key not in saved and key in contract:
-                old[key] = contract[key]
-        for key in ('current_dropout_all', 'current_dropout_phase', 'current_zero_probability', 'validation_current_samples'):
-            if key not in saved and key in contract:
-                old[key] = contract[key]
-        # Explicit one-time 300 -> 400 adaptation, preserving AdamW and every tensor.
-        if (saved.get('implementation_sha256') == '709b69182cb4bb5bf47dbe36cc7e09bdc4f07ca10fff1b876f2b85ebbeaa02c4'
-                and saved.get('lr_schedule') == 'flat_cosine'
-                and contract.get('lr_schedule') == 'adaptation_cosine'
-                and contract.get('current_dropout_all', 0) > 0):
-            for key in ('lr_schedule', 'lr_decay_start', 'lr_decay_end', 'lr_min_ratio',
-                        'lr_restart_epoch', 'lr_restart_warmup', 'lr_restart_initial', 'lr_restart_peak'):
-                old[key] = contract[key]
-        old['implementation_sha256'] = contract['implementation_sha256']
-        if 'boundary_weight' in contract:
-            old['boundary_weight'] = contract['boundary_weight']
-        if 'background_repeats' in contract:
-            old['background_repeats'] = contract['background_repeats']
-        if not (allow_upgrade and contract['balanced_events'] and known_old and old == contract):
-            raise ValueError('Параметры/данные не совпадают; переход со старого OZZ требует allow_balance_upgrade=True.')
-        return True
+def validate_resume_contract(saved, contract):
+    if saved != contract:
+        raise ValueError('OZZ contract changed. Start the new recipe from SSL in a new output directory.')
     return False
 
 
 def learning_rate_factor(config, epoch_progress):
-    """Stateless schedule: epoch/cursor and the checkpoint contract define LR."""
-    if config['lr_schedule'] == 'constant':
-        return 1.
-    peak = 1.
-    if config['lr_schedule'] == 'adaptation_cosine':
-        elapsed = epoch_progress-config['lr_restart_epoch']
-        warmup = config['lr_restart_warmup']
-        peak = config['lr_restart_peak']
-        if elapsed < warmup:
-            fraction = min(1., max(0., elapsed/warmup))
-            return config['lr_restart_initial'] + (peak-config['lr_restart_initial'])*fraction
-    start, end = config['lr_decay_start'], config['lr_decay_end']
-    t = min(1., max(0., (epoch_progress-start)/(end-start)))
-    floor = config['lr_min_ratio']
-    return floor + (peak-floor)*.5*(1+math.cos(math.pi*t))
+    """One warmup and one cosine decay, determined by the saved training clock."""
+    warmup = config['lr_warmup_epochs']
+    if epoch_progress < warmup:
+        t = max(0., epoch_progress/warmup)
+        return config['lr_initial_ratio']+(1-config['lr_initial_ratio'])*t
+    t = min(1., max(0., (epoch_progress-warmup)/(config['lr_total_epochs']-warmup)))
+    return config['lr_min_ratio']+(1-config['lr_min_ratio'])*.5*(1+math.cos(math.pi*t))
 
 
 def run(config):
     config = dict(config)
-    config.setdefault('lr_schedule', 'constant')
-    config.setdefault('lr_decay_start', 150.)
-    config.setdefault('lr_decay_end', 300.)
-    config.setdefault('lr_min_ratio', .1)
-    if config['lr_schedule'] not in ('constant', 'flat_cosine', 'adaptation_cosine'):
-        raise ValueError('Unknown learning-rate schedule')
-    if not (0 <= config['lr_decay_start'] < config['lr_decay_end'] and 0 < config['lr_min_ratio'] <= 1):
-        raise ValueError('Invalid cosine schedule bounds')
-    if config['lr_schedule'] == 'adaptation_cosine':
-        if not (config['lr_restart_epoch'] >= 0 and config['lr_restart_warmup'] > 0
-                and 0 < config['lr_restart_initial'] <= config['lr_restart_peak'] <= 1
-                and config['lr_min_ratio'] <= config['lr_restart_peak']
-                and config['lr_restart_epoch']+config['lr_restart_warmup'] <= config['lr_decay_start']):
-            raise ValueError('Invalid adaptation cosine schedule')
+    config.setdefault('lr_warmup_epochs', 10.)
+    config.setdefault('lr_total_epochs', float(config['epochs']))
+    config.setdefault('lr_initial_ratio', .05)
+    config.setdefault('lr_min_ratio', .05)
+    if not (0 < config['lr_warmup_epochs'] < config['lr_total_epochs']
+            and 0 < config['lr_initial_ratio'] <= 1 and 0 < config['lr_min_ratio'] <= 1):
+        raise ValueError('Invalid warmup/cosine settings')
+    config.setdefault('feature_mode', 'continuous_record')
+    config.setdefault('label_tail_periods', 1)
+    config.setdefault('voltage_dropout_phase', .03)
+    config.setdefault('background_dropout_multiplier', 1.4)
+    if config['feature_mode'] != 'continuous_record' or config['label_tail_periods'] != 1:
+        raise ValueError('Current OZZ recipe requires continuous history and a one-period label tail')
     config.setdefault('validation_current_samples', 0)
     if config['validation_current_samples'] < 0:
         raise ValueError('validation_current_samples must be nonnegative')
     config.setdefault('current_dropout_all', 0.)
     config.setdefault('current_dropout_phase', 0.)
     config.setdefault('current_zero_probability', .5)
+    multiplier = config['background_dropout_multiplier']
+    if not (multiplier >= 1 and 0 <= config['voltage_dropout_phase']*multiplier <= 1
+            and (config['current_dropout_all']+config['current_dropout_phase'])*multiplier <= 1):
+        raise ValueError('Invalid background/voltage dropout probabilities')
     from osc_tools.ml.phase5_ozz_input_augmentation import augment_current_channels
     augment_current_channels(np.ones((1, 8)), None, np.random.default_rng(0),
         config['current_dropout_all'], config['current_dropout_phase'], config['current_zero_probability'])
@@ -228,7 +193,6 @@ def run(config):
     no_checkpoint_max_tokens = config.pop('no_checkpoint_max_tokens', 0)
     if no_checkpoint_max_tokens < 0:
         raise ValueError('no_checkpoint_max_tokens must be nonnegative')
-    allow_upgrade = config.pop('allow_balance_upgrade', False)
     smooth_binary_targets(torch.tensor(0.), config['label_error_probability'])
     output = Path(config['output']).resolve()
     latest = output/'latest_checkpoint.pt'
@@ -243,8 +207,6 @@ def run(config):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     amp = device.type == 'cuda' and torch.cuda.is_bf16_supported()
     state = torch.load(latest if resume else config['ssl_checkpoint'], map_location='cpu', weights_only=False)
-    if config['lr_schedule'] == 'adaptation_cosine' and (not resume or state['epoch'] < config['lr_restart_epoch']):
-        raise ValueError('Сначала завершите исходные 300 эпох; адаптация продолжает готовый OZZ checkpoint.')
     architecture = state['contract']['architecture']
     backbone = OZZRegularizedBackbone(HierarchicalConfig(**architecture), config['drop_path_rate'])
     if not resume:
@@ -255,27 +217,26 @@ def run(config):
     manifest_path = ROOT/'data/phase5/research_strict_splits.json'
     records, manifest = prepare_records(ROOT, config, json.loads(manifest_path.read_text(encoding='utf-8')))
     contract = {k: v for k, v in config.items() if k not in ('resume', 'epochs', 'workers', 'save_every', 'console_interval', 'ssl_checkpoint')}
-    contract.update(architecture=architecture, recipe='hierarchical_ozz_v1', amp_bf16=amp,
+    contract.update(architecture=architecture, recipe='hierarchical_ozz_continuous_v1', amp_bf16=amp,
                     split_sha256=hashlib.sha256(json.dumps(manifest, sort_keys=True).encode()).hexdigest(),
                     ssl_split_sha256=hashlib.sha256(manifest_path.read_bytes()).hexdigest())
     code_paths = [Path(__file__), ROOT/'osc_tools/ml/phase5_hierarchical_ozz.py',
                   ROOT/'osc_tools/ml/phase5_hierarchical_data.py', ROOT/'osc_tools/ml/models/phasor_hierarchical.py',
-                  ROOT/'osc_tools/ml/phase5_ozz_regularization.py', ROOT/'osc_tools/ml/phase5_fourier.py', ROOT/'osc_tools/ml/phase5_ozz_balance.py', ROOT/'osc_tools/ml/phase5_ozz_input_augmentation.py']
+                  ROOT/'osc_tools/ml/phase5_ozz_regularization.py', ROOT/'osc_tools/ml/phase5_fourier.py', ROOT/'osc_tools/ml/phase5_ozz_balance.py', ROOT/'osc_tools/ml/phase5_ozz_input_augmentation.py', ROOT/'osc_tools/ml/phase5_ozz_features.py']
     contract['implementation_sha256'] = hashlib.sha256(b''.join(p.read_bytes() for p in code_paths)).hexdigest()
-    upgraded = validate_resume_contract(state['contract'], contract, allow_upgrade) if resume else False
+    if resume:
+        validate_resume_contract(state['contract'], contract)
     output.mkdir(parents=True, exist_ok=True)
-    if upgraded:
-        backup = (output/'before_current_adaptation_epoch300.pt' if config['lr_schedule'] == 'adaptation_cosine'
-                  else output/f'before_balance_step_{state["step"]}.pt')
-        if not backup.exists():
-            atomic_save(state, backup)
     (output/'split.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
     (output/'config.json').write_text(json.dumps(contract, ensure_ascii=False, indent=2), encoding='utf-8')
     provenance = state.get('ssl_origin') if resume else {'path': str(config['ssl_checkpoint']), 'step': state['step'], 'epoch': state['epoch']}
     train = OZZDataset(records['train'], config['samples_per_epoch'], config['seed'], config['max_seconds'], True, event_windows=config['balanced_events'], background_repeats=config['background_repeats'],
                        current_dropout_all=config['current_dropout_all'], current_dropout_phase=config['current_dropout_phase'],
-                       current_zero_probability=config['current_zero_probability'])
-    val = OZZDataset(records['validation'], config['validation_samples'], config['seed']+100000, config['max_seconds'], False)
+                       current_zero_probability=config['current_zero_probability'],
+                       feature_mode=config['feature_mode'], label_tail_periods=config['label_tail_periods'],
+                       voltage_dropout_phase=config['voltage_dropout_phase'],
+                       background_dropout_multiplier=config['background_dropout_multiplier'])
+    val = OZZDataset(records['validation'], config['validation_samples'], config['seed']+100000, config['max_seconds'], False, feature_mode=config['feature_mode'], label_tail_periods=1)
     opt = torch.optim.AdamW([{'params': [p for p in backbone.parameters() if p.requires_grad], 'lr': config['backbone_lr']},
                             {'params': model.classifier.parameters(), 'lr': config['head_lr']}], weight_decay=1e-4)
     epoch, cursor, step, best = 0, 0, 0, float('inf')
@@ -287,16 +248,11 @@ def run(config):
     balance = state.get('balance') if resume else None
     if config['balanced_events'] and balance is None:
         print('Оценка весов по обучающим окнам (без validation)...', flush=True)
-        reference = OZZDataset(records['train'], config['samples_per_epoch'], config['seed'], config['max_seconds'], True, event_windows=config['balanced_events'])
+        reference = OZZDataset(records['train'], config['samples_per_epoch'], config['seed'], config['max_seconds'], True, event_windows=config['balanced_events'], feature_mode=config['feature_mode'], label_tail_periods=1)
         balance = estimate_balance(reference, config['balance_samples'], config['positive_weight_cap'])
     if balance is not None:
         print(f'Class balance: {balance}', flush=True)
         (output/'class_balance.json').write_text(json.dumps(balance, indent=2), encoding='utf-8')
-    history = state.get('balance_history', []) if resume else []
-    if upgraded:
-        history.append(dict(epoch=epoch, cursor=cursor, step=step, previous_contract=state['contract']))
-        if not state.get('balance'):
-            best_f1 = -1.
     del state
     execution = fit_execution_to_memory(1, max(80,no_checkpoint_max_tokens), no_checkpoint_max_tokens, device=device)
     (output/'execution.json').write_text(json.dumps(execution, indent=2), encoding='utf-8')
@@ -309,7 +265,7 @@ def run(config):
     def save(path=latest):
         atomic_save(dict(contract=contract, model=model.state_dict(), optimizer=opt.state_dict(), rng=rng_state(),
                          epoch=epoch, cursor=cursor, step=step, best=best, best_f1=best_f1, balance=balance,
-                         balance_history=history, ssl_origin=provenance), path)
+                         ssl_origin=provenance), path)
     def log(row):
         with (output/'training_log.jsonl').open('a', encoding='utf-8') as stream:
             stream.write(json.dumps(row)+'\n')
@@ -322,7 +278,7 @@ def run(config):
         if epoch >= config['epochs']:
             progress.message('Все заданные эпохи уже завершены. Увеличьте EPOCHS для продолжения.')
             return
-        if not latest.exists() or upgraded:
+        if not latest.exists():
             save()  # Recoverable state even if the very first AdamW update fails.
         while epoch < config['epochs']:
             train.epoch = epoch
@@ -391,7 +347,7 @@ def run(config):
             if config['validation_current_samples']:
                 for variant in ('missing', 'zero'):
                     probe = OZZDataset(records['validation'], config['validation_current_samples'],
-                        config['seed']+100000, config['max_seconds'], False, current_evaluation=variant)
+                        config['seed']+100000, config['max_seconds'], False, current_evaluation=variant, feature_mode=config['feature_mode'], label_tail_periods=1)
                     robustness = evaluate(model, probe, device, config['workers'], amp, progress)
                     log(dict(kind='validation_current_'+variant, epoch=epoch, step=step, **robustness))
                     progress.message(f'Without currents ({variant}): F1={robustness["f1_per_class"]}; AP={robustness["average_precision_per_class"]}')
@@ -408,7 +364,7 @@ def run(config):
             export_curves(output)
             restore_rng(preserved_rng)
             if stop[0] or (output/'STOP').exists(): return
-        progress.update(len(val), force=True, status='completed')
+        progress.update(progress.total, force=True, status='completed')
     except Exception as exc:
         if optimizer_in_progress:
             # AdamW may already have changed some tensors. Never overwrite a

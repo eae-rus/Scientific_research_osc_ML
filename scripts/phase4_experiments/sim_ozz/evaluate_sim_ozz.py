@@ -550,7 +550,7 @@ if __name__ == '__main__':
         main()
     else:
         MODEL_FAMILY = 'hierarchical'  # 'hierarchical' (Phase 5) или 'legacy'
-        CHECKPOINT = ('experiments/phase5/hierarchical_ozz_v1/latest_checkpoint.pt'
+        CHECKPOINT = ('experiments/phase5/hierarchical_ozz_continuous/latest_checkpoint.pt'
                       if MODEL_FAMILY == 'hierarchical' else
                       'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt')
         if CHECKPOINT is None:
@@ -582,6 +582,6 @@ if __name__ == '__main__':
                 num_workers=4,  # Phase 5: параллельная CPU-подготовка с ограниченной очередью.
                 save_plots=True,
                 include_roc=True,
-                output_dir=('reports/phase5/hierarchical_ozz_evaluation' if MODEL_FAMILY == 'hierarchical'
+                output_dir=('reports/phase5/hierarchical_ozz_continuous_evaluation' if MODEL_FAMILY == 'hierarchical'
                             else 'reports/phase4/sim_ozz_eval/manual_run'),
             )

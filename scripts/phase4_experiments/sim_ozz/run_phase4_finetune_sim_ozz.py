@@ -1019,13 +1019,10 @@ def run_manual() -> None:
     MODEL_FAMILY = "hierarchical"  # "hierarchical" (Phase 5) или "legacy" (Phase 4)
 
     if MODEL_FAMILY == "hierarchical":
-        # НОВАЯ модель: первый запуск переносит веса SSL и создаёт голову ОЗЗ.
-        # Далее RESUME=True продолжает именно ОЗЗ, а не перечитывает SSL.
+        # Новый опыт от последнего SSL. После остановки этого опыта поставить RESUME=True.
         SSL_CHECKPOINT = PROJECT_ROOT / "experiments/phase5/phasor_hierarchical_v1/latest_checkpoint.pt"
-        OUTPUT_DIR = PROJECT_ROOT / "experiments/phase5/hierarchical_ozz_v1"
-        RESUME = True
-        # True продолжает latest_checkpoint.pt из OUTPUT_DIR, включая старый OZZ.
-        ALLOW_BALANCE_UPGRADE = True  # Только проверенный переход старого рецепта; веса/AdamW сохраняются.
+        OUTPUT_DIR = PROJECT_ROOT / "experiments/phase5/hierarchical_ozz_continuous"
+        RESUME=True
         BALANCED_EVENTS = True   # RTDS-окна с событием + равный вклад окон + веса редких меток.
         BALANCE_SAMPLES = 400     # Обучающие окна для оценки частот; веса сохраняются в checkpoint.
         POSITIVE_WEIGHT_CAP = 100.0
@@ -1033,19 +1030,16 @@ def run_manual() -> None:
         BOUNDARY_WEIGHT = 0.5    # Вес двух интервалов по сторонам перехода; метки сохраняются.
         BACKGROUND_REPEATS = 2    # Два реальных фоновых окна на четыре RTDS: доля фона 1/3.
         SMOKE = False             # True: отдельный короткий запуск перед основным.
-        EPOCHS = 400              # Общий предел, включая уже пройденные эпохи.
-        CURRENT_DROPOUT_ALL = 0.20    # Все токи: половина NaN, половина нули.
-        CURRENT_DROPOUT_PHASE = 0.25  # Одна фаза тока; чаще IB. Напряжения сохраняются.
+        EPOCHS = 300
+        CURRENT_DROPOUT_ALL = 0.20
+        CURRENT_DROPOUT_PHASE = 0.25
         CURRENT_ZERO_PROBABILITY = 0.50
-        VALIDATION_CURRENT_SAMPLES = 40  # Дополнительные фиксированные проверки без токов / с нулями.
-        LR_SCHEDULE = "adaptation_cosine"
-        LR_RESTART_EPOCH = 300.0      # Один раз, не менять при дальнейших resume.
-        LR_RESTART_WARMUP = 2.0       # Мягкий подъём 1e-6 -> 1e-5 (основа).
-        LR_RESTART_INITIAL = 0.1
-        LR_RESTART_PEAK = 1.0         # Исходные высокие LR 1e-5 / 1e-4.
-        LR_DECAY_START = 302.0    # После разгона начинается косинусное снижение.
-        LR_DECAY_END = 400.0      # Конец спада; не изменять при обычном resume.
-        LR_MIN_RATIO = 0.1        # Финальные LR: 1e-6 для основы и 1e-5 для головы.
+        VOLTAGE_DROPOUT_PHASE = 0.03  # Редкое зануление одной фазы напряжения.
+        BACKGROUND_DROPOUT_MULTIPLIER = 1.4  # На реальном фоне пропуски чуть чаще.
+        VALIDATION_CURRENT_SAMPLES = 40
+        LR_WARMUP_EPOCHS = 10.0
+        LR_INITIAL_RATIO = 0.05
+        LR_MIN_RATIO = 0.05
         SAMPLES_PER_EPOCH = 2_000  # Четыре группы RTDS + усиленный реальный фон.
         VALIDATION_SAMPLES = 200   # Фиксированные окна, поровну те же пять групп.
         NO_CHECKPOINT_MAX_TOKENS = 800  # Короткие окна без повторного расчёта backward; 0 отключает ускорение.
@@ -1077,19 +1071,19 @@ def run_manual() -> None:
                       expert_report=str(EXPERT_REPORT), label_error_probability=LABEL_ERROR_PROBABILITY,
                       drop_path_rate=DROP_PATH_RATE, balanced_events=BALANCED_EVENTS,
                       balance_samples=BALANCE_SAMPLES, positive_weight_cap=POSITIVE_WEIGHT_CAP,
-                      allow_balance_upgrade=ALLOW_BALANCE_UPGRADE, focal_gamma=FOCAL_GAMMA,
+                      focal_gamma=FOCAL_GAMMA,
                       background_repeats=BACKGROUND_REPEATS, boundary_weight=BOUNDARY_WEIGHT,
-                      lr_schedule=LR_SCHEDULE, lr_decay_start=LR_DECAY_START,
-                      lr_decay_end=LR_DECAY_END, lr_min_ratio=LR_MIN_RATIO,
+                      lr_warmup_epochs=LR_WARMUP_EPOCHS, lr_total_epochs=float(EPOCHS),
+                      lr_initial_ratio=LR_INITIAL_RATIO, lr_min_ratio=LR_MIN_RATIO,
                       no_checkpoint_max_tokens=NO_CHECKPOINT_MAX_TOKENS,
                       current_dropout_all=CURRENT_DROPOUT_ALL, current_dropout_phase=CURRENT_DROPOUT_PHASE,
                       current_zero_probability=CURRENT_ZERO_PROBABILITY, validation_current_samples=VALIDATION_CURRENT_SAMPLES,
-                      lr_restart_epoch=LR_RESTART_EPOCH, lr_restart_warmup=LR_RESTART_WARMUP,
-                      lr_restart_initial=LR_RESTART_INITIAL, lr_restart_peak=LR_RESTART_PEAK)
+                      voltage_dropout_phase=VOLTAGE_DROPOUT_PHASE,
+                      background_dropout_multiplier=BACKGROUND_DROPOUT_MULTIPLIER)
         if SMOKE:
-            config.update(output=str(PROJECT_ROOT / "experiments/phase5/hierarchical_ozz_smoke"),
+            config.update(output=str(PROJECT_ROOT / "experiments/phase5/hierarchical_ozz_continuous_smoke"),
                           epochs=1, samples_per_epoch=10, validation_samples=10,
-                          target_tokens=80, max_seconds=1.0)
+                          target_tokens=80, max_seconds=1.0, lr_total_epochs=1., lr_warmup_epochs=.1)
         run(config)
         return
     if MODEL_FAMILY != "legacy":

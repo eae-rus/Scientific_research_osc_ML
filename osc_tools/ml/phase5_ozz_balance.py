@@ -8,12 +8,12 @@ class NoUsableEvent(ValueError):
     """Expected data condition; labels cannot anchor a usable interval."""
 
 
-def event_start(labels, length, spp, group, rng):
+def event_start(labels, length, spp, group, rng, continuous=False):
     """Anchor the source arc type in a usable (post Fourier warm-up) interval."""
     blocks = int(round(length/(10*spp)))
     positions = np.floor(np.arange(1, blocks*80+1)*spp/8+.5).astype(int)-1
     left = np.floor((np.arange(blocks*80)//80)*10*spp+.5).astype(int)
-    eligible = positions-left >= int(np.floor(spp+.5))-1
+    eligible = (positions if continuous else positions-left) >= int(np.floor(spp+.5))-1
     token = np.searchsorted(positions, np.arange(length))
     usable = eligible[np.minimum(token, len(eligible)-1)] & (token < len(eligible))
     first = int(np.flatnonzero(usable)[0])

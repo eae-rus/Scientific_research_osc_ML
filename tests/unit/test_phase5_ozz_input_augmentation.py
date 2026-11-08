@@ -42,18 +42,10 @@ def test_disabled_recipe_consumes_no_randomness():
     assert rng.random() == original.random()
 
 
-def test_adaptation_schedule_and_strict_resume_migration():
-    config = dict(lr_schedule='adaptation_cosine', lr_restart_epoch=300., lr_restart_warmup=2.,
-                  lr_restart_initial=.1, lr_restart_peak=1., lr_decay_start=302., lr_decay_end=400., lr_min_ratio=.1)
-    for epoch, expected in ((300, .1), (301, .55), (302, 1.), (351, .55), (400, .1), (450, .1)):
+def test_warmup_cosine_and_strict_resume():
+    config = dict(lr_warmup_epochs=10., lr_total_epochs=300., lr_initial_ratio=.05, lr_min_ratio=.05)
+    for epoch, expected in ((0, .05), (5, .525), (10, 1.), (155, .525), (300, .05)):
         assert learning_rate_factor(config, epoch) == pytest.approx(expected)
-    old = dict(implementation_sha256='709b69182cb4bb5bf47dbe36cc7e09bdc4f07ca10fff1b876f2b85ebbeaa02c4',
-               balanced_events=True, backbone_lr=1e-5, lr_schedule='flat_cosine', lr_decay_start=150., lr_decay_end=300., lr_min_ratio=.1)
-    new = dict(old, **{k: v for k, v in config.items()}, current_dropout_all=.2, current_dropout_phase=.25,
-               current_zero_probability=.5, validation_current_samples=40)
-    new['implementation_sha256'] = 'current'
-    assert validate_resume_contract(old, new, True)
+    assert validate_resume_contract(config, dict(config)) is False
     with pytest.raises(ValueError):
-        validate_resume_contract(old, dict(new, backbone_lr=1e-3), True)
-    with pytest.raises(ValueError):
-        validate_resume_contract(new, dict(new, lr_restart_epoch=400.), True)
+        validate_resume_contract(config, dict(config, lr_total_epochs=400.))
