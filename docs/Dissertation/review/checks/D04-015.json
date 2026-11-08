@@ -1,0 +1,126 @@
+{
+  "task": "D04-015",
+  "date": "2026-11-08",
+  "status": "REVIEW: transition and placeholder complete; code/preservation/build/visual checks passed; drawing and author approval pending",
+  "raw_notes_preserved": 104,
+  "math_and_tables_preserved": true,
+  "protected_sha256": {
+    "osc_tools/ml/models/transformer.py": "e2890240118010d9aaf48debbf2f27320c7dd5a99e1eca1824e8f573ef923f84",
+    "osc_tools/ml/layers/transformer_blocks.py": "9f250e8f726e9fac4aff2e410c21eacee5f517981cae1edcc26b5277048457d9",
+    "docs/Dissertation/manuscript/figures/transformer_baseline_detail.png": "51238ad338ba27ddf6e6624696fed9a13412758c665dc3e585e8a2c1c0544e90",
+    "docs/Dissertation/review/issues/author_annotations.json": "1c8493bf5fb08122a57b20cd8ad05ca0c46616b7b3300d83a17234b522e23eae",
+    "docs/Dissertation/review/issues/author_note_dispositions.json": "da34c53421d39f9871ed460c7269cc79a1c46cb31fcf23a3f7d2a4964fbe00e6",
+    "docs/Dissertation/build/reading/author_notes.tex": "ea224b8c29ded5090a57546ab022d9e4900405a14d101e4d390667e0c50b97e3",
+    "docs/Dissertation/manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex": "a656b4cc98381553cc9d05e8e1e255027a79028e9ad2d0a792f6cd3d71c39f31",
+    "docs/Dissertation/manuscript/chapters/ch05_ml_adaptive_algorithms/sec01_direction_and_validity.tex": "753421cca173eb843e58db9e4b7c7b79ac07e519bfede8d6377d783511a1cf9a",
+    "docs/Dissertation/manuscript/chapters/ch05_ml_adaptive_algorithms/sec02_analytical_organs.tex": "d94959dd7250645e9a09132a75b2c3779934db464ab385b242c17d0c31cf7279",
+    "docs/Dissertation/manuscript/chapters/ch05_ml_adaptive_algorithms/sec03_population_audit.tex": "9174dfead8d946a4a157c3be4de56dc32fa7d2ebb998ac02ef3c8bd5b090135d",
+    "docs/Dissertation/manuscript/chapters/ch05_ml_adaptive_algorithms/sec04_expert_reference.tex": "47be1ff16956feb9687d5d3df6193eec964d40ddba053c11a64fb54dc5af5e71",
+    "docs/Dissertation/manuscript/chapters/ch05_ml_adaptive_algorithms/sec05_engineering_verification.tex": "f790f6c8fbdd110b22dadcc397f371816a0efded3a3800f7fc4b17ba82b5fce0",
+    "docs/Dissertation/manuscript/chapters/ch05_ml_adaptive_algorithms/sec06_first_results.tex": "978e29e2e2e38ff0b408f28026ff41a2e29b6d14113e811092456378c4fbad08",
+    "docs/Dissertation/manuscript/chapters/ch05_ml_adaptive_algorithms/sec07_expert_adaptation.tex": "ce84f90bcba89799dd1405c78456a0dc7bd28a98012847545865e917ec50afd8",
+    "docs/Dissertation/manuscript/chapters/ch05_ml_adaptive_algorithms/sec08_dense_validation.tex": "df43b43e5963f8613a1867b76b5f851a9acb8b3829eb9adaa730145cc4036540",
+    "docs/Dissertation/manuscript/chapters/ch05_ml_adaptive_algorithms/sec09_rtds_validation.tex": "2043705b32a6dc63ebd6d1d913ff020d892303e529e1f5c0fdf17fe5b9a77c5f",
+    "docs/Dissertation/manuscript/chapters/ch05_ml_adaptive_algorithms/sec10_adaptation_and_conclusions.tex": "5c35f33ac21cdadeec6e39a3d6803cb9112f5c956c29b6a85661e0b1ac839dbb"
+  },
+  "scientific_source_sha256": "2ce3b13c28c97a1c32b8febd6b7211d3eff8c1594da77296536a19469b1bcc0c",
+  "specification_sha256": "12c7a37b543e7dfa0e7c304d16f15058c6c0816ec91de1aed3e269fc046fe22b",
+  "scope": "Section 4.3.9 transition, overview placeholder and drawing specification; model, experiments, original graphics and author discussions preserved",
+  "release": {
+    "dissertation_review": {
+      "pages": 257,
+      "sha256": "41ae2beca92d8b0892caf6d2e2e43e90fc2ebed7c2f77b3db3a4302feeecf465",
+      "chapter4_start": 123,
+      "chapter4_end": 198,
+      "transition_pages": [
+        141,
+        143
+      ],
+      "overview": {
+        "number": "4.13",
+        "page": 142
+      },
+      "detail_labels": {
+        "fig:ch4_transformer_interactions": {
+          "number": "4.14",
+          "page": 143
+        },
+        "fig:ch4_directional_geometry": {
+          "number": "4.15",
+          "page": 144
+        },
+        "fig:ch4_transformer_physical": {
+          "number": "4.16",
+          "page": 144
+        },
+        "fig:ch4_polar_attention": {
+          "number": "4.17",
+          "page": 145
+        },
+        "fig:ch4_physical_ffn": {
+          "number": "4.18",
+          "page": 146
+        }
+      },
+      "overfull_hbox": 9,
+      "path": "docs/Dissertation/build/reading/latex/dissertation_review.pdf"
+    },
+    "dissertation_comments": {
+      "pages": 272,
+      "sha256": "ccf3f7d456702c3c95d09670fc4ae235d46a840c9c5e6f2857f0d9cfc5562762",
+      "chapter4_start": 124,
+      "chapter4_end": 205,
+      "transition_pages": [
+        143,
+        145
+      ],
+      "overview": {
+        "number": "4.13",
+        "page": 144
+      },
+      "detail_labels": {
+        "fig:ch4_transformer_interactions": {
+          "number": "4.14",
+          "page": 145
+        },
+        "fig:ch4_directional_geometry": {
+          "number": "4.15",
+          "page": 146
+        },
+        "fig:ch4_transformer_physical": {
+          "number": "4.16",
+          "page": 147
+        },
+        "fig:ch4_polar_attention": {
+          "number": "4.17",
+          "page": 148
+        },
+        "fig:ch4_physical_ffn": {
+          "number": "4.18",
+          "page": 148
+        }
+      },
+      "overfull_hbox": 9,
+      "path": "docs/Dissertation/build/reading/latex/dissertation_comments.pdf"
+    },
+    "ch04_reviewer": {
+      "pages": 82,
+      "sha256": "934110198ffb2ec5d8fdcfef785b318817af0c5730dfe52ede384ce2ce7d3d3b",
+      "path": "docs/Dissertation/build/reading/latex/ch04_reviewer.pdf"
+    }
+  },
+  "visual_qa": {
+    "clean_pages": [
+      141,
+      142,
+      143
+    ],
+    "comments_pages": [
+      143,
+      144,
+      145
+    ],
+    "chapter_only_pdf_page": 21,
+    "result": "Transition, placeholder, captions, detail references and chapter extract inspected. No new overflow or missing glyphs. Nine existing overfull warnings remain."
+  }
+}
