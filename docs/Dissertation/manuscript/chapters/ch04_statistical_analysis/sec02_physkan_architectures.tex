@@ -141,7 +141,7 @@ $I_A$, $I_B$, $I_C$ и напряжений $U_A$, $U_B$, $U_C$,
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{ch04_output_decision_candidate.png}
+    \includegraphics[width=\textwidth]{figures/ch04/ch04_output_decision_candidate.png}
     \caption{Оценки событий и получение меток при сравнении с порогом.
     Условный пример, не результат испытания модели}
     \label{fig:ch4_output_decision}
@@ -212,7 +212,7 @@ $I_A$, $I_B$, $I_C$ и напряжений $U_A$, $U_B$, $U_C$,
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{physkan_mlp.png}
+    \includegraphics[width=\textwidth]{figures/ch04/physkan_mlp.png}
     \caption{Последовательность обработки в SimpleMLP. Показан вариант
     с нормализацией и отключением части активаций при обучении}
     \label{fig:ch4_mlp_flow}
@@ -317,7 +317,7 @@ $\operatorname{ReLU}(x)=\max(0,x)$. Между линейным преобраз
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{physkan_cnn.png}
+    \includegraphics[width=\textwidth]{figures/ch04/physkan_cnn.png}
     \caption{Обработка окна в SimpleCNN. Свёрточные блоки выделяют
     локальные признаки, затем выполняется усреднение вдоль окна}
     \label{fig:ch4_cnn_flow}
@@ -399,7 +399,7 @@ Dropout используется при обучении после обрабо
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{physkan_residual.png}
+    \includegraphics[width=\textwidth]{figures/ch04/physkan_residual.png}
     \caption{Остаточный блок ResNet1D. Обходной путь передаёт вход
     непосредственно или согласует его размерность перед суммированием}
     \label{fig:ch4_residual_flow}
@@ -479,7 +479,7 @@ KAN: Kolmogorov--Arnold Networks. 2025.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{physkan_kan_edge.png}
+    \includegraphics[width=\textwidth]{figures/ch04/physkan_kan_edge.png}
     \caption{Принцип KAN-слоя на условном примере двух входов
     и двух выходов. Схема не изображает обученные функции конкретной модели}
     \label{fig:ch4_kan_flow}
@@ -693,7 +693,7 @@ SimpleKAN развёртывает многоканальный вход в ве
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{physkan_arithmetic_stem.png}
+    \includegraphics[width=\textwidth]{figures/ch04/physkan_arithmetic_stem.png}
     \caption{Входной физический блок PhysicsKAN. Исходные каналы
     дополняются нормализованными произведениями и отношениями}
     \label{fig:ch4_physics_stem}
@@ -813,7 +813,7 @@ SimpleKAN развёртывает многоканальный вход в ве
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{physkan_complex_ops.png}
+    \includegraphics[width=\textwidth]{figures/ch04/physkan_complex_ops.png}
     \caption{Комплексные арифметические операции в полярном
     представлении. Показан случай без дополнительного фазового сдвига}
     \label{fig:ch4_complex_flow}
@@ -975,7 +975,7 @@ SimpleKAN развёртывает многоканальный вход в ве
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{physkan_relay_gate.png}
+    \includegraphics[width=\textwidth]{figures/ch04/physkan_relay_gate.png}
     \caption{Раздельные ветви и фазовое управление в rPhysicsKAN.
     Коэффициенты маски умножаются на неотрицательные
     признаки амплитудной ветви. Входная подготовка показана укрупнённо}
@@ -1151,7 +1151,7 @@ $\boldsymbol{v}_s$ вектором значений, а $\mathcal{A}_t$
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{transformer_attention.png}
+    \includegraphics[width=\textwidth]{figures/ch04/transformer_attention.png}
     \caption{Принцип внимания при обработке последовательности признаков осциллограммы. Условная схема доступа к предыстории}
     \label{fig:ch4_transformer_attention}
 \end{figure}
@@ -1198,7 +1198,7 @@ $\boldsymbol{v}_s$ вектором значений, а $\mathcal{A}_t$
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{transformer_baseline_detail.png}
+    \includegraphics[width=\textwidth]{figures/ch04/transformer_baseline_detail.png}
     \caption{Последовательность обработки в базовой трансформерной модели}
     \label{fig:ch4_transformer_baseline}
 \end{figure}
@@ -1286,8 +1286,8 @@ FFN получает уже сформированные скрытые приз
 
 \begin{figure}[!htbp]
     \centering
-    \IfFileExists{figures/transformer_physical_overview.png}{%
-        \includegraphics[width=\textwidth]{transformer_physical_overview.png}%
+    \IfFileExists{figures/ch04/transformer_physical_overview.png}{%
+        \includegraphics[width=\textwidth]{figures/ch04/transformer_physical_overview.png}%
     }{%
         \fbox{\begin{minipage}{0.94\textwidth}
         \centering\small
@@ -1316,13 +1316,7 @@ FFN получает уже сформированные скрытые приз
     и расположение физических блоков}
     \label{fig:ch4_physical_transformer_overview}
 \end{figure}
-\figurereview{Общая схема добавлена. Пунктир маски следует начинать
-у блока обработки отсутствующих каналов, а не у спектрального входа.
-В PhysicalStem желательно явно подписать совместную обработку
-исходных и расчётных признаков. На стрелке к выходной части
-полезна подпись «После N-го блока».
-Части u и v содержат совместное представление исходных
-и расчётных признаков; это пояснено в тексте перед рисунком.}
+% D04-015. Авторская общая схема v2 от 08.11.2026; прежние локальные замечания исполнены.
 
 \paragraph{Полярный вход и дополнительные признаки.}
 Вход Physical KAN-Transformer содержит пары амплитуды $A$
@@ -1373,7 +1367,7 @@ FFN получает уже сформированные скрытые приз
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{transformer_interactions_detail.png}
+    \includegraphics[width=\textwidth]{figures/ch04/transformer_interactions_detail.png}
     \caption{Параллельные произведения и отношения в комплексном блоке}
     \label{fig:ch4_transformer_interactions}
 \end{figure}
@@ -1430,7 +1424,7 @@ FFN получает уже сформированные скрытые приз
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{transformer_gate_geometry.png}
+    \includegraphics[width=\textwidth]{figures/ch04/transformer_gate_geometry.png}
     \caption{Действие плавного углового управления. Параметры и векторы условные}
     \label{fig:ch4_directional_geometry}
 \end{figure}
@@ -1471,12 +1465,12 @@ $\varphi'$ передаются к угловому выходу каскада 
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{transformer_stem_detail.png}
+    \includegraphics[width=\textwidth]{figures/ch04/transformer_stem_detail.png}
     \caption{Входной PhysicalStem. Именованные выходы ветвей используются
     при раздельной сборке двух частей скрытого вектора}
     \label{fig:ch4_transformer_physical}
 \end{figure}
-\figureapproved{Автор подтвердил корректность рисунка 30.10.2026. Повторная проверка сейчас не требуется.}
+% D04-015. Авторская схема Stem v2 от 08.11.2026; прежний статус относился к архивной версии.
 
 При сборке амплитудной части рядом размещаются отклики FastKAN
 и модули комплексных результатов. При сборке угловой части
@@ -1521,7 +1515,7 @@ $\varphi'$ передаются к угловому выходу каскада 
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{transformer_attention_detail.png}
+    \includegraphics[width=\textwidth]{figures/ch04/transformer_attention_detail.png}
     \caption{Полярное многоголовое внимание с общими весами двух ветвей}
     \label{fig:ch4_polar_attention}
 \end{figure}
@@ -1583,7 +1577,7 @@ $\varphi'$ передаются к угловому выходу каскада 
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{transformer_ffn_detail.png}
+    \includegraphics[width=\textwidth]{figures/ch04/transformer_ffn_detail.png}
     \caption{Физический FFN и сложение двух амплитудных вкладов.
     Показаны нормализованный вход FFN и обход исходного состояния}
     \label{fig:ch4_physical_ffn}
