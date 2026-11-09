@@ -234,6 +234,16 @@ def evaluate_records(model, config, device, checkpoint, per_class=240, backgroun
                   hard_background_records=[dict(record=record, max_probability=float(result['p'][result['v']].max()))
                       for record, result in zip(selected, results) if record['group'] == 4 and result['v'].any()
                       and result['p'][result['v']].max() >= .2])
+    if config.get('recipe') == 'hierarchical_ozz_v2' and not plots:
+        from osc_tools.ml.phase5_hierarchical_ozz import OZZDataset
+        from scripts.phase5_experiments.run_phase5_hierarchical_ozz import evaluate
+        from scripts.phase5_experiments.progress import TrainingProgress
+        probe=OZZDataset(manifest['validation'],config.get('validation_samples',200),
+            config['seed']+100000,config['max_seconds'],False,
+            feature_mode='hierarchical_v2',label_tail_periods=1,synthetic_context=True,
+            synthetic_normal_probability=config.get('synthetic_normal_probability',.15))
+        report['variable_context_validation']=evaluate(model,probe,device,workers,
+            device.type=='cuda' and config.get('amp_bf16',False),TrainingProgress(output,interval=2.))
     (output/'evaluation.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
     plot_threshold_summary(report, output/'threshold_summary.png')
     np.savez_compressed(output/'predictions.npz', **{f'{key}{i}': r[key]

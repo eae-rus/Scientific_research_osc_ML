@@ -210,6 +210,8 @@ def export_single_comtrade_marking(
     for bus_id in buses:
         raw_display, raw_model, fs, time_arr, sig_info = load_comtrade_raw(
             cfg_path, bus=bus_id, norm_osc=norm_osc,
+            hierarchical=config.get("model_family")=="hierarchical",
+            allow_partial_phases=config.get("feature_mode")=="hierarchical_v2",
         )
         if raw_display is None or raw_model is None or time_arr is None:
             print(f"bus={bus_id}: не удалось извлечь обязательные каналы")
@@ -222,7 +224,7 @@ def export_single_comtrade_marking(
 
         print(f"bus={bus_id}: N={raw_display.shape[0]}, Fs={fs:.0f} Гц")
         probs, coverage = mark_real_oscillogram(
-            model, raw_for_model, config, device, fs=fs, fast_mode=fast_mode,
+            model, raw_for_model, config, device, fs=fs, f_network=sig_info.get("_f_network",50.), fast_mode=fast_mode,
         )
 
         csv_path, png_path = _make_output_paths(cfg_path, bus_id, output, output_dir)
@@ -344,7 +346,7 @@ if __name__ == '__main__':
         # Подходит для подготовки рисунков статьи: модель может быть почти
         # любой обученной (PhysicalKAN/PhysicalMLP/Baseline) — ключевые
         # совместимые поля берутся из чекпоинта.
-        CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt'
+        CHECKPOINT = 'experiments/phase5/hierarchical_v2_ozz/latest_checkpoint.pt'
         CFG = 'data/real_OZZ/osc_comtrade/<укажите_файл>.cfg'
 
         BUS = 'auto'           # '1' | '1,2' | 'auto' (взять из overvoltage_report)

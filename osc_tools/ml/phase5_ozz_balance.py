@@ -40,7 +40,8 @@ def event_start(labels, length, spp, group, rng, continuous=False):
 def estimate_balance(dataset, samples=400, cap=100.):
     """Match window-mean loss; use training data only, never validation labels."""
     fractions = []
-    for i in range(min(samples, len(dataset))):
+    from tqdm import tqdm
+    for i in tqdm(range(min(samples, len(dataset))),desc='OZZ class balance',leave=False):
         batch = dataset[i]
         mask = batch['valid'] & batch['supervised']
         if mask.any():

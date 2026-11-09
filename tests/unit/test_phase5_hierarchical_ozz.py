@@ -66,24 +66,22 @@ def test_manual_ozz_entry_selects_phase5_without_training(monkeypatch):
     entry.run_manual()
     assert len(seen) == 1 and not seen[0]['resume']
     assert seen[0]['background_repeats'] == 2
-    assert 'phase5' in seen[0]['output'] and seen[0]['ssl_checkpoint'].endswith('latest_checkpoint.pt')
+    assert 'hierarchical_v2_ozz' in seen[0]['output'] and 'ssl_checkpoint' not in seen[0]
     assert seen[0]['balanced_events'] and seen[0]['lr_warmup_epochs'] == 10
 
 @pytest.mark.parametrize('balanced,loader_failure', [(False, False), (True, False), (True, True), (True, 'optimizer')])
 def test_ozz_resume_matches_uninterrupted_training(tmp_path, monkeypatch, balanced, loader_failure):
     from dataclasses import asdict
     from scripts.phase5_experiments import run_phase5_hierarchical_ozz as engine
-    cfg = replace(HierarchicalConfig(), channel_width=8, width=16, channel_layers=1,
-                  local_layers=1, global_layers=1, fusion_layers=1, dropout=.05)
-    checkpoint = tmp_path/'ssl.pt'
-    torch.save(dict(contract={'architecture': asdict(cfg), 'data_contract': 'phase5_hierarchical_b_reim_v1'},
-                    model=PhasorHierarchicalKAN(cfg).state_dict(), epoch=1, step=7), checkpoint)
+    from osc_tools.ml.models.phasor_hierarchical_v2 import HierarchicalV2Config
+    cfg = HierarchicalV2Config(channel_width=8,channel_heads=2,width=16,heads=2,
+        channel_layers=1,local_layers=1,global_layers=1,fusion_layers=1,dropout=.05,drop_path_rate=.3)
     raw = np.random.default_rng(8).normal(size=(320, 8)).astype(np.float32)*.1
     records = [dict(kind='real', name='fixture', raw=raw, group=4)]
     monkeypatch.setattr(engine, 'prepare_records', lambda *a: ({'train': records, 'validation': records}, {'fixture': True}))
     monkeypatch.setattr(engine, 'export_curves', lambda *a: None)
     monkeypatch.setattr(engine, 'estimate_balance', lambda *a: dict(positive_weight=[4.]*4, normalizer=[1.6]*4))
-    config = dict(ssl_checkpoint=str(checkpoint), output=str(tmp_path/'continuous'), resume=False,
+    config = dict(architecture=asdict(cfg), output=str(tmp_path/'continuous'), resume=False,
                   epochs=1, samples_per_epoch=5, validation_samples=2, target_tokens=160, max_seconds=.2,
                   backbone_lr=1e-5, head_lr=1e-4, use_real_no_ozz=False, workers=0, save_every=1,
                   console_interval=2., seed=42, label_error_probability=.05, drop_path_rate=.3,
@@ -126,7 +124,6 @@ def test_ozz_resume_matches_uninterrupted_training(tmp_path, monkeypatch, balanc
     monkeypatch.setattr(engine, 'atomic_save', save_original)
     config['resume'] = True
     # Continued OZZ does not depend on an available SSL checkpoint.
-    checkpoint.unlink()
     engine.run(config)
     full = torch.load(tmp_path/'continuous/latest_checkpoint.pt', weights_only=False)
     resumed = torch.load(tmp_path/'resumed/latest_checkpoint.pt', weights_only=False)

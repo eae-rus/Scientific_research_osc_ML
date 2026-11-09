@@ -328,8 +328,8 @@ def collect_statistics(
         print(f"Порог: fixed = {threshold_config['default_threshold']:.3f}")
 
     if output_dir is None and config.get('model_family') == 'hierarchical':
-        output_dir = str(PROJECT_ROOT / ('reports/phase5/real_ozz_continuous_statistics'
-            if config.get('feature_mode') == 'continuous_record' else 'reports/phase5/real_ozz_statistics'))
+        output_dir = str(PROJECT_ROOT / (('reports/phase5/hierarchical_v2_ozz_real_statistics' if config.get('feature_mode')=='hierarchical_v2' else 'reports/phase5/real_ozz_continuous_statistics')
+            if config.get('feature_mode') in ('continuous_record','hierarchical_v2') else 'reports/phase5/real_ozz_statistics'))
 
     # Отчёт
     report = load_real_ozz_report()
@@ -367,6 +367,7 @@ def collect_statistics(
             raw_display, raw_model, fs, time_arr, sig_info = load_comtrade_raw(
                 cfg_path, bus=bus, norm_osc=norm_osc,
                 hierarchical=config.get("model_family") == "hierarchical",
+                allow_partial_phases=config.get("feature_mode")=="hierarchical_v2",
             )
             if raw_display is None:
                 continue
@@ -781,9 +782,9 @@ if __name__ == '__main__':
         # =====================================================
         # РУЧНОЙ РЕЖИМ — отредактируйте константы ниже
         # =====================================================
-        MODEL_FAMILY = 'hierarchical'  # 'hierarchical' (Phase 5) или 'legacy'
-        CHECKPOINT = ('experiments/phase5/hierarchical_ozz_continuous/latest_checkpoint.pt'
-                      if MODEL_FAMILY == 'hierarchical' else
+        MODEL_FAMILY = 'hierarchical_v2'  # 'hierarchical_v2' (Phase 5) или 'legacy'
+        CHECKPOINT = ('experiments/phase5/hierarchical_v2_ozz/latest_checkpoint.pt'
+                      if MODEL_FAMILY == 'hierarchical_v2' else
                       'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt')
         # Пример: CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_.../best_model.pt'
 

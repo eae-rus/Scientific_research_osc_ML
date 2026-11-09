@@ -11,6 +11,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from osc_tools.ml.models.phasor_hierarchical import HierarchicalConfig, PhasorHierarchicalKAN
+from osc_tools.ml.models.phasor_hierarchical_v2 import HierarchicalV2Config, PhasorHierarchicalKANV2
 from osc_tools.ml.phase5_hierarchical_ozz import OZZDataset, prepare_records
 from osc_tools.ml.phase5_ozz_regularization import OZZRegularizedBackbone, smooth_binary_targets
 from scripts.phase5_experiments.run_phase5_hierarchical import atomic_save, rng_state, restore_rng, worker_init
@@ -27,15 +28,19 @@ class DataLoadingFailure(RuntimeError):
 
 
 class OZZClassifier(nn.Module):
-    """Read the final global-context features without changing the SSL source/hash."""
+    """Four independent sigmoid logits; generation 2 also exposes a supervised local head."""
     def __init__(self, backbone):
         super().__init__()
         self.backbone = backbone
         self.classifier = nn.Linear(backbone.cfg.width, 4)
-        for head in (backbone.head, backbone.local_head):
-            head.requires_grad_(False)
+        for name in ('head','local_head'):
+            if hasattr(backbone,name): getattr(backbone,name).requires_grad_(False)
 
-    def forward(self, batch):
+    def forward(self, batch, return_aux=False, use_global=True):
+        if self.backbone.cfg.architecture_id == 'phasor_hierarchical_v2':
+            result=self.backbone(batch['z'],batch['state'],batch['times'],batch['valid'],use_global=use_global)
+            logits=self.classifier(result['token_features'])
+            return dict(logits=logits,local_logits=self.classifier(result['local_features'])) if return_aux else logits
         features = []
         handle = self.backbone.head.register_forward_pre_hook(lambda module, args: features.append(args[0]))
         try:
@@ -43,7 +48,8 @@ class OZZClassifier(nn.Module):
         finally:
             handle.remove()
         b, t = batch['valid'].shape
-        return self.classifier(features[0]).reshape(b, -1, 4)[:, :t]
+        logits=self.classifier(features[0]).reshape(b, -1, 4)[:, :t]
+        return dict(logits=logits,local_logits=logits) if return_aux else logits
 
 
 def loader(dataset, workers, cursor=0):
@@ -80,6 +86,7 @@ def metrics_from_counts(tp, fp, fn, tn):
 def evaluate(model, dataset, device, workers, amp, progress):
     model.eval()
     counts = torch.zeros(4, 4, device=device)
+    local_counts=torch.zeros_like(counts)
     total, count = 0., 0
     real_fp, real_count = 0, 0
     real_window_fp, real_windows = 0, 0
@@ -90,12 +97,16 @@ def evaluate(model, dataset, device, workers, amp, progress):
             batch = to_device(batch, device)
             mask = batch['supervised'] & batch['valid']
             with torch.autocast(device.type, dtype=torch.bfloat16, enabled=amp):
-                logits = model(batch)
+                predictions=model(batch,return_aux=True)
+                logits=predictions['logits']
+                local=predictions['local_logits'][mask].float()
             logits, target = logits[mask].float(), batch['target'][mask]
             total += nn.functional.binary_cross_entropy_with_logits(logits, target, reduction='sum').item()
             count += target.numel()
             all_logits.append(logits.cpu().numpy()); all_targets.append(target.cpu().numpy())
             pred, truth = logits >= 0, target > .5
+            lp=local>=0
+            local_counts+=torch.stack(((lp&truth).sum(0),(lp&~truth).sum(0),(~lp&truth).sum(0),(~lp&~truth).sum(0)))
             if batch['source_group'].item() == 4:
                 real_fp += pred.any(-1).sum().item()
                 real_count += len(pred)
@@ -106,7 +117,9 @@ def evaluate(model, dataset, device, workers, amp, progress):
                                    (~pred & truth).sum(0), (~pred & ~truth).sum(0)))
             progress.update(i+1, {'loss': total/max(count, 1)})
     progress.update(len(dataset), force=True)
-    return {'loss': total/max(count, 1), **metrics_from_counts(*counts.cpu()),
+    local_metrics=metrics_from_counts(*local_counts.cpu())
+    return {'loss': total/max(count, 1), 'local_macro_f1':local_metrics['macro_f1'],
+            'local_f1_per_class':local_metrics['f1_per_class'], **metrics_from_counts(*counts.cpu()),
             **average_precision_metrics(np.concatenate(all_logits), np.concatenate(all_targets)),
             'real_no_ozz_false_positive_rate': real_fp/real_count if real_count else None,
             'real_no_ozz_window_false_positive_rate': real_window_fp/real_windows if real_windows else None,
@@ -134,7 +147,7 @@ def export_curves(output):
 
 def validate_resume_contract(saved, contract):
     if saved != contract:
-        raise ValueError('OZZ contract changed. Start the new recipe from SSL in a new output directory.')
+        raise ValueError('OZZ contract changed. Start generation 2 from scratch in a new output directory.')
     return False
 
 
@@ -157,11 +170,16 @@ def run(config):
     if not (0 < config['lr_warmup_epochs'] < config['lr_total_epochs']
             and 0 < config['lr_initial_ratio'] <= 1 and 0 < config['lr_min_ratio'] <= 1):
         raise ValueError('Invalid warmup/cosine settings')
-    config.setdefault('feature_mode', 'continuous_record')
+    config.setdefault('feature_mode', 'hierarchical_v2')
     config.setdefault('label_tail_periods', 1)
+    config.setdefault('synthetic_context', True)
+    config.setdefault('synthetic_normal_probability', .15)
+    if not 0 <= config['synthetic_normal_probability'] <= 1: raise ValueError('Invalid synthetic normal probability')
+    config.setdefault('local_loss_weight', .25)
+    if not 0 <= config['local_loss_weight'] <= 1: raise ValueError('Invalid local loss weight')
     config.setdefault('voltage_dropout_phase', .03)
     config.setdefault('background_dropout_multiplier', 1.4)
-    if config['feature_mode'] != 'continuous_record' or config['label_tail_periods'] != 1:
+    if config['feature_mode'] != 'hierarchical_v2' or config['label_tail_periods'] != 1:
         raise ValueError('Current OZZ recipe requires continuous history and a one-period label tail')
     config.setdefault('validation_current_samples', 0)
     if config['validation_current_samples'] < 0:
@@ -206,37 +224,37 @@ def run(config):
     random.seed(config['seed']); np.random.seed(config['seed']); torch.manual_seed(config['seed'])
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     amp = device.type == 'cuda' and torch.cuda.is_bf16_supported()
-    state = torch.load(latest if resume else config['ssl_checkpoint'], map_location='cpu', weights_only=False)
-    architecture = state['contract']['architecture']
-    backbone = OZZRegularizedBackbone(HierarchicalConfig(**architecture), config['drop_path_rate'])
-    if not resume:
-        if state['contract'].get('data_contract') != 'phase5_hierarchical_b_reim_v1':
-            raise ValueError('Нужен checkpoint иерархического SSL Phase 5.')
-        backbone.load_state_dict(state['model'], strict=True)
+    state = torch.load(latest,map_location='cpu',weights_only=False) if resume else {}
+    architecture = config.pop('architecture', asdict(HierarchicalV2Config(drop_path_rate=config['drop_path_rate'])))
+    backbone = PhasorHierarchicalKANV2(HierarchicalV2Config(**architecture))
     model = OZZClassifier(backbone).to(device)
     manifest_path = ROOT/'data/phase5/research_strict_splits.json'
     records, manifest = prepare_records(ROOT, config, json.loads(manifest_path.read_text(encoding='utf-8')))
     contract = {k: v for k, v in config.items() if k not in ('resume', 'epochs', 'workers', 'save_every', 'console_interval', 'ssl_checkpoint')}
-    contract.update(architecture=architecture, recipe='hierarchical_ozz_continuous_v1', amp_bf16=amp,
+    contract.update(architecture=architecture, recipe='hierarchical_ozz_v2', amp_bf16=amp,
                     split_sha256=hashlib.sha256(json.dumps(manifest, sort_keys=True).encode()).hexdigest(),
                     ssl_split_sha256=hashlib.sha256(manifest_path.read_bytes()).hexdigest())
     code_paths = [Path(__file__), ROOT/'osc_tools/ml/phase5_hierarchical_ozz.py',
                   ROOT/'osc_tools/ml/phase5_hierarchical_data.py', ROOT/'osc_tools/ml/models/phasor_hierarchical.py',
-                  ROOT/'osc_tools/ml/phase5_ozz_regularization.py', ROOT/'osc_tools/ml/phase5_fourier.py', ROOT/'osc_tools/ml/phase5_ozz_balance.py', ROOT/'osc_tools/ml/phase5_ozz_input_augmentation.py', ROOT/'osc_tools/ml/phase5_ozz_features.py']
+                  ROOT/'osc_tools/ml/phase5_ozz_regularization.py', ROOT/'osc_tools/ml/phase5_fourier.py', ROOT/'osc_tools/ml/phase5_ozz_balance.py', ROOT/'osc_tools/ml/phase5_ozz_input_augmentation.py', ROOT/'osc_tools/ml/phase5_ozz_features.py', ROOT/'osc_tools/ml/phase5_hierarchical_v2_features.py',
+                  ROOT/'osc_tools/ml/phase5_ozz_synthesis.py', ROOT/'osc_tools/ml/models/phasor_hierarchical_v2.py']
     contract['implementation_sha256'] = hashlib.sha256(b''.join(p.read_bytes() for p in code_paths)).hexdigest()
     if resume:
         validate_resume_contract(state['contract'], contract)
     output.mkdir(parents=True, exist_ok=True)
     (output/'split.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
     (output/'config.json').write_text(json.dumps(contract, ensure_ascii=False, indent=2), encoding='utf-8')
-    provenance = state.get('ssl_origin') if resume else {'path': str(config['ssl_checkpoint']), 'step': state['step'], 'epoch': state['epoch']}
-    train = OZZDataset(records['train'], config['samples_per_epoch'], config['seed'], config['max_seconds'], True, event_windows=config['balanced_events'], background_repeats=config['background_repeats'],
-                       current_dropout_all=config['current_dropout_all'], current_dropout_phase=config['current_dropout_phase'],
-                       current_zero_probability=config['current_zero_probability'],
-                       feature_mode=config['feature_mode'], label_tail_periods=config['label_tail_periods'],
-                       voltage_dropout_phase=config['voltage_dropout_phase'],
-                       background_dropout_multiplier=config['background_dropout_multiplier'])
-    val = OZZDataset(records['validation'], config['validation_samples'], config['seed']+100000, config['max_seconds'], False, feature_mode=config['feature_mode'], label_tail_periods=1)
+    provenance = state.get('initialization',dict(kind='random',seed=config['seed']))
+    def dataset(items,samples,seed,train,current_evaluation=None):
+        return OZZDataset(items,samples,seed,config['max_seconds'],train,
+            event_windows=config['balanced_events'],background_repeats=config['background_repeats'],
+            current_dropout_all=config['current_dropout_all'],current_dropout_phase=config['current_dropout_phase'],
+            current_zero_probability=config['current_zero_probability'],feature_mode=config['feature_mode'],label_tail_periods=1,
+            voltage_dropout_phase=config['voltage_dropout_phase'],background_dropout_multiplier=config['background_dropout_multiplier'],
+            synthetic_context=config['synthetic_context'],current_evaluation=current_evaluation,
+            synthetic_normal_probability=config['synthetic_normal_probability'])
+    train=dataset(records['train'],config['samples_per_epoch'],config['seed'],True)
+    val=dataset(records['validation'],config['validation_samples'],config['seed']+100000,False)
     opt = torch.optim.AdamW([{'params': [p for p in backbone.parameters() if p.requires_grad], 'lr': config['backbone_lr']},
                             {'params': model.classifier.parameters(), 'lr': config['head_lr']}], weight_decay=1e-4)
     epoch, cursor, step, best = 0, 0, 0, float('inf')
@@ -248,7 +266,7 @@ def run(config):
     balance = state.get('balance') if resume else None
     if config['balanced_events'] and balance is None:
         print('Оценка весов по обучающим окнам (без validation)...', flush=True)
-        reference = OZZDataset(records['train'], config['samples_per_epoch'], config['seed'], config['max_seconds'], True, event_windows=config['balanced_events'], feature_mode=config['feature_mode'], label_tail_periods=1)
+        reference = dataset(records['train'],config['samples_per_epoch'],config['seed'],True)
         balance = estimate_balance(reference, config['balance_samples'], config['positive_weight_cap'])
     if balance is not None:
         print(f'Class balance: {balance}', flush=True)
@@ -265,11 +283,11 @@ def run(config):
     def save(path=latest):
         atomic_save(dict(contract=contract, model=model.state_dict(), optimizer=opt.state_dict(), rng=rng_state(),
                          epoch=epoch, cursor=cursor, step=step, best=best, best_f1=best_f1, balance=balance,
-                         ssl_origin=provenance), path)
+                         initialization=provenance), path)
     def log(row):
         with (output/'training_log.jsonl').open('a', encoding='utf-8') as stream:
             stream.write(json.dumps(row)+'\n')
-    progress.message(f'OZZ Phase 5 | {device} | SSL step {provenance["step"]} | {output}\n'
+    progress.message(f'OZZ Phase 5 | {device} | random initialization | {output}\n'
                      '4 типа ОЗЗ; все четыре выхода 0 = не ОЗЗ. Ctrl+C или STOP: сохранить и остановиться.')
     safe_cursor, safe_rng = cursor, rng_state()
     optimizer_in_progress = False
@@ -299,14 +317,21 @@ def run(config):
                 mask = batch['valid'] & batch['supervised']
                 with activation_policy(backbone, batch['z'].shape[1], execution['no_checkpoint_max_tokens']):
                     with torch.autocast(device.type, dtype=torch.bfloat16, enabled=amp):
-                        logits = model(batch)
+                        prediction = model(batch,return_aux=True)
+                        logits=prediction['logits']
                         target = smooth_binary_targets(batch['target'][mask], config['label_error_probability'])
                         if balance is not None:
                             loss = balanced_window_loss(logits[mask].float(), batch['target'][mask],
                                                         config['label_error_probability'], balance, config['focal_gamma'],
                                                         transition_weights(batch['target'], mask, config['boundary_weight'])[mask])
+                            local_loss = balanced_window_loss(prediction['local_logits'][mask].float(),batch['target'][mask],
+                                config['label_error_probability'],balance,config['focal_gamma'],
+                                transition_weights(batch['target'],mask,config['boundary_weight'])[mask])
+                            loss=(loss+config['local_loss_weight']*local_loss)/(1+config['local_loss_weight'])
                         else:
                             loss = nn.functional.binary_cross_entropy_with_logits(logits[mask].float(), target, reduction='sum')
+                            local_loss=nn.functional.binary_cross_entropy_with_logits(prediction['local_logits'][mask].float(),target,reduction='sum')
+                            loss=(loss+config['local_loss_weight']*local_loss)/(1+config['local_loss_weight'])
                     (loss/4096).backward()
                 tokens += window_tokens; targets += window_targets
                 loss_sum += loss.detach(); cursor += 1
@@ -343,11 +368,10 @@ def run(config):
             progress.update(cursor, force=True)
             result = evaluate(model, val, device, config['workers'], amp, progress)
             log(dict(kind='validation', epoch=epoch, step=step, **result))
-            progress.message(f'Epoch {epoch+1}: val BCE={result["loss"]:.6f}, macro F1={result["macro_f1"]:.4f}; F1={result["f1_per_class"]}; AP={result["average_precision_per_class"]}; real no-OZZ FPR={result["real_no_ozz_false_positive_rate"]}; window FPR={result["real_no_ozz_window_false_positive_rate"]}')
+            progress.message(f'Epoch {epoch+1}: val BCE={result["loss"]:.6f}, macro F1={result["macro_f1"]:.4f}; F1={result["f1_per_class"]}; AP={result["average_precision_per_class"]}; local F1={result['local_macro_f1']:.4f}; real no-OZZ FPR={result["real_no_ozz_false_positive_rate"]}; window FPR={result["real_no_ozz_window_false_positive_rate"]}')
             if config['validation_current_samples']:
                 for variant in ('missing', 'zero'):
-                    probe = OZZDataset(records['validation'], config['validation_current_samples'],
-                        config['seed']+100000, config['max_seconds'], False, current_evaluation=variant, feature_mode=config['feature_mode'], label_tail_periods=1)
+                    probe = dataset(records['validation'],config['validation_current_samples'],config['seed']+100000,False,variant)
                     robustness = evaluate(model, probe, device, config['workers'], amp, progress)
                     log(dict(kind='validation_current_'+variant, epoch=epoch, step=step, **robustness))
                     progress.message(f'Without currents ({variant}): F1={robustness["f1_per_class"]}; AP={robustness["average_precision_per_class"]}')

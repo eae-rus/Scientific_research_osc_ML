@@ -398,9 +398,9 @@ if __name__ == '__main__':
         # =====================================================================
         # РУЧНОЙ ЗАПУСК
         # =====================================================================
-        MODEL_FAMILY = 'hierarchical'  # 'hierarchical' (Phase 5) или 'legacy'
-        CHECKPOINT = ('experiments/phase5/hierarchical_ozz_continuous/latest_checkpoint.pt'
-                      if MODEL_FAMILY == 'hierarchical' else
+        MODEL_FAMILY = 'hierarchical_v2'  # 'hierarchical_v2' (Phase 5) или 'legacy'
+        CHECKPOINT = ('experiments/phase5/hierarchical_v2_ozz/latest_checkpoint.pt'
+                      if MODEL_FAMILY == 'hierarchical_v2' else
                       'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt')
 
         if CHECKPOINT is None:

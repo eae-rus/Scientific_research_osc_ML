@@ -1,4 +1,4 @@
-﻿"""
+"""
 Оценка моделей Этапа 4.5 на симулированных данных SimOZZ.
 
 File-by-file подход: для каждого val-файла загружаются ВСЕ окна,
@@ -549,9 +549,9 @@ if __name__ == '__main__':
     if len(_sys.argv) > 1:
         main()
     else:
-        MODEL_FAMILY = 'hierarchical'  # 'hierarchical' (Phase 5) или 'legacy'
-        CHECKPOINT = ('experiments/phase5/hierarchical_ozz_continuous/latest_checkpoint.pt'
-                      if MODEL_FAMILY == 'hierarchical' else
+        MODEL_FAMILY = 'hierarchical_v2'  # 'hierarchical_v2' (Phase 5) или 'legacy'
+        CHECKPOINT = ('experiments/phase5/hierarchical_v2_ozz/latest_checkpoint.pt'
+                      if MODEL_FAMILY == 'hierarchical_v2' else
                       'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt')
         if CHECKPOINT is None:
             exp_root = PROJECT_ROOT / 'experiments' / 'phase4'
@@ -582,6 +582,6 @@ if __name__ == '__main__':
                 num_workers=4,  # Phase 5: параллельная CPU-подготовка с ограниченной очередью.
                 save_plots=True,
                 include_roc=True,
-                output_dir=('reports/phase5/hierarchical_ozz_continuous_evaluation' if MODEL_FAMILY == 'hierarchical'
+                output_dir=('reports/phase5/hierarchical_v2_ozz_evaluation' if MODEL_FAMILY == 'hierarchical_v2'
                             else 'reports/phase4/sim_ozz_eval/manual_run'),
             )

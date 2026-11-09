@@ -20,7 +20,19 @@ def load_hierarchical(state, checkpoint, device):
     from osc_tools.ml.models.phasor_hierarchical import HierarchicalConfig
     from osc_tools.ml.phase5_ozz_regularization import OZZRegularizedBackbone
     config = dict(state['contract'])
-    model = OZZClassifier(OZZRegularizedBackbone(HierarchicalConfig(**config['architecture'])))
+    # Read checkpoints produced before the general-purpose encoder was renamed.
+    config['architecture'] = dict(config['architecture'])
+    if config['architecture']['architecture_id'] == 'phase_ozz_v2':
+        config['architecture']['architecture_id'] = 'phasor_hierarchical_v2'
+    if config.get('feature_mode') == 'phase_v2':
+        config['feature_mode'] = 'hierarchical_v2'
+    if config.get('recipe') == 'phase_ozz_v2':
+        config['recipe'] = 'hierarchical_ozz_v2'
+    if config['architecture']['architecture_id']=='phasor_hierarchical_v2':
+        from osc_tools.ml.models.phasor_hierarchical_v2 import HierarchicalV2Config,PhasorHierarchicalKANV2
+        model=OZZClassifier(PhasorHierarchicalKANV2(HierarchicalV2Config(**config['architecture'])))
+    else:
+        model = OZZClassifier(OZZRegularizedBackbone(HierarchicalConfig(**config['architecture'])))
     model.load_state_dict(state['model'], strict=True)
     model.to(device).eval()
     digest = hashlib.sha256()
@@ -30,10 +42,11 @@ def load_hierarchical(state, checkpoint, device):
     for relative in ('osc_tools/ml/phase5_ozz_inference.py', 'osc_tools/ml/phase5_fourier.py',
                      'osc_tools/ml/phase5_hierarchical_ozz.py', 'osc_tools/ml/models/phasor_hierarchical.py',
                      'osc_tools/ml/phase5_hierarchical_data.py', 'osc_tools/ml/phase5_ozz_features.py',
-                     'scripts/phase5_experiments/run_phase5_hierarchical_ozz.py'):
+                     'scripts/phase5_experiments/run_phase5_hierarchical_ozz.py',
+                     'osc_tools/ml/models/phasor_hierarchical_v2.py','osc_tools/ml/phase5_hierarchical_v2_features.py','osc_tools/ml/phase5_ozz_synthesis.py'):
         digest.update((ROOT / relative).read_bytes())
     digest.update(json.dumps(dict(architecture=config['architecture'], feature_mode=config.get('feature_mode', 'local_blocks')), sort_keys=True).encode())
-    config.update(model_family='hierarchical', model_type='PhasorHierarchicalKAN',
+    config.update(model_family='hierarchical', model_type=('PhasorHierarchicalKANV2' if config['architecture']['architecture_id']=='phasor_hierarchical_v2' else 'PhasorHierarchicalKAN'),
                   data_dir=config['rtds_dir'], num_classes=4, inference_sha256=digest.hexdigest(),
                   checkpoint=str(Path(checkpoint).resolve()), checkpoint_step=state['step'])
     return model, config
@@ -48,6 +61,12 @@ def prepare_chunks(raw, spp, max_blocks, basis="phase", provenance=None, feature
         length = int(np.floor(blocks*10*spp+.5))
         part = raw[offset:offset+length]
         if not len(part):
+            continue
+        if feature_mode == 'hierarchical_v2':
+            batch=supervised_window(part,np.zeros((len(part),4),np.float32),spp,blocks,basis=basis,provenance=provenance,
+                feature_mode=feature_mode,history=raw[max(0,offset-int(np.floor(10*spp+.5))):offset])
+            ends=batch['sample_ends'].numpy();starts=np.r_[0,ends[:-1]]
+            yield batch,starts+offset,ends+offset,(batch['valid']&batch['supervised']).numpy()
             continue
         padded = np.full((length, 8), np.nan, np.float32)
         padded[:len(part)] = part

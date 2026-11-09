@@ -87,6 +87,9 @@ class TrainingProgress:
         self.started=time.monotonic(); self.last=0.; self.ema=None
 
     def message(self,text):
+        # Routine synthesis details stay in JSONL, without interrupting the progress bar.
+        if text.startswith('Данные: synthetic_context_'):
+            return
         if self.width:
             print(file=self.stream); self.width=0
         print(text,file=self.stream,flush=True)

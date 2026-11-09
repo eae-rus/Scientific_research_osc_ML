@@ -39,6 +39,9 @@ def select_real_background(file_names, report_path):
 
 def supervised_window(raw, labels, spp, blocks, basis="phase", provenance=None,
                       feature_mode="local_blocks", history=None):
+    if feature_mode == 'hierarchical_v2':
+        from osc_tools.ml.phase5_hierarchical_v2_features import phase_window
+        return phase_window(raw, labels, spp, blocks, basis, provenance, history)
     if provenance is None:
         provenance = np.isfinite(raw).any(0).astype(np.uint8)
     if feature_mode == 'continuous_record':
@@ -163,6 +166,9 @@ def prepare_unlabeled_background(root, config, ssl_manifest):
         if spp < 8 or int(meta['n_samples']) < int(np.floor(10*spp+.5)):
             skipped.append(index)
             continue
+        if config.get('feature_mode') == 'hierarchical_v2' and meta.get('voltage_basis', 'phase') != 'phase':
+            skipped.append(index)
+            continue
         if not meta.get('normalized'):
             raise ValueError(f'Unnormalized Open_EE record: {name}')
         records[split].append(dict(kind='open_ee', registry=str(registry), index=index,
@@ -181,13 +187,15 @@ class OZZDataset:
     def __init__(self, records, samples, seed, max_seconds, train, event_windows=False, background_repeats=1,
                  current_dropout_all=0., current_dropout_phase=0., current_zero_probability=.5,
                  current_evaluation=None, feature_mode="local_blocks", label_tail_periods=0,
-                 voltage_dropout_phase=0., background_dropout_multiplier=1.):
+                 voltage_dropout_phase=0., background_dropout_multiplier=1., synthetic_context=False, synthetic_normal_probability=.15):
         self.groups = [[r for r in records if r['group'] == g] for g in sorted({r['group'] for r in records})]
         self.schedule = [i for i, group in enumerate(self.groups) for _ in range(background_repeats if group[0]['group'] == 4 and train else 1)]
         self.samples, self.seed, self.max_seconds, self.train = samples, seed, max_seconds, train
         self.epoch = 0
         self.event_windows = event_windows
         self.feature_mode, self.label_tail_periods = feature_mode, label_tail_periods
+        self.synthetic_context = synthetic_context
+        self.synthetic_normal_probability = synthetic_normal_probability
         self.voltage_dropout_phase = voltage_dropout_phase
         self.background_dropout_multiplier = background_dropout_multiplier
         self.current_dropout = (current_dropout_all, current_dropout_phase, current_zero_probability)
@@ -239,6 +247,8 @@ class OZZDataset:
                     except OSError:
                         if attempt == 2: raise
                         time.sleep(.2*(attempt+1))
+            if 'ozz' in data and data['ozz'].any() and not data['targets'].any():
+                raise ValueError(f'OZZ flag positive but all type labels absent: {path}')
             if self.label_tail_periods and 'expanded_targets' not in data:
                 from osc_tools.ml.phase5_ozz_features import cached_expanded_labels
                 data['expanded_targets'] = cached_expanded_labels(data['targets'], 1/(50*data['dt']))
@@ -250,9 +260,22 @@ class OZZDataset:
         choices = [b for b in BUCKETS if b <= available]
         if not choices:
             raise ValueError(f'Record shorter than 10 periods: {record.get("path", record.get("name"))}')
+        if self.synthetic_context and record['kind'] == 'rtds':
+            requested = int(rng.choice([b for b in BUCKETS if b <= int(self.max_seconds*fnet/10)]))
+            if requested > available:
+                from osc_tools.ml.phase5_ozz_synthesis import compose_context, UnsuitableEdges
+                try:
+                    raw, labels, placements = compose_context(raw, data['targets'], spp,
+                        int(np.floor(requested*10*spp+.5)), rng, self.label_tail_periods,
+                        include_events=rng.random() >= self.synthetic_normal_probability)
+                    available = requested
+                    choices = [requested]
+                    note = f'synthetic_context_{len(placements)}_copies'
+                except UnsuitableEdges as exc:
+                    note = 'synthetic_context_rejected_'+str(exc)
+            else:
+                choices = [requested]
         blocks = int(rng.choice(choices))
-        if self.train and self.event_windows and record['kind'] == 'rtds' and rng.random() < .25:
-            blocks = available  # Largest whole ten-period window, up to max_seconds.
         length = int(np.floor(blocks*10*spp+.5))
         start = int(rng.integers(len(raw)-length+1))
         if self.train and self.event_windows and record['kind'] == 'rtds':
@@ -263,19 +286,19 @@ class OZZDataset:
                 if len(present):
                     event_group = int(rng.choice(present))
                     note = 'source_type_without_labels_using_present_type'
-                elif data['ozz'].any():
+                elif data['ozz'].any() and note != 'synthetic_context_0_copies':
                     raise ValueError(f'OZZ flag positive but all type labels absent: {path}')
                 else:
                     event_group = None
-                    note = 'simulation_without_event_used_as_negative'
+                    note = note or 'simulation_without_event_used_as_negative'
             if event_group is not None:
                 try:
-                    start = event_start(labels, length, spp, event_group, rng, continuous=self.feature_mode == 'continuous_record')
+                    start = event_start(labels, length, spp, event_group, rng, continuous=self.feature_mode != 'local_blocks')
                 except NoUsableEvent:
                     # Retain true interval labels; never invent or erase an event.
                     note = 'event_unavailable_in_usable_intervals_random_window'
         history_start = (max(0, start-int(np.floor(10*spp+.5)))
-                         if self.feature_mode == 'continuous_record' else start)
+                         if self.feature_mode != 'local_blocks' else start)
         history_count = start-history_start
         segment = raw[history_start:start+length].copy()
         if self.train:

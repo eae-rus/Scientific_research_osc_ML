@@ -89,6 +89,7 @@ def load_comtrade_raw(
     bus: str,
     norm_osc: NormOsc | None = None,
     hierarchical: bool = False,
+    allow_partial_phases: bool = False,
 ) -> tuple[np.ndarray | None, np.ndarray | None, float, np.ndarray | None, dict]:
     """Загружает COMTRADE и извлекает 8 каналов для указанной секции (bus).
 
@@ -140,12 +141,13 @@ def load_comtrade_raw(
     required_hard = {'IA', 'IC', 'UA', 'UB', 'UC'}
     available = {k for k, v in resolved.items() if v is not None}
 
-    if not required_hard.issubset(available):
+    usable = lambda present: bool(present & {'IA','IB','IC','UA','UB','UC'}) if allow_partial_phases else required_hard.issubset(present)
+    if not usable(available):
         # Fallback: пробуем bus='1', если запрошенный bus не дал результата
         if bus != '1':
             resolved_fb = resolve_channels('1')
             available_fb = {k for k, v in resolved_fb.items() if v is not None}
-            if required_hard.issubset(available_fb):
+            if usable(available_fb):
                 resolved = resolved_fb
                 signal_info = {k: v for k, v in resolved.items() if v is not None}
                 signal_info['_bus_fallback'] = f'bus={bus}→bus=1'
@@ -162,7 +164,7 @@ def load_comtrade_raw(
     # Собираем 8 каналов ОРИГИНАЛЬНЫХ (для графика)
     order = ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']
     N = raw_df.height
-    raw_8ch_display = np.zeros((N, 8), dtype=np.float32)
+    raw_8ch_display = np.full((N, 8), np.nan if allow_partial_phases else 0., dtype=np.float32)
     for i, ch in enumerate(order):
         col_name = resolved.get(ch)
         if col_name is not None and col_name in raw_df.columns:
@@ -617,7 +619,7 @@ def run_inference_on_real_ozz(
 
     # Папка вывода
     if output_dir is None:
-        out_base = PROJECT_ROOT / 'reports' / ('phase5' if config.get('model_family') == 'hierarchical' else 'phase4') / ('real_ozz_continuous_inference' if config.get('feature_mode') == 'continuous_record' else 'real_ozz_inference')
+        out_base = PROJECT_ROOT / 'reports' / ('phase5' if config.get('model_family') == 'hierarchical' else 'phase4') / (('hierarchical_v2_ozz_real_inference' if config.get('feature_mode')=='hierarchical_v2' else 'real_ozz_continuous_inference') if config.get('feature_mode') in ('continuous_record','hierarchical_v2') else 'real_ozz_inference')
     else:
         out_base = Path(output_dir)
 
@@ -749,6 +751,7 @@ def run_inference_on_real_ozz(
             raw_display, raw_model, fs, time_arr, sig_info = load_comtrade_raw(
                 cfg_path, bus=bus, norm_osc=norm_osc,
                 hierarchical=config.get("model_family") == "hierarchical",
+                allow_partial_phases=config.get("feature_mode")=="hierarchical_v2",
             )
 
             if raw_display is None:
@@ -956,9 +959,9 @@ if __name__ == '__main__':
         # РУЧНОЙ РЕЖИМ — отредактируйте константы ниже
         # =====================================================
         # Укажите путь после обучения
-        MODEL_FAMILY = 'hierarchical'  # 'hierarchical' (Phase 5) или 'legacy'
-        CHECKPOINT = ('experiments/phase5/hierarchical_ozz_continuous/latest_checkpoint.pt'
-                      if MODEL_FAMILY == 'hierarchical' else
+        MODEL_FAMILY = 'hierarchical_v2'  # 'hierarchical_v2' (Phase 5) или 'legacy'
+        CHECKPOINT = ('experiments/phase5/hierarchical_v2_ozz/latest_checkpoint.pt'
+                      if MODEL_FAMILY == 'hierarchical_v2' else
                       'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt')
         # Пример: CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_.../best_model.pt'
 
