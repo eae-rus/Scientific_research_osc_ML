@@ -1,7 +1,7 @@
 """
 Разделение осциллограмм real_OZZ на подтверждённые ОЗЗ и ложные срабатывания.
 
-Использует отчёт overvoltage_report_T1_with_com_v1.7.csv:
+Использует отчёт overvoltage_report_T1_with_com_v1.8.csv:
 - Проверка == '+' → confirmed_ozz (подтверждённое ОЗЗ)
 - Проверка == '-' → false_detection (ошибочно детектировано)
 
@@ -26,7 +26,7 @@ import polars as pl
 
 
 # Путь к отчёту по умолчанию (относительно корня проекта)
-_DEFAULT_REPORT_PATH = Path(__file__).resolve().parents[2] / 'data' / 'real_OZZ' / 'overvoltage_report_T1_with_com_v1.7.csv'
+_DEFAULT_REPORT_PATH = Path(__file__).resolve().parents[2] / 'data' / 'real_OZZ' / 'overvoltage_report_T1_with_com_v1.8.csv'
 _DEFAULT_COMTRADE_DIR = Path(__file__).resolve().parents[2] / 'data' / 'real_OZZ' / 'osc_comtrade'
 
 
@@ -36,7 +36,7 @@ def load_real_ozz_report(
     """Загружает отчёт о перенапряжениях.
 
     Args:
-        report_path: путь к CSV (по умолч. data/real_OZZ/overvoltage_report_T1_with_com_v1.7.csv)
+        report_path: путь к CSV (по умолч. data/real_OZZ/overvoltage_report_T1_with_com_v1.8.csv)
 
     Returns:
         DataFrame с колонками: filename, bus, group, overvoltage_group, overvoltage, verified, comment

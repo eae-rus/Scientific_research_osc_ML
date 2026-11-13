@@ -1045,7 +1045,7 @@ def run_manual() -> None:
         USE_REAL_NO_OZZ = True
         # Реальные: весь НЕРАЗМЕЧЕННЫЙ Open_EE, кроме имён с ID экспертного набора.
         # Остальные записи считаются без ОЗЗ независимо от ML_2_*.
-        EXPERT_REPORT = PROJECT_ROOT / "data/real_OZZ/overvoltage_report_T1_with_com_v1.7.csv"
+        EXPERT_REPORT = PROJECT_ROOT / "data/real_OZZ/overvoltage_report_T1_with_com_v1.8.csv"
         LABEL_ERROR_PROBABILITY = 0.05
         DROP_PATH_RATE = 0.10          # Пропуск residual-блоков; максимум в конце каждой стадии.
         NUM_WORKERS = 4

@@ -123,7 +123,7 @@ compare_4models_latest_20260610_204942/
 
 ### 4.1. Набор данных
 
-- Источник разметки: `data/real_OZZ/overvoltage_report_T1_with_com_v1.7.csv`
+- Источник разметки: `data/real_OZZ/overvoltage_report_T1_with_com_v1.8.csv`
   - `Проверка = '+'` → **confirmed** (подтверждённое ОЗЗ), 829 уникальных файлов
   - `Проверка = '-'` → **false_detection** (перенапряжение без ОЗЗ), 1004 файла
 - COMTRADE: `data/real_OZZ/osc_comtrade/{filename}.cfg`
@@ -331,7 +331,7 @@ Raw instantaneous    | 0.977  | 91.6%      | 60.1%      | 8.9
 | `scripts/phase4_experiments/sim_ozz/evaluate_sim_ozz.py` | SimOZZ метрики и графики |
 | `scripts/phase4_experiments/real_ozz/collect_real_ozz_statistics.py` | Real OZZ статистика + CSV export |
 | `scripts/phase4_experiments/real_ozz/inference_real_ozz.py` | Визуализация одной осциллограммы |
-| `data/real_OZZ/overvoltage_report_T1_with_com_v1.7.csv` | Ground truth разметка |
+| `data/real_OZZ/overvoltage_report_T1_with_com_v1.8.csv` | Ground truth разметка |
 | `docs/phase_discription/phase_4/ARTICLE_PREPARATION_BRIEF.md` | Общий план статьи |
 | `docs/new_article.md` | Текущий черновик (§5 пока заглушка) |
 

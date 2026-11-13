@@ -398,7 +398,7 @@ python scripts/phase4_experiments/sim_ozz/evaluate_sim_ozz.py --checkpoint exper
 
 **Расположение:** `data/real_OZZ/osc_comtrade/` — 1865 COMTRADE файлов (.cfg + .dat).
 
-**Разделение** по отчёту `overvoltage_report_T1_with_com_v1.7.csv` (поле «Проверка»):
+**Разделение** по отчёту `overvoltage_report_T1_with_com_v1.8.csv` (поле «Проверка»):
 - **Confirmed OZZ** (`+`): 830 записей — подтверждённые случаи ОЗЗ
 - **False detection** (`-`): 1025 записей — ошибочно детектировано (нет ОЗЗ)
 

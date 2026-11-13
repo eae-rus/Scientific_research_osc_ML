@@ -27,7 +27,7 @@
    - `dataset_manager.py`: обновлён порядок fallback-поиска (data/ вместо raw_data/)
    - Подготовка к переносу пакета коллеге (портабельность)
 
-4. **Миграция `overvoltage_report_T1_with_com_v1.7.csv`**
+4. **Миграция `overvoltage_report_T1_with_com_v1.8.csv`**
    - `real_ozz_split.py` уже ссылался на `data/real_OZZ/` — корректно
    - `003_analisis.ipynb` — обновлён путь в коде на `data/real_OZZ/`
 

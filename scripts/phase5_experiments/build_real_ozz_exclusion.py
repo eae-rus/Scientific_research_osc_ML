@@ -107,7 +107,7 @@ def build_index(open_ee_dir: Path, report_path: Path) -> dict[str, object]:
 def main(argv: Iterable[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--open-ee-dir", type=Path, default=PROJECT_ROOT / "data/Open_EE_Dataset_v1_3_osc_CSV")
-    parser.add_argument("--report", type=Path, default=PROJECT_ROOT / "data/real_OZZ/overvoltage_report_T1_with_com_v1.7.csv")
+    parser.add_argument("--report", type=Path, default=PROJECT_ROOT / "data/real_OZZ/overvoltage_report_T1_with_com_v1.8.csv")
     parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "data/phase5")
     args = parser.parse_args(argv)
     result = build_index(args.open_ee_dir, args.report)
@@ -127,7 +127,7 @@ def run_manual() -> None:
     # Для CLI: python -m scripts.phase5_experiments.build_real_ozz_exclusion
     # =================================================================
     OPEN_EE_DIR = PROJECT_ROOT / "data/Open_EE_Dataset_v1_3_osc_CSV"
-    REAL_OZZ_REPORT = PROJECT_ROOT / "data/real_OZZ/overvoltage_report_T1_with_com_v1.7.csv"
+    REAL_OZZ_REPORT = PROJECT_ROOT / "data/real_OZZ/overvoltage_report_T1_with_com_v1.8.csv"
     OUTPUT_DIR = PROJECT_ROOT / "data/phase5"
 
     result = build_index(OPEN_EE_DIR, REAL_OZZ_REPORT)

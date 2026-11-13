@@ -191,7 +191,7 @@ def prepare_unlabeled_background(root, config, ssl_manifest, exclude=()):
     source = create_source(registry, 'open_ee')
     metadata = [source.get_metadata(i) for i in range(len(source))]
     names, audit = select_real_background([m['file_name'] for m in metadata],
-                  config.get('expert_report', root/'data/real_OZZ/overvoltage_report_T1_with_com_v1.7.csv'))
+                  config.get('expert_report', root/'data/real_OZZ/overvoltage_report_T1_with_com_v1.8.csv'))
     eligible = {name for name in names if not any(key.casefold() in name.casefold() for key in exclude)}
     # Preserve SSL separation and keep all buses/crops of a recording together.
     membership = {}
