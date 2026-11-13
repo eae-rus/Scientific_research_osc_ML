@@ -991,17 +991,6 @@
     "author_acceptance": "accepted",
     "suppress_in_review": true
   },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex#1": {
-    "text_sha256": "5631d6d370c7fa7993572f46b6d53f9e1590d45e786a232e20886922c0584ed6",
-    "status": "DECISION_RECORDED",
-    "implementation_status": "implemented",
-    "response_ru": "В начале 5.1 теперь объяснены оба выхода. Неприменимость означает, что ответом направления нельзя пользоваться. Удалена тяжёлая фраза о едином измерительном базисе; оставлено сравнение по одинаковым измерениям.",
-    "section_label": "sec:ch05_intro",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
-  },
   "manuscript/chapters/ch04_statistical_analysis/sec02_physkan_architectures.tex#42": {
     "text_sha256": "44f5bf6c1f4719b5f6f7d4c272e64fa2470db729c9a1f1439f6fbdab88e16ea2",
     "status": "RESOLVED_BY_AUTHOR",
@@ -1552,17 +1541,28 @@
     "reviewer_acceptance": "accepted"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex#2": {
+    "text_sha256": "5631d6d370c7fa7993572f46b6d53f9e1590d45e786a232e20886922c0584ed6",
+    "status": "AUTHOR_ACCEPTED",
+    "implementation_status": "implemented",
+    "response_ru": "В начале 5.1 теперь объяснены оба выхода. Неприменимость означает, что ответом направления нельзя пользоваться. Удалена тяжёлая фраза о едином измерительном базисе; оставлено сравнение по одинаковым измерениям.",
+    "section_label": "sec:ch05_intro",
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
+  },
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex#3": {
     "text_sha256": "38d697b7ecdc0c66d6374cd299cba107dbfc2d3b2c54f52d4107ebd63937af07",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "implemented",
     "response_ru": "В первых трёх абзацах 5.1 прямо названы цель и порядок исследования. Массовая обработка нужна для поиска записей с расхождениями, экспертный просмотр задаёт требуемое состояние, испытания проверяют ответ во времени. Повторное общее введение сокращено.",
     "section_label": "sec:ch05_intro",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex#3": {
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex#4": {
     "text_sha256": "e6e93411241775a68c74ce1d461a182bb77bf5f272abaf81097d4c5b26c0eab4",
     "status": "DECISION_RECORDED",
     "implementation_status": "partial",
@@ -1573,154 +1573,132 @@
     "decision": "D06-006, per-note audit 2026-11-10",
     "display": "ответ проверен 10.11; состояние исполнения ниже"
   },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex#4": {
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex#5": {
     "text_sha256": "16669d83d7b2c43916d2672dbfa9bc4d58134057ed4b07126cc5b753813d535b",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "implemented",
     "response_ru": "В научном тексте главы заменены формы слова «поляризация» на опорное напряжение, сигнал или величину по смыслу. Исходные авторские и рецензионные цитаты оставлены без изменений; обозначения формул сохранены.",
     "section_label": "sec:ch05_intro",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex#5": {
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex#6": {
     "text_sha256": "ff4493a0cd98cfe6673757926af4075d72126689fc665207698b1114eb8a4f7c",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "implemented",
     "response_ru": "Из введения убрано описание настройки под конкретный энергообъект. В 5.11 такая адаптация оставлена только как возможное последующее исследование и прямо отделена от выполненных опытов.",
     "section_label": "sec:ch05_intro",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex#6": {
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex#7": {
     "text_sha256": "0b0c06223abbbb0a467049650c4182c1169cd2da61a6324d41271db5267666e8",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "partial",
     "response_ru": "Три мелких подраздела введения переведены в связующие абзацы, дублирующий общий текст сокращён. Дробность остальных частей главы ещё требует адресной редакции; не отмечаю её выполненной целиком.",
     "section_label": "sec:ch05_intro",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
-  },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex#7": {
-    "text_sha256": "62f7677a7c87b52042a9f0047fb67876362a968f0cbe5379975f7ed165f3c97c",
-    "status": "RESOLVED_BY_AUTHOR",
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "Ок; закрыто автором, история сохранена",
-    "implementation_status": "not_required",
     "author_acceptance": "accepted",
-    "response_ru": "Ок. Принято авторское закрытие текущей пометки. Незавершённые физические иллюстрации и результаты помечены в начале соответствующих фрагментов как находящиеся в работе.",
-    "section_label": "sec:ch05_intro",
-    "suppress_in_review": true
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec01_direction_and_validity.tex#1": {
     "text_sha256": "9fd49b7dab89027bafd6555bb97a06fd5baed820aa2b3206a2a9533d16b8adef",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "implemented",
     "response_ru": "В определении целевого выхода теперь используются прямое и обратное направления. Передача мощности оставлена для описания физического процесса, чтобы не смешивать её знак с нулевым выходом органа.",
     "section_label": "sec:ch5_direction_validity",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec01_direction_and_validity.tex#2": {
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec01_direction_and_validity.tex#3": {
     "text_sha256": "8fd8a075b4d2e5e4ca8b9f588afe0b4c3bf9c493862e863e43f10c9910926a2e",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "implemented",
     "response_ru": "Решение перенесено в текст 5.2: признак непригодности передаётся внешней блокирующей логике. Общая или посекционная блокировка остаётся задачей проектирования БАВР, а не новым правилом разметки.",
     "section_label": "sec:ch5_direction_validity",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec01_direction_and_validity.tex#3": {
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec01_direction_and_validity.tex#4": {
     "text_sha256": "9e436327e8b3ce422f0e0548cbb840646805c4c3a66990c0f674c78742b50f5b",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "implemented",
     "response_ru": "В 5.2 добавлен пример перестановки B и C в одной группе измерений. Указано, что такие интервалы отмечал специалист; отдельное автоматическое правило обнаружения каждого дефекта не заявлено.",
     "section_label": "sec:ch5_direction_validity",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
-  },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec01_direction_and_validity.tex#4": {
-    "text_sha256": "85b117182b6e7fc19766c68e713c820e5c121d4ca66a1fa7cfceea593c82b646",
-    "status": "DECISION_RECORDED",
-    "implementation_status": "implemented",
-    "response_ru": "Оба выхода введены в первых абзацах 5.1, до употребления неприменимости в подробном описании. В 5.2 сохранено их предметное определение.",
-    "section_label": "sec:ch5_direction_validity",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec02_analytical_organs.tex#1": {
     "text_sha256": "628656b5f2bc9e62003caef7bc023a7189ad4813be12598be2fbe5e58bc9d976",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "deferred",
     "response_ru": "Описание здесь сохранено. Согласование с главой 2 остаётся в D07-001 и D06-006: выбрать основное место подробного вывода, а в другом оставить назначение и ссылку. Сейчас описание главы 2 не удалялось.",
     "section_label": "sec:ch5_analytical_organs",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec02_analytical_organs.tex#2": {
     "text_sha256": "f53d80827ba2f9db6f31c4e27e113ded9d8eddc693b5f23513000089870f715c",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "deferred",
     "response_ru": "Литературные основания пока не восстановлены полностью. В D06-006 оставлена предметная сверка открытых принципов каждого органа и ссылок обзора главы 2. Служебная пометка «Статья 5» не считается заменой библиографической ссылки.",
     "section_label": "sec:ch5_analytical_organs",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec02_analytical_organs.tex#3": {
     "text_sha256": "14b84e0c35c1a5395d00644e187bac31fbe74b3dddff62a92076dddd9b0eb48b",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "partial",
     "response_ru": "Требование одинаковой ориентации записано в задании ch05_waveform_cases.md: поворачивать вместе оси и все векторы, сохраняя знак критерия. Нельзя отдельно повернуть ток и изменить физический смысл. Сами векторные рисунки пока не заменены.",
     "section_label": "sec:ch5_analytical_organs",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec02_analytical_organs.tex#4": {
     "text_sha256": "8176748208e01e7e8cc543982feea526984d90da858b1c7915b02e260881a1b0",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "not_required",
     "response_ru": "T здесь обозначает рабочий момент критерия, вычисляемый по напряжению, току и углу. Это не период сети и не время. Обозначение оставлено по вашему указанию; совпадение этой буквы с конкретным литературным источником отдельно не утверждается.",
     "section_label": "sec:ch5_analytical_organs",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec02_analytical_organs.tex#5": {
     "text_sha256": "e5f889b52d740dc467539c857f98b2b58a93893c19be8cec8f0894a8bd74be93",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "partial",
     "response_ru": "Согласование основной мощностной уставки уже описано рядом с формулой и служебной записью D06-004. Полная проверка тракта нормировки и базиса порога 0,001 остаётся R5-03; замечание не закрываю одной отсылкой.",
     "section_label": "sec:ch5_analytical_organs",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec02_analytical_organs.tex#6": {
     "text_sha256": "89bd525bba6fe76e9afece8ddfe9d6aa14f8d9f28457b034787e7519fb5037d2",
     "status": "DECISION_RECORDED",
-    "implementation_status": "deferred",
-    "response_ru": "Авторское решение о допустимой подробности и ссылке на РЭ сохранено как открытое. Закрытые детали и характеристики терминалов самостоятельно не дописывались. До получения точной ссылки утверждение о конкретных современных изделиях не добавлялось.",
+    "implementation_status": "partial",
+    "response_ru": "Границу раскрытия подробностей и ссылку на руководство ООО «АПС» определит автор. Описание пока оставлено на вычитку.",
     "section_label": "sec:ch5_analytical_organs",
     "author_acceptance": "pending",
     "suppress_in_review": false,
@@ -1729,25 +1707,25 @@
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec02_analytical_organs.tex#7": {
     "text_sha256": "51596db2dad81cb9488b9496479cd35b30d2fde8d262b129c549e76bcecc4698",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "implemented",
     "response_ru": "В начале 5.3 добавлено объяснение отбора органов: сравниваются разные способы использования одинаковых измерений, выделения составляющих и работы с предысторией. Это связывает перечень с поиском причин различий.",
     "section_label": "sec:ch5_analytical_organs",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec02_analytical_organs.tex#8": {
     "text_sha256": "d2c780c495f6a90a959e4d1fb927799663697edaf628cdc7978a71ab103b17b5",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "partial",
     "response_ru": "В открытой реализации Sivokobylenko2PtPDRAlgorithm базовая настройка sample_interval_ms равна 1 мс. Фактический шаг после округления зависит от частоты регистрации. Привязку к настройкам именно сохранённого опыта ещё нужно подтвердить; основание считать 1 мс оптимумом не установлено.",
     "section_label": "sec:ch5_analytical_organs",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec02_analytical_organs.tex#9": {
     "text_sha256": "ba7f1d524a99507311c0237a74861e9081164db04b902ceed786f031ebad3e33",
@@ -1784,42 +1762,42 @@
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec02_analytical_organs.tex#12": {
     "text_sha256": "1c178514e51efb3925645fa073371afc201164dafcfd0ed3b42412a7dce38623",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "partial",
     "response_ru": "Связь этой ветви с базовыми условиями направления и применимости уже описана в начале 5.3. Точная отсылка из подраздела БАВР-072 к общей формуле ещё требует адресной проверки; пока не отмечаю этот пункт исполненным.",
     "section_label": "sec:ch5_analytical_organs",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec03_population_audit.tex#1": {
     "text_sha256": "ce32769e50d80f35cc321f4910dc1b6c31dd2303278923d79ca8435d2af0fdc3",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "implemented",
     "response_ru": "Перед описанием French/RTE добавлено, что его доля в обучении ограничена и что полный пригодный архив отличается от доли обучающих предъявлений. Указана неполная совместимость состава процессов с основной задачей БАВР.",
     "section_label": "sec:ch5_population_audit",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec03_population_audit.tex#2": {
     "text_sha256": "0c239238fc23bea932f0f0f68295ad073e2f4a266881805d94eba5fcf7f5e7fc",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "implemented",
     "response_ru": "Начало 5.4 теперь объясняет отбор осциллограмм по инженерному вопросу. Перед оценкой разброса простыми словами раскрыт повторный выбор целых записей/групп; название «бутстреп» дано после объяснения.",
     "section_label": "sec:ch5_population_audit",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec03_population_audit.tex#3": {
     "text_sha256": "6500d5b61048480186eaf1dff441ad67e72cafd8cfd5f1cbbcd76ef5ded29af4",
     "status": "DECISION_RECORDED",
-    "implementation_status": "partial",
-    "response_ru": "Добавлена связь методического описания с поиском малых токов, коммутаций и последующим просмотром дорожек. Отдельные результаты сохранены в 5.7; полное сокращение сухих связок и расположение всех иллюстраций ещё не завершены.",
+    "implementation_status": "deferred",
+    "response_ru": "Дальнейшее сокращение отложено до дополнительных рецензий по решению автора.",
     "section_label": "sec:ch5_population_audit",
     "author_acceptance": "pending",
     "suppress_in_review": false,
@@ -1828,25 +1806,25 @@
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec03_population_audit.tex#4": {
     "text_sha256": "519669c1414248fc8c9d1ea5453e3788da6e1f1c390952edfdaac166781bee48",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "implemented",
     "response_ru": "Перед перечнем признаков объяснены пик-фактор и его назначение для поиска выбросов; несимметрия и временные признаки связаны с отбором разных процессов для просмотра, а не с расширением перечня ради объёма.",
     "section_label": "sec:ch5_population_audit",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec04_expert_reference.tex#1": {
     "text_sha256": "bc3e28ba7aa53bfe96008968ddc32853e36abdadae8c4c61834e160192836b9d",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "implemented",
     "response_ru": "Термин наладочной прогрузки заменён описанием подачи испытательных токов/сигналов. Это испытательный режим, а не автоматически зарегистрированное сетевое повреждение.",
     "section_label": "sec:ch5_expert_reference",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec04_expert_reference.tex#2": {
     "text_sha256": "d971477b7bf0c03b6bf0a480d64419532f810b2bf518137e153bc8613bc17a11",
@@ -1862,8 +1840,8 @@
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec04_expert_reference.tex#3": {
     "text_sha256": "dca0c05d5c9a662b7790bec28bab39e97707a32e119ad33c7d5e400a8bd8d363",
     "status": "DECISION_RECORDED",
-    "implementation_status": "implemented",
-    "response_ru": "В 5.5 добавлено объяснение коэффициента каппа Коэна как совпадения с поправкой на ожидаемые совпадения. Подчёркнуто, что здесь сравниваются два просмотра одного специалиста, а не согласие разных экспертов.",
+    "implementation_status": "partial",
+    "response_ru": "Требуется уточнить, что ожидаемое совпадение рассчитывается из долей каждого состояния в двух просмотрах.",
     "section_label": "sec:ch5_expert_reference",
     "author_acceptance": "pending",
     "suppress_in_review": false,
@@ -1873,8 +1851,8 @@
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec04_expert_reference.tex#4": {
     "text_sha256": "d75fc868d3c96da98f7cb32935860f3551b9a2b3a10940c328decade1d3ad5fa",
     "status": "DECISION_RECORDED",
-    "implementation_status": "implemented",
-    "response_ru": "Фраза о третьем инженерном рассмотрении заменена числом записей с расхождениями двух просмотров. Прямо сказано, что третий просмотр в приведённом опыте не выполнялся; дальнейший разбор обозначен только как возможное продолжение.",
+    "implementation_status": "partial",
+    "response_ru": "Речь о возможном повторном разборе спорных записей после двух выполненных просмотров. Формулировку следует уточнить.",
     "section_label": "sec:ch5_expert_reference",
     "author_acceptance": "pending",
     "suppress_in_review": false,
@@ -1883,14 +1861,14 @@
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec04_expert_reference.tex#5": {
     "text_sha256": "ecae521040b35e85b3f70e56ba517460825f238b9a4362abdba9e91835cf2c8b",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "implemented",
     "response_ru": "В начале 5.1 добавлена последовательность назначения шагов: сравнение, поиск спорных записей, экспертный эталон, адаптация и временная проверка. В начале 5.8 отдельно объяснён порядок сравнения до и после экспертного обучения.",
     "section_label": "sec:ch5_expert_reference",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec04_expert_reference.tex#6": {
     "text_sha256": "fd42fe5441cf771b14f369978c5a32918813dca7d46410136704bf558ef8f1c7",
@@ -1904,72 +1882,69 @@
     "display": "ответ проверен 10.11; состояние исполнения ниже"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec05_engineering_verification.tex#1": {
+    "text_sha256": "09ac1da878fd2f3531eb1f0b1ac5ceed9a4569aa63863436650b28f5ad153fcb",
+    "status": "REVIEWED",
+    "decision": "D06-006: новое замечание оставлено для вычитки.",
+    "implementation_status": "deferred",
+    "response_ru": "Редакционное уточнение оставлено для следующей правки начала раздела.",
+    "section_label": "sec:ch5_engineering_verification"
+  },
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec05_engineering_verification.tex#2": {
     "text_sha256": "05ef1c5d90de7dc367e58c29c6c2c4bd8f939e46688830975cbc855af483ff16",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "implemented",
     "response_ru": "Начало 5.6 теперь говорит о поведении органа на записи: длительности ошибки, лишних переключениях и реакции на изменение режима. Это раскрывает смысл проверки без неопределённого слова «характеристика».",
     "section_label": "sec:ch5_engineering_verification",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec05_engineering_verification.tex#2": {
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec05_engineering_verification.tex#3": {
     "text_sha256": "666a0456a38172e3282d54b8bd195d35b82bc4b35ae51f5fedb60f62878866cf",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "partial",
     "response_ru": "Добавлен понятный пример различия коротких ошибочных ответов и длительной неверной блокировки при одинаковом общем проценте совпадений. Сплошное упрощение остальных определений подраздела ещё не завершено.",
     "section_label": "sec:ch5_engineering_verification",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec05_engineering_verification.tex#3": {
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec05_engineering_verification.tex#4": {
     "text_sha256": "e00dbda73a33e8ecb013654016780983f1d2080238263ef1a9112b8b2dc873b6",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "partial",
     "response_ru": "«Длительное неблагополучие» заменено продолжительной ошибкой с короткими правильными ответами. Необходимость объединить мелкие подразделы этой части ещё проверяется; одной заменой слов вопрос структуры не закрыт.",
     "section_label": "sec:ch5_engineering_verification",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec05_engineering_verification.tex#4": {
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec05_engineering_verification.tex#5": {
     "text_sha256": "8740b10fc11c3081437571731e8595d154fe08bde401b46eb2d058abfc8ccbc7",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "partial",
     "response_ru": "В 5.10 используется формулировка «программа испытательных режимов БАВР». Название организации и статус обязательности не добавлены без первичного документа. Точная ссылка на программу остаётся для включения.",
     "section_label": "sec:ch5_engineering_verification",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
-  },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec05_engineering_verification.tex#5": {
-    "text_sha256": "b9e15134b6f7be6b00c206f766f29fb95fed2fa6e44dc231c293ecb63515a0bc",
-    "status": "DECISION_RECORDED",
-    "implementation_status": "partial",
-    "response_ru": "Введение укрупнено, но несколько коротких подразделов 5.6 сохранены до проверки их различающихся определений. Для этой части замечание о дробности остаётся открытым, а не считается закрытым общей правкой введения.",
-    "section_label": "sec:ch5_engineering_verification",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec06_first_results.tex#1": {
     "text_sha256": "30a9d2bdff3c94433f8c6ecca9fcef95c883ba37268462e9ff8cfd7fb7939daa",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "implemented",
     "response_ru": "Неясное «в распределительном архиве» заменено точным названием Open_EE перед числом 59,15%. В начале 5.7 также объяснено назначение трёх групп результатов.",
     "section_label": "sec:ch5_first_results",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec06_first_results.tex#2": {
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec06_first_results.tex#3": {
     "text_sha256": "116cd606687fed66e3b2325c3b05aac98e97fec5352a07da52edc18e9724deb9",
     "status": "DECISION_RECORDED",
     "implementation_status": "partial",
@@ -1980,51 +1955,51 @@
     "decision": "D06-006, per-note audit 2026-11-10",
     "display": "ответ проверен 10.11; состояние исполнения ниже"
   },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec06_first_results.tex#3": {
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec06_first_results.tex#4": {
     "text_sha256": "149ddea03c2c2cc075531964dcbfc36e78529feece4c2e11852cbdbc2369ea65",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "partial",
     "response_ru": "Повторные оговорки о разных подмножествах пока сокращены не полностью. Определение сравнимых позиций вынесено в отдельное пояснение R5-04; оставшиеся повторяющие абзацы требуют удаления по месту.",
     "section_label": "sec:ch5_first_results",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec06_first_results.tex#4": {
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec06_first_results.tex#5": {
     "text_sha256": "4b80f7dfb1c9f0cbe65e7cd7f7ddaefcf376d9441ee794f51f06f3e703a3f991",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "implemented",
     "response_ru": "Перед результатами объяснено, что согласие нужно для поиска похожих и различающихся органов и отбора записей для разбора. Оно не используется как голосование за правильное физическое решение.",
     "section_label": "sec:ch5_first_results",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec06_first_results.tex#5": {
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec06_first_results.tex#6": {
     "text_sha256": "cd50a8a435ab9c4d7e75d13fccafd503e298fa68ed370373ad5a97acc36e4b27",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "implemented",
     "response_ru": "Перед графиком PCA объяснены новые оси наибольших различий, их назначение для поиска групп и проверки состава экспертной выборки. Разбор направления мощности этим графиком не подменяется.",
     "section_label": "sec:ch5_first_results",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec06_first_results.tex#6": {
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec06_first_results.tex#7": {
     "text_sha256": "6146e7be2f203d62865e6857f2d3812e7a4b7db7f07ba9fe0825b0680d4a8bdf",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "implemented",
     "response_ru": "Перед ROC-AUC указана целевая метка — источник записи. Отдельно описаны физические признаки и параметры регистрации. Смысл опыта — обнаружить различия архивов и возможную зависимость модели от них, после чего сравнивать источники раздельно.",
     "section_label": "sec:ch5_first_results",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec06_first_results.tex#7": {
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec06_first_results.tex#8": {
     "text_sha256": "4532478d01a5083445c3d5d7e27cce39eae0badd0f680ed00b9189e473a0d623",
     "status": "DECISION_RECORDED",
     "implementation_status": "partial",
@@ -2035,71 +2010,60 @@
     "decision": "D06-006, per-note audit 2026-11-10",
     "display": "ответ проверен 10.11; состояние исполнения ниже"
   },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec06_first_results.tex#8": {
-    "text_sha256": "5acb26f3f4b45c012c335250e6899f94f1ae3c2399b8ca4279f2de49d4eadded",
-    "status": "DECISION_RECORDED",
-    "implementation_status": "implemented",
-    "response_ru": "В 5.7 добавлено объяснение MCC: согласованность двух двоичных решений с учётом обоих направлений, смысл положительных, близких к нулю и отрицательных значений, назначение для поиска пар органов.",
-    "section_label": "sec:ch5_first_results",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
-  },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec07_expert_adaptation.tex#1": {
     "text_sha256": "23ea22ba1bddb39be04f44d738d2fda059e339e6ff7f10afd92f87268dfa1d3c",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "implemented",
     "response_ru": "Во вводном описании названа PhysicalKANTransformer и используется «модель архитектуры «Трансформер»». Неоднозначное прилагательное в научном изложении заменено; исходная цитата R5-05 сохраняет прежний текст.",
     "section_label": "sec:ch5_expert_adaptation",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec07_expert_adaptation.tex#2": {
     "text_sha256": "57d0935e67dc5ef31d0162e2038cb17c9a234374e1a28a05be239fa0677b0c75",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "partial",
     "response_ru": "Согласованные редакционные действия R5-05 внесены и ответ размещён рядом с рецензионным замечанием. Сверка всех деталей двухвыходного решения с историческим протоколом ещё не объявлена завершённой.",
     "section_label": "sec:ch5_expert_adaptation",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec07_expert_adaptation.tex#3": {
     "text_sha256": "88bca33caeb3889a369a7582121026826b9375557ec847ef4280357ccda02fd3",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "implemented",
     "response_ru": "«Пулы» в описании обучения заменены последовательно сменяемыми наборами записей. Указанные размеры и числа предъявлений сохранены.",
     "section_label": "sec:ch5_expert_adaptation",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec07_expert_adaptation.tex#4": {
     "text_sha256": "e2331bd862f5d1ac4a63f0b9302c7c26b7a912e5428720b578d723b0ec709be7",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "not_required",
     "response_ru": "Принято ограничение глубины проверки. Новые поиски всей цепочки запусков не выполнялись. В ответе R5-06 сохранены известные различия инициализации, но одинаковое начало всех серий не утверждается.",
     "section_label": "sec:ch5_expert_adaptation",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec07_expert_adaptation.tex#5": {
     "text_sha256": "1bc0af1d27bdaab091b52af825de5435ee436171f9da7c95b173c075a3e965d3",
-    "status": "DECISION_RECORDED",
+    "status": "AUTHOR_ACCEPTED",
     "implementation_status": "partial",
     "response_ru": "Перед протоколом добавлено объяснение, зачем сравниваются выбранные веса, экспертный этап и обычные режимы. Сокращение и возможное объединение отдельных численных подразделов остаются в работе.",
     "section_label": "sec:ch5_expert_adaptation",
-    "author_acceptance": "pending",
-    "suppress_in_review": false,
-    "decision": "D06-006, per-note audit 2026-11-10",
-    "display": "ответ проверен 10.11; состояние исполнения ниже"
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec07_expert_adaptation.tex#6": {
     "text_sha256": "c4b05e4cf526aadd5cf4e939442c9ea90cb6338a65fd328e37dd4afd17212a7f",
@@ -2133,5 +2097,73 @@
     "suppress_in_review": false,
     "decision": "D06-006, per-note audit 2026-11-10",
     "display": "ответ проверен 10.11; состояние исполнения ниже"
+  },
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/chapter.tex#8": {
+    "text_sha256": "62f7677a7c87b52042a9f0047fb67876362a968f0cbe5379975f7ed165f3c97c",
+    "status": "AUTHOR_ACCEPTED",
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории",
+    "implementation_status": "not_required",
+    "author_acceptance": "accepted",
+    "response_ru": "Ок. Принято авторское закрытие текущей пометки. Незавершённые физические иллюстрации и результаты помечены в начале соответствующих фрагментов как находящиеся в работе.",
+    "section_label": "sec:ch05_intro",
+    "suppress_in_review": true
+  },
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec01_direction_and_validity.tex#5": {
+    "text_sha256": "85b117182b6e7fc19766c68e713c820e5c121d4ca66a1fa7cfceea593c82b646",
+    "status": "AUTHOR_ACCEPTED",
+    "implementation_status": "implemented",
+    "response_ru": "Оба выхода введены в первых абзацах 5.1, до употребления неприменимости в подробном описании. В 5.2 сохранено их предметное определение.",
+    "section_label": "sec:ch5_direction_validity",
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
+  },
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec05_engineering_verification.tex#6": {
+    "text_sha256": "b9e15134b6f7be6b00c206f766f29fb95fed2fa6e44dc231c293ecb63515a0bc",
+    "status": "AUTHOR_ACCEPTED",
+    "implementation_status": "partial",
+    "response_ru": "Введение укрупнено, но несколько коротких подразделов 5.6 сохранены до проверки их различающихся определений. Для этой части замечание о дробности остаётся открытым, а не считается закрытым общей правкой введения.",
+    "section_label": "sec:ch5_engineering_verification",
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
+  },
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec06_first_results.tex#9": {
+    "text_sha256": "5acb26f3f4b45c012c335250e6899f94f1ae3c2399b8ca4279f2de49d4eadded",
+    "status": "AUTHOR_ACCEPTED",
+    "implementation_status": "implemented",
+    "response_ru": "В 5.7 добавлено объяснение MCC: согласованность двух двоичных решений с учётом обоих направлений, смысл положительных, близких к нулю и отрицательных значений, назначение для поиска пар органов.",
+    "section_label": "sec:ch5_first_results",
+    "author_acceptance": "accepted",
+    "suppress_in_review": true,
+    "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
+    "display": "закрыто автором; сохранено в истории"
+  },
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec10_adaptation_and_conclusions.tex#2": {
+    "text_sha256": "21255324925629594c343dee9f1bd722dc10a70d8bc1e1ef5faec12d87064d62",
+    "status": "REVIEWED",
+    "decision": "D06-006: новое замечание оставлено для вычитки.",
+    "implementation_status": "deferred",
+    "response_ru": "Это выводы по главе 5. Состав и формулировки оставлены на отдельную вычитку.",
+    "section_label": "sec:ch05_conclusions"
+  },
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec10_adaptation_and_conclusions.tex#3": {
+    "text_sha256": "61dffa1bd6839bb7fef7ec7661612f48256034bc16777b1bde45e7230f58fbfd",
+    "status": "REVIEWED",
+    "decision": "D06-006: новое замечание оставлено для вычитки.",
+    "implementation_status": "deferred",
+    "response_ru": "При правке выводов нужно первым сформулировать общий результат для органов РЗА, затем отдельно показать проверку на РНМ. Для более узкой задачи, например детекции ОЗЗ, состав осциллограмм задаётся самой задачей.",
+    "section_label": "sec:ch05_conclusions"
+  },
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec10_adaptation_and_conclusions.tex#4": {
+    "text_sha256": "9f039a06b4bd3b0034bfbdfe74803f2449a79c419fddcb95bcad93901606f385",
+    "status": "REVIEWED",
+    "decision": "D06-006: новое замечание оставлено для вычитки.",
+    "implementation_status": "deferred",
+    "response_ru": "Пометка сохранена для следующей авторской вычитки выводов.",
+    "section_label": "sec:ch05_conclusions"
   }
 }

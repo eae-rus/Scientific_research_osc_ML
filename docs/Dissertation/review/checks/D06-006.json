@@ -121,5 +121,36 @@
       208
     ],
     "stable_references": true
+  },
+  "author_round_2026_11_11": {
+    "path": "docs/Dissertation/build/reading/latex/dissertation_comments.pdf",
+    "sha256": "f407ed0642feba9652e5343c6ecd1551c227322611968c2dd9ee3738057e45f2",
+    "pages": 280,
+    "accepted_author_threads": 38,
+    "reconfirmed": [
+      "AA071"
+    ],
+    "accepted_reviewer_threads": [
+      "R5-01",
+      "R5-02",
+      "R5-04",
+      "R5-05",
+      "R5-09",
+      "R5-11",
+      "R5-13"
+    ],
+    "new_visible": {
+      "AA188": 226,
+      "AA189": 261,
+      "AA190": 261,
+      "AA191": 262
+    },
+    "visual_pages": [
+      215,
+      224,
+      226,
+      261
+    ],
+    "aux_toc_stable": true
   }
 }
