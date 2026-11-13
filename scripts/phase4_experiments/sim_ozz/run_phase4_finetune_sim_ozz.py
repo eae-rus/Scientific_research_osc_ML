@@ -1016,20 +1016,16 @@ def main() -> None:
 
 def run_manual() -> None:
     # Сначала выбираем семейство: настройки разных веток не смешиваются.
-    MODEL_FAMILY = "hierarchical_v2"  # "hierarchical_v2" (с нуля) или "legacy" (Phase 4)
+    MODEL_FAMILY = "hierarchical_v2"
 
     if MODEL_FAMILY == "hierarchical_v2":
-        # Новый опыт с нуля. После остановки этого опыта поставить RESUME=True.
-        OUTPUT_DIR = PROJECT_ROOT / "experiments/phase5/hierarchical_v2_ozz"
-        RESUME = True  # Продолжить сохранённое обучение; False — новый опыт в новом каталоге.
-        BALANCED_EVENTS = True   # RTDS-окна с событием + равный вклад окон + веса редких меток.
-        BALANCE_SAMPLES = 400     # Обучающие окна для оценки частот; веса сохраняются в checkpoint.
-        POSITIVE_WEIGHT_CAP = 100.0
-        FOCAL_GAMMA = 1.0         # Меньше вклад уверенно верных ответов; 0 = только взвешенная BCE.
-        BOUNDARY_WEIGHT = 0.5    # Вес двух интервалов по сторонам перехода; метки сохраняются.
-        BACKGROUND_REPEATS = 2    # Два реальных фоновых окна на четыре RTDS: доля фона 1/3.
+        INITIAL_CHECKPOINT = PROJECT_ROOT / "experiments/phase5/hierarchical_v2_ozz/latest_checkpoint.pt"
+        OUTPUT_DIR = PROJECT_ROOT / "experiments/phase5/hierarchical_v2_ozz_presence"
+        RESUME = (OUTPUT_DIR / "latest_checkpoint.pt").is_file()
+        BALANCED_EVENTS = True
+        BACKGROUND_REPEATS = 2
         SMOKE = False             # True: отдельный короткий запуск перед основным.
-        EPOCHS = 300
+        EPOCHS = 100
         CURRENT_DROPOUT_ALL = 0.20
         CURRENT_DROPOUT_PHASE = 0.25
         CURRENT_ZERO_PROBABILITY = 0.50
@@ -1040,17 +1036,17 @@ def run_manual() -> None:
         LR_INITIAL_RATIO = 0.05
         LR_MIN_RATIO = 0.05
         SAMPLES_PER_EPOCH = 2_000  # Четыре группы RTDS + усиленный реальный фон.
-        VALIDATION_SAMPLES = 200   # Фиксированные окна, поровну те же пять групп.
+        VALIDATION_SAMPLES = 200
         NO_CHECKPOINT_MAX_TOKENS = 800  # Короткие окна без повторного расчёта backward; 0 отключает ускорение.
         TARGET_TOKENS = 640        # Микробатч 1; накопление по числу токенов.
         MAX_SECONDS = 30.0
-        BACKBONE_LR = 2e-4         # Обучение основы с нуля.
-        HEAD_LR = 5e-4             # Новая классификационная голова.
+        BACKBONE_LR = 2e-5
+        HEAD_LR = 3e-4
         USE_REAL_NO_OZZ = True
         # Реальные: весь НЕРАЗМЕЧЕННЫЙ Open_EE, кроме имён с ID экспертного набора.
         # Остальные записи считаются без ОЗЗ независимо от ML_2_*.
         EXPERT_REPORT = PROJECT_ROOT / "data/real_OZZ/overvoltage_report_T1_with_com_v1.7.csv"
-        LABEL_ERROR_PROBABILITY = 0.05  # Независимые выходы BCE: 1 -> .95, 0 -> .05.
+        LABEL_ERROR_PROBABILITY = 0.05
         DROP_PATH_RATE = 0.10          # Пропуск residual-блоков; максимум в конце каждой стадии.
         NUM_WORKERS = 4
         SAVE_EVERY_STEPS = 500
@@ -1060,7 +1056,7 @@ def run_manual() -> None:
         DATASET_REGISTRY = PROJECT_ROOT / "data/phase5/datasets_registry.json"
 
         from scripts.phase5_experiments.run_phase5_hierarchical_ozz import run
-        config = dict(output=str(OUTPUT_DIR), resume=RESUME,
+        config = dict(output=str(OUTPUT_DIR), resume=RESUME, presence_type=True, initialize_ozz=str(INITIAL_CHECKPOINT),
                       epochs=EPOCHS, samples_per_epoch=SAMPLES_PER_EPOCH,
                       validation_samples=VALIDATION_SAMPLES, target_tokens=TARGET_TOKENS,
                       max_seconds=MAX_SECONDS, backbone_lr=BACKBONE_LR, head_lr=HEAD_LR,
@@ -1069,9 +1065,7 @@ def run_manual() -> None:
                       seed=SEED, rtds_dir=str(RTDS_DIR), registry=str(DATASET_REGISTRY),
                       expert_report=str(EXPERT_REPORT), label_error_probability=LABEL_ERROR_PROBABILITY,
                       drop_path_rate=DROP_PATH_RATE, balanced_events=BALANCED_EVENTS,
-                      balance_samples=BALANCE_SAMPLES, positive_weight_cap=POSITIVE_WEIGHT_CAP,
-                      focal_gamma=FOCAL_GAMMA,
-                      background_repeats=BACKGROUND_REPEATS, boundary_weight=BOUNDARY_WEIGHT,
+                      background_repeats=BACKGROUND_REPEATS,
                       lr_warmup_epochs=LR_WARMUP_EPOCHS, lr_total_epochs=float(EPOCHS),
                       lr_initial_ratio=LR_INITIAL_RATIO, lr_min_ratio=LR_MIN_RATIO,
                       no_checkpoint_max_tokens=NO_CHECKPOINT_MAX_TOKENS,
@@ -1081,9 +1075,9 @@ def run_manual() -> None:
                       voltage_dropout_phase=VOLTAGE_DROPOUT_PHASE,
                       background_dropout_multiplier=BACKGROUND_DROPOUT_MULTIPLIER)
         if SMOKE:
-            config.update(output=str(PROJECT_ROOT / "experiments/phase5/hierarchical_v2_ozz_smoke"),
+            config.update(output=str(PROJECT_ROOT / "experiments/phase5/hierarchical_v2_ozz_presence_smoke"),
                           resume=False,
-                          epochs=1, samples_per_epoch=40, validation_samples=10, validation_current_samples=5, balance_samples=40,
+                          epochs=1, samples_per_epoch=40, validation_samples=10, validation_current_samples=5,
                           target_tokens=160, max_seconds=1.0, lr_total_epochs=1., lr_warmup_epochs=.1)
         run(config)
         return

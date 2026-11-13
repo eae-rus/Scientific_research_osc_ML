@@ -328,12 +328,22 @@ def collect_statistics(
         print(f"Порог: fixed = {threshold_config['default_threshold']:.3f}")
 
     if output_dir is None and config.get('model_family') == 'hierarchical':
-        output_dir = str(PROJECT_ROOT / (('reports/phase5/hierarchical_v2_ozz_real_statistics' if config.get('feature_mode')=='hierarchical_v2' else 'reports/phase5/real_ozz_continuous_statistics')
+        output_dir = str(PROJECT_ROOT / ((f'reports/phase5/{Path(config["checkpoint"]).parent.name}_real_statistics' if config.get('feature_mode')=='hierarchical_v2' else 'reports/phase5/real_ozz_continuous_statistics')
             if config.get('feature_mode') in ('continuous_record','hierarchical_v2') else 'reports/phase5/real_ozz_statistics'))
 
     # Отчёт
     report = load_real_ozz_report()
     confirmed_df, false_df = split_by_verification(report)
+    from osc_tools.ml.phase5_ozz_inference import labeled_training_ids
+    training_ids = labeled_training_ids(config)
+    excluded_training_files = []
+    if training_ids:
+        def keep_unseen(frame):
+            names = frame['filename'].to_list()
+            keep = [not any(key in name.casefold() for key in training_ids) for name in names]
+            excluded_training_files.extend(name for name, retain in zip(names, keep) if not retain)
+            return frame.filter(pl.Series(keep, dtype=pl.Boolean))
+        confirmed_df, false_df = keep_unseen(confirmed_df), keep_unseen(false_df)
     confirmed_files_set = set(confirmed_df['filename'].to_list())
     false_files_set = set(false_df['filename'].to_list())
 
@@ -410,6 +420,7 @@ def collect_statistics(
     # ── Агрегация ──
     agg = aggregate_statistics(per_file_stats, confirmed_files_set, false_files_set)
     agg['thresholding'] = threshold_metadata(threshold_config)
+    agg['excluded_training_files'] = sorted(set(excluded_training_files))
 
     # ── Сохранение ──
     if output_dir is None:
@@ -783,7 +794,7 @@ if __name__ == '__main__':
         # РУЧНОЙ РЕЖИМ — отредактируйте константы ниже
         # =====================================================
         MODEL_FAMILY = 'hierarchical_v2'  # 'hierarchical_v2' (Phase 5) или 'legacy'
-        CHECKPOINT = ('experiments/phase5/hierarchical_v2_ozz/latest_checkpoint.pt'
+        CHECKPOINT = ('experiments/phase5/hierarchical_v2_ozz_presence/latest_checkpoint.pt'
                       if MODEL_FAMILY == 'hierarchical_v2' else
                       'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt')
         # Пример: CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_.../best_model.pt'

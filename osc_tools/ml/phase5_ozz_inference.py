@@ -30,7 +30,7 @@ def load_hierarchical(state, checkpoint, device):
         config['recipe'] = 'hierarchical_ozz_v2'
     if config['architecture']['architecture_id']=='phasor_hierarchical_v2':
         from osc_tools.ml.models.phasor_hierarchical_v2 import HierarchicalV2Config,PhasorHierarchicalKANV2
-        model=OZZClassifier(PhasorHierarchicalKANV2(HierarchicalV2Config(**config['architecture'])))
+        model=OZZClassifier(PhasorHierarchicalKANV2(HierarchicalV2Config(**config['architecture'])), config.get('presence_type', False))
     else:
         model = OZZClassifier(OZZRegularizedBackbone(HierarchicalConfig(**config['architecture'])))
     model.load_state_dict(state['model'], strict=True)
@@ -50,6 +50,15 @@ def load_hierarchical(state, checkpoint, device):
                   data_dir=config['rtds_dir'], num_classes=4, inference_sha256=digest.hexdigest(),
                   checkpoint=str(Path(checkpoint).resolve()), checkpoint_step=state['step'])
     return model, config
+
+
+def labeled_training_ids(config):
+    if not config.get('presence_type'):
+        return ()
+    manifest = json.loads((Path(config['checkpoint']).parent/'split.json').read_text(encoding='utf-8'))
+    if hashlib.sha256(json.dumps(manifest, sort_keys=True).encode()).hexdigest() != config['split_sha256']:
+        raise ValueError('OZZ split does not match checkpoint')
+    return tuple(manifest['real_labeled_ozz']['train_originals'])
 
 
 def prepare_chunks(raw, spp, max_blocks, basis="phase", provenance=None, feature_mode="local_blocks"):
@@ -107,14 +116,17 @@ def predict_record(model, raw, config, device, fs, f_network=50., basis="phase",
     if cached is not None:
         return cached
     amp = device.type == "cuda" and bool(config.get("amp_bf16", False))
-    probabilities, starts, ends, valid = [], [], [], []
+    probabilities, starts, ends, valid, joints = [], [], [], [], []
     model.eval()
     for batch, left, right, usable in chunks:
         data = {k: (v.unsqueeze(0).pin_memory().to(device, non_blocking=True)
                     if device.type == "cuda" else v.unsqueeze(0)) for k, v in batch.items()}
         with torch.autocast(device.type, dtype=torch.bfloat16, enabled=amp):
             logits = model(data)
-        probability = logits[0].float().sigmoid().cpu().numpy()
+        probability = model.decision_scores(logits[0]).cpu().numpy()
+        if model.presence is not None:
+            values = logits[0].float()
+            joints.append((values[..., :1].sigmoid()*values[..., 1:].softmax(-1)).cpu().numpy())
         if not np.isfinite(probability[usable]).all():
             raise FloatingPointError('Non-finite OZZ probability on a usable interval; record was not cached')
         probabilities.append(probability)
@@ -123,6 +135,9 @@ def predict_record(model, raw, config, device, fs, f_network=50., basis="phase",
                   starts=np.concatenate(starts) if starts else np.empty(0, np.int64),
                   ends=np.concatenate(ends) if ends else np.empty(0, np.int64),
                   valid=np.concatenate(valid) if valid else np.empty(0, bool))
+    if joints:
+        result['joint_type_probabilities'] = np.concatenate(joints)
+        result['presence_probability'] = result['probabilities'].sum(-1)
     cache.parent.mkdir(parents=True, exist_ok=True)
     temporary = cache.with_suffix(f'.{os.getpid()}.tmp')
     with temporary.open('wb') as stream:

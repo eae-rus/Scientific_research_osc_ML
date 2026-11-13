@@ -89,7 +89,7 @@ def threshold_report(records, thresholds=(.2, .3, .4, .5, .6, .7, .8, .9)):
             background_files=background_files,
             background_population_weighted_file_fpr=weighted_fp/weighted_files if weighted_files else None,
             background_population_weighted_interval_fpr=weighted_interval_fp/weighted_intervals if weighted_intervals else None)
-    p = np.concatenate([r['p'][r['v']] for r in records])
+    p = np.concatenate([r.get('ranking_p', r['p'])[r['v']] for r in records])
     y = np.concatenate([r['y'][r['v']] for r in records])
     # AP only depends on ordering; probabilities are legitimate ranking scores.
     ap = average_precision_metrics(p, y)
@@ -207,7 +207,7 @@ def evaluate_records(model, config, device, checkpoint, per_class=240, backgroun
             starts = pred['starts'][:count]
             targets[:count] = np.maximum.reduceat(labels, starts, axis=0)
             original_targets[:count] = np.maximum.reduceat(original_labels, starts, axis=0)
-        results.append(dict(p=pred['probabilities'], y=targets, y_original=original_targets, v=pred['valid'], group=record['group'], weight=record.get('population_weight', 1.)))
+        results.append(dict(p=pred['probabilities'], ranking_p=pred.get('joint_type_probabilities', pred['probabilities']), y=targets, y_original=original_targets, v=pred['valid'], group=record['group'], weight=record.get('population_weight', 1.)))
         if plots and record['kind'] == 'rtds':
             from scripts.phase4_experiments.sim_ozz.plot_sim_ozz_marking import plot_sim_ozz_marking
             raw_display = load_raw_csv(record['path'], normalize=False)['raw']
@@ -219,6 +219,34 @@ def evaluate_records(model, config, device, checkpoint, per_class=240, backgroun
     simulated = [r for r in results if r['group'] < 4]
     if simulated:
         report['simulated_only'] = threshold_report(simulated)
+    if config.get('presence_type'):
+        from osc_tools.ml.phase5_hierarchical_ozz import prepare_labeled_ozz
+        from osc_tools.ml.phase5_ozz_balance import average_precision_metrics
+        from osc_tools.ml.phase5_ozz_features import expand_labels
+        labeled, _, audit = prepare_labeled_ozz(ROOT, config)
+        if audit != manifest['real_labeled_ozz']:
+            raise ValueError('Labeled OZZ split does not match training')
+        real = []
+        for record in labeled['validation']:
+            original = record['original_labels']
+            prediction = predict_record(model, record['raw'], config, device, 1600., basis=record['basis'])
+            y = np.maximum.reduceat(expand_labels(original, 32), prediction['starts'])
+            real.append((record['name'].split('_Bus ')[0], prediction['presence_probability'], y, prediction['valid']))
+        p = np.concatenate([p[v] for _, p, _, v in real])
+        y = np.concatenate([y[v] for _, _, y, v in real])
+        thresholds = {}
+        for threshold in (.2, .3, .4, .5, .6, .7, .8, .9):
+            intervals = p >= threshold
+            events = sum((event_counts(scores >= threshold, target, valid)
+                          for _, scores, target, valid in real), np.zeros(5, np.int64))
+            hits = {name for name, scores, _, valid in real if (scores[valid] >= threshold).any()}
+            thresholds[str(threshold)] = dict(
+                interval_recall=float(intervals[y].mean()) if y.any() else None,
+                interval_fpr=float(intervals[~y].mean()) if (~y).any() else None,
+                event_hits=int(events[0]), event_false_positives=int(events[1]), event_misses=int(events[2]),
+                originals_detected=len(hits))
+        report['real_labeled_presence'] = dict(in_sample=True, originals=audit['usable_originals'],
+            fragments=len(real), thresholds=thresholds, **average_precision_metrics(p[:, None], y[:, None]))
     report.update(checkpoint=config['checkpoint'], checkpoint_step=config['checkpoint_step'],
                   inference_sha256=config['inference_sha256'], records=selected,
                   model_contract=config, selection_seed=42,
@@ -234,7 +262,7 @@ def evaluate_records(model, config, device, checkpoint, per_class=240, backgroun
                   hard_background_records=[dict(record=record, max_probability=float(result['p'][result['v']].max()))
                       for record, result in zip(selected, results) if record['group'] == 4 and result['v'].any()
                       and result['p'][result['v']].max() >= .2])
-    if config.get('recipe') == 'hierarchical_ozz_v2' and not plots:
+    if config.get('recipe') == 'hierarchical_ozz_v2' and not config.get('presence_type') and not plots:
         from osc_tools.ml.phase5_hierarchical_ozz import OZZDataset
         from scripts.phase5_experiments.run_phase5_hierarchical_ozz import evaluate
         from scripts.phase5_experiments.progress import TrainingProgress
@@ -247,7 +275,7 @@ def evaluate_records(model, config, device, checkpoint, per_class=240, backgroun
     (output/'evaluation.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
     plot_threshold_summary(report, output/'threshold_summary.png')
     np.savez_compressed(output/'predictions.npz', **{f'{key}{i}': r[key]
-        for i, r in enumerate(results) for key in ('p', 'y', 'y_original', 'v', 'group', 'weight')})
+        for i, r in enumerate(results) for key in ('p', 'ranking_p', 'y', 'y_original', 'v', 'group', 'weight')})
     print(json.dumps({k: v for k, v in report.items() if k not in ('records', 'hard_background_records', 'simulated_only', 'original_labels')}, ensure_ascii=False, indent=2))
     return report
 

@@ -29,18 +29,30 @@ class DataLoadingFailure(RuntimeError):
 
 class OZZClassifier(nn.Module):
     """Four independent sigmoid logits; generation 2 also exposes a supervised local head."""
-    def __init__(self, backbone):
+    def __init__(self, backbone, presence_type=False):
         super().__init__()
         self.backbone = backbone
+        self.presence = nn.Linear(backbone.cfg.width, 1) if presence_type else None
         self.classifier = nn.Linear(backbone.cfg.width, 4)
         for name in ('head','local_head'):
             if hasattr(backbone,name): getattr(backbone,name).requires_grad_(False)
 
+    def classify(self, features):
+        types = self.classifier(features)
+        return types if self.presence is None else torch.cat((self.presence(features), types), dim=-1)
+
+    def decision_scores(self, logits):
+        logits = logits.float()
+        if self.presence is None:
+            return logits.sigmoid()
+        winner = logits[..., 1:].argmax(-1, keepdim=True)
+        return torch.zeros_like(logits[..., 1:]).scatter_(-1, winner, logits[..., :1].sigmoid())
+
     def forward(self, batch, return_aux=False, use_global=True):
         if self.backbone.cfg.architecture_id == 'phasor_hierarchical_v2':
             result=self.backbone(batch['z'],batch['state'],batch['times'],batch['valid'],use_global=use_global)
-            logits=self.classifier(result['token_features'])
-            return dict(logits=logits,local_logits=self.classifier(result['local_features'])) if return_aux else logits
+            logits=self.classify(result['token_features'])
+            return dict(logits=logits,local_logits=self.classify(result['local_features'])) if return_aux else logits
         features = []
         handle = self.backbone.head.register_forward_pre_hook(lambda module, args: features.append(args[0]))
         try:
@@ -83,6 +95,21 @@ def metrics_from_counts(tp, fp, fn, tn):
             'specificity_per_class': (tn/(tn+fp).clamp_min(1)).tolist()}
 
 
+def presence_type_loss(logits, target, known_type, smoothing=0.):
+    logits = logits.float()
+    present = target.gt(.5).any(-1)
+    detection = nn.functional.binary_cross_entropy_with_logits(
+        logits[:, 0], smooth_binary_targets(present.float(), smoothing), reduction='none')
+    positive = (detection*present).sum()/present.sum().clamp_min(1)
+    negative = (detection*~present).sum()/(~present).sum().clamp_min(1)
+    detection = (positive+negative)/(present.any().int()+(~present).any().int()).clamp_min(1)
+    # When expanded class labels overlap, only presence is unambiguous.
+    typed = known_type & (target.gt(.5).sum(-1) == 1)
+    type_loss = nn.functional.cross_entropy(
+        logits[:, 1:], target.argmax(-1), reduction='none', label_smoothing=smoothing)
+    return detection+(type_loss*typed).sum()/typed.sum().clamp_min(1)
+
+
 def evaluate(model, dataset, device, workers, amp, progress):
     model.eval()
     counts = torch.zeros(4, 4, device=device)
@@ -91,6 +118,7 @@ def evaluate(model, dataset, device, workers, amp, progress):
     real_fp, real_count = 0, 0
     real_window_fp, real_windows = 0, 0
     all_logits, all_targets = [], []
+    presence_scores, presence_labels, real_presence = [], [], []
     progress.begin('OZZ validation', len(dataset))
     with torch.no_grad():
         for i, batch in enumerate(guarded_batches(dataset, workers, 0)):
@@ -101,11 +129,25 @@ def evaluate(model, dataset, device, workers, amp, progress):
                 logits=predictions['logits']
                 local=predictions['local_logits'][mask].float()
             logits, target = logits[mask].float(), batch['target'][mask]
-            total += nn.functional.binary_cross_entropy_with_logits(logits, target, reduction='sum').item()
-            count += target.numel()
-            all_logits.append(logits.cpu().numpy()); all_targets.append(target.cpu().numpy())
-            pred, truth = logits >= 0, target > .5
-            lp=local>=0
+            group = batch['source_group'].item()
+            if model.presence is not None:
+                total += presence_type_loss(logits, target, group < 4).item()
+                count += 1
+                presence_scores.append(logits[:, 0].cpu().numpy())
+                presence_labels.append(target.gt(.5).any(-1).cpu().numpy())
+                if group == 5:
+                    real_presence.append((presence_scores[-1], presence_labels[-1]))
+                logits, local = model.decision_scores(logits), model.decision_scores(local)
+                pred, lp = logits >= .5, local >= .5
+            else:
+                total += nn.functional.binary_cross_entropy_with_logits(logits, target, reduction='sum').item()
+                count += target.numel()
+                pred, lp = logits >= 0, local >= 0
+            truth = target > .5
+            if group != 5:
+                all_logits.append(logits.cpu().numpy()); all_targets.append(target.cpu().numpy())
+            else:
+                pred, lp, truth = pred[:0], lp[:0], truth[:0]
             local_counts+=torch.stack(((lp&truth).sum(0),(lp&~truth).sum(0),(~lp&truth).sum(0),(~lp&~truth).sum(0)))
             if batch['source_group'].item() == 4:
                 real_fp += pred.any(-1).sum().item()
@@ -118,7 +160,19 @@ def evaluate(model, dataset, device, workers, amp, progress):
             progress.update(i+1, {'loss': total/max(count, 1)})
     progress.update(len(dataset), force=True)
     local_metrics=metrics_from_counts(*local_counts.cpu())
-    return {'loss': total/max(count, 1), 'local_macro_f1':local_metrics['macro_f1'],
+    presence_metrics = {}
+    if presence_scores:
+        scores, labels = np.concatenate(presence_scores), np.concatenate(presence_labels)
+        predicted = scores >= 0
+        presence_metrics = dict(presence_recall=float(predicted[labels].mean()) if labels.any() else None,
+                                presence_fpr=float(predicted[~labels].mean()) if (~labels).any() else None,
+                                **{'presence_'+k: v for k,v in average_precision_metrics(scores[:, None], labels[:, None]).items()})
+    if real_presence:
+        real_scores = np.concatenate([p for p, _ in real_presence])
+        real_labels = np.concatenate([y for _, y in real_presence])
+        presence_metrics['real_labeled_presence_recall'] = float((real_scores[real_labels] >= 0).mean()) if real_labels.any() else None
+        presence_metrics['real_labeled_presence_fpr'] = float((real_scores[~real_labels] >= 0).mean()) if (~real_labels).any() else None
+    return {**presence_metrics, 'loss': total/max(count, 1), 'local_macro_f1':local_metrics['macro_f1'],
             'local_f1_per_class':local_metrics['f1_per_class'], **metrics_from_counts(*counts.cpu()),
             **average_precision_metrics(np.concatenate(all_logits), np.concatenate(all_targets)),
             'real_no_ozz_false_positive_rate': real_fp/real_count if real_count else None,
@@ -134,7 +188,7 @@ def export_curves(output):
     fig = Figure(figsize=(15, 4)); FigureCanvasAgg(fig)
     ax, bx, cx = fig.subplots(1, 3)
     x = [r['epoch']+1 for r in rows]
-    ax.plot(x, [r['loss'] for r in rows]); ax.set(xlabel='Epoch', ylabel='Validation BCE')
+    ax.plot(x, [r['loss'] for r in rows]); ax.set(xlabel='Epoch', ylabel='Validation loss')
     for i, name in enumerate(('Stable', 'Petersen', 'PetersSlepian', 'Beliakov')):
         bx.plot(x, [r['f1_per_class'][i] for r in rows], label=name)
     bx.legend(); bx.set(xlabel='Epoch', ylabel='Validation F1', ylim=(0, 1))
@@ -226,8 +280,20 @@ def run(config):
     amp = device.type == 'cuda' and torch.cuda.is_bf16_supported()
     state = torch.load(latest,map_location='cpu',weights_only=False) if resume else {}
     architecture = config.pop('architecture', asdict(HierarchicalV2Config(drop_path_rate=config['drop_path_rate'])))
+    initial = config.get('initialize_ozz')
+    transfer = torch.load(initial, map_location='cpu', weights_only=False) if initial and not resume else None
+    if transfer is not None:
+        architecture = transfer['contract']['architecture']
+    elif resume:
+        architecture = state['contract']['architecture']
     backbone = PhasorHierarchicalKANV2(HierarchicalV2Config(**architecture))
-    model = OZZClassifier(backbone).to(device)
+    model = OZZClassifier(backbone, config.get('presence_type', False))
+    if transfer is not None:
+        expected_missing = {'presence.weight', 'presence.bias'} if model.presence is not None else set()
+        missing, unexpected = model.load_state_dict(transfer['model'], strict=False)
+        if set(missing) != expected_missing or unexpected:
+            raise ValueError(f'Incompatible OZZ checkpoint: {missing=}, {unexpected=}')
+    model.to(device)
     manifest_path = ROOT/'data/phase5/research_strict_splits.json'
     records, manifest = prepare_records(ROOT, config, json.loads(manifest_path.read_text(encoding='utf-8')))
     contract = {k: v for k, v in config.items() if k not in ('resume', 'epochs', 'workers', 'save_every', 'console_interval', 'ssl_checkpoint')}
@@ -245,6 +311,9 @@ def run(config):
     (output/'split.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
     (output/'config.json').write_text(json.dumps(contract, ensure_ascii=False, indent=2), encoding='utf-8')
     provenance = state.get('initialization',dict(kind='random',seed=config['seed']))
+    if transfer is not None:
+        provenance = dict(kind='ozz_transfer', checkpoint=str(initial), step=transfer['step'])
+        del transfer
     def dataset(items,samples,seed,train,current_evaluation=None):
         return OZZDataset(items,samples,seed,config['max_seconds'],train,
             event_windows=config['balanced_events'],background_repeats=config['background_repeats'],
@@ -256,7 +325,7 @@ def run(config):
     train=dataset(records['train'],config['samples_per_epoch'],config['seed'],True)
     val=dataset(records['validation'],config['validation_samples'],config['seed']+100000,False)
     opt = torch.optim.AdamW([{'params': [p for p in backbone.parameters() if p.requires_grad], 'lr': config['backbone_lr']},
-                            {'params': model.classifier.parameters(), 'lr': config['head_lr']}], weight_decay=1e-4)
+                            {'params': [p for name, p in model.named_parameters() if not name.startswith('backbone.')], 'lr': config['head_lr']}], weight_decay=1e-4)
     epoch, cursor, step, best = 0, 0, 0, float('inf')
     if resume:
         model.load_state_dict(state['model']); opt.load_state_dict(state['optimizer'])
@@ -264,7 +333,7 @@ def run(config):
         restore_rng(state['rng'])
     best_f1 = state.get('best_f1', -1.) if resume else -1.
     balance = state.get('balance') if resume else None
-    if config['balanced_events'] and balance is None:
+    if config['balanced_events'] and balance is None and model.presence is None:
         print('Оценка весов по обучающим окнам (без validation)...', flush=True)
         reference = dataset(records['train'],config['samples_per_epoch'],config['seed'],True)
         balance = estimate_balance(reference, config['balance_samples'], config['positive_weight_cap'])
@@ -287,8 +356,7 @@ def run(config):
     def log(row):
         with (output/'training_log.jsonl').open('a', encoding='utf-8') as stream:
             stream.write(json.dumps(row)+'\n')
-    progress.message(f'OZZ Phase 5 | {device} | random initialization | {output}\n'
-                     '4 типа ОЗЗ; все четыре выхода 0 = не ОЗЗ. Ctrl+C или STOP: сохранить и остановиться.')
+    progress.message(f"OZZ Phase 5 | {device} | {provenance['kind']} | {output}")
     safe_cursor, safe_rng = cursor, rng_state()
     optimizer_in_progress = False
     reported = set()
@@ -309,10 +377,9 @@ def run(config):
                 if note and (name, note) not in reported:
                     reported.add((name, note))
                     log(dict(kind='data_notice', epoch=epoch, cursor=cursor, record=name, reason=note))
-                    progress.message(f'Данные: {note}: {name}')
                 cpu_mask = batch['valid'] & batch['supervised']
                 window_tokens = int(batch['valid'].sum())
-                window_targets = int(cpu_mask.any()) if balance is not None else int(cpu_mask.sum())*4
+                window_targets = int(cpu_mask.any()) if balance is not None or model.presence is not None else int(cpu_mask.sum())*4
                 batch = to_device(batch, device)
                 mask = batch['valid'] & batch['supervised']
                 with activation_policy(backbone, batch['z'].shape[1], execution['no_checkpoint_max_tokens']):
@@ -320,7 +387,14 @@ def run(config):
                         prediction = model(batch,return_aux=True)
                         logits=prediction['logits']
                         target = smooth_binary_targets(batch['target'][mask], config['label_error_probability'])
-                        if balance is not None:
+                        if model.presence is not None:
+                            typed = batch['source_group'][0] < 4
+                            loss = presence_type_loss(logits[mask], batch['target'][mask], typed,
+                                                      config['label_error_probability'])
+                            local_loss = presence_type_loss(prediction['local_logits'][mask], batch['target'][mask],
+                                                            typed, config['label_error_probability'])
+                            loss = (loss+config['local_loss_weight']*local_loss)/(1+config['local_loss_weight'])
+                        elif balance is not None:
                             loss = balanced_window_loss(logits[mask].float(), batch['target'][mask],
                                                         config['label_error_probability'], balance, config['focal_gamma'],
                                                         transition_weights(batch['target'], mask, config['boundary_weight'])[mask])
@@ -368,7 +442,9 @@ def run(config):
             progress.update(cursor, force=True)
             result = evaluate(model, val, device, config['workers'], amp, progress)
             log(dict(kind='validation', epoch=epoch, step=step, **result))
-            progress.message(f'Epoch {epoch+1}: val BCE={result["loss"]:.6f}, macro F1={result["macro_f1"]:.4f}; F1={result["f1_per_class"]}; AP={result["average_precision_per_class"]}; local F1={result['local_macro_f1']:.4f}; real no-OZZ FPR={result["real_no_ozz_false_positive_rate"]}; window FPR={result["real_no_ozz_window_false_positive_rate"]}')
+            progress.message(f'Epoch {epoch+1}: val loss={result["loss"]:.6f}, macro F1={result["macro_f1"]:.4f}; F1={result["f1_per_class"]}; AP={result["average_precision_per_class"]}; local F1={result['local_macro_f1']:.4f}; real no-OZZ FPR={result["real_no_ozz_false_positive_rate"]}; window FPR={result["real_no_ozz_window_false_positive_rate"]}')
+            if 'real_labeled_presence_recall' in result:
+                progress.message(f"Real labeled OZZ (in sample): recall={result['real_labeled_presence_recall']}; interval FPR={result['real_labeled_presence_fpr']}")
             if config['validation_current_samples']:
                 for variant in ('missing', 'zero'):
                     probe = dataset(records['validation'],config['validation_current_samples'],config['seed']+100000,False,variant)

@@ -106,6 +106,54 @@ def normalized_real(frame, nominal, return_basis=False):
     return (raw, basis) if return_basis else raw
 
 
+REAL_OZZ_LABELS = ('ML_2_1', 'ML_2_1_1', 'ML_2_1_2', 'ML_2_1_3')
+
+
+def prepare_labeled_ozz(root, config):
+    path = root/'data/ml_datasets/labeled_2025_12_03.csv'
+    positive = pl.any_horizontal([
+        pl.col(c).cast(pl.Float32, strict=False).fill_null(0) > 0 for c in REAL_OZZ_LABELS
+    ])
+    data = pl.scan_csv(path, infer_schema_length=10000)
+    names = data.filter(positive).select('file_name').unique().collect()['file_name']
+    ids = {name.split('_Bus ')[0] for name in names}
+    nominal = {row['name']: row for row in pl.read_csv(root/'data/norm_coef_all_v1.4.csv', infer_schema=False).to_dicts()}
+    frames = data.filter(pl.col('file_name').is_in(names.to_list())).collect().sort(['file_name', 'sample'])
+    records = []
+    from osc_tools.ml.phase5_ozz_features import expand_labels
+    for frame in frames.partition_by('file_name', maintain_order=True):
+        name = frame['file_name'][0]
+        normalized = normalized_real(frame, nominal, return_basis=True)
+        if normalized is None:
+            continue
+        raw, basis = normalized
+        if basis != 'phase' and not np.isfinite(raw[:, :3]).any():
+            continue
+        labels = frame.select(positive.alias('ozz'))['ozz'].to_numpy()
+        samples = frame['sample'].to_numpy()
+        boundaries = np.r_[0, np.flatnonzero(np.diff(samples) != 1)+1, len(frame)]
+        for start, end in zip(boundaries[:-1], boundaries[1:]):
+            if end-start < 32 or not labels[start:end].any():
+                continue
+            target = np.zeros((end-start, 4), np.float32)
+            target[:, 0] = labels[start:end]
+            target = expand_labels(target, 32.)
+            records.append(dict(kind='labeled_ozz', name=name, group=5, basis=basis,
+                                raw=raw[start:end], labels=target, original_labels=labels[start:end], sample_start=int(samples[start])))
+    usable = sorted({r['name'].split('_Bus ')[0] for r in records})
+    if not usable:
+        raise ValueError('No usable point-labeled OZZ recordings')
+    # Pilot: the same real labels are used for training and in-sample diagnostics.
+    split = {'train': records, 'validation': records}
+    audit = dict(source_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+                 nominal_sha256=hashlib.sha256((root/'data/norm_coef_all_v1.4.csv').read_bytes()).hexdigest(),
+                 positive_originals=len(ids), usable_originals=len(usable),
+                 validation_is_in_sample=True, train_originals=usable,
+                 fragments={k: len(v) for k, v in split.items()})
+    print(f'Labeled real OZZ: {audit}', flush=True)
+    return split, ids, audit
+
+
 def prepare_records(root, config, ssl_manifest):
     directory = Path(config['rtds_dir'])
     paths = sorted(p.name for p in directory.glob('*.csv') if parse_filename(p))
@@ -119,13 +167,18 @@ def prepare_records(root, config, ssl_manifest):
             records[split].append(dict(kind='rtds', path=str(directory/name), group=parse_filename(name)['x']-1,
                                       bytes=stat.st_size, mtime_ns=stat.st_mtime_ns))
     manifest = {}
+    exclude = set()
+    if config.get('presence_type'):
+        labeled, exclude, manifest['real_labeled_ozz'] = prepare_labeled_ozz(root, config)
+        for split in records:
+            records[split].extend(labeled[split])
     if config['use_real_no_ozz']:
-        background, audit = prepare_unlabeled_background(root, config, ssl_manifest)
+        background, audit = prepare_unlabeled_background(root, config, ssl_manifest, exclude)
         for split in records:
             records[split].extend(background[split])
         manifest['real_background'] = audit
     for split, items in records.items():
-        manifest[split] = [{k: v for k, v in r.items() if k != 'raw'} for r in items]
+        manifest[split] = [{k: v for k, v in r.items() if k not in ('raw', 'labels', 'original_labels')} for r in items]
         counts = [sum(r['group'] == g for r in items) for g in range(5 if config['use_real_no_ozz'] else 4)]
         if not all(counts):
             raise ValueError(f'{split}: empty data group, counts={counts}')
@@ -133,13 +186,13 @@ def prepare_records(root, config, ssl_manifest):
     return records, manifest
 
 
-def prepare_unlabeled_background(root, config, ssl_manifest):
+def prepare_unlabeled_background(root, config, ssl_manifest, exclude=()):
     registry = Path(config.get('registry', root/'data/phase5/datasets_registry.json')).resolve()
     source = create_source(registry, 'open_ee')
     metadata = [source.get_metadata(i) for i in range(len(source))]
     names, audit = select_real_background([m['file_name'] for m in metadata],
                   config.get('expert_report', root/'data/real_OZZ/overvoltage_report_T1_with_com_v1.7.csv'))
-    eligible = set(names)
+    eligible = {name for name in names if not any(key.casefold() in name.casefold() for key in exclude)}
     # Preserve SSL separation and keep all buses/crops of a recording together.
     membership = {}
     for split, indices in ssl_manifest['sources']['open_ee']['splits'].items():
@@ -232,6 +285,8 @@ class OZZDataset:
             provenance = source.get_provenance(record['index']).copy()
             spp, fnet = record['spp'], record['f_network']
             labels = np.zeros((len(raw), 4), np.float32)
+        elif record['kind'] == 'labeled_ozz':
+            raw, labels, spp = record['raw'], record['labels'], 32.
         elif record['kind'] == 'real':
             raw, spp = record['raw'], 32.
             labels = np.zeros((len(raw), 4), np.float32)
@@ -258,7 +313,7 @@ class OZZDataset:
             raw, labels, spp = data['raw'], data.get('expanded_targets', data['targets']), 1/(50*data['dt'])
         available = min(int(len(raw)/(10*spp)), int(self.max_seconds*fnet/10))
         choices = [b for b in BUCKETS if b <= available]
-        if not choices:
+        if not choices and record['kind'] != 'labeled_ozz':
             raise ValueError(f'Record shorter than 10 periods: {record.get("path", record.get("name"))}')
         if self.synthetic_context and record['kind'] == 'rtds':
             requested = int(rng.choice([b for b in BUCKETS if b <= int(self.max_seconds*fnet/10)]))
@@ -275,8 +330,12 @@ class OZZDataset:
                     note = 'synthetic_context_rejected_'+str(exc)
             else:
                 choices = [requested]
-        blocks = int(rng.choice(choices))
-        length = int(np.floor(blocks*10*spp+.5))
+        if record['kind'] == 'labeled_ozz':
+            length = min(len(raw), int(self.max_seconds*fnet*spp))
+            blocks = math.ceil(length/(10*spp))
+        else:
+            blocks = int(rng.choice(choices))
+            length = int(np.floor(blocks*10*spp+.5))
         start = int(rng.integers(len(raw)-length+1))
         if self.train and self.event_windows and record['kind'] == 'rtds':
             from osc_tools.ml.phase5_ozz_balance import event_start, NoUsableEvent
@@ -297,6 +356,9 @@ class OZZDataset:
                 except NoUsableEvent:
                     # Retain true interval labels; never invent or erase an event.
                     note = 'event_unavailable_in_usable_intervals_random_window'
+        if record['kind'] == 'labeled_ozz' and length < len(raw):
+            positive_sample = int(rng.choice(np.flatnonzero(labels.any(1))))
+            start = int(rng.integers(max(0, positive_sample-length+1), min(positive_sample, len(raw)-length)+1))
         history_start = (max(0, start-int(np.floor(10*spp+.5)))
                          if self.feature_mode != 'local_blocks' else start)
         history_count = start-history_start
@@ -332,6 +394,18 @@ class OZZDataset:
         batch = supervised_window(segment[history_count:], labels[start:start+length], spp, blocks,
             basis=record.get('basis', 'phase'), provenance=provenance,
             feature_mode=self.feature_mode, history=segment[:history_count])
+        # Extend the layout only. Masked slots have no spectrum or target.
+        if self.train and record['kind'] == 'labeled_ozz':
+            desired = int(rng.choice([0, *[b*80 for b in BUCKETS if b*10/fnet <= self.max_seconds]]))
+            extra = max(0, desired-len(batch['valid']))
+            if extra:
+                left = int(rng.integers(extra+1))
+                for key, value in batch.items():
+                    shape = (desired, *value.shape[1:])
+                    padded = value.new_zeros(shape)
+                    padded[left:left+len(value)] = value
+                    batch[key] = padded
+                batch['times'] += left/8
         batch['input_variant'] = input_variant
         if self.train and self.event_windows and record['kind'] == 'rtds':
             if labels.any() and not batch['target'][batch['supervised']].any():

@@ -619,7 +619,7 @@ def run_inference_on_real_ozz(
 
     # Папка вывода
     if output_dir is None:
-        out_base = PROJECT_ROOT / 'reports' / ('phase5' if config.get('model_family') == 'hierarchical' else 'phase4') / (('hierarchical_v2_ozz_real_inference' if config.get('feature_mode')=='hierarchical_v2' else 'real_ozz_continuous_inference') if config.get('feature_mode') in ('continuous_record','hierarchical_v2') else 'real_ozz_inference')
+        out_base = PROJECT_ROOT / 'reports' / ('phase5' if config.get('model_family') == 'hierarchical' else 'phase4') / ((f'{Path(config["checkpoint"]).parent.name}_real_inference' if config.get('feature_mode')=='hierarchical_v2' else 'real_ozz_continuous_inference') if config.get('feature_mode') in ('continuous_record','hierarchical_v2') else 'real_ozz_inference')
     else:
         out_base = Path(output_dir)
 
@@ -960,7 +960,7 @@ if __name__ == '__main__':
         # =====================================================
         # Укажите путь после обучения
         MODEL_FAMILY = 'hierarchical_v2'  # 'hierarchical_v2' (Phase 5) или 'legacy'
-        CHECKPOINT = ('experiments/phase5/hierarchical_v2_ozz/latest_checkpoint.pt'
+        CHECKPOINT = ('experiments/phase5/hierarchical_v2_ozz_presence/latest_checkpoint.pt'
                       if MODEL_FAMILY == 'hierarchical_v2' else
                       'experiments/phase4/sim_ozz_finetune_PhysicalKANTransformer_20260616_072711/latest_checkpoint.pt')
         # Пример: CHECKPOINT = 'experiments/phase4/sim_ozz_finetune_.../best_model.pt'
