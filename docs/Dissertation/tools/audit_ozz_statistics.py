@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[3]
 DISS = ROOT / "docs/Dissertation"
 sys.path.insert(0, str(ROOT))
 from osc_tools.analysis.overvoltage_statistics import describe_overvoltages, interval_fraction, empirical_cdf
-PRIMARY = ROOT / "data/real_OZZ/overvoltage_report_T1_with_com_v1.7.csv"
+PRIMARY = ROOT / "data/real_OZZ/overvoltage_report_T1_with_com_v1.8.csv"
 INPUT_SHA = "eb9f193dcf4e5ec8e37cd3269e90279ba9e5291da138009b64f0f34031806c5b"
 SNAPSHOT = DISS / "planning/sources/STAT-OZZ" / INPUT_SHA / PRIMARY.name
 FONT = "OzzArial"

@@ -1,0 +1,310 @@
+[
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\main.tex",
+    "sha256": "52F7A36335723A846E00E299D112CCF8F3D5E78BFFCDD14A94A63E74F9E97A63"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\preamble.tex",
+    "sha256": "E48DFE368056121C524EB3359B8B037DBA5CD46BD24095473BF8BEC9CBCD9777"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\test_skeleton.tex",
+    "sha256": "ACA4EC7483E1B4E3EE6B908DDA0F0710C7FBF92000EADEBD67A9B862E74E0BFD"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\backmatter\\appendix01.tex",
+    "sha256": "A8C1EE2F2E154601571DE090460D26FD5B2EAA3DF11378638DA1FC0502BC1A0B"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\backmatter\\bibliography_part1.tex",
+    "sha256": "ED81420BF92BE06339318BFC600AF2C5DBDBAFFB2E368FEC52E957626F0FB33C"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\backmatter\\bibliography_part2.tex",
+    "sha256": "12602C5BF2BA3007AC69A8C7722C7D24EAA7A5B6907A9B7985D0A0A6A45F2976"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\backmatter\\bibliography.tex",
+    "sha256": "BF3D42ABF99E45B3E134B3BBDC588329B3CEE45AD6AA8D53CC3ACA47CB67793F"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\backmatter\\notes_informal_part1.tex",
+    "sha256": "8F6E547E499C4AD321A976C46665644D2AF641E028A73DDA52D8ABA104714FB7"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\backmatter\\notes_informal_part2.tex",
+    "sha256": "765474806E1071BBCEA276C2BBD86F3C388719E04B1D78456F61E6137FA78514"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\backmatter\\notes_informal.tex",
+    "sha256": "C8CD036C979B763F8D77CF2F76CA5EDBAE7CECA61EF6FF164F2E3F1871C29847"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\backmatter\\supplementary_elements.tex",
+    "sha256": "92E6956C74AB8867D17B44A46152781532634534CB947C04CC4B0272C0D3CD9A"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\chapter.tex",
+    "sha256": "EB4FE123410136F2B8340660379D5D1B53F457CA0B455A4456805F516C9A22BE"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec01_intro.tex",
+    "sha256": "E1301041AD80B3167A149A2FAB3C086DABA83D350DD5E5761002CDC88F26A573"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec02_statistics_and_basic_problems.tex",
+    "sha256": "166BCB7FE14E4E636D224EBECEABCE382DE96221934496E838DBD76F848B7AB5"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec03_base_organs_problems.tex",
+    "sha256": "E0EB85FADE471042CAC52AAA9C3E7C8E550A4ACCA20A92853E438CC17A2D71FC"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec04_adaptive_functions.tex",
+    "sha256": "C01E121E26E144040D209D88A8F3B99101A0EEDA5065AB7E292419C1F97E76CE"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec05_manufacturers_analysis_part1.tex",
+    "sha256": "21E2EF1AE497939D9ECBD1B9B88F13991F86C2F7CFABF75A001752D18BB87A8E"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec06_manufacturers_analysis_part2.tex",
+    "sha256": "407A5956012602B5A256F4FC4E0C5D09448D339421D52DD0B44620863F8FE4D6"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec07_complex_cases_time.tex",
+    "sha256": "B7C698AF18FDDD842B999B5043702F189AEE6A9743F6A311250C66B7231E29D6"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec08_adaptive_dropout.tex",
+    "sha256": "E62D67B98E491A548B6F56A46E3D6F81FA74566ABC7BF0D136C5EBE7F4A9E417"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec09_external_two_phase_blocking.tex",
+    "sha256": "12C91393D5451E8439A1C1EF2AFC836FE72E4BBEFEE50928DE4622B579554C15"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec10_rogowski_and_zero_sequence.tex",
+    "sha256": "554DC6D20193DB6E27FB5224A1DAA4411DB6EFF43BCCB8E8F6C28BFF518B79C2"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec11_ferroresonance_ozz.tex",
+    "sha256": "66B157E7ADC903AD36E1951F571C87D831135BD53FB12D09EF94EBB79A8D21C2"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\sec12_conclusions.tex",
+    "sha256": "FB7079FCDD709A7B4FAF2CE5D26A2AF1ADC7E06AE487459CABCFB7D4EEC4FD77"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch01_bavr_problems\\tab01_bavr_operation.tex",
+    "sha256": "A1F4809519D0DCBDF0D173A31243D49EAB7CFF5D34E4224A7AC131D0C6F42302"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\chapter.tex",
+    "sha256": "27A572EA1D4FCEDD9166F902E29E907B9613A55F4FC61D24794753DEAF41E942"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec01_intro_and_rogowski_theory.tex",
+    "sha256": "1CE11BD29F194CF9E4CCA471DFEFC23D112AF71ECB9CD525CC5A017503F078E3"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec02_transient_and_harmonics.tex",
+    "sha256": "F9027EC6A15DF9CDF5EB2A0CDE69E649A6E21C3A8797A0DD1080ED6317779477"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec03_fourier_theory.tex",
+    "sha256": "BC78385107DC9292D4D224AF5142FA199089D3CF7176C1660E4E2A0CA252AF60"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec04_rnm_tt_kr_comparison.tex",
+    "sha256": "7B6C4993C2F636260277D7734238B30DF893EBD7D40FBB5492A5BC22AD61D138"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec05_industrial_application_kr.tex",
+    "sha256": "0946928DED53A2507BAF177B56BF50C23908C860208D1A85B957E8A9B163D6BE"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec06_vnr_algorithms.tex",
+    "sha256": "32B6518890900B69EFB18ABBB796864D834055102B3CBBBDFE1AD731F4A3D743"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\sec07_conclusions.tex",
+    "sha256": "F2BD7CCD2258D131C5B5D2D91CACD2BFEAE531C00D08C56195C839C638AADA54"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch02_bavr_modernization\\tab04_window_functions.tex",
+    "sha256": "0E19C45372706D8A452AB7F30AEC79433D479A37AA98DB9661F3DE95176FB70D"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\chapter.tex",
+    "sha256": "05D3C7B3D73F2E1F9C1761B6EED79E5D5D94C91AB96930D909AA25352E267BC5"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec01_intro_and_methodology.tex",
+    "sha256": "72A247357912658811D328E9DE8802673F741EC8103A372E549B0C7AC437C97B"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec02_data_collection_and_db.tex",
+    "sha256": "8D27B569833F7B45C3D929CA4E7C458CC4200BEFC7B90278B195E9F535CBCA8D"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec03_comtrade_intro.tex",
+    "sha256": "6D6C98AE6999E5FEF271F40AE3566BA28A81244687B975AACFB9CE005CED6E13"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec04_dat_files_and_depersonalization.tex",
+    "sha256": "0549F8AEACF68DB1DF80E37B7C522CE39624F821EBF48549E35B7F43774E7762"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec05_signal_naming_unification.tex",
+    "sha256": "258526F269F5A6AA4167D76E4E9449E913B05D48F0C78C10B6A8051127B754E7"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec06_normalization_methodology.tex",
+    "sha256": "88B482CFBB0A74E81AF9C4E1EFDDAF02E3E838BED4344C0C04CDBE639059A5A3"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec07_basis_algorithms_and_csv.tex",
+    "sha256": "E2B205E2A84BAFF87F212EC5D564243F287150D40E76F33FC17F3272E251A271"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec08_annotation_methodology.tex",
+    "sha256": "E88901E708222C1746413B64582D56A5321FF8E52B990EA324FA28DF97D550B7"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec09_empty_oscillograms_filtering.tex",
+    "sha256": "DC46BB1A42BA85FB8DE4991F7066FC3DACAB00EC3991300E4B53AC7A4E428CF6"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec10_earth_fault_subset.tex",
+    "sha256": "BBDEEE139E92E31C4D762151FD77A97796C30C6D81DDBD22AF89229BA07F13C3"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\sec11_conclusions.tex",
+    "sha256": "AEAC7DEE697410686DEB6D25C7FC1263C246731BC524557083AE29CBC55083BE"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\tab01_analog_signals_parameters.tex",
+    "sha256": "94F049AAB2AF3A77225CE7A00BB5565CCCCAF05545A5FD7028864A922FFEC5F2"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\tab02_oscillograms_frequencies.tex",
+    "sha256": "1453EB3A0EA52941AB6AFAF10E3AE70B02B8002180B6AF539D1F17E9ACAEB725"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch03_dataset_preparation\\tab03_zero_sequence_basis.tex",
+    "sha256": "83C5F016AA6C25CBAD2E562EBE1E7C92613250C3BAA286DE47B6E3C5D60F2A6D"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\chapter.tex",
+    "sha256": "717F1F4B0B2BF9D2A74BFFCB9A948783BE8F824B1723A550E176D5DFE88806B9"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec01_evaluation_methodology.tex",
+    "sha256": "14340C9F3FC71EB5967892C49ADBD207DAB64B8A810E75BC5E6688037DF3A76F"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec02_physkan_architectures.tex",
+    "sha256": "D766CE15BD60C88ED684F44ECB1F45E5B9D23F28574873941528A4BC897858BF"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec03_signal_representations.tex",
+    "sha256": "0DCCF2F56B9A9C310D5B451848F7635D82DDB3C39D1EAE06105FD1927C6A1BEF"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec04_training_protocol.tex",
+    "sha256": "9C8B332D21C7D1A92694616EC78079DDE3AE6307012175A987596AB142C367E9"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec05_physical_validation.tex",
+    "sha256": "A797CFDBFB51982D9F6CEFD0C5B917A640B16A3151013BE18F133E6B63F80C70"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec06_event_examples.tex",
+    "sha256": "07888A744A38F69AD0648E987E3C7460E124ACAF4AFAD4068E0FFFEBADECADF1"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec07_ozz_validation.tex",
+    "sha256": "C38DD7514A616264D257AB13EC87A22B2D671F1367BAB4591FDD618498A1E92A"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec08_input_sensitivity.tex",
+    "sha256": "72B40D52338CAA4F566B9E4E33B5BAF16AE195C4306D15CFF582D95CBB776B6B"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec09_ct_saturation.tex",
+    "sha256": "95A8A74B756C73B81294373E0D7EA1FC2B3AC86BD5A6997E63B0744144A95B5D"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch04_statistical_analysis\\sec10_conclusions.tex",
+    "sha256": "14921E463D02B1B53B137DB41385F0C8FD803D6ACF16AA40B17686F0827AC906"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\chapter.tex",
+    "sha256": "DEEA96BA9AFA884B84793855A3E26E2314143A057EEAF7457645F5A3E6FBAC52"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec01_direction_and_validity.tex",
+    "sha256": "25EA7073E01C5AB7D5E41E361EBC277E985C2F4BE1B720723B222EBAB3DEF84A"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec02_analytical_organs.tex",
+    "sha256": "75EB04165C9A3234D20B00313A926118BF3954312DB8C75E3C30FDE6C283FF63"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec03_population_audit.tex",
+    "sha256": "4D2688505D6AF8CEBD50021B2BF7C38204CA82C4BDBE2DFFBB00857069094D46"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec04_expert_reference.tex",
+    "sha256": "174B0D5231B0425ABD91C9E0BFA87CCED6488D9C7D9B1F6032027F1FD0E316F9"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec05_engineering_verification.tex",
+    "sha256": "4BB724193E4599B6E3174A8B09C9F4EFB10BECA0441E5271A80F3FAB9F8C39E3"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec06_first_results.tex",
+    "sha256": "DD3EE7264D1995B785BA5CDFC38667EB20FFB4EF5505BDD56F070305A7A0A48F"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec07_expert_adaptation.tex",
+    "sha256": "4EC105FF274AADA73A99DEB8EFD1522E0112D6A4CB57FA68ED00D087BA20FB06"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec08_dense_validation.tex",
+    "sha256": "8969A213971E199C2468B134C9C41246713B2F1FD37B152B2B2F8D2D49B1270A"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec09_rtds_validation.tex",
+    "sha256": "021307C0153B1A66EDEAAB611CD5396A5569D8438F40C1E2DCD9194C8350E5CB"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\chapters\\ch05_ml_adaptive_algorithms\\sec10_adaptation_and_conclusions.tex",
+    "sha256": "0A6C0ED95DA1EEAB3F0252AD227C588F5C8F8B91315969AE9426018A8DB1CB44"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\frontmatter\\introduction.tex",
+    "sha256": "658C5F8F92792235E3A2D6249EA1931A722F511A8BC304746348E20C29B124D7"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\frontmatter\\title.tex",
+    "sha256": "123ABEBC884ED825F15E06D12EC22ABA50587F411F3FCE313EA6E2BC3BDD8BE8"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\manuscript\\frontmatter\\toc_source.tex",
+    "sha256": "060CAE328A354A16BB2930A4D32E6055AF8B437977F03D73AE6F8BE78CDA7250"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\review\\Рецензия на диссертация от Gemini Argon.txt",
+    "sha256": "5B2C3481F0FDBDEA22D7F5EC42BEFC496240892CDECD2CA437A8A62E25186C0F"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\review\\issues\\author_annotations.json",
+    "sha256": "4DA2401A7814C1FFAA8B6E9D047E9F6736887F85C2AE034164E015B28F36BF8B"
+  },
+  {
+    "path": "D:\\Программирование\\Fork\\Scientific_research_osc_ML\\docs\\Dissertation\\review\\issues\\author_note_dispositions.json",
+    "sha256": "B62B520D0AA5D3C23969E4445D984B6B53BF2FBC80E7C070D8E13EE1A52CA71D"
+  }
+]
