@@ -552,14 +552,15 @@ def main() -> int:
 
 def run_manual() -> None:
     # 1. Сначала выберите семейство. Настройки ниже действуют только в своей ветке.
-    MODEL_FAMILY = "hierarchical"  # "hierarchical" или "legacy"
+    MODEL_FAMILY = "hierarchical"  # "hierarchical", "hierarchical_v3" или "legacy"
 
-    if MODEL_FAMILY == "hierarchical":
+    if MODEL_FAMILY in ("hierarchical", "hierarchical_v3"):
+        v3 = MODEL_FAMILY == "hierarchical_v3"
         # 2А. НОВАЯ глубокая модель (~14.7 млн параметров).
         # Фиксированный вход B/ReIm: 8 токенов/период, блок 10 периодов.
         # snapshot_5, MODEL_PRESET и BATCH_SIZE здесь НЕ используются.
         SMOKE = False             # Отдельный короткий опыт; RESUME=False для первого запуска.
-        RESUME = True             # Продолжить текущий SSL; False для нового каталога.
+        RESUME = not v3           # Для первого V3 False, для продолжения V3 поставить True.
         EPOCHS = 200              # Общее число эпох, включая уже завершённые.
         SAMPLES_PER_EPOCH = 20_000
         VALIDATION_SAMPLES = 64
@@ -579,9 +580,11 @@ def run_manual() -> None:
         GPU_RESERVE_MIB = 1024          # Оставлять запас для других программ.
         SAVE_EVERY_STEPS = 500     # Обычно несколько минут; Ctrl+C и конец эпохи сохраняют сразу.
         CONSOLE_INTERVAL_SECONDS = 2.0
-        HIERARCHICAL_OUTPUT = PROJECT_ROOT / "experiments/phase5/phasor_hierarchical_v1"
+        folder = "phasor_hierarchical_v3" if v3 else "phasor_hierarchical_v1"
+        HIERARCHICAL_OUTPUT = PROJECT_ROOT / "experiments/phase5" / folder
         from scripts.phase5_experiments.run_phase5_hierarchical import build_parser, run as run_hierarchical
         args=build_parser().parse_args([])
+        args.architecture = "v3" if v3 else "v1"
         args.output=HIERARCHICAL_OUTPUT
         args.resume=RESUME
         args.epochs=EPOCHS
@@ -601,7 +604,9 @@ def run_manual() -> None:
         args.save_every=SAVE_EVERY_STEPS
         args.console_interval=CONSOLE_INTERVAL_SECONDS
         if SMOKE:
-            args.output=PROJECT_ROOT / "experiments/phase5/hierarchical_manual_smoke"
+            smoke_folder = "phasor_hierarchical_v3_smoke" if v3 else "hierarchical_manual_smoke"
+            args.output=HIERARCHICAL_OUTPUT.with_name(smoke_folder)
+            args.resume=False
             args.samples_per_epoch=6; args.validation_samples=3; args.epochs=1
             args.target_tokens=240
         run_hierarchical(args)

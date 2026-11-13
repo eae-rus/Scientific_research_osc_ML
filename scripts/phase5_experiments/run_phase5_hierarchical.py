@@ -187,7 +187,8 @@ def profile(args,model,device,amp):
                "peak_reserved_mib":torch.cuda.max_memory_reserved()/2**20 if device.type=="cuda" else 0}
         records.append(row); print(json.dumps(row),flush=True)
         del batch,total,count,loss
-    destination = ROOT/"reports/phase5/hierarchical_v1_profile.json"
+    profile_name = "hierarchical_v3_profile.json" if model.cfg.architecture_id == "phasor_hierarchical_v3" else "hierarchical_v1_profile.json"
+    destination = ROOT/"reports/phase5"/profile_name
     destination.write_text(json.dumps({"model":asdict(model.cfg),"parameters":sum(p.numel() for p in model.parameters()),
                            "gpu":torch.cuda.get_device_name() if device.type=="cuda" else "cpu","amp_bf16":amp,
                            "torch":torch.__version__,"measurements":records},indent=2),encoding="utf-8")
@@ -200,10 +201,30 @@ def run(args):
     cfg = HierarchicalConfig()
     drop_path_rate = getattr(args, 'drop_path_rate', 0.1)
     regularization = regularization_contract(drop_path_rate)
-    model = OZZRegularizedBackbone(cfg, drop_path_rate).to(device)
+    dataset_type = HierarchicalDataset
+    data_contract, data_hash, recipe = DATA_CONTRACT, model_data_hash(), "hierarchical_ssl_v1"
+    if getattr(args, "architecture", "v1") == "v3":
+        from osc_tools.ml.models.phasor_hierarchical_v3 import HierarchicalV3Config
+        from osc_tools.ml.phase5_hierarchical_v3_ssl import HierarchicalV3Dataset, HierarchicalV3SSL
+        cfg = HierarchicalV3Config(drop_path_rate=drop_path_rate)
+        model = HierarchicalV3SSL(cfg).to(device)
+        dataset_type = HierarchicalV3Dataset
+        data_contract, recipe = "phase5_raw_time_gaps_v3", "hierarchical_ssl_v3"
+        dependencies = (
+            "osc_tools/ml/models/phasor_hierarchical_v2.py",
+            "osc_tools/ml/models/phasor_hierarchical_v3.py",
+            "osc_tools/ml/phase5_hierarchical_v2_features.py",
+            "osc_tools/ml/phase5_hierarchical_v3_ssl.py",
+        )
+        data_hash = hashlib.sha256(data_hash.encode() + b"".join(
+            (ROOT / path).read_bytes() for path in dependencies
+        )).hexdigest()
+    else:
+        model = OZZRegularizedBackbone(cfg, drop_path_rate).to(device)
     if args.profile:
         profile(args,model,device,amp); return
-    output = args.output.resolve()
+    default_folder = "phasor_hierarchical_v3" if recipe == "hierarchical_ssl_v3" else "phasor_hierarchical_v1"
+    output = (args.output or ROOT/"experiments/phase5"/default_folder).resolve()
     latest = output/"latest_checkpoint.pt"
     if (output/"STOP").exists(): raise ValueError("Remove the STOP file before starting/resuming")
     if args.resume and not latest.exists(): raise FileNotFoundError(latest)
@@ -212,15 +233,15 @@ def run(args):
     output.mkdir(parents=True,exist_ok=True)
     registry = ROOT/"data/phase5/datasets_registry.json"
     manifest = _load_splits(ROOT/"data/phase5/research_strict_splits.json")
-    contract = {"architecture":asdict(cfg),"data_contract":DATA_CONTRACT,"split_sha256":manifest["sha256"],
-                "model_data_sha256":model_data_hash(),"training_recipe":"hierarchical_ssl_v1",
+    contract = {"architecture":asdict(cfg),"data_contract":data_contract,"split_sha256":manifest["sha256"],
+                "model_data_sha256":data_hash,"training_recipe":recipe,
                 "registry_sha256":hashlib.sha256(registry.read_bytes()).hexdigest(),"seed":args.seed,
                 "samples_per_epoch":args.samples_per_epoch,"validation_samples":args.validation_samples,
                 "target_tokens":args.target_tokens,"max_seconds":args.max_seconds,"lr":args.lr,
                 "amp_bf16":amp,"loss":"radial_vector_huber_0.1_local_0.25","protocol":"research_strict",
                 "regularization":regularization}
-    train = HierarchicalDataset(registry,manifest,samples=args.samples_per_epoch,seed=args.seed,max_seconds=args.max_seconds)
-    val = HierarchicalDataset(registry,manifest,split="validation",samples=args.validation_samples,seed=args.seed+100000,
+    train = dataset_type(registry,manifest,samples=args.samples_per_epoch,seed=args.seed,max_seconds=args.max_seconds)
+    val = dataset_type(registry,manifest,split="validation",samples=args.validation_samples,seed=args.seed+100000,
                               max_seconds=args.max_seconds,augment=False)
     opt = torch.optim.AdamW(model.parameters(),lr=args.lr,weight_decay=1e-4)
     def multiplier(step):
@@ -270,7 +291,7 @@ def run(args):
     record_execution()
     stop = [False]
     progress=TrainingProgress(output,interval=getattr(args,"console_interval",2.))
-    progress.message(f"PhasorHierarchicalKAN | {device} | {'BF16' if amp else 'FP32'} | "
+    progress.message(f"{cfg.architecture_id} | {device} | {'BF16' if amp else 'FP32'} | "
                      f"эпоха {epoch+1}/{args.epochs}, окно {cursor:,}/{len(train):,}, шаг {step:,}\n"
                      f"Результаты: {output}\n"
                      f"До {policy['max_windows']} окон за проход; накопление {args.target_tokens} токенов; workers={args.workers}. "
@@ -404,7 +425,8 @@ def run(args):
 
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output",type=Path,default=ROOT/"experiments/phase5/phasor_hierarchical_v1")
+    parser.add_argument("--output",type=Path)
+    parser.add_argument("--architecture", choices=("v1", "v3"), default="v1")
     parser.add_argument("--resume",action="store_true")
     parser.add_argument("--epochs",type=int,default=200)
     parser.add_argument("--samples-per-epoch",type=int,default=20000)
