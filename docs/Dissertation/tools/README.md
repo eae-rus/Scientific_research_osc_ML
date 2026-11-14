@@ -105,4 +105,4 @@ D04-010. Старые неиспользуемые архитектурные ч
 
 В preamble.tex макросы conceptsource и figurereview выводят источники идей и задания к рисункам только при AuthorReview. Отдельного реестра для них нет. Workinprogress виден в обеих сборках и помещается в начале именно незавершённого раздела.
 
-Обычная сборка main.tex, рецензионная `\def\AuthorReview{1}\input{main.tex}` с jobname dissertation_comments. Для каждого прохода соответствующие aux/toc из build/reading/latex копируются в manuscript. Выходы по прежним путям dissertation_review.pdf и dissertation_comments.pdf. Во время сборки TEX не изменять и текущий записываемый PDF не читать. После последнего прохода сверять aux и toc и проверять растр затронутых страниц.
+Единый выпуск на вычитку — build/reading/latex/dissertation_comments.pdf. Собирать из manuscript с включённым AuthorReview и jobname dissertation_comments. Промежуточные проходы, временные PDF и растры хранить во временном каталоге. После стабилизации ссылок и просмотра изменённых страниц заменять PDF по постоянному пути.

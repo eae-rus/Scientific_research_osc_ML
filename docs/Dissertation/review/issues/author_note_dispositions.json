@@ -1525,7 +1525,7 @@
     "decision": "D04-014, повторная вычитка 2026-11-01 по поручению автора",
     "section_label": "sec:ch04_conclusions",
     "display": "закрыто 01.11; история сохранена",
-    "response_ru": "Вывод соответствует таблице главы: 94,81/92,64% обнаружений и 63,65/55,68% ложных. Универсальный победитель не заявлен.",
+    "response_ru": "В выводах главы 4 отдельно сформулированы результат оконной оценки на моделировании и обнаружение подтверждённых ОЗЗ по реальным записям. Для обеих моделей приведены доли ложного обнаружения на сложной отрицательной группе.",
     "reviewer_acceptance": "accepted"
   },
   "manuscript/chapters/ch04_statistical_analysis/sec10_conclusions.tex#5": {
@@ -1566,7 +1566,7 @@
     "text_sha256": "e6e93411241775a68c74ce1d461a182bb77bf5f272abaf81097d4c5b26c0eab4",
     "status": "DECISION_RECORDED",
     "implementation_status": "partial",
-    "response_ru": "Подробное задание записано в planning/integration/figure_specs/ch05_waveform_cases.md, последний абзац. Указаны этапы общей схемы и исключение промежуточных F1. Сам рисунок ещё не заменён; эта часть остаётся открытой.",
+    "response_ru": "Подготовлено задание на два ряда схемы. Верхний показывает общую методику РЗА, нижний связывает этапы с примером РНМ. Рисунок ожидает перерисовки.",
     "section_label": "sec:ch05_intro",
     "author_acceptance": "pending",
     "suppress_in_review": false,
@@ -1840,8 +1840,8 @@
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec04_expert_reference.tex#3": {
     "text_sha256": "dca0c05d5c9a662b7790bec28bab39e97707a32e119ad33c7d5e400a8bd8d363",
     "status": "DECISION_RECORDED",
-    "implementation_status": "partial",
-    "response_ru": "Требуется уточнить, что ожидаемое совпадение рассчитывается из долей каждого состояния в двух просмотрах.",
+    "implementation_status": "implemented",
+    "response_ru": "В определении каппы приведён пример с частым прямым направлением. Базовый уровень совпадения определяется по частотам состояний первого и второго просмотров. Правило расчёта по файлам и число 172 сохранены.",
     "section_label": "sec:ch5_expert_reference",
     "author_acceptance": "pending",
     "suppress_in_review": false,
@@ -1851,8 +1851,8 @@
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec04_expert_reference.tex#4": {
     "text_sha256": "d75fc868d3c96da98f7cb32935860f3551b9a2b3a10940c328decade1d3ad5fa",
     "status": "DECISION_RECORDED",
-    "implementation_status": "partial",
-    "response_ru": "Речь о возможном повторном разборе спорных записей после двух выполненных просмотров. Формулировку следует уточнить.",
+    "implementation_status": "implemented",
+    "response_ru": "Из научного текста убрано упоминание третьего просмотра. После таблицы оставлены результаты двух просмотров и инженерный смысл обнаруженных расхождений.",
     "section_label": "sec:ch5_expert_reference",
     "author_acceptance": "pending",
     "suppress_in_review": false,
@@ -1885,8 +1885,8 @@
     "text_sha256": "09ac1da878fd2f3531eb1f0b1ac5ceed9a4569aa63863436650b28f5ad153fcb",
     "status": "REVIEWED",
     "decision": "D06-006: новое замечание оставлено для вычитки.",
-    "implementation_status": "deferred",
-    "response_ru": "Редакционное уточнение оставлено для следующей правки начала раздела.",
+    "implementation_status": "implemented",
+    "response_ru": "Вводный абзац теперь прямо называет длительность ошибок, лишние переключения и реакцию на смену режима. Последствие длительной ошибочной блокировки раскрыто через работу БАВР.",
     "section_label": "sec:ch5_engineering_verification"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec05_engineering_verification.tex#2": {
@@ -1948,7 +1948,7 @@
     "text_sha256": "116cd606687fed66e3b2325c3b05aac98e97fec5352a07da52edc18e9724deb9",
     "status": "DECISION_RECORDED",
     "implementation_status": "partial",
-    "response_ru": "Добавлено назначение матрицы согласия и переход к отдельным записям. У рисунков ещё нужно последовательно сократить сухие пояснения; графическая и содержательная правка не завершена.",
+    "response_ru": "В F03-002 A переработан подраздел о малых токах. Пояснено, как запись попадает в группу, что означают обе доли на рисунке и как по осциллограмме проверить роль порога. Последующие рисунки и подраздел о попарном согласии остаются на вычитку.",
     "section_label": "sec:ch5_first_results",
     "author_acceptance": "pending",
     "suppress_in_review": false,
@@ -1999,12 +1999,12 @@
     "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
     "display": "закрыто автором; сохранено в истории"
   },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec06_first_results.tex#8": {
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec06_expert_results.tex#1": {
     "text_sha256": "4532478d01a5083445c3d5d7e27cce39eae0badd0f680ed00b9189e473a0d623",
     "status": "DECISION_RECORDED",
     "implementation_status": "partial",
     "response_ru": "Предложение разделить анализ на весь ручной массив и валидационную часть сохранено. В текущем PDF таблица относится к прежней валидации; оценки на всём массиве ещё не рассчитаны и не выданы за готовый результат.",
-    "section_label": "sec:ch5_first_results",
+    "section_label": "sec:ch5_analytical_expert_comparison",
     "author_acceptance": "pending",
     "suppress_in_review": false,
     "decision": "D06-006, per-note audit 2026-11-10",
@@ -2131,12 +2131,12 @@
     "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
     "display": "закрыто автором; сохранено в истории"
   },
-  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec06_first_results.tex#9": {
+  "manuscript/chapters/ch05_ml_adaptive_algorithms/sec06_expert_results.tex#2": {
     "text_sha256": "5acb26f3f4b45c012c335250e6899f94f1ae3c2399b8ca4279f2de49d4eadded",
     "status": "AUTHOR_ACCEPTED",
     "implementation_status": "implemented",
     "response_ru": "В 5.7 добавлено объяснение MCC: согласованность двух двоичных решений с учётом обоих направлений, смысл положительных, близких к нулю и отрицательных значений, назначение для поиска пар органов.",
-    "section_label": "sec:ch5_first_results",
+    "section_label": "sec:ch5_analytical_expert_comparison",
     "author_acceptance": "accepted",
     "suppress_in_review": true,
     "decision": "D06-006: автор принял ответ или явно закрыл обсуждение 11.11.2026.",
@@ -2154,8 +2154,8 @@
     "text_sha256": "61dffa1bd6839bb7fef7ec7661612f48256034bc16777b1bde45e7230f58fbfd",
     "status": "REVIEWED",
     "decision": "D06-006: новое замечание оставлено для вычитки.",
-    "implementation_status": "deferred",
-    "response_ru": "При правке выводов нужно первым сформулировать общий результат для органов РЗА, затем отдельно показать проверку на РНМ. Для более узкой задачи, например детекции ОЗЗ, состав осциллограмм задаётся самой задачей.",
+    "implementation_status": "implemented",
+    "response_ru": "Общий результат сформулирован первым в выводах главы 5. Следом приведена проверка на РНМ. Для детекции ОЗЗ обозначен собственный состав записей и эталонных состояний.",
     "section_label": "sec:ch05_conclusions"
   },
   "manuscript/chapters/ch05_ml_adaptive_algorithms/sec10_adaptation_and_conclusions.tex#4": {
