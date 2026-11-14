@@ -1,10 +1,28 @@
-% ==============================================================================
-% БИБЛИОГРАФИЧЕСКИЙ СПИСОК (DISS-005-B2082 .. DISS-005-B2221)
-% Точный перенос текста рукописи v0.5 без изменений
-% ==============================================================================
-
 \begingroup
 \sloppy
+\renewcommand{\bibname}{Библиографический список}
+\begin{thebibliography}{999}
+\phantomsection
+\addcontentsline{toc}{chapter}{Список литературы}
+\label{ch:bibliography}
 \input{backmatter/bibliography_part1}
 \input{backmatter/bibliography_part2}
+
+\bibitem{evdakov_rogowski_abstract_2024}
+Евдаков А. Е., Яблоков А. А., Филатова Г. А.
+Исследование применения катушек Роговского для устройств БАВР //
+Радиоэлектроника, электротехника и энергетика.
+Москва, 29 февраля -- 2 марта 2024 г. С.~1194.
+\href{https://reepe.mpei.ru/abstracts/Documents/Blok_doklad_2024_fin.pdf}{Сборник тезисов}.
+
+\bibitem{evdakov_oscillograms_2026}
+Evdakov A., Filatova G., Yablokov A., Kovalenko A., Skachkov E., Makarov I.
+A dataset of real-world oscillograms from electrical power grids //
+Scientific Data. 2026. Vol.~13. Article~262.
+DOI: \href{https://doi.org/10.1038/s41597-026-06587-8}{10.1038/s41597-026-06587-8}.
+\bibitem{aps_apscilloscope}
+ООО «АПС». APScilloscope. Программное обеспечение
+для просмотра и анализа файлов COMTRADE.
+\href{https://www.aps-m.com/software}{Страница разработчика}.
+\end{thebibliography}
 \endgroup
