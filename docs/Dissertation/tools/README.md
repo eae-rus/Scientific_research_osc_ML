@@ -105,4 +105,12 @@ D04-010. Старые неиспользуемые архитектурные ч
 
 В preamble.tex макросы conceptsource и figurereview выводят источники идей и задания к рисункам только при AuthorReview. Отдельного реестра для них нет. Workinprogress виден в обеих сборках и помещается в начале именно незавершённого раздела.
 
-Единый выпуск на вычитку — build/reading/latex/dissertation_comments.pdf. Собирать из manuscript с включённым AuthorReview и jobname dissertation_comments. Промежуточные проходы, временные PDF и растры хранить во временном каталоге. После стабилизации ссылок и просмотра изменённых страниц заменять PDF по постоянному пути.
+Скрипт `build_pdf.py` в корне диссертации собирает PDF через MiKTeX. Команды из каталога диссертации:
+
+```powershell
+python build_pdf.py
+python build_pdf.py --mode both
+python build_pdf.py --chapters 4 5 --mode comments
+```
+
+Результаты находятся в `build/reading/latex`. Полная версия с примечаниями обновляет `dissertation_comments.pdf`, обычная сохраняется в `dissertation_plain.pdf`. Выбранные главы записываются в один файл, например `chapters_4_5_comments.pdf`. При извлечении остаются печатные номера страниц, глав, рисунков и ссылок, а переходы к страницам вне выборки убираются. Для этого режима нужен `pypdf` (`python -m pip install pypdf`). Промежуточная сборка проходит во временной папке.
