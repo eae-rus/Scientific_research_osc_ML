@@ -168,7 +168,14 @@ def prepare_records(root, config, ssl_manifest):
                                       bytes=stat.st_size, mtime_ns=stat.st_mtime_ns))
     manifest = {}
     exclude = set()
-    if config.get('presence_type'):
+    if config.get('prepared_real_manifest'):
+        from osc_tools.ml.phase5_ozz_study_data import partition_real
+        labeled, exclude, digest = partition_real(config['prepared_real_manifest'], config['seed'])
+        manifest['prepared_real_sha256'] = digest
+        manifest['real_test'] = labeled['test']
+        for split in records:
+            records[split].extend(labeled[split])
+    elif config.get('presence_type'):
         labeled, exclude, manifest['real_labeled_ozz'] = prepare_labeled_ozz(root, config)
         for split in records:
             records[split].extend(labeled[split])
@@ -240,9 +247,17 @@ class OZZDataset:
     def __init__(self, records, samples, seed, max_seconds, train, event_windows=False, background_repeats=1,
                  current_dropout_all=0., current_dropout_phase=0., current_zero_probability=.5,
                  current_evaluation=None, feature_mode="local_blocks", label_tail_periods=0,
-                 voltage_dropout_phase=0., background_dropout_multiplier=1., synthetic_context=False, synthetic_normal_probability=.15):
+                 voltage_dropout_phase=0., background_dropout_multiplier=1., synthetic_context=False, synthetic_normal_probability=.15, study_mixture=False,
+                 impulse_probability=0.):
+        if not 0 <= impulse_probability <= 1:
+            raise ValueError("impulse_probability must be in [0, 1]")
+        self.impulse_probability = impulse_probability
         self.groups = [[r for r in records if r['group'] == g] for g in sorted({r['group'] for r in records})]
         self.schedule = [i for i, group in enumerate(self.groups) for _ in range(background_repeats if group[0]['group'] == 4 and train else 1)]
+        if study_mixture:
+            if [g[0]['group'] for g in self.groups] != list(range(7)):
+                raise ValueError('OZZ study requires all seven window groups')
+            self.schedule = [0, 5, 1, 6, 2, 5, 3, 4]
         self.samples, self.seed, self.max_seconds, self.train = samples, seed, max_seconds, train
         self.epoch = 0
         self.event_windows = event_windows
@@ -285,6 +300,14 @@ class OZZDataset:
             provenance = source.get_provenance(record['index']).copy()
             spp, fnet = record['spp'], record['f_network']
             labels = np.zeros((len(raw), 4), np.float32)
+        elif record['kind'] == 'prepared_ozz':
+            from osc_tools.ml.phase5_ozz_study_data import load_section
+            from osc_tools.ml.phase5_ozz_features import expand_labels
+            raw, label = load_section(record)
+            fnet = record['f_network']
+            spp = record['fs']/fnet
+            labels = np.zeros((len(label), 4), dtype=bool)
+            labels[:, 0] = expand_labels(label[:, None], spp)[:, 0] if self.label_tail_periods else label
         elif record['kind'] == 'labeled_ozz':
             raw, labels, spp = record['raw'], record['labels'], 32.
         elif record['kind'] == 'real':
@@ -313,7 +336,7 @@ class OZZDataset:
             raw, labels, spp = data['raw'], data.get('expanded_targets', data['targets']), 1/(50*data['dt'])
         available = min(int(len(raw)/(10*spp)), int(self.max_seconds*fnet/10))
         choices = [b for b in BUCKETS if b <= available]
-        if not choices and record['kind'] != 'labeled_ozz':
+        if not choices and record['kind'] not in ('labeled_ozz', 'prepared_ozz'):
             raise ValueError(f'Record shorter than 10 periods: {record.get("path", record.get("name"))}')
         if self.synthetic_context and record['kind'] == 'rtds':
             requested = int(rng.choice([b for b in BUCKETS if b <= int(self.max_seconds*fnet/10)]))
@@ -330,7 +353,7 @@ class OZZDataset:
                     note = 'synthetic_context_rejected_'+str(exc)
             else:
                 choices = [requested]
-        if record['kind'] == 'labeled_ozz':
+        if record['kind'] in ('labeled_ozz', 'prepared_ozz'):
             length = min(len(raw), int(self.max_seconds*fnet*spp))
             blocks = math.ceil(length/(10*spp))
         else:
@@ -356,7 +379,7 @@ class OZZDataset:
                 except NoUsableEvent:
                     # Retain true interval labels; never invent or erase an event.
                     note = 'event_unavailable_in_usable_intervals_random_window'
-        if record['kind'] == 'labeled_ozz' and length < len(raw):
+        if record['group'] == 5 and length < len(raw):
             positive_sample = int(rng.choice(np.flatnonzero(labels.any(1))))
             start = int(rng.integers(max(0, positive_sample-length+1), min(positive_sample, len(raw)-length)+1))
         history_start = (max(0, start-int(np.floor(10*spp+.5)))
@@ -377,7 +400,7 @@ class OZZDataset:
         input_variant = 'full'
         if self.train:
             from osc_tools.ml.phase5_ozz_input_augmentation import augment_current_channels
-            multiplier = self.background_dropout_multiplier if record['group'] == 4 else 1.
+            multiplier = self.background_dropout_multiplier if record['group'] in (4, 6) else 1.
             all_p, phase_p, zero_p = self.current_dropout
             segment, provenance, input_variant = augment_current_channels(
                 segment, provenance, rng, all_p*multiplier, phase_p*multiplier, zero_p)
@@ -391,6 +414,9 @@ class OZZDataset:
             from osc_tools.ml.phase5_ozz_input_augmentation import augment_current_channels
             segment, provenance, input_variant = augment_current_channels(
                 segment, provenance, rng, 1., 0., float(self.current_evaluation == 'zero'))
+        if self.train and self.impulse_probability:
+            from osc_tools.ml.phase5_ozz_input_augmentation import augment_impulse
+            augment_impulse(segment, rng, self.impulse_probability, history_count)
         batch = supervised_window(segment[history_count:], labels[start:start+length], spp, blocks,
             basis=record.get('basis', 'phase'), provenance=provenance,
             feature_mode=self.feature_mode, history=segment[:history_count])

@@ -102,6 +102,18 @@ class PhasorHierarchicalKANV3(PhasorHierarchicalKANV2):
              if self.training and self.cfg.checkpoint_blocks else block(x,valid,phi,times))
         return (x+(y-x)/(1-rate))*valid.unsqueeze(-1) if rate else y
 
+    def mix_channels(self, channels, available, index, mask, local_times):
+        b, n, k = mask.shape
+        channel_mask = mask.unsqueeze(-1) & available[:, index]
+        x = channels[:, index].permute(0, 1, 3, 2, 4).reshape(b*n*6, k, -1)
+        cmask = channel_mask.permute(0, 1, 3, 2).reshape(b*n*6, k)
+        channel_times = local_times.repeat_interleave(6, dim=0)
+        for block in self.channel_blocks:
+            x = self.run_block(block, x, cmask, channel_times)
+        x = x.reshape(b, n, 6, k, -1).permute(0, 1, 3, 2, 4).flatten(-2).reshape(b*n, k, -1)
+        with torch.autocast(x.device.type, enabled=False):
+            return self.mixer(x.float())
+
     def forward(self, z, state, times, valid, use_global=True):
         b,t,h,_,_ = z.shape; k,s = self.cfg.block_tokens,self.cfg.block_stride
         n = max(1,math.ceil((t-k)/s)+1); total=(n-1)*s+k; pad=total-t
@@ -112,15 +124,10 @@ class PhasorHierarchicalKANV3(PhasorHierarchicalKANV2):
         available = (visible | (state == 3)).any(-2)
         valid = valid & available.any(-1)
         index = torch.arange(n,device=z.device)[:,None]*s+torch.arange(k,device=z.device)[None,:]
-        mask=valid[:,index]; channel_mask=mask.unsqueeze(-1)&available[:,index]
-        x=channels[:,index].permute(0,1,3,2,4).reshape(b*n*6,k,-1)
-        cmask=channel_mask.permute(0,1,3,2).reshape(b*n*6,k)
+        mask=valid[:,index]
         window_times=times[:,index]; local_times=window_times-window_times[:,:,:1]
         local_times = local_times.reshape(b*n,k)
-        channel_times = local_times.repeat_interleave(6, dim=0)
-        for block in self.channel_blocks: x=self.run_block(block,x,cmask,channel_times)
-        x=x.reshape(b,n,6,k,-1).permute(0,1,3,2,4).flatten(-2).reshape(b*n,k,-1)
-        with torch.autocast(z.device.type,enabled=False): x=self.mixer(x.float())
+        x = self.mix_channels(channels, available, index, mask, local_times)
         x=x+self.raw_bypass(safe[:,index].reshape(b*n,k,-1))
         wm=mask.reshape(b*n,k); wp=phi[:,index].reshape(b*n,k,h,3,10)
         for block in self.local_blocks: x=self.run_block(block,x,wm,local_times,wp)

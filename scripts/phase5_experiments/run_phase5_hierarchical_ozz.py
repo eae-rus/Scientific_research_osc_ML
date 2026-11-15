@@ -49,7 +49,7 @@ class OZZClassifier(nn.Module):
         return torch.zeros_like(logits[..., 1:]).scatter_(-1, winner, logits[..., :1].sigmoid())
 
     def forward(self, batch, return_aux=False, use_global=True):
-        if self.backbone.cfg.architecture_id == 'phasor_hierarchical_v2':
+        if self.backbone.cfg.architecture_id in ('phasor_hierarchical_v2', 'phasor_hierarchical_v3'):
             result=self.backbone(batch['z'],batch['state'],batch['times'],batch['valid'],use_global=use_global)
             logits=self.classify(result['token_features'])
             return dict(logits=logits,local_logits=self.classify(result['local_features'])) if return_aux else logits
@@ -286,7 +286,13 @@ def run(config):
         architecture = transfer['contract']['architecture']
     elif resume:
         architecture = state['contract']['architecture']
-    backbone = PhasorHierarchicalKANV2(HierarchicalV2Config(**architecture))
+    if config.get('study_variant'):
+        from osc_tools.ml.models.ozz_study import build_encoder
+        from osc_tools.ml.models.phasor_hierarchical_v3 import HierarchicalV3Config
+        backbone = build_encoder(config['study_variant'], HierarchicalV3Config(**architecture),
+                                 external_factory=config.get('external_factory'))
+    else:
+        backbone = PhasorHierarchicalKANV2(HierarchicalV2Config(**architecture))
     model = OZZClassifier(backbone, config.get('presence_type', False))
     if transfer is not None:
         expected_missing = {'presence.weight', 'presence.bias'} if model.presence is not None else set()
@@ -304,6 +310,11 @@ def run(config):
                   ROOT/'osc_tools/ml/phase5_hierarchical_data.py', ROOT/'osc_tools/ml/models/phasor_hierarchical.py',
                   ROOT/'osc_tools/ml/phase5_ozz_regularization.py', ROOT/'osc_tools/ml/phase5_fourier.py', ROOT/'osc_tools/ml/phase5_ozz_balance.py', ROOT/'osc_tools/ml/phase5_ozz_input_augmentation.py', ROOT/'osc_tools/ml/phase5_ozz_features.py', ROOT/'osc_tools/ml/phase5_hierarchical_v2_features.py',
                   ROOT/'osc_tools/ml/phase5_ozz_synthesis.py', ROOT/'osc_tools/ml/models/phasor_hierarchical_v2.py']
+    if config.get('study_variant'):
+        code_paths.extend(ROOT / p for p in (
+            'osc_tools/ml/models/ozz_study.py', 'osc_tools/ml/models/phasor_hierarchical_v3.py',
+            'osc_tools/ml/phase5_ozz_study_data.py',
+        ))
     contract['implementation_sha256'] = hashlib.sha256(b''.join(p.read_bytes() for p in code_paths)).hexdigest()
     if resume:
         validate_resume_contract(state['contract'], contract)
@@ -321,7 +332,9 @@ def run(config):
             current_zero_probability=config['current_zero_probability'],feature_mode=config['feature_mode'],label_tail_periods=1,
             voltage_dropout_phase=config['voltage_dropout_phase'],background_dropout_multiplier=config['background_dropout_multiplier'],
             synthetic_context=config['synthetic_context'],current_evaluation=current_evaluation,
-            synthetic_normal_probability=config['synthetic_normal_probability'])
+            synthetic_normal_probability=config['synthetic_normal_probability'],
+            study_mixture=bool(config.get('prepared_real_manifest')),
+            impulse_probability=config.get('impulse_probability', 0.))
     train=dataset(records['train'],config['samples_per_epoch'],config['seed'],True)
     val=dataset(records['validation'],config['validation_samples'],config['seed']+100000,False)
     opt = torch.optim.AdamW([{'params': [p for p in backbone.parameters() if p.requires_grad], 'lr': config['backbone_lr']},
@@ -444,7 +457,7 @@ def run(config):
             log(dict(kind='validation', epoch=epoch, step=step, **result))
             progress.message(f'Epoch {epoch+1}: val loss={result["loss"]:.6f}, macro F1={result["macro_f1"]:.4f}; F1={result["f1_per_class"]}; AP={result["average_precision_per_class"]}; local F1={result['local_macro_f1']:.4f}; real no-OZZ FPR={result["real_no_ozz_false_positive_rate"]}; window FPR={result["real_no_ozz_window_false_positive_rate"]}')
             if 'real_labeled_presence_recall' in result:
-                progress.message(f"Real labeled OZZ (in sample): recall={result['real_labeled_presence_recall']}; interval FPR={result['real_labeled_presence_fpr']}")
+                progress.message(f"Real labeled OZZ: recall={result['real_labeled_presence_recall']}; interval FPR={result['real_labeled_presence_fpr']}")
             if config['validation_current_samples']:
                 for variant in ('missing', 'zero'):
                     probe = dataset(records['validation'],config['validation_current_samples'],config['seed']+100000,False,variant)

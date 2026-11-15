@@ -556,10 +556,20 @@ def plot_real_ozz_marking(
 
     ax.set_xlabel('Время, мс')
 
-    fig.suptitle(title, fontsize=12)
-    fig.tight_layout()
-    fig.savefig(out_path, dpi=150)
-    plt.close(fig)
+    from tempfile import NamedTemporaryFile
+
+    try:
+        fig.suptitle(title, fontsize=12)
+        fig.tight_layout()
+        with NamedTemporaryFile(dir=out_path.parent, suffix='.png', delete=False) as stream:
+            temporary = Path(stream.name)
+        try:
+            fig.savefig(temporary, dpi=150, format='png')
+            temporary.replace(out_path)
+        finally:
+            temporary.unlink(missing_ok=True)
+    finally:
+        plt.close(fig)
 
 
 # ---------------------------------------------------------------------------
@@ -693,6 +703,7 @@ def run_inference_on_real_ozz(
         'inference_sha256': config.get('inference_sha256'),
         'total_files': len(unique_files),
         'processed': 0,
+        'plot_errors': [],
         'skipped': 0,
         # Диагностика причин пропуска (для проверки 477 vs 830 confirmed):
         'skip_not_on_disk': 0,        # .cfg файл отсутствует в osc_comtrade/
@@ -835,17 +846,21 @@ def run_inference_on_real_ozz(
 
                 from osc_tools.ml.phase5_ozz_inference import presence_plot_scores
                 plot_scores = presence_plot_scores(model, raw_for_model, config, device, fs, sig_info.get("_f_network", 50.))
-                plot_real_ozz_marking(
-                    out_path=plot_path,
-                    raw_data=raw_display,
-                    probs=probs,
-                    coverage=cov,
-                    fs=fs,
-                    title=title,
-                    threshold=threshold_config['threshold_spec'],
-                    auto_crop=auto_crop and has_ozz,
-                    plot_scores=plot_scores,
-                )
+                try:
+                    plot_real_ozz_marking(
+                        out_path=plot_path,
+                        raw_data=raw_display,
+                        probs=probs,
+                        coverage=cov,
+                        fs=fs,
+                        title=title,
+                        threshold=threshold_config['threshold_spec'],
+                        auto_crop=auto_crop and has_ozz,
+                        plot_scores=plot_scores,
+                    )
+                except OSError as exc:
+                    stats['plot_errors'].append(dict(filename=fname, bus=bus, path=str(plot_path), error=str(exc)))
+                    print(f"PNG [{file_idx+1}/{len(unique_files)}] {plot_path!s}: {exc}", flush=True)
 
             # Pseudo-CSV сегменты только для unknown с детектом (расширение датасета)
             if save_pseudo_csv and category == 'unknown' and has_ozz and pseudo_dir is not None:
@@ -865,6 +880,9 @@ def run_inference_on_real_ozz(
                 pseudo_meta_all.extend(seg_metas)
 
             stats['processed'] += 1
+
+    if stats['plot_errors']:
+        print(f"PNG errors: {len(stats['plot_errors'])} (inference_stats.json)")
 
     # Итог
     print(f"\n{'='*60}")

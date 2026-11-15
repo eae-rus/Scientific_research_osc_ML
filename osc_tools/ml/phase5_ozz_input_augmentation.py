@@ -2,6 +2,28 @@
 import numpy as np
 
 
+def augment_impulse(raw, rng, probability, history_count=0):
+    """Corrupt one measured channel or all measured channels for 1–3 samples."""
+    if probability == 0 or rng.random() >= probability:
+        return
+    signal = raw[history_count:]
+    # Respect missing channels and channels already zeroed by dropout.
+    available = np.flatnonzero(np.any(np.isfinite(signal) & (signal != 0), axis=0))
+    if not len(available):
+        return
+    channels = available if rng.random() < .5 else [int(rng.choice(available))]
+    width = int(rng.integers(1, min(3, len(signal)) + 1))
+    start = int(rng.integers(len(signal) - width + 1))
+    zero = rng.random() < .5
+    factor = 0. if zero else rng.choice([-1., 1.]) * rng.uniform(100., 1000.)
+    for channel in channels:
+        column = signal[:, channel]
+        values = column[np.isfinite(column) & (column != 0)]
+        amplitude = np.quantile(np.abs(values), .95) if not zero else 0.
+        burst = column[start:start + width]
+        burst[np.isfinite(burst)] = factor * amplitude
+
+
 def augment_current_channels(raw, provenance, rng, all_probability=0., phase_probability=0., zero_probability=.5):
     """Label-independent current corruption; voltages and true labels stay intact.
 

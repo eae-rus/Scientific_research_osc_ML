@@ -28,7 +28,13 @@ def load_hierarchical(state, checkpoint, device):
         config['feature_mode'] = 'hierarchical_v2'
     if config.get('recipe') == 'phase_ozz_v2':
         config['recipe'] = 'hierarchical_ozz_v2'
-    if config['architecture']['architecture_id']=='phasor_hierarchical_v2':
+    if config.get('study_variant'):
+        from osc_tools.ml.models.ozz_study import build_encoder
+        from osc_tools.ml.models.phasor_hierarchical_v3 import HierarchicalV3Config
+        backbone = build_encoder(config['study_variant'], HierarchicalV3Config(**config['architecture']),
+                                 external_factory=config.get('external_factory'))
+        model = OZZClassifier(backbone, presence_type=True)
+    elif config['architecture']['architecture_id']=='phasor_hierarchical_v2':
         from osc_tools.ml.models.phasor_hierarchical_v2 import HierarchicalV2Config,PhasorHierarchicalKANV2
         model=OZZClassifier(PhasorHierarchicalKANV2(HierarchicalV2Config(**config['architecture'])), config.get('presence_type', False))
     else:
@@ -45,6 +51,9 @@ def load_hierarchical(state, checkpoint, device):
                      'scripts/phase5_experiments/run_phase5_hierarchical_ozz.py',
                      'osc_tools/ml/models/phasor_hierarchical_v2.py','osc_tools/ml/phase5_hierarchical_v2_features.py','osc_tools/ml/phase5_ozz_synthesis.py'):
         digest.update((ROOT / relative).read_bytes())
+    if config.get('study_variant'):
+        for relative in ('osc_tools/ml/models/ozz_study.py', 'osc_tools/ml/models/phasor_hierarchical_v3.py'):
+            digest.update((ROOT / relative).read_bytes())
     digest.update(json.dumps(dict(architecture=config['architecture'], feature_mode=config.get('feature_mode', 'local_blocks')), sort_keys=True).encode())
     config.update(model_family='hierarchical', model_type=('PhasorHierarchicalKANV2' if config['architecture']['architecture_id']=='phasor_hierarchical_v2' else 'PhasorHierarchicalKAN'),
                   data_dir=config['rtds_dir'], num_classes=4, inference_sha256=digest.hexdigest(),
@@ -58,6 +67,8 @@ def labeled_training_ids(config):
     manifest = json.loads((Path(config['checkpoint']).parent/'split.json').read_text(encoding='utf-8'))
     if hashlib.sha256(json.dumps(manifest, sort_keys=True).encode()).hexdigest() != config['split_sha256']:
         raise ValueError('OZZ split does not match checkpoint')
+    if config.get('study_variant'):
+        return tuple(sorted({r['id'] for r in manifest['train'] if r['group'] == 5}))
     return tuple(manifest['real_labeled_ozz']['train_originals'])
 
 
