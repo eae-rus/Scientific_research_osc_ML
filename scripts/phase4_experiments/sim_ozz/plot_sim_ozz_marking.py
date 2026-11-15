@@ -146,14 +146,15 @@ def plot_sim_ozz_marking(
     fs: float,
     title: str,
     threshold: float = 0.5,
+    plot_scores: np.ndarray | None = None,
 ) -> None:
     """Строит график разметки для одной SimOZZ осциллограммы."""
     N = raw_data.shape[0]
     num_classes = probs.shape[1]
     time_ms = np.arange(N) * 1000.0 / fs
 
-    # 2 строки (токи, напряжения) + num_classes строк вероятностей + 1 строка coverage
-    height_ratios = [1.2, 1.2] + [0.6] * num_classes + [0.3]
+    extra_row = int(plot_scores is not None)
+    height_ratios = [1.2, 1.2] + [0.6] * (num_classes + extra_row)
     n_rows = len(height_ratios)
     fig = plt.figure(figsize=(18, 8 + 1.2 * num_classes))
     gs = fig.add_gridspec(nrows=n_rows, ncols=1, height_ratios=height_ratios)
@@ -177,9 +178,18 @@ def plot_sim_ozz_marking(
     ax_u.grid(True, alpha=0.3, linestyle=':')
 
     # --- Вероятности + Ground Truth ---
+    if plot_scores is not None:
+        ax = fig.add_subplot(gs[2, 0], sharex=ax_i)
+        presence = plot_scores[:, 0]
+        ax.plot(time_ms, presence, color='black', linewidth=1.1)
+        ax.axhline(threshold, color='red', linestyle='--', alpha=0.6)
+        ax.set_ylim(-0.02, 1.02)
+        ax.set_ylabel('P(ОЗЗ)')
+        ax.grid(True, alpha=0.3, linestyle=':')
+
     for ci in range(num_classes):
-        ax = fig.add_subplot(gs[2 + ci, 0], sharex=ax_i)
-        p = probs[:, ci]
+        ax = fig.add_subplot(gs[2 + extra_row + ci, 0], sharex=ax_i)
+        p = np.where(coverage > 0, probs[:, ci] if plot_scores is None else plot_scores[:, ci+1], np.nan)
         gt = targets[:, ci]
         color = CLASS_COLORS[ci % len(CLASS_COLORS)]
         label = ARC_TYPES[ci] if ci < len(ARC_TYPES) else f'Class {ci}'
@@ -195,24 +205,19 @@ def plot_sim_ozz_marking(
         ax.plot(time_ms, p, color=color, linewidth=1.2, alpha=0.8)
 
         # Зона выше порога
-        high = (p >= threshold) & valid
+        high = (probs[:, ci] >= threshold) & valid
         if np.any(high):
             ax.fill_between(time_ms, 0, p, where=high,
                             alpha=0.2, color=color)
 
-        ax.axhline(threshold, color='red', linewidth=0.8, linestyle='--', alpha=0.6)
+        if plot_scores is None:
+            ax.axhline(threshold, color='red', linewidth=0.8, linestyle='--', alpha=0.6)
         ax.set_ylim(-0.02, 1.02)
-        ax.set_ylabel(label, fontsize=8)
+        ax.set_ylabel(label if plot_scores is None else f'P(тип | ОЗЗ)\n{label}', fontsize=8)
         ax.legend(loc='upper right', fontsize=7)
         ax.grid(True, alpha=0.3, linestyle=':')
 
-    # --- Coverage ---
-    ax_cov = fig.add_subplot(gs[-1, 0], sharex=ax_i)
-    ax_cov.fill_between(time_ms, 0, coverage, color='steelblue', alpha=0.3)
-    ax_cov.plot(time_ms, coverage, color='steelblue', linewidth=0.6)
-    ax_cov.set_ylabel('Valid input' if np.max(coverage, initial=0) <= 1 else 'Coverage', fontsize=8)
-    ax_cov.set_xlabel('Время, мс')
-    ax_cov.grid(True, alpha=0.3, linestyle=':')
+    ax.set_xlabel('Время, мс')
 
     fig.suptitle(title, fontsize=12)
     fig.tight_layout()

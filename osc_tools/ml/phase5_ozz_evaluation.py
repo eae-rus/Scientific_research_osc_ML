@@ -2,7 +2,7 @@
 from pathlib import Path
 import json
 import numpy as np
-from osc_tools.ml.phase5_ozz_inference import predict_record, mark_record
+from osc_tools.ml.phase5_ozz_inference import predict_record, mark_record, record_plot_scores
 
 
 def runs(mask):
@@ -213,7 +213,8 @@ def evaluate_records(model, config, device, checkpoint, per_class=240, backgroun
             raw_display = load_raw_csv(record['path'], normalize=False)['raw']
             p, coverage = mark_record(model, raw, config, device, fs, fnet)
             plot_sim_ozz_marking(output/(Path(record['path']).stem+'.png'), raw_display,
-                p, coverage, original_labels, fs, title=Path(record['path']).stem, threshold=.5)
+                p, coverage, original_labels, fs, title=Path(record['path']).stem, threshold=.5,
+                plot_scores=record_plot_scores(pred, len(raw)))
     report = threshold_report(results)
     report['original_labels'] = threshold_report([dict(r, y=r['y_original']) for r in results])
     simulated = [r for r in results if r['group'] < 4]
@@ -230,7 +231,8 @@ def evaluate_records(model, config, device, checkpoint, per_class=240, backgroun
         for record in labeled['validation']:
             original = record['original_labels']
             prediction = predict_record(model, record['raw'], config, device, 1600., basis=record['basis'])
-            y = np.maximum.reduceat(expand_labels(original, 32), prediction['starts'])
+            expanded = expand_labels(original[:, None], 32)[:, 0]
+            y = np.maximum.reduceat(expanded, prediction['starts'])
             real.append((record['name'].split('_Bus ')[0], prediction['presence_probability'], y, prediction['valid']))
         p = np.concatenate([p[v] for _, p, _, v in real])
         y = np.concatenate([y[v] for _, _, y, v in real])

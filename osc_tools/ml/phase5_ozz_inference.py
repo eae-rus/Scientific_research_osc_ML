@@ -155,3 +155,25 @@ def mark_record(model, raw, config, device, fs, f_network=50.):
             probs[a:b] = p
             coverage[a:b] = 1
     return probs, coverage
+
+
+def record_plot_scores(result, n_samples):
+    """Expand presence and conditional type probabilities onto the sample axis."""
+    if 'joint_type_probabilities' not in result:
+        return None
+    scores = np.full((n_samples, 5), np.nan, np.float32)
+    for presence, joint, a, b, valid in zip(
+        result['presence_probability'], result['joint_type_probabilities'],
+        result['starts'], result['ends'], result['valid'],
+    ):
+        if valid:
+            scores[a:b, 0] = presence
+            if presence > 0:
+                scores[a:b, 1:] = joint / presence
+    return scores
+
+
+def presence_plot_scores(model, raw, config, device, fs, f_network):
+    if not config.get('presence_type'):
+        return None
+    return record_plot_scores(predict_record(model, raw, config, device, fs, f_network), len(raw))

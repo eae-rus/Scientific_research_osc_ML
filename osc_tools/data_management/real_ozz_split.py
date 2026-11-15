@@ -4,6 +4,7 @@
 Использует отчёт overvoltage_report_T1_with_com_v1.8.csv:
 - Проверка == '+' → confirmed_ozz (подтверждённое ОЗЗ)
 - Проверка == '-' → false_detection (ошибочно детектировано)
+- Остальные отметки (в том числе '_+/-_') исключаются из обеих групп.
 
 Структура выходных CSV:
   data/real_OZZ/confirmed_ozz.csv — filename, bus, group, overvoltage, comment
@@ -27,6 +28,7 @@ import polars as pl
 
 # Путь к отчёту по умолчанию (относительно корня проекта)
 _DEFAULT_REPORT_PATH = Path(__file__).resolve().parents[2] / 'data' / 'real_OZZ' / 'overvoltage_report_T1_with_com_v1.8.csv'
+_DATASET_REPORT_PATH = Path(r'D:\DataSet\_spef_dataset_v1.2') / _DEFAULT_REPORT_PATH.name
 _DEFAULT_COMTRADE_DIR = Path(__file__).resolve().parents[2] / 'data' / 'real_OZZ' / 'osc_comtrade'
 
 
@@ -36,13 +38,14 @@ def load_real_ozz_report(
     """Загружает отчёт о перенапряжениях.
 
     Args:
-        report_path: путь к CSV (по умолч. data/real_OZZ/overvoltage_report_T1_with_com_v1.8.csv)
+        report_path: путь к CSV. По умолчанию используется отчёт из папки
+            датасета, а при его отсутствии — копия из data/real_OZZ.
 
     Returns:
         DataFrame с колонками: filename, bus, group, overvoltage_group, overvoltage, verified, comment
     """
     if report_path is None:
-        report_path = _DEFAULT_REPORT_PATH
+        report_path = _DATASET_REPORT_PATH if _DATASET_REPORT_PATH.is_file() else _DEFAULT_REPORT_PATH
     report_path = Path(report_path)
 
     if not report_path.exists():
@@ -89,8 +92,9 @@ def split_by_verification(
         comtrade_dir = _DEFAULT_COMTRADE_DIR
     comtrade_dir = Path(comtrade_dir)
 
-    confirmed = report.filter(pl.col('verified') == '+')
-    false_det = report.filter(pl.col('verified') == '-')
+    verified = pl.col('verified').str.strip_chars()
+    confirmed = report.filter(verified == '+')
+    false_det = report.filter(verified == '-')
 
     # TODO [ВЕРИФИКАЦИЯ ДЛЯ СТАТЬИ]: отчёт может иметь несколько строк на один файл
     # (по одной на каждую секцию/bus). Поэтому кол-во строк != кол-во уникальных файлов.

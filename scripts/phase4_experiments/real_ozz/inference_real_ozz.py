@@ -475,6 +475,7 @@ def plot_real_ozz_marking(
     threshold: float | dict[str, float] = 0.5,
     auto_crop: bool = True,
     f_network: float = 50.0,
+    plot_scores: np.ndarray | None = None,
 ) -> None:
     """Строит график разметки для реальной COMTRADE осциллограммы."""
     threshold_values = thresholds_for_classes(CLASS_NAMES, threshold)
@@ -492,12 +493,15 @@ def plot_real_ozz_marking(
         raw_data = raw_data[s:e]
         probs = probs[s:e]
         coverage = coverage[s:e]
+        if plot_scores is not None:
+            plot_scores = plot_scores[s:e]
         time_ms = time_ms[s:e]
         N = e - s
 
     channel_names = ['IA', 'IB', 'IC', 'IN', 'UA', 'UB', 'UC', 'UN']
 
-    height_ratios = [1.2, 1.2] + [0.6] * num_classes + [0.3]
+    extra_row = int(plot_scores is not None)
+    height_ratios = [1.2, 1.2] + [0.6] * (num_classes + extra_row)
     n_rows = len(height_ratios)
     fig = plt.figure(figsize=(18, 8 + 1.2 * num_classes))
     gs = fig.add_gridspec(nrows=n_rows, ncols=1, height_ratios=height_ratios)
@@ -521,31 +525,36 @@ def plot_real_ozz_marking(
     ax_u.grid(True, alpha=0.3, linestyle=':')
 
     # --- Вероятности ОЗЗ (по классам) ---
+    if plot_scores is not None:
+        ax = fig.add_subplot(gs[2, 0], sharex=ax_i)
+        presence = plot_scores[:, 0]
+        ax.plot(time_ms, presence, color='black', linewidth=1.1)
+        if np.allclose(threshold_values, threshold_values[0]):
+            ax.axhline(float(threshold_values[0]), color='red', linestyle='--', alpha=0.6)
+        ax.set_ylim(-0.02, 1.02)
+        ax.set_ylabel('P(ОЗЗ)')
+        ax.grid(True, alpha=0.3, linestyle=':')
+
     for ci in range(num_classes):
-        ax = fig.add_subplot(gs[2 + ci, 0], sharex=ax_i)
-        p = probs[:, ci]
+        ax = fig.add_subplot(gs[2 + extra_row + ci, 0], sharex=ax_i)
+        p = np.where(coverage > 0, probs[:, ci] if plot_scores is None else plot_scores[:, ci+1], np.nan)
         color = CLASS_COLORS[ci % len(CLASS_COLORS)]
         label = CLASS_LABELS[ci] if ci < len(CLASS_LABELS) else f'Class {ci}'
         class_threshold = float(threshold_values[ci]) if ci < len(threshold_values) else 0.5
 
         ax.plot(time_ms, p, color=color, linewidth=1.2, alpha=0.7)
-        mask_high = p >= class_threshold
+        mask_high = (p >= class_threshold) if plot_scores is None else (probs[:, ci] >= class_threshold)
         if np.any(mask_high & ~np.isnan(p)):
             ax.fill_between(time_ms, 0, p, where=mask_high & ~np.isnan(p),
                             alpha=0.2, color=color)
 
-        ax.axhline(class_threshold, color='red', linewidth=0.8, linestyle='--', alpha=0.6)
+        if plot_scores is None:
+            ax.axhline(class_threshold, color='red', linewidth=0.8, linestyle='--', alpha=0.6)
         ax.set_ylim(-0.02, 1.02)
-        ax.set_ylabel(label, fontsize=8)
+        ax.set_ylabel(label if plot_scores is None else f'P(тип | ОЗЗ)\n{label}', fontsize=8)
         ax.grid(True, alpha=0.3, linestyle=':')
 
-    # --- Coverage ---
-    ax_cov = fig.add_subplot(gs[2 + num_classes, 0], sharex=ax_i)
-    ax_cov.fill_between(time_ms, 0, coverage, color='steelblue', alpha=0.3)
-    ax_cov.plot(time_ms, coverage, color='steelblue', linewidth=0.6)
-    ax_cov.set_ylabel('Valid input' if np.max(coverage, initial=0) <= 1 else 'Coverage', fontsize=8)
-    ax_cov.set_xlabel('Время, мс')
-    ax_cov.grid(True, alpha=0.3, linestyle=':')
+    ax.set_xlabel('Время, мс')
 
     fig.suptitle(title, fontsize=12)
     fig.tight_layout()
@@ -653,7 +662,7 @@ def run_inference_on_real_ozz(
     # Кеши имён для быстрых проверок категории
     confirmed_files_set = set(confirmed_df['filename'].to_list())
     false_files_set = set(false_df['filename'].to_list())
-    known_files_set = confirmed_files_set | false_files_set
+    known_files_set = set(report['filename'].drop_nulls().to_list())
 
     # Формируем список файлов для обработки
     if subset == 'confirmed':
@@ -824,6 +833,8 @@ def run_inference_on_real_ozz(
                 plot_path = out_dir_file / plot_name
                 title = f'{label.upper()} | {fname} | bus={bus} | Fs={fs:.0f} Гц | maxP={max_prob_value:.3f}'
 
+                from osc_tools.ml.phase5_ozz_inference import presence_plot_scores
+                plot_scores = presence_plot_scores(model, raw_for_model, config, device, fs, sig_info.get("_f_network", 50.))
                 plot_real_ozz_marking(
                     out_path=plot_path,
                     raw_data=raw_display,
@@ -833,6 +844,7 @@ def run_inference_on_real_ozz(
                     title=title,
                     threshold=threshold_config['threshold_spec'],
                     auto_crop=auto_crop and has_ozz,
+                    plot_scores=plot_scores,
                 )
 
             # Pseudo-CSV сегменты только для unknown с детектом (расширение датасета)

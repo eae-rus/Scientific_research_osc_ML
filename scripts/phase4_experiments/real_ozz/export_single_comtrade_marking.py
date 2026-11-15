@@ -251,6 +251,8 @@ def export_single_comtrade_marking(
         print(f"  max P={max_prob:.3f}, detected={detected}")
 
         if plot:
+            from osc_tools.ml.phase5_ozz_inference import presence_plot_scores
+            plot_scores = presence_plot_scores(model, raw_for_model, config, device, fs, sig_info.get("_f_network", 50.))
             title = f'{cfg_path.stem} | bus={bus_id} | Fs={fs:.0f} Гц | maxP={max_prob:.3f}'
             plot_real_ozz_marking(
                 out_path=png_path,
@@ -261,6 +263,7 @@ def export_single_comtrade_marking(
                 title=title,
                 threshold=threshold_config['threshold_spec'],
                 auto_crop=(not no_crop) and detected,
+                plot_scores=plot_scores,
             )
             print(f"  PNG: {png_path}")
 
